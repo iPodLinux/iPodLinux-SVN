@@ -96,9 +96,9 @@ void
 usage()
 {
     printf("Usage: patch_fw [-h]\n"
-	   "       patch_fw [-v] [-3] -o outfile -e img_no fw_file\n"   
+	   "       patch_fw [-v] -o outfile -e img_no fw_file\n"   
 	   "       patch_fw [-v] [-3] [-r rev] -o outfile [-i img_from_-e]* [-l raw_img]* ldr_img\n\n"
-	   "  -3:    extract/create with version 3 firmware (mini, 4g, photo)\n"
+	   "  -3:    create version 3 firmware (required for mini, 4g, photo)\n"
 	   "  -e:    extract the image at img_no in boot table to outfile\n"
 	   "         fw_file is an original firmware image\n"
 	   "         the original firmware has the sw at 0, and a flash updater at 1\n"
@@ -391,13 +391,6 @@ main(int argc, char **argv)
 	return 1;
     }
    
-    printf("Generating firmware image compatible with ");
-    if (fw_version == 3) {
-	printf("iPod mini, 4g and iPod photo...\n");
-    } else {
-	printf("1g, 2g and 3g iPods...\n");
-    }
-   
     if (ext) {
 	if ((in = fopen(argv[optind], "rb")) == NULL) {
 	    fprintf(stderr, "Cannot open firmware image file %s\n", argv[optind]);
@@ -407,7 +400,14 @@ main(int argc, char **argv)
 	fclose(in); fclose(out);
 	return 0;
     }
-    
+
+    printf("Generating firmware image compatible with ");
+    if (fw_version == 3) {
+	printf("iPod mini, 4g and iPod photo...\n");
+    } else {
+	printf("1g, 2g and 3g iPods...\n");
+    }
+
     if (!images_done) {
 	fprintf(stderr, "no images specified!\n");
 	return 1;
