@@ -33,6 +33,7 @@ extern void new_record_line_in_window(void);
 extern void new_playback_browse_window(void);
 extern void new_calendar_window(void);
 extern void new_oth_window(void);
+extern void new_steroids_window(void);
 extern void new_bluecube_window(void);
 extern void new_itunes_track(void);
 extern void new_itunes_artist(void);
@@ -82,6 +83,7 @@ struct menu_item {
 typedef void (*menu_action_t) (void);
 
 static struct menu_item games_menu[] = {
+	{"Steroids", ACTION_MENU, new_steroids_window, NOSETTING, 0},
 	{"Othello", ACTION_MENU, new_oth_window, NOSETTING, 0},
 	{"BlueCube", ACTION_MENU, new_bluecube_window, NOSETTING, 0},
 	{"Pong", ACTION_MENU, new_pong_window, NOSETTING, 0},

@@ -57,6 +57,13 @@ OBJS=\
 	itunes_db.o \
 	itunesmenu.o \
 	calc.o \
+	Steroids/asteroid.o \
+	Steroids/main.o \
+	Steroids/object.o \
+	Steroids/polygon.o \
+	Steroids/ship.o \
+	Steroids/shot.o \
+	Steroids/vector.o \
 	bluecube/box.o \
 	bluecube/main.o \
 	bluecube/pieces.o \
