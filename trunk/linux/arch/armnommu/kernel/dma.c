@@ -275,6 +275,7 @@ GLOBAL_ALIAS(init_dma, get_dma_residue);
 
 #endif
 
+EXPORT_SYMBOL(free_dma);
 EXPORT_SYMBOL(enable_dma);
 EXPORT_SYMBOL(disable_dma);
 EXPORT_SYMBOL(set_dma_addr);
