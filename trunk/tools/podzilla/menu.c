@@ -55,6 +55,7 @@ struct menu_item {
 
 typedef void (*menu_action_t) (void);
 
+#if 0
 static struct menu_item browse_menu[] = {
 	{"Artists", DISPLAY_MENU, 0},
 	{"Albums", DISPLAY_MENU, 0},
@@ -63,6 +64,7 @@ static struct menu_item browse_menu[] = {
 	{"Composers", DISPLAY_MENU, 0},
 	{0, 0, 0}
 };
+#endif
 
 static struct menu_item games_menu[] = {
 	{"Othello", ACTION_MENU, new_oth_window},
@@ -71,10 +73,12 @@ static struct menu_item games_menu[] = {
 
 static struct menu_item extras_menu[] = {
 	{"Voice Record", ACTION_MENU, new_record_window},
+#if 0
 	{"Clock", SUB_MENU_HEADER, 0},
 	{"Contacts", SUB_MENU_HEADER, 0},
 	{"Calendar", SUB_MENU_HEADER, 0},
 	{"Notes", SUB_MENU_HEADER, 0},
+#endif
 	{"Games", SUB_MENU_HEADER, games_menu},
 	{0, 0, 0}
 };
@@ -86,20 +90,28 @@ static struct menu_item reset_menu[] = {
 };
 
 static struct menu_item settings_menu[] = {
+#if 0
 	{"About", SUB_MENU_HEADER, 0},
 	{"Shuffle", VALUE_MENU, 0},
 	{"Repeat", VALUE_MENU, 0},
 	{"EQ -Off", VALUE_MENU, 0},
+#endif
 	{"Backlight", ACTION_MENU, toggle_backlight},
+#if 0
 	{"Backlight Timer", ACTION_MENU, set_backlight_timer},
+#endif
 	{"Contrast", ACTION_MENU, set_contrast},
 	{"Wheel Debounce", ACTION_MENU, set_wheeldebounce},
 	{"Button Debounce", ACTION_MENU, set_buttondebounce},
+#if 0
 	{"Alarms", SUB_MENU_HEADER, 0},
 	{"Contacts", SUB_MENU_HEADER, 0},
+#endif
 	{"Clicker", ACTION_MENU, toggle_piezo},
+#if 0
 	{"Language", SUB_MENU_HEADER, 0},
 	{"Legal", SUB_MENU_HEADER, 0},
+#endif
 	{"Reset All Settings", SUB_MENU_HEADER, reset_menu},
 	{"Save Settings", ACTION_MENU, ipod_save_settings},
 	{"Load Settings", ACTION_MENU, ipod_load_settings},
@@ -113,8 +125,10 @@ static struct menu_item reboot_menu[] = {
 };
 
 static struct menu_item main_menu[] = {
+#if 0
 	{"Playlists", SUB_MENU_HEADER, 0},
 	{"Browse", SUB_MENU_HEADER, browse_menu},
+#endif
 	{"Extras", SUB_MENU_HEADER, extras_menu},
 	{"Settings", SUB_MENU_HEADER, settings_menu},
 	{"File Browser", ACTION_MENU, new_browser_window},
