@@ -62,7 +62,7 @@ static struct irqchip ipod_chip = {
 	.unmask = ipod_unmask_irq,
 };
 
-int ipod_init_irq(void)
+void __init ipod_init_irq(void)
 {
 	unsigned int irq;
 
@@ -86,7 +86,5 @@ int ipod_init_irq(void)
 	 * we can wake up the COP safely
 	 */
 	outl(0xce, 0xcf004058);
-
-        return 0;
 }
 
