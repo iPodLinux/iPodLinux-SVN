@@ -152,32 +152,40 @@ static int calc_do_keystroke(GR_EVENT * event) {
 		case '\n':
 			calc_do_math(current_calc_item);
 			draw_calc();
-			ret = 1;
+			ret |= KEY_CLICK;
 			break;
-		case 'p':
-			calc_do_math(14);
-			draw_calc();
-			break;
+
 		case 'l':
 			last_calc_item = current_calc_item;
 			current_calc_item--;
 			draw_calc();
-			ret = 1;
+			ret |= KEY_CLICK;
 			break;
-		case 'r':
 
+		case 'r':
 			last_calc_item = current_calc_item;
 			current_calc_item++;
 			draw_calc();
-			ret = 1;
+			ret |= KEY_CLICK;
 			break;
+
 		case 'm':
 			GrDestroyGC(calc_gc);
 			GrUnmapWindow(calc_wid);
 			GrDestroyWindow(calc_wid);
-			ret = 1;
+			ret |= KEY_CLICK;
 			break;
+
+		default:
+			ret |= KEY_UNUSED;
 		}
+		break;
+
+	case GR_EVENT_TYPE_TIMEOUT:
+		break;
+
+	default:
+		ret |= EVENT_UNUSED;
 		break;
 	}
 	return ret;
@@ -195,7 +203,8 @@ void new_calc_window() {
 
 	calc_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), calc_do_draw, calc_do_keystroke);
 
-	GrSelectEvents(calc_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_KEY_DOWN);
+	GrSelectEvents(calc_wid, GR_EVENT_MASK_EXPOSURE |
+			GR_EVENT_MASK_KEY_UP | GR_EVENT_MASK_KEY_DOWN);
 
 	GrMapWindow(calc_wid);
 }
