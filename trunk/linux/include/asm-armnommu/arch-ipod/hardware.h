@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003,2004 Bernard Leach (leachbj@bouncycastle.org)
+ * Copyright (c) 2003-2005 Bernard Leach (leachbj@bouncycastle.org)
  */
 
 #ifndef __ASM_ARCH_HARDWARE_H
@@ -7,6 +7,25 @@
 
 /* this is called from drivers/block/blkmem.c */
 #define HARD_RESET_NOW() ipod_hard_reset()
+
+/* PP5020,PP5002 register definitions */
+#define PP5002_PROC_ID	0xc4000000
+#define PP5002_COP_CTRL	0xcf004058
+#define PP5020_PROC_ID	0x60000000
+#define PP5020_COP_CTRL	0x60007004
+
+/* special locations in fast ram */
+#define PP_CPU_TYPE	0x40000000
+
+#define DMA_READ_OFF	0x40000004
+#define DMA_WRITE_OFF	0x40000008
+#define DMA_ACTIVE	0x4000000c
+#define DMA_STEREO	0x40000010
+#define DMA_HANDLER	(ipod_dma_handler_t *)0x40000014
+#define DMA_BASE	0x40000018
+
+#define SYSINFO_TAG	(unsigned char *)0x40017f18
+#define SYSINFO_PTR	(struct sysinfo_t **)0x40017f1c
 
 #ifndef __ASSEMBLY__
 struct sysinfo_t {
