@@ -81,7 +81,7 @@ pci_unmap_single(struct pci_dev *hwdev, dma_addr_t dma_addr, size_t size, int di
 static inline dma_addr_t pci_map_page(struct pci_dev *hwdev, struct page *page,
                                       unsigned long offset, size_t size, int direction)
 {
-	return (dma_addr_t)(page - mem_map) * PAGE_SIZE + offset;
+	return pci_map_single(hwdev, page_address(page) + offset, size, direction);
 }
 
 static inline void pci_unmap_page(struct pci_dev *hwdev, dma_addr_t dma_address,                                  size_t size, int direction)
@@ -110,13 +110,21 @@ pci_map_sg(struct pci_dev *hwdev, struct scatterlist *sg, int nents, int directi
 	int i;
 
 	for (i = 0; i < nents; i++, sg++) {
-		consistent_sync(sg->address, sg->length, direction);
-		sg->dma_address = virt_to_bus(sg->address);
+ 		if (sg->address) {
+			consistent_sync(sg->address, sg->length, direction);
+			sg->dma_address = virt_to_bus(sg->address);
+		}
+		else {
+/* bus & phys are the same */
+#define page_to_bus page_to_phys
+
+			consistent_sync(page_address(sg->page) + sg->offset, sg->length, direction);
+			sg->dma_address = page_to_bus(sg->page) + sg->offset;
+		}
 	}
 
 	return nents;
-}
-
+} 
 /* Unmap a set of streaming mode DMA translations.
  * Again, cpu read rules concerning calls here are the same as for
  * pci_unmap_single() above.
@@ -154,7 +162,12 @@ pci_dma_sync_sg(struct pci_dev *hwdev, struct scatterlist *sg, int nelems, int d
 	int i;
 
 	for (i = 0; i < nelems; i++, sg++)
-		consistent_sync(sg->address, sg->length, direction);
+		if (sg->address) {
+			consistent_sync(sg->address, sg->length, direction);
+		}
+		else {
+			consistent_sync(page_address(sg->page) + sg->offset, sg->length, direction);
+		}
 }
 
 /* Return whether the given PCI device DMA address mask can
