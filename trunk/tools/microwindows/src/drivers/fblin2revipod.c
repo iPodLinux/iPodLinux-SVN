@@ -10,9 +10,12 @@
 
 #include <assert.h>
 #include <string.h>
+#include <stdio.h>
+#include <ctype.h>
 #include "device.h"
 #include "fb.h"
 
+static long get_generation(void);
 static void lcd_update_display(PSD psd, int sx, int sy, int mx, int my);
 
 #define inl(p) (*(volatile unsigned long *) (p))
@@ -20,12 +23,28 @@ static void lcd_update_display(PSD psd, int sx, int sy, int mx, int my);
 
 static unsigned char notmask[4] = { 0xfc, 0xf3, 0xcf, 0x3f };
 
+/* global stuff for ipod gen stuff */
+#define BUFSIZR 512
+
+static long gen = 0;
+static unsigned long ipod_lcd_base	= 0xc0001000;
+static unsigned long ipod_rtc		= 0xcf001110;
+
 /* Calc linelen and mmap size, return 0 on fail*/
 static int
 linear2_init(PSD psd)
 {
 	if (!psd->size)
 		psd->size = psd->yres * psd->linelen;
+
+	if (!gen) {
+		gen = get_generation();
+		if (gen > 40000) {
+			ipod_lcd_base	= 0x70003000;
+			ipod_rtc	= 0x60005010;
+		}
+	}
+
 	/* linelen in bytes for bpp 1, 2, 4, 8 so no change*/
 	return 1;
 }
@@ -186,24 +205,21 @@ SUBDRIVER fblinear2 = {
 	linear2_blit
 };
 
-#define IPOD_LCD_BASE	0xc0001000
-#define IPOD_RTC	0xcf001110
 #define IPOD_LCD_WIDTH	160
 #define IPOD_LCD_HEIGHT	128
-
 
 /* get current usec counter */
 static int
 timer_get_current(void)
 {
-	return inl(IPOD_RTC);
+	return inl(ipod_rtc);
 }
 
 /* check if number of useconds has past */
 static int
 timer_check(int clock_start, int usecs)
 {
-	if ( (inl(IPOD_RTC) - clock_start) >= usecs ) {
+	if ( (inl(ipod_rtc) - clock_start) >= usecs ) {
 		return 1;
 	} else {
 		return 0;
@@ -214,11 +230,11 @@ timer_check(int clock_start, int usecs)
 static void
 lcd_wait_write(void)
 {
-	if ( (inl(IPOD_LCD_BASE) & 0x1) != 0 ) {
+	if ( (inl(ipod_lcd_base) & 0x1) != 0 ) {
 		int start = timer_get_current();
 
 		do {
-			if ( (inl(IPOD_LCD_BASE) & (unsigned int)0x8000) == 0 ) break;
+			if ( (inl(ipod_lcd_base) & (unsigned int)0x8000) == 0 ) break;
 		} while ( timer_check(start, 1000) == 0 );
 	}
 }
@@ -230,9 +246,9 @@ lcd_send_data(int data_lo, int data_hi)
 {
 	lcd_wait_write();
 
-	outl(data_lo, 0xc0001010);
+	outl(data_lo, ipod_lcd_base + 0x10);
 	lcd_wait_write();
-	outl(data_hi, 0xc0001010);
+	outl(data_hi, ipod_lcd_base + 0x10);
 }
 
 /* send LCD command */
@@ -240,9 +256,9 @@ static void
 lcd_prepare_cmd(int cmd)
 {
 	lcd_wait_write();
-	outl(0x0, 0xc0001008);
+	outl(0x0, ipod_lcd_base + 0x8);
 	lcd_wait_write();
-	outl(cmd, 0xc0001008);
+	outl(cmd, ipod_lcd_base + 0x8);
 }
 
 /* send LCD command and data */
@@ -252,6 +268,26 @@ lcd_cmd_and_data(int cmd, int data_lo, int data_hi)
 	lcd_prepare_cmd(cmd);
 
 	lcd_send_data(data_lo, data_hi);
+}
+
+static long get_generation(void)
+{
+	int i;
+	char cpuinfo[BUFSIZR];
+	char *ptr;
+	FILE *file;
+
+	if ((file = fopen("/proc/cpuinfo", "r")) != NULL) {
+		while (fgets(cpuinfo, sizeof(cpuinfo), file) != NULL)
+			if (strncmp(cpuinfo, "Revision", 8) == 0)
+				break;
+		fclose(file);
+	}
+	for (i = 0; !isspace(cpuinfo[i]); i++);
+	for (; isspace(cpuinfo[i]); i++);
+	ptr = cpuinfo + i + 2;
+
+	return strtol(ptr, NULL, 10);
 }
 
 static void lcd_update_display(PSD psd, int sx, int sy, int mx, int my)
