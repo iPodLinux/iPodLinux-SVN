@@ -26,7 +26,7 @@ ipod_fixup(struct machine_desc *desc, struct param_struct *params,
 
 MACHINE_START(IPOD, "iPod")
 	MAINTAINER("Bernard Leach")
-	BOOT_MEM(0x28000000, 0xc0000000, 0x00000000)
+	BOOT_MEM(0x00000000, 0xc0000000, 0x00000000)
 	INITIRQ(ipod_init_irq)
 	FIXUP(ipod_fixup)
 MACHINE_END

@@ -484,7 +484,7 @@ if [ "$CONFIG_ARCH_IPOD" = "y" ]; then
    define_bool CONFIG_CPU_ARM7TDMI y
    define_bool CONFIG_CPU_32 y
    define_bool CONFIG_CPU_26 n
-   define_hex DRAM_BASE 0x28000000
+   define_hex DRAM_BASE 0x00000000
    define_hex DRAM_SIZE 0x02000000
    define_hex FLASH_MEM_BASE 0x10000000
    define_hex FLASH_SIZE 0x00100000
