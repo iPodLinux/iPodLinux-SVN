@@ -28,7 +28,8 @@ LIBITUNESDB=../libitunesdb/src
 
 endif
 
-CFLAGS+=-Wall -g -I$(MICROWINDOWS)/include -g -I$(LIBITUNESDB) -DPZ_VER="\"podzilla v0.2beta\""
+PZ_VER=\"podzilla `date -u +"%Y-%m-%d"`CVS\"
+CFLAGS+=-Wall -g -I$(MICROWINDOWS)/include -g -I$(LIBITUNESDB) -DPZ_VER="$(PZ_VER)"
 LDFLAGS+=$(MICROWINDOWS)/lib/libnano-X.a $(MICROWINDOWS)/lib/libmwengine.a $(MICROWINDOWS)/lib/libmwdrivers.a $(MICROWINDOWS)/lib/libmwfonts.a $(LIBITUNESDB)/.libs/libitunesdb.a
 
 # enable JPEG support
@@ -56,6 +57,7 @@ OBJS=\
 	btree.o \
 	itunes_db.o \
 	itunesmenu.o \
+	tictactoe.o \
 	calc.o \
 	Steroids/asteroid.o \
 	Steroids/main.o \
