@@ -107,29 +107,29 @@ static void itunes_do_draw()
 	draw_itunes();
 }
 
-void *mountitunes() {
+static char *find_mount_point(void)
+{
+	static char mountpoint[MAXLINELENGTH];
+
 	char input[MAXLINELENGTH];
 	char device[MAXLINELENGTH];
 	char filesystem[MAXLINELENGTH];
 	char itunesloc[MAXLINELENGTH];
-	char mountpoint[MAXLINELENGTH];
 	char command[2*MAXLINELENGTH];
 	int mounted=0;
-	long fs;
 
 	FILE *file;
-	FILE *itunesdb;
 
-#ifdef IPOD
 	if ((file = fopen("/proc/mounts", "r")) == NULL){
 		printf("Unable to open mounts!\n");
 		return;
 	}
+
 	printf("Checking mounts for /dev/hda2\n");
 
-	while(fgets(input, MAXLINELENGTH, file)) {
+	while(fgets(input, MAXLINELENGTH-1, file)) {
 		sscanf(input, "%s%s%s", &device, &mountpoint, &filesystem);
-		if(strcmp(device, "/dev/hdb2")==0) {
+		if(strcmp(device, "/dev/hda2")==0) {
 			if(strcmp(filesystem, "msdos")==0) {
 				printf("/dev/hda2 mounted as msdos, remounting as vfat\n");
 				sprintf(command, "umount %s", mountpoint);
@@ -150,29 +150,59 @@ void *mountitunes() {
 		sprintf(mountpoint, "/mnt/music");
 	}
 
-        strcpy(itunesloc, mountpoint);
+	return mountpoint;
+}
+
+void *mountitunes() {
+	char itunesloc[MAXLINELENGTH];
+	char mountpoint[MAXLINELENGTH];
+
+	char msg[MAXLINELENGTH];
+	long fs;
+
+	FILE *itunesdb;
+
+	mountpoint[0] = 0;
+
 	strcat(itunesloc, "/iPod_Control/iTunes/iTunesDB");
-#else
-	strcat(itunesloc, "iTunesDB");
-#endif
 	if((itunesdb = fopen(itunesloc, "rb"))==NULL) {
-		printf("Error: can't open file.\n");
+		strcpy(itunesloc, "iTunesDB");
+		if((itunesdb = fopen(itunesloc, "rb"))==NULL) {
+			strcpy(mountpoint, find_mount_point());
+
+			strcpy(itunesloc, mountpoint);
+			strcat(itunesloc, "/iPod_Control/iTunes/iTunesDB");
+			itunesdb = fopen(itunesloc, "rb");
+		}
+	}
+
+	if(itunesdb ==NULL) {
+		new_message_window("Error: can't open file.\n");
 		return;
 	}
+
 	printf("File found at: %s. Parsing...\n", itunesloc);
 	fseek(itunesdb, 0, SEEK_END);
 	fs = ftell(itunesdb);
 	printf("File size: %dK\n", fs/1024);
 	rewind(itunesdb);
+
 	buffer = malloc(fs * sizeof(char));
-	if(fread(buffer, 1, fs, itunesdb)==0) {
-		printf("A memory demon ran away with your memory...\n");
+	if(buffer==NULL) {
+		sprintf(msg, "malloc: %d\n", fs);
+		new_message_window(msg);
+		return;
+	}
+	if(fread(buffer, 1, fs, itunesdb)!=fs) {
+		sprintf(msg, "read: %d\n", fs);
+		new_message_window(msg);
 		return;
 	}
 	fclose(itunesdb);
+
 	parse(mountpoint);
+
 	printf("Thread finished parsing...\n");
-	pthread_exit(NULL);
 }
 
 static unsigned int get_int(char *p)
@@ -185,7 +215,7 @@ static unsigned int get_int(char *p)
 	}
 }
 
-int parse(char mountpoint[MAXLINELENGTH]) {
+int parse(char *mountpoint) {
 	char filepos2[80], buf, *curitem;
 	char filepos[128], itemtext[128], artisttext[128], songtext[128];
 	unsigned int isitem=0, oldartist=0, whichartist, songpos, whichitem;
