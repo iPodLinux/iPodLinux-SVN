@@ -1,41 +1,79 @@
 #
-# use 'make IPOD=1' to build for iPod, or 'make' for host
+# use 'make IPOD=1' to build for iPod, 'make MINI=1' for x11-mini, 
+# 'make PHOTO=1' for x11-photo, and 'make' for x11
 # 
+# directory structure is set up as follows:
+# 	../microwindows
+# 		ipod/src	- build for ipod
+# 		ipod-x11/src	- build for x11
+# 		mini-x11/src	- build for mini on x11
+# 		photo-x11/src	- build for photo on x11
+# 	../libjpeg
+# 		ipod		- jpeg library built for ipod
+# 		ipod-x11	- jpeg library built for host(optional)
+# 	../libitunesdb
+# 		ipod/src	- build for ipod
+# 		ipod-x11/src	- build for x11
+# 	../ipp		- Intel Performance Primitives
+#
 
 ifneq ($(IPOD),)
 
 # iPod build
-CC=arm-elf-gcc
-CFLAGS=-DIPOD -D__linux__
-LDFLAGS=-elf2flt
-MICROWINDOWS = ../microwindows/src
-LIBITUNESDB=../libitunesdb.ipod/src
-IPP=/usr/local/ipp/ippsa11
+CC= arm-elf-gcc
+CFLAGS= -DIPOD -D__linux__
+LDFLAGS= -elf2flt
+MICROWINDOWS= ../microwindows/ipod/src
+LIBITUNESDB= ../libitunesdb/ipod/src
+IPP= ../ipp
+LDFLAGS+= -L ../libjpeg/ipod
 
-# enable JPEG support
-LDFLAGS+=-L ../jpeg-6b
-
-CFLAGS+=-I$(IPP)/include
-LDFLAGS+=$(IPP)/lib/ippAC_SA11LNX_r.a $(IPP)/lib/ippSP_SA11LNX_r.a
+CFLAGS+= -I$(IPP)/include
+LDFLAGS+=\
+	$(IPP)/lib/ippAC_SA11LNX_r.a \
+	$(IPP)/lib/ippSP_SA11LNX_r.a
 
 else
-
+ifneq ($(MINI),)
+ # mini on x11
+ MICROWINDOWS= ../microwindows/mini-x11/src
+else
+ ifneq ($(PHOTO),)
+  # photo on x11
+  MICROWINDOWS= ../microwindows/photo-x11/src
+ else
+  # x11 build
+  MICROWINDOWS= ../microwindows/ipod-x11/src
+ endif
+endif
 CC=gcc
 CFLAGS=
-LDFLAGS=-L/usr/X11R6/lib -lX11
-MICROWINDOWS = ../../../src/microwindows-0.90/src
-LIBITUNESDB=../libitunesdb/src
+LDFLAGS= -L/usr/X11R6/lib -lX11
+LIBITUNESDB= ../libitunesdb/ipod-x11/src
+	
+# for libjpeg on x11
+#LDFLAGS+= -L../libjpeg/ipod-x11
 
 endif
 
 PZ_VER=\"podzilla `date -u +"%Y-%m-%d"`CVS\"
-CFLAGS+=-Wall -g -I$(MICROWINDOWS)/include -g -I$(LIBITUNESDB) -DPZ_VER="$(PZ_VER)"
-LDFLAGS+=$(MICROWINDOWS)/lib/libnano-X.a $(MICROWINDOWS)/lib/libmwengine.a $(MICROWINDOWS)/lib/libmwdrivers.a $(MICROWINDOWS)/lib/libmwfonts.a $(LIBITUNESDB)/.libs/libitunesdb.a
 
-# enable JPEG support
-LDFLAGS += -ljpeg
+CFLAGS+=\
+	-Wall -g \
+	-I$(MICROWINDOWS)/include \
+	-I$(LIBITUNESDB) \
+	-DPZ_VER="$(PZ_VER)"
 
-LDFLAGS += -lm
+LDFLAGS+=\
+	$(MICROWINDOWS)/lib/libnano-X.a \
+	$(MICROWINDOWS)/lib/libmwengine.a \
+	$(MICROWINDOWS)/lib/libmwdrivers.a \
+	$(MICROWINDOWS)/lib/libmwfonts.a \
+	$(LIBITUNESDB)/.libs/libitunesdb.a
+
+LDFLAGS+=\
+	-ljpeg \
+	-lm
 
 OBJS=\
 	pz.o \
@@ -61,6 +99,7 @@ OBJS=\
 	calc.o \
 	poddraw.o \
 	playlist.o \
+	cube.o \
 	Steroids/asteroid.o \
 	Steroids/main.o \
 	Steroids/object.o \
@@ -84,8 +123,8 @@ endif
 
 all: podzilla
 
-podzilla: $(OBJS)
-	$(CC) $(OBJS) -o podzilla  $(CFLAGS) $(LDFLAGS)
+podzilla: $(OBJS) Makefile
+	$(CC) $(OBJS) -o podzilla $(CFLAGS) $(LDFLAGS)
 
 clean: 
 	$(RM) $(OBJS) *~ podzilla podzilla.gdb
