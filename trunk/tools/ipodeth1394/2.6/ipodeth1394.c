@@ -624,20 +624,22 @@ static void hpsb_write_sched (void *__ptask)
         unsigned long flags;
 
 	/* Statistics */
-	spin_lock_irqsave (&priv->lock, flags);
 	if (!hpsb_write(priv->host, ptask->dest_node,
 			get_hpsb_generation(priv->host),
 			ptask->addr, (quadlet_t *)skb->data, skb->len)) {
+		spin_lock_irqsave (&priv->lock, flags);
 		priv->stats.tx_bytes += skb->len;
 		priv->stats.tx_packets++;
+		spin_unlock_irqrestore (&priv->lock, flags);
 	} else {
 		//printk("Failed in hpsb_write_sched\n");
+		spin_lock_irqsave (&priv->lock, flags);
 		priv->stats.tx_dropped++;
 		priv->stats.tx_errors++;
+		spin_unlock_irqrestore (&priv->lock, flags);
 		if (netif_queue_stopped (dev))
 			netif_wake_queue (dev);
 	}
-	spin_unlock_irqrestore (&priv->lock, flags);
 
 	dev->trans_start = jiffies;
 	dev_kfree_skb(skb);
