@@ -56,110 +56,113 @@ struct menu_item {
 	char *text;
 	int type;
 	void *ptr;
+	int setting_id;
 };
 
 #define DISPLAY_MENU	0
 #define SUB_MENU_HEADER	1
 #define ACTION_MENU	2
-#define VALUE_MENU	3
-#define SUB_MENU_PREV   4
+#define BOOLEAN_MENU	3
+#define SUB_MENU_PREV	4
 #define ACTION_MENU_PREV_SUB	5
+
+#define NOSETTING -1 /* This is for menu items not associated with global settings */
 
 typedef void (*menu_action_t) (void);
 
 static struct menu_item games_menu[] = {
-	{"Othello", ACTION_MENU, new_oth_window},
-	{"BlueCube", ACTION_MENU, new_bluecube_window},
-	{"Pong", ACTION_MENU, new_pong_window},
-	{"Nimesweeper", ACTION_MENU, new_mines_window},
-	{0, 0, 0}
+	{"Othello", ACTION_MENU, new_oth_window, NOSETTING},
+	{"BlueCube", ACTION_MENU, new_bluecube_window, NOSETTING},
+	{"Pong", ACTION_MENU, new_pong_window, NOSETTING},
+	{"Nimesweeper", ACTION_MENU, new_mines_window, NOSETTING},
+	{0, 0, 0, NOSETTING}
 };
 
 
 static struct menu_item sample_rate_menu[] = {
-	{"8 kHz", ACTION_MENU_PREV_SUB, record_set_8},
-	{"32 kHz", ACTION_MENU_PREV_SUB, record_set_32},
-	{"44.1 kHz", ACTION_MENU_PREV_SUB, record_set_44},
-	{"88.2 kHz", ACTION_MENU_PREV_SUB, record_set_88},
-	{"96 kHz", ACTION_MENU_PREV_SUB, record_set_96},
-	{0, 0, 0}
+	{"8 kHz", ACTION_MENU_PREV_SUB, record_set_8, NOSETTING},
+	{"32 kHz", ACTION_MENU_PREV_SUB, record_set_32, NOSETTING},
+	{"44.1 kHz", ACTION_MENU_PREV_SUB, record_set_44, NOSETTING},
+	{"88.2 kHz", ACTION_MENU_PREV_SUB, record_set_88, NOSETTING},
+	{"96 kHz", ACTION_MENU_PREV_SUB, record_set_96, NOSETTING},
+	{0, 0, 0, NOSETTING}
 };
 
 static struct menu_item recording_menu[] = {
-	{"Mic Record", ACTION_MENU, new_record_window},
+	{"Mic Record", ACTION_MENU, new_record_window, NOSETTING},
 #if 0
-	{"Line In Record", ACTION_MENU, new_record_window},
+	{"Line In Record", ACTION_MENU, new_record_window, NOSETTING},
 #endif
-	{"Playback", ACTION_MENU, new_playback_browse_window},
-	{"Sample Rate", SUB_MENU_HEADER, sample_rate_menu},
-	{0, 0, 0}
+	{"Playback", ACTION_MENU, new_playback_browse_window, NOSETTING},
+	{"Sample Rate", SUB_MENU_HEADER, sample_rate_menu, NOSETTING},
+	{0, 0, 0, NOSETTING}
 };
 static struct menu_item extras_menu[] = {
-	{"Recordings", SUB_MENU_HEADER, recording_menu},
+	{"Recordings", SUB_MENU_HEADER, recording_menu, NOSETTING},
 #if 0
-	{"Clock", SUB_MENU_HEADER, 0},
-	{"Contacts", SUB_MENU_HEADER, 0},
-	{"Calendar", SUB_MENU_HEADER, 0},
-	{"Notes", SUB_MENU_HEADER, 0},
+	{"Clock", SUB_MENU_HEADER, 0, NOSETTING},
+	{"Contacts", SUB_MENU_HEADER, 0, NOSETTING},
+	{"Calendar", SUB_MENU_HEADER, 0, NOSETTING},
+	{"Notes", SUB_MENU_HEADER, 0, NOSETTING},
 #endif
-	{"Games", SUB_MENU_HEADER, games_menu},
-	{0, 0, 0}
+	{"Games", SUB_MENU_HEADER, games_menu, NOSETTING},
+	{0, 0, 0, NOSETTING}
 };
 
 
 
 static struct menu_item reset_menu[] = {
-	{"Cancel", SUB_MENU_PREV, 0},
-	{"Absolutely", ACTION_MENU, ipod_reset_settings},
-	{0, 0, 0}
+	{"Cancel", SUB_MENU_PREV, 0, NOSETTING},
+	{"Absolutely", ACTION_MENU, ipod_reset_settings, NOSETTING},
+	{0, 0, 0, NOSETTING}
 };
 
 static struct menu_item settings_menu[] = {
 #if 0
-	{"About", SUB_MENU_HEADER, 0},
-	{"Shuffle", VALUE_MENU, 0},
-	{"Repeat", VALUE_MENU, 0},
-	{"EQ -Off", VALUE_MENU, 0},
+	{"About", SUB_MENU_HEADER, 0, NOSETTING},
 #endif
-	{"Backlight", ACTION_MENU, toggle_backlight},
+	{"Repeat", BOOLEAN_MENU, 0, REPEAT},
+	{"EQ", BOOLEAN_MENU, 0, EQUILIZER},
+	{"Shuffle", BOOLEAN_MENU, 0, SHUFFLE},
+	{"Backlight", BOOLEAN_MENU, 0, BACKLIGHT},
 #if 0
-	{"Backlight Timer", ACTION_MENU, set_backlight_timer},
+	{"Backlight Timer", ACTION_MENU, set_backlight_timer, NOSETTING},
 #endif
-	{"Contrast", ACTION_MENU, set_contrast},
-	{"Wheel Sensitivity", ACTION_MENU, set_wheeldebounce},
-	{"Button Debounce", ACTION_MENU, set_buttondebounce},
+	{"Contrast", ACTION_MENU, set_contrast, NOSETTING},
+	{"Wheel Sensitivity", ACTION_MENU, set_wheeldebounce, NOSETTING},
+	{"Button Debounce", ACTION_MENU, set_buttondebounce, NOSETTING},
 #if 0
-	{"Alarms", SUB_MENU_HEADER, 0},
-	{"Contacts", SUB_MENU_HEADER, 0},
+	{"Alarms", SUB_MENU_HEADER, 0, NOSETTING},
+	{"Contacts", SUB_MENU_HEADER, 0, NOSETTING},
 #endif
-	{"Clicker", ACTION_MENU, toggle_piezo},
+	{"Clicker", BOOLEAN_MENU, 0, CLICKER},
 #if 0
-	{"Language", SUB_MENU_HEADER, 0},
-	{"Legal", SUB_MENU_HEADER, 0},
+	{"Language", SUB_MENU_HEADER, 0, NOSETTING},
+	{"Legal", SUB_MENU_HEADER, 0, NOSETTING},
 #endif
-	{"Reset All Settings", SUB_MENU_HEADER, reset_menu},
-	{"Save Settings", ACTION_MENU, ipod_save_settings},
-	{"Load Settings", ACTION_MENU, ipod_load_settings},
-	{0, 0, 0}
+	{"Reset All Settings", SUB_MENU_HEADER, reset_menu, NOSETTING},
+	{"Save Settings", ACTION_MENU, ipod_save_settings, NOSETTING},
+	{"Load Settings", ACTION_MENU, ipod_load_settings, NOSETTING},
+	{0, 0, 0, NOSETTING}
 };
 
 static struct menu_item reboot_menu[] = {
-	{"Cancel", SUB_MENU_PREV, 0},
-	{"Absolutely", ACTION_MENU, reboot_ipod},
-	{0, 0, 0}
+	{"Cancel", SUB_MENU_PREV, 0, NOSETTING},
+	{"Absolutely", ACTION_MENU, reboot_ipod, NOSETTING},
+	{0, 0, 0, NOSETTING}
 };
 
 static struct menu_item main_menu[] = {
 #if 0
-	{"Playlists", SUB_MENU_HEADER, 0},
+	{"Playlists", SUB_MENU_HEADER, 0, NOSETTING},
 #endif
-	{"Music", ACTION_MENU, new_itunes_window},
-	{"Extras", SUB_MENU_HEADER, extras_menu},
-	{"Settings", SUB_MENU_HEADER, settings_menu},
-	{"File Browser", ACTION_MENU, new_browser_window},
-        {"Quit Podzilla", ACTION_MENU, quit_podzilla},
-        {"Reboot iPod", SUB_MENU_HEADER, reboot_menu},
-	{0, 0, 0}
+	{"Music", ACTION_MENU, new_itunes_window, NOSETTING},
+	{"Extras", SUB_MENU_HEADER, extras_menu, NOSETTING},
+	{"Settings", SUB_MENU_HEADER, settings_menu, NOSETTING},
+	{"File Browser", ACTION_MENU, new_browser_window, NOSETTING},
+	{"Quit Podzilla", ACTION_MENU, quit_podzilla, NOSETTING},
+	{"Reboot iPod", SUB_MENU_HEADER, reboot_menu, NOSETTING},
+	{0, 0, 0, NOSETTING}
 };
 
 static int current_menu_item = 0;
@@ -201,6 +204,18 @@ static void draw_menu()
 
 		if (m->text != 0) {
 			GrText(menu_wid, menu_gc, 8, 1 + (i + 1) * height - 4, m->text, -1, GR_TFASCII);
+
+			if ((m->type==BOOLEAN_MENU) && (m->setting_id != NOSETTING))
+			{
+				if (!ipod_get_setting(m->setting_id)) {
+					GrText(menu_wid, menu_gc, 130, 1 + (i + 1) * height - 4, "Off", -1, GR_TFASCII);
+				
+				}
+				else {
+					GrText(menu_wid, menu_gc, 130, 1 + (i + 1) * height - 4, "On", -1, GR_TFASCII);
+				
+				}
+			}
 			m++;
 		}
 
@@ -266,7 +281,19 @@ static int menu_do_keystroke(GR_EVENT * event)
 			event->keystroke.ch = 'm';
 			menu_do_keystroke(event);
 			break;
-			
+		case BOOLEAN_MENU:
+			if (menu[current_menu_item].setting_id != NOSETTING) {
+				if (ipod_get_setting(menu[current_menu_item].setting_id)) {
+					ipod_set_setting(menu[current_menu_item].setting_id,0);
+				} else {
+					ipod_set_setting(menu[current_menu_item].setting_id,1);
+				}
+			}
+			if (menu[current_menu_item].ptr != 0) {
+				((menu_action_t) menu[current_menu_item].ptr)();
+			}
+			draw_menu(); /* note: probably need to remember position */
+			break;
 		}
 		break;
 
