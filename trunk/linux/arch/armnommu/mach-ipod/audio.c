@@ -358,9 +358,8 @@ static int ipodaudio_open(struct inode *inode, struct file *filep)
 static void ipodaudio_txdrain(void)
 {
 	while ( (inl(0xc000251c) & (1<<0)) == 0 ) {
-		int to = (32 * HZ * 2) / ipod_sample_rate * 4;
 		set_current_state(TASK_INTERRUPTIBLE);
-		schedule_timeout(to >= 2 ? to : 2);
+		schedule_timeout(2);
 
 		if (signal_pending(current)) {
 			break;
@@ -417,96 +416,74 @@ static ssize_t ipodaudio_write(struct file *filp, const char *buf, size_t count,
 	while ( rem > 0 ) {
 		int cnt;
 
-		write_off_next = (write_off_current + 1);
-		if ( write_off_next > BUF_LEN ) write_off_next = 0;
+		write_off_next = (write_off_current + 1) % BUF_LEN;
 
 		read_off_current = *r_off;
 
-		if ( read_off_current < write_off_current ) {
+		/* buffer full? */
+		if ( write_off_next == read_off_current ) {
+			/* buffer is full */
+			set_current_state(TASK_INTERRUPTIBLE);
+
+			/* sleep a little */
+			schedule_timeout(2);
+		}
+
+		if ( read_off_current <= write_off_current ) {
+			/* room at end of buffer? */
 			cnt = BUF_LEN - 1 - write_off_current;
+			if ( read_off_current > 0 ) cnt++;
 
 			if ( cnt > 0 )  {
 				if ( cnt > rem ) cnt = rem;
 
-				memcpy((void*)&dma_buf[write_off_next], bufsp, cnt<<1);
+				memcpy((void*)&dma_buf[write_off_current], bufsp, cnt<<1);
 
 				rem -= cnt;
 				bufsp += cnt;
 
-				if ( read_off_current > 0 && rem > 0 ) {
-					int n;
+				write_off_current += cnt;
+			}
 
-					if ( rem > read_off_current ) {
-						n = read_off_current;
-					}
-					else {
-						n = rem;
-					}
+			/* room at start of buffer (and more data)? */
+			if ( read_off_current > 0 && rem > 0 ) {
+				int n;
 
-					memcpy((void*)&dma_buf[0], bufsp, n<<1);
-
-					rem -= n;
-					bufsp += n;
-
-					write_off_current = n - 1;
+				if ( rem >= read_off_current ) {
+					n = read_off_current - 1;
 				}
 				else {
-					write_off_current += cnt;
+					n = rem;
 				}
-			}
-			else {
-				int to = (100 * HZ * 2) / ipod_sample_rate * 4;
 
-				/* buffer is full */
-				set_current_state(TASK_INTERRUPTIBLE);
+				memcpy((void*)&dma_buf[0], bufsp, n<<1);
 
-				/* sleep a little */
-				schedule_timeout(to >= 2 ? to : 2);
+				rem -= n;
+				bufsp += n;
+
+				write_off_current = n;
 			}
 		}
 		else if ( read_off_current > write_off_current ) {
 			cnt = read_off_current - 1 - write_off_current;
 			if ( cnt > rem ) cnt = rem;
 
-			memcpy((void*)&dma_buf[write_off_next], bufsp, cnt<<1);
+			memcpy((void*)&dma_buf[write_off_current], bufsp, cnt<<1);
 
 			bufsp += cnt;
 			rem -= cnt;
 
 			write_off_current += cnt;
 		}
-		else {
-			/* buffer is empty */
-			if ( rem < BUF_LEN ) {
-				cnt = rem;
-			}
-			else {
-				cnt = BUF_LEN;
-			}
-			memcpy((void*)&dma_buf[0], bufsp, cnt<<1);
 
-			bufsp += cnt;
-			rem -= cnt;
-
-			write_off_current = cnt - 1;
-
-			/* we have copied to the start of the buffer */
-			*r_off = 0;
-		}
+		*w_off = write_off_current;
 
 		if ( !*dma_active ) {
 			*dma_active = 1;
 
-			*w_off = write_off_current;
-
 			outl(inl(0xc000251c)|(1<<9), 0xc000251c);
-
-			/* dummy write to start things */
-			outl(0x0, 0xc0002540);
 		}
 	}
-
-	*w_off = write_off_current;
 
 	return count;
 }
@@ -543,18 +520,21 @@ static ssize_t ipodaudio_read(struct file *filp, char *buf, size_t count, loff_t
 		int read_pos = *r_off;
 		int len = 0;
 
-		set_current_state(TASK_INTERRUPTIBLE);
-
 		if ( read_pos < write_pos ) {
+			/* read data between read pos and write pos */
 			len = write_pos - read_pos;
 		}
 		else if ( write_pos < read_pos ) {
+			/* read data to end of buffer */
+			/* next loop iteration will read the rest */
 			len = BUF_LEN - read_pos;
 		}
 		else {
+			/* buffer is empty */
+			set_current_state(TASK_INTERRUPTIBLE);
+
 			/* sleep a little */
-			int to = (32 * HZ * 2) / ipod_sample_rate * 4;
-			schedule_timeout(to >= 2 ? to : 2);
+			schedule_timeout(2);
 		}
 
 		if ( len > rem ) {
@@ -569,6 +549,7 @@ static ssize_t ipodaudio_read(struct file *filp, char *buf, size_t count, loff_t
 				*r_off = (*r_off + len) % BUF_LEN;
 			}
 			else {
+				printk(KERN_ERR "ADC buffer overrun\n");
 			}
 
 			rem -= len;
