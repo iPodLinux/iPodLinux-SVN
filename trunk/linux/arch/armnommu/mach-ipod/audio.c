@@ -570,6 +570,31 @@ static ssize_t ipodaudio_read(struct file *filp, char *buf, size_t count, loff_t
 	return count;
 }
 
+static int ipod_getspace_ioctl(void *arg)
+{
+	audio_buf_info abinfo;
+	int read_pos = *(int *)DMA_READ_OFF;
+	int write_pos = *(int *)DMA_WRITE_OFF;
+	int len;
+
+	if (read_pos == write_pos) {
+		len = BUF_LEN - 1;	/* ring buffer empty */
+	}
+	else if (read_pos < write_pos) {
+		len = BUF_LEN - 1 - (write_pos - read_pos);
+	} else {
+		int next_write_pos = (write_pos + 1) % BUF_LEN;
+
+		len = read_pos - next_write_pos;
+	}
+
+	abinfo.bytes = len * 2;
+	abinfo.fragsize = BUF_LEN / 2;
+	abinfo.fragments = abinfo.bytes / abinfo.fragsize;
+
+	return copy_to_user(arg, &abinfo, sizeof(abinfo)) ? -EFAULT : 0;
+}
+
 static int ipodaudio_ioctl(struct inode *inode, struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	int rc = 0;
@@ -645,6 +670,9 @@ static int ipodaudio_ioctl(struct inode *inode, struct file *filp, unsigned int 
 	case SNDCTL_DSP_RESET:
 		rc = 0;
 		break;
+
+	case SNDCTL_DSP_GETOSPACE:
+		return ipod_getspace_ioctl((void *)arg);
 	}
 
 	return rc;
