@@ -208,6 +208,11 @@ extern struct page *empty_zero_page;
 #define ZERO_PAGE(vaddr)	(virt_to_page(0))
 #endif
 
+/*
+ * These would be in other places but having them here reduces the diffs.
+ */
+extern unsigned int kobjsize(const void *objp);
+
 #define pte_pfn(pte)		(pte_val(pte) >> PAGE_SHIFT)
 #define pfn_pte(pfn,prot)	(__pte(((pfn) << PAGE_SHIFT) | pgprot_val(prot)))
 
