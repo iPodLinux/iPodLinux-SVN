@@ -1,5 +1,5 @@
-iPodLinux loader v0.3
----------------------
+iPodLinux loader v0.3.1
+-----------------------
 
 This is a quick and dirty bootloader hack for ipodlinux. It makes it
 possible to load either the original firmware or linux without having to
