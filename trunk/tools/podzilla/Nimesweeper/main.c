@@ -296,7 +296,7 @@ static int mines_do_keystroke(GR_EVENT * event)
 		/* Uncover a square */
 		case '\r':
 			/* Only bother if square is unflagged */
-			if( flags[Game.x][Game.y] == FALSE )
+			if( flags[Game.x][Game.y] == FALSE ) {
 				/* Uncover sqaure and test for a mine */
 				if( Uncover(Game.x,Game.y,Game.Width,Game.Height) == TRUE ) {
 					restart = Winner(&Game,FALSE);
@@ -304,12 +304,14 @@ static int mines_do_keystroke(GR_EVENT * event)
 				else {
 					draw_current_pos(FALSE);
 				}
+			}
 			break;
 		}
 	}
 	else {
 		pz_close_window(mines_wid);
 	}
+	return 1;
 }
 
 void new_mines_window()

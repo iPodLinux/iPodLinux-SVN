@@ -1,5 +1,5 @@
 /*
- * BlueCube - just another tetris clone 
+ * BlueCube - just another tetris clone
  * Copyright (C) 2003  Sebastian Falbesoner
  *
  * This program is free software; you can redistribute it and/or
@@ -34,6 +34,8 @@
 extern int lines, score;
 extern int level;
 extern int nextPiece;
+extern void ClearRect(int x, int y, int w, int h);
+extern void ClearBox(void);
 #ifdef USE_SDL
 const int intervals[11] = {27, 25, 23, 21, 19, 17, 15, 13, 11, 9, 7};
 #else
@@ -75,13 +77,13 @@ void DrawBox()
 			if (box[x][y].style)
 			{
 				PutRect(
-					boxdraw.box_x + x*(boxdraw.brick_width + boxdraw.box_l), 
+					boxdraw.box_x + x*(boxdraw.brick_width + boxdraw.box_l),
 					boxdraw.box_y + y*(boxdraw.brick_height+ boxdraw.box_l),
-					boxdraw.brick_width, boxdraw.brick_height, 
+					boxdraw.brick_width, boxdraw.brick_height,
 					STYLE_R(box[x][y].style-1),
 					STYLE_G(box[x][y].style-1),
 					STYLE_B(box[x][y].style-1));
-				
+
 				PutRect(
 					2+boxdraw.box_x+x*(boxdraw.brick_width + boxdraw.box_l),
 					2+boxdraw.box_y+y*(boxdraw.brick_height+ boxdraw.box_l),
@@ -142,7 +144,7 @@ void SetClusterPiece()
 
 	for (y=0; y<CLUSTER_Y; y++)
 		for (x=0; x<CLUSTER_X; x++)
-			cluster.data[x][y] = 
+			cluster.data[x][y] =
 			Pieces[cluster.pieceValue][cluster.turnValue][x][y];
 }
 
@@ -159,9 +161,9 @@ void DrawCluster()
 		{
 			if (cluster.data[x][y])
 				PutRect(
-					boxdraw.box_x + (cluster.x+x)*(boxdraw.brick_width+boxdraw.box_l), 
+					boxdraw.box_x + (cluster.x+x)*(boxdraw.brick_width+boxdraw.box_l),
 					boxdraw.box_y + (cluster.y+y)*(boxdraw.brick_height+boxdraw.box_l),
-					boxdraw.brick_width, boxdraw.brick_height, 
+					boxdraw.brick_width, boxdraw.brick_height,
 					STYLE_R(cluster.data[x][y]-1),
 					STYLE_G(cluster.data[x][y]-1),
 					STYLE_B(cluster.data[x][y]-1));
@@ -178,7 +180,7 @@ void ClearCluster(void)
 		{
 			if (cluster.data[x][y])
 				ClearRect(
-					boxdraw.box_x + (cluster.x+x)*(boxdraw.brick_width+boxdraw.box_l), 
+					boxdraw.box_x + (cluster.x+x)*(boxdraw.brick_width+boxdraw.box_l),
 					boxdraw.box_y + (cluster.y+y)*(boxdraw.brick_height+boxdraw.box_l),
 					boxdraw.brick_width, boxdraw.brick_height);
 		}
@@ -345,9 +347,9 @@ int FullLine(int y)
 
 	for (x=0; x<BOX_BRICKS_X; x++) {
 		if (!box[x][y].style)
-			return 0; 
+			return 0;
 	}
-	
+
 	return 1;
 }
 
@@ -358,9 +360,10 @@ int FullLine(int y)
 int CheckFullLine()
 {
 	int counter = 0; /* Number of the killed lines */
-	int x, y, newX, newY;
+	int y, newX, newY;
 
 #ifdef USE_SDL
+	int x;
 	for (y=BOX_BRICKS_Y-1; y>0; y--) /* Create particles and play sound... */
 		if (FullLine(y))
 		{
@@ -466,7 +469,7 @@ void BoxDrawMove()
 	static int frameTimer = 0;
 
 	frameTimer++;
-	
+
 	if (frameTimer == 1)
 	{
 		/*
@@ -502,14 +505,14 @@ void BoxDrawMove()
 			if (boxdraw.box_l <= 2)
 				bSpace = 1;
 		}
-		
+
 		frameTimer = 0;
 	}
 
-	boxdraw.box_x += moveX;	
+	boxdraw.box_x += moveX;
 	/* boxdraw.box_x = (SCREEN_X/2 - boxdraw.box_width/2); */
 	boxdraw.box_y = (SCREEN_Y/2 - boxdraw.box_height/2);
-	
+
 	if ((boxdraw.box_x + boxdraw.box_width-1) >= SCREEN_X)
 		moveX = -3;
 	if (boxdraw.box_x < 0)

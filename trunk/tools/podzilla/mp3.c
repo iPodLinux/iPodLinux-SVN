@@ -133,6 +133,7 @@ static int mp3_do_keystroke(GR_EVENT * event)
 static int audiobufpos, audiobuf_len;
 static char *audiobuf;
 
+#ifdef IPOD
 static void setup_dsp(int sample_rate, int n_channels)
 {
 	int val;
@@ -142,6 +143,7 @@ static void setup_dsp(int sample_rate, int n_channels)
 	ioctl(dsp_fd, SNDCTL_DSP_SPEED, &sample_rate);
 	ioctl(dsp_fd, SNDCTL_DSP_CHANNELS, &n_channels);
 }
+#endif
 
 static void mp3_event_handler()
 {
@@ -373,7 +375,8 @@ void new_mp3_window(char *filename, char *album, char *artist, char *title, int 
 	remaining_time = len;
 
 	mp3_gc = GrNewGC();
-	GrSetGCUseBackground(mp3_gc, GR_FALSE);
+	GrSetGCUseBackground(mp3_gc, GR_TRUE);
+	GrSetGCBackground(mp3_gc, WHITE);
 	GrSetGCForeground(mp3_gc, BLACK);
 	GrGetScreenInfo(&screen_info);
 
