@@ -42,11 +42,15 @@
 
 #include "pz.h"
 
+/* draw_time calls to wait before redrawing when adjusting volume */
+#define RECT_CYCLES 2
+
 
 static GR_WINDOW_ID mp3_wid;
 static GR_GC_ID mp3_gc;
 static GR_SCREEN_INFO screen_info;
 static long remaining_time;
+static long total_time;
 static char current_album[128];
 static char current_artist[128];
 static char current_title[128];
@@ -54,24 +58,63 @@ static int dsp_fd, mixer_fd;
 static int dsp_vol;
 static int decoding_finished;
 static int mp3_pause;
+static int rect_x1;
+static int rect_x2;
+static int rect_y1;
+static int rect_y2;
+static int rect_wait;
 
 int is_mp3_type(char *extension)
 {
 	return strcmp(extension, ".mp3") == 0;
 }
 
+static void draw_bar(int bar_length)
+{
+	if (!(bar_length < 0 || bar_length > rect_x2-rect_x1-4) ) {
+		GrFillRect (mp3_wid, mp3_gc, rect_x1 + 2, rect_y1+2, bar_length, rect_y2-rect_y1-4);
+		GrSetGCForeground(mp3_gc, WHITE);
+		GrFillRect(mp3_wid, mp3_gc, rect_x1 + 2 + bar_length, rect_y1+2, rect_x2-rect_x1-4 - bar_length, rect_y2-rect_y1-4);
+		GrSetGCForeground(mp3_gc, BLACK);
+	}
+}
+
 static void draw_time()
 {
+	int bar_length, elapsed;
+	char buf[256];
 	struct tm *tm;
-	time_t rem_time;
-	char onscreen_timer[128];
+	time_t tot_time;
 
-	/* draw the time using currenttime */
-	rem_time = remaining_time / 1000;
-	tm = gmtime(&rem_time);
-	sprintf(onscreen_timer, "Time: %02d:%02d:%02d", tm->tm_hour, tm->tm_min, tm->tm_sec);
+	elapsed= total_time - remaining_time;
+	bar_length= (elapsed * (rect_x2-rect_x1-4)) / total_time;
 
-	GrText(mp3_wid, mp3_gc, 40, 80, onscreen_timer, -1, GR_TFASCII);
+	GrSetGCForeground(mp3_gc, WHITE);
+	GrFillRect(mp3_wid, mp3_gc, rect_x1, rect_y1-12, rect_x2-rect_x1+1, 10);
+	GrSetGCForeground(mp3_gc, BLACK);
+
+	GrText(mp3_wid, mp3_gc, rect_x1, rect_y1-2, "0", -1, GR_TFASCII);
+	tot_time = total_time / 1000;
+	tm = gmtime(&tot_time);
+	sprintf(buf, "%02d:%02d:%02d", tm->tm_hour, tm->tm_min, tm->tm_sec);
+	GrText(mp3_wid, mp3_gc, rect_x2-43, rect_y1-2, buf, -1, GR_TFASCII);
+	GrText(mp3_wid, mp3_gc, 50, rect_y1-2, "time", -1, GR_TFASCII);
+	draw_bar(bar_length);
+}
+
+static void draw_volume()
+{
+	int vol = dsp_vol & 0xff;
+	int bar_length= (vol * (rect_x2-rect_x1-4)) / 100;
+
+	GrSetGCForeground(mp3_gc, WHITE);
+	GrFillRect(mp3_wid, mp3_gc, rect_x1, rect_y1-12, rect_x2-rect_x1+1, 10);
+	GrSetGCForeground(mp3_gc, BLACK);
+
+	GrText(mp3_wid, mp3_gc, rect_x1, rect_y1-2, "0", -1, GR_TFASCII);
+	GrText(mp3_wid, mp3_gc, rect_x2-20, rect_y1-2, "100", -1, GR_TFASCII);
+	GrText(mp3_wid, mp3_gc, 50, rect_y1-2, "volume", -1, GR_TFASCII);
+	draw_bar(bar_length);
 }
 
 static void mp3_do_draw(GR_EVENT * event)
@@ -84,14 +127,21 @@ static void mp3_do_draw(GR_EVENT * event)
 	GrText(mp3_wid, mp3_gc, 8, 34, current_artist, -1, GR_TFASCII);
 	GrText(mp3_wid, mp3_gc, 8, 48, current_title, -1, GR_TFASCII);
 
+	rect_x1 = 8;
+	rect_x2 = screen_info.cols - 8;
+	rect_y1 =  screen_info.rows - (HEADER_TOPLINE + 1) - 18;
+	rect_y2 =  screen_info.rows - (HEADER_TOPLINE + 1) - 8;
+	GrRect(mp3_wid, mp3_gc, rect_x1, rect_y1, rect_x2-rect_x1, rect_y2-rect_y1);
+
+	rect_wait = 0;
 	draw_time();
 }
 
 static int mp3_do_keystroke(GR_EVENT * event)
 {
-        switch (event->keystroke.ch) {
-        case '\r':
-        case '\n':
+	switch (event->keystroke.ch) {
+	case '\r':
+	case '\n':
 		break;
 	case 'm':
 		decoding_finished = 1;
@@ -112,6 +162,8 @@ static int mp3_do_keystroke(GR_EVENT * event)
 				vol--;
 				vol = dsp_vol = vol << 8 | vol;
 				ioctl(mixer_fd, SOUND_MIXER_WRITE_PCM, &vol);
+				rect_wait = RECT_CYCLES;
+				draw_volume();
 			}
 		}
 		break;
@@ -122,6 +174,8 @@ static int mp3_do_keystroke(GR_EVENT * event)
 				vol++;
 				vol = dsp_vol = vol << 8 | vol;
 				ioctl(mixer_fd, SOUND_MIXER_WRITE_PCM, &vol);
+				rect_wait=RECT_CYCLES;
+				draw_volume();
 			}
 		}
 		break;
@@ -280,7 +334,7 @@ static void decode_mp3()
 			RenderSound(pcm, &DecoderState);
 			remaining_time -= 26;
 			nframes++;
-			if (nframes % 40 == 0) {
+			if (nframes % 40 == 0 && rect_wait-- <= 0) {
 				draw_time();
 			}
 			refill = ((bs.Head>=bs.Tail) && (STREAM_BUF_SIZE-bs.Head+bs.Tail < FIFO_THRESH)) || ((bs.Tail >= bs.Head) && (bs.Tail-bs.Head < FIFO_THRESH));
@@ -372,7 +426,7 @@ void new_mp3_window(char *filename, char *album, char *artist, char *title, int 
 	strncpy(current_title, title, sizeof(current_title)-1);
 	current_title[sizeof(current_title)-1] = 0;
 
-	remaining_time = len;
+	total_time= remaining_time = len;
 
 	mp3_gc = GrNewGC();
 	GrSetGCUseBackground(mp3_gc, GR_TRUE);
