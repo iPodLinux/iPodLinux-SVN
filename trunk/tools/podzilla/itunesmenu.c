@@ -88,7 +88,7 @@ struct menulist *new_ml()
 	GrGetGCTextSize(ret->gc, "M", -1, GR_TFASCII, &ret->gr_width,
 			&ret->gr_height, &ret->gr_base);
 
-	ret->gr_height += 5;
+	ret->gr_height += 4;
 
 	GrMapWindow(ret->wid);
 
@@ -381,8 +381,8 @@ static void itunes_draw(struct menulist *ml)
 	int i;
 	int offset = 0, offset2 = 0;
 
-	if (ml->sel_line > 4) {
-		ml->sel_line = 4;
+	if (ml->sel_line > 5) {
+		ml->sel_line = 5;
 	} else {
 		if (ml->sel_line < 0) ml->sel_line = 0;
 	}
@@ -391,7 +391,7 @@ static void itunes_draw(struct menulist *ml)
 		if (ml->get_prev(ml)) offset++;
 	}
 
-	for (i = 0; i < 5; i++) {
+	for (i = 0; i < 6; i++) {
 		if (i == offset) {
 			drawline_hlight(ml, i);
 		} else {
