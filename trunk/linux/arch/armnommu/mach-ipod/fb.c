@@ -2,6 +2,8 @@
  * fb.c - Frame-buffer driver for iPod
  *
  * Copyright (c) 2003, Bernard Leach (leachbj@bouncycastle.org)
+ *
+ * The LCD uses the HD66753 controller from Hitachi.
  */
 
 #include <linux/config.h>
@@ -18,21 +20,25 @@
 #include <asm/io.h>
 
 #include <video/fbcon.h>
-#ifdef CONFIG_FBCON_MFB
-#include <video/fbcon-mfb.h>
-#endif
-#ifdef CONFIG_FBCON_CFB2
 #include <video/fbcon-cfb2.h>
-#endif
+
+/* the ID returned by the controller */
+#define HD66753_ID	0x5307
 
 #define IPOD_LCD_BASE	0xc0001000
 #define IPOD_RTC	0xcf001110
 #define IPOD_LCD_WIDTH	160
 #define IPOD_LCD_HEIGHT	128
 
+static int contrast;
+
+/* allow for 2bpp */
+static char ipod_scr[IPOD_LCD_HEIGHT * (IPOD_LCD_WIDTH/4)];
+
+
 /* get current usec counter */
 static int
-timer_get_current()
+timer_get_current(void)
 {
 	return inl(IPOD_RTC);
 }
@@ -50,7 +56,7 @@ timer_check(int clock_start, int usecs)
 
 /* wait for LCD with timeout */
 static void
-lcd_wait_write()
+lcd_wait_write(void)
 {
 	if ( (inl(IPOD_LCD_BASE) & 0x1) != 0 ) {
 		int start = timer_get_current();
@@ -91,88 +97,56 @@ lcd_cmd_and_data(int cmd, int data_lo, int data_hi)
 	lcd_send_data(data_lo, data_hi);
 }
 
-static int lcd_inited;
-
-/* initialise LCD hardware? */
-static void
-init_lcd()
+static unsigned
+read_contrast(void)
 {
-	outl(inl(0xcf005000) | 0x800, 0xcf005000);
-	outl(inl(0xcf005000) & ~0x400, 0xcf005000);
+	unsigned data_lo, data_hi;
 
-	outl(inl(0xcf005030) | 0x400, 0xcf005030);
-	udelay(15);
-	outl(inl(0xcf005030) & ~0x400, 0xcf005030);
+	/* data_lo has the scan line */
+	lcd_wait_write();
+	data_lo = inl(0xc0001008);
+	/* data_hi has the contrast */
+	lcd_wait_write();
+	data_hi = inl(0xc0001008);
 
-	outl(inl(IPOD_LCD_BASE) & ~0x4, IPOD_LCD_BASE);
-	udelay(15);
-	outl(inl(IPOD_LCD_BASE) | 0x4, IPOD_LCD_BASE);
-
-	udelay(15);
-
-	outl((inl(IPOD_LCD_BASE) & ~0x10) | 0x4001, IPOD_LCD_BASE);
-
-	lcd_inited = 1;
+	return data_hi & 0xff;
 }
 
-/* reset the LCD */
-static void
-reset_lcd()
+static unsigned
+read_controller_id(void)
 {
-	if ( lcd_inited == 0 ) {
-		init_lcd();
+	unsigned data_lo, data_hi;
 
-		lcd_inited = 1;
+	/* read the Start Osciallation register -> it gives us a id */
+	lcd_prepare_cmd(0x0);
+
+	lcd_wait_write();
+	data_lo = inl(0xc0001010);
+	lcd_wait_write();
+	data_hi = inl(0xc0001010);
+
+	return ((data_hi & 0xff) << 8) | (data_lo & 0xff);
+}
+
+/* initialise the LCD */
+static void
+init_lcd(void)
+{
+	if ( read_controller_id() != HD66753_ID )  {
+		printk(KERN_WARNING "0x%x id?\n", read_controller_id());
 	}
 
-#if 1
-	lcd_cmd_and_data(0x0, 0x0, 0x1);
+	/* driver output control - 168x128 -> we use 160x128 */
+	/* CMS=0, SGS=1 */
+	lcd_cmd_and_data(0x1, 0x1, 0xf);
 
-	/* delay 10000 usecs */
-	udelay(10000);
+	/* ID=1 -> auto decrement address counter */
+	/* AM=00 -> data is continuously written in parallel */
+	/* LG=00 -> no logical operation */
+	lcd_cmd_and_data(0x5, 0x0, 0x10);
 
-	lcd_cmd_and_data(0x1, 0x0, 0xf);
-
-	lcd_cmd_and_data(0x2, 0x0, 0x55);
-	lcd_cmd_and_data(0x3, 0x15, 0xc);
-	lcd_cmd_and_data(0x4, 0x0, 0x0);
-	lcd_cmd_and_data(0x5, 0x0, 0x0);
-	lcd_cmd_and_data(0x6, 0x0, 0x0);
-	lcd_cmd_and_data(0x7, 0x0, 0x0);
-	lcd_cmd_and_data(0x8, 0x0, 0x4);
-	lcd_cmd_and_data(0xb, 0x0, 0x0);
-	lcd_cmd_and_data(0xc, 0x0, 0x0);
-	lcd_cmd_and_data(0xd, 0xff, 0x0);
-	lcd_cmd_and_data(0xe, 0x0, 0x0);
-	lcd_cmd_and_data(0x10, 0x0, 0x0);
-
-	/* move the cursor */
-	lcd_cmd_and_data(0x11, 0, 0);
-
-	/* the following two should vary per board */
-	lcd_cmd_and_data(0x4, 0x4, 0x5c);
-
-	lcd_cmd_and_data(0x7, 0x0, 0x9);
-#else
-	lcd_cmd_and_data(0x0, 0x0, 0x1);
-
-	/* delay 10000 usecs */
-	udelay(10000);
-
-	lcd_cmd_and_data(0x3, 0x15, 0x0);
-	lcd_cmd_and_data(0x3, 0x15, 0xc);
-
-	// if (backlight_off)
-	lcd_cmd_and_data(0x7, 0x0, 0x9);
-	// else
-	//lcd_cmd_and_data(0x7, 0x0, 0x11);
-
-	lcd_cmd_and_data(0x5, 0x0, 0x14);
-#endif
+	contrast = read_contrast();
 }
-
-/* allow for 2bpp */
-static char ipod_scr[IPOD_LCD_HEIGHT * (IPOD_LCD_WIDTH/4)];
 
 int
 backlight_on_off(int on)
@@ -181,18 +155,84 @@ backlight_on_off(int on)
 
         if ( on ) {
                 lcd_state = lcd_state | 0x2;
+		outl(lcd_state, IPOD_LCD_BASE);
 
-		lcd_cmd_and_data(0x7, 0x0, 0x11);
+		/* display control (1 00 0 1) */
+		/* GSH=01 -> 2/3 level grayscale control */
+		/* GSL=00 -> 1/4 level grayscale control */
+		/* REV=0 -> don't reverse */
+		/* D=1 -> display on */
+		lcd_cmd_and_data(0x7, 0x0, 0x11 | 0x2);
         }
         else {
                 lcd_state = lcd_state & ~0x2;
+		outl(lcd_state, IPOD_LCD_BASE);
 
+		/* display control (10 0 1) */
+		/* GSL=10 -> 2/4 level grayscale control */
+		/* REV=0 -> don't reverse */
+		/* D=1 -> display on */
 		lcd_cmd_and_data(0x7, 0x0, 0x9);
         }
 
-        outl(lcd_state, IPOD_LCD_BASE);
-
         return 0x0;
+}
+
+void contrast_up(void)
+{
+	if ( contrast < 0xff ) {
+		contrast++; 
+		lcd_cmd_and_data(0x4, 0x4, contrast);
+
+#if 0
+		printk("ctrst=0x%x\n", read_contrast());
+#endif
+	}
+}
+
+void contrast_down(void)
+{
+	if ( contrast > 0 ) {
+		contrast--; 
+		lcd_cmd_and_data(0x4, 0x4, contrast);
+
+#if 0
+		printk("ctrst=0x%x\n", read_contrast());
+#endif
+	}
+}
+
+static void ipod_update_display(struct display *p, int sx, int sy, int mx, int my)
+{
+	unsigned short cursor_pos;
+	unsigned short y;
+
+	cursor_pos = sx + (sy * fontheight(p) * 0x20);
+
+	for ( y = sy * fontheight(p); y < my * fontheight(p); y++ ) {
+		unsigned char *img_data;
+		unsigned char x;
+
+		// move the cursor
+		lcd_cmd_and_data(0x11, cursor_pos >> 8, cursor_pos & 0xff);
+
+		// setup for printing
+		lcd_prepare_cmd(0x12);
+
+		// cursor pos * image data width
+		img_data = &ipod_scr[y * p->line_length + sx * 2];
+
+		// 160/8 -> 20 == loops 20 times
+		for ( x = sx; x < mx; x++ ) {
+			// display a character
+			lcd_send_data(*(img_data + 1), *img_data);
+
+			img_data += 2;
+		}
+
+		// update cursor pos counter
+		cursor_pos += 0x20;
+	}
 }
 
 struct ipodfb_info {
@@ -225,203 +265,44 @@ struct ipodfb_par {
 	 */
 };
 
-/* XXX ok, this is not good */
-unsigned char reverse_byte(unsigned char c)
+
+void ipod_fb_setup(struct display *p)
 {
-	return ((c & 1) << 7) | ((c & 2) << 5) | ((c & 4) << 3) | ((c & 8) << 1) | ((c & 16) >> 1) | ((c & 32) >> 3) | ((c & 64) >> 5) | ((c & 128) >> 7);
+	fbcon_cfb2.setup(p);
 }
 
-static void ipod_update_display(struct display *p)
-{
-	unsigned short cursor_pos;
-	unsigned short y;
-
-	for ( y = 0, cursor_pos = 32; y < IPOD_LCD_HEIGHT; y++ ) {
-		unsigned char *img_data;
-		unsigned char r6;
-
-		// move the cursor
-		lcd_cmd_and_data(0x11, cursor_pos >> 8, cursor_pos & 0xff);
-
-		// setup for printing
-		lcd_prepare_cmd(0x12);
-
-		lcd_send_data(0x0, 0x0);
-
-		// cursor pos * image data width
-		img_data = &ipod_scr[y * p->line_length];
-
-		// 160/8 -> 20 == loops 20 times
-		for ( r6 = 0; r6 < (IPOD_LCD_WIDTH / 8); r6++ ) {
-			if ( p->var.bits_per_pixel == 2 ) {
-				unsigned char c1 = 0, c2 = 0;
-				c1 = reverse_byte(*(img_data + 0));
-				c2 = reverse_byte(*(img_data + 1));
-				lcd_send_data(c1, c2);
-
-				// display a character
-				// lcd_send_data(*img_data, *(img_data + 1));
-				// lcd_send_data(*(img_data + 1), *(img_data + 0));
-				img_data += 2;
-			}
-			else {
-				unsigned short c1 = *img_data++;
-				unsigned short c2 = 0;
-				int i;
-
-				for ( i = 0; i < 8; i ++ ) {
-					unsigned short t;
-					
-					t = (c1 & (1 << i));
-					c2 |= (t << i);
-					c2 |= (t << (i+1));
-				}
-				lcd_send_data((c2 >> 8) & 0xff, c2 & 0xff);
-			}
-		}
-
-		// update cursor pos counter
-		cursor_pos += 32;
-	}
-}
-
-void ipod_mfb_setup(struct display *p)
-{
-	switch (p->var.bits_per_pixel) {
-#ifdef CONFIG_FBCON_MFB
-		case 1:
-			fbcon_mfb.setup(p);
-			break;
-#endif
-
-#ifdef CONFIG_FBCON_CFB2
-		case 2:
-			fbcon_cfb2.setup(p);
-			break;
-#endif
-	}
-}
-
-void ipod_mfb_bmove(struct display *p, int sy, int sx, int dy, int dx,
+void ipod_fb_bmove(struct display *p, int sy, int sx, int dy, int dx,
 		     int height, int width)
 {
-	switch (p->var.bits_per_pixel) {
-#ifdef CONFIG_FBCON_MFB
-		case 1:
-			fbcon_mfb.bmove(p, sy, sx, dy, dx, height, width);
-			break;
-#endif
-
-#ifdef CONFIG_FBCON_CFB2
-		case 2:
-			fbcon_cfb2.bmove(p, sy, sx, dy, dx, height, width);
-			break;
-#endif
-	}
-
-	ipod_update_display(p);
+	fbcon_cfb2.bmove(p, sy, sx, dy, dx, height, width);
+	ipod_update_display(p, 0, 0, IPOD_LCD_WIDTH/8, IPOD_LCD_HEIGHT/fontheight(p));
 }
 
-void ipod_mfb_clear(struct vc_data *conp, struct display *p, int sy, int sx,
+void ipod_fb_clear(struct vc_data *conp, struct display *p, int sy, int sx,
 		     int height, int width)
 {
-	switch (p->var.bits_per_pixel) {
-#ifdef CONFIG_FBCON_MFB
-		case 1:
-			fbcon_mfb.clear(conp, p, sy, sx, height, width);
-			break;
-#endif
-
-#ifdef CONFIG_FBCON_CFB2
-		case 2:
-			fbcon_cfb2.clear(conp, p, sy, sx, height, width);
-			break;
-#endif
-	}
-
-	ipod_update_display(p);
+	fbcon_cfb2.clear(conp, p, sy, sx, height, width);
+	ipod_update_display(p, sx, sy, sx+width, sy+height);
 }
 
-void ipod_mfb_putc(struct vc_data *conp, struct display *p, int c, int yy,
+void ipod_fb_putc(struct vc_data *conp, struct display *p, int c, int yy,
 		    int xx)
 {
-	switch (p->var.bits_per_pixel) {
-#ifdef CONFIG_FBCON_MFB
-		case 1:
-			fbcon_mfb.putc(conp, p, c, yy, xx);
-			break;
-#endif
-
-#ifdef CONFIG_FBCON_CFB2
-		case 2:
-			fbcon_cfb2.putc(conp, p, c, yy, xx);
-			break;
-#endif
-	}
-
-	ipod_update_display(p);
+	fbcon_cfb2.putc(conp, p, c, yy, xx);
+	ipod_update_display(p, xx, yy, xx+1, yy+1);
 }
 
-void ipod_mfb_putcs(struct vc_data *conp, struct display *p, 
+void ipod_fb_putcs(struct vc_data *conp, struct display *p, 
 		     const unsigned short *s, int count, int yy, int xx)
 {
-	switch (p->var.bits_per_pixel) {
-#ifdef CONFIG_FBCON_MFB
-		case 1:
-			fbcon_mfb.putcs(conp, p, s, count, yy, xx);
-			break;
-#endif
-
-#ifdef CONFIG_FBCON_CFB2
-		case 2:
-			fbcon_cfb2.putcs(conp, p, s, count, yy, xx);
-			break;
-#endif
-	}
-
-	ipod_update_display(p);
+	fbcon_cfb2.putcs(conp, p, s, count, yy, xx);
+	ipod_update_display(p, xx, yy, xx+count, yy+1);
 }
 
-void ipod_mfb_revc(struct display *p, int xx, int yy)
+void ipod_fb_revc(struct display *p, int xx, int yy)
 {
-	switch (p->var.bits_per_pixel) {
-#ifdef CONFIG_FBCON_MFB
-		case 1:
-			fbcon_mfb.revc(p, xx, yy);
-			break;
-#endif
-
-#ifdef CONFIG_FBCON_CFB2
-		case 2:
-			fbcon_cfb2.revc(p, xx, yy);
-			break;
-#endif
-	}
-
-	ipod_update_display(p);
-}
-
-void ipod_mfb_clear_margins(struct vc_data *conp, struct display *p,
-			     int bottom_only)
-{
-	switch (p->var.bits_per_pixel) {
-#ifdef CONFIG_FBCON_MFB
-		case 1:
-			fbcon_mfb.clear_margins(conp, p, bottom_only);
-			break;
-#endif
-
-/* CFB2 doesnt have a clear_margins */
-#if 0
-#ifdef CONFIG_FBCON_CFB2
-		case 2:
-			fbcon_cfb2.clear_margins(conp, p, bottom_only);
-			break;
-#endif
-#endif
-	}
-
-	ipod_update_display(p);
+	fbcon_cfb2.revc(p, xx, yy);
+	ipod_update_display(p, xx, yy, xx+1, yy+1);
 }
 
 
@@ -430,13 +311,12 @@ void ipod_mfb_clear_margins(struct vc_data *conp, struct display *p,
      */
 
 struct display_switch fbcon_ipod = {
-    setup:		ipod_mfb_setup,
-    bmove:		ipod_mfb_bmove,
-    clear:		ipod_mfb_clear,
-    putc:		ipod_mfb_putc,
-    putcs:		ipod_mfb_putcs,
-    revc:		ipod_mfb_revc,
-    clear_margins:	ipod_mfb_clear_margins,
+    setup:		ipod_fb_setup,
+    bmove:		ipod_fb_bmove,
+    clear:		ipod_fb_clear,
+    putc:		ipod_fb_putc,
+    putcs:		ipod_fb_putcs,
+    revc:		ipod_fb_revc,
     fontwidthmask:	FONTWIDTH(8)
 };
 
@@ -481,15 +361,8 @@ static int ipod_encode_fix(struct fb_fix_screeninfo *fix, struct ipodfb_par *par
 	strcpy(fix->id, "iPod");
 	fix->type= FB_TYPE_PACKED_PIXELS;
 
-#ifdef CONFIG_FBCON_CFB2
 	fix->visual = FB_VISUAL_PSEUDOCOLOR;	/* fixed visual */
 	fix->line_length = IPOD_LCD_WIDTH >> 2;	/* cfb2 default */
-#endif
-
-#ifdef CONFIG_FBCON_MFB
-	fix->visual = FB_VISUAL_MONO10;	/* fixed visual */
-	fix->line_length = IPOD_LCD_WIDTH >> 3;	/* mfb default */
-#endif
 
 	fix->xpanstep = 0;	/* no hardware panning */
 	fix->ypanstep = 0;	/* no hardware panning */
@@ -521,8 +394,7 @@ static int ipod_decode_var(struct fb_var_screeninfo *var, struct ipodfb_par *par
 		return -EINVAL;
 	}
 
-	if ( var->bits_per_pixel != 1 ||
-		var->bits_per_pixel != 2 ) {
+	if ( var->bits_per_pixel != 2 ) {
 		return -EINVAL;
 	}
 
@@ -544,13 +416,8 @@ static int ipod_encode_var(struct fb_var_screeninfo *var, struct ipodfb_par *par
 	var->xoffset = 0;
 	var->yoffset = 0;
 
-#ifdef CONFIG_FBCON_CFB2
 	var->bits_per_pixel = 2;
-#endif
-#ifdef CONFIG_FBCON_MFB
-	var->bits_per_pixel = 1;
-#endif
-	var->grayscale = 0;
+	var->grayscale = 1;
 
 	return 0;
 }
@@ -653,27 +520,7 @@ static void ipod_set_disp(const void *par, struct display *disp,
 	 */
 
 	disp->screen_base = ipod_scr;
-
-	switch (disp->var.bits_per_pixel) {
-#ifdef CONFIG_FBCON_MFB
-		case 1:
-			disp->dispsw = &fbcon_ipod;
-			break;
-#endif
-
-#ifdef CONFIG_FBCON_CFB2
-		case 2:
-			disp->dispsw = &fbcon_ipod;
-			break;
-#endif
-
-		default:
-#if !defined(CONFIG_FBCON_MFB) && !defined(CONFIG_FBCON_CFB2)
-#warning "No FB console handler!"
-#endif
-			disp->dispsw = &fbcon_dummy;
-			break;
-	}
+	disp->dispsw = &fbcon_ipod;
 }
 
 
@@ -704,7 +551,6 @@ struct fbgen_hwswitch ipod_switch = {
 
 static int ipod_fp_open(const struct fb_info *info, int user)
 {
-	reset_lcd();
 	return 0;
 }
 
@@ -758,6 +604,8 @@ int __init ipodfb_init(void)
 	if ( register_framebuffer(&fb_info.gen.info) < 0 ) {
 		return -EINVAL;
 	}
+
+	init_lcd();
 
 	printk(KERN_INFO "fb%d: %s frame buffer device\n", GET_FB_IDX(fb_info.gen.info.node), fb_info.gen.info.modename);
 
