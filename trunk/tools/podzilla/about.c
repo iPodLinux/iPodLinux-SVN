@@ -141,7 +141,7 @@ static void about_start_draw() {
 
 	pz_draw_header("About");
 
-#ifdef __linux__
+#if defined(__linux__) || defined(IPOD)
 	if((ptr = popen("uname -rv", "r")) != NULL) {
 #else
 	if((ptr = popen("uname -r", "r")) != NULL) {
