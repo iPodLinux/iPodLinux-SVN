@@ -1,3 +1,7 @@
+Courtney Cavin - Wed Mar 9 2005
+	event handler passes unparsed events to a 'default action' function
+	timer now directs events to the corrent window
+
 Fredrik Bergholtz - Sun Mar 6 2005
 	steroids uses global screen_info and pz_get_gc, drawing buffered
 

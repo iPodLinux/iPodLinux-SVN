@@ -132,84 +132,104 @@ static void draw_hold_status()
 	}
 }
 
-void pz_event_handler(GR_EVENT *event)
+/* handles default functions for unused keystrokes */
+void pz_default_handler(GR_EVENT *event)
+{
+	switch (event->type) {
+	case GR_EVENT_TYPE_KEY_DOWN:
+		switch (event->keystroke.ch) {
+#if 0
+		case 'f':
+			printf("unused::fastforward\n");
+			break;
+		case 'w':
+			printf("unused::rewind\n");
+			break;
+		case 'd':
+			printf("unused::play\n");
+			break;
+#endif
+		default:
+			break;
+		}
+		break;
+	}	
+}
+
+static inline struct pz_window *pz_find_window(GR_WINDOW_ID wid)
 {
 	int i;
+
+	for (i = 0; i < n_opened; i++)
+		if (windows[i].wid == wid && wid != GR_ROOT_WINDOW_ID)
+			return &windows[i];
+	return NULL;
+}
+
+void pz_event_handler(GR_EVENT *event)
+{
+	int ret = 0;
 	unsigned long int curtime;
 	struct timeval cur_st;
-	GR_WINDOW_ID wid = GR_ROOT_WINDOW_ID;
+	struct pz_window *window;
 
 	gettimeofday( &cur_st, NULL);
 	curtime = (cur_st.tv_sec % 1000) * 1000 + cur_st.tv_usec / 1000;
 
 	switch (event->type) {
-	case GR_EVENT_TYPE_TIMEOUT:
-		/* Test to see if backlight timer has expired, if so, turn it off. */
-		if (ipod_get_setting(BACKLIGHT_TIMER) > 0) {
-			if ((curtime - last_keypress_event) > ((ipod_get_setting(BACKLIGHT_TIMER) + 1) * 1000)) {
-				ipod_set_setting(BACKLIGHT, 0);
-			}
-		}
-		break;
-
 	case GR_EVENT_TYPE_EXPOSURE:
-		wid = ((GR_EVENT_EXPOSURE *)event)->wid;
-		for (i = 0; i < n_opened; i++) {
-			if (windows[i].wid == wid && wid != GR_ROOT_WINDOW_ID) {
-				windows[i].draw();
-			}
-		}
+		window = pz_find_window(((GR_EVENT_EXPOSURE *)event)->wid);
+
+		if (window != NULL)
+			window->draw();
 		break;
 
 	case GR_EVENT_TYPE_KEY_DOWN:
-		wid = ((GR_EVENT_KEYSTROKE *)event)->wid;
-
-		/* If backlight timer isn't off and backlight isn't on turn it on. */
+		window = pz_find_window(((GR_EVENT_KEYSTROKE *)event)->wid);
 
 		last_keypress_event = curtime;
 
-		if (ipod_get_setting(BACKLIGHT_TIMER) > 0) {
-			ipod_set_setting(BACKLIGHT, 1);
-		}
-
-#ifdef IPOD
 		switch (event->keystroke.ch) {
+#ifdef IPOD
 		case 'm':
 		case 'q':
 		case 'w':
 		case 'f':
 		case '\r':
-			if (curtime - last_button_event > ipod_get_setting(ACTION_DEBOUNCE)) {
+			if (curtime - last_button_event >
+					ipod_get_setting(ACTION_DEBOUNCE)) {
 				last_button_event = curtime;
 			}
 			else {
-				wid = GR_ROOT_WINDOW_ID;
+				window = NULL;
 			}
 			break;
 
 		case 'l':
 		case 'r':
 			wheel_evt_count++;
-			if (wheel_evt_count % ipod_get_setting(WHEEL_DEBOUNCE) != 0) {
-				wid = GR_ROOT_WINDOW_ID;
+			if (wheel_evt_count % ipod_get_setting(WHEEL_DEBOUNCE)
+					!= 0) {
+				window = NULL;
 			}
 			break;
-		}
-#endif
-
-		if (event->keystroke.ch == 'h') {
+#endif /* IPOD */
+		case 'h':
 			if (!hold_is_on) {
 				hold_is_on = 1;
 				draw_hold_status();
 			}
+			break;
 		}
 
 		key_pressed = event->keystroke.ch;
-		for (i = 0; i < n_opened; i++) {
-			if (windows[i].wid == wid && wid != GR_ROOT_WINDOW_ID) {
-				if(windows[i].keystroke(event) == 1)
-					beep();
-			}
+
+		if (window != NULL) {
+			ret = window->keystroke(event);
+			if(KEY_CLICK & ret)
+				beep();
+			if(KEY_UNUSED & ret || EVENT_UNUSED & ret)
+				pz_default_handler(event);
 		}
 		break;
 
@@ -220,21 +240,33 @@ void pz_event_handler(GR_EVENT *event)
 				draw_hold_status();
 			}
 		}
-		wid = ((GR_EVENT_KEYSTROKE *)event)->wid;
+		window = pz_find_window(((GR_EVENT_KEYSTROKE *)event)->wid);
+
 		event->keystroke.ch = key_pressed;
-		for (i = 0; i < n_opened; i++) {
-			if (windows[i].wid == wid && wid != GR_ROOT_WINDOW_ID) {
-				windows[i].keystroke(event);
-			}
+		if (window != NULL) {
+			ret = window->keystroke(event);
+			if(KEY_UNUSED & ret || EVENT_UNUSED & ret)
+				pz_default_handler(event);
 		}
 		break;
 
 	case GR_EVENT_TYPE_TIMER:
-		windows[n_opened-1].keystroke(event);
-		break;
+		window = pz_find_window(((GR_EVENT_TIMER *)event)->wid);
 
+		if (window != NULL) 
+			window->keystroke(event);
+		break;
+	case GR_EVENT_TYPE_TIMEOUT:
+		break;
+		
 	default:
-		printf("AN UNKNOWN EVENT OCCURED!!\n");
+		window = pz_find_window(((GR_EVENT_GENERAL *)event)->wid);
+
+		if (window != NULL) 
+			ret = window->keystroke(event);
+
+		if(EVENT_UNUSED & ret)
+			printf("AN UNKNOWN EVENT OCCURED!!\n");
 	}
 }
 
@@ -249,9 +281,10 @@ void pz_draw_header(char *header)
 	GrGetGCTextSize(root_gc, header, -1, GR_TFASCII, &width, &height,
 			&base);
 
-	GrText(root_wid, root_gc, (screen_info.cols - width) / 2, HEADER_BASELINE,
-		header, -1, GR_TFASCII);
-	GrLine(root_wid, root_gc, 0, HEADER_TOPLINE, screen_info.cols, HEADER_TOPLINE);
+	GrText(root_wid, root_gc, (screen_info.cols - width) / 2,
+			HEADER_BASELINE, header, -1, GR_TFASCII);
+	GrLine(root_wid, root_gc, 0, HEADER_TOPLINE, screen_info.cols,
+			HEADER_TOPLINE);
 
 	draw_batt_status();
 	draw_hold_status();
@@ -313,7 +346,9 @@ main(int argc, char **argv)
 			    GR_ROOT_WINDOW_ID,
 			    0, 0, screen_info.cols, screen_info.rows, WHITE);
 
-	GrSelectEvents(root_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_CLOSE_REQ |GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_KEY_DOWN);
+	GrSelectEvents(root_wid, GR_EVENT_MASK_EXPOSURE |
+			GR_EVENT_MASK_CLOSE_REQ | GR_EVENT_MASK_KEY_UP |
+			GR_EVENT_MASK_KEY_DOWN);
 
 	GrMapWindow(root_wid);
 

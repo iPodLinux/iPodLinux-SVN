@@ -25,6 +25,10 @@
 #define HEADER_BASELINE 15
 #define HEADER_TOPLINE 20
 
+#define KEY_CLICK 1
+#define KEY_UNUSED 2
+#define EVENT_UNUSED 4
+
 #define FONT_HEIGHT 14
 
 /* pz.c */
