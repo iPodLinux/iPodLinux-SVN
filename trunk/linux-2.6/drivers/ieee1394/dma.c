@@ -182,6 +182,7 @@ void dma_region_sync(struct dma_region *dma, unsigned long offset, unsigned long
 	pci_dma_sync_sg(dma->dev, &dma->sglist[first], last - first + 1, dma->direction);
 }
 
+#ifdef CONFIG_MMU
 /* nopage() handler for mmap access */
 
 static struct page*
@@ -213,6 +214,7 @@ out:
 static struct vm_operations_struct dma_region_vm_ops = {
 	.nopage	= dma_region_pagefault,
 };
+#endif
 
 int dma_region_mmap(struct dma_region *dma, struct file *file, struct vm_area_struct *vma)
 {

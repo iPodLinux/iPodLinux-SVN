@@ -1431,7 +1431,8 @@ static int nodemgr_check_irm_capability(struct hpsb_host *host, int cycles)
 	quadlet_t bc;
 	int status;
 
-	if (host->is_irm)
+	/* if irm_id == -1 then there is no IRM on this bus */
+	if (host->is_irm || host->irm_id == (nodeid_t)-1)
 		return 1;
 
 	status = hpsb_read(host, LOCAL_BUS | (host->irm_id),
