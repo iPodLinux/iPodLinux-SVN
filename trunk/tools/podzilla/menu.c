@@ -29,7 +29,8 @@ extern void new_browser_window(void);
 extern void toggle_backlight(void);
 extern void set_wheeldebounce(void);
 extern void set_buttondebounce(void);
-extern void new_record_window(void);
+extern void new_record_mic_window(void);
+extern void new_record_line_in_window(void);
 extern void new_playback_browse_window(void);
 extern void new_calendar_window(void);
 extern void new_oth_window(void);
@@ -88,10 +89,8 @@ static char *sample_rate_options[] = {
 	"8 kHz","32 kHz","44.1 kHz","88.2 kHz","96 kHz"
 };
 static struct menu_item recording_menu[] = {
-	{"Mic Record", ACTION_MENU, new_record_window, NOSETTING, 0},
-#if 0
-	{"Line In Record", ACTION_MENU, new_record_window, NOSETTING, 0},
-#endif
+	{"Mic Record", ACTION_MENU, new_record_mic_window, NOSETTING, 0},
+	{"Line In Record", ACTION_MENU, new_record_line_in_window, NOSETTING, 0},
 	{"Playback", ACTION_MENU, new_playback_browse_window, NOSETTING, 0},
 	{"Sample Rate", OPTION_MENU, sample_rate_options, DSPFREQUENCY, 5},
 	{0, 0, 0, NOSETTING, 0}
