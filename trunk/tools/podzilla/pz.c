@@ -353,6 +353,7 @@ main(int argc, char **argv)
 	GrMapWindow(root_wid);
 
 	ipod_load_settings();
+	hw_version = ipod_get_hw_version();
 
 	new_menu_window();
 

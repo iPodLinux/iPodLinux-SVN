@@ -1,3 +1,7 @@
+Alastair S - Wed Mar 9 2005
+	hw_version now delimits ipod revision as read from /proc/cpuinfo
+	generation checks on recording/playback
+
 Courtney Cavin - Wed Mar 9 2005
 	event handler passes unparsed events to a 'default action' function
 	timer now directs events to the corrent window

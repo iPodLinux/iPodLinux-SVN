@@ -26,6 +26,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <string.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -243,3 +244,28 @@ void ipod_beep(void)
 #endif
 }
 
+long ipod_get_hw_version(void)
+{
+#ifdef IPOD
+	int i;
+	char cpuinfo[512];
+	char *ptr;
+	FILE *file;
+
+	if ((file = fopen("/proc/cpuinfo", "r")) != NULL) {
+		while (fgets(cpuinfo, sizeof(cpuinfo), file) != NULL)
+			if (strncmp(cpuinfo, "Revision", 8) == 0)
+				break;
+		fclose(file);
+	} else {
+		return 0;
+	}
+	for (i = 0; !isspace(cpuinfo[i]); i++);
+	for (; isspace(cpuinfo[i]); i++);
+	ptr = cpuinfo + i + 2;
+
+	return strtol(ptr, NULL, 10);
+#else
+	return 0;
+#endif
+}
