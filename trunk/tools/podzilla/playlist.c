@@ -31,7 +31,7 @@
 
 struct tracknode {
 	struct track *cur;
-	struct track *origcur;
+	struct track origcur;
 	struct tracknode *prevnode;
 	struct tracknode *nextnode;
 };
@@ -61,7 +61,6 @@ extern void stop_song();
 extern int is_mp3_type(char *extension);
 
 extern void new_message_window(char *message);
-
 
 static void
 play_track(struct tracknode *tracknode)
@@ -169,21 +168,25 @@ swap_tracknodes(struct tracknode *one, struct tracknode *two)
 static int
 get_rand_numb(int max)
 {
-	int data;
-	int fd;
+	static int seedinit = 0;
+	
+	if (!seedinit)
+	{
+		int fd, data;
 
-	fd = open("/dev/random", O_RDONLY);
-	if (fd == -1) {
-		printf("random number error!\n");
-		return 3;
+		fd = open("/dev/random", O_RDONLY);
+		if (fd == -1) {
+			data = (int)time(NULL);
+		}
+		else {
+			read(fd, &data, sizeof(data));
+			close(fd);
+		}
+		srand(data);
+		seedinit = 1;
 	}
 
-	read(fd, &data, sizeof(data));
-	close(fd);
-
-	data = abs(data);
-
-	return (data % (max - 1)) + 1;
+	return 1 + (int)((float)max * rand() / (RAND_MAX + 1.0));
 }
 
 static struct tracknode *
@@ -229,15 +232,13 @@ shuffle_songs(int preserve)
 		}
 	}
 
-	while (cur != NULL)
+	while (cur!=NULL)
 	{
 		int swapnode = 1;
-
 		while (swapnode == 1)
 		{
 			swapnode = get_rand_numb(playlistlength);
 		}
-
 		swap_tracknodes(cur, get_tracknode(swapnode));
 		cur = cur->nextnode;
 	}
@@ -263,8 +264,8 @@ shuffle_off()
 	playlistpos = 1;
 	while (cur != NULL)
 	{
-		cur->cur = cur->origcur;
-		if (cur->origcur == curtrack)
+		cur->cur = &(cur->origcur);
+		if (&(cur->origcur) == curtrack)
 		{
 
 			/*
@@ -309,7 +310,7 @@ add_track_to_queue(struct track *song)
 	}
 
 	newsong->cur = asong;
-	newsong->origcur = asong;
+	memcpy(&(newsong->origcur),asong,sizeof(struct track));
 	newsong->nextnode = NULL;
 
 	playlistlength++;
@@ -339,7 +340,6 @@ clear_play_queue()
 	while (curnode != NULL)
 	{
 		nextnode = curnode->nextnode;
-		free(curnode->origcur);
 		free(curnode);
 		curnode = nextnode;
 	}

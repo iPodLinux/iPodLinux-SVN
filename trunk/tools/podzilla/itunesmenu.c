@@ -37,13 +37,12 @@ struct menulist {
 	int		 (*get_next)(struct menulist *);
 	int		 (*select)(struct menulist *);
 	char		*(*get_text)(struct menulist *);
-
+	struct track*	 (*get_track)(struct menulist *);
 	int		 sel_line;
 	GR_WINDOW_ID 	 wid;
 	GR_GC_ID 	 gc;
 	GR_SCREEN_INFO 	 screen_info;
 	GR_SIZE 	 gr_width, gr_height, gr_base;
-
 	struct menulist	*prevml;
 };
 
@@ -251,32 +250,27 @@ static char *get_text_plisttrack(struct menulist *ml)
 
 static int select_track(struct menulist *ml)
 {
-	struct itdb_track *track = db_read_details((struct track *)ml->user);
-	if (!track) {
-		fprintf(stderr, "can not get track details. \n");
-		return 0;
-	}
-
 	play_song(ml, (struct track *)ml->user);
 
 	return 0;
 }
 
+static struct track * get_track(struct menulist *ml)
+{
+	return (struct track *)ml->user;
+}
+
 
 static int select_tracklist(struct menulist *ml)
 {
-	struct itdb_track *track = db_read_details(
-			((struct tracklist *) ml->user)->track);
-	if (!track) {
-		fprintf(stderr, "can not get track details. \n");
-		return 0;
-	}
-
 	play_song(ml, ((struct tracklist *)ml->user)->track);
-
 	return 0;
 }
 
+static struct track* get_tracklist(struct menulist *ml)
+{
+	return ((struct tracklist *)ml->user)->track;
+}
 
 static int select_album(struct menulist *ml)
 {
@@ -287,6 +281,7 @@ static int select_album(struct menulist *ml)
 	currentml->get_prev = get_prev;
 	currentml->get_text = get_text_tracklist;
 	currentml->select = select_tracklist;
+	currentml->get_track = get_tracklist;
 
 	currentml->user = (void *) btree_first((struct btree_head *)
 			&album->tracks);
@@ -308,6 +303,7 @@ static int select_albumlist(struct menulist *ml)
 	currentml->get_prev = get_prev_tracklist_artselect;
 	currentml->get_text = get_text_tracklist;
 	currentml->select = select_tracklist;
+	currentml->get_track = get_tracklist;
 
 	currentml->user = (void *) btree_first((struct btree_head *)
 			&al->album->tracks);
@@ -346,17 +342,14 @@ static int select_plisttrack(struct menulist *ml)
 {
 	atracks *at = ml->user;
 	struct track *t = (*at)[0];
-
-
-	struct itdb_track *track = db_read_details(t);
-	if (!track) {
-		fprintf(stderr, "can not get track details. \n");
-		return 0;
-	}
-
 	play_song(ml, t);
 
 	return 0;
+}
+static struct track * get_plisttrack(struct menulist *ml)
+{
+	atracks *at = ml->user;
+	return (*at)[0];
 }
 
 static int select_plist(struct menulist *ml)
@@ -369,6 +362,7 @@ static int select_plist(struct menulist *ml)
 	currentml->get_prev = get_prev_array;
 	currentml->get_text = get_text_plisttrack;
 	currentml->select = select_plisttrack;
+	currentml->get_track = get_plisttrack;
 
 	currentml->user = plist->tracks;
 
@@ -465,8 +459,6 @@ void queue_all_tracks(struct menulist * ml)
 	{    
 		playlistpos++;
 		tracknum--;
-		currentml->sel_line--;
-		//itunes_draw(currentml);
 	}
 
 	/*is now at the top*/
@@ -479,7 +471,6 @@ void queue_all_tracks(struct menulist * ml)
 			break;
 		}
 		tracknum++;
-		currentml->sel_line++;
 	}
 
 	while (tracknum != 0)
@@ -487,12 +478,10 @@ void queue_all_tracks(struct menulist * ml)
 		if (tracknum > 0) {
 			tracknum--;
 			currentml->get_prev(currentml);
-			currentml->sel_line--;
 		}
 		if (tracknum < 0) {
 			tracknum++;
 			currentml->get_next(currentml);
-			currentml->sel_line++;
 		}
 	}
 
@@ -542,6 +531,7 @@ void new_itunes_track()
 	currentml->get_prev = get_prev;
 	currentml->get_text = get_text_track;
 	currentml->select = select_track;
+	currentml->get_track = get_track;
 
 	if ((db_init((void *) draw_itunes_parse) < 0) || !tracks) {
 		pz_close_window(currentml->wid);
