@@ -919,26 +919,6 @@ static void ipod_1394_interrupt(int irq, void *dev_id, struct pt_regs *regs_are_
 	}
 }
 
-/* needed for 3g only */
-static __devinit void fw_i2c(int data0, int data1)
-{
-	outl(0x6a, 0xc0008000);
-	mdelay(10);
-
-	outl(0x0, 0xc0008000);
-	outl(inl(0xc0008000) | (1<<1), 0xc0008000);
-
-	outl(0x10, 0xc0008004);		/* address */
-
-	outl(inl(0xc0008000) | (1<<5), 0xc0008000);
-
-	outl(data0, 0xc000800c);
-	outl(data1, 0xc0008010);
-
-	outl(inl(0xc0008000) | (1<<7), 0xc0008000);	/* send cmd */
-	mdelay(10);
-}
-
 static __devinit void ipod_1394_hw_init(void)
 {
 	unsigned ipod_hw_ver;
@@ -1031,16 +1011,16 @@ static __devinit void ipod_1394_hw_init(void)
 		outl(inl(0xcf005030) & ~(1<<8), 0xcf005030);
 
 		/* some i2c magic */
-		fw_i2c(0x39, 0);
-		fw_i2c(0x3a, 0);
-		fw_i2c(0x3b, 0);
-		fw_i2c(0x3c, 0);
-		fw_i2c(0x39, 7);
-		fw_i2c(0x3a, 0);
-		fw_i2c(0x3b, 7);
-		fw_i2c(0x3c, 7);
-		fw_i2c(0x3b, 0);
-		fw_i2c(0x3c, 0);
+		ipod_i2c_send(0x8, 0x39, 0);
+		ipod_i2c_send(0x8, 0x3a, 0);
+		ipod_i2c_send(0x8, 0x3b, 0);
+		ipod_i2c_send(0x8, 0x3c, 0);
+		ipod_i2c_send(0x8, 0x39, 7);
+		ipod_i2c_send(0x8, 0x3a, 0);
+		ipod_i2c_send(0x8, 0x3b, 7);
+		ipod_i2c_send(0x8, 0x3c, 7);
+		ipod_i2c_send(0x8, 0x3b, 0);
+		ipod_i2c_send(0x8, 0x3c, 0);
 
 		/* don't enable GPIO port D bit 7 & set it to low
 		 * this seems to enable firewire DMA which messes
@@ -1062,7 +1042,7 @@ static int __devinit ipod_1394_init(void)
 {
 	struct ti_ipod *ipod;
 
-	printk("ipod_1394: $Id: tsb43aa82.c,v 1.2 2004/02/19 22:55:36 leachbj Exp $\n");
+	printk("ipod_1394: $Id: tsb43aa82.c,v 1.3 2004/02/25 20:11:13 leachbj Exp $\n");
 
 	ipod_host = hpsb_alloc_host(&ipod_1394_driver, sizeof(struct ti_ipod));
 	if (!ipod_host) {
