@@ -202,6 +202,7 @@ cpu_startup:
 
 	bl	ipod_init_cache
 	bl	ipod_set_cpu_speed
+	bl	ipod_set_sys_info
 
 	/* put initial values into stack?? */
 	mov	r5, sp
