@@ -1,7 +1,7 @@
 /*
  * ipod_audio.c - audio driver for iPod
  *
- * Copyright (c) 2003, Bernard Leach (leachbj@bouncycastle.org)
+ * Copyright (c) 2003,2004 Bernard Leach (leachbj@bouncycastle.org)
  */
 
 #include <linux/module.h>
@@ -20,6 +20,7 @@
 #include <asm/uaccess.h>
 #include <asm/io.h>
 #include <asm/arch/irqs.h>
+#include <asm/arch/hardware.h>
 
 
 #define D2A_POWER_OFF   1
@@ -45,26 +46,6 @@
 static int ipodaudio_isopen;
 static int ipodaudio_power_state;
 
-/** XXX **/
-
-/* get current usec counter */
-static int
-timer_get_current(void)
-{
-	return inl(0xcf001110);
-}
-
-/* check if number of seconds has past */
-static int
-timer_check(int clock_start, int usecs)
-{
-	if ( (inl(0xcf001110) - clock_start) >= usecs ) {
-		return 1;
-	} else {
-		return 0;
-	}
-}
-
 static void
 set_clock_enb(unsigned short clks, int on)
 {
@@ -76,74 +57,21 @@ set_clock_enb(unsigned short clks, int on)
 	}
 }
 
-static int
-d2a_send_cmd(unsigned int arg_r0, unsigned int arg_r1, unsigned char *arg_r2)
-{
-	int start;
-	int data_addr;
-	int i;
-unsigned long flags;
-
-	if ( arg_r1 < 0x1 ) return 0x9;
-	if ( arg_r1 > 0x4 ) return 0x9;
-
-save_flags_cli(flags);
-	if ( (inb(0xc000801c) & (1<<6)) != 0 ) {
-		// get start time
-		start = timer_get_current();
-
-		while ( (inb(0xc000801c) & (1<<6)) != 0 ) {
-			if ( timer_check(start, 1000) != 0 ) {
-				// timeout
-				return 0x15;
-			}
-		}
-	}
-restore_flags(flags);
-
-	// clear top 15 bits, left shift 1
-	outb((arg_r0 << 17) >> 16, 0xc0008004);
-
-	outb(inb(0xc0008000) & ~0x20, 0xc0008000);
-
-	data_addr = 0xc000800c;
-	for ( i = 0; i < arg_r1; i++ ) {
-		outb(*arg_r2++, data_addr);
-
-		data_addr += 4;
-	}
-
-	outb((inb(0xc0008000) & ~0x26) | ((arg_r1-1) << 1), 0xc0008000);
-
-	outb(inb(0xc0008000) | 0x80, 0xc0008000);
-
-	return 0x0;
-}
-
 static void
 d2a_set_active(int active)
 {
-	unsigned char cmd[2];
-
 	// set active to 0x0 or 0x1
 	if ( active == 0 ) {
-		cmd[0] = 0x12;
-		cmd[1] = 0x0;
+		ipod_i2c_send(0x1a, 0x12, 0x00);
 
-		d2a_send_cmd(0x1a, 0x2, cmd);
 	} else {
-		cmd[0] = 0x12;
-		cmd[1] = 0x1;
-
-		d2a_send_cmd(0x1a, 0x2, cmd);
+		ipod_i2c_send(0x1a, 0x12, 0x01);
 	}
 }
 
 static void
 d2a_set_power(int new_state)
 {
-	unsigned char cmd[2];
-
 	if ( ipodaudio_power_state == new_state) {
 		return;
 	}
@@ -154,33 +82,28 @@ d2a_set_power(int new_state)
 
 	if ( new_state == D2A_POWER_ON ) {
 		// set power register to POWER_OFF=0 on OUTPD=0, DACPD=0
-		cmd[0] = 0xc; cmd[1] = 0x67;
-		d2a_send_cmd(0x1a, 0x2, cmd);
+		ipod_i2c_send(0x1a, 0x0c, 0x67);
 
 		// de-activate the d2a
 		d2a_set_active(0x0);
 
 		// set DACSEL=1
-		cmd[0] = 0x8; cmd[1] = 0x10;
-		d2a_send_cmd(0x1a, 0x2, cmd);
+		ipod_i2c_send(0x1a, 0x08, 0x10);
 
 		// set DACMU=0 DEEMPH=0
-		cmd[0] = 0xa; cmd[1] = 0x0;
-		d2a_send_cmd(0x1a, 0x2, cmd);
+		ipod_i2c_send(0x1a, 0x0a, 0x00);
 
 		// set BCLKINV=0(Dont invert BCLK) MS=1(Enable Master) LRSWAP=0 LRP=0 IWL=10(24 bit) FORMAT=10(I2S format)
-		cmd[0] = 0xe; cmd[1] = 0x4a;
-		d2a_send_cmd(0x1a, 0x2, cmd);
+		ipod_i2c_send(0x1a, 0x0e, 0x4a);
 
 		// set CLKIDIV2=0 SR=1000 BOSR=1 USB/NORM=1
 		//cmd[0] = 0x10; cmd[1] = 0x23;
 
 		// set CLKIDIV2=1 SR=1000 BOSR=1 (272fs) USB/NORM=1 (USB)
-		cmd[0] = 0x10; cmd[1] = 0x63;
+		ipod_i2c_send(0x1a, 0x10, 0x63);
 
 		// set CLKIDIV2=1 SR=0011 BOSR=0 (fs) USB/NORM=1 (USB)
-		//cmd[0] = 0x10; cmd[1] = 0x4d;
-		d2a_send_cmd(0x1a, 0x2, cmd);
+		//ipod_i2c_send(0x1a, 0x10, 0x4d);
 
 		// activate the d2a
 		d2a_set_active(0x1);
@@ -189,23 +112,19 @@ d2a_set_power(int new_state)
 		/* power off or standby the audio chip */
 
 		// set DACMU=1 DEEMPH=0
-		cmd[0] = 0xa; cmd[1] = 0x8;
-		d2a_send_cmd(0x1a, 0x2, cmd);
+		ipod_i2c_send(0x1a, 0xa, 0x8);
 
 		// set DACSEL=0
-		cmd[0] = 0x8; cmd[1] = 0x0;
-		d2a_send_cmd(0x1a, 0x2, cmd);
+		ipod_i2c_send(0x1a, 0x8, 0x0);
 
 		// set POWEROFF=0 OUTPD=0 DACPD=1
-		cmd[0] = 0xc; cmd[1] = 0x6f;
-		d2a_send_cmd(0x1a, 0x2, cmd);
+		ipod_i2c_send(0x1a, 0xc, 0x6f);
 
 		if ( new_state == D2A_POWER_OFF ) {
 			/* power off the chip */
 
 			// set POWEROFF=1 OUTPD=1 DACPD=1
-			cmd[0] = 0xc; cmd[1] = 0xff;
-			d2a_send_cmd(0x1a, 0x2, cmd);
+			ipod_i2c_send(0x1a, 0xc, 0xff);
 
 			set_clock_enb((1<<1), 0x0);
 		}
@@ -213,8 +132,7 @@ d2a_set_power(int new_state)
 			/* standby the chip */
 
 			// set POWEROFF=0 OUTPD=1 DACPD=1
-			cmd[0] = 0xc; cmd[1] = 0x7f;
-			d2a_send_cmd(0x1a, 0x2, cmd);
+			ipod_i2c_send(0x1a, 0xc, 0x7f);
 		}
 	}
 
@@ -223,7 +141,6 @@ d2a_set_power(int new_state)
 
 static void d2a_set_vol(int vol)
 {
-	unsigned char cmd[2];
 	unsigned int v;
 
 	if ( vol > MAX_VOLUME ) {
@@ -237,8 +154,7 @@ static void d2a_set_vol(int vol)
 	v = (vol + ZERO_DB) | LRHPBOTH;
 
 	// set volume
-	cmd[0] = 4 | (v >> 8); cmd[1] = (unsigned char)v;
-	d2a_send_cmd(0x1a, 0x2, cmd);
+	ipod_i2c_send(0x1a, 4 | (v >> 8), v);
 }
 
 static int ipodaudio_open(struct inode *inode, struct file *filep)
@@ -257,7 +173,7 @@ static int ipodaudio_open(struct inode *inode, struct file *filep)
 	return 0;
 }
 
-static void ipodaudio_txdrain()
+static void ipodaudio_txdrain(void)
 {
 	while ( (inl(0xc000251c) & (1<<0)) == 0 ) {
 		// empty
@@ -310,7 +226,7 @@ static ssize_t ipodaudio_write(struct file *filp, const char *buf, size_t count,
 			if ( cnt > 0 )  {
 				if ( cnt > rem ) cnt = rem;
 
-				memcpy(&dma_buf[write_off_next], bufsp, cnt<<1);
+				memcpy((void*)&dma_buf[write_off_next], bufsp, cnt<<1);
 
 				rem -= cnt;
 				bufsp += cnt;
@@ -325,7 +241,7 @@ static ssize_t ipodaudio_write(struct file *filp, const char *buf, size_t count,
 						n = rem;
 					}
 
-					memcpy(&dma_buf[0], bufsp, n<<1);
+					memcpy((void*)&dma_buf[0], bufsp, n<<1);
 
 					rem -= n;
 					bufsp += n;
@@ -341,7 +257,7 @@ static ssize_t ipodaudio_write(struct file *filp, const char *buf, size_t count,
 			cnt = read_off_current - 1 - write_off_current;
 			if ( cnt > rem ) cnt = rem;
 
-			memcpy(&dma_buf[write_off_next], bufsp, cnt<<1);
+			memcpy((void*)&dma_buf[write_off_next], bufsp, cnt<<1);
 
 			bufsp += cnt;
 			rem -= cnt;
@@ -356,7 +272,7 @@ static ssize_t ipodaudio_write(struct file *filp, const char *buf, size_t count,
 			else {
 				cnt = BUF_LEN;
 			}
-			memcpy(&dma_buf[0], bufsp, cnt<<1);
+			memcpy((void*)&dma_buf[0], bufsp, cnt<<1);
 
 			bufsp += cnt;
 			rem -= cnt;
@@ -449,7 +365,7 @@ static struct file_operations  ipodaudio_fops = {
 	ioctl: ipodaudio_ioctl,
 };
 
-void ipod_process_dma(void)
+static void ipodaudio_process_dma(void)
 {
 	volatile int *r_off = (int *)DMA_READ_OFF;
 	volatile int *w_off = (int *)DMA_WRITE_OFF;
@@ -460,8 +376,6 @@ void ipod_process_dma(void)
 	outl(inl(0xc000251c) & ~(1<<9), 0xc000251c);
 
 	while ( *r_off != *w_off ) {
-		int i;
-
 		while ( (inl(0xc000251c) & 0x7800000) == 0 ) {
 		}
 
@@ -494,6 +408,8 @@ static int __init ipodaudio_init(void)
 
 	outl(inl(0xcf00103c) | (1 << DMA_OUT_IRQ) , 0xcf00103c);
 	outl((1 << DMA_OUT_IRQ), 0xcf001034);
+
+	ipod_set_process_dma(ipodaudio_process_dma);
 
 #if 0
 	/* intialise the hardware */
@@ -529,5 +445,16 @@ static int __init ipodaudio_init(void)
 	return 0;
 }
 
-module_init(ipodaudio_init);
+static void __exit ipodaudio_exit(void)
+{
+	ipod_set_process_dma(0);
 
+	unregister_chrdev(SOUND_MAJOR, "sound");
+}
+
+module_init(ipodaudio_init);
+module_exit(ipodaudio_exit);
+
+MODULE_AUTHOR("Bernard Leach <leachbj@bouncycastle.org>");
+MODULE_DESCRIPTION("Audio driver for IPod");
+MODULE_LICENSE("GPL");
