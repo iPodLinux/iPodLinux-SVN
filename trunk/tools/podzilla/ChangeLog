@@ -1,4 +1,13 @@
 Courtney Cavin - Fri Feb 14 2005
+	implemented new Makefile
+	Games moved to Fun
+
+Alastair S - Fri Feb 14 2005
+	ported cube from rockbox - a spinning 3D graphics demo
+	 - changed control system, stats display
+	 - added zoom, added solid rendering
+	
+Courtney Cavin - Fri Feb 14 2005
 	changed some mp3 error messages to pz_perror
 	mini-ized textviewer and fixed a few small bugs
 	
