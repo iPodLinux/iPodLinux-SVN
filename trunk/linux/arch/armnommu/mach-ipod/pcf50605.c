@@ -1,7 +1,7 @@
 /*
  * pcf50605.c - pcf50605 RTC driver
  *
- * Copyright (c) 2004 Bernard Leach <leachbj@bouncycastle.org>
+ * Copyright (c) 2004-2004 Bernard Leach <leachbj@bouncycastle.org>
  */
 
 
@@ -96,7 +96,7 @@ static struct file_operations pcf_rtc_fops = {
 
 static int __init pcf50605_init(void)
 {
-	if ((ipod_get_hw_version() >> 16) != 0x3) {
+	if ((ipod_get_hw_version() >> 16) < 0x3) {
 		return 0;
 	}
 
