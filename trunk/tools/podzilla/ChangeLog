@@ -1,3 +1,9 @@
+Matthis - Tue Feb 08 2005
+	bluecube changes:
+	 - falling cubes are colored when falling and white when fell
+	 - movement left-right with the scroll wheel, adapted wheel sensitivity
+	 - high score
+
 Alastair S - Tue Feb 08 2005
 	MAX_MENU_ITEMS is now a variable
 	menu, Pong, Nimesweeper, and browser are now relative to screen size

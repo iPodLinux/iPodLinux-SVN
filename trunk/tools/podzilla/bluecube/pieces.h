@@ -23,7 +23,6 @@
 #ifndef __PIECES_H__
 #define __PIECES_H__
 
-extern int StyleColors[][3];
 extern int Pieces[][4][CLUSTER_X][CLUSTER_Y];
 
 #endif

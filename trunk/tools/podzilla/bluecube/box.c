@@ -1,5 +1,5 @@
 /*
- * BlueCube - just another tetris clone
+ * BlueCube - just another tetris clone 
  * Copyright (C) 2003  Sebastian Falbesoner
  *
  * This program is free software; you can redistribute it and/or
@@ -24,31 +24,19 @@
 
 #include "global.h"
 #include "grafix.h"
-#ifdef USE_SDL
-#include "sound.h"
-#include "particle.h"
-#endif
 #include "pieces.h"
 #include "box.h"
 
 extern int lines, score;
 extern int level;
 extern int nextPiece;
-extern void ClearRect(int x, int y, int w, int h);
-extern void ClearBox(void);
-#ifdef USE_SDL
-const int intervals[11] = {27, 25, 23, 21, 19, 17, 15, 13, 11, 9, 7};
-#else
-/* makes it 3 times faster ;) */
 const int intervals[11] = {9, 8, 7, 6, 5, 4, 3, 3, 2, 2, 1};
-#endif
 
 CBoxDraw boxdraw;
 CCluster cluster;
 CBrick box[BOX_BRICKS_X][BOX_BRICKS_Y];
 
 /* Function prototypes from other source files */
-void StartGameOverAnimation();
 
 /*=========================================================================
 // Name: InitBox()
@@ -77,17 +65,14 @@ void DrawBox()
 			if (box[x][y].style)
 			{
 				PutRect(
-					boxdraw.box_x + x*(boxdraw.brick_width + boxdraw.box_l),
+					boxdraw.box_x + x*(boxdraw.brick_width + boxdraw.box_l), 
 					boxdraw.box_y + y*(boxdraw.brick_height+ boxdraw.box_l),
-					boxdraw.brick_width, boxdraw.brick_height,
-					STYLE_R(box[x][y].style-1),
-					STYLE_G(box[x][y].style-1),
-					STYLE_B(box[x][y].style-1));
-
+					boxdraw.brick_width, boxdraw.brick_height, 1);
+				
 				PutRect(
 					2+boxdraw.box_x+x*(boxdraw.brick_width + boxdraw.box_l),
 					2+boxdraw.box_y+y*(boxdraw.brick_height+ boxdraw.box_l),
-					boxdraw.brick_width-4, boxdraw.brick_height-4,0,0,0);
+					boxdraw.brick_width-4, boxdraw.brick_height-4,1);
 			}
 		}
 }
@@ -120,6 +105,7 @@ int IsBrickSet(int x, int y)
 //=======================================================================*/
 void NewCluster()
 {
+
 	cluster.x = 3;
 	cluster.y = 0;
 	cluster.turnValue = 0;
@@ -128,9 +114,10 @@ void NewCluster()
 	cluster.dropCount = intervals[level];
 
 	nextPiece = rand()%7;
-
+	DrawValues();
+	
 	if (ClusterCollisionTest(cluster.x, cluster.y))
-		StartGameOverAnimation(); /* No space left for cluster? -> GameOver! */
+		youlose(); /* No space left for cluster? -> youlose! */
 }
 
 
@@ -144,7 +131,7 @@ void SetClusterPiece()
 
 	for (y=0; y<CLUSTER_Y; y++)
 		for (x=0; x<CLUSTER_X; x++)
-			cluster.data[x][y] =
+			cluster.data[x][y] = 
 			Pieces[cluster.pieceValue][cluster.turnValue][x][y];
 }
 
@@ -152,7 +139,7 @@ void SetClusterPiece()
 // Name: DrawCluster()
 // Desc: Draws the cluster onto the screen
 //=======================================================================*/
-void DrawCluster()
+void DrawCluster(int colorvar)
 {
 	int x, y;
 
@@ -161,31 +148,11 @@ void DrawCluster()
 		{
 			if (cluster.data[x][y])
 				PutRect(
-					boxdraw.box_x + (cluster.x+x)*(boxdraw.brick_width+boxdraw.box_l),
+					boxdraw.box_x + (cluster.x+x)*(boxdraw.brick_width+boxdraw.box_l), 
 					boxdraw.box_y + (cluster.y+y)*(boxdraw.brick_height+boxdraw.box_l),
-					boxdraw.brick_width, boxdraw.brick_height,
-					STYLE_R(cluster.data[x][y]-1),
-					STYLE_G(cluster.data[x][y]-1),
-					STYLE_B(cluster.data[x][y]-1));
+					boxdraw.brick_width, boxdraw.brick_height,colorvar);
 		}
 }
-
-#ifndef USE_SDL
-void ClearCluster(void)
-{
-	int x, y;
-
-	for (y=0; y<CLUSTER_Y; y++)
-		for (x=0; x<CLUSTER_X; x++)
-		{
-			if (cluster.data[x][y])
-				ClearRect(
-					boxdraw.box_x + (cluster.x+x)*(boxdraw.brick_width+boxdraw.box_l),
-					boxdraw.box_y + (cluster.y+y)*(boxdraw.brick_height+boxdraw.box_l),
-					boxdraw.brick_width, boxdraw.brick_height);
-		}
-}
-#endif
 
 /*=========================================================================
 // Name: DrawNextPiece()
@@ -195,21 +162,13 @@ void DrawNextPiece(int posX, int posY)
 {
 	int x, y;
 
-#ifndef USE_SDL
-	ClearRect(posX, posY, CLUSTER_X * (boxdraw.brick_width+boxdraw.box_l),
-			CLUSTER_Y*(boxdraw.brick_height+boxdraw.box_l));
-#endif
-
 	for (y=0; y<CLUSTER_Y; y++)
 		for (x=0; x<CLUSTER_X; x++)
 			if (Pieces[nextPiece][0][x][y])
 				PutRect(
 					posX + x*(boxdraw.brick_width+boxdraw.box_l),
 					posY + y*(boxdraw.brick_height+boxdraw.box_l),
-					boxdraw.brick_width, boxdraw.brick_height,
-					STYLE_R(Pieces[nextPiece][0][x][y]-1),
-					STYLE_G(Pieces[nextPiece][0][x][y]-1),
-					STYLE_B(Pieces[nextPiece][0][x][y]-1));
+					boxdraw.brick_width, boxdraw.brick_height,3);
 }
 
 /*=========================================================================
@@ -347,9 +306,9 @@ int FullLine(int y)
 
 	for (x=0; x<BOX_BRICKS_X; x++) {
 		if (!box[x][y].style)
-			return 0;
+			return 0; 
 	}
-
+	
 	return 1;
 }
 
@@ -362,17 +321,8 @@ int CheckFullLine()
 	int counter = 0; /* Number of the killed lines */
 	int y, newX, newY;
 
-#ifdef USE_SDL
-	int x;
-	for (y=BOX_BRICKS_Y-1; y>0; y--) /* Create particles and play sound... */
-		if (FullLine(y))
-		{
-			for (x=0; x<BOX_BRICKS_X; x++)
-				BrickExplosion(x, y, 1, 15);
-			PutSound(&sndLine);
-		}
-#endif
 
+		
 	for (y=BOX_BRICKS_Y-1; y>0; y--)
 		while (FullLine(y)) /* Remove lines */
 		{
@@ -383,9 +333,13 @@ int CheckFullLine()
 				}
 			counter++;
 		}
+		
+		
 
 	if (counter) /* Were some lines killed? */
-	{
+	{   
+	
+		PutRect(52,7,58, 93,2); /* clear the inside of the tetris board */
 		lines += counter; /* Increase lines counter */
 		switch (counter)  /* Increase score */
 		{
@@ -394,10 +348,9 @@ int CheckFullLine()
 		case 3: score += 5000;  break;
 		case 4: score += 10000; break;
 		}
+		
+		
 
-#ifndef USE_SDL
-		ClearBox();
-#endif
 
 		return 1;
 	}
@@ -405,21 +358,7 @@ int CheckFullLine()
 	return 0;
 }
 
-#ifdef USE_SDL
-/*=========================================================================
-// Name: BrickExplosion()
-// Desc: Creates an explosion for a certain brick (particle system)
-//=======================================================================*/
-void BrickExplosion(int x, int y, int energy, int density)
-{
-	CreateParticleExplosion(
-		boxdraw.box_x + x * (boxdraw.brick_width  + boxdraw.box_l) + boxdraw.brick_width/2,
-		boxdraw.box_y + y * (boxdraw.brick_height + boxdraw.box_l) + boxdraw.brick_height/2,
-		STYLE_R(box[x][y].style-1),
-		STYLE_G(box[x][y].style-1),
-		STYLE_B(box[x][y].style-1), energy, density);
-}
-#endif
+
 
 /*=========================================================================
 // Name: BoxDrawInit()
@@ -428,21 +367,11 @@ void BrickExplosion(int x, int y, int energy, int density)
 void BoxDrawInit()
 {
 	boxdraw.box_l = 2;
-#ifdef USE_SDL
-	boxdraw.brick_width  = 20;
-	boxdraw.brick_height = 20;
-#else
 	boxdraw.brick_width  = 4;
 	boxdraw.brick_height = 4;
-#endif
 	BoxDrawUpdate();
-#ifdef USE_SDL
-	boxdraw.box_x = (SCREEN_X/2 - boxdraw.box_width/2);
-	boxdraw.box_y = (SCREEN_Y/2 - boxdraw.box_height/2);
-#else
 	boxdraw.box_x = 52;
 	boxdraw.box_y = 7;
-#endif
 }
 
 /*=========================================================================
@@ -457,65 +386,3 @@ void BoxDrawUpdate()
 						 (BOX_BRICKS_Y - 1)*boxdraw.box_l);
 }
 
-#ifdef USE_SDL
-/*=========================================================================
-// Name: BoxDrawMove()
-// Desc: Moves the box (needed for crazy mode)
-//=======================================================================*/
-void BoxDrawMove()
-{
-	static int moveX=3;
-	static int bSpace=1;
-	static int frameTimer = 0;
-
-	frameTimer++;
-
-	if (frameTimer == 1)
-	{
-		/*
-		if (bGrow)
-		{
-			boxdraw.brick_width++;
-			boxdraw.brick_height++;
-			BoxDrawUpdate();
-			if (boxdraw.brick_width >= 25)
-				bGrow = false;
-		}
-		else
-		{
-			boxdraw.brick_width--;
-			boxdraw.brick_height--;
-			BoxDrawUpdate();
-			if (boxdraw.brick_width <= 5)
-				bGrow = true;
-		}
-		*/
-
-		if (bSpace)
-		{
-			boxdraw.box_l++;
-			BoxDrawUpdate();
-			if (boxdraw.box_l >= 7)
-				bSpace = 0;
-		}
-		else
-		{
-			boxdraw.box_l--;
-			BoxDrawUpdate();
-			if (boxdraw.box_l <= 2)
-				bSpace = 1;
-		}
-
-		frameTimer = 0;
-	}
-
-	boxdraw.box_x += moveX;
-	/* boxdraw.box_x = (SCREEN_X/2 - boxdraw.box_width/2); */
-	boxdraw.box_y = (SCREEN_Y/2 - boxdraw.box_height/2);
-
-	if ((boxdraw.box_x + boxdraw.box_width-1) >= SCREEN_X)
-		moveX = -3;
-	if (boxdraw.box_x < 0)
-		moveX = 3;
-}
-#endif
