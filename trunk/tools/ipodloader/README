@@ -14,7 +14,8 @@ responsibility whatever happens. But it works for me on a 40GB iPod with
 firmware 2.1. Others have tested previous versions of this code on g1/g2 
 hardware with firmware revisions 1.2x and 1.3.
 
-The only host-compiled code (make_fw) is tested to be 64bit and endian clean.
+The only code running on the host (make_fw) is tested to be 64bit and 
+endian clean.
 
 I haven't tested the ipod updater with the modified firmware, neither you 
 would want it. Simply restore the original firmware before updating.
@@ -25,9 +26,6 @@ Quick HOWTO:
 I assume you've already set up firewire with linux, and you know how to make
 your linux box see the ipod as a disk. I'll assume your ipod's called
 /dev/sda. Also you should have both a native and an arm-elf cross toolchain.
-
-Please note that I've only tested on i386 linux. ppc should work but is
-untested.
 
 0. Build an iPodlinux kernel. I'll assume you have a linux.bin according to
    Bernard's docs.

@@ -31,9 +31,6 @@ typedef struct _image {
 #define TBL ((char **)0x40000000)
 #define MASK 0x1
 
-#define inb(a) (*(volatile unsigned char *)(a))
-#define outb(v,a) (*(volatile unsigned char *)(a) = (v))
-
 /* black magic */
 static void 
 init_keyboard(void)

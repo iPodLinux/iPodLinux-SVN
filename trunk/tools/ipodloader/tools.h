@@ -1,6 +1,11 @@
 
+#ifndef TOOLS_H
+#define TOOLS_H
+
 #define inl(a) (*(volatile unsigned long *) (a))
 #define outl(a,b) (*(volatile unsigned long *) (a) = (b))
+#define inb(a) (*(volatile unsigned char *)(a))
+#define outb(v,a) (*(volatile unsigned char *)(a) = (v))
 
 
 /* wait for action button to be pressed and then released */
@@ -15,7 +20,6 @@ int timer_check(int clock_start, int usecs);
 
 /* wait for r0 useconds */
 int wait_usec(int usecs);
-
 
 
 /* wait for LCD with timeout */
@@ -50,3 +54,5 @@ typedef struct _img {
 } img;
 
 void display_image(img *img, int draw_bg);
+
+#endif

@@ -103,9 +103,7 @@ usage()
 	   "         first image is loaded by default, 2., 3., 4. or 5. loaded if\n"
 	   "         rew, menu, play or ff is hold while booting\n\n"
 	   "  -v: verbose\n\n"
-	   " This program is used to create a bootable ipod image.\n"
-	   " Warning! The original boot sector still has to be patched in:\n"
-	   "    $ dd if=original_image of=outfile bs=512 count=1 conv=notrunc\n\n");
+	   " This program is used to create a bootable ipod image.\n\n");
 }
 
 /* read len bytes from the beginning of s, 
@@ -417,24 +415,23 @@ main(int argc, char **argv)
 	fprintf(stderr, "fseek failed: %s\n", strerror(errno));
 	return 1;
     }
-printf("%d\n", strlen(apple_copyright));
     if (fwrite(apple_copyright, 0x100, 1, out) != 1) {
-	fprintf(stderr, "fwrite failes: %s\n", strerror(errno));
+	fprintf(stderr, "fwrite failed: %s\n", strerror(errno));
 	return 1;
     }
     version = switch_32(0x5b68695d); /* magic */
     if (fwrite(&version, 4, 1, out) != 1) {
-	fprintf(stderr, "fwrite failes: %s\n", strerror(errno));
+	fprintf(stderr, "fwrite failed: %s\n", strerror(errno));
 	return 1;
     }
     version = switch_32(0x00004000); /* magic */
     if (fwrite(&version, 4, 1, out) != 1) {
-	fprintf(stderr, "fwrite failes: %s\n", strerror(errno));
+	fprintf(stderr, "fwrite failed: %s\n", strerror(errno));
 	return 1;
     }
     version = switch_32(0x0002010c); /* magic */
     if (fwrite(&version, 4, 1, out) != 1) {
-	fprintf(stderr, "fwrite failes: %s\n", strerror(errno));
+	fprintf(stderr, "fwrite failed: %s\n", strerror(errno));
 	return 1;
     }
     if (write_entry(&image, out, TBL, 0) == -1)
