@@ -985,8 +985,7 @@ void new_tuxchess_window (void)
 {
 	init();
 	init_historic();
-	// open_tuxchess_window();
-	last_tuxchess_window();
+	open_tuxchess_window();
 }
 
 /* ***********************************************************/
