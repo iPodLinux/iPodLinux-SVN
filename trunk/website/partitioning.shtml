@@ -2,27 +2,27 @@
 
 <h1>Linux on iPod - Partitioning</h1>
 
-<p>The iPods are paritioned as either Win-iPods or Mac-iPods, the difference being that the Win versions use a FAT32 parition and the Mac versions HFS+ to store the music.  From a technical perspective the two versions look something like:
+<p>The iPods are partitioned as either Win-iPods or Mac-iPods, the difference being that the Win versions use a FAT32 partition and the Mac versions HFS+ to store the music.  From a technical perspective the two versions look something like:
 
 <pre>
    [FAT32]
    hda1 Firmware partition
-   hda2 Music parition (FAT32)
+   hda2 Music partition (FAT32)
 
    [HFS+]
    hda1 Partition map
-   hda2 Firmware parition
+   hda2 Firmware partition
    hda3 Music partition (HFS+)
 </pre>
 
 
-<p>In order to run Linux on your iPod you need a suitable root parition where the Linux operating system (not the kernel) can be stored.  There are basically two possibilities either use use the Music partition, or create a new partition specifically for Linux.
+<p>In order to run Linux on your iPod you need a suitable root partition where the Linux operating system (not the kernel) can be stored.  There are basically two possibilities either use use the Music partition, or create a new partition specifically for Linux.
 
-<p>For Win-iPods if you use the music partition you will be using the UMSDOS filesystem for the root parition.  This works fine under 2.4 but it looks like it won't be in 2.6.  Furthermore, the standard kernel configuration (and the binary releases) don't have UMSDOS support and expect the root filesystem to be on hda3 so repartitioning is required to use that version.
+<p>For Win-iPods if you use the music partition you will be using the UMSDOS filesystem for the root partition.  This works fine under 2.4 but it looks like it won't be in 2.6.  Furthermore, the standard kernel configuration (and the binary releases) don't have UMSDOS support and expect the root filesystem to be on hda3 so repartitioning is required to use that version.
 
-<p>For Mac-iPods the HFS+ parition wlil work fine as a root parition so no repartition is required.
+<p>For Mac-iPods the HFS+ partition wlil work fine as a root partition so no repartition is required.
 
-<p>If however you want a native Linux parition to use with uClinux the rest of this document shows you how!
+<p>If however you want a native Linux partition to use with uClinux the rest of this document shows you how!
 
 
 <h2>Re-partitioning the iPod</h2>
@@ -134,7 +134,7 @@ Units = cylinders of 16065 * 512 = 8225280 bytes
 	</code>
 	</blockquote>
 
-<li>Review the changes.  Note, this is for a 20GB verison, the sda2 parition size will vary.
+<li>Review the changes.  Note, this is for a 20GB verison, the sda2 partition size will vary.
 	<blockquote>
 	<code>
 	Command (m for help): <b>p</b><br>
