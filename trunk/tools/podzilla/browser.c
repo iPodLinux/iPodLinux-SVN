@@ -16,12 +16,17 @@
  * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#ifdef IPOD
+#include <linux/vt.h>
+#endif
 #include <dirent.h>
 #include <string.h>
 
@@ -64,7 +69,7 @@ extern void new_playback_window(char *filename);
 #endif
 extern int is_text_type(char * extension);
 extern int is_ascii_file(char *filename);
-void new_script_window(char *filename);
+void new_exec_window(char *filename);
 
 static void browser_exit()
 {
@@ -205,7 +210,7 @@ static void browser_draw_browser()
 	GrSetGCForeground(browser_gc, BLACK);
 }
 
-static void browser_do_draw(GR_EVENT *event)
+static void browser_do_draw()
 {
 	pz_draw_header("File Browser");
 
@@ -217,16 +222,42 @@ static int is_script_type(char *extension)
 	return strcmp(extension, ".sh") == 0;
 }
 
+
+static int is_binary_type(char *filename)
+{
+	FILE *fp;
+	unsigned char header[12];
+
+	if((fp = fopen(filename, "r"))==NULL) {
+		fprintf(stderr, "Can't open \"%s\"\n", filename);
+		return 0;
+	}
+
+	fread(header, sizeof(char), 12, fp);
+	
+	fclose(fp);
+	if(strncmp(header, "bFLT", 4)==0)
+		return 1;
+	if(strncmp(header, "#!/bin/sh", 9)==0)
+		return 1;
+	return 0;
+}
+
 static void handle_type_other(char *filename)
 {
 	char *ext;
 
 	ext = strrchr(filename, '.');
-	if(ext==0) {
-		if(is_ascii_file(filename))
+	if (ext==0) {
+		if (is_ascii_file(filename)) {
 			new_textview_window(filename);
-		else
+		}
+		else if (is_binary_type(filename)) {
+			new_exec_window(filename);
+		}
+		else {
 			new_message_window("Unknown Filetype");
+		}
 	}
 	else if (is_image_type(ext)) {
 		new_image_window(filename);
@@ -240,10 +271,13 @@ static void handle_type_other(char *filename)
 	}
 #endif
 	else if (is_script_type(ext)) {
-		new_script_window(filename);
+		new_exec_window(filename);
 	}
 	else if (is_text_type(ext)||is_ascii_file(filename)) {
 		new_textview_window(filename);
+	}
+	else if (is_binary_type(filename)) {
+		new_exec_window(filename);
 	}
 	else  {
 		new_message_window("Unknown Filetype");
@@ -271,6 +305,7 @@ static int browser_do_keystroke(GR_EVENT * event)
 	case '\r':
 	case '\n':
 		browser_selection_activated(browser_currentSelection);
+		GrClearWindow(browser_wid, 1);
 		browser_draw_browser();
 		ret = 1;
 		break;
@@ -344,31 +379,82 @@ void new_browser_window(char *initial_path)
 	GrMapWindow(browser_wid);
 }
 
-void new_script_window(char *filename)
+void new_exec_window(char *filename)
 {
+#ifdef IPOD
+	int ttyfd, status, fd;
 	pid_t pid;
 
-	GrClose();
+	if((ttyfd = open("/dev/console", O_RDWR)) == -1) {
+                perror("/dev/console");
+		return;
+	}
+	if(ioctl(ttyfd, VT_ACTIVATE, 0x2)) {
+		perror("child VT_ACTIVATE");
+		_exit(1);
+	}
+	if(ioctl(ttyfd, VT_WAITACTIVE, 0x2)) {
+		perror("child VT_WAITACTIVE");
+		_exit(1);
+	}
+	
+	switch(pid = vfork()) {
+	case -1: /* error */
+		perror("vfork");
+		break;
+	case 0: /* child */
+		close(ttyfd);
+		if(setsid() < 0) {
+			perror("setsid");
+			_exit(1);
+		}
+		close(0);
+		if((fd = open("/dev/console", O_RDWR)) == -1) {
+			perror("/dev/console");
+			_exit(1);
+		}
+		if(dup(fd) == -1) {
+			perror("stdin dup");
+			_exit(1);
+		}
+		close(1);
+		if(dup(fd) == -1) {
+			perror("stdout dup");
+			_exit(1);
+		}
+		close(2);
+		if(dup(fd) == -1) {
+			perror("stderr dup");
+			_exit(1);
+		}
 
-	pid = vfork();
-	if (pid == 0) {
-		execl("/bin/sh", "sh", filename);
+		execl("/bin/sh", "sh", "-c", filename);
 		fprintf(stderr, "exec failed!\n");
 		exit(1);
-	}
-	else {
-		if (pid > 0) {
-			int status;
-
-			waitpid(pid, &status, 0);
+		break;
+	default: /* parent */
+		waitpid(pid, &status, 0);
+		sleep(5);
+		
+        	if(ioctl(ttyfd, VT_ACTIVATE, 0x1)) {
+			perror("parent VT_ACTIVATE");
+			return;
 		}
-		else {
-			fprintf(stderr, "vfork failed %d\n", pid);
+        	if(ioctl(ttyfd, VT_WAITACTIVE, 0x1)) {
+			perror("parent VT_WAITACTIVE");
+			return;
 		}
-	}
+		if(ioctl(ttyfd, VT_DISALLOCATE, 0x2)) {
+			perror("VT_DISALLOCATE");
+			return;
+		}
+		close(ttyfd);
 
-	execl("/sbin/podzilla", "podzilla");
-	fprintf(stderr, "Cannot restart podzilla!\n");
-	exit(1);
+		browser_do_draw();
+		break;
+	}
+#else
+	new_message_window(filename);
+#endif
 }
 
