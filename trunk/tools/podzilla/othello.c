@@ -18,15 +18,12 @@
  */
 
 #include <stdio.h>
-//#include <assert.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <math.h>
 #include <string.h>
 
 #include "pz.h"
-#include "ipod.h"
-//#include "piezo.c"
 
 extern void new_browser_window(void);
 extern void toggle_backlight(void);
@@ -44,56 +41,41 @@ static int last_current_oth_item;
 static int status[64];
 static int testb[64];
 static int over = 0;
-/*typedef struct piece PIECE;
-struct piece {
-	int piecex;
-	int piecey;
-};*/
+
+static int ogs, oxoff, oyoff;
 
 static void draw_oth()
 {
-	GR_SIZE width, height, base;
-
-	GrGetGCTextSize(oth_gc, "M", -1, GR_TFASCII, &width, &height, &base);
-
+	int i;
 	GrSetGCUseBackground(oth_gc, GR_TRUE);
 	GrSetGCForeground(oth_gc, BLACK);
-	GrLine(oth_wid, oth_gc, 33, 8, 127, 8);
-	GrLine(oth_wid, oth_gc, 32, 20, 128, 20);
-	GrLine(oth_wid, oth_gc, 32, 32, 128, 32);
-	GrLine(oth_wid, oth_gc, 32, 44, 128, 44);
-	GrLine(oth_wid, oth_gc, 32, 56, 128, 56);
-	GrLine(oth_wid, oth_gc, 32, 68, 128, 68);
-	GrLine(oth_wid, oth_gc, 32, 80, 128, 80);
-	GrLine(oth_wid, oth_gc, 32, 92, 128, 92);
-	GrLine(oth_wid, oth_gc, 33, 104, 127, 104);
+	for(i = 0; i <= 8; i++) {
+		GrLine(oth_wid, oth_gc, oxoff,
+		       oyoff+(ogs*i), oxoff+(ogs*8), oyoff+(ogs*i));
+		GrLine(oth_wid, oth_gc, oxoff+(ogs*i),
+		       oyoff, oxoff+(ogs*i), oyoff+(ogs*8));
+	}
 
-	GrLine(oth_wid, oth_gc, 32, 9, 32, 103);
-	GrLine(oth_wid, oth_gc, 44, 8, 44, 104);
-	GrLine(oth_wid, oth_gc, 56, 8, 56, 104);
-	GrLine(oth_wid, oth_gc, 68, 8, 68, 104);
-	GrLine(oth_wid, oth_gc, 80, 8, 80, 104);
-	GrLine(oth_wid, oth_gc, 92, 8, 92, 104);
-	GrLine(oth_wid, oth_gc, 104, 8, 104, 104);
-	GrLine(oth_wid, oth_gc, 116, 8, 116, 104);
-	GrLine(oth_wid, oth_gc, 128, 9, 128, 103);
 	GrSetGCForeground(oth_gc, BLACK);
 	GrSetGCUseBackground(oth_gc, GR_FALSE);
 
 	if(current_oth_item < 0)
-		current_oth_item = 63;
-	else if(current_oth_item >= 64)
+		current_oth_item = (ogs*8)-1;
+	else if(current_oth_item >= ogs*8)
 		current_oth_item = 0;
-	xlocal=current_oth_item * 12 + 32 - 96*(int)(current_oth_item/8);
-	ylocal=8+12*(int)(current_oth_item/8);
-	lastxlocal=last_current_oth_item * 12 + 32 - 96*(int)(last_current_oth_item/8);
-	lastylocal=8+12*(int)(last_current_oth_item/8);
-	GrRect(oth_wid, oth_gc, xlocal,ylocal, 12, 12);
+	xlocal=current_oth_item * ogs + oxoff - (ogs*8)*(int)(current_oth_item/8);
+	ylocal=oyoff+ogs*(int)(current_oth_item/8);
+	lastxlocal=last_current_oth_item * ogs + oxoff
+	            - (ogs*8)*(int)(last_current_oth_item/8);
+	lastylocal=oyoff+ogs*(int)(last_current_oth_item/8);
+	GrRect(oth_wid, oth_gc, xlocal,ylocal, ogs, ogs);
 
 	GrSetGCForeground(oth_gc, WHITE);
 	if(current_oth_item != last_current_oth_item) {
-		GrLine(oth_wid, oth_gc, lastxlocal+1,lastylocal+11,lastxlocal+11,lastylocal+11);
-		GrLine(oth_wid, oth_gc, lastxlocal+11,lastylocal+11,lastxlocal+11,lastylocal+1);
+		GrLine(oth_wid, oth_gc, lastxlocal+1, lastylocal+(ogs-1),
+		       lastxlocal+(ogs-1), lastylocal+(ogs-1));
+		GrLine(oth_wid, oth_gc, lastxlocal+(ogs-1), lastylocal+(ogs-1),
+		       lastxlocal+(ogs-1), lastylocal+1);
 		if(status[last_current_oth_item] != 3)
 			oth_set_piece(last_current_oth_item, status[last_current_oth_item]);
 	}
@@ -104,11 +86,16 @@ static void draw_oth()
 static void oth_set_piece(int pos, int coloresq)
 {
 	GR_POINT cheese[] = {
-		{pos*12 +33 -96*(int)(pos/8), 14 +12*(int)(pos/8)},
-		{pos*12 +38 -96*(int)(pos/8), 9 +12*(int)(pos/8)},
-		{pos*12 +43 -96*(int)(pos/8), 14 +12*(int)(pos/8)},
-		{pos*12 +38 -96*(int)(pos/8), 19 +12*(int)(pos/8)},
-		{pos*12 +33 -96*(int)(pos/8), 14 +12*(int)(pos/8)}
+		{pos*ogs +(oxoff+1) -(ogs*8)*(int)(pos/8), 
+		  (oyoff+(ogs/2)) +ogs*(int)(pos/8)},
+		{pos*ogs +(oxoff+(ogs/2)) -(ogs*8)*(int)(pos/8),
+		  (oyoff+1) +ogs*(int)(pos/8)},
+		{pos*ogs +(oxoff+(ogs-1)) -(ogs*8)*(int)(pos/8),
+		  (oyoff+(ogs/2)) +ogs*(int)(pos/8)},
+		{pos*ogs +(oxoff+(ogs/2)) -(ogs*8)*(int)(pos/8),
+		  (oyoff+(ogs-1)) +ogs*(int)(pos/8)},
+		{pos*ogs +(oxoff+1) -(ogs*8)*(int)(pos/8),
+		  (oyoff+(ogs/2)) +ogs*(int)(pos/8)}
 	};
 	status[pos] = coloresq;
 	GrSetGCForeground(oth_gc, BLACK);
@@ -183,29 +170,28 @@ static int endgame(int isOver)
 		}
 	}
 	GrSetGCForeground(oth_gc, WHITE);
-	GrFillRect(oth_wid, oth_gc, 32, 8, 97, 97);
+	GrFillRect(oth_wid, oth_gc, oxoff, oyoff, (ogs*8)+1, (ogs*8)+1);
 	GrSetGCForeground(oth_gc, BLACK);
 	sprintf(comp, "Me: %d", computer);
 	sprintf(hum, "You: %d", human);
-	GrText(oth_wid, oth_gc, 35, 32, comp, -1, GR_TFASCII);
-	GrText(oth_wid, oth_gc, 80, 32, hum, -1, GR_TFASCII);
+	GrText(oth_wid, oth_gc, oxoff, oyoff, comp, -1, GR_TFASCII|GR_TFTOP);
+	GrText(oth_wid, oth_gc, oxoff, oyoff+18, hum, -1, GR_TFASCII|GR_TFTOP);
 
 	if(human>computer) {
-		GrText(oth_wid, oth_gc, 8, 56, win[s], -1, GR_TFASCII);
+		GrText(oth_wid, oth_gc, oxoff/4, oyoff+40,
+		       win[s], -1, GR_TFASCII|GR_TFTOP);
 		over=1;
-		printf("\n\nCongratulations! You beat the computer %d to %d !\n\n",human,computer);
 
 	}
 	else if(computer>human) {
-		GrText(oth_wid, oth_gc, 8, 56, lose[s], -1, GR_TFASCII);
+		GrText(oth_wid, oth_gc, oxoff/4, oyoff+40,
+		       lose[s], -1, GR_TFASCII|GR_TFTOP);
 		over=1;
-		printf("\n\nDoh! The computer beat you %d to %d!\n\n",computer,human);
-		printf("%s %s", comp,hum);
 	}
 	else {
-		GrText(oth_wid, oth_gc, 8, 56, tie[s], -1, GR_TFASCII);
+		GrText(oth_wid, oth_gc, oxoff/4, oyoff+40,
+		       tie[s], -1, GR_TFASCII|GR_TFTOP);
 		over=1;
-		printf("Amazing! You tied the computer! This is a very uncommon event!\n");
 	}
 	return 1;
 }
@@ -340,14 +326,8 @@ static float movevalue(int xy,int side,int depth) {
 	if(nmoves)
 		value -= (float)(validmove(oxy,'Y',opp,'Y')-1);
 	else {
-		#ifdef VERBOSE
-			printf(" [calc] no possible opponent moves!\n");
-		#endif
 		value += 1;
 	}
-	#ifdef VERBOSE
-		printf(" [calc] %c%d = %f\n",x+'A',y+1,value);
-	#endif
 	return value;
 }
 
@@ -365,7 +345,6 @@ static void computermove(int side) {
 				}
 			}
 	pieces=validmove(mxy,'N',side,'Y');
-	//printf("I moved at %d and captured %d of your pieces!\n",mxy,pieces);
 }
 
 static int oth_do_keystroke(GR_EVENT * event)
@@ -389,7 +368,6 @@ static int oth_do_keystroke(GR_EVENT * event)
 					last_current_oth_item = current_oth_item;
 					current_oth_item--;
 					while(validmove(current_oth_item,'N',0,'N') == 0) {
-				//while(status[current_oth_item] != 3) {
 						current_oth_item--;
 						if(current_oth_item < 0)
 							current_oth_item = 63;
@@ -401,7 +379,6 @@ static int oth_do_keystroke(GR_EVENT * event)
 					last_current_oth_item = current_oth_item;
 					current_oth_item++;
 					while(validmove(current_oth_item,'N',0,'N') == 0) {
-					//while(status[current_oth_item] != 3) {
 						current_oth_item++;
 						if(current_oth_item > 63)
 							current_oth_item = 0;
@@ -432,6 +409,10 @@ static int oth_do_keystroke(GR_EVENT * event)
 
 void new_oth_window()
 {
+	ogs = (int)(screen_info.cols/13);
+	oxoff = ((screen_info.cols-(ogs*8))/2);
+	oyoff = (((screen_info.rows-(HEADER_TOPLINE + 1))-(ogs*8))/2);
+
 	oth_gc = pz_get_gc(1);
 	GrSetGCUseBackground(oth_gc, GR_FALSE);
 	GrSetGCForeground(oth_gc, BLACK);

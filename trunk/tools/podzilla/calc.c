@@ -32,34 +32,53 @@ static int current_calc_item = 0;
 static int last_calc_item;
 char *num[]={"7","8","9","/","4","5","6","*","1","2","3","-","0",".","=","+"};
 
+static int cxgap = 5, cygap = 4;
+static int cbw = 25, cbh = 16;
+
+#define CHEIGHT	((5*cbh)+(4*cygap))
+#define CWIDTH	((4*cbw)+(3*cxgap))
+#define CXOFF	((screen_info.cols-CWIDTH)/2)
+#define CYOFF	(((screen_info.rows-(HEADER_TOPLINE+1))-CHEIGHT)/2)
+#define CBYOFF	(CYOFF+cbh+cygap)
+
 static void draw_calc() {
 	GR_SIZE width, height, base;
 
 	GrSetGCUseBackground(calc_gc, GR_FALSE);
 	GrSetGCForeground(calc_gc, BLACK);
-	GrRect(calc_wid, calc_gc, 20, 10, 115, 16);
+	GrRect(calc_wid, calc_gc, CXOFF, CYOFF, CWIDTH, cbh);
 	GrGetGCTextSize(calc_gc, mathloc, -1, GR_TFASCII, &width, &height, &base);
 	GrSetGCForeground(calc_gc, WHITE);
-	GrFillRect(calc_wid, calc_gc, 21, 11, 113, 14);
+	GrFillRect(calc_wid, calc_gc, CXOFF+1, CYOFF+1, CWIDTH-2, cbh-2);
 	GrSetGCForeground(calc_gc, BLACK);
-	GrText(calc_wid, calc_gc, screen_info.cols-(width+27), 23, mathloc, -1, GR_TFASCII);
+	GrText(calc_wid, calc_gc, CXOFF+(CWIDTH-width-4),
+		CYOFF+((cbh/2)-(height/2)), mathloc, -1, GR_TFASCII|GR_TFTOP);
 
 	if(current_calc_item < 0)
 		current_calc_item = 15;
 	else if(current_calc_item >= 16)
 		current_calc_item = 0;
-	xlocal=current_calc_item*30+20-120*(int)(current_calc_item/4);
-	ylocal=30+20*(int)(current_calc_item/4);
-	lastxlocal=last_calc_item*30+20-120*(int)(last_calc_item/4);
-	lastylocal=30+20*(int)(last_calc_item/4);
+		
+	xlocal=CXOFF+((cbw+cxgap)*(current_calc_item%4));
+	ylocal=CBYOFF+((cbh+cygap)*(current_calc_item/4));
+	lastxlocal=CXOFF+((cbw+cxgap)*(last_calc_item%4));
+	lastylocal=CBYOFF+((cbh+cygap)*(last_calc_item/4));
+	
 	GrSetGCForeground(calc_gc, WHITE);
-	GrFillRect(calc_wid, calc_gc, lastxlocal+1, lastylocal+1, 23, 14);
+	GrFillRect(calc_wid, calc_gc, lastxlocal+1, lastylocal+1, cbw-2, cbh-2);
 	GrSetGCForeground(calc_gc, BLACK);
-	GrText(calc_wid, calc_gc, lastxlocal+9, lastylocal+13, num[last_calc_item], -1, GR_TFASCII);
-	GrFillRect(calc_wid, calc_gc, xlocal, ylocal, 25, 16);
+	GrGetGCTextSize(calc_gc, num[last_calc_item], -1, GR_TFASCII,
+	                &width, &height, &base);
+	GrText(calc_wid, calc_gc,
+	       lastxlocal+((cbw/2)-(width/2)), lastylocal+((cbh/2)-(height/2)),
+	       num[last_calc_item], -1, GR_TFASCII|GR_TFTOP);
+	GrFillRect(calc_wid, calc_gc, xlocal, ylocal, cbw, cbh);
 	GrSetGCForeground(calc_gc, WHITE);
-	GrText(calc_wid, calc_gc, xlocal+9, ylocal+13, num[current_calc_item], -1, GR_TFASCII);
-
+	GrGetGCTextSize(calc_gc, num[current_calc_item], -1, GR_TFASCII,
+	                &width, &height, &base);
+	GrText(calc_wid, calc_gc,
+	       xlocal+((cbw/2)-(width/2)), ylocal+((cbh/2)-(height/2)),
+	       num[current_calc_item], -1, GR_TFASCII|GR_TFTOP);
 	GrSetGCUseBackground(calc_gc, GR_FALSE);
 	GrSetGCMode(calc_gc, GR_MODE_SET);
 }
@@ -104,14 +123,21 @@ void calc_do_math(int pos) {
 
 static void calc_do_draw() {
 	int i;
+	GR_SIZE width, height, base;
 	pz_draw_header("Calculator");
 	mathloc[0]='\0';
 	numfull = 0;
 	littr = 0;
 	GrSetGCForeground(calc_gc, BLACK);
 	for(i=0; i<=15; i++) {
-		GrRect(calc_wid, calc_gc, i*30+20-120*(int)(i/4), 30+20*(int)(i/4), 25, 16);
-		GrText(calc_wid, calc_gc, i*30+29-120*(int)(i/4), 43+20*(int)(i/4), num[i], -1, GR_TFASCII);
+		GrGetGCTextSize(calc_gc, num[i], -1, GR_TFASCII,
+		                &width, &height, &base);
+		GrRect(calc_wid, calc_gc,CXOFF+((cbw+cxgap)*(i%4)), 
+		       CBYOFF+((cbh+cygap)*(i/4)), cbw, cbh);
+		GrText(calc_wid, calc_gc,
+		       CXOFF+((cbw+cxgap)*(i%4))+((cbw/2)-(width/2)),
+		       CBYOFF+((cbh+cygap)*(i/4))+((cbh/2)-(height/2)),
+		       num[i], -1, GR_TFASCII|GR_TFTOP);
 	}
 	draw_calc();
 }
@@ -161,6 +187,11 @@ void new_calc_window() {
 	calc_gc = pz_get_gc(1);
 	GrSetGCUseBackground(calc_gc, GR_FALSE);
 	GrSetGCForeground(calc_gc, BLACK);
+
+	if (screen_info.cols < 160) { //mini
+		cxgap = 3; cygap = 2;
+		cbw = 22; cbh = 15;
+	}
 
 	calc_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), calc_do_draw, calc_do_keystroke);
 
