@@ -61,6 +61,7 @@ extern int is_raw_audio_type(char *extension);
 extern void new_playback_window(char *filename);
 #endif
 extern int is_text_type(char * extension);
+extern int is_ascii_file(char *filename);
 void new_script_window(char *filename);
 
 static void browser_exit()
@@ -219,14 +220,14 @@ static void handle_type_other(char *filename)
 	char *ext;
 
 	ext = strrchr(filename, '.');
-	if (ext == 0) {
-		new_textview_window(filename);
+	if(ext==0) {
+		if(is_ascii_file(filename))
+			new_textview_window(filename);
+		else
+			new_message_window("Unknown Filetype");
 	}
 	else if (is_image_type(ext)) {
 		new_image_window(filename);
-	}
-	else if (is_text_type(ext)) {
-		new_textview_window(filename);
 	}
 #ifdef __linux__
 	else if (is_mp3_type(ext)) {
@@ -239,8 +240,11 @@ static void handle_type_other(char *filename)
 	else if (is_script_type(ext)) {
 		new_script_window(filename);
 	}
+	else if (is_text_type(ext)||is_ascii_file(filename)) {
+		new_textview_window(filename);
+	}
 	else  {
-		new_message_window(filename);
+		new_message_window("Unknown Filetype");
 	}
 }
 
