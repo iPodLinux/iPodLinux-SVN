@@ -19,6 +19,7 @@
 #include <linux/delay.h>
 #include <linux/pci.h>
 #include <linux/moduleparam.h>
+#include <linux/suspend.h>
 #include <asm/atomic.h>
 
 #include "ieee1394_types.h"
@@ -88,7 +89,7 @@ static struct csr1212_bus_ops nodemgr_csr_ops = {
 };
 
 
-/* 
+/*
  * Basically what we do here is start off retrieving the bus_info block.
  * From there will fill in some info about the node, verify it is of IEEE
  * 1394 type, and that the crc checks out ok. After that we start off with
@@ -102,7 +103,7 @@ static struct csr1212_bus_ops nodemgr_csr_ops = {
  * that's easy to parse by the protocol interface.
  */
 
-/* 
+/*
  * The nodemgr relies heavily on the Driver Model for device callbacks and
  * driver/device mappings. The old nodemgr used to handle all this itself,
  * but now we are much simpler because of the LDM.
@@ -117,6 +118,7 @@ struct host_info {
 	struct semaphore reset_sem;
 	int pid;
 	char daemon_name[15];
+	int kill_me;
 };
 
 static int nodemgr_bus_match(struct device * dev, struct device_driver * drv);
@@ -273,7 +275,7 @@ static ssize_t fw_show_ne_bus_options(struct device *dev, char *buf)
 		       ne->busopt.irmc,
 		       ne->busopt.cmc, ne->busopt.isc, ne->busopt.bmc,
 		       ne->busopt.pmc, ne->busopt.generation, ne->busopt.lnkspd,
-		       ne->busopt.max_rec, 
+		       ne->busopt.max_rec,
 		       ne->busopt.max_rom,
 		       ne->busopt.cyc_clk_acc);
 }
@@ -328,7 +330,7 @@ static ssize_t fw_get_ignore_driver(struct device *dev, char *buf)
 	struct unit_directory *ud = container_of(dev, struct unit_directory, device);
 
 	return sprintf(buf, "%d\n", ud->ignore_driver);
-}	
+}
 static DEVICE_ATTR(ignore_driver, S_IWUSR | S_IRUGO, fw_get_ignore_driver, fw_set_ignore_driver);
 
 
@@ -356,7 +358,6 @@ static int nodemgr_rescan_bus_thread(void *__unused)
 {
 	/* No userlevel access needed */
 	daemonize("kfwrescan");
-	allow_signal(SIGTERM);
 
 	bus_rescan_devices(&ieee1394_bus_type);
 
@@ -726,7 +727,7 @@ static void nodemgr_update_bus_options(struct node_entry *ne)
 	ne->busopt.max_rom	= (busoptions >> 8) & 0x3;
 	ne->busopt.generation   = (busoptions >> 4) & 0xf;
 	ne->busopt.lnkspd       = busoptions & 0x7;
-	
+
 	HPSB_VERBOSE("NodeMgr: raw=0x%08x irmc=%d cmc=%d isc=%d bmc=%d pmc=%d "
 		     "cyc_clk_acc=%d max_rec=%d max_rom=%d gen=%d lspd=%d",
 		     busoptions, ne->busopt.irmc, ne->busopt.cmc,
@@ -1012,7 +1013,7 @@ static void nodemgr_process_root_directory(struct host_info *hi, struct node_ent
 
 		case CSR1212_KV_ID_UNIT:
 			nodemgr_process_unit_directory(hi, ne, kv, &ud_id, NULL);
-			break;			
+			break;
 
 		case CSR1212_KV_ID_DESCRIPTOR:
 			if (last_key_id == CSR1212_KV_ID_VENDOR) {
@@ -1056,13 +1057,14 @@ static int nodemgr_hotplug(struct class_device *cdev, char **envp, int num_envp,
 
 #define PUT_ENVP(fmt,val) 					\
 do {								\
+    	int printed;						\
 	envp[i++] = buffer;					\
-	length += snprintf(buffer, buffer_size - length,	\
+	printed = snprintf(buffer, buffer_size - length,	\
 			   fmt, val);				\
-	if ((buffer_size - length <= 0) || (i >= num_envp))	\
+	if ((buffer_size - (length+printed) <= 0) || (i >= num_envp))	\
 		return -ENOMEM;					\
-	++length;						\
-	buffer += length;					\
+	length += printed+1;					\
+	buffer += printed+1;					\
 } while (0)
 
 	PUT_ENVP("VENDOR_ID=%06x", ud->vendor_id);
@@ -1084,7 +1086,7 @@ static int nodemgr_hotplug(struct class_device *cdev, char **envp, int num_envp,
 			   char *buffer, int buffer_size)
 {
 	return -ENODEV;
-} 
+}
 
 #endif /* CONFIG_HOTPLUG */
 
@@ -1150,7 +1152,6 @@ static void nodemgr_update_node(struct node_entry *ne, struct csr1212_csr *csr,
 	ne->generation = generation;
 }
 
-		
 
 
 static void nodemgr_node_scan_one(struct host_info *hi,
@@ -1381,8 +1382,9 @@ static void nodemgr_node_probe(struct host_info *hi, int generation)
 static int nodemgr_do_irm_duties(struct hpsb_host *host, int cycles)
 {
 	quadlet_t bc;
-        
-	if (!host->is_irm)
+
+	/* if irm_id == -1 then there is no IRM on this bus */
+	if (!host->is_irm || host->irm_id == (nodeid_t)-1)
 		return 1;
 
 	host->csr.broadcast_channel |= 0x40000000;  /* set validity bit */
@@ -1468,17 +1470,28 @@ static int nodemgr_host_thread(void *__hi)
 
 	/* No userlevel access needed */
 	daemonize(hi->daemon_name);
-	allow_signal(SIGTERM);
 
 	/* Setup our device-model entries */
 	nodemgr_create_host_dev_files(host);
 
 	/* Sit and wait for a signal to probe the nodes on the bus. This
 	 * happens when we get a bus reset. */
-	while (!down_interruptible(&hi->reset_sem) &&
-	       !down_interruptible(&nodemgr_serialize)) {
+	while (1) {
 		unsigned int generation = 0;
 		int i;
+
+		if (down_interruptible(&hi->reset_sem) ||
+		    down_interruptible(&nodemgr_serialize)) {
+			if (current->flags & PF_FREEZE) {
+				refrigerator(0);
+				continue;
+			}
+			printk("NodeMgr: received unexpected signal?!\n" );
+			break;
+		}
+
+		if (hi->kill_me)
+			break;
 
 		/* Pause for 1/4 second in 1/16 second intervals,
 		 * to make sure things settle down. */
@@ -1500,6 +1513,10 @@ static int nodemgr_host_thread(void *__hi)
 			 * start the the waiting over again */
 			while (!down_trylock(&hi->reset_sem))
 				i = 0;
+
+			/* Check the kill_me again */
+			if (hi->kill_me)
+				goto caught_signal;
 		}
 
 		if (!nodemgr_check_irm_capability(host, reset_cycles)) {
@@ -1612,7 +1629,7 @@ int hpsb_node_read(struct node_entry *ne, u64 addr,
 			 addr, buffer, length);
 }
 
-int hpsb_node_write(struct node_entry *ne, u64 addr, 
+int hpsb_node_write(struct node_entry *ne, u64 addr,
 		    quadlet_t *buffer, size_t length)
 {
 	unsigned int generation = ne->generation;
@@ -1622,7 +1639,7 @@ int hpsb_node_write(struct node_entry *ne, u64 addr,
 			  addr, buffer, length);
 }
 
-int hpsb_node_lock(struct node_entry *ne, u64 addr, 
+int hpsb_node_lock(struct node_entry *ne, u64 addr,
 		   int extcode, quadlet_t *data, quadlet_t arg)
 {
 	unsigned int generation = ne->generation;
@@ -1680,7 +1697,9 @@ static void nodemgr_remove_host(struct hpsb_host *host)
 
 	if (hi) {
 		if (hi->pid >= 0) {
-			kill_proc(hi->pid, SIGTERM, 1);
+			hi->kill_me = 1;
+			mb();
+			up(&hi->reset_sem);
 			wait_for_completion(&hi->exited);
 			nodemgr_remove_host_dev(&host->device);
 		}
@@ -1698,12 +1717,23 @@ static struct hpsb_highlevel nodemgr_highlevel = {
 	.remove_host =	nodemgr_remove_host,
 };
 
-void init_ieee1394_nodemgr(void)
+int init_ieee1394_nodemgr(void)
 {
-	class_register(&nodemgr_ne_class);
-	class_register(&nodemgr_ud_class);
+	int ret;
+
+	ret = class_register(&nodemgr_ne_class);
+	if (ret < 0)
+		return ret;
+
+	ret = class_register(&nodemgr_ud_class);
+	if (ret < 0) {
+		class_unregister(&nodemgr_ne_class);
+		return ret;
+	}
 
 	hpsb_register_highlevel(&nodemgr_highlevel);
+
+	return 0;
 }
 
 void cleanup_ieee1394_nodemgr(void)

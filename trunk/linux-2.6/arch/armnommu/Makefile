@@ -48,16 +48,13 @@ arch-$(CONFIG_CPU_32v3)		:=-D__LINUX_ARM_ARCH__=3 -march=armv3
 tune-$(CONFIG_CPU_ARM7V3)	:=-mtune=arm610
 tune-$(CONFIG_CPU_ARM610)	:=-mtune=arm610
 tune-$(CONFIG_CPU_ARM710)	:=-mtune=arm7tdmi
+tune-$(CONFIG_CPU_S3C4510B)	:=-mtune=arm7tdmi
 tune-$(CONFIG_CPU_ARM720T)	:=-mtune=arm7tdmi
 tune-$(CONFIG_CPU_ARM740T)	:=-mtune=arm7tdmi
 tune-$(CONFIG_CPU_ARM920T)	:=-mtune=arm9tdmi
 tune-$(CONFIG_CPU_ARM922T)	:=-mtune=arm9tdmi
 tune-$(CONFIG_CPU_ARM926T)	:=-mtune=arm9tdmi
 tune-$(CONFIG_CPU_ARM940T)	:=-mtune=arm9tdmi
-tune-$(CONFIG_CPU_SA110)	:=-mtune=strongarm110
-tune-$(CONFIG_CPU_SA1100)	:=-mtune=strongarm1100
-tune-$(CONFIG_CPU_XSCALE)	:=$(call check_gcc,-mtune=xscale,-mtune=strongarm110) -Wa,-mcpu=xscale
-tune-$(CONFIG_CPU_V6)		:=-mtune=strongarm
 
 # Need -Uarm for gcc < 3.x
 CFLAGS_BOOT	:=-mapcs-32 $(arch-y) $(tune-y) -mshort-load-bytes -msoft-float -Wa,-mno-fpu -Uarm
@@ -81,8 +78,12 @@ textaddr-y	:= 0x00008000			# default text address
 #   in alphabetical order.
 machine-$(CONFIG_ARCH_ATMEL)		:= atmel
 	textaddr-$(CONFIG_ARCH_ATMEL)		:= 0x01000000
+machine-$(CONFIG_ARCH_ESPD_4510B)	:= espd_4510b
+	textaddr-$(CONFIG_ARCH_ESPD_4510B)	:= 0x00008000
 machine-$(CONFIG_ARCH_S3C3410)		:= s3c3410
 	textaddr-$(CONFIG_ARCH_S3C3410)		:= 0x01020000
+machine-$(CONFIG_ARCH_S3C44B0)		:= s3c44b0x
+	textaddr-$(CONFIG_ARCH_S3C44B0)		:= 0x0c008000
 machine-$(CONFIG_ARCH_S5C7375) 		:= s5c7375
 	textaddr-$(CONFIG_ARCH_S5C7375) 	:= 0x00008000
 machine-$(CONFIG_ARCH_IPOD) 		:= ipod
@@ -112,20 +113,20 @@ export HEADMACH
 head-y		+= arch/armnommu/kernel/init_task.o
 
 # Do we have FASTFPE?
-FASTFPE		:=arch/armnommu/fastfpe
+FASTFPE		:=arch/arm/fastfpe
 ifeq ($(FASTFPE),$(wildcard $(FASTFPE)))
 FASTFPE_OBJ	:=$(FASTFPE)/
 endif
 
 # If we have a machine-specific directory, then include it in the build.
-core-y				+= arch/armnommu/kernel/ arch/armnommu/mm/ arch/armnommu/common/
+core-y				+= arch/armnommu/kernel/ arch/armnommu/mm/ arch/arm/common/
 ifneq ($(MACHINE),)
 core-y				+= arch/armnommu/mach-$(MACHINE)/
 endif
-core-$(CONFIG_FPE_NWFPE)	+= arch/armnommu/nwfpe/
+core-$(CONFIG_FPE_NWFPE)	+= arch/arm/nwfpe/
 core-$(CONFIG_FPE_FASTFPE)	+= $(FASTFPE_OBJ)
 
-libs-y				+= arch/armnommu/lib/
+libs-y				+= arch/arm/lib/
 
 # Default target when executing plain make
 all: uCImage
@@ -147,7 +148,7 @@ prepare: maketools
 .PHONY: maketools FORCE
 maketools: include/asm-armnommu/.arch \
 	   include/asm-armnommu/constants.h include/linux/version.h FORCE
-	$(Q)$(MAKE) $(build)=arch/armnommu/tools include/asm-armnommu/mach-types.h
+	$(Q)$(MAKE) $(build)=arch/arm/tools include/asm-arm/mach-types.h
 
 # Convert bzImage to zImage
 bzImage: vmlinux
@@ -166,13 +167,12 @@ linux.bin: vmlinux FORCE
 	@rm $@.tmp pad.bin
 	@echo '  Kernel: $@ is ready'
 	
-
 zinstall install: vmlinux
 	$(Q)$(MAKE) $(build)=$(boot) $@
 
-CLEAN_FILES += include/asm-armnommu/constants.h* include/asm-armnommu/mach-types.h
+CLEAN_FILES += include/asm-armnommu/constants.h* include/asm-arm/mach-types.h
 CLEAN_FILES += linux.bin linux arch/armnommu/kernel/entry-macro.S
-MRPROPER_FILES += include/asm-armnommu/arch include/asm-armnommu/.arch
+CLEAN_FILES += include/asm-armnommu/arch include/asm-armnommu/.arch
 
 # We use MRPROPER_FILES and CLEAN_FILES now
 archclean:
@@ -197,9 +197,4 @@ define archhelp
   echo  '  Image         - Uncompressed kernel image (arch/$(ARCH)/boot/Image)'
   echo  '  uCImage	 - Uncompressed kernel and the stripped binary (linux.bin)'
   echo  '  bootpImage    - Combined zImage and initial RAM disk' 
-  echo  '  install       - Install uncompressed kernel'
-  echo  '  zinstall      - Install compressed kernel'
-  echo  '                  Install using (your) ~/bin/installkernel or'
-  echo  '                  (distribution) /sbin/installkernel or'
-  echo  '                  install to $$(INSTALL_PATH) and run lilo'
 endef

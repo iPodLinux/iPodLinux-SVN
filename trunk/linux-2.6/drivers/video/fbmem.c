@@ -32,6 +32,9 @@
 #include <linux/kmod.h>
 #endif
 #include <linux/devfs_fs_kernel.h>
+#include <linux/err.h>
+#include <linux/kernel.h>
+#include <linux/device.h>
 
 #if defined(__mc68000__) || defined(CONFIG_APUS)
 #include <asm/setup.h>
@@ -55,7 +58,6 @@ extern int acornfb_init(void);
 extern int acornfb_setup(char*);
 extern int amifb_init(void);
 extern int amifb_setup(char*);
-extern int anakinfb_init(void);
 extern int atafb_init(void);
 extern int atafb_setup(char*);
 extern int macfb_init(void);
@@ -112,6 +114,8 @@ extern int valkyriefb_setup(char*);
 extern int chips_init(void);
 extern int g364fb_init(void);
 extern int sa1100fb_init(void);
+extern int pxafb_init(void);
+extern int pxafb_setup(char*);
 extern int fm2fb_init(void);
 extern int fm2fb_setup(char*);
 extern int q40fb_init(void);
@@ -119,6 +123,8 @@ extern int sun3fb_init(void);
 extern int sun3fb_setup(char *);
 extern int sgivwfb_init(void);
 extern int sgivwfb_setup(char*);
+extern int gbefb_init(void);
+extern int gbefb_setup(char*);
 extern int rivafb_init(void);
 extern int rivafb_setup(char*);
 extern int tdfxfb_init(void);
@@ -166,6 +172,8 @@ extern int kyrofb_init(void);
 extern int kyrofb_setup(char*);
 extern int ipodfb_init(void);
 extern int ipodfb_setup(char*);
+extern int mc68x328fb_init(void);
+extern int mc68x328fb_setup(char *);
 
 static struct {
 	const char *name;
@@ -181,9 +189,6 @@ static struct {
 #endif
 #ifdef CONFIG_FB_AMIGA
 	{ "amifb", amifb_init, amifb_setup },
-#endif
-#ifdef CONFIG_FB_ANAKIN
-	{ "anakinfb", anakinfb_init, NULL },
 #endif
 #ifdef CONFIG_FB_CLPS711X
 	{ "clps711xfb", clps711xfb_init, NULL },
@@ -313,6 +318,9 @@ static struct {
 #ifdef CONFIG_FB_SGIVW
 	{ "sgivwfb", sgivwfb_init, sgivwfb_setup },
 #endif
+#ifdef CONFIG_FB_GBE
+	{ "gbefb", gbefb_init, gbefb_setup },
+#endif
 #ifdef CONFIG_FB_ACORN
 	{ "acornfb", acornfb_init, acornfb_setup },
 #endif
@@ -346,6 +354,9 @@ static struct {
 #ifdef CONFIG_FB_SA1100
 	{ "sa1100fb", sa1100fb_init, NULL },
 #endif
+#ifdef CONFIG_FB_PXA
+	{ "pxafb", pxafb_init, pxafb_setup },
+#endif
 #ifdef CONFIG_FB_SUN3
 	{ "sun3fb", sun3fb_init, sun3fb_setup },
 #endif
@@ -375,6 +386,9 @@ static struct {
 #endif
 #ifdef CONFIG_FB_KYRO
 	{ "kyrofb", kyrofb_init, kyrofb_setup },
+#endif
+#ifdef CONFIG_FB_68328
+	{ "68328fb", mc68x328fb_init, mc68x328fb_setup },
 #endif
 
 	/*
@@ -417,12 +431,13 @@ static int ofonly __initdata = 0;
 /*
  * Drawing helpers.
  */
-u8 sys_inbuf(struct fb_info *info, u8 *src)
-{	
+static u8 fb_sys_inbuf(struct fb_info *info, u8 *src)
+{
 	return *src;
 }
 
-void sys_outbuf(struct fb_info *info, u8 *dst, u8 *src, unsigned int size)
+static void fb_sys_outbuf(struct fb_info *info, u8 *dst,
+				u8 *src, unsigned int size)
 {
 	memcpy(dst, src, size);
 }	
@@ -920,7 +935,7 @@ fb_cursor(struct fb_info *info, struct fb_cursor *sprite)
 			return -ENOMEM;
 		}
 		
-		if (copy_from_user(&cursor.image.data, sprite->image.data, size) ||
+		if (copy_from_user(cursor.image.data, sprite->image.data, size) ||
 		    copy_from_user(cursor.mask, sprite->mask, size)) { 
 			kfree(cursor.image.data);
 			kfree(cursor.mask);
@@ -1019,7 +1034,7 @@ fb_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 	struct fb_con2fbmap con2fb;
 #endif
 	struct fb_cmap cmap;
-	int i, rc;
+	int i;
 	
 	if (!fb)
 		return -ENODEV;
@@ -1047,7 +1062,7 @@ fb_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 	case FBIOGETCMAP:
 		if (copy_from_user(&cmap, (void *) arg, sizeof(cmap)))
 			return -EFAULT;
-		return (fb_copy_cmap(&info->cmap, &cmap, 0));
+		return (fb_copy_cmap(&info->cmap, &cmap, 2));
 	case FBIOPAN_DISPLAY:
 		if (copy_from_user(&var, (void *) arg, sizeof(var)))
 			return -EFAULT;
@@ -1061,9 +1076,9 @@ fb_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 		return 0;
 	case FBIO_CURSOR:
 		acquire_console_sem();
-		rc = fb_cursor(info, (struct fb_cursor *) arg);
+		i = fb_cursor(info, (struct fb_cursor *) arg);
 		release_console_sem();
-		return rc;
+		return i;
 #ifdef CONFIG_FRAMEBUFFER_CONSOLE
 	case FBIOGET_CON2FBMAP:
 		if (copy_from_user(&con2fb, (void *)arg, sizeof(con2fb)))
@@ -1184,13 +1199,10 @@ fb_mmap(struct file *file, struct vm_area_struct * vma)
 	if (boot_cpu_data.x86 > 3)
 		pgprot_val(vma->vm_page_prot) |= _PAGE_PCD;
 #elif defined(__mips__)
-	pgprot_val(vma->vm_page_prot) &= ~_CACHE_MASK;
-	pgprot_val(vma->vm_page_prot) |= _CACHE_UNCACHED;
-#elif defined(__sh__)
-	pgprot_val(vma->vm_page_prot) &= ~_PAGE_CACHABLE;
+	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
 #elif defined(__hppa__)
 	pgprot_val(vma->vm_page_prot) |= _PAGE_NO_CACHE;
-#elif defined(__ia64__) || defined(__arm__)
+#elif defined(__ia64__) || defined(__arm__) || defined(__sh__)
 	vma->vm_page_prot = pgprot_writecombine(vma->vm_page_prot);
 #else
 #warning What do we have to do here??
@@ -1256,6 +1268,8 @@ static struct file_operations fb_fops = {
 #endif
 };
 
+static struct class_simple *fb_class;
+
 /**
  *	register_framebuffer - registers a frame buffer device
  *	@fb_info: frame buffer info structure
@@ -1270,6 +1284,7 @@ int
 register_framebuffer(struct fb_info *fb_info)
 {
 	int i;
+	struct class_device *c;
 
 	if (num_registered_fb == FB_MAX)
 		return -ENXIO;
@@ -1278,6 +1293,12 @@ register_framebuffer(struct fb_info *fb_info)
 		if (!registered_fb[i])
 			break;
 	fb_info->node = i;
+
+	c = class_simple_device_add(fb_class, MKDEV(FB_MAJOR, i), NULL, "fb%d", i);
+	if (IS_ERR(c)) {
+		/* Not fatal */
+		printk(KERN_WARNING "Unable to create class_device for framebuffer %d; errno = %ld\n", i, PTR_ERR(c));
+	}
 	
 	if (fb_info->pixmap.addr == NULL) {
 		fb_info->pixmap.addr = kmalloc(FBPIXMAPSIZE, GFP_KERNEL);
@@ -1285,14 +1306,15 @@ register_framebuffer(struct fb_info *fb_info)
 			fb_info->pixmap.size = FBPIXMAPSIZE;
 			fb_info->pixmap.buf_align = 1;
 			fb_info->pixmap.scan_align = 1;
+			fb_info->pixmap.access_align = 4;
 			fb_info->pixmap.flags = FB_PIXMAP_DEFAULT;
 		}
 	}	
 	fb_info->pixmap.offset = 0;
 	if (fb_info->pixmap.outbuf == NULL)
-		fb_info->pixmap.outbuf = sys_outbuf;
+		fb_info->pixmap.outbuf = fb_sys_outbuf;
 	if (fb_info->pixmap.inbuf == NULL)
-		fb_info->pixmap.inbuf = sys_inbuf;
+		fb_info->pixmap.inbuf = fb_sys_inbuf;
 
 	if (fb_info->sprite.addr == NULL) {
 		fb_info->sprite.addr = kmalloc(FBPIXMAPSIZE, GFP_KERNEL);
@@ -1300,14 +1322,15 @@ register_framebuffer(struct fb_info *fb_info)
 			fb_info->sprite.size = FBPIXMAPSIZE;
 			fb_info->sprite.buf_align = 1;
 			fb_info->sprite.scan_align = 1;
+			fb_info->sprite.access_align = 4;
 			fb_info->sprite.flags = FB_PIXMAP_DEFAULT;
 		}
 	}
 	fb_info->sprite.offset = 0;
 	if (fb_info->sprite.outbuf == NULL)
-		fb_info->sprite.outbuf = sys_outbuf;
+		fb_info->sprite.outbuf = fb_sys_outbuf;
 	if (fb_info->sprite.inbuf == NULL)
-		fb_info->sprite.inbuf = sys_inbuf;
+		fb_info->sprite.inbuf = fb_sys_inbuf;
 
 	registered_fb[i] = fb_info;
 
@@ -1343,6 +1366,7 @@ unregister_framebuffer(struct fb_info *fb_info)
 		kfree(fb_info->sprite.addr);
 	registered_fb[i]=NULL;
 	num_registered_fb--;
+	class_simple_device_remove(MKDEV(FB_MAJOR, i));
 	return 0;
 }
 
@@ -1403,6 +1427,12 @@ fbmem_init(void)
 	devfs_mk_dir("fb");
 	if (register_chrdev(FB_MAJOR,"fb",&fb_fops))
 		printk("unable to get major %d for fb devs\n", FB_MAJOR);
+
+	fb_class = class_simple_create(THIS_MODULE, "graphics");
+	if (IS_ERR(fb_class)) {
+		printk(KERN_WARNING "Unable to create fb class; errno = %ld\n", PTR_ERR(fb_class));
+		fb_class = NULL;
+	}
 
 #ifdef CONFIG_FB_OF
 	if (ofonly) {
