@@ -34,22 +34,23 @@ extern void toggle_backlight(void);
 static GR_WINDOW_ID oth_wid;
 static GR_GC_ID oth_gc;
 static GR_SCREEN_INFO screen_info;
-int xlocal,ylocal,xh,yh,xl,yl,xslip,yslip;
+int xlocal,ylocal,lastxlocal,lastylocal;
 
 void quit_podzilla(void);
 void reboot_ipod(void);
+static void oth_set_piece(int pos, int coloresq);
    
-static int current_oth_item = 0;
+static int current_oth_item = 19;
+static int last_current_oth_item;
 static int in_contrast = 0;
 static int status[64];
 static int testb[64];
 static int over = 0;
-typedef char board[64];
-typedef struct piece PIECE;
+/*typedef struct piece PIECE;
 struct piece {
 	int piecex;
 	int piecey;
-};	
+};*/
 
 static void draw_oth()
 {
@@ -78,7 +79,7 @@ static void draw_oth()
 	GrLine(oth_wid, oth_gc, 104, 8, 104, 104);
 	GrLine(oth_wid, oth_gc, 116, 8, 116, 104);
 	GrLine(oth_wid, oth_gc, 128, 9, 128, 103);
-        GrSetGCForeground(oth_gc, WHITE);
+	GrSetGCForeground(oth_gc, WHITE);
 	GrSetGCUseBackground(oth_gc, GR_TRUE);
 	
 	if(current_oth_item < 0)
@@ -87,25 +88,23 @@ static void draw_oth()
 		current_oth_item = 0;
 	xlocal=current_oth_item * 12 + 32 - 96*(int)(current_oth_item/8);
 	ylocal=8+12*(int)(current_oth_item/8);
-	xl=current_oth_item==0?116:(current_oth_item-1) * 12 + 32 - 96*(int)((current_oth_item-1)/8);
-	yl=current_oth_item==0?92:8+12*(int)((current_oth_item-1)/8);
-	xh=current_oth_item==63?32:(current_oth_item+1) * 12 + 32 - 96*(int)((current_oth_item+1)/8);
-	yh=current_oth_item==63?8:8+12*(int)((current_oth_item+1)/8);
+	lastxlocal=last_current_oth_item * 12 + 32 - 96*(int)(last_current_oth_item/8);
+	lastylocal=8+12*(int)(last_current_oth_item/8);
 	GrRect(oth_wid, oth_gc, xlocal,ylocal, 12, 12); 
 
 	GrSetGCForeground(oth_gc, BLACK);
-	GrLine(oth_wid, oth_gc, xl+1,yl+11,xl+11,yl+11);
-	GrLine(oth_wid, oth_gc, xl+11,yl+11,xl+11,yl+1 );
-	GrLine(oth_wid, oth_gc, xh+1, yh+11,xh+11,yh+11);
-	GrLine(oth_wid, oth_gc, xh+11,yh+11,xh+11,yh+1);
+	if(current_oth_item != last_current_oth_item) {
+		GrLine(oth_wid, oth_gc, lastxlocal+1,lastylocal+11,lastxlocal+11,lastylocal+11);
+		GrLine(oth_wid, oth_gc, lastxlocal+11,lastylocal+11,lastxlocal+11,lastylocal+1);
+		if(status[last_current_oth_item] != 3)
+			oth_set_piece(last_current_oth_item, status[last_current_oth_item]);
+	}
 
 	GrSetGCMode(oth_gc, GR_MODE_SET);
 }
 
 static void oth_set_piece(int pos, int coloresq)
 {
-	//xslip=pos * 12 + 33 - 96*(int)(pos/8);
-	//yslip=9 +12*(int)(pos/8);
 	GR_POINT cheese[] = {
 		{pos*12 +33 -96*(int)(pos/8), 14 +12*(int)(pos/8)},
 		{pos*12 +38 -96*(int)(pos/8), 9 +12*(int)(pos/8)},
@@ -129,11 +128,12 @@ static void oth_do_draw()
 {
 	int i;
 	pz_draw_header("Othello");
-	draw_oth();
 	for (i=0;i<64;i++) {
 		status[i]=3;
 	}
 	over = 0;
+	current_oth_item = 19;
+	draw_oth();
 	oth_set_piece(27, 1);
 	oth_set_piece(28, 0);
 	oth_set_piece(35, 0);
@@ -144,9 +144,8 @@ static int endgame(int isOver)
 {
 	int i;
 	int human=0,computer=0;
-	int rand_seed=10;
 	int s;
-	char *lose[5] = { 
+	char *lose[5] = {
 		"That was really sad...\0",
 		"I can\'t believe you lost!\0",
 		"Hah, taught you a lesson!\0",
@@ -167,8 +166,10 @@ static int endgame(int isOver)
 		"Want some coke with that tie?\0",
 		"A Tie huh?\0"
 	};
-	rand_seed = rand_seed * 1103515245 +12345;
-	s = (unsigned int)rand() / (unsigned int)(65536) % 5;
+	char comp[8];
+	char hum[8];
+	srand(current_oth_item*last_current_oth_item);
+	s = rand() % 5;
 	for(i=0;i<64;i++) {
 		switch(status[i]) {
 			case 3:
@@ -183,35 +184,35 @@ static int endgame(int isOver)
 				break;
 		}
 	}
+	GrSetGCForeground(oth_gc, BLACK);
+	GrFillRect(oth_wid, oth_gc, 32, 8, 97, 97);
+	GrSetGCForeground(oth_gc, WHITE);
+	sprintf(comp, "Me: %d\0", computer);
+	sprintf(hum, "You: %d\0", human);
+	GrText(oth_wid, oth_gc, 35, 32, comp, -1, GR_TFASCII);
+	GrText(oth_wid, oth_gc, 80, 32, hum, -1, GR_TFASCII);
+
 	if(human>computer) {
-		GrSetGCForeground(oth_gc, BLACK);
-		GrFillRect(oth_wid, oth_gc, 32, 8, 97, 97);
-		GrSetGCForeground(oth_gc, WHITE);
-		GrText(oth_wid, oth_gc, 8, 32, win[s], -1, GR_TFASCII);
+		GrText(oth_wid, oth_gc, 8, 56, win[s], -1, GR_TFASCII);
 		over=1;
 		printf("\n\nCongratulations! You beat the computer %d to %d !\n\n",human,computer);
 		
 	}
 	else if(computer>human) {
-		GrSetGCForeground(oth_gc, BLACK);
-		GrFillRect(oth_wid, oth_gc, 32, 8, 97, 97);
-		GrSetGCForeground(oth_gc, WHITE);
-		GrText(oth_wid, oth_gc, 8, 32, lose[s], -1, GR_TFASCII);
+		GrText(oth_wid, oth_gc, 8, 56, lose[s], -1, GR_TFASCII);
 		over=1;
 		printf("\n\nDoh! The computer beat you %d to %d!\n\n",computer,human);
+		printf("%s %s", comp,hum);
 	}
 	else {
-		GrSetGCForeground(oth_gc, BLACK);
-		GrFillRect(oth_wid, oth_gc, 32, 8, 97, 97);
-		GrSetGCForeground(oth_gc, WHITE);
-		GrText(oth_wid, oth_gc, 8, 32, tie[s], -1, GR_TFASCII);
+		GrText(oth_wid, oth_gc, 8, 56, tie[s], -1, GR_TFASCII);
 		over=1;
 		printf("Amazing! You tied the computer! This is a very uncommon event!\n");
 	}
 	return 1;
 }
 
-static int testmove(int xy,char test,int side,int dx,int dy,char execute){
+static int testmove(int xy,char test,int side,int dx,int dy,char execute) {
 	int pieces=0;
 	int oxy;
 	char found_end='N';
@@ -224,16 +225,19 @@ static int testmove(int xy,char test,int side,int dx,int dy,char execute){
 			found_end='Y';
 		else if(status[xy]==3)
 			break;
-		else if(xy==0||xy==8||xy==16||xy==24||xy==32||xy==40||xy==48||xy==56) {
+		else 
+			pieces++;
+		if(xy==0||xy==8||xy==16||xy==24||xy==32||xy==40||xy==48||xy==56) {
 			if(dx==-1)
-				break;}
+				break;
+		}
 		else if(xy==7||xy==15||xy==23||xy==31||xy==39||xy==47||xy==55||xy==63) {
 			if(dx==1)
-				break;}
-		else
-			pieces++;
+				break;
+		}
 		xy+=dx;
 		xy+=(dy*8);
+		
 	}
 	if(found_end=='Y') {
 		if(execute=='Y') {
@@ -258,6 +262,9 @@ static int validmove(int xy,char test,int side,char execute) {
 
 	if(side==0) opp=1;
 	if(side==1) opp=0;
+
+	if(status[xy] != 3)
+		return 0;
 
 	if(xy>0 && xy!=8  && xy!=16 && xy!=24 && xy!=32 && xy!=40 && xy!=48 && xy!=56) {
 		if(xy>7)
@@ -312,11 +319,19 @@ static float movevalue(int xy,int side,int depth) {
 
 	/* play the space */
 	value = (float)validmove(xy,'Y',side,'Y');
+	if(xy == 0 || xy == 7 || xy == 56 || xy == 63)
+		value+=7;
+	if(xy == 8 || xy == 16 || xy == 24 || xy == 32 || xy == 40 || xy == 48 || xy == 15 || xy == 23 || xy == 31 || xy == 39 || xy == 47 || xy == 55)
+		value +=3;
 
 	/* assume an immediately optimal opponent and find best move */
 	for(i=0;i<64;i++)
 		if(status[i]==3)
 			if((pieces=validmove(xy,'Y',opp,'N')) > 0) {
+				if(i == 0 || i == 7 || i == 56 || i == 63)
+					pieces+=7;
+				if(i == 8 || i == 16 || i == 24 || i == 32 || i == 40 || i == 48 || i == 15 || i == 23 || i == 31 || i == 39 || i == 47 || i == 55)
+					pieces+=3;
 				if(pieces>maxpieces) {
 					maxpieces=pieces;
 					oxy=i;
@@ -359,67 +374,66 @@ static int oth_do_keystroke(GR_EVENT * event)
 {
 	static int rcount = 0;
 	static int lcount = 0;
-	int otherMoved;
 	int ret = 0;
 
-	switch (event->keystroke.ch) {
-	case '\r':
-		if(!over) {
-			if(canmove(0)) {
-				otherMoved = 1;
-				if(!validmove(current_oth_item, 'N', 0, 'Y'))
+	if(!over) {
+		if(canmove(0)) {
+			/*keystrokes during gameplay*/
+			switch (event->keystroke.ch) {
+				case '\r':
+					if(validmove(current_oth_item, 'N', 0, 'Y') > 0) {
+						if(!over)
+							computermove(1);
+					}
+					ret = 1;
 					break;
-			}
-			else {
-				if(!otherMoved) {
-					endgame(1);
+			case 'l':
+				lcount++;
+				if (lcount < 1) {
+					break;
+				}
+				lcount = 0;
+				last_current_oth_item = current_oth_item;
+				current_oth_item--;
+				while(validmove(current_oth_item,'N',0,'N') == 0) {
+				//while(status[current_oth_item] != 3) {
+					current_oth_item--;
+					if(current_oth_item < 0)
+						current_oth_item = 63;
+				}
+				draw_oth();
+				ret = 1;
 				break;
-				}
-				otherMoved = 0;
-				printf("No possible move! Skipping your turn...\n");
-			}
-			if(canmove(1)) {
-				otherMoved = 1;
-				computermove(1);
-			}
-			else {
-				if(!otherMoved) {
-					endgame(1);
+			case 'r':
+				rcount++;
+				if (rcount < 1) {
 					break;
 				}
-				otherMoved = 0;
-				printf("No possible move! Skipping my turn...\n");
+				rcount = 0;
+				last_current_oth_item = current_oth_item;
+				current_oth_item++;
+				while(validmove(current_oth_item,'N',0,'N') == 0) {
+				//while(status[current_oth_item] != 3) {
+					current_oth_item++;
+					if(current_oth_item > 63)
+						current_oth_item = 0;
+				}
+				draw_oth();
+				ret = 1;
+				break;
 			}
-			//if(validmove(current_oth_item, 'N', 0, 'Y') > 0)
 		}
-		ret = 1;
-		break;
+		else if (canmove(1)) {
+			computermove(1);
+			draw_oth();
+		}
+		else
+			endgame(1);
+	}
+	/*global keystrokes*/
+	switch (event->keystroke.ch) {
 	case 'm':
 		pz_close_window(oth_wid);
-		ret = 1;
-		break;
-	case 'l':
-		if(!over) {
-			lcount++;
-			if (lcount < 1) {
-				break;
-			}
-			lcount = 0;
-			current_oth_item--;
-			draw_oth();
-		}
-		ret = 1;
-		break;
-	case 'r':
-		if(!over) {
-			rcount++;
-			if (rcount < 1) {
-				break;
-			}
-			rcount = 0;
-			current_oth_item++;
-			draw_oth();
-		}
 		ret = 1;
 		break;
 	}

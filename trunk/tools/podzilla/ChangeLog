@@ -1,3 +1,9 @@
+Courtney Cavin - Fri June 4, 2004
+	Cursor no longer erases edges of previosly selected pieces
+	Score now shows at end along with the degrading comment.
+	Computer player now likes edges and loves corners..
+	Cursor only moves to valid moves
+
 leachbj - Mon May 24 2004
 	Fixed partial read/write bug
 	Playback window now plays the file requested
