@@ -100,6 +100,12 @@ config IEEE1394_OHCI1394
 	  To compile this driver as a module, say M here: the
 	  module will be called ohci1394.
 
+config IEEE1394_IPOD
+	tristate "iPod IEEE1394 support (TI TSB43AA82)"
+	depends on IEEE1394 && ARCH_IPOD
+        help
+          Enable this driver if you have an iPod and want firewire support.
+
 comment "Protocol Drivers"
 	depends on IEEE1394
 
@@ -124,7 +130,7 @@ config IEEE1394_SBP2_PHYS_DMA
 
 config IEEE1394_ETH1394
 	tristate "Ethernet over 1394"
-	depends on IEEE1394 && EXPERIMENTAL
+	depends on IEEE1394 && EXPERIMENTAL && INET
 	select IEEE1394_CONFIG_ROM_IP1394
 	select IEEE1394_EXTRA_CONFIG_ROMS
 	help
@@ -134,6 +140,14 @@ config IEEE1394_ETH1394
 	  older versions of this driver found in stock kernels prior to 2.6.3.
 	  This driver is still considered experimental.  It does not yet support
 	  MCAP, therefore multicast support is significantly limited.
+
+config IEEE1394_IPODETH1394
+	tristate "Ethernet over 1394 for iPod"
+	depends on IEEE1394 && EXPERIMENTAL && INET && ARCH_IPOD
+	help
+          This is a port of an older version of the eth1394 module that does
+          not require isochronous driver support to work and so works on the
+          iPod.
 
 config IEEE1394_DV1394
 	tristate "OHCI-DV I/O support"

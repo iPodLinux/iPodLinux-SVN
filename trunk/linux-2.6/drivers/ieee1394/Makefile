@@ -14,8 +14,10 @@ obj-$(CONFIG_IEEE1394_RAWIO) += raw1394.o
 obj-$(CONFIG_IEEE1394_SBP2) += sbp2.o
 obj-$(CONFIG_IEEE1394_DV1394) += dv1394.o
 obj-$(CONFIG_IEEE1394_ETH1394) += eth1394.o
+obj-$(CONFIG_IEEE1394_IPODETH1394) += ipodeth1394.o
 obj-$(CONFIG_IEEE1394_AMDTP) += amdtp.o
 obj-$(CONFIG_IEEE1394_CMP) += cmp.o
+obj-$(CONFIG_IEEE1394_IPOD) += tsb43aa82.o
 
 quiet_cmd_oui2c = OUI2C   $@
       cmd_oui2c = $(CONFIG_SHELL) $(srctree)/$(src)/oui2c.sh < $< > $@
