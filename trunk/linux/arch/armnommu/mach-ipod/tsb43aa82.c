@@ -419,7 +419,7 @@ static int rx_packet(struct ti_ipod *ipod)
 	quadlet_t data = 0;
 	static quadlet_t pkt[1024];
 	unsigned status;
-	int ack;
+	int packet_acked;
 	int tcode;
 	int i;
 
@@ -453,7 +453,7 @@ static int rx_packet(struct ti_ipod *ipod)
 		}
 	}
 
-	ack = data & 0x0f;
+	packet_acked = ((data & 0x0f) == ACK_COMPLETE) ? 1 : 0;
 
 	for (i = 0; i < 3; i++) {
 		pkt[i] = fw_reg_read(LYNX_ARF_DATA);
@@ -462,14 +462,14 @@ static int rx_packet(struct ti_ipod *ipod)
 	tcode = (pkt[0] >> 4) & 0xf;
 	if (tcode == TCODE_WRITEQ || tcode == TCODE_READQ_RESPONSE) {
 		pkt[3] = cpu_to_be32(fw_reg_read(LYNX_ARF_DATA));
-		hpsb_packet_received(ipod->host, pkt, 16, ack);
+		hpsb_packet_received(ipod->host, pkt, 16, packet_acked);
 	}
 	else if (tcode == TCODE_READB) {
 		pkt[3] = fw_reg_read(LYNX_ARF_DATA);
-		hpsb_packet_received(ipod->host, pkt, 16, ack);
+		hpsb_packet_received(ipod->host, pkt, 16, packet_acked);
 	}
 	else if (tcode == TCODE_READQ || tcode == TCODE_WRITE_RESPONSE) {
-		hpsb_packet_received(ipod->host, pkt, 12, ack);
+		hpsb_packet_received(ipod->host, pkt, 12, packet_acked);
 	}
 	else if (tcode == TCODE_WRITEB || tcode == TCODE_READB_RESPONSE)
 	{
@@ -482,7 +482,7 @@ static int rx_packet(struct ti_ipod *ipod)
 			pkt[4+i] = cpu_to_be32(fw_reg_read(LYNX_ARF_DATA));
 		}
 
-		hpsb_packet_received(ipod->host, pkt, 16 + block_len, ack);
+		hpsb_packet_received(ipod->host, pkt, 16 + block_len, packet_acked);
 	}
 	else {
 		printk(KERN_ERR "Unknown tcode 0x%x\n", tcode);
@@ -494,11 +494,9 @@ static int rx_packet(struct ti_ipod *ipod)
 
 static void tx_packet_end(struct ti_ipod *ipod)
 {
-	unsigned r;
 	unsigned ack;
 
-	r = fw_reg_read(LYNX_ACK);
-	ack = (r & 0xf0) >> 4;
+	ack = (fw_reg_read(LYNX_ACK) & 0xf0) >> 4;
 
 	if (fw_reg_read(LYNX_TXTIMER_CTRL) & LYNX_TXTIMER_ATERR) {
 		printk(KERN_ERR "LYNX_TXTIMER_ATERR\n");
@@ -509,27 +507,23 @@ static void tx_packet_end(struct ti_ipod *ipod)
 
 	/* broadcast messages don't get a response */
 	if ((ipod->packet->node_id & NODE_MASK) == NODE_MASK) {
-		hpsb_packet_sent(ipod->host, ipod->packet, 0x1);
+		if (ack != ACK_COMPLETE) {
+			/* TODO: check this */
+			printk(KERN_ERR "broadcast without ACK_COMPLETE\n");
+		}
+		hpsb_packet_sent(ipod->host, ipod->packet, ACK_COMPLETE);
 
 		return;
 	}
 
-	/* are we expecting a reponse? */
-	if (ipod->packet->expect_response) {
-		if (ack != ACK_PENDING) {
-			printk(KERN_ERR "no reponse, ack 0x%x\n", ack);
-		}
+	/* mark the message as sent */
+	hpsb_packet_sent(ipod->host, ipod->packet, ack);
 
-		/* mark the message as done */
-		hpsb_packet_sent(ipod->host, ipod->packet, ACK_PENDING);
-
+	/* are we expecting a reponse and is it there? */
+	if (ipod->packet->expect_response && ack == ACK_PENDING) {
 		/* read response packet */
 		rx_packet(ipod);
-
-		return;
 	}
-
-	hpsb_packet_sent(ipod->host, ipod->packet, ack);
 }
 
 static void tx_tasklet(unsigned long data)
@@ -1053,7 +1047,7 @@ static int __devinit ipod_1394_init(void)
 {
 	struct ti_ipod *ipod;
 
-	printk("ipod_1394: $Id: tsb42aa82.c,v 1.8 2004/02/12 21:06:08 leachbj Exp $\n");
+	printk("ipod_1394: $Id: tsb43aa82.c,v 1.1 2004/02/19 00:47:27 leachbj Exp $\n");
 
 	ipod_host = hpsb_alloc_host(&ipod_1394_driver, sizeof(struct ti_ipod));
 	if (!ipod_host) {
