@@ -637,7 +637,7 @@ int Winner(GameStats *Game, int winner)
 		mvwprintw(WinnerWin,3,5,"You trod on a mine!");
 		wattroff(WinnerWin,A_BLINK | A_BOLD);
 #else
-		pz_draw_header(" You trod on a mine!                     ");
+		pz_draw_header(" You trod on a mine!           ");
 #endif
 	}
 
