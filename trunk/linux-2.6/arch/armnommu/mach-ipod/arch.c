@@ -19,7 +19,7 @@
 #include <asm/mach/arch.h>
 
 static void __init
-ipod_fixup(struct machine_desc *desc, struct param_struct *params,
+ipod_fixup(struct machine_desc *desc, struct tag *tag,
 	char **cmdline, struct meminfo *mi)
 {
 }
