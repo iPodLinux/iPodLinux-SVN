@@ -129,6 +129,13 @@ export	SYSTEM ZTEXTADDR ZBSSADDR ZRELADDR INITRD_PHYS INITRD_VIRT PARAMS_PHYS
 
 Image:	$(CONFIGURE) $(SYSTEM)
 	$(OBJCOPY) -O binary -R .note -R .comment -S $(SYSTEM) $@
+ifeq ($(MACH_IPOD),)
+	@mv $@ $@.tmp
+	@$(AS) -o ../mach-ipod/pad.o ../mach-ipod/pad.S
+	@$(OBJCOPY) -O binary ../mach-ipod/pad.o pad.bin
+	@cat pad.bin $@.tmp > $@
+	@$(RM) $@.tmp pad.bin
+endif
 
 bzImage: zImage
 
