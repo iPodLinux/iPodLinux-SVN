@@ -45,6 +45,7 @@ extern void new_pong_window(void);
 extern void new_mines_window(void);
 extern void new_tictactoe_window(void);
 extern void new_calc_window(void);
+extern void new_poddraw_window(void);
 extern void about_window(void);
 
 static GR_WINDOW_ID menu_wid;
@@ -89,6 +90,7 @@ static struct menu_item games_menu[] = {
 	{"BlueCube", ACTION_MENU, new_bluecube_window, NOSETTING, 0},
 	{"Nimesweeper", ACTION_MENU, new_mines_window, NOSETTING, 0},
 	{"Othello", ACTION_MENU, new_oth_window, NOSETTING, 0},
+	{"PodDraw", ACTION_MENU, new_poddraw_window, NOSETTING, 0},
 	{"Pong", ACTION_MENU, new_pong_window, NOSETTING, 0},
 	{"Steroids", ACTION_MENU, new_steroids_window, NOSETTING, 0},
 	{"Tic-Tac-Toe", ACTION_MENU, new_tictactoe_window, NOSETTING, 0},
