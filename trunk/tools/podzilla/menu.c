@@ -41,6 +41,7 @@ extern void new_itunes_plist(void);
 extern void new_pong_window(void);
 extern void new_mines_window(void);
 extern void new_calc_window(void);
+extern void about_window(void);
 
 static GR_WINDOW_ID menu_wid;
 static GR_GC_ID menu_gc;
@@ -170,6 +171,7 @@ static struct menu_item main_menu[] = {
 	{"File Browser", ACTION_MENU, new_browser_window, NOSETTING, 0},
 	{"Quit Podzilla", ACTION_MENU, quit_podzilla, NOSETTING, 0},
 	{"Reboot iPod", SUB_MENU_HEADER, reboot_menu, NOSETTING, 0},
+	{"About", ACTION_MENU, about_window, NOSETTING, 0},
 	{0, 0, 0, NOSETTING, 0}
 };
 
