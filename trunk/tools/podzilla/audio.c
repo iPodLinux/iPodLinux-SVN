@@ -572,10 +572,10 @@ void new_record_window()
 	time(&now);
 	tm = localtime(&now);
 
-	/* MMDDYYYY HHMMSS */
-	sprintf(myfilename, "%s/%02d%02d%04d %02d%02d%02d.wav",
+	/* YYYYMMDD HHMMSS */
+	sprintf(myfilename, "%s/%04d%02d%02d-%02d%02d%02d.wav",
 		RECORDINGS,
-		tm->tm_mon+1, tm->tm_mday, tm->tm_year + 1900, tm->tm_hour,
+		tm->tm_year + 1900, tm->tm_mon+1, tm->tm_mday, tm->tm_hour,
 		tm->tm_min, tm->tm_sec);
 
 	strncpy(pcm_file, myfilename, sizeof(pcm_file) - 1);
