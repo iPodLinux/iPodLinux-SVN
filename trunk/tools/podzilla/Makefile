@@ -41,7 +41,8 @@ OBJS=\
 	mp3.o \
 	message.o \
 	slider.o \
-	audio.o
+	audio.o \
+	othello.o
 
 all: podzilla
 

@@ -7,6 +7,9 @@ leachbj - Sun May 23 2004
 	Added simple voice recording via microphone
 	Added .raw file playback (44.1kHz only)
 
+Courtney Cavin - Fri May 21, 2004
+        Added Othello game
+
 leachbj - Sat May 8 2004
 	Merged Matthew's changes in
 	Fixed backlight timer to work with GR_EVENT_TYPE_TIMEOUT
