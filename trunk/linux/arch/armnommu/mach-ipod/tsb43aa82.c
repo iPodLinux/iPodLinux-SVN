@@ -923,8 +923,6 @@ static __devinit void ipod_1394_hw_init(void)
 {
 	unsigned ipod_hw_ver;
 
-	ipod_hw_ver = ipod_get_hw_version() >> 16;
-
 	/* MIO setup? */
 	outl((inl(0xcf004040) & ~(1<<6)) | (1<<7), 0xcf004040);
 	outl(0x00001f1f, 0xcf00401c);
@@ -1041,7 +1039,12 @@ static int __devinit ipod_1394_init(void)
 {
 	struct ti_ipod *ipod;
 
-	printk("ipod_1394: $Id: tsb43aa82.c,v 1.6 2004/12/18 14:17:31 leachbj Exp $\n");
+	ipod_hw_ver = ipod_get_hw_version() >> 16;
+	if (ipod_hw_ver > 0x3) {
+		return;
+	}
+
+	printk("ipod_1394: $Id: tsb43aa82.c,v 1.7 2005/02/04 18:19:01 leachbj Exp $\n");
 
 	ipod_host = hpsb_alloc_host(&ipod_1394_driver, sizeof(struct ti_ipod));
 	if (!ipod_host) {
