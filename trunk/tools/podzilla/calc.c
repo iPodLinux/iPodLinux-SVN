@@ -171,8 +171,7 @@ static int calc_do_keystroke(GR_EVENT * event) {
 
 		case 'm':
 			GrDestroyGC(calc_gc);
-			GrUnmapWindow(calc_wid);
-			GrDestroyWindow(calc_wid);
+			pz_close_window(calc_wid);
 			ret |= KEY_CLICK;
 			break;
 
