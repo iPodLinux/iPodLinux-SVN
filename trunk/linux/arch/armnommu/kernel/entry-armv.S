@@ -773,6 +773,67 @@ irq_prio_swarm:
 		.byte   0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
 		.endm
 
+#elif defined(CONFIG_ARCH_IPOD)
+
+#include <asm/arch/irqs.h>
+
+#define IDE_INT0_MASK	(1 << IDE_INT0_IRQ)
+#define TIMER1_MASK	(1 << TIMER1_IRQ)
+#define GPIO_MASK	(1 << GPIO_IRQ)
+#define DMA_OUT_MASK	(1 << DMA_OUT_IRQ)
+
+		.macro	disable_fiq
+.ifdef NOTDEF
+		mrs	r13, spsr
+		orr	r13, r13, #F_BIT
+		msr	spsr_c, r13
+.endif
+		ldr	pc, cop_fiq_loc
+
+cop_fiq_loc:	.word	cop_fiq
+
+		.endm
+
+		.macro  get_irqnr_and_base, irqnr, irqstat, base, tmp
+
+		ldr 	\base, =(0xcf001000)
+		ldr	\irqstat, [\base]
+
+#if 1
+		tst	\irqstat, #DMA_OUT_MASK
+		movne	\irqnr, #DMA_OUT_IRQ
+		bne	1001f
+
+		tst	\irqstat, #GPIO_MASK
+		movne	\irqnr, #GPIO_IRQ
+		bne	1001f
+
+		tst	\irqstat, #IDE_INT0_MASK
+		movne	\irqnr, #IDE_INT0_IRQ
+		bne	1001f
+
+		tst	\irqstat, #TIMER1_MASK
+		movne	\irqnr, #TIMER1_IRQ
+		bne	1001f
+
+1001:
+
+#else
+		mov     \irqnr, #0
+1001:
+		tst     \irqstat, #1
+		bne     1002f
+		add     \irqnr, \irqnr, #1
+		mov     \irqstat, \irqstat, lsr #1
+		cmp     \irqnr, #32
+		bcc     1001b
+1002:		/* EQ will be set if we reach 32 */
+
+#endif
+		.endm
+
+		.macro irq_prio_table
+		.endm
 #else
 #error Unknown architecture
 #endif

@@ -5,7 +5,7 @@ EXTRAVERSION = -uc0
 
 KERNELRELEASE=$(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
 
-# ARCH := armnommu
+ARCH := armnommu
 # ARCH := m68knommu
 # ARCH := h8300
 ifndef ARCH
@@ -25,7 +25,7 @@ HOSTCC  	= unset GCC_EXEC_PREFIX; gcc
 HOSTCFLAGS	= -Wall -Wstrict-prototypes -O2 -fomit-frame-pointer
 
 # CROSS_COMPILE 	= m68k-elf-
-# CROSS_COMPILE 	= arm-elf-
+CROSS_COMPILE 	= arm-elf-
 # CROSS_COMPILE 	= h8300-elf-
 ifndef CROSS_COMPILE
 CROSS_COMPILE 	=

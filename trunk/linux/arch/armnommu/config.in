@@ -46,7 +46,8 @@ choice 'ARM system type'	\
 	  NET+ARM		CONFIG_ARCH_NETARM \
 	  SWARM			CONFIG_ARCH_SWARM \
 	  Samsung		CONFIG_ARCH_SAMSUNG \
-	  Atmel			CONFIG_ARCH_ATMEL" TI-DSC21
+	  Atmel			CONFIG_ARCH_ATMEL \
+	  iPod			CONFIG_ARCH_IPOD" TI-DSC21
 
 bool 'Generate big endian code' CONFIG_CPU_BIG_ENDIAN
 
@@ -243,6 +244,19 @@ if [ "$CONFIG_ARCH_INTEGRATOR" = "y" ]; then
    define_hex FLASH_MEM_BASE 0x25000000
    define_hex FLASH_SIZE 0x02000000
 fi
+
+if [ "$CONFIG_ARCH_IPOD" = "y" ]; then
+   define_bool CONFIG_NO_PGT_CACHE y
+   define_bool CONFIG_CPU_ARM710 y
+   define_bool CONFIG_CPU_ARM7TDMI y
+   define_bool CONFIG_CPU_32 y
+   define_bool CONFIG_CPU_26 n
+   define_hex DRAM_BASE 0x28000000
+   define_hex DRAM_SIZE 0x02000000
+   define_hex FLASH_MEM_BASE 0x10000000
+   define_hex FLASH_SIZE 0x00100000
+fi
+
 endmenu
 
 #------------------------------------------------------------------------------

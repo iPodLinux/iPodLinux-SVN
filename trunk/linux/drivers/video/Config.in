@@ -40,6 +40,10 @@ if [ "$CONFIG_FB" = "y" ]; then
    if [ "$CONFIG_APOLLO" = "y" ]; then
       define_bool CONFIG_FB_APOLLO y
    fi
+   if [ "$CONFIG_ARCH_IPOD" = "y" ]; then
+      bool '  iPod LCD support' CONFIG_FB_IPOD
+   fi
+
    if [ "$CONFIG_Q40" = "y" ]; then
       define_bool CONFIG_FB_Q40 y
    fi
