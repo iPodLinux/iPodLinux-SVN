@@ -11,9 +11,7 @@
 #include <linux/ide.h>
 #include <linux/init.h>
 #include <asm/irq.h>
-
-#define IDE_PRIMARY_BASE	0xc00031e0
-#define IDE_PRIMARY_CONTROL	0xc00033f8
+#include <asm/hardware.h>
 
 int __init ipod_ide_register(void)
 {
@@ -22,22 +20,47 @@ int __init ipod_ide_register(void)
 	ide_hwif_t *hwifp;
 	int i;
 
-	outl(inl(0xc0003024) | (1 << 7), 0xc0003024);
-	outl(inl(0xc0003024) & ~(1<<2), 0xc0003024);
+	int hw_ver = ipod_get_hw_version() >> 16;
 
-	outl(0x10, 0xc0003000);
-	outl(0x80002150, 0xc0003004);
+	if (hw_ver > 0x3) {
+		/* PP5020 */
+		outl(inl(0xc3000028) | (1 << 5), 0xc3000028);
+		outl(inl(0xc3000028) & ~0x10000000, 0xc3000028);
+
+		outl(0x10, 0xc3000000);
+		outl(0x80002150, 0xc3000004);
+	}
+	else {
+		/* PP5002 */
+		outl(inl(0xc0003024) | (1 << 7), 0xc0003024);
+		outl(inl(0xc0003024) & ~(1<<2), 0xc0003024);
+
+		outl(0x10, 0xc0003000);
+		outl(0x80002150, 0xc0003004);
+	}
 
 	memset(&hw, 0, sizeof(hw));
 
-	reg = IDE_PRIMARY_BASE;
+	if (hw_ver > 0x3) {
+		reg = PP5020_IDE_PRIMARY_BASE;
+	}
+	else {
+		reg = PP5002_IDE_PRIMARY_BASE;
+	}
+
 	for (i = IDE_DATA_OFFSET; i <= IDE_STATUS_OFFSET; i++) {
 		hw.io_ports[i] = reg;
 		reg += 4;	/* our registers are on word boundaries */
 	}
 
-	hw.io_ports[IDE_CONTROL_OFFSET] = IDE_PRIMARY_CONTROL;
-	hw.irq = IDE_INT0_IRQ;
+	if (hw_ver > 0x3) {
+		hw.io_ports[IDE_CONTROL_OFFSET] = PP5020_IDE_PRIMARY_CONTROL;
+		hw.irq = PP5020_IDE_IRQ;
+	}
+	else {
+		hw.io_ports[IDE_CONTROL_OFFSET] = PP5002_IDE_PRIMARY_CONTROL;
+		hw.irq = PP5002_IDE_IRQ;
+	}
 
 	ide_register_hw(&hw, &hwifp);
 
