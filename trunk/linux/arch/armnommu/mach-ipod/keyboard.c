@@ -339,6 +339,184 @@ done:
 	}
 }
 
+static void opto_i2c_init(void)
+{
+	int i, curr_value;
+
+	/* wait for value to settle */
+	i = 1000;
+	curr_value = (inl(0x7000c104) << 16) >> 24;
+	while (i > 0)
+	{
+		int new_value = (inl(0x7000c104) << 16) >> 24;
+
+		if (new_value != curr_value) {
+			i = 10000;
+			curr_value = new_value;
+		}
+		else {
+			i--;
+		}
+	}
+
+	outl(inl(0x6000d024) | 0x10, 0x6000d024);	/* port B bit 4 = 1 */
+
+	outl(inl(0x6000600c) | 0x10000, 0x6000600c);	/* dev enable */
+	outl(inl(0x60006004) | 0x10000, 0x60006004);	/* dev reset */
+	udelay(5);
+	outl(inl(0x60006004) & ~0x10000, 0x60006004);	/* dev reset finish */
+
+	outl(0xffffffff, 0x7000c120);
+	outl(0xffffffff, 0x7000c124);
+	outl(0xc00a1f00, 0x7000c100);
+	outl(0x1000000, 0x7000c104);
+}
+
+static void key_i2c_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+{
+	unsigned reg, status;
+	static int button_mask = 0;
+	static int wheel_bits16_22 = -1;
+	static int countr = 0;
+	static int countl = 0;
+	int wheel_value = 0;
+
+	reg = 0x7000c104;
+
+	if ((inl(0x7000c104) & 0x4000000) != 0) {
+		reg = reg + 0x3C;	/* 0x7000c140 */
+
+		status = inl(0x7000c140);
+		outl(0x0, 0x7000c140);	/* clear interrupt status? */
+
+		if ((status & 0x800000ff) == 0x8000001a) {
+			int new_button_mask;
+			int new_wheel_value;
+
+			/* NB: highest wheel = 0x5F, clockwise increases */
+			new_wheel_value = ((status << 9) >> 25) & 0xff;
+
+			if ((status & 0x100) != 0) {
+				new_button_mask |= 0x1;	/* Action */
+				handle_scancode(ACTION_SC, 1);
+				countl = countr = 0;
+			}
+			else if (button_mask & 0x1) {
+				handle_scancode(ACTION_SC, 0);
+			}
+
+			if ((status & 0x1000) != 0) {
+				new_button_mask |= 0x10;	/* Menu */
+				handle_scancode(UP_SC, 1);
+				countl = countr = 0;
+			}
+			else if (button_mask & 0x10) {
+				handle_scancode(UP_SC, 0);
+			}
+
+			if ((status & 0x800) != 0) {
+				new_button_mask |= 0x8;	/* Play/Pause */
+				handle_scancode(DOWN_SC, 1);
+				countl = countr = 0;
+			}
+			else if (button_mask & 0x8) {
+				handle_scancode(DOWN_SC, 0);
+			}
+
+			if ((status & 0x200) != 0) {
+				new_button_mask |= 0x2;	/* Next */
+				handle_scancode(RIGHT_SC, 1);
+				countl = countr = 0;
+			}
+			else if (button_mask & 0x2) {
+				handle_scancode(RIGHT_SC, 0);
+			}
+
+			if ((status & 0x400) != 0) {
+				new_button_mask |= 0x4;	/* Prev */
+				handle_scancode(LEFT_SC, 1);
+				countl = countr = 0;
+			}
+			else if (button_mask & 0x4) {
+				handle_scancode(LEFT_SC, 0);
+			}
+
+			if ((status & 0x40000000) != 0) {
+				/* scroll wheel down */
+				new_button_mask |= 0x20;
+
+				if (wheel_bits16_22 != -1) {
+					int diff;
+
+					diff = (new_wheel_value - wheel_bits16_22) % 94;
+					if (diff > 0) {
+						while (diff-- > 0) {
+							if (countr > 2) {
+								/* 'r' keypress */
+								handle_scancode(R_SC, 1);
+								handle_scancode(R_SC, 0);
+								countl = 0;
+							}
+	
+							if (countr < 3) {
+								countr++;
+							}
+						}
+
+						wheel_bits16_22 = new_wheel_value;
+					}
+					else if (diff < 0) {
+						while (diff++ < 0) {
+							if (countl > 2) {
+								/* 'l' keypress */
+								handle_scancode(L_SC, 1);
+								handle_scancode(L_SC, 0);
+								countr = 0;
+							}
+
+							if (countl < 3) {
+								countl++;
+							}
+						}
+
+						wheel_bits16_22 = new_wheel_value;
+					}
+				}
+				else {
+					wheel_bits16_22 = new_wheel_value;
+				}
+			}
+			else if (button_mask & 0x20) {
+				/* scroll wheel up */
+				wheel_bits16_22 = -1;
+				countl = countr = 0;
+			}
+
+			button_mask = new_button_mask;
+
+#ifdef CONFIG_VT
+			tasklet_schedule(&keyboard_tasklet);
+#endif /* CONFIG_VT */
+		}
+		else if ((status & 0x800000FF) == 0x8000003A) {
+			wheel_value = status & 0x800000FF;
+		}
+		else if (status == 0xffffffff) {
+			opto_i2c_init();
+		}
+	}
+
+	if ((inl(reg) & 0x8000000) != 0) {
+		outl(0xffffffff, 0x7000c120);
+		outl(0xffffffff, 0x7000c12d);
+	}
+
+	outl(inl(0x7000c104) | 0xC000000, 0x7000c104);
+	outl(0x400a1f00, 0x7000c100);
+
+	outl(inl(0x6000d024) | 0x10, 0x6000d024);	/* port B bit 4 = 1 */
+}
+
 void __init ipodkb_init_hw(void)
 {
 	/* get our hardware type */
@@ -371,6 +549,13 @@ void __init ipodkb_init_hw(void)
 	}
 	else if (ipod_hw_ver > 0x4) {
 		/* 4g and photo */
+		ipod_i2c_init();
+
+		opto_i2c_init();
+
+		if (request_irq(PP5020_I2C_IRQ, key_i2c_interrupt, SA_SHIRQ, "keyboard", KEYBOARD_DEV_ID)) {
+			printk("ipodkb: IRQ %d failed\n", PP5020_I2C_IRQ);
+		}
 	}
 	else {
 		outb(~inb(0xcf000030), 0xcf000060);
