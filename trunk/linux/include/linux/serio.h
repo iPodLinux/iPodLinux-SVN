@@ -111,6 +111,8 @@ static __inline__ int serio_write(struct serio *serio, unsigned char data)
 #define SERIO_PS2SER	0x22
 #define SERIO_HIL	0x25
 
+#define SERIO_IPOD_REM	0x26
+
 #define SERIO_ID	0xff00UL
 #define SERIO_EXTRA	0xff0000UL
 
