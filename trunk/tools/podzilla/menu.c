@@ -31,6 +31,7 @@ extern void set_buttondebounce(void);
 extern void new_record_window(void);
 extern void new_oth_window(void);
 extern void new_bluecube_window(void);
+extern void new_pong_window(void);
 
 static GR_WINDOW_ID menu_wid;
 static GR_GC_ID menu_gc;
@@ -70,6 +71,7 @@ static struct menu_item browse_menu[] = {
 static struct menu_item games_menu[] = {
 	{"Othello", ACTION_MENU, new_oth_window},
 	{"BlueCube", ACTION_MENU, new_bluecube_window},
+	{"Pong", ACTION_MENU, new_pong_window},
 	{0, 0, 0}
 };
 
