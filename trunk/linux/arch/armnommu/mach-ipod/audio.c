@@ -542,7 +542,10 @@ static ssize_t ipodaudio_read(struct file *filp, char *buf, size_t count, loff_t
 		}
 
 		if (len) {
-			memcpy(buf, (void*)&dma_buf[read_pos], len<<1);
+			memcpy(bufsp, (void*)&dma_buf[read_pos], len<<1);
+
+			bufsp += len;
+			rem -= len;
 
 			/* check for buffer over run */
 			if ( read_pos == *r_off ) {
@@ -551,8 +554,6 @@ static ssize_t ipodaudio_read(struct file *filp, char *buf, size_t count, loff_t
 			else {
 				printk(KERN_ERR "ADC buffer overrun\n");
 			}
-
-			rem -= len;
 		}
 
 		if (signal_pending(current)) {
