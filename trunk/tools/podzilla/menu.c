@@ -43,6 +43,7 @@ extern void new_itunes_album(void);
 extern void new_itunes_plist(void);
 extern void new_pong_window(void);
 extern void new_mines_window(void);
+extern void new_tictactoe_window(void);
 extern void new_calc_window(void);
 extern void about_window(void);
 
@@ -85,11 +86,12 @@ struct menu_item {
 typedef void (*menu_action_t) (void);
 
 static struct menu_item games_menu[] = {
-	{"Steroids", ACTION_MENU, new_steroids_window, NOSETTING, 0},
-	{"Othello", ACTION_MENU, new_oth_window, NOSETTING, 0},
 	{"BlueCube", ACTION_MENU, new_bluecube_window, NOSETTING, 0},
-	{"Pong", ACTION_MENU, new_pong_window, NOSETTING, 0},
 	{"Nimesweeper", ACTION_MENU, new_mines_window, NOSETTING, 0},
+	{"Othello", ACTION_MENU, new_oth_window, NOSETTING, 0},
+	{"Pong", ACTION_MENU, new_pong_window, NOSETTING, 0},
+	{"Steroids", ACTION_MENU, new_steroids_window, NOSETTING, 0},
+	{"Tic-Tac-Toe", ACTION_MENU, new_tictactoe_window, NOSETTING, 0},
 	{0, 0, 0, NOSETTING, 0}
 };
 
@@ -128,8 +130,8 @@ static struct menu_item reset_menu[] = {
 };
 
 static struct menu_item settings_menu[] = {
+	{"About", ACTION_MENU, about_window, NOSETTING, 0},
 #if 0
-	{"About", SUB_MENU_HEADER, 0, NOSETTING, 0},
 	{"Repeat", BOOLEAN_MENU, 0, REPEAT, 0},
 	{"EQ", BOOLEAN_MENU, 0, EQUILIZER, 0},
 	{"Shuffle", BOOLEAN_MENU, 0, SHUFFLE, 0},
@@ -167,7 +169,7 @@ static struct menu_item itunes_menu[] = {
 	{"Artists", ACTION_MENU, new_itunes_artist, NOSETTING, 0},
 	{"Albums", ACTION_MENU, new_itunes_album, NOSETTING, 0},
 	{"Songs", ACTION_MENU, new_itunes_track, NOSETTING, 0},
-	{0, 0, 0}
+	{0, 0, 0, NOSETTING, 0}
 };
 
 static struct menu_item main_menu[] = {
@@ -177,7 +179,6 @@ static struct menu_item main_menu[] = {
 	{"File Browser", ACTION_MENU, new_browser_window, NOSETTING, 0},
 	{"Quit Podzilla", ACTION_MENU, quit_podzilla, NOSETTING, 0},
 	{"Reboot iPod", SUB_MENU_HEADER, reboot_menu, NOSETTING, 0},
-	{"About", ACTION_MENU, about_window, NOSETTING, 0},
 	{0, 0, 0, NOSETTING, 0}
 };
 
