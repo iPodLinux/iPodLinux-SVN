@@ -1,3 +1,14 @@
+Courtney Cavin - Sat Jan 22 2005
+	.jpeg; .pnm; and .xcf extentions now open
+	fixed about, the scrolling was a little funky/incorrect
+
+Cameron Nishiyama - Sat Jan 22 2005
+	image viewer scaling and zooming added
+	image extentions are no longer case sensitive
+
+Scott Lawrence - Sat Jan 22 2005
+	added PodDraw, an etch-a-sketch simulation
+
 Courtney Cavin - Wed Jan 12 2005
 	PZ_VER is now date compiled +CVS by default
 
