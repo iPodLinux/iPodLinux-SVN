@@ -214,7 +214,6 @@ out:
 static struct vm_operations_struct dma_region_vm_ops = {
 	.nopage	= dma_region_pagefault,
 };
-#endif
 
 int dma_region_mmap(struct dma_region *dma, struct file *file, struct vm_area_struct *vma)
 {
@@ -239,3 +238,5 @@ int dma_region_mmap(struct dma_region *dma, struct file *file, struct vm_area_st
 
 	return 0;
 }
+
+#endif
