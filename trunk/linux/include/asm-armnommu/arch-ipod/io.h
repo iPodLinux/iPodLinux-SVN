@@ -30,5 +30,8 @@
 #define writew(val,addr)		__raw_writew(val,addr)
 #define writel(val,addr)		__raw_writel(val,addr)
 
+/* hacks to get SCSI to compile */
+#define PCI_DMA_BUS_IS_PHYS (0)
+
 #endif
 
