@@ -44,6 +44,7 @@ OBJS=\
 	audio.o \
 	othello.o \
 	pong.o \
+	itunesdb.o \
 	bluecube/box.o \
 	bluecube/main.o \
 	bluecube/pieces.o

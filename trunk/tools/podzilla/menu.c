@@ -31,6 +31,7 @@ extern void set_buttondebounce(void);
 extern void new_record_window(void);
 extern void new_oth_window(void);
 extern void new_bluecube_window(void);
+extern void new_itunes_window(void);
 extern void new_pong_window(void);
 
 static GR_WINDOW_ID menu_wid;
@@ -48,7 +49,6 @@ struct menu_item {
 	void *ptr;
 };
 
-
 #define DISPLAY_MENU	0
 #define SUB_MENU_HEADER	1
 #define ACTION_MENU	2
@@ -56,17 +56,6 @@ struct menu_item {
 #define SUB_MENU_PREV   4
 
 typedef void (*menu_action_t) (void);
-
-#if 0
-static struct menu_item browse_menu[] = {
-	{"Artists", DISPLAY_MENU, 0},
-	{"Albums", DISPLAY_MENU, 0},
-	{"Songs", DISPLAY_MENU, 0},
-	{"Genres", DISPLAY_MENU, 0},
-	{"Composers", DISPLAY_MENU, 0},
-	{0, 0, 0}
-};
-#endif
 
 static struct menu_item games_menu[] = {
 	{"Othello", ACTION_MENU, new_oth_window},
@@ -131,8 +120,8 @@ static struct menu_item reboot_menu[] = {
 static struct menu_item main_menu[] = {
 #if 0
 	{"Playlists", SUB_MENU_HEADER, 0},
-	{"Browse", SUB_MENU_HEADER, browse_menu},
 #endif
+	{"Browse", ACTION_MENU, new_itunes_window},
 	{"Extras", SUB_MENU_HEADER, extras_menu},
 	{"Settings", SUB_MENU_HEADER, settings_menu},
 	{"File Browser", ACTION_MENU, new_browser_window},
