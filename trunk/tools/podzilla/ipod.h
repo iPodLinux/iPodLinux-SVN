@@ -32,6 +32,7 @@
 #define CLICKER 10
 #define VOLUME 11
 #define EQUILIZER 12
+#define DSPFREQUENCY 13
 
 /* PLAYLIST SETTINGS 20 - 29 */
  

@@ -26,6 +26,7 @@
 #include <time.h>
 #include <byteswap.h>
 #include "pz.h"
+#include "ipod.h"
 
 static GR_WINDOW_ID dsp_wid;
 static GR_GC_ID dsp_gc;
@@ -37,7 +38,6 @@ static char *pcm_file;
 
 #define RECORD        0
 #define PLAYBACK      1
-#define PLAYBACK_ONLY 2
 
 static volatile int killed;
 
@@ -45,6 +45,30 @@ static volatile int killed;
 #define DSP_PLAY_SIZE	16*1024*2
 
 static unsigned short dsp_buf[16*1024];
+
+unsigned int read_32_le(int file_fd)
+{
+	int value;
+
+	read(file_fd, &value, 4);
+#ifdef IS_BIG_ENDIAN
+	value = bswap_32(value);
+#endif
+
+	return value;
+}
+
+unsigned short read_16_le(int file_fd)
+{
+	short value;
+
+	read(file_fd, &value, 2);
+#ifdef IS_BIG_ENDIAN
+	value = bswap_16(value);
+#endif
+
+	return value;
+}
 
 int write_32_le(int file_fd, unsigned int value)
 {
@@ -129,7 +153,7 @@ static void dsp_do_draw(GR_EVENT * event)
 static void * dsp_record(void *filename)
 {
 	int dsp_fd, file_fd;
-	int samplerate = 44100;
+	int samplerate;
 	int channels = 1;
 	int start_pos;
 	int filelength;
@@ -146,6 +170,11 @@ static void * dsp_record(void *filename)
 	if (dsp_fd < 0) {
 		new_message_window("could not open /dev/dsp");
 		goto no_audio;
+	}
+
+	samplerate = ipod_get_setting(DSPFREQUENCY);
+	if (samplerate == 0) {
+		samplerate = 44100;
 	}
 
 	set_dsp_rate(dsp_fd, samplerate);
@@ -195,8 +224,8 @@ no_audio:
 
 no_file:
 	recording = 0;
-	mode = PLAYBACK;
-	dsp_do_draw(0);
+	free(pcm_file);
+	pz_close_window(dsp_wid);
 
 	return NULL;
 }
@@ -205,6 +234,8 @@ static void * dsp_playback(void *filename)
 {
 	int dsp_fd, file_fd;
 	ssize_t count = 0;
+	int samplerate;
+	int channels;
 
 	file_fd = open((char *)filename, O_RDONLY);
 	if (file_fd < 0) {
@@ -214,20 +245,26 @@ static void * dsp_playback(void *filename)
 		goto no_file;
 	}
 
-	/* skip over WAV header */
-	lseek(file_fd, 44, SEEK_SET);
-
 	dsp_fd = open("/dev/dsp", O_WRONLY);
 	if (dsp_fd < 0) {
 		new_message_window("could not open /dev/dsp");
 		goto no_audio;
 	}
 
-	set_dsp_rate(dsp_fd, 44100);
+	/* assume a basic WAV header, jump to number channels */
+	lseek(file_fd, 22, SEEK_SET);
+	channels = read_16_le(file_fd);
+	samplerate = read_32_le(file_fd);
+
+	set_dsp_rate(dsp_fd, samplerate);
+	set_dsp_channels(dsp_fd, channels);
 
 	killed = 0;
 	playing = 1;
 	paused = 0;
+
+	/* assume a basic WAV header, skip to start of PCM data */
+	lseek(file_fd, 22, SEEK_SET);
 
 	do {
 		ssize_t n, rem;
@@ -253,6 +290,7 @@ no_audio:
 no_file:
 
 	playing = 0;
+	free(pcm_file);
 	pz_close_window(dsp_wid);
 	return NULL;
 }
@@ -294,23 +332,14 @@ static int dsp_do_keystroke(GR_EVENT * event)
 	switch (event->keystroke.ch) {
 	case '\r':
 	case '\n':
-		if (mode == PLAYBACK || mode == PLAYBACK_ONLY) {
-			if (playing) {
-				stop_dsp();
-				if (mode == PLAYBACK) mode = RECORD;
-			}
-			else {
-				start_playback();
-			}
+		if (playing || recording) {
+			stop_dsp();
+		}
+		else if (mode == PLAYBACK) {
+			start_playback();
 		}
 		else {
-			if (recording) {
-				stop_dsp();
-				mode = PLAYBACK;
-			}
-			else {
-				start_recording();
-			}
+			start_recording();
 		}
 		dsp_do_draw(0);
 		break;
@@ -319,8 +348,10 @@ static int dsp_do_keystroke(GR_EVENT * event)
 		if (playing || recording) {
 			stop_dsp();
 		}
-		free(pcm_file);
-		pz_close_window(dsp_wid);
+		else {
+			free(pcm_file);
+			pz_close_window(dsp_wid);
+		}
 		break;
 
 	case 'd':
@@ -336,6 +367,31 @@ static int dsp_do_keystroke(GR_EVENT * event)
 	}
 
 	return 1;
+}
+
+void record_set_8()
+{
+	ipod_set_setting(DSPFREQUENCY, 8000);
+}
+
+void record_set_32()
+{
+	ipod_set_setting(DSPFREQUENCY, 32000);
+}
+
+void record_set_44()
+{
+	ipod_set_setting(DSPFREQUENCY, 44100);
+}
+
+void record_set_88()
+{
+	ipod_set_setting(DSPFREQUENCY, 88200);
+}
+
+void record_set_96()
+{
+	ipod_set_setting(DSPFREQUENCY, 96000);
 }
 
 void new_record_window(char *filename)
@@ -368,7 +424,7 @@ void new_record_window(char *filename)
 
 void new_playback_window(char *filename)
 {
-	mode = PLAYBACK_ONLY;
+	mode = PLAYBACK;
 	pcm_file = strdup(filename);
 
 	dsp_gc = GrNewGC();
@@ -381,5 +437,10 @@ void new_playback_window(char *filename)
 	GrSelectEvents(dsp_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN);
 
 	GrMapWindow(dsp_wid);
+}
+
+void new_playback_browse_window(void)
+{
+	new_browser_window("Recordings");
 }
 
