@@ -137,6 +137,14 @@ static void mp3_do_draw(GR_EVENT * event)
 	draw_time();
 }
 
+
+static void mp3_refresh_state()
+{
+	ioctl(mixer_fd, SOUND_MIXER_WRITE_PCM, &dsp_vol);
+	rect_wait = RECT_CYCLES;
+	draw_volume();
+}
+
 static int mp3_do_keystroke(GR_EVENT * event)
 {
 	switch (event->keystroke.ch) {
@@ -161,9 +169,6 @@ static int mp3_do_keystroke(GR_EVENT * event)
 			if (vol > 0) {
 				vol--;
 				vol = dsp_vol = vol << 8 | vol;
-				ioctl(mixer_fd, SOUND_MIXER_WRITE_PCM, &vol);
-				rect_wait = RECT_CYCLES;
-				draw_volume();
 			}
 		}
 		break;
@@ -173,9 +178,6 @@ static int mp3_do_keystroke(GR_EVENT * event)
 			if (vol < 100) {
 				vol++;
 				vol = dsp_vol = vol << 8 | vol;
-				ioctl(mixer_fd, SOUND_MIXER_WRITE_PCM, &vol);
-				rect_wait=RECT_CYCLES;
-				draw_volume();
 			}
 		}
 		break;
@@ -202,15 +204,22 @@ static void setup_dsp(int sample_rate, int n_channels)
 static void mp3_event_handler()
 {
 	GR_EVENT event;
-
-	if (GrPeekEvent(&event))
+	int evtcap = 200;
+	int old_vol = dsp_vol;
+	while (GrPeekEvent(&event) && evtcap--)
 	{
-		do {
-			GrGetNextEventTimeout(&event, 1000);
-			if (event.type != GR_EVENT_TYPE_TIMEOUT) {
-				pz_event_handler(&event);
-			}
-		} while (mp3_pause && !decoding_finished);
+		
+		GrGetNextEventTimeout(&event, 1000);
+		if (event.type != GR_EVENT_TYPE_TIMEOUT) {
+			pz_event_handler(&event);
+		} else {
+			break;
+		}
+	}
+	
+	if (old_vol != dsp_vol)
+	{
+		mp3_refresh_state();		
 	}
 }
 
@@ -325,6 +334,9 @@ static void decode_mp3()
 
 		mp3_event_handler();
 
+		if (mp3_pause)
+			continue;
+		
 		switch (DecodeMP3Frame(&bs, pcm, &DecoderState)) {
 		case MP3_FRAME_COMPLETE:
 			if (!dsp_initialised) {
