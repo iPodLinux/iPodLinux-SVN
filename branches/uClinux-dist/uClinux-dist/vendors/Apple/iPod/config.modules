@@ -1,0 +1,44 @@
+#
+# Automatically generated make config: don't edit
+#
+CONFIG_MODULES=y
+
+#
+# Audio Modules
+#
+# CONFIG_MODULES_AUDIO_AD1845 is not set
+
+#
+# ADSL Modules
+#
+# CONFIG_MODULES_ADSL_SPEEDTOUCH is not set
+
+#
+# Crypto Modules
+#
+# CONFIG_MODULES_CRYPTO_HIFN7901 is not set
+# CONFIG_MODULES_CRYPTO_HIFN7951 is not set
+# CONFIG_MODULES_CRYPTO_SAFENET is not set
+
+#
+# Debug Modules
+#
+# CONFIG_MODULES_MCF_FULL_MEMORY_PROTECT is not set
+
+#
+# IO Modules
+#
+# CONFIG_MODULES_SGIO is not set
+
+#
+# QTAB Modules
+#
+# CONFIG_MODULES_QTAB_FCC is not set
+# CONFIG_MODULES_QTAB_MDIGI is not set
+# CONFIG_MODULES_QTAB_SMARTREADER is not set
+
+#
+# Satellite Modules
+#
+# CONFIG_MODULES_SAT_PENTANET is not set
+# CONFIG_MODULES_SAT_PENTAVAL is not set
