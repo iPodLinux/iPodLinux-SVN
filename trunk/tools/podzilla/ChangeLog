@@ -1,4 +1,9 @@
 
+ansi - Fri October 8 2004
+	new OPTION_MENU support
+	cleaned up BOOLEAN_MENU support display
+	implemented new OPTION_MENU for audio recording sample rate
+
 leachbj - Thu October 7 2004
 	added volume control for wav playback (requires kernel support!)
 	ported calendar from linav project (http://linav.sf.net)

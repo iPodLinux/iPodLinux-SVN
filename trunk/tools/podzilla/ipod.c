@@ -172,7 +172,7 @@ int ipod_load_settings(void)
 		ipod_set_setting(WHEEL_DEBOUNCE, 3);
 		ipod_set_setting(ACTION_DEBOUNCE, 400);
 		ipod_set_setting(BACKLIGHT_TIMER, 0);
-		ipod_set_setting(DSPFREQUENCY, 44100);
+		ipod_set_setting(DSPFREQUENCY, 0);
 	}
 
 	return 0;
