@@ -33,7 +33,8 @@
 #define DMA_WRITE_OFF	0x40000004
 #define DMA_ACTIVE	0x40000008
 #define DMA_STEREO	0x4000000c
-#define DMA_BASE	0x40000010
+#define DMA_HANDLER	0x40000010
+#define DMA_BASE	0x40000014
 
 /* length of shared buffer in half-words (starting at DMA_BASE) */
 #define BUF_LEN		(46*1024)
