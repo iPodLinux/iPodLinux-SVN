@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2002 Bernard Leach
  *
+ * big endian support added 2003 Steven Lucy
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -19,6 +21,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#if defined(__ppc__) || defined(__PPC__)
+#define IS_BIG_ENDIAN
+#endif
+
+#define VERSION_MASK 0xff0
 #define VERSION 0x120
 
 typedef struct _image {
@@ -33,6 +40,29 @@ typedef struct _image {
 	unsigned long vers;		/* image version */
 	unsigned long loadAddr;		/* load address for image */
 } image_t;
+
+
+unsigned long
+switch_long(unsigned long l)
+{
+	return ((l & 0xff) << 24)
+		| ((l & 0xff00) << 8)
+		| ((l & 0xff0000) >> 8)
+		| ((l & 0xff000000) >> 24);
+}
+
+void
+switch_endian(image_t *image)
+{
+	image->id = switch_long(image->id);
+	image->devOffset = switch_long(image->devOffset);
+	image->len = switch_long(image->len);
+	image->addr = switch_long(image->addr);
+	image->entryOffset = switch_long(image->entryOffset);
+	image->chksum = switch_long(image->chksum);
+	image->vers = switch_long(image->vers);
+	image->loadAddr = switch_long(image->loadAddr);
+}
 
 void
 print_image(image_t *image)
@@ -51,7 +81,7 @@ usage()
 	printf("This program is used to patch a program into an image taken\n");
 	printf("From an iPod.  The the bootloader table will be updated and\n");
 	printf("the new program copied in.\n\n");
-	printf("Only version %x.%x of the firmware can be patched\n\n", ((VERSION>>8)&0xff), (VERSION&0xff));
+	printf("Only version %x.%xx of the firmware can be patched\n\n", ((VERSION>>8)&0xff), ((VERSION&0xff)>>4));
 }
 
 int
@@ -72,13 +102,19 @@ main(int argc, char **argv)
 		fseek(in,0x4200,SEEK_SET);
 		fread(&image_1, sizeof(image_1), 1, in);
 		fread(&image_2, sizeof(image_2), 1, in);
+#ifdef IS_BIG_ENDIAN
+		switch_endian(&image_1);
+		switch_endian(&image_2);
+#endif
 
-		if ( image_1.vers != VERSION ) {
-			printf("Can only patch version 0x%0x, fw is 0x%0x\n", VERSION, image_1.vers);
+		if ( (image_1.vers & VERSION_MASK) != VERSION ) {
+			printf("Can only patch version %x.%01xx, fw is %x.%0x\n", ((VERSION>>8)&0xff), ((VERSION&0xff)>>4), ((image_1.vers>>8)&0xff), ((image_1.vers&0xff)>>4));
 		}
 		else {
 			FILE *patch;
-			unsigned sum = 0, temp = 0, i, len;
+			unsigned sum = 0, i, len;
+			unsigned char temp = 0;
+			unsigned long devoff;
 
 			patch = fopen(argv[2], "r");
 			if ( patch != NULL ) {
@@ -86,9 +122,8 @@ main(int argc, char **argv)
 				len = ftell(patch);
 				printf("length for new fw is 0x%x\n", len);
 
-				if ( len > image_2.devOffset ) {
-					printf("Sorry, new image is too large, image2 offset is 0x%x!\n", image_2.devOffset);
-					
+				if ( len > image_2.devOffset - image_1.devOffset) {
+					printf("Sorry, new image is too large, image2 offset is 0x%x!   0x%x\n", image_2.devOffset, len);
 				}
 				else {
 					fseek(patch, 0x0, SEEK_SET);
@@ -102,11 +137,18 @@ main(int argc, char **argv)
 					image_1.len = len;
 					image_1.chksum = sum;
 
+					/* preserve through endianizing */
+					devoff = image_1.devOffset;
+
 					fseek(in,0x4200,SEEK_SET);
+
+#ifdef IS_BIG_ENDIAN
+					switch_endian(&image_1);
+#endif
 					fwrite(&image_1, sizeof(image_1), 1, in);
 
 					/* go to dev offset to write new image */
-					fseek(in, image_1.devOffset, SEEK_SET);
+					fseek(in, devoff, SEEK_SET);
 					/* rewind to start of new image */
 					fseek(patch, 0x0, SEEK_SET);
 					for ( i = 0; i < len; i++ ) {
