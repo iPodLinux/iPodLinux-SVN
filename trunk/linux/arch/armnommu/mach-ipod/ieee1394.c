@@ -270,7 +270,8 @@ static void init_config_rom(struct ti_ipod *ipod)
 	/* Bus info block */
 	cf_unit_begin(&cr, 0);
 	cf_put_1quad(&cr, 0x31333934);	// Bus ID == "1394"
-	cf_put_1quad(&cr, 0x00ffa002);	// Bus options (same as iPod f/w)
+	cf_put_1quad(&cr, 0x00ff6002);	// Bus options (based iPod f/w)
+					// 6 -> 2^7 == max_rec
 	cf_put_1quad(&cr, 0x00000000);	// vendor id, chip id high */
 	cf_put_1quad(&cr, 0x024f3638);	// chip id low
 	cf_unit_end(&cr);
@@ -406,6 +407,8 @@ static void rx_packet(struct hpsb_host *host)
 	static quadlet_t data[1024], status;
 	int i;
 	int tcode;
+	// unsigned arf;
+	// int avail;
 
 	if ( !(fw_reg_read(0x30) & 0x8000) ) {
 		printk(KERN_ERR "ARF sts: 0x%04x\n", fw_reg_read(0x30));
@@ -417,11 +420,27 @@ static void rx_packet(struct hpsb_host *host)
 		}
 	}
 
+	// arf = fw_reg_read(0x30);
+	// avail = (arf << 7) >> 23;
+
 	status = fw_reg_read(0x80);
 
 	for ( i = 0; i < 3; i++ ) {
 		data[i] = fw_reg_read(0x80);
 	}
+
+#if 0
+	if ( avail > 0xb4 ) {
+		printk("invalid avail 0x%x\n", avail);
+		printk("arf 0x%08x\n", arf);
+
+		printk("%08x ", status);
+		for ( i = 0 ; i < 3; i++ ) {
+			printk("%08x ", data[i]);
+		}
+		printk("\n");
+	}
+#endif
 
 	tcode = (data[0] >> 4) & 0xf;
 	if ( tcode == TCODE_WRITEQ || tcode == TCODE_READQ_RESPONSE ) {
@@ -442,6 +461,8 @@ static void rx_packet(struct hpsb_host *host)
 		data[3] = fw_reg_read(0x80);
 		block_len = data[3] >> 16;
 
+		// if ( block_len > 500 ) printk("block_len %d arf 0x%08x\n", block_len, fw_reg_read(0x30));
+
 		for (i = 0; i < (block_len + 3) / 4; i++) {
 			int to = 0;
 
@@ -455,6 +476,8 @@ static void rx_packet(struct hpsb_host *host)
 
 			data[4+i] = cpu_to_be32(fw_reg_read(0x80));
 		}
+
+		// if ( block_len > 500 ) printk("done\n");
 
 		hpsb_packet_received(host, data, 16 + block_len, 0);
 	}
@@ -678,15 +701,16 @@ static void handle_selfid(struct ti_ipod *ohci, struct hpsb_host *host,
 	quadlet_t q0;
 	size_t size;
 
-	printk(KERN_ERR "phyid: 0x%x\n", phyid);
-	printk(KERN_ERR "isroot: %d\n", isroot);
+//	printk(KERN_ERR "phyid: 0x%x\n", phyid);
+//	printk(KERN_ERR "isroot: %d\n", isroot);
 
-	size = 4;
+	size = fw_reg_read(0x9c) & 0x1ff;
+//	printk("size = %d\n", size);
 
 	while (size > 0) {
 		q0 = fw_reg_read(0xac);		/* read from DRF */
 		if ( (q0 & 0x80000000) == 0 ) {
-			printk(KERN_ERR "ignored 0x%x received\n", q0);
+//			printk(KERN_ERR "ignored 0x%x received\n", q0);
 		}
 		else {
 			printk(KERN_ERR "SelfID packet 0x%x received\n", q0);
@@ -699,7 +723,7 @@ static void handle_selfid(struct ti_ipod *ohci, struct hpsb_host *host,
 		size--;
 	}
 
-	printk(KERN_ERR "SelfID complete\n");
+//	printk(KERN_ERR "SelfID complete\n");
 
 	hpsb_selfid_complete(host, phyid, isroot);
 }
@@ -738,8 +762,8 @@ static void ipod_1394_fw_int(int irq, struct ti_ipod *ipod)
 				else {
 					int phyid = -1, isroot = 0;
 
-					printk(KERN_ERR "bus_reset:0x%x\n", bus_reset);
-					printk(KERN_ERR "misc:0x%x\n", fw_reg_read(0x4));
+//					printk(KERN_ERR "bus_reset:0x%x\n", bus_reset);
+//					printk(KERN_ERR "misc:0x%x\n", fw_reg_read(0x4));
 					// 00000000001111110000000000000000
 					phyid =  (bus_reset & 0x3f0000) >> 16;
 
@@ -765,10 +789,6 @@ static void ipod_1394_fw_int(int irq, struct ti_ipod *ipod)
 
 		if ( fw_src & ARF_RXD ) {
 			unsigned long flags;
-
-			if ( fw_src & ATF_END ) {
-				printk("ATF_END & ARF_RXD\n");
-			}
 
 			spin_lock_irqsave(&ipod->tx_lock, flags);
 			ipod->rx_state = RX_BUSY;
@@ -962,16 +982,12 @@ static int __init ipod_1394_init(void)
 	fw_reg_write(0x40, 0x1000);
 	// set CTQ size to 0x0 (we dont use it)
 	fw_reg_write(0x3c, 0x1000);
-	// set ARF size to 0xc8
+	// set ARF size to 0xb4
 	// clear the ARF
-	fw_reg_write(0x30, 0x10c8);
-	// set ATF size to 0xa0
+	fw_reg_write(0x30, 0x10b4);
+	// set ATF size to 0xb4
 	// clear the ATF
-	fw_reg_write(0x2c, 0x10a0);
-printk("atf size 0x%x\n", fw_reg_read(0x2c) & 0xff);
-printk("arf size 0x%x\n", fw_reg_read(0x30) & 0xff);
-printk("ctq size 0x%x\n", fw_reg_read(0x3c) & 0xff);
-printk("crf size 0x%x\n", fw_reg_read(0x40) & 0xff);
+	fw_reg_write(0x2c, 0x10b4);
 // ATF default size is 0x80		(0x2c)
 // ARF default size is 0x8e		(0x30)
 // CTQ default size is 0xf		(0x3c)
@@ -981,9 +997,9 @@ printk("crf size 0x%x\n", fw_reg_read(0x40) & 0xff);
 
 	// rxsld,rsisel,tren,reset tr,split transaction enable,
 	// auto retry,cycle master,cyle timer enable,dma block clear*/
-	fw_reg_write(CONTROL_REG, 0x6420cb00 | (1<<(31-18))|(1<<(31-24))|(1<(31-25)));
+	fw_reg_write(CONTROL_REG, (0x6420cb00 | (1<<(31-18))|(1<<(31-24))) & ~(1<(31-25)));
 	// finish dma clear
-	fw_reg_write(CONTROL_REG, 0x6420ca00 | (1<<(31-18))|(1<<(31-24))|(1<(31-25)));
+	fw_reg_write(CONTROL_REG, (0x6420ca00 | (1<<(31-18))|(1<<(31-24))) & ~(1<(31-25)));
 
 	// DMA control
 	// 00111100001000000110110010000011
