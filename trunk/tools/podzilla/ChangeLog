@@ -1,3 +1,7 @@
+leachbj - Sun June 06 2004
+	In browser, execute .sh files as shell scripts
+	Removed un-implemented menus to avoid confusion
+
 Courtney Cavin - Fri June 4, 2004
 	Cursor no longer erases edges of previosly selected pieces
 	Score now shows at end along with the degrading comment.
