@@ -6,6 +6,9 @@ Podzilla is a basic GUI for the iPod.  Although it looks like the Apple
 version it is actually a re-write and at the moment mostly just a proof
 of concept.
 
+!! This version needs the latest kernel available from the ipod sourceforge 
+CVS repository. !!
+
 The working parts;
     o Basic menu navigation
     o Settings, Contrast
@@ -18,8 +21,45 @@ Other working parts will be added over time.
 Note, the battery display is static!  It does not represent the battery
 charge.
 
+Build Instructions
+------------------
+
+Podzilla can be built to run on the iPod or on your PC.  The application is
+built using the Microwindows <http://www.microwindows.org> toolkit.  This
+toolkit can be built for your desktop (running under X11) or with the
+ipodlinux patches for the iPod.
+
+The base archive can be downloaded from:
+
+<ftp://microwindows.censoft.com/pub/microwindows/microwindows-0.90.tar.gz>
+
+iPod:
+    1. Build Microwindows for the iPod
+        o extract the microwindows archive
+        o download the tools/microwindows module from CVS
+        o cp -r microwindows to microwindows-0.90 to install the patches
+        o cd microwindows-0.90/src
+        o copy the ipod configuration (cp Configs/config.ipod config)
+        o make
+    2. Build Podzilla
+        o check the directories in the Makefile
+	o make
+
+Desktop:
+    1. Build Microwindows for the desktop
+        o extract the microwindows archive
+        o cd microwindows-0.90/src
+	o copy Configs/config.ipod_x11 config (from the ipodlinux cvs)
+	o make
+    2. Build Podzilla
+        o change CC,CFLAGS in the Makefile to host setttings
+	o make
+
+To enable jpeg support please see the documentation in Microwindows
+microwindows-0.90/src/contrib/jpeg/README.txt.
+
 Sofar this program is the work of;
 
 Bernard Leach <leachbj@bouncycastle.org>
-Damien Marchal <marchal@lazarus.lifl.fr>
+Damien Marchal <marchal@lifl.fr>
 
