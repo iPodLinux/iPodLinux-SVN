@@ -21,45 +21,9 @@
 
 void *module_alloc(unsigned long size)
 {
-	struct vm_struct *area;
-	struct page **pages;
-	unsigned int array_size, i;
-
-	size = PAGE_ALIGN(size);
-	if (!size)
-		goto out_null;
-
-	area = __get_vm_area(size, VM_ALLOC, MODULE_START, MODULE_END);
-	if (!area)
-		goto out_null;
-
-	area->nr_pages = size >> PAGE_SHIFT;
-	array_size = area->nr_pages * sizeof(struct page *);
-	area->pages = pages = kmalloc(array_size, GFP_KERNEL);
-	if (!area->pages) {
-		remove_vm_area(area->addr);
-		kfree(area);
-		goto out_null;
-	}
-
-	memset(pages, 0, array_size);
-
-	for (i = 0; i < area->nr_pages; i++) {
-		pages[i] = alloc_page(GFP_KERNEL);
-		if (unlikely(!pages[i])) {
-			area->nr_pages = i;
-			goto out_no_pages;
-		}
-	}
-
-	if (map_vm_area(area, PAGE_KERNEL, &pages))
-		goto out_no_pages;
-	return area->addr;
-
- out_no_pages:
-	vfree(area->addr);
- out_null:
-	return NULL;
+	if (size == 0)
+		return NULL;
+	return vmalloc(size);
 }
 
 void module_free(struct module *module, void *region)
