@@ -32,6 +32,11 @@
 #include "../../../drivers/ieee1394/hosts.h"
 #include "../../../drivers/ieee1394/ieee1394_core.h"
 
+/* what version are we compiling for */
+#undef IPOD_1G
+#define IPOD_2G
+#undef IPOD_3G
+
 #define RX_SLD	(1<<(31-1))
 #define RS_ISEL	(1<<(31-2))
 #define CONTROL_REG	0x8
@@ -832,11 +837,36 @@ static void ipod_1394_interrupt(int irq, void *dev_id, struct pt_regs *regs_are_
 	}
 }
 
+#if defined(IPOD_3G)
+static void busy_wait( int delay )
+{
+	volatile int i;
+
+	for (i = delay * 70000; i > 0; i-- )
+		;
+}
+
+static void fw_sub( int r0, int r1 )
+{
+	outl( 0x6a, 0xc0008000 );
+	busy_wait( 0xa );
+	outl( 0x0, 0xc0008000 );
+
+	outl( inl(0xc0008000) | (1<<1), 0xc0008000 );
+	outl( 0x10, 0xc0008004 );
+	outl( inl(0xc0008000) | (1<<5), 0xc0008000 );
+	outl( r0, 0xc000800c );
+	outl( r1, 0xc0008010 );
+	outl( inl(0xc0008000) | (1<<7), 0xc0008000 );
+	busy_wait( 0xa );
+}
+#endif
+
 static int __init ipod_1394_init(void)
 {
 	struct ti_ipod *ipod;
 
-	printk("ipod_1394: $Id$\n");
+	printk("ipod_1394: $Id: tsb42aa82.c,v 1.2 2003/03/21 10:47:22 leachbj Exp $\n");
 
 	ipod_host = hpsb_alloc_host(&ipod_1394_driver, sizeof(struct ti_ipod));
 	if ( !ipod_host ) {
@@ -872,6 +902,9 @@ static int __init ipod_1394_init(void)
 
 	outl(0xffff, 0xcf004020);
 
+#if defined(IPOD_1G) || defined(IPOD_2G)
+/* this is the 1g and 2g init */
+
 	// port D enable
 	outl(inl(0xcf00000c) | (1<<4)|(1<<5)|(1<<7), 0xcf00000c);
 
@@ -880,7 +913,10 @@ static int __init ipod_1394_init(void)
 
 	// port D output value ~10000 | 100000
 	outl((inl(0xcf00002c) & ~(1<<4)) | (1<<5), 0xcf00002c);
+#endif
 
+/* this is 2g only */
+#if defined(IPOD_2G)
 	{
 		unsigned r2;
 
@@ -906,6 +942,33 @@ static int __init ipod_1394_init(void)
 
 		outl(r2 | (1<<4), 0xcf004044);
 	}
+#endif
+
+#if defined(IPOD_3G)
+	/* this is 3g */
+	{
+		/* reset device 8 */
+		outl( inl(0xcf005030) | (1<<8), 0xcf005030 );
+		outl( inl(0xcf005030) & ~(1<<8), 0xcf005030 );
+
+		// looks like some i2c functions
+		fw_sub( 0x39, 0 );
+		fw_sub( 0x3a, 0 );
+		fw_sub( 0x3b, 0 );
+		fw_sub( 0x3c, 0 );
+		fw_sub( 0x39, 7 );
+		fw_sub( 0x3a, 0 );
+		fw_sub( 0x3b, 7 );
+		fw_sub( 0x3c, 7 );
+		fw_sub( 0x3b, 0 );
+		fw_sub( 0x3c, 0 );
+
+		// enable GPIO port D bit 7 & set it to low
+		outl( inl( 0xcf00000c) | (1<<7), 0xcf00000c );
+		outl( inl(0xcf00001c) | (1<<7), 0xcf00001c );
+		outl( inl( 0xcf00002c) & ~(1<<7), 0xcf00002c );
+	}
+#endif
 
 	if ( fw_reg_read(0x0) != 0x43008203 ) {
 		printk(KERN_ERR "ipod_1394: invalid chip revsion 0x%x\n", fw_reg_read(0x0));
