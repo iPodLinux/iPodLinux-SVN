@@ -40,12 +40,18 @@ static GR_SCREEN_INFO screen_info;
 static pthread_t dsp_thread;
 static int mode;
 static volatile int playing = 0, recording = 0, paused = 0;
-static char *pcm_file;
+static char pcm_file[128];
 
 #define RECORD        0
 #define PLAYBACK      1
 
 static volatile int killed;
+
+#ifdef IPOD
+#define RECORDINGS "/Recordings"
+#else
+#define RECORDINGS "Recordings"
+#endif
 
 #define DSP_REC_SIZE	512
 #define DSP_PLAY_SIZE	16*1024*2
@@ -166,14 +172,14 @@ static void * dsp_record(void *filename)
 	file_fd = open((char *)filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR);
 	if (file_fd < 0) {
 		char buf[256];
-		sprintf(buf, "could not open %s\n", (char *)filename);
+		sprintf(buf, "Cant open %s", (char *)filename);
 		new_message_window(buf);
 		goto no_file;
 	}
 
 	dsp_fd = open("/dev/dsp", O_RDONLY);
 	if (dsp_fd < 0) {
-		new_message_window("could not open /dev/dsp");
+		new_message_window("Cant open /dev/dsp");
 		goto no_audio;
 	}
 
@@ -182,11 +188,14 @@ static void * dsp_record(void *filename)
 		samplerate = 44100;
 	}
 
-	set_dsp_rate(dsp_fd, samplerate);
 	set_dsp_channels(dsp_fd, channels);
+	set_dsp_rate(dsp_fd, samplerate);
+
 	killed = 0;
 	recording = 1;
 	paused = 0;
+
+	dsp_do_draw(0);
 
 	write_wav_header(file_fd, samplerate, channels);
 
@@ -211,6 +220,8 @@ static void * dsp_record(void *filename)
 		}
 	}
 
+	close(dsp_fd);
+
 	/* get file length by position which is 1 more than last */
 	filelength = (int)lseek(file_fd, 1, SEEK_CUR) - 1;
 
@@ -222,15 +233,12 @@ static void * dsp_record(void *filename)
 	lseek(file_fd, 4, SEEK_SET);
 	write_32_le(file_fd, filelength - 8);
 
-	close(dsp_fd);
-
 no_audio:
 	close(file_fd);
 
 no_file:
 	recording = 0;
-	free(pcm_file);
-	pz_close_window(dsp_wid);
+	dsp_do_draw(0);
 
 	return NULL;
 }
@@ -268,6 +276,8 @@ static void * dsp_playback(void *filename)
 	playing = 1;
 	paused = 0;
 
+	dsp_do_draw(0);
+
 	/* assume a basic WAV header, skip to start of PCM data */
 	lseek(file_fd, 22, SEEK_SET);
 
@@ -287,16 +297,19 @@ static void * dsp_playback(void *filename)
 		}
 	} while (!killed && count > 0);
 
+	if (!killed) {
+		pz_close_window(dsp_wid);
+	}
+
 	close(dsp_fd);
 
 no_audio:
 	close(file_fd);
 
 no_file:
-
 	playing = 0;
-	free(pcm_file);
-	pz_close_window(dsp_wid);
+	dsp_do_draw(0);
+
 	return NULL;
 }
 
@@ -337,6 +350,7 @@ static int dsp_do_keystroke(GR_EVENT * event)
 	case '\n':
 		if (playing || recording) {
 			stop_dsp();
+			pz_close_window(dsp_wid);
 		}
 		else if (mode == PLAYBACK) {
 			start_playback();
@@ -344,7 +358,6 @@ static int dsp_do_keystroke(GR_EVENT * event)
 		else {
 			start_recording();
 		}
-		dsp_do_draw(0);
 		break;
 
 	case 'm':
@@ -352,7 +365,6 @@ static int dsp_do_keystroke(GR_EVENT * event)
 			stop_dsp();
 		}
 		else {
-			free(pcm_file);
 			pz_close_window(dsp_wid);
 		}
 		break;
@@ -407,11 +419,12 @@ void new_record_window(char *filename)
 	tm = localtime(&now);
 
 	/* MMDDYYYY HHMMSS */
-	sprintf(myfilename, "Recordings/%02d%02d%04d %02d%02d%02d.wav",
+	sprintf(myfilename, "%s/%02d%02d%04d %02d%02d%02d.wav",
+		RECORDINGS,
 		tm->tm_mon+1, tm->tm_mday, tm->tm_year + 1900, tm->tm_hour,
 		tm->tm_min, tm->tm_sec);
 
-	pcm_file = strdup(myfilename);
+	strncpy(pcm_file, myfilename, sizeof(pcm_file)-1);
 	mode = RECORD;
 	dsp_gc = GrNewGC();
 	GrSetGCUseBackground(dsp_gc, GR_TRUE);
@@ -428,7 +441,7 @@ void new_record_window(char *filename)
 void new_playback_window(char *filename)
 {
 	mode = PLAYBACK;
-	pcm_file = strdup(filename);
+	strncpy(pcm_file, filename, sizeof(pcm_file)-1);
 
 	dsp_gc = GrNewGC();
 	GrSetGCUseBackground(dsp_gc, GR_TRUE);
@@ -444,6 +457,6 @@ void new_playback_window(char *filename)
 
 void new_playback_browse_window(void)
 {
-	new_browser_window("Recordings");
+	new_browser_window(RECORDINGS);
 }
 
