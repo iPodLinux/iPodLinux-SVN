@@ -5,12 +5,7 @@
 #include <asm/assembler.h>
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>
-
-	.equ	PP5002_PROC_ID,  0xc4000000
-	.equ	PP5002_COP_CTRL, 0xcf004058
-
-	.equ	PP5020_PROC_ID,  0x60000000
-	.equ	PP5020_COP_CTRL, 0x60007004
+#include <asm/arch/hardware.h>
 
 /*
  * Reset condition :
@@ -65,7 +60,7 @@ install_reloc_end:
 
 post_reloc_start:
 	cmp	r5, #0x28000000
-	mov	r0, #0x40000000
+	mov	r0, #PP_CPU_TYPE
 	moveq	r1, #0x0	/* we are a PP5002 */
 	movne	r1, #0x1	/* we are a PP5020 */
 	str	r1, [r0]
@@ -172,16 +167,4 @@ LC0:	.long	SYMBOL_NAME(__bss_start)
 	.long	SYMBOL_NAME(_end)
 	.long	SYMBOL_NAME(__machine_arch_type)
 	.long	SYMBOL_NAME(init_task_union)+8192
-
-#ifdef CONFIG_BLK_DEV_RAM
-	.global __ramdisk_data
-	.global __ramdisk_data_end
-
-	.align 12
-__ramdisk_data:
-	.incbin "../../../initrd"
-__ramdisk_data_end:
-	.align
-
-#endif
 
