@@ -677,6 +677,36 @@ static int ipod_1394_devctl(struct hpsb_host *host, enum devctl_cmd command, int
 }
 
 #if 0
+static int ipod_1394_isoctl(struct hpsb_iso *iso, enum isoctl_cmd cmd, unsigned long arg)
+{
+	switch (cmd) {
+	case XMIT_INIT:
+	case XMIT_START:
+	case XMIT_STOP:
+	case XMIT_QUEUE:
+	case XMIT_SHUTDOWN:
+	case RECV_INIT:
+	case RECV_START:
+	case RECV_STOP:
+	case RECV_RELEASE:
+	case RECV_FLUSH:
+	case RECV_SHUTDOWN:
+	case RECV_LISTEN_CHANNEL:
+	case RECV_UNLISTEN_CHANNEL:
+	case RECV_SET_CHANNEL_MASK:
+		return 0;
+								
+	default:
+		printk(KERN_ERR "ohci_isoctl cmd %d not implemented yet", cmd);
+		break;
+	}
+
+	return -EINVAL;
+}
+#endif
+
+
+#if 0
 /* This function is mainly to redirect local CSR reads/locks to the iso
  * management registers (bus manager id, bandwidth available, channels
  * available) to the hardware registers in OHCI.  reg is 0,1,2,3 for bus         * mgr, bwdth avail, ch avail hi, ch avail lo respectively (the same ids         * as OHCI uses).  data and compare are the new data and expected data
@@ -695,6 +725,7 @@ static struct hpsb_host_driver ipod_1394_driver = {
 	.get_rom = ipod_1394_get_rom,
 	.transmit_packet = ipod_1394_transmit_packet,
 	.devctl = ipod_1394_devctl,
+	// .isoctl = ipod_1394_isoctl,
 #if 0
 	hw_csr_reg: ipod_1394_hw_csr_reg
 #endif
@@ -756,6 +787,7 @@ static void ipod_1394_fw_int(int irq, struct ti_ipod *ipod)
 
 				if ( (fw_reg_read(0x8) & 0x80000000) == 0 ) {
 					printk(KERN_ERR "ID not valid!\n");
+					goto selfid_not_valid;
 				}
 
 				bus_reset = fw_reg_read(0x24);	// Bus Reset Register
@@ -781,6 +813,7 @@ static void ipod_1394_fw_int(int irq, struct ti_ipod *ipod)
 			else {
 				printk(KERN_ERR "irq: selfid outside bus reset\n");
 			}
+selfid_not_valid:
 		}
 
 		if ( fw_src & ATF_END ) {
@@ -838,35 +871,144 @@ static void ipod_1394_interrupt(int irq, void *dev_id, struct pt_regs *regs_are_
 }
 
 #if defined(IPOD_3G)
-static void busy_wait( int delay )
+static __devinit void fw_i2c(int data0, int data1)
 {
-	volatile int i;
+	outl(0x6a, 0xc0008000);
+	mdelay(10);
 
-	for (i = delay * 70000; i > 0; i-- )
-		;
-}
+	outl(0x0, 0xc0008000);
+	outl(inl(0xc0008000) | (1<<1), 0xc0008000);
 
-static void fw_sub( int r0, int r1 )
-{
-	outl( 0x6a, 0xc0008000 );
-	busy_wait( 0xa );
-	outl( 0x0, 0xc0008000 );
+	outl(0x10, 0xc0008004);		/* address */
 
-	outl( inl(0xc0008000) | (1<<1), 0xc0008000 );
-	outl( 0x10, 0xc0008004 );
-	outl( inl(0xc0008000) | (1<<5), 0xc0008000 );
-	outl( r0, 0xc000800c );
-	outl( r1, 0xc0008010 );
-	outl( inl(0xc0008000) | (1<<7), 0xc0008000 );
-	busy_wait( 0xa );
+	outl(inl(0xc0008000) | (1<<5), 0xc0008000);
+
+	outl(data0, 0xc000800c);
+	outl(data1, 0xc0008010);
+
+	outl(inl(0xc0008000) | (1<<7), 0xc0008000);	/* send cmd */
+	mdelay(10);
 }
 #endif
 
-static int __init ipod_1394_init(void)
+static __devinit void ipod_1394_hw_init()
+{
+	// firewire stuff
+
+	// MIO setup?
+	outl((inl(0xcf004040) & ~(1<<6)) | (1<<7), 0xcf004040);
+	outl(0x00001f1f, 0xcf00401c);
+	outl(0xffff, 0xcf004020);
+
+#if defined(IPOD_1G) || defined(IPOD_2G)
+/* this is the 1g and 2g init */
+
+	// port D enable, PD(4) power down and LPS(5) link power staus, and(7?)
+	outl(inl(0xcf00000c) | (1<<4)|(1<<5)|(1<<7), 0xcf00000c);
+
+	// port D output enable
+	outl(inl(0xcf00001c) | (1<<4)|(1<<5)|(1<<7), 0xcf00001c);
+
+	// port D output value ~10000 | 100000
+	// set PD (power down) to low and LPS to high (see 12.4)
+	outl((inl(0xcf00002c) & ~(1<<4)) | (1<<5), 0xcf00002c);
+
+	mdelay(20):
+#endif
+
+/* this is 1g only */
+#if defined(IPOD_1G)
+	{
+		/* Reset TSB43AA82 link and PHY (see section 12.5) */
+		outl(inl(0xcf00000c) | (1<<1) | (1<<2) , 0xcf00000c);
+		outl(inl(0xcf00001c) | (1<<1) | (1<<2), 0xcf00001c);
+		outl(inl(0xcf00002c) | (1<<1) | (1<<2), 0xcf00002c);
+
+		mdelay(10);
+
+		/* XRESETL */
+		outl(inl(0xcf00002c) & ~(1<<1), 0xcf00002c);
+		/* XRESETP */
+		outl(inl(0xcf00002c) & ~(1<<2), 0xcf00002c);
+
+		mdelay(10);
+
+		outl(inl(0xcf00002c) | (1<<1), 0xcf00002c);
+		outl(inl(0xcf00002c) | (1<<2), 0xcf00002c);
+
+		mdelay(10);
+	}
+#endif
+
+/* this is 2g only */
+#if defined(IPOD_2G)
+	{
+		unsigned r2;
+
+		// Port E Bit 2 Enable
+		outl(inl(0xcf004048) | (1<<2), 0xcf004048);
+
+		r2 = inl(0xcf004044);
+
+		// Port E Bit 4 output high
+		outl(inl(0xcf004048) | (1<<4), 0xcf004048);
+
+		mdelay(10);
+
+		// Port E Bit 2 output low
+		outl(inl(0xcf004048) & ~(1<<2), 0xcf004048);
+		// Port E Bit 4 output low
+		outl(inl(0xcf004048) & ~(1<<4), 0xcf004048);
+
+		mdelay(10);
+
+		// Port E Bit 2 output high
+		outl(inl(0xcf004048) | (1<<2), 0xcf004048);
+		// Port E Bit 2 output high
+		outl(inl(0xcf004048) | (1<<4), 0xcf004048);
+
+		mdelay(10);
+
+		outl(r2 | (1<<4), 0xcf004044);
+	}
+#endif
+
+#if defined(IPOD_3G)
+	/* this is 3g */
+	{
+		/* reset device i2c */
+		outl(inl(0xcf005030) | (1<<8), 0xcf005030);
+		outl(inl(0xcf005030) & ~(1<<8), 0xcf005030);
+
+		// some i2c magic
+		fw_i2c(0x39, 0);
+		fw_i2c(0x3a, 0);
+		fw_i2c(0x3b, 0);
+		fw_i2c(0x3c, 0);
+		fw_i2c(0x39, 7);
+		fw_i2c(0x3a, 0);
+		fw_i2c(0x3b, 7);
+		fw_i2c(0x3c, 7);
+		fw_i2c(0x3b, 0);
+		fw_i2c(0x3c, 0);
+
+		// enable GPIO port D bit 7 & set it to low
+		outl(inl(0xcf00000c) | (1<<7), 0xcf00000c);
+		outl(inl(0xcf00001c) | (1<<7), 0xcf00001c);
+		outl(inl(0xcf00002c) & ~(1<<7), 0xcf00002c);
+	}
+#endif
+
+	if ( fw_reg_read(0x0) != 0x43008203 ) {
+		printk(KERN_ERR "ipod_1394: invalid chip revsion 0x%x\n", fw_reg_read(0x0));
+	}
+}
+
+static int __devinit ipod_1394_init(void)
 {
 	struct ti_ipod *ipod;
 
-	printk("ipod_1394: $Id: tsb42aa82.c,v 1.2 2003/03/21 10:47:22 leachbj Exp $\n");
+	printk("ipod_1394: $Id: tsb42aa82.c,v 1.3 2004/01/25 14:02:35 leachbj Exp $\n");
 
 	ipod_host = hpsb_alloc_host(&ipod_1394_driver, sizeof(struct ti_ipod));
 	if ( !ipod_host ) {
@@ -892,89 +1034,9 @@ static int __init ipod_1394_init(void)
 		printk(KERN_ERR "ipod_1394: IRQ %d failed\n", GPIO_IRQ);
 	}
 
-	// firewire stuff
+	ipod_1394_hw_init();
 
-	// interrupts for port c
-
-	outl((inl(0xcf004040) & ~(1<<6)) | (1<<7), 0xcf004040);
-
-	outl(0x00001f1f, 0xcf00401c);
-
-	outl(0xffff, 0xcf004020);
-
-#if defined(IPOD_1G) || defined(IPOD_2G)
-/* this is the 1g and 2g init */
-
-	// port D enable
-	outl(inl(0xcf00000c) | (1<<4)|(1<<5)|(1<<7), 0xcf00000c);
-
-	// port D output enable
-	outl(inl(0xcf00001c) | (1<<4)|(1<<5)|(1<<7), 0xcf00001c);
-
-	// port D output value ~10000 | 100000
-	outl((inl(0xcf00002c) & ~(1<<4)) | (1<<5), 0xcf00002c);
-#endif
-
-/* this is 2g only */
-#if defined(IPOD_2G)
-	{
-		unsigned r2;
-
-		// Port E Bit 2 Enable
-		outl(inl(0xcf004048) | (1<<2), 0xcf004048);
-
-		r2 = inl(0xcf004044);
-
-		// Port E Bit 4 Enable
-		outl(inl(0xcf004048) | (1<<4), 0xcf004048);
-
-		// Port E Bit 2 disable
-		outl(inl(0xcf004048) & ~(1<<2), 0xcf004048);
-
-		// Port E Bit 4 disable
-		outl(inl(0xcf004048) & ~(1<<4), 0xcf004048);
-
-		// Port E Bit 2 Enable
-		outl(inl(0xcf004048) | (1<<2), 0xcf004048);
-
-		// Port E Bit 2 Enable
-		outl(inl(0xcf004048) | (1<<4), 0xcf004048);
-
-		outl(r2 | (1<<4), 0xcf004044);
-	}
-#endif
-
-#if defined(IPOD_3G)
-	/* this is 3g */
-	{
-		/* reset device 8 */
-		outl( inl(0xcf005030) | (1<<8), 0xcf005030 );
-		outl( inl(0xcf005030) & ~(1<<8), 0xcf005030 );
-
-		// looks like some i2c functions
-		fw_sub( 0x39, 0 );
-		fw_sub( 0x3a, 0 );
-		fw_sub( 0x3b, 0 );
-		fw_sub( 0x3c, 0 );
-		fw_sub( 0x39, 7 );
-		fw_sub( 0x3a, 0 );
-		fw_sub( 0x3b, 7 );
-		fw_sub( 0x3c, 7 );
-		fw_sub( 0x3b, 0 );
-		fw_sub( 0x3c, 0 );
-
-		// enable GPIO port D bit 7 & set it to low
-		outl( inl( 0xcf00000c) | (1<<7), 0xcf00000c );
-		outl( inl(0xcf00001c) | (1<<7), 0xcf00001c );
-		outl( inl( 0xcf00002c) & ~(1<<7), 0xcf00002c );
-	}
-#endif
-
-	if ( fw_reg_read(0x0) != 0x43008203 ) {
-		printk(KERN_ERR "ipod_1394: invalid chip revsion 0x%x\n", fw_reg_read(0x0));
-	}
-
-	// setup battery and firewire interrupts
+	// setup firewire power (4) and firewire (5) interrupts
 
 	// enable port c bits 4 & 5
 	outb(inb(0xcf000008) | (1<<4) | (1<<5), 0xcf000008);
