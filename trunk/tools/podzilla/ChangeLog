@@ -1,3 +1,12 @@
+Jens Taprogge - Fri July 27 2004
+	lots of improvements around the new iTunesDB browser. Including
+	playlist support (just the normal ones so far). Depends on libitunesdb
+	V0.5 (http://shamrock.dyndns.org/~ln/ipod/libitunesdb_0.5.tar.gz ).
+	
+Jens Taprogge - Fri July 16 2004
+	added a new iTunesDB browser written from scratch. It provides
+	browsing by Track, Artist or Album so far. The implementation is based
+	on libitunesdb V0.4 (http://shamrock.dyndns.org/~ln/ipod/libitunesdb_0.4.tar.gz ).
 
 leachbj - Sat October 9 2004
 	added basic line-in recording support

@@ -35,7 +35,10 @@ extern void new_playback_browse_window(void);
 extern void new_calendar_window(void);
 extern void new_oth_window(void);
 extern void new_bluecube_window(void);
-extern void new_itunes_window(void);
+extern void new_itunes_track(void);
+extern void new_itunes_artist(void);
+extern void new_itunes_album(void);
+extern void new_itunes_plist(void);
 extern void new_pong_window(void);
 extern void new_mines_window(void);
 
@@ -151,11 +154,16 @@ static struct menu_item reboot_menu[] = {
 	{0, 0, 0, NOSETTING, 0}
 };
 
+static struct menu_item itunes_menu[] = {
+ 	{"Playlists", ACTION_MENU, new_itunes_plist, NOSETTING, 0},
+	{"Artists", ACTION_MENU, new_itunes_artist, NOSETTING, 0},
+	{"Albums", ACTION_MENU, new_itunes_album, NOSETTING, 0},
+	{"Songs", ACTION_MENU, new_itunes_track, NOSETTING, 0},
+	{0, 0, 0}
+};
+
 static struct menu_item main_menu[] = {
-#if 0
-	{"Playlists", SUB_MENU_HEADER, 0, NOSETTING, 0},
-#endif
-	{"Music", ACTION_MENU, new_itunes_window, NOSETTING, 0},
+	{"Music", SUB_MENU_HEADER, itunes_menu, NOSETTING, 0},
 	{"Extras", SUB_MENU_HEADER, extras_menu, NOSETTING, 0},
 	{"Settings", SUB_MENU_HEADER, settings_menu, NOSETTING, 0},
 	{"File Browser", ACTION_MENU, new_browser_window, NOSETTING, 0},

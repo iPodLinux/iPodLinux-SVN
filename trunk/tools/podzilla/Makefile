@@ -6,23 +6,25 @@ ifneq ($(IPOD),)
 
 # iPod build
 CC=arm-elf-gcc
-CFLAGS=-DIPOD -D_REENTRANT -Wall
+CFLAGS=-DIPOD
 LDFLAGS=-elf2flt
 MICROWINDOWS = ../microwindows/src
+LIBITUNESDB=../libitunesdb.ipod/src
 
 # enable JPEG support
 LDFLAGS+=-L ../jpeg-6b
 else
 
 CC=gcc
-CFLAGS=-Wall
+CFLAGS=
 LDFLAGS=-L/usr/X11R6/lib -lX11
 MICROWINDOWS = ../../../src/microwindows-0.90/src
+LIBITUNESDB=../libitunesdb/src
 
 endif
 
-CFLAGS+=-I$(MICROWINDOWS)/include -g
-LDFLAGS+=$(MICROWINDOWS)/lib/libnano-X.a $(MICROWINDOWS)/lib/libmwengine.a $(MICROWINDOWS)/lib/libmwdrivers.a $(MICROWINDOWS)/lib/libmwfonts.a
+CFLAGS+=-D_REENTRANT -Wall -g -I$(MICROWINDOWS)/include -g -I$(LIBITUNESDB)
+LDFLAGS+=$(MICROWINDOWS)/lib/libnano-X.a $(MICROWINDOWS)/lib/libmwengine.a $(MICROWINDOWS)/lib/libmwdrivers.a $(MICROWINDOWS)/lib/libmwfonts.a $(LIBITUNESDB)/.libs/libitunesdb.a
 
 # enable JPEG support
 LDFLAGS += -ljpeg
@@ -44,8 +46,10 @@ OBJS=\
 	audio.o \
 	othello.o \
 	pong.o \
-	itunesdb.o \
 	calendar.o \
+	btree.o \
+	itunes_db.o \
+	itunesmenu.o \
 	bluecube/box.o \
 	bluecube/main.o \
 	bluecube/pieces.o \
