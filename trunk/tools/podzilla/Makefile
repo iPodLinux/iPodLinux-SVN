@@ -14,7 +14,6 @@ MICROWINDOWS = ../microwindows/src
 # LDFLAGS+=-L ../jpeg-6b
 else
 
-# Uncomment for building natively
 CC=gcc
 CFLAGS=
 LDFLAGS=-L/usr/X11R6/lib -lX11
@@ -37,6 +36,7 @@ OBJS=\
 	menu.o \
 	piezo.o \
 	textview.o \
+	mp3.o \
 	message.o
 
 all: podzilla
