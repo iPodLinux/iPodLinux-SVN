@@ -1,6 +1,6 @@
 
 leachbj - Fri October 8 2004
-	increased maximum number of songs per artist to 512
+	removed limit on number of songs per artist
 	fixed some memory overwrites in iTunesDB parsing
 
 ansi - Fri October 8 2004
