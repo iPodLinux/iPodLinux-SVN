@@ -81,21 +81,21 @@ void steroids_shot_newShip (Steroids_Shot *shot,
 }
 
 
-void steroids_shot_drawall (Steroids_Shot *shot, int n)
+void steroids_shot_drawall (Steroids_Shot *shot, int n, GR_WINDOW_ID wid)
 {
     int i;
     for (i = 0; i < n; i++)
     {
 	if (shot[i].active)
 	{
-	    steroids_shot_draw (&shot[i]);
+	    steroids_shot_draw (&shot[i], wid);
 	}
     }
 }
 
-void steroids_shot_draw (Steroids_Shot *shot)
+void steroids_shot_draw (Steroids_Shot *shot, GR_WINDOW_ID wid)
 {
-    steroids_object_draw (&shot->shape, 0);
+    steroids_object_draw (&shot->shape, 0, wid);
 }
 
 

@@ -1,3 +1,6 @@
+Fredrik Bergholtz - Sun Mar 6 2005
+	steroids uses global screen_info and pz_get_gc, drawing buffered
+
 Alastair S - Sat Mar 5 2005
 	bluecube: mini-ised; global functions made static where needed
 	ambiguously named globals renamed

@@ -27,7 +27,8 @@ typedef struct SteroidsObject
 } Steroids_Object;
 
 void steroids_object_draw (Steroids_Object *o,
-			    int clipMode);
+			   int clipMode,
+			   GR_WINDOW_ID wid);
 
 /** Animates target accoring to velocity and accelleration.
  * 

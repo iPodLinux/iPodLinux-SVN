@@ -162,21 +162,21 @@ void steroids_asteroid_split (Steroids_Asteroid *a,
 
 
 
-void steroids_asteroid_drawall (Steroids_Asteroid *asteroid)
+void steroids_asteroid_drawall (Steroids_Asteroid *asteroid, GR_WINDOW_ID wid)
 {
     int i;
     for (i = 0; i < STEROIDS_ASTEROID_NUM; i++)
     {
 	if (asteroid[i].active)
 	{
-	    steroids_asteroid_draw (&asteroid[i]);
+	    steroids_asteroid_draw (&asteroid[i], wid);
 	}
     }
 }
 
-void steroids_asteroid_draw (Steroids_Asteroid *asteroid)
+void steroids_asteroid_draw (Steroids_Asteroid *asteroid, GR_WINDOW_ID wid)
 {
-    steroids_object_draw (&asteroid->shape, 0);
+    steroids_object_draw (&asteroid->shape, 0, wid);
 }
 
 

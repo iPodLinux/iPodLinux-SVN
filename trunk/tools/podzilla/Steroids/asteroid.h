@@ -29,8 +29,8 @@ typedef struct SteroidsAsteroid
 void steroids_asteroid_initall (Steroids_Asteroid *asteroid);
 void steroids_asteroid_init (Steroids_Asteroid *asteroid);
 
-void steroids_asteroid_drawall (Steroids_Asteroid *asteroid);
-void steroids_asteroid_draw (Steroids_Asteroid *asteroid);
+void steroids_asteroid_drawall (Steroids_Asteroid *asteroid, GR_WINDOW_ID wid);
+void steroids_asteroid_draw (Steroids_Asteroid *asteroid, GR_WINDOW_ID wid);
 
 /** Animates asteroid according to velocity and accelleration.
  * 

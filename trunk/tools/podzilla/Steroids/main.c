@@ -177,16 +177,19 @@ void new_steroids_window(void)
     /* Init randomizer */
     srand(time(NULL));
 
-    GrGetScreenInfo(&steroids_globals.screen_info);
+    steroids_globals.game_gc = pz_get_gc(1);
+    steroids_globals.topLeft_gc = pz_get_gc(1);
 
-    steroids_globals.width = steroids_globals.screen_info.cols;
-    steroids_globals.height = steroids_globals.screen_info.rows
+    steroids_globals.width = screen_info.cols;
+    steroids_globals.height = screen_info.rows
 	                      - (HEADER_TOPLINE + 1);
 
-    steroids_globals.game_gc = GrNewGC();
-    GrSetGCUseBackground(steroids_globals.game_gc, GR_FALSE);
+    GrSetGCUseBackground(steroids_globals.topLeft_gc, GR_FALSE);
 
-    steroids_globals.topLeft_gc = GrNewGC();
+    steroids_globals.temp_wid = GrNewPixmap(screen_info.cols,
+					    (screen_info.rows - (HEADER_TOPLINE + 1)),
+					    NULL);
+
     steroids_globals.topLeft_wid = pz_new_window(0,
 					 0,
 					 STEROIDS_GAME_SHIPS * (STEROIDS_SHIP_WIDTH + 2)
@@ -219,25 +222,6 @@ void new_steroids_window(void)
 
 
 
-#ifdef USE_SDL
-/*=========================================================================
-// Name: TimeLeft()
-// Desc: Returns the number of ms to wait that the framerate is constant
-//=======================================================================*/
-Uint32 TimeLeft()
-{
-	static Uint32 next_time=0;
-	Uint32 now;
-
-	now = SDL_GetTicks();
-	if (next_time <= now) {
-		next_time = now + TICK_INTERVAL;
-		return 0;
-	}
-
-	return (next_time - now);
-}
-#endif
 
 
 /*=========================================================================
@@ -282,7 +266,7 @@ static void steroids_Game_Loop()
 						 &steroids_ship);
 // My own shots are lethal:
 //      collide |= steroids_shot_collideShip (steroids_shot,
-//    					  &steroids_ship);
+//    					      &steroids_ship);
 	if (collide)
 	{
 	    if (steroids_ship_collided (&steroids_ship))
@@ -343,7 +327,11 @@ static void steroids_DrawScene()
     case STEROIDS_GAME_STATE_PLAY:
 	// Clear playfield:
 	//
-	GrClearWindow (steroids_globals.game_wid, GR_FALSE);
+	GrSetGCForeground(steroids_globals.game_gc, WHITE);
+	GrFillRect(steroids_globals.temp_wid,
+		   steroids_globals.game_gc,
+		   0, 0,
+		   screen_info.cols, (screen_info.rows - (HEADER_TOPLINE + 1)));
 
 	GrSetGCForeground(steroids_globals.game_gc, BLACK);
 	/*
@@ -360,7 +348,7 @@ static void steroids_DrawScene()
 	    {
 		sprintf (chScore, "Inactive");
 	    }
-	    GrText(steroids_globals.game_wid,
+	    GrText(steroids_globals.temp_wid,
 		   steroids_globals.game_gc,
 		   1, i * 11 + 11,
 		   chScore,
@@ -374,7 +362,7 @@ static void steroids_DrawScene()
 	{
 	    sprintf (chScore, "%s%d", chScore, steroids_shotShip[i].active);
 	}
-	GrText(steroids_globals.game_wid,
+	GrText(steroids_globals.temp_wid,
 	       steroids_globals.game_gc,
 	       1, 103,
 	       chScore,
@@ -385,7 +373,7 @@ static void steroids_DrawScene()
 	sprintf (chScore, "%.2f, %.2f",
 		 steroids_asteroid[0].shape.pos.x,
 		 steroids_asteroid[0].shape.pos.y);
-	GrText(steroids_globals.game_wid,
+	GrText(steroids_globals.temp_wid,
 	       steroids_globals.game_gc,
 	       1, 90,
 	       chScore,
@@ -394,16 +382,28 @@ static void steroids_DrawScene()
 	sprintf (chScore, "%d, %d",
 		 steroids_ship.shape.geometry.polygon.cog.x,
 		 steroids_ship.shape.geometry.polygon.cog.y);
-	GrText(steroids_globals.game_wid,
+	GrText(steroids_globals.temp_wid,
 	       steroids_globals.game_gc,
 	       1, 103,
 	       chScore,
 	       -1,
 	       GR_TFASCII);
 */
-	steroids_asteroid_drawall (steroids_asteroid);
-	steroids_shot_drawall (steroids_shotShip, STEROIDS_SHOT_NUM);
-	steroids_ship_draw (&steroids_ship);
+	steroids_asteroid_drawall (steroids_asteroid,
+				   steroids_globals.temp_wid);
+	steroids_shot_drawall (steroids_shotShip,
+			       STEROIDS_SHOT_NUM,
+			       steroids_globals.temp_wid);
+	steroids_ship_draw (&steroids_ship,
+			    steroids_globals.temp_wid);
+
+	GrCopyArea(steroids_globals.game_wid,
+		   steroids_globals.game_gc,
+		   0, 0,
+		   screen_info.cols, (screen_info.rows - (HEADER_TOPLINE + 1)),
+		   steroids_globals.temp_wid,
+		   0, 0,
+		   MWROP_SRCCOPY);
 	break;
 
 
@@ -448,23 +448,3 @@ void steroids_StartGameOverAnimation()
 static void steroids_GameOverAnimation()
 {
 }
-
-/*=========================================================================
-// Name: PutRect()
-// Desc: Draws a /UN/ filled rectangle onto the screen
-//=======================================================================*/
-void steroids_PutRect(int x, int y, int w, int h, int r, int g, int b)
-{
-    // GrSetGCForeground(steroids_globals.game_gc, MWRGB(r, g, b));
-    GrSetGCForeground(steroids_globals.game_gc, BLACK);
-    GrRect(steroids_globals.game_wid, steroids_globals.game_gc, x, y, w, h);
-}
-
-void steroids_ClearRect(int x, int y, int w, int h)
-{
-    GrSetGCForeground(steroids_globals.game_gc, WHITE);
-    GrFillRect(steroids_globals.game_wid, steroids_globals.game_gc, x, y, w, h);
-    GrSetGCForeground(steroids_globals.game_gc, BLACK);
-}
-
-
