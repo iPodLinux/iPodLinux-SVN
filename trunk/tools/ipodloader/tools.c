@@ -1,35 +1,69 @@
 
 #include "tools.h"
 
+#define IPOD_PP5002_LCD_BASE    0xc0001000
+#define IPOD_PP5002_RTC         0xcf001110
 
-/* wait for action button to be pressed and then released */
+#define IPOD_PP5020_LCD_BASE    0x70003000
+#define IPOD_PP5020_RTC         0x60005010
+
+#define LCD_DATA		0x10
+#define LCD_CMD			0x08
+
+#define IPOD_STD_LCD_WIDTH      160
+#define IPOD_STD_LCD_HEIGHT     128
+
+#define IPOD_MINI_LCD_WIDTH	138
+#define IPOD_MINI_LCD_HEIGHT	110
+
+#define HW_REV_MINI		4
+#define HW_REV_4G		5
+
+
+static unsigned long ipod_rtc_reg;
+static unsigned long lcd_base;
+
+static unsigned long lcd_width;
+static unsigned long lcd_height;
+
+extern int ipod_ver;
+
+/* find out which ipod revision we're running on */
 void
-wait_for_action()
+get_ipod_rev()
 {
-	/* wait for press */
-	do {
-		inl(0xcf000030);
-	} while ( (inl(0xcf000030) & 0x2) != 0 );
+	unsigned long rev = inl(0x2084) >> 16;
 
-	/* wait for release */
-	do {
-		inl(0xcf000030);
-	} while ( (inl(0xcf000030) & 0x2) == 0 );
+	lcd_base = IPOD_PP5002_LCD_BASE;
+	ipod_rtc_reg = IPOD_PP5002_RTC;
+	lcd_width = IPOD_STD_LCD_WIDTH;
+	lcd_height = IPOD_STD_LCD_HEIGHT;
+
+	if (rev > 3) {
+		lcd_base = IPOD_PP5020_LCD_BASE;
+		ipod_rtc_reg = IPOD_PP5020_RTC;
+	}
+
+	if (rev == HW_REV_MINI) {
+		lcd_width = IPOD_MINI_LCD_WIDTH;
+		lcd_height = IPOD_MINI_LCD_HEIGHT;
+	}
+
+	ipod_ver = rev;
 }
-
 
 /* get current usec counter */
 int
 timer_get_current()
 {
-	return inl(0xcf001110);
+	return inl(ipod_rtc_reg);
 }
 
 /* check if number of seconds has past */
 int
 timer_check(int clock_start, int usecs)
 {
-	if ( (inl(0xcf001110) - clock_start) >= usecs ) {
+	if ((inl(ipod_rtc_reg) - clock_start) >= usecs) {
 		return 1;
 	} else {
 		return 0;
@@ -40,9 +74,9 @@ timer_check(int clock_start, int usecs)
 int
 wait_usec(int usecs)
 {
-	int start = inl(0xcf001110);
+	int start = inl(ipod_rtc_reg);
 
-	while ( timer_check(start, usecs) == 0 ) {
+	while (timer_check(start, usecs) == 0) {
 		// empty
 	}
 
@@ -54,12 +88,12 @@ wait_usec(int usecs)
 void
 lcd_wait_write()
 {
-	if ( (inl(0xc0001000) & 0x1) != 0 ) {
+	if ((inl(lcd_base) & 0x8000) != 0) {
 		int start = timer_get_current();
 
 		do {
-			if ( (inl(0xc0001000) & (unsigned int)0x8000) == 0 ) break;
-		} while ( timer_check(start, 1000) == 0 );
+			if ((inl(lcd_base) & 0x8000) == 0) break;
+		} while (timer_check(start, 1000) == 0);
 	}
 }
 
@@ -69,9 +103,9 @@ void
 lcd_send_data(int data_lo, int data_hi)
 {
 	lcd_wait_write();
-	outl(0xc0001010, data_lo);
+	outl(data_lo, lcd_base + LCD_DATA);
 	lcd_wait_write();
-	outl(0xc0001010, data_hi);
+	outl(data_hi, lcd_base + LCD_DATA);
 }
 
 /* send LCD command */
@@ -79,9 +113,9 @@ void
 lcd_prepare_cmd(int cmd)
 {
 	lcd_wait_write();
-	outl(0xc0001008, 0x0);
+	outl(0x0, lcd_base + LCD_CMD);
 	lcd_wait_write();
-	outl(0xc0001008, cmd);
+	outl(cmd, lcd_base + LCD_CMD);
 }
 
 /* send LCD command and data */
@@ -91,114 +125,6 @@ lcd_cmd_and_data(int cmd, int data_lo, int data_hi)
 	lcd_prepare_cmd(cmd);
 
 	lcd_send_data(data_lo, data_hi);
-}
-
-static int lcd_inited;
-static int ipod_rev;
-
-/* initialise LCD hardware? */
-static void
-init_lcd()
-{
-	wait_usec(15);
-	outl(0xcf005000, inl(0xcf005000) | 0x800);
-	wait_usec(15);
-	outl(0xcf005000, inl(0xcf005000) & ~0x400);
-	wait_usec(15);
-
-	outl(0xcf005030, inl(0xcf005030) | 0x400);
-
-	/* delay for 15 usecs */
-	wait_usec(15);
-
-	outl(0xcf005030, inl(0xcf005030) & ~0x400);
-	wait_usec(15);
-
-	outl(0xc0001000, inl(0xc0001000) & ~0x4);
-
-	/* delay for 15 usecs */
-	wait_usec(15);
-
-	outl(0xc0001000, inl(0xc0001000) | 0x4);
-
-	/* delay for 15 usecs */
-	wait_usec(15);
-
-	outl(0xc0001000, (inl(0xc0001000) & ~0x10) | 0x4001);
-	wait_usec(15);
-
-	lcd_inited = 1;
-}
-
-/* reset the LCD */
-void
-reset_lcd()
-{
-	if ( lcd_inited == 0 ) {
-		int i;
-
-		// 0xcf005000 and 0xc0001000 initialisation
-		init_lcd();
-
-		lcd_inited = 1;
-
-		i = inl(0x2084);
-		if ( i == 0x30000 || i == 0x30001 ) ipod_rev = 3;
-		else if ( i == 0x20000 || i == 0x20001 ) ipod_rev = 2;
-		else ipod_rev = 1;
-	}
-
-	lcd_cmd_and_data(0x0, 0x0, 0x1);
-
-	/* delay 10000 usecs */
-	wait_usec(10000);
-
-
-	lcd_cmd_and_data(0x1, 0x0, 0xf);
-	lcd_cmd_and_data(0x2, 0x0, 0x55);
-	lcd_cmd_and_data(0x3, 0x15, 0xc);
-	lcd_cmd_and_data(0x4, 0x0, 0x0);
-	lcd_cmd_and_data(0x5, 0x0, 0x0);
-	lcd_cmd_and_data(0x6, 0x0, 0x0);
-	lcd_cmd_and_data(0x7, 0x0, 0x0);
-	lcd_cmd_and_data(0x8, 0x0, 0x4);
-	lcd_cmd_and_data(0xb, 0x0, 0x0);
-	lcd_cmd_and_data(0xc, 0x0, 0x0);
-	lcd_cmd_and_data(0xd, 0xff, 0x0);
-	lcd_cmd_and_data(0xe, 0x0, 0x0);
-	lcd_cmd_and_data(0x10, 0x0, 0x0);
-
-	/* move the cursor */
-	lcd_cmd_and_data(0x11, 0, 0);
-
-	/* the following two should vary per board */
-	if ( ipod_rev == 3 ) {
-		lcd_cmd_and_data(0x4, 0x4, 0x6c);
-	}
-	else if ( ipod_rev == 2 ) {
-		lcd_cmd_and_data(0x4, 0x4, 0x5c);
-	}
-	else {
-		lcd_cmd_and_data(0x4, 0x4, 0x5c);
-	}
-	lcd_cmd_and_data(0x7, 0x0, 0x9);
-}
-
-int
-backlight_on_off(int on)
-{
-	int lcd_state = inl(0xc0001000);
-
-	if ( on ) {
-		lcd_state = lcd_state | 0x2;
-	}
-	else {
-		lcd_state = lcd_state & ~0x2;
-	}
-
-	outl(0xc0001000, lcd_state);
-
-	return 0x0;
 }
 
 static unsigned char patterns[] = {
@@ -233,8 +159,7 @@ display_image(img *img, int draw_bg)
 	width_off_diff = img->width - img->offx;
 
 	// center the image vertically
-	// nb. screen height is 128
-	vert_space = 64 - (height_off_diff / 2);
+	vert_space = (lcd_height/2) - (height_off_diff / 2);
 
 	for ( cursor_pos = 0; vert_space > cursor_pos; cursor_pos = (cursor_pos + 1) & 0xff ) {
 		int bg = 0;
@@ -257,7 +182,7 @@ display_image(img *img, int draw_bg)
 		}
 
 		/* print out line line of background */
-		for ( r6 = 0; r6 < 168; r6 += 8 ) {
+		for ( r6 = 0; r6 < lcd_width; r6 += 8 ) {
 			// display background character
 			lcd_send_data(bg, bg);
 		}
@@ -288,7 +213,7 @@ display_image(img *img, int draw_bg)
 			}
 		}
 
-		for ( r6 = 0; r6 < 80 - (width_off_diff / 2); r6 += 8 ) {
+		for ( r6 = 0; r6 < (lcd_width/2) - (width_off_diff / 2); r6 += 8 ) {
 			// display background character
 			lcd_send_data(bg, bg);
 		}
@@ -313,7 +238,7 @@ display_image(img *img, int draw_bg)
 
 		}
 
-		for ( r6 = 80 + (width_off_diff / 2); r6 < 168; r6 += 8 ) {
+		for ( r6 = (lcd_width/2) + (width_off_diff / 2); r6 <= lcd_width; r6 += 8 ) {
 			// display background character
 			lcd_send_data(bg, bg);
 		}
@@ -326,8 +251,7 @@ display_image(img *img, int draw_bg)
 
 	/* background the bottom half */
 
-	// screen height is 128
-	for ( cursor_pos = 64 + (height_off_diff / 2); cursor_pos <= 128; cursor_pos++ ) {
+	for ( cursor_pos = 64 + (height_off_diff / 2); cursor_pos <= lcd_height; cursor_pos++ ) {
 		int bg = 0;
 		unsigned char r6;
 
@@ -350,11 +274,13 @@ display_image(img *img, int draw_bg)
 		}
 
 		/* print out a line of background */
-		for ( r6 = 0; r6 < 168; r6 += 8 ) {
+		for ( r6 = 0; r6 <= lcd_width; r6 += 8 ) {
 			// display background character
 			lcd_send_data(bg, bg);
 		}
 	}
+	lcd_cmd_and_data(0x11, 0, 0);
+	lcd_send_data(0xff, 0xff);
 	wait_usec(15);
 }
 
