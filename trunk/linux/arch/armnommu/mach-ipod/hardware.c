@@ -273,6 +273,31 @@ ipod_i2c_init(void)
 }
 
 int
+ipod_i2c_read_byte(unsigned int addr, unsigned int *data)
+{
+	if (ipod_i2c_wait_not_busy() < 0) {
+		return -ETIMEDOUT;
+	}
+
+	// clear top 15 bits, left shift 1, or in 0x1 for a read
+	outb(((addr << 17) >> 16) | 0x1, IPOD_I2C_ADDR);
+
+	outb(inb(IPOD_I2C_CTRL) | 0x20, IPOD_I2C_CTRL);
+
+	outb(inb(IPOD_I2C_CTRL) | IPOD_I2C_SEND, IPOD_I2C_CTRL);
+
+	if (ipod_i2c_wait_not_busy() < 0) {
+		return -ETIMEDOUT;
+	}
+
+	if (data) {
+		*data = inb(IPOD_I2C_DATA0);
+	}
+
+	return 0;
+}
+
+int
 ipod_i2c_send_bytes(unsigned int addr, unsigned int len, unsigned char *data)
 {
 	int data_addr;
@@ -314,6 +339,16 @@ ipod_i2c_send(unsigned int addr, int data0, int data1)
 	data[1] = data1;
 
 	return ipod_i2c_send_bytes(addr, 2, data);
+}
+
+int
+ipod_i2c_send_byte(unsigned int addr, int data0)
+{
+	unsigned char data[1];
+
+	data[0] = data0;
+
+	return ipod_i2c_send_bytes(addr, 1, data);
 }
 
 void
@@ -391,6 +426,7 @@ EXPORT_SYMBOL(ipod_get_sysinfo);
 EXPORT_SYMBOL(ipod_i2c_init);
 EXPORT_SYMBOL(ipod_i2c_send_bytes);
 EXPORT_SYMBOL(ipod_i2c_send);
+EXPORT_SYMBOL(ipod_i2c_send_byte);
 EXPORT_SYMBOL(ipod_serial_init);
 EXPORT_SYMBOL(ipod_set_process_dma);
 
