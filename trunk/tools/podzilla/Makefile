@@ -101,6 +101,7 @@ OBJS=\
 	playlist.o \
 	cube.o \
 	matrix.o \
+	mlist.o \
 	Steroids/asteroid.o \
 	Steroids/main.o \
 	Steroids/object.o \

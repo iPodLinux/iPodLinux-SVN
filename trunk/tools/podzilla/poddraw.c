@@ -139,6 +139,7 @@ static int poddraw_handle_event(GR_EVENT * event)
 
 static void poddraw_do_draw( void )
 {
+    pz_draw_header( "PodDraw" );
     poddraw_cycle_point();
 }
 
@@ -162,5 +163,4 @@ void new_poddraw_window( void )
     poddraw_x = screen_info.cols/2;
     poddraw_y = (screen_info.rows - (HEADER_TOPLINE + 1))/2;
 
-    pz_draw_header( "PodDraw" );
 }
