@@ -9,8 +9,6 @@
  * 	o window effects? fade, disolve, slide, zoom, rotate, etc.
  * 	o sort by popularity/usage?
  *
- * Then, of course, comes integration..
- *
  * Copyright (C) 2005 Courtney Cavin
  *
  * This program is free software; you can redistribute it and/or modify
@@ -84,23 +82,23 @@ void menu_draw_timer(menu_st *menulist)
 	}
 	GrSetGCUseBackground(menulist->menu_gc, GR_FALSE);
 	/* cycle through colors */
-	if(menulist->timer_step == 0 || menulist->timer_step == 12) {
-		GrSetGCForeground(menulist->menu_gc, BLACK);
+	if(menulist->timer_step == 0 || menulist->timer_step > 6) {
+		GrSetGCForeground(menulist->menu_gc, WHITE);
 		if(menulist->timer_step == 12)
 			menulist->timer_step = 1;
 		else
 			menulist->timer_step++;
 	}
-	else if(menulist->timer_step == 1 || menulist->timer_step == 11) {
-		GrSetGCForeground(menulist->menu_gc, GRAY);
-		menulist->timer_step++;
-	}
-	else if(menulist->timer_step == 2 || menulist->timer_step == 10) {
+	else if(menulist->timer_step == 1 || menulist->timer_step == 6) {
 		GrSetGCForeground(menulist->menu_gc, LTGRAY);
 		menulist->timer_step++;
 	}
-	else if(menulist->timer_step >= 3 && menulist->timer_step < 10) {
-		GrSetGCForeground(menulist->menu_gc, WHITE);
+	else if(menulist->timer_step == 2 || menulist->timer_step == 5) {
+		GrSetGCForeground(menulist->menu_gc, GRAY);
+		menulist->timer_step++;
+	}
+	else if(menulist->timer_step == 3 || menulist->timer_step == 4) {
+		GrSetGCForeground(menulist->menu_gc, BLACK);
 		menulist->timer_step++;
 	}
 	/* executable instead */
@@ -181,7 +179,7 @@ void menu_clear_pixmap(menu_st *menulist, int pos)
 	}
 	GrSetGCForeground(menulist->menu_gc, WHITE);
 	GrFillRect(menulist->pixmaps[menulist->pixmap_pos[pos]],
-			menulist->menu_gc, 0, 0, 220, menulist->height);
+			menulist->menu_gc, 0, 0, 440, menulist->height);
 	GrSetGCForeground(menulist->menu_gc, BLACK);
 }
 
@@ -234,10 +232,23 @@ void menu_retext_pixmap(menu_st *menulist, int pixmap, item_st *item)
 		Dprintf("menu_retext_pixmap::Item non-existent\n");
 		return;
 	}
+
+	/* set the bit for a checked long item */
+	if(!(LONG_ITEM & item->op)) {
+		GR_SIZE width, height, base;
+		GrGetGCTextSize(menulist->menu_gc, item->text,
+			-1, GR_TFASCII,	&width,	&height, &base);
+		item->text_width = width;
+
+		item->op |= LONG_ITEM; 
+	}
+
 	menu_clear_pixmap(menulist, pixmap);
+
 	GrText(menulist->pixmaps[menulist->pixmap_pos[pixmap]],
 			menulist->menu_gc, 8, 1, item->text, -1, GR_TFASCII|
 			GR_TFTOP);
+
 	
 	if(BOOLEAN_MENU & item->op) {
 		GR_SIZE width, height, base;
@@ -268,17 +279,18 @@ void menu_retext_pixmap(menu_st *menulist, int pixmap, item_st *item)
 				(8 + 2), 1, option[item->sel_option], -1,
 				GR_TFASCII | GR_TFTOP);
 	}
-	
-	/* set the bit for a checked long item */
-	if(!(LONG_ITEM & item->op)) {
-		GR_SIZE width, height, base;
-		GrGetGCTextSize(menulist->menu_gc, item->text,
-			-1, GR_TFASCII,	&width,	&height, &base);
-		item->text_width = width;
-
-		item->op |= LONG_ITEM; 
+	else if((SUB_MENU_HEADER & item->op || ARROW_MENU & item->op) &&
+			(item->text_width < (menulist->w - 8) - 8)) {
+		GrSetGCUseBackground(menulist->menu_gc, GR_FALSE);
+		GrText(menulist->pixmaps[menulist->pixmap_pos[pixmap]],
+				menulist->menu_gc, (menulist->w - 8) - 7,
+				2, ">", -1, GR_TFASCII | GR_TFTOP);
+		GrText(menulist->pixmaps[menulist->pixmap_pos[pixmap]],
+				menulist->menu_gc, (menulist->w - 8) - 6,
+				2, ">", -1, GR_TFASCII | GR_TFTOP);
+		GrSetGCUseBackground(menulist->menu_gc, GR_TRUE);
 	}
-
+	
 	menu_draw_item(menulist, pixmap);
 }
 
@@ -618,7 +630,7 @@ menu_st *menu_init(GR_WINDOW_ID menu_wid, GR_GC_ID menu_gc, char *title, int x,
 
 	/* initialize pixmaps */
 	for(i = 0; i < menulist->screen_items; i++) {
-		menulist->pixmaps[i] = GrNewPixmap(220, menulist->height, NULL);
+		menulist->pixmaps[i] = GrNewPixmap(440, menulist->height, NULL);
 		menulist->pixmap_pos[i] = i;
 		menu_clear_pixmap(menulist, i);
 	}
