@@ -262,6 +262,13 @@ void pz_event_handler(GR_EVENT *event)
 		break;
 	case GR_EVENT_TYPE_TIMEOUT:
 		break;
+
+	case GR_EVENT_TYPE_SCREENSAVER:
+		if(((GR_EVENT_SCREENSAVER *)event)->activate)
+			ipod_set_setting(BACKLIGHT, 0);
+		else
+			ipod_set_setting(BACKLIGHT, 1);
+		break;
 		
 	default:
 		window = pz_find_window(((GR_EVENT_GENERAL *)event)->wid);
@@ -353,6 +360,7 @@ main(int argc, char **argv)
 	GrSelectEvents(root_wid, GR_EVENT_MASK_EXPOSURE |
 			GR_EVENT_MASK_CLOSE_REQ | GR_EVENT_MASK_KEY_UP |
 			GR_EVENT_MASK_KEY_DOWN);
+	GrSelectEvents(GR_ROOT_WINDOW_ID, GR_EVENT_MASK_SCREENSAVER);
 
 	GrMapWindow(root_wid);
 

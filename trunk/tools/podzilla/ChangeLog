@@ -1,3 +1,9 @@
+Courtney Cavin - Thu Mar 17 2005
+	backlight timer implemented
+	max item length for scroller upped to 440px
+	arrows now always show for submenu items
+	moved Entertainment to Stuff
+
 Alastair S - Sun Mar 13 2005
 	matrix now based on cmatrix algorithm, also ported to photo
 	bluecube no longer has its own event loop

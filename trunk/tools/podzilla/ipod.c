@@ -112,6 +112,14 @@ int ipod_set_backlight(int backlight)
 	return 0;
 }
 
+int ipod_set_backlight_timer(int timer)
+{
+	int times[] = {0, 1, 2, 5, 10, 30, 60};
+	GrSetScreenSaverTimeout(times[timer]);
+	ipod_set_backlight(timer ? 1 : 0);
+	return 0;
+}
+
 int ipod_set_setting(int setting, int value)
 {
 	if (value <= 0) {
@@ -125,6 +133,9 @@ int ipod_set_setting(int setting, int value)
 		break;	
 	case BACKLIGHT:
 		ipod_set_backlight(value);
+		break;
+	case BACKLIGHT_TIMER:
+		ipod_set_backlight_timer(value);
 		break;
 	}
 	
