@@ -78,9 +78,10 @@ struct menulist *new_ml()
 {
 	struct menulist *ret =
 		(struct menulist *) malloc(sizeof(struct menulist));
+		
 	GrGetScreenInfo(&ret->screen_info);
 
-	ret->gc = GrNewGC();
+	ret->gc = pz_get_gc(1);
 	GrSetGCUseBackground(ret->gc, GR_FALSE);
 	GrSetGCForeground(ret->gc, BLACK);
 

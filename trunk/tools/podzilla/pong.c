@@ -45,7 +45,6 @@ struct Velocity
 static GR_TIMER_ID timer_id;
 static GR_WINDOW_ID pong_wid;
 static GR_GC_ID pong_gc;
-static GR_SCREEN_INFO screen_info;
 static struct Position pball, pplayer1, pplayer2;
 static struct Velocity vball, vplayer1, vplayer2;
 int roundover=2, comppoint=0, userpoint=0, gameover=0;
@@ -531,9 +530,7 @@ static int pong_do_keystroke(GR_EVENT * event) {
 
 void new_pong_window()
 {
-	GrGetScreenInfo(&screen_info);
-
-	pong_gc = GrNewGC();
+	pong_gc = pz_get_gc(1);
 	GrSetGCUseBackground(pong_gc, GR_FALSE);
 	GrSetGCForeground(pong_gc, BLACK);
 

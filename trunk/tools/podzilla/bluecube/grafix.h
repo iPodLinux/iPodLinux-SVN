@@ -24,7 +24,6 @@
 
 GR_WINDOW_ID tetris_wid;
 GR_GC_ID tetris_gc;
-GR_SCREEN_INFO screen_info;
 
 void InitWindow(void);
 void PutRect(int x, int y, int w, int h, int color);

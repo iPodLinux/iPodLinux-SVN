@@ -22,7 +22,7 @@
 
 static GR_WINDOW_ID calc_wid;
 static GR_GC_ID calc_gc;
-static GR_SCREEN_INFO screen_info;
+
 int xlocal,ylocal,lastxlocal,lastylocal;
 char mathloc[16];
 double oldnum;
@@ -158,9 +158,7 @@ static int calc_do_keystroke(GR_EVENT * event) {
 }
 
 void new_calc_window() {
-	GrGetScreenInfo(&screen_info);
-
-	calc_gc = GrNewGC();
+	calc_gc = pz_get_gc(1);
 	GrSetGCUseBackground(calc_gc, GR_FALSE);
 	GrSetGCForeground(calc_gc, BLACK);
 

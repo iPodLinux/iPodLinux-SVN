@@ -49,7 +49,6 @@
 
 static GR_WINDOW_ID mp3_wid;
 static GR_GC_ID mp3_gc;
-static GR_SCREEN_INFO screen_info;
 static long remaining_time;
 static long total_time;
 static long next_song_time;
@@ -499,11 +498,10 @@ void new_mp3_window(char *filename, char *album, char *artist, char *title, int 
 
 	window_open = 1;
 
-	mp3_gc = GrNewGC();
+	mp3_gc = pz_get_gc(1);
 	GrSetGCUseBackground(mp3_gc, GR_TRUE);
 	GrSetGCBackground(mp3_gc, WHITE);
 	GrSetGCForeground(mp3_gc, BLACK);
-	GrGetScreenInfo(&screen_info);
 
 	mp3_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), mp3_do_draw, mp3_do_keystroke);
 

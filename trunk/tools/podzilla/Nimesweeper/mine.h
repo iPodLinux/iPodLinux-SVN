@@ -131,7 +131,6 @@ WINDOW *FlagsWin;
 #else
 extern GR_WINDOW_ID mines_wid;
 extern GR_GC_ID mines_gc;
-extern GR_SCREEN_INFO screen_info;
 #endif
 
 

@@ -28,7 +28,6 @@
 static GR_TIMER_ID msg_timer;
 static GR_WINDOW_ID msg_wid;
 static GR_GC_ID msg_gc;
-static GR_SCREEN_INFO screen_info;
 static char **msglines;
 static int linenum;
 
@@ -126,9 +125,7 @@ void new_message_window(char *message)
 	GR_SIZE width, height, base;
 	int i, maxwidth;
 
-	GrGetScreenInfo(&screen_info);
-
-	msg_gc = GrNewGC();
+	msg_gc = pz_get_gc(1);
 	GrSetGCUseBackground(msg_gc, GR_FALSE);
 	GrSetGCForeground(msg_gc, BLACK);
 

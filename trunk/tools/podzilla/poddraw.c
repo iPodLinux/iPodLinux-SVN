@@ -39,7 +39,6 @@
 static GR_WINDOW_ID	poddraw_wid;
 static GR_GC_ID		poddraw_gc;
 static GR_TIMER_ID      poddraw_timer;
-static GR_SCREEN_INFO	screen_info;
 
 static int poddraw_color = 0;
 static int poddraw_x = 0;
@@ -145,9 +144,7 @@ static void poddraw_do_draw( void )
 
 void new_poddraw_window( void )
 {
-    GrGetScreenInfo(&screen_info);
-
-    poddraw_gc = GrNewGC();
+    poddraw_gc = pz_get_gc(1);
     GrSetGCUseBackground(poddraw_gc, GR_FALSE);
     GrSetGCForeground(poddraw_gc, BLACK);
 

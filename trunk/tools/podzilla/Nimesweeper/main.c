@@ -194,7 +194,6 @@ int main(int argc, char **argv)
 
 GR_WINDOW_ID mines_wid;
 GR_GC_ID mines_gc;
-GR_SCREEN_INFO screen_info;
 
 static GameStats Game;
 
@@ -329,7 +328,6 @@ static int mines_do_keystroke(GR_EVENT * event)
 void new_mines_window()
 {
 	FILE *File;
-    GrGetScreenInfo(&screen_info);
 
     if (screen_info.cols == 138) { /* mini */
     	ylen = 7;
@@ -355,7 +353,7 @@ void new_mines_window()
 	lastx = Game.x;
 	lasty = Game.y;
 
-	mines_gc = GrNewGC();
+	mines_gc = pz_get_gc(1);
 	GrSetGCForeground(mines_gc, BLACK);
 	GrSetGCUseBackground(mines_gc, GR_FALSE);
 	GrSetGCMode(mines_gc, GR_MODE_SET);

@@ -21,7 +21,6 @@
 
 static GR_WINDOW_ID slider_wid;
 static GR_GC_ID slider_gc;
-static GR_SCREEN_INFO screen_info;
 
 struct slider_widget {
 	int setting;
@@ -98,9 +97,7 @@ void new_slider_widget(int SETTING, char *title, int slider_min, int slider_max)
 	slider.max = slider_max;
 	slider.title = title;
 
-	GrGetScreenInfo(&screen_info);
-
-	slider_gc = GrNewGC();
+	slider_gc = pz_get_gc(1);
 	GrSetGCUseBackground(slider_gc, GR_FALSE);
 	GrSetGCForeground(slider_gc, BLACK);
 

@@ -30,7 +30,6 @@
 static GR_GC_ID tv_gc;
 static GR_WINDOW_ID tv_wid;
 static GR_WINDOW_INFO tv_winfo;
-static GR_SCREEN_INFO screen_info;
 static char *g_title;
 
 static unsigned int totalLines = 0;
@@ -265,9 +264,7 @@ int is_ascii_file(char *filename)
 
 void create_textview_window()
 {
-	GrGetScreenInfo(&screen_info);
-
-	tv_gc = GrNewGC();
+	tv_gc = pz_get_gc(1);
 	GrSetGCUseBackground(tv_gc, GR_FALSE);
 	GrSetGCForeground(tv_gc, BLACK);
 
