@@ -21,6 +21,9 @@ static int ipod_sys_info_set;
 void ipod_set_sys_info(void);
 
 /*
+ * ipod photo 0x60000
+ * 4th generation 0x50000
+ * ipod mini 0x40000
  * 3rd generation (docking) 0x30000, 0x30001
  * 2nd generation (touch wheel) 0x20000, 0x20001
  * 1st generation (scroll wheel) iPods 0x10000, 0x10001, 0x10002
@@ -69,64 +72,97 @@ void ipod_set_sys_info(void)
 
 void ipod_hard_reset(void)
 {
-	outl(inl(0xcf005030) | 0x4, 0xcf005030);
+	int hw_ver = ipod_get_hw_version() >> 16;
+	if (hw_ver > 0x3) {
+		outl(inl(0x60006004) | 0x4, 0x60006004);
+	}
+	else {
+		outl(inl(0xcf005030) | 0x4, 0xcf005030);
+	}
 }
 
 void
 ipod_init_cache(void)
 {
 	unsigned i;
+	int hw_ver;
 
-	outl(inl(0xcf004050) & ~0x700, 0xcf004050);
-	outl(0x4000, 0xcf004020);
+	hw_ver = ipod_get_hw_version() >> 16;
+	if (hw_ver > 0x3) {
+		/* cache init mode? */
+		outl(0x4, 0x6000C000);
 
-	outl(0x2, 0xcf004024);
+		/* PP5002 has 8KB cache */
+		for (i = 0xf0004000; i < 0xf0006000; i += 16) {
+			outl(0x0, i);
+		}
 
-	/* PP5002 has 8KB cache */
-	for (i = 0xf0004000; i < 0xf0006000; i += 16) {
-		outl(0x0, i);
+		outl(0x0, 0xf000f040);
+		outl(0x3fc0, 0xf000f044);
+
+		/* enable cache */
+		outl(0x1, 0x6000C000);
+
+		for (i = 0x10000000; i < 0x10002000; i += 16) {
+			inb(i);
+		}
 	}
+	else {
+		outl(inl(0xcf004050) & ~0x700, 0xcf004050);
+		outl(0x4000, 0xcf004020);
 
-	outl(0x0, 0xf000f020);
-	outl(0x3fc0, 0xf000f024);
+		outl(0x2, 0xcf004024);
 
-	outl(0x3, 0xcf004024);
+		/* PP5002 has 8KB cache */
+		for (i = 0xf0004000; i < 0xf0006000; i += 16) {
+			outl(0x0, i);
+		}
+
+		outl(0x0, 0xf000f020);
+		outl(0x3fc0, 0xf000f024);
+
+		outl(0x3, 0xcf004024);
+	}
 }
 
 void
 ipod_set_cpu_speed(void)
 {
-	outl(0x02, 0xcf005008);
+	int hw_ver;
 
-	outl(0x55, 0xcf00500c);
-	outl(0x6000, 0xcf005010);
+	if ((ipod_get_hw_version() >> 16) <= 0x3) {
+		outl(0x02, 0xcf005008);
+
+		outl(0x55, 0xcf00500c);
+		outl(0x6000, 0xcf005010);
 
 #if 1
-	// 75  MHz (24/24 * 75) (default)
-	outl(24, 0xcf005018);
-	outl(75, 0xcf00501c);
+		// 75  MHz (24/24 * 75) (default)
+		outl(24, 0xcf005018);
+		outl(75, 0xcf00501c);
 #endif
 
 #if 0
-	// 66 MHz (24/3 * 8)
-	outl(3, 0xcf005018);
-	outl(8, 0xcf00501c);
+		// 66 MHz (24/3 * 8)
+		outl(3, 0xcf005018);
+		outl(8, 0xcf00501c);
 #endif
 
-	outl(0xe000, 0xcf005010);
+		outl(0xe000, 0xcf005010);
 
-	udelay(2000);
+		udelay(2000);
 
-	outl(0xa8, 0xcf00500c);
+		outl(0xa8, 0xcf00500c);
+	}
 }
 
-#define IPOD_I2C_CTRL	0xc0008000
-#define IPOD_I2C_ADDR	0xc0008004
-#define IPOD_I2C_DATA0	0xc000800c
-#define IPOD_I2C_DATA1	0xc0008010
-#define IPOD_I2C_DATA2	0xc0008014
-#define IPOD_I2C_DATA3	0xc0008018
-#define IPOD_I2C_STATUS	0xc000801c
+#define IPOD_I2C_CTRL	(ipod_i2c_base+0x00)
+#define IPOD_I2C_ADDR	(ipod_i2c_base+0x04)
+#define IPOD_I2C_DATA0	(ipod_i2c_base+0x0c)
+#define IPOD_I2C_DATA1	(ipod_i2c_base+0x10)
+#define IPOD_I2C_DATA2	(ipod_i2c_base+0x14)
+#define IPOD_I2C_DATA3	(ipod_i2c_base+0x18)
+#define IPOD_I2C_STATUS	(ipod_i2c_base+0x1c)
 
 /* IPOD_I2C_CTRL bit definitions */
 #define IPOD_I2C_SEND	0x80
@@ -135,6 +171,9 @@ ipod_set_cpu_speed(void)
 #define IPOD_I2C_BUSY	(1<<6)
 
 #define POLL_TIMEOUT (HZ)
+
+static int ipod_get_hw_ver;
+static unsigned ipod_i2c_base;
 
 static int
 ipod_i2c_wait_not_busy(void)
@@ -160,9 +199,21 @@ ipod_i2c_init(void)
 	if (i2c_init == 0) {
 		i2c_init = 1;
 
+		ipod_get_hw_ver = ipod_get_hw_version() >> 16;
+
 		/* reset I2C */
-                outl(inl(0xcf005030) | (1<<8), 0xcf005030);
-		outl(inl(0xcf005030) & ~(1<<8), 0xcf005030);
+		if (ipod_get_hw_ver > 0x3) {
+			ipod_i2c_base = 0x7000c000;
+
+			outl(inl(0x60005030) | (1<<12), 0x60005030);
+			outl(inl(0x60005030) & ~(1<<12), 0x60005030);
+		}
+		else {
+			ipod_i2c_base = 0xc0008000;
+
+			outl(inl(0xcf005030) | (1<<8), 0xcf005030);
+			outl(inl(0xcf005030) & ~(1<<8), 0xcf005030);
+		}
 	}
 }
 
@@ -251,7 +302,9 @@ ipod_serial_init(void)
 	int hw_ver = ipod_get_hw_version() >> 16;
 
 	/* enable ttyS1 (piezo) */
-	outl(inl(0xcf004040) & ~(1<<12), 0xcf004040);
+	if (hw_ver <= 0x3) {
+		outl(inl(0xcf004040) & ~(1<<12), 0xcf004040);
+	}
 	if (hw_ver == 0x3) {
 		/* port c, bit 0 and 3 disabled */
 		outl(inl(0xcf00000c) & ~((1<<0)|(1<<3)), 0xcf00000c);
@@ -272,24 +325,35 @@ ipod_serial_init(void)
 	}
 
 	/* enable ttyS0 (remote) */
-	if (hw_ver != 0x3) {
+	if (hw_ver < 0x3) {
 		outl(inl(0xcf00000c) & ~0x8, 0xcf00000c);
+	}
+
+	if (hw_ver >= 0x3) {
+		ipod_i2c_init();
+
+		/* send some commands to the PCF */
+		/* to power up the 3.3V pin + ?? */
+
+		/* 4g diag this this (mini diag doesnt) */
+		/* ipod_i2c_send(0x8, 0x38, 0x0); */
+
+		ipod_i2c_send(0x8, 0x24, 0xf5);
+		ipod_i2c_send(0x8, 0x25, 0xf8);
+
+		/* 4g diag doesnt have this (mini diag does) */
+		ipod_i2c_send(0x8, 0x26, 0xf5);
 	}
 
 	/* 3g ttyS0 init */
 	if (hw_ver == 0x3) {
-		ipod_i2c_send(0x8, 0x24, 0xf5);
-		ipod_i2c_send(0x8, 0x25, 0xf8);
-		ipod_i2c_send(0x8, 0x26, 0xf5);
 		ipod_i2c_send(0x8, 0x34, 0x02);
 		ipod_i2c_send(0x8, 0x1b, 0xf9);
 
-		// sub_0_2800147C(0)
 		outl(inl(0xcf004044) | (1<<4), 0xcf004044);
 		outl(inl(0xcf004048) & ~(1<<4), 0xcf004048);
 
 		/* port c bit 3 output 1 */
-		// sub_0_28001434(1)
 		outl(inl(0xcf000008) | (1<<3), 0xcf000008);
 		outl(inl(0xcf000018) | (1<<3), 0xcf000018);
 		outl(inl(0xcf000028) | (1<<3), 0xcf000028);
@@ -297,6 +361,37 @@ ipod_serial_init(void)
 		// rmt_uart_init
 		outl(inl(0xcf00000c) & ~0x1, 0xcf00000c);
 		outl(inl(0xcf00000c) & ~0x8, 0xcf00000c);
+	}
+
+	if (hw_ver > 0x3) {
+		/* 4g diag for ser1 */
+		outl(inl(0x70000014) & ~0xF00, 0x70000014);
+		outl(inl(0x70000014) | 0xA00, 0x70000014);
+
+		/* 4g diag for ser0 */
+		outl(inl(0x70000018) & ~0xC00, 0x70000018);
+
+		/* where did this come from? */
+		// outl(inl(0x70000020) & ~0x200, 0x70000020);
+
+		/* port c bit 3 output 1 */
+		outl(inl(0x6000d008) | (1<<3), 0x6000d008);
+		outl(inl(0x6000d018) | (1<<3), 0x6000d018);
+		outl(inl(0x6000d028) | (1<<3), 0x6000d028);
+
+		/* enable ser0 */
+		outl(inl(0x6000600c) | 0x40, 0x6000600c);
+
+		/* reset ser0 */
+		outl(inl(0x60006004) | 0x40, 0x60006004);
+		outl(inl(0x60006004) & ~0x40, 0x60006004);
+
+		/* enable ser1 */
+		outl(inl(0x6000600c) | 0x80, 0x6000600c);
+
+		/* reset ser1 */
+		outl(inl(0x60006004) | 0x80, 0x60006004);
+		outl(inl(0x60006004) & ~0x80, 0x60006004);
 	}
 }
 
