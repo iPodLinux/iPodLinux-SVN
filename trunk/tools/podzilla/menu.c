@@ -116,7 +116,7 @@ static struct menu_item extras_menu[] = {
 
 static struct menu_item reset_menu[] = {
 	{"Cancel", SUB_MENU_PREV, 0, NOSETTING, 0},
-	{"Absolutely", ACTION_MENU, ipod_reset_settings, NOSETTING, 0},
+	{"Absolutely", ACTION_MENU_PREV_SUB, ipod_reset_settings, NOSETTING, 0},
 	{0, 0, 0, NOSETTING, 0}
 };
 
@@ -299,14 +299,12 @@ static int menu_do_keystroke(GR_EVENT * event)
 			break;
 		case ACTION_MENU:
 			if (menu[current_menu_item].ptr != 0) {
-				((menu_action_t) menu[current_menu_item].
-				 ptr) ();
+				((menu_action_t) menu[current_menu_item].ptr)();
 			}
 			break;
 		case ACTION_MENU_PREV_SUB:
 			if (menu[current_menu_item].ptr != 0) {
-				((menu_action_t) menu[current_menu_item].
-				 ptr) ();
+				((menu_action_t) menu[current_menu_item].ptr)();
 			}
 			event->keystroke.ch = 'm';
 			menu_do_keystroke(event);
