@@ -15,6 +15,7 @@
 #define LYNX_IMASK            0x10
 #define LYNX_CYCLE_TIMER      0x14
 #define LYNX_DIAGNOSTIC       0x18
+#define LYNX_RESERVED         0x1c
 #define LYNX_PHYACCESS        0x20
 #define LYNX_BUS_RESET        0x24
 #define LYNX_TIMELIMIT        0x28
@@ -146,6 +147,10 @@
 #define LYNX_INTERRUPT_TxExpr     0x00000002ul
 #define LYNX_INTERRUPT_AgntWr     0x00000001ul
 
+/************************************************************************/
+/*      bit definition for LYNX_RESERVED (0x1C)                         */
+/************************************************************************/
+#define POWER_CONSUMPTION_DIS     0x80000000
 
 /************************************************************************/
 /*      bit definition for LYNX_PHYACCESS (0x20)                        */
