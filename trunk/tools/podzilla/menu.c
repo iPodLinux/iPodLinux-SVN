@@ -29,11 +29,18 @@ extern void toggle_backlight(void);
 extern void set_wheeldebounce(void);
 extern void set_buttondebounce(void);
 extern void new_record_window(void);
+extern void new_playback_browse_window(void);
 extern void new_oth_window(void);
 extern void new_bluecube_window(void);
 extern void new_itunes_window(void);
 extern void new_pong_window(void);
 extern void new_mines_window(void);
+extern void record_set_8(void);
+extern void record_set_32(void);
+extern void record_set_44(void);
+extern void record_set_88(void);
+extern void record_set_96(void);
+
 
 static GR_WINDOW_ID menu_wid;
 static GR_GC_ID menu_gc;
@@ -55,6 +62,7 @@ struct menu_item {
 #define ACTION_MENU	2
 #define VALUE_MENU	3
 #define SUB_MENU_PREV   4
+#define ACTION_MENU_PREV_SUB	5
 
 typedef void (*menu_action_t) (void);
 
@@ -66,8 +74,27 @@ static struct menu_item games_menu[] = {
 	{0, 0, 0}
 };
 
+
+static struct menu_item sample_rate_menu[] = {
+	{"8 kHz", ACTION_MENU_PREV_SUB, record_set_8},
+	{"32 kHz", ACTION_MENU_PREV_SUB, record_set_32},
+	{"44.1 kHz", ACTION_MENU_PREV_SUB, record_set_44},
+	{"88.2 kHz", ACTION_MENU_PREV_SUB, record_set_88},
+	{"96 kHz", ACTION_MENU_PREV_SUB, record_set_96},
+	{0, 0, 0}
+};
+
+static struct menu_item recording_menu[] = {
+	{"Mic Record", ACTION_MENU, new_record_window},
+#if 0
+	{"Line In Record", ACTION_MENU, new_record_window},
+#endif
+	{"Playback", ACTION_MENU, new_playback_browse_window},
+	{"Sample Rate", SUB_MENU_HEADER, sample_rate_menu},
+	{0, 0, 0}
+};
 static struct menu_item extras_menu[] = {
-	{"Voice Record", ACTION_MENU, new_record_window},
+	{"Recordings", SUB_MENU_HEADER, recording_menu},
 #if 0
 	{"Clock", SUB_MENU_HEADER, 0},
 	{"Contacts", SUB_MENU_HEADER, 0},
@@ -77,6 +104,8 @@ static struct menu_item extras_menu[] = {
 	{"Games", SUB_MENU_HEADER, games_menu},
 	{0, 0, 0}
 };
+
+
 
 static struct menu_item reset_menu[] = {
 	{"Cancel", SUB_MENU_PREV, 0},
@@ -123,7 +152,7 @@ static struct menu_item main_menu[] = {
 #if 0
 	{"Playlists", SUB_MENU_HEADER, 0},
 #endif
-	{"Browse", ACTION_MENU, new_itunes_window},
+	{"Music", ACTION_MENU, new_itunes_window},
 	{"Extras", SUB_MENU_HEADER, extras_menu},
 	{"Settings", SUB_MENU_HEADER, settings_menu},
 	{"File Browser", ACTION_MENU, new_browser_window},
@@ -223,11 +252,19 @@ static int menu_do_keystroke(GR_EVENT * event)
 				 ptr) ();
 			}
 			break;
-
+		case ACTION_MENU_PREV_SUB:
+			if (menu[current_menu_item].ptr != 0) {
+				((menu_action_t) menu[current_menu_item].
+				 ptr) ();
+			}
+			event->keystroke.ch = 'm';
+			menu_do_keystroke(event);
+			break;
 		case SUB_MENU_PREV:
 			event->keystroke.ch = 'm';
 			menu_do_keystroke(event);
 			break;
+			
 		}
 		break;
 
