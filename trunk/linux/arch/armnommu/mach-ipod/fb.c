@@ -539,6 +539,7 @@ static int ipod_blank(int blank_mode, const struct fb_info *info)
 		/* printk(KERN_ERR "VESA_XSYNC_BLANKING\n"); */
 		if (backlight_on == -1) {
 			backlight_on = get_backlight();
+			set_backlight(0);
 		}
 
 		/* go to SLP = 1 */
@@ -551,6 +552,7 @@ static int ipod_blank(int blank_mode, const struct fb_info *info)
 		/* printk(KERN_ERR "VESA_POWERDOWN\n"); */
 		if (backlight_on == -1) {
 			backlight_on = get_backlight();
+			set_backlight(0);
 		}
 
 		/* got to standby */
