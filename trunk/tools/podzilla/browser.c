@@ -25,6 +25,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #ifdef IPOD
 #include <linux/vt.h>
 #endif
@@ -32,41 +33,38 @@
 #include <string.h>
 
 #include "pz.h"
+#include "mlist.h"
 #include "piezo.h"
 
+static GR_WINDOW_ID browser_key_timer;
 static GR_WINDOW_ID browser_wid;
 static GR_GC_ID browser_gc;
+static menu_st *browser_menu;
 
 #define FILE_TYPE_PROGRAM 0
 #define FILE_TYPE_DIRECTORY 1
 #define FILE_TYPE_OTHER 2
-#define MAX_ENTRIES 200
+#define MAX_ENTRIES 256
 
 typedef struct {
-	char name[32];
-	char name_size;
+	char name[64];
 	char *full_name;
 	unsigned short type;
 } Directory;
 
 static char current_dir[128];
-int browser_nbEntries = 0;
-int browser_currentSelection = 0;
-int browser_currentBase = 0;
-char *browser_selected_filename = NULL;
-int browser_top = 0;
-Directory browser_entries[MAX_ENTRIES];
-
-int items_offset = 0;
+static int browser_nbEntries = 0;
+static Directory browser_entries[MAX_ENTRIES];
 
 extern void new_textview_window(char * filename);
 extern int is_image_type(char *extension);
 #ifdef __linux__
 extern int is_mp3_type(char *extension);
-extern void new_mp3_window(char *filename, char *album, char *artist, char *title, unsigned short len);
+extern void new_mp3_window(char *filename, char *album, char *artist,
+		char *title, unsigned short len);
 extern int is_raw_audio_type(char *extension);
 extern void new_playback_window(char *filename);
-#endif
+#endif /* __linux__ */
 extern int is_text_type(char * extension);
 extern int is_ascii_file(char *filename);
 void new_exec_window(char *filename);
@@ -89,139 +87,76 @@ static void browser_exit()
 static void browser_mscandir(char *dira)
 {
 	DIR *dir = opendir(dira);
-	int i;
+	int i, size, op;
 	struct stat stat_result;
 	struct dirent *subdir;
-	int size;
 
-	// not very good for fragmentation...
+	if(browser_menu != NULL)
+		menu_destroy(browser_menu);
+	browser_menu = menu_init(browser_wid, browser_gc, "File Browser",
+			0, 1, screen_info.cols, screen_info.rows -
+			(HEADER_TOPLINE + 1), NULL, NULL);
+
+	/* not very good for fragmentation... */
 	for (i = 0; i < browser_nbEntries; i++) {
 		free(browser_entries[i].full_name);
 	}
 	browser_nbEntries = 0;
 
 	while ((subdir = readdir(dir))) {
-		if (strncmp(subdir->d_name, ".", strlen(subdir->d_name)) != 0) {
-			if (browser_nbEntries >= MAX_ENTRIES) {
-				new_message_window("Too many files.");
-				break;
-			}
-
-			size = strlen(subdir->d_name);
-			browser_entries[browser_nbEntries].full_name = malloc(sizeof(char) * size + 1);
-			strcpy(browser_entries[browser_nbEntries].full_name, subdir->d_name);
-
-			if (size > 30) {
-				size = 30;
-			}
-
-			memcpy(browser_entries[browser_nbEntries].name, subdir->d_name, size);
-			browser_entries[browser_nbEntries].name[size] = 0;
-			browser_entries[browser_nbEntries].name_size = size;
-
-			browser_entries[browser_nbEntries].type = FILE_TYPE_OTHER;
-			stat(subdir->d_name, &stat_result);
-			if (S_ISDIR(stat_result.st_mode)) {
-				browser_entries[browser_nbEntries].type =
-				    FILE_TYPE_DIRECTORY;
-			} else if (stat_result.st_mode & S_IXUSR) {
-				browser_entries[browser_nbEntries].type =
-				    FILE_TYPE_PROGRAM;
-			} else {
-			}
-
-			browser_nbEntries++;
+		if(strncmp(subdir->d_name, ".", strlen(subdir->d_name)) == 0)
+			continue;
+		if(browser_nbEntries >= MAX_ENTRIES) {
+			pz_error("Directory contains too many files.");
+			break;
 		}
-	}
-	closedir(dir);
+		
+		size = strlen(subdir->d_name);
+		size = (size > 62 ? 62 : size);
+		browser_entries[browser_nbEntries].full_name =
+			strdup(subdir->d_name);
 
-	browser_currentSelection = 0;
-	browser_top = 0;
-	browser_currentBase = 0;
-}
+		strncpy(browser_entries[browser_nbEntries].name,
+				subdir->d_name, size);
+		browser_entries[browser_nbEntries].name[size] = '\0';
 
-static void browser_draw_browser()
-{
-	int i;
-
-	GR_SIZE width, height, base;
-
-	int begin = browser_currentBase;
-	int y;
-
-	GrGetGCTextSize(browser_gc, "M", -1, GR_TFASCII, &width, &height, &base);
-	height += 2;
-
-	y = 5;
-	for (i = begin; i < begin + 5+items_offset && i < browser_nbEntries; i++) {
-		if (i == browser_currentSelection) {
-			GrSetGCForeground(browser_gc, BLACK);
-			GrFillRect(browser_wid, browser_gc, 0, y + 2,
-				   screen_info.cols, height);
-			GrSetGCForeground(browser_gc, WHITE);
-			GrSetGCUseBackground(browser_gc, GR_TRUE);
-		} else {
-			GrSetGCUseBackground(browser_gc, GR_FALSE);
-			GrSetGCMode(browser_gc, GR_MODE_SET);
-			GrSetGCForeground(browser_gc, WHITE);
-			GrFillRect(browser_wid, browser_gc, 0, y + 2,
-				   screen_info.cols, height);
-			GrSetGCForeground(browser_gc, BLACK);
+		stat(subdir->d_name, &stat_result);
+		if(S_ISDIR(stat_result.st_mode)) {
+			browser_entries[browser_nbEntries].type =
+			    FILE_TYPE_DIRECTORY;
+			op = ARROW_MENU;
 		}
-
-		y += height;
-
-		if (strncmp(browser_entries[i].name, "..", 2) == 0) {
-			GrText(browser_wid, browser_gc, 8, y,
-				"<", -1, GR_TFASCII);
+		else if(stat_result.st_mode & S_IXUSR) {
+			browser_entries[browser_nbEntries].type =
+			    FILE_TYPE_PROGRAM;
+			op = EXECUTE_MENU;
 		}
 		else {
-			GrText(browser_wid, browser_gc, 8, y,
-				browser_entries[i].name, -1, GR_TFASCII);
+			browser_entries[browser_nbEntries].type =
+				FILE_TYPE_OTHER;
+			op = STUB_MENU;
 		}
+		menu_add_item(browser_menu,
+			browser_entries[browser_nbEntries].name, NULL, 0, op);
 
-		GrSetGCForeground(browser_gc, LTGRAY);
-		switch (browser_entries[i].type) {
-		case FILE_TYPE_PROGRAM:
-			GrText(browser_wid, browser_gc, 1, y, "x", -1,
-			       GR_TFASCII);
-			break;
-		case FILE_TYPE_DIRECTORY:
-			if (strncmp(browser_entries[i].name, "..", 2) == 0) {
-				GrText(browser_wid, browser_gc, 1, y, "<", -1,
-					GR_TFASCII);
-			}
-			else {
-				GrText(browser_wid, browser_gc, 1, y, ">", -1,
-					GR_TFASCII);
-			}
-			break;
-		case FILE_TYPE_OTHER:
-			break;
-		}
+		browser_nbEntries++;
 	}
-
-	/* clear bottom portion of display */
-	GrSetGCUseBackground(browser_gc, GR_FALSE);
-	GrSetGCMode(browser_gc, GR_MODE_SET);
-	GrSetGCForeground(browser_gc, WHITE);
-	GrFillRect(browser_wid, browser_gc, 0, y + 2, screen_info.cols,
-		   screen_info.rows - (y + 2));
-	GrSetGCForeground(browser_gc, BLACK);
+	closedir(dir);
 }
 
 static void browser_do_draw()
 {
-	pz_draw_header("File Browser");
-
-	browser_draw_browser();
+	/* window is focused */
+	if(browser_wid == GrGetFocus()) {
+		pz_draw_header(browser_menu->title);
+		menu_draw(browser_menu);
+	}
 }
 
 static int is_script_type(char *extension)
 {
 	return strcmp(extension, ".sh") == 0;
 }
-
 
 static int is_binary_type(char *filename)
 {
@@ -252,7 +187,7 @@ static void handle_type_other(char *filename)
 	char *ext;
 
 	ext = strrchr(filename, '.');
-	if (ext==0) {
+	if (ext == 0) {
 		if (is_ascii_file(filename)) {
 			new_textview_window(filename);
 		}
@@ -268,12 +203,13 @@ static void handle_type_other(char *filename)
 	}
 #ifdef __linux__
 	else if (is_mp3_type(ext)) {
-		new_mp3_window(filename, "Unknown Album", "Unknown Artist", "Unknown Title", 0);
+		new_mp3_window(filename, "Unknown Album", "Unknown Artist",
+				"Unknown Title", 0);
 	}
 	else if (is_raw_audio_type(ext)) {
 		new_playback_window(filename);
 	}
-#endif
+#endif /* __linux __ */
 	else if (is_script_type(ext)) {
 		new_exec_window(filename);
 	}
@@ -307,51 +243,65 @@ static int browser_do_keystroke(GR_EVENT * event)
 	int ret = 0;
 
 	switch(event->type) {
+	case GR_EVENT_TYPE_TIMER:
+		if(((GR_EVENT_TIMER *)event)->tid == browser_key_timer) {
+			GrDestroyTimer(browser_key_timer);
+			browser_key_timer = 0;
+			menu_handle_timer(browser_menu, 1);
+			browser_selection_activated(browser_menu->sel);
+			browser_do_draw();
+		}
+		else
+			menu_draw_timer(browser_menu);
+		break;
+
 	case GR_EVENT_TYPE_KEY_DOWN:
 		switch (event->keystroke.ch) {
 		case '\r':
 		case '\n':
-			browser_selection_activated(browser_currentSelection);
-			GrClearWindow(browser_wid, 1);
-			browser_draw_browser();
-			ret = 1;
+			browser_key_timer = GrCreateTimer(browser_wid, 500);
 			break;
 
 		case 'm':
 		case 'q':
+			menu_destroy(browser_menu);
 			browser_exit();
+			GrDestroyGC(browser_gc);
 			pz_close_window(browser_wid);
-			ret = 1;
+			ret |= KEY_CLICK;
 			break;
 
 		case 'r':
-			if (browser_currentSelection < browser_nbEntries - 1) {
-				browser_currentSelection++;
-
-				if (browser_top >= 4+items_offset) {
-					browser_currentBase++;
-				} else
-					browser_top++;
-				browser_draw_browser();
-				ret = 1;
-			}
-
+			menu_shift_selected(browser_menu, 1);
+			menu_draw(browser_menu);
+			ret |= KEY_CLICK;
 			break;
+
 		case 'l':
-
-			if (browser_currentSelection > 0) {
-				browser_currentSelection--;
-
-				if (browser_top == 0) {
-					browser_currentBase--;
-				} else {
-					browser_top--;
-				}
-				browser_draw_browser();
-				ret = 1;
+			menu_shift_selected(browser_menu, -1);
+			menu_draw(browser_menu);
+			ret |= KEY_CLICK;
+			break;
+		default:
+			ret |= KEY_UNUSED;
+		}
+		break;
+	case GR_EVENT_TYPE_KEY_UP:
+		switch (event->keystroke.ch) {
+		case '\r':
+		case '\n':
+			if(browser_key_timer) {
+				GrDestroyTimer(browser_key_timer);
+				browser_key_timer = 0;
+				menu_handle_timer(browser_menu, 1);
+				browser_selection_activated(browser_menu->sel);
+				browser_do_draw();
 			}
 			break;
 		}
+		break;
+	default:
+		ret |= EVENT_UNUSED;
 		break;
 	}
 	return ret;
@@ -367,21 +317,20 @@ void new_browser_window(char *initial_path)
 		current_dir[0] = 0;
 	}
 
-	if (screen_info.cols != 138) { /* not mini */
-		items_offset = 1;
-	}
-
 	browser_gc = pz_get_gc(1);
 	GrSetGCUseBackground(browser_gc, GR_FALSE);
-	GrSetGCBackground(browser_gc, BLACK);
+	GrSetGCBackground(browser_gc, WHITE);
 	GrSetGCForeground(browser_gc, BLACK);
 
 	browser_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols,
                                     screen_info.rows - (HEADER_TOPLINE + 1),
                                     browser_do_draw, browser_do_keystroke);
 
-	GrSelectEvents(browser_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_KEY_DOWN);
+	GrSelectEvents(browser_wid, GR_EVENT_MASK_EXPOSURE |
+			GR_EVENT_MASK_KEY_UP | GR_EVENT_MASK_KEY_DOWN |
+			GR_EVENT_MASK_TIMER);
 
+	browser_menu = NULL;
 	browser_mscandir("./");
 
 	GrMapWindow(browser_wid);
@@ -437,7 +386,7 @@ void new_exec_window(char *filename)
 		}
 
 		execl("/bin/sh", "sh", "-c", filename);
-		fprintf(stderr, "exec failed!\n");
+		fprintf(stderr, "Exec failed! (Check Permissions)\n");
 		exit(1);
 		break;
 	default: /* parent */
@@ -463,6 +412,6 @@ void new_exec_window(char *filename)
 	}
 #else
 	new_message_window(filename);
-#endif
+#endif /* IPOD */
 }
 
