@@ -2,6 +2,9 @@
 /* mine.h is part of Nimesweeper */
 /*  Copyright (C) 2002 by Daniel Burnett
 
+    Copyright (C) 2004 by Matthis Rouch (iPod port)
+	- with lots of code taken from Courtney Cavin's ipod-othello port
+
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation.
@@ -16,7 +19,12 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
 #include <ctype.h>
+#ifdef USE_NCURSES
 #include <ncurses.h>
+#else
+#define MWINCLUDECOLORS
+#include <nano-X.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -27,7 +35,11 @@
 #define VERSION    ("1.0")
 #define DATE       ("17th November 2002")
 #define EMAIL      ("d4n13l@lycos.com")
+#ifdef USE_NCURSES
 #define HIGHSCORES ("/usr/share/nimesweeper/HighScores.dat")
+#else
+#define HIGHSCORES (".minesweeper")
+#endif
 /* HIGHSCORES is a binary file, 40 items of HighScores,
    a top ten for each difficulty level */
 /* For HighScores structure */
@@ -62,8 +74,13 @@
 #define KEY__QUIT	('Q')  /* To Quit */
 
 /* Screen Coordinates relative to the grid coordinates */
+#ifdef USE_NCURSES
 #define X x*2+1
 #define Y y+1
+#else
+#define X x*12+5-156*(int)(x/13)
+#define Y 17+12*y
+#endif
 
 /* Structure for storing dynamic game data */
 typedef struct _Stats
@@ -100,8 +117,14 @@ short int grid[50][20];
 short int flags[50][20];
 
 /* Global WINDOWS */
+#ifdef USE_NCURSES
 WINDOW *GameWin;
 WINDOW *FlagsWin;
+#else
+extern GR_WINDOW_ID mines_wid;
+extern GR_GC_ID mines_gc;
+extern GR_SCREEN_INFO screen_info;
+#endif
 
 
 /* Various initialisation type functions, in init.c */
@@ -127,6 +150,7 @@ int  Uncover(int x, int y, int width, int height);
 void UncoverBoundary(register int x, register int y, int width, int height);
 int  Winner(GameStats *Game, int winner);
 
+#ifdef USE_NCURSES
 /* WINDOW related functions, in windows.c */
 void KillWin(WINDOW *Window);
 void Draw_Grid(int Width, int Height);
@@ -135,6 +159,7 @@ WINDOW *Draw_WinnerWin(int Width, int Height);
 WINDOW *Draw_ChangeDifficultyWin(int Width,int Height);
 WINDOW *Draw_HelpWin(int Width, int Height);
 WINDOW *Draw_HighScoreWin(int Width, int Height);
+#endif
 
 /* High Score functions, in scores.c */
 int  IsHighScore(long int time, int difficulty);

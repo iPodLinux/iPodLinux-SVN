@@ -2,6 +2,9 @@
 /* scores.c part of Nimesweeper */
 /*  Copyright (C) 2002 by Daniel Burnett
 
+    Copyright (C) 2004 by Matthis Rouch (iPod port)
+	- with lots of code taken from Courtney Cavin's ipod-othello port
+
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation.
@@ -21,11 +24,14 @@
    position in HIGHSCORES file through WriteNewRecord(). */
 void NewHighScore(GameStats *Game)
 {
+#ifdef USE_NCURSES
 	WINDOW *HighScoreWin;
+#endif
 	char name[MAXNAME];
 	unsigned int i,Input = FALSE;
 	int Position = FALSE;
 	
+#ifdef USE_NCURSES
 	echo();
 	HighScoreWin = Draw_HighScoreWin(Game->Width,Game->Height);
 	wattron(HighScoreWin,A_BOLD | COLOR_PAIR(7));
@@ -87,14 +93,21 @@ void NewHighScore(GameStats *Game)
 	
 	noecho();
 	werase(HighScoreWin);
+#else
+	strcpy(name, "You");
+#endif
 
 	/* Write new record to file */
 	if( (Position = WriteNewRecord(Game->Timer,Game->Difficulty,name)) == FALSE )
 	{
+#ifdef USE_NCURSES
 		/* if it fails, clean up windows */
 		KillWin(HighScoreWin);
 		redrawwin(GameWin);
 		wrefresh(GameWin);
+#else
+		new_message_window("Highscores failed");
+#endif
 	}
 	else
 	{
@@ -122,71 +135,107 @@ int  NameCharIsOk(char ch)
 int  ShowHighScores(GameStats *Game, int Position)
 {
 	FILE *ScoresFile;
+#ifdef USE_NCURSES
 	WINDOW *HighScoreWin;
+#endif
 	HighScores HighArray[10];
 	int i;
 	char *Levels[] = {"Newbie","Easy","Medium","Hard"};
 		
+#ifdef USE_NCURSES
 	HighScoreWin = Draw_HighScoreWin(Game->Width,Game->Height);
 	curs_set(0);
+#endif
 	if( (ScoresFile = OpenFile("rb")) == NULL)
 	{
+#ifdef USE_NCURSES
 		curs_set(1);
 		KillWin(HighScoreWin);
 		redrawwin(GameWin);
 		wrefresh(GameWin);
+#else
+		new_message_window("Read failed");
+#endif
 		return FALSE;
 	}
 	
 	/* Locate "top ten" times, using difficulty as the offset */
 	if( fseek(ScoresFile,sizeof(HighScores)*(Game->Difficulty-1)*10,SEEK_SET) != 0 )
 	{
+#ifdef USE_NCURSES
 		curs_set(1);
 		FileError(ScoresFile,"seek");
 		KillWin(HighScoreWin);
 		redrawwin(GameWin);
 		wrefresh(GameWin);
+#else
+		new_message_window("Seek failed");
+#endif
 		return FALSE;
 	}
 	/* read top ten entries for given difficulty into an array */
 	if( fread(&HighArray,sizeof(HighArray),1,ScoresFile) != 1 )
 	{
+#ifdef USE_NCURSES
 		curs_set(1);
 		FileError(ScoresFile,"read");
 		KillWin(HighScoreWin);
 		redrawwin(GameWin);
 		wrefresh(GameWin);
+#else
+		new_message_window("Read failed");
+#endif
 		return FALSE;
 	}
 	
 	fclose(ScoresFile);
 	
 	/* Print the array, highlighting new entry (if there is one) */
+#ifdef USE_NCURSES
 	wattron(HighScoreWin, COLOR_PAIR(7));
 	mvwprintw(HighScoreWin,1,3,"Nimesweeper Hall of Fame");
 	mvwprintw(HighScoreWin,3,7,"Difficulty %6s",Levels[Game->Difficulty-1]);
+#else
+	GrText(mines_wid, mines_gc, 20, 52, "Hall of Fame:",  -1, GR_TFASCII);
+#endif
 	for(i=0;i<10;i++)
 	{
 		if( Position == i+1 )
 		{
+#ifdef USE_NCURSES
 			wattron(HighScoreWin,A_BOLD);
 			mvwprintw(HighScoreWin,5+i,5,"%-2d  %-10s  %-5ld",
 			  i+1,HighArray[i].Name,HighArray[i].Time);
 			wattroff(HighScoreWin,A_BOLD);
+#else
+			char scorestring[128];
+
+			sprintf(scorestring,"%-2d  %-10s  %-5ld",i+1,HighArray[i].Name,HighArray[i].Time);
+			GrText(mines_wid, mines_gc,20, 70+i*12,scorestring,  -1, GR_TFASCII);
+#endif
 		}
 		else
 		{
+#ifdef USE_NCURSES
 			mvwprintw(HighScoreWin,5+i,5,"%-2d  %-10s  %-5ld",
 			  i+1,HighArray[i].Name,HighArray[i].Time);
+#else
+			char scorestring[128];
+
+			sprintf(scorestring,"%-2d  %-10s  %-5ld",i+1,HighArray[i].Name,HighArray[i].Time);
+			GrText(mines_wid, mines_gc,20, 70+i*12,scorestring,  -1, GR_TFASCII);
+#endif
 		}
 	}
 	
+#ifdef USE_NCURSES
 	wrefresh(HighScoreWin);
 	getch();
 	curs_set(1);
 	KillWin(HighScoreWin);
 	redrawwin(GameWin);
 	wrefresh(GameWin);
+#endif
 	return TRUE;
 }
 
@@ -304,7 +353,9 @@ int  IsHighScore(long int time, int difficulty)
 			break;
 		default:
 			/* Just in case */
+#ifdef USE_NCURSES
 			endwin();
+#endif
 			fprintf(stderr,"IsHighScore:: difficulty is invalid\n");
 			exit(9);
 			break;

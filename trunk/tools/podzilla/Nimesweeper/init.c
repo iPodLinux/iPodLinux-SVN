@@ -2,6 +2,9 @@
 /* init.c is part of Nimesweeper */
 /*  Copyright (C) 2002 by Daniel Burnett
 
+    Copyright (C) 2004 by Matthis Rouch (iPod port)
+	- with lots of code taken from Courtney Cavin's ipod-othello port
+
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation.
@@ -22,14 +25,18 @@
 void Init_Game(GameStats *Game,struct timeval *start,char *Argv,unsigned int *restart)
 {
 	Init_GameStats(Game);
+#ifdef USE_NCURSES
 	Init_ncurses(Game,Argv);
+#endif
 	Init_Grid(Game);
 	*restart = 2;
 	gettimeofday(start,NULL);
+#ifdef USE_NCURSES
 	fflush(stdin);
 	refresh();
 	Draw_Grid(Game->Width,Game->Height);
 	Draw_FlagsWin(Game->Width,Game->Height);
+#endif
 }
 
 
@@ -37,6 +44,7 @@ void Init_Game(GameStats *Game,struct timeval *start,char *Argv,unsigned int *re
    difficulty levels */
 void Init_GameStats(GameStats *Game)
 {
+#ifdef USE_NCURSES
 	switch(Game->Difficulty)
 	{
 		/* --newbie	Area 256 - 6.4 Clear : 1 Mine */
@@ -77,6 +85,13 @@ void Init_GameStats(GameStats *Game)
 			fprintf(stderr,"\nInit_GameStats::switch(Game->Difficulty) == default:\n");
 			exit(3);
 	}
+#else
+	Game->Height = 8;
+	Game->Width  = 13;
+	Game->MinesSet = 12;
+	Game->x = Game->Width/2;
+	Game->y = Game->Height/2;
+#endif
 	Game->Guesses = 0;
 	Game->Timer = 0;
 	Game->Correct = 0;
@@ -160,7 +175,7 @@ void Init_Grid(GameStats *Game)
 }
 
 
-
+#ifdef USE_NCURSES
 /* Initialise the ncurses environment */
 void Init_ncurses(GameStats *Game, char *Argv0)
 {
@@ -216,5 +231,6 @@ void Init_ncurses(GameStats *Game, char *Argv0)
 	init_pair(7,COLOR_WHITE,COLOR_BLACK);
 	init_pair(8,COLOR_YELLOW,COLOR_RED);
 }
+#endif
 
 
