@@ -35,6 +35,7 @@ OBJS =
 #ifeq ($(ARCH), ECOS)
 #dirs = nanowm nanox nxkbd nxscribble
 #endif
+dirs = nxkbd
 
 ######################### Makefile.rules section #############################
 
