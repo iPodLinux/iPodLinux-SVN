@@ -491,18 +491,43 @@ static int ipod_pan_display(struct fb_var_screeninfo *var,
 
 static int ipod_blank(int blank_mode, const struct fb_info *info)
 {
-	/*
-	 *  Blank the screen if blank_mode != 0, else unblank. If blank == NULL
-	 *  then the caller blanks by setting the CLUT (Color Look Up Table) to all
-	 *  black. Return 0 if blanking succeeded, != 0 if un-/blanking failed due
-	 *  to e.g. a video mode which doesn't support it. Implements VESA suspend
-	 *  and powerdown modes on hardware that supports disabling hsync/vsync:
-	 *    blank_mode == 2: suspend vsync
-	 *    blank_mode == 3: suspend hsync
-	 *    blank_mode == 4: powerdown
-	 */
+	switch (blank_mode) {
+	case VESA_NO_BLANKING:
+		// printk("VESA_NO_BLANKING\n");
 
-	/* ... */
+		// start oscillation
+		// wait 10ms
+		// cancel standby
+		// turn on LCD power
+		lcd_cmd_and_data(0x0, 0x0, 0x1);
+		udelay(10000);
+		lcd_cmd_and_data(0x3, 0x15, 0x0);
+		lcd_cmd_and_data(0x3, 0x15, 0xc);
+		lcd_cmd_and_data(0x7, 0x0, 0x11);
+		break;
+
+	case VESA_VSYNC_SUSPEND:
+	case VESA_HSYNC_SUSPEND:
+		// printk("VESA_XSYNC_BLANKING\n");
+
+		// go to SLP = 1
+		// 10101 00001100
+		lcd_cmd_and_data(0x3, 0x15, 0x0);
+		lcd_cmd_and_data(0x3, 0x15, 0x2);
+		break;
+
+	case VESA_POWERDOWN:
+		// printk("VESA_POWERDOWN\n");
+
+		// got to standby
+		lcd_cmd_and_data(0x3, 0x15, 0x1);
+		break;
+
+	default:
+		printk("unknown blank value %d\n", blank_mode);
+		return -EINVAL;
+	}
+
 	return 0;
 }
 
