@@ -50,6 +50,7 @@ key_pressed(void)
 {
     unsigned char state;
     state = inb(0xcf000030);
+    if ((state & 0x20) == 0) return 0; /* hold on */
     if ((state & 0x08) == 0) return 1;
     if ((state & 0x10) == 0) return 2;
     if ((state & 0x04) == 0) return 3;
