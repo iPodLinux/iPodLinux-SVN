@@ -17,8 +17,8 @@
  */
 
 #include <stdio.h>
-#include <assert.h>
-
+//#include <assert.h>
+#include <sys/time.h>
 #include "pz.h"
 #include "browser.h"
 #include "ipod.h"
@@ -35,6 +35,14 @@ struct pz_window {
 static struct pz_window windows[10];
 static int n_opened = 0;
 
+static unsigned long int last_wheel_event = 0;
+static unsigned long int last_action_event = 0;
+static unsigned long int last_outer_event = 0;
+static unsigned long int wheel_evt_count = 0;
+#define WHEEL_DEBOUNCE  200
+#define ACTION_DEBOUNCE 400
+#define OUTER_DEBOUNCE  400
+#define WHEEL_EVT_MOD   3
 
 /*
 +----+
@@ -62,8 +70,13 @@ static GR_POINT batt_outline[] = {
 static void event_handler(GR_EVENT *event)
 {
 	int i;
+	unsigned long int curtime;
+	struct timeval cur_st;
 	GR_WINDOW_ID wid = GR_ROOT_WINDOW_ID;
-
+	
+	gettimeofday( &cur_st, NULL);
+	curtime = (cur_st.tv_sec % 1000) * 1000 + cur_st.tv_usec / 1000;
+	
 	switch (event->type) {
 	case GR_EVENT_TYPE_EXPOSURE:
 		wid = ((GR_EVENT_EXPOSURE *)event)->wid;
@@ -71,9 +84,85 @@ static void event_handler(GR_EVENT *event)
 
 	case GR_EVENT_TYPE_KEY_DOWN:
 		wid = ((GR_EVENT_KEYSTROKE *)event)->wid;
-		break;
-	}
+		
+		switch(event->keystroke.ch)
+		{
+			case 'm':
+			case 'q':
+			case 'w':
+			case 'f':
+				// handle the wraparound case
+				if (curtime < last_outer_event)
+					if (curtime + 1000000 > last_outer_event + OUTER_DEBOUNCE )
+					{
+						last_outer_event = curtime;
+						break;
+					}
+						
+				if (curtime > last_outer_event+ OUTER_DEBOUNCE)
+				{
+					last_outer_event = curtime;
+					break;
+				}
+						
+				wid = GR_ROOT_WINDOW_ID;
+				break;
+				
+			case 'r':
+			case 'l':
+				wheel_evt_count ++;
+				if (wheel_evt_count % WHEEL_EVT_MOD != 0)
+				{
+					wid = GR_ROOT_WINDOW_ID;
+					break;
+				}
+				printf("%ld : %ld\n",curtime,last_wheel_event);
+				
+				// handle the wraparound case
+				if (curtime < last_wheel_event)
+					if (curtime + 1000000 > last_wheel_event + WHEEL_DEBOUNCE)
+					{
 
+						last_wheel_event = curtime;
+						break;
+					}
+						
+						if (curtime > last_wheel_event + WHEEL_DEBOUNCE)
+						{
+
+							last_wheel_event = curtime;
+							break;
+						}
+
+						wid = GR_ROOT_WINDOW_ID;
+				break;	
+				
+			case '\n':
+			case '\r':	
+				// handle the wraparound case
+				if (curtime < last_action_event)
+					if (curtime + 1000000> last_action_event + ACTION_DEBOUNCE )
+					{
+						last_action_event = curtime;
+						break;
+					}
+						
+					if (curtime > last_action_event + ACTION_DEBOUNCE)
+					{
+						last_action_event = curtime;
+						break;
+					}
+						
+					wid = GR_ROOT_WINDOW_ID;
+			break;	
+			
+		}
+		break;
+	default:
+		printf("AN UNKNOWN EVENT OCCURED!!\n");
+	}
+	
+	
 	if (wid != GR_ROOT_WINDOW_ID) {
 		for (i = 0; i < n_opened; i++) {
 			if (windows[i].wid == wid) {
@@ -129,7 +218,7 @@ pz_new_window(int x, int y, int w, int h, GR_FNCALLBACKEVENT event_handler)
 void
 pz_close_window(GR_WINDOW_ID wid)
 {
-	assert(windows[n_opened-1].wid == wid);
+	//assert(windows[n_opened-1].wid == wid);
 
 	GrUnmapWindow(wid);
 	GrDestroyWindow(wid);
