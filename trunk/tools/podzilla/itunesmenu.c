@@ -216,8 +216,7 @@ static char *get_text_plist(struct menulist *ml)
 
 static void play_song(struct itdb_track *track)
 {
-	printf("play file: %s\n", track->path);
-	new_mp3_window(track->path);
+	new_mp3_window(track->path, track->album, track->artist, track->title, track->length);
 }
 
 	
