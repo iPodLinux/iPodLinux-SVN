@@ -84,6 +84,7 @@ struct menulist *new_ml()
 	ret->gc = pz_get_gc(1);
 	GrSetGCUseBackground(ret->gc, GR_FALSE);
 	GrSetGCForeground(ret->gc, BLACK);
+	GrSetGCBackground(ret->gc, BLACK);
 
 	ret->wid = pz_new_window(0, HEADER_TOPLINE + 1, ret->screen_info.cols,
 			ret->screen_info.rows - (HEADER_TOPLINE + 1),
