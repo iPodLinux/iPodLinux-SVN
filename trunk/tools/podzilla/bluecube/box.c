@@ -24,15 +24,22 @@
 
 #include "global.h"
 #include "grafix.h"
+#ifdef USE_SDL
 #include "sound.h"
 #include "particle.h"
+#endif
 #include "pieces.h"
 #include "box.h"
 
 extern int lines, score;
 extern int level;
 extern int nextPiece;
+#ifdef USE_SDL
 const int intervals[11] = {27, 25, 23, 21, 19, 17, 15, 13, 11, 9, 7};
+#else
+/* makes it 3 times faster ;) */
+const int intervals[11] = {9, 8, 7, 6, 5, 4, 3, 3, 2, 2, 1};
+#endif
 
 CBoxDraw boxdraw;
 CCluster cluster;
@@ -331,6 +338,7 @@ int CheckFullLine()
 	int counter = 0; /* Number of the killed lines */
 	int x, y, newX, newY;
 
+#ifdef USE_SDL
 	for (y=BOX_BRICKS_Y-1; y>0; y--) /* Create particles and play sound... */
 		if (FullLine(y))
 		{
@@ -338,6 +346,7 @@ int CheckFullLine()
 				BrickExplosion(x, y, 1, 15);
 			PutSound(&sndLine);
 		}
+#endif
 
 	for (y=BOX_BRICKS_Y-1; y>0; y--)
 		while (FullLine(y)) /* Remove lines */
@@ -367,6 +376,7 @@ int CheckFullLine()
 	return 0;
 }
 
+#ifdef USE_SDL
 /*=========================================================================
 // Name: BrickExplosion()
 // Desc: Creates an explosion for a certain brick (particle system)
@@ -380,6 +390,7 @@ void BrickExplosion(int x, int y, int energy, int density)
 		STYLE_G(box[x][y].style-1),
 		STYLE_B(box[x][y].style-1), energy, density);
 }
+#endif
 
 /*=========================================================================
 // Name: BoxDrawInit()
@@ -388,11 +399,21 @@ void BrickExplosion(int x, int y, int energy, int density)
 void BoxDrawInit()
 {
 	boxdraw.box_l = 2;
+#ifdef USE_SDL
 	boxdraw.brick_width  = 20;
 	boxdraw.brick_height = 20;
+#else
+	boxdraw.brick_width  = 4;
+	boxdraw.brick_height = 4;
+#endif
 	BoxDrawUpdate();
+#ifdef USE_SDL
 	boxdraw.box_x = (SCREEN_X/2 - boxdraw.box_width/2);
 	boxdraw.box_y = (SCREEN_Y/2 - boxdraw.box_height/2);
+#else
+	boxdraw.box_x = 52;
+	boxdraw.box_y = 7;
+#endif
 }
 
 /*=========================================================================
@@ -407,6 +428,7 @@ void BoxDrawUpdate()
 						 (BOX_BRICKS_Y - 1)*boxdraw.box_l);
 }
 
+#ifdef USE_SDL
 /*=========================================================================
 // Name: BoxDrawMove()
 // Desc: Moves the box (needed for crazy mode)
@@ -467,3 +489,4 @@ void BoxDrawMove()
 	if (boxdraw.box_x < 0)
 		moveX = 3;
 }
+#endif

@@ -22,6 +22,7 @@
 #ifndef __GRAFIX_H__
 #define __GRAFIX_H__
 
+#ifdef USE_SDL
 #include "SDL.h"
 
 #define SCREEN_X   640
@@ -32,5 +33,11 @@ void InitSDLex(void);
 void PutPixel(int x, int y, int r, int g, int b);
 void PutRect(int x, int y, int w, int h, int r, int g, int b);
 void BlitIMG(SDL_Surface *img, int x, int y, int x2, int y2, int w, int h);
+#else
+#define MWINCLUDECOLORS
+#include <nano-X.h>
+
+void PutRect(int x, int y, int w, int h, int r, int g, int b);
+#endif
 
 #endif

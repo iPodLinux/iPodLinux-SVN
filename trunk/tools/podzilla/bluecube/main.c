@@ -24,15 +24,21 @@
 
 #include "global.h"
 #include "grafix.h"
+#ifdef USE_SDL
 #include "sound.h"
 #include "particle.h"
 #include "font.h"
+#endif
 #include "box.h"
+#ifdef USE_SDL
 #include "credits.h"
+#endif
 
+#ifdef USE_SDL
 extern SDL_Surface* screen;
 
 Uint32 TimeLeft(void);
+#endif
 static void NewGame(void);
 static void MainMenu_Loop(void);
 static void Game_Loop(void);
@@ -40,7 +46,9 @@ static void DrawScene(void);
 void StartGameOverAnimation(void);
 static void GameOverAnimation(void);
 
+#ifdef USE_SDL
 SDL_Event event;
+#endif
 
 int lines, score;       /* Line counter and score */
 int nextPiece;          /* Next cluster  */
@@ -54,6 +62,16 @@ int bGameOver;   /* GameOver Animation? */
 int bExplode;    /* Explosion is active? */
 int x,y;         /* Current explosion coordinates */
 
+#ifndef USE_SDL
+static GR_TIMER_ID timer_id;
+
+static GR_WINDOW_ID tetris_wid;
+static GR_GC_ID tetris_gc;
+static GR_SCREEN_INFO screen_info;
+#endif
+                                                                                
+
+#ifdef USE_SDL
 /*=========================================================================
 // Name: main()
 // Desc: Entrypoint
@@ -194,9 +212,97 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
+#else
+
+#define HEADER_TOPLINE 20
+
+static void tetris_do_draw()
+{
+	pz_draw_header("BlueCube");
+}
+
+static int tetris_do_keystroke(GR_EVENT * event)
+{
+	switch (event->type) {
+	case GR_EVENT_TYPE_TIMER:
+		cluster.dropCount--;  /* Decrease time until the next fall */;
+		break;
+
+	case GR_EVENT_TYPE_KEY_DOWN:
+		/* Is the game active? */
+		if (bGameOver) {
+			pz_close_window(tetris_wid);
+		}
+		else {
+			switch (event->keystroke.ch)
+			{
+			case '\r':
+				MoveCluster(1); /* "drop" cluster...      */
+				NewCluster();   /* ... and create new one */
+				break;
+
+			case 'd':
+				if (MoveCluster(0)) {
+					NewCluster();
+				}
+				break;
+
+			case 'w':
+				MoveClusterLeft();
+				break;
+
+			case 'f':
+				MoveClusterRight();
+				break;
+
+			case 'l':
+			case 'r':
+				TurnClusterRight();
+				break;
+
+			case 'm':
+				bDone = 1;
+				break;
+
+			default:
+				break;
+			}
+		}
+	}
+
+	Game_Loop();
+
+	if (bDone == 1) {
+		pz_close_window(tetris_wid);
+		GrDestroyTimer(timer_id);
+	}
+
+	return 1;
+}
+
+void new_bluecube_window(void)
+{
+	/* Init randomizer */
+	srand(time(NULL));
+
+	GrGetScreenInfo(&screen_info);
+	tetris_gc = GrNewGC();
+	GrSetGCUseBackground(tetris_gc, GR_TRUE);
+	tetris_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), tetris_do_draw, tetris_do_keystroke);
+	GrSelectEvents(tetris_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN|GR_EVENT_MASK_TIMER);
+	GrMapWindow(tetris_wid);
+
+	bDone = 0;
+
+	/* intialise game state */
+	NewGame();
+
+	timer_id = GrCreateTimer(tetris_wid, 150); /*Create nano-x timer*/
+}
+#endif
 
 
-
+#ifdef USE_SDL
 /*=========================================================================
 // Name: TimeLeft()
 // Desc: Returns the number of ms to wait that the framerate is constant
@@ -214,6 +320,7 @@ Uint32 TimeLeft()
 
 	return (next_time - now);
 }
+#endif
 
 
 /*=========================================================================
@@ -238,6 +345,7 @@ static void NewGame()
 	zustand = STATE_PLAY; /* Set playstate */
 }
 
+#ifdef USE_SDL
 /*=========================================================================
 // Name: MainMenu_Loop()
 // Desc: The main menu loop (nasty function...)
@@ -337,6 +445,7 @@ static void MainMenu_Loop()
 
 	SDL_Flip(screen);
 }
+#endif
 
 /*=========================================================================
 // Name: Game_Loop()
@@ -348,7 +457,9 @@ static void Game_Loop()
 	{
 		if (!bGameOver)
 		{
+#ifdef USE_SDL
 			cluster.dropCount--;  /* Decrease time until the next fall */
+#endif
 			if (cluster.dropCount == 0)
 			{
 				if (MoveCluster(0)) /* If cluster "collides"... */
@@ -368,7 +479,9 @@ static void Game_Loop()
 				((level == 9) && (lines >= 200)))
 			{
 				level++;
+#ifdef USE_SDL
 				PutSound(&sndNextlevel);
+#endif
 			}
 		}
 		else
@@ -376,10 +489,12 @@ static void Game_Loop()
 			GameOverAnimation();
 		}
 
+#ifdef USE_SDL
 		if (bCrazy)        /* If crazy mode is actived... */
 			BoxDrawMove(); /* ... change box settings!    */
 		MoveStars();       /* Move stars */
 		UpdateParticles(); /* Move particles */
+#endif
 	}
 
 	DrawScene();
@@ -395,12 +510,19 @@ static void DrawScene()
 		 chLines[30],
 		 chLevel[30];
 
+#ifdef USE_SDL
 	/* Black background */
 	SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, 0,0,0));
 	DrawStars(); /* Starfield */
 
 	if (bCrazy)
 		WriteText(font, 250, 30+(boxdraw.box_x), "Cr4zY m0d3!"); /* woo hoo! */
+#else
+	/* clear the screen */
+	GrSetGCForeground(tetris_gc, BLACK);
+	GrFillRect(tetris_wid, tetris_gc, 0, 0, screen_info.cols, screen_info.rows);
+	GrSetGCForeground(tetris_gc, WHITE);
+#endif
 
 	if (!bGameOver)
 	{
@@ -414,6 +536,7 @@ static void DrawScene()
 		sprintf(chScore, "%d", score);
 		sprintf(chLines, "%d", lines);
 		sprintf(chLevel, "%d", level);
+#ifdef USE_SDL
 		WriteText(font, 490, 80, "Score");  /*  Show SCORE */
 		WriteText(font, 490, 105, chScore); 
 		WriteText(font, 495, 180, "Next");  /*  Show NEXT piece */
@@ -422,21 +545,45 @@ static void DrawScene()
 		WriteText(font, 490, 375, chLines);
 		WriteText(font, 95, 350, "Level");  /*  Show current LEVEL */
 		WriteText(font, 95, 375, chLevel);
+#else
+		GrSetGCForeground(tetris_gc, WHITE);
+		GrText(tetris_wid, tetris_gc, 1, 20, "Score",  -1, GR_TFASCII);
+		GrText(tetris_wid, tetris_gc, 1, 32, chScore, -1, GR_TFASCII);
+		GrText(tetris_wid, tetris_gc, 125, 24, "Next",  -1, GR_TFASCII);
+		DrawNextPiece(130, 40);
+		GrSetGCForeground(tetris_gc, WHITE);
+		GrText(tetris_wid, tetris_gc, 1, 45, "Lines",  -1, GR_TFASCII);
+		GrText(tetris_wid, tetris_gc, 1, 57, chLines, -1, GR_TFASCII);
+		GrText(tetris_wid, tetris_gc, 1, 72, "Level",  -1, GR_TFASCII);
+		GrText(tetris_wid, tetris_gc, 1, 84, chLevel, -1, GR_TFASCII);
+#endif
 	}
 
 	DrawBox();       /* Draw box bricks */
+#ifdef USE_SDL
 	DrawParticles();
 
 	if (bPause)
 		WriteText(font, 265, 20, "- PAUSE -");
+#endif
 	if (bGameOver && !bExplode)
 	{
+#ifdef USE_SDL
 		WriteTextCenter(font, 120, "GAME OVER");
 		sprintf(chScore, "Your Score: %d", score); 
 		WriteTextCenter(font, 250, chScore);
+#else
+		GrSetGCForeground(tetris_gc, BLACK);
+		GrFillRect(tetris_wid, tetris_gc, 0, 0, 168, 128);
+		GrSetGCForeground(tetris_gc, WHITE);
+		GrText(tetris_wid, tetris_gc, 45, 35, "- Game Over -",  -1, GR_TFASCII);        sprintf(chScore, "Your Score: %d", score);
+		GrText(tetris_wid, tetris_gc, 35, 65, chScore,  -1, GR_TFASCII);
+#endif
 	}
 
+#ifdef USE_SDL
 	SDL_Flip(screen); /* Let's flip! */
+#endif
 }
 
 /*=========================================================================
@@ -448,7 +595,9 @@ void StartGameOverAnimation()
 	x = 0;
 	y = 0;
 	bGameOver = 1;
+#ifdef USE_SDL
 	bExplode = 1;
+#endif
 }
 
 /*=========================================================================
@@ -457,6 +606,7 @@ void StartGameOverAnimation()
 //=======================================================================*/
 static void GameOverAnimation()
 {
+#ifdef USE_SDL
 	static int counter = 1; /* Sound counter */
 
 	if (bExplode)
@@ -489,4 +639,19 @@ static void GameOverAnimation()
 		if (NoParticlesLeft())
 			zustand = STATE_MENU;
 	}	
+#endif
 }
+
+#ifndef USE_SDL
+/*=========================================================================
+// Name: PutRect()
+// Desc: Draws a /UN/ filled rectangle onto the screen
+//=======================================================================*/
+void PutRect(int x, int y, int w, int h, int r, int g, int b)
+{
+	// GrSetGCForeground(tetris_gc, MWRGB(r, g, b));
+	GrSetGCForeground(tetris_gc, WHITE);
+	GrRect(tetris_wid, tetris_gc, x, y, w, h);
+}
+#endif
+
