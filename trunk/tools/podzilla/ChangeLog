@@ -1,3 +1,7 @@
+Courtney Cavin - Sun Oct 24 2004
+	calculator now uses inverse text for current selection
+	calendar no longer redraws entire screen on selection change
+	fix for december 31 to jan 31 bug
 
 Courtney Cavin - Wed Oct 20 2004
 	added calculator
