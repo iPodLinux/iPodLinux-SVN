@@ -67,7 +67,7 @@ CONFIG_KERNEL_ELF=y
 # CONFIG_PM is not set
 # CONFIG_ARTHUR is not set
 CONFIG_CMDLINE_BOOL=y
-CONFIG_CMDLINE="root=/dev/hda2 rw"
+CONFIG_CMDLINE="root=/dev/hda3 rw"
 # CONFIG_ALIGNMENT_TRAP is not set
 # CONFIG_PCI is not set
 # CONFIG_RAM_ATTACHED_ROMFS is not set
@@ -418,7 +418,7 @@ CONFIG_FONT_8x16=y
 # CONFIG_ADFS_FS_RW is not set
 # CONFIG_AFFS_FS is not set
 # CONFIG_HFS_FS is not set
-CONFIG_HFSPLUS_FS=m
+CONFIG_HFSPLUS_FS=y
 # CONFIG_BEFS_FS is not set
 # CONFIG_BEFS_DEBUG is not set
 # CONFIG_BFS_FS is not set
@@ -428,7 +428,7 @@ CONFIG_JBD=y
 CONFIG_FAT_FS=y
 CONFIG_MSDOS_FS=y
 CONFIG_UMSDOS_FS=y
-# CONFIG_VFAT_FS is not set
+CONFIG_VFAT_FS=y
 # CONFIG_EFS_FS is not set
 # CONFIG_JFFS_FS is not set
 # CONFIG_JFFS2_FS is not set
@@ -447,8 +447,8 @@ CONFIG_RAMFS=y
 # CONFIG_NTFS_RW is not set
 # CONFIG_HPFS_FS is not set
 CONFIG_PROC_FS=y
-# CONFIG_DEVFS_FS is not set
-# CONFIG_DEVFS_MOUNT is not set
+CONFIG_DEVFS_FS=y
+CONFIG_DEVFS_MOUNT=y
 # CONFIG_DEVFS_DEBUG is not set
 # CONFIG_DEVPTS_FS is not set
 # CONFIG_QNX4FS_FS is not set
@@ -677,7 +677,7 @@ CONFIG_IEEE1394=y
 #   Texas Instruments PCILynx requires I2C bit-banging
 #
 # CONFIG_IEEE1394_OHCI1394 is not set
-CONFIG_IEEE1394_IPOD=y
+CONFIG_IEEE1394_IPOD=m
 
 #
 # Protocol Drivers
