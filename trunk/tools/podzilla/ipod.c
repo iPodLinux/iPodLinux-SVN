@@ -48,6 +48,9 @@
 #define IPOD_SETTINGS_FILE	"podzilla.conf"
 #endif
 
+#define inl(a) (*(volatile unsigned long *) (a))
+#define outl(a,b) (*(volatile unsigned long *) (b) = (a))
+
 static int settings_buffer[100];
 
 static int ipod_ioctl(int request, int *arg)
@@ -239,15 +242,25 @@ int ipod_set_blank_mode(int blank)
 void ipod_beep(void)
 {
 #ifdef IPOD
-	static int fd = -1; 
-	static char buf;
+	if (hw_version >= 40000) {
+		int i;
+		outl(inl(0x70000010) & ~0xc, 0x70000010);
+		outl(inl(0x6000600c) | 0x20000, 0x6000600c);    /* enable device */
+		for (i = 0; i < 0x888; i++ ) {
+			outl(0x80000000 | 0x800000 | i, 0x7000a000); /* set pitch */
+		}
+		outl(0x0, 0x7000a000);    /* piezo off */
+	} else {
+		static int fd = -1; 
+		static char buf;
 
-	if (fd == -1 && (fd = open("/dev/ttyS1", O_WRONLY)) == -1
-			&& (fd = open("/dev/tts/1", O_WRONLY)) == -1) {
-		return;
+		if (fd == -1 && (fd = open("/dev/ttyS1", O_WRONLY)) == -1
+				&& (fd = open("/dev/tts/1", O_WRONLY)) == -1) {
+			return;
+		}
+    	
+		write(fd, &buf, 1);
 	}
-    
-	write(fd, &buf, 1);
 #else
 	if (isatty(1)) {
 		printf("\a");
