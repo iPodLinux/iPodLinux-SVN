@@ -13,9 +13,12 @@
  * supply the kernel with out time(r) functions.
  */
 
-extern unsigned long ipod_gettimeoffset(void);
 extern int ipod_set_rtc(void);
 extern void ipod_timer_interrupt(int irq, void *dev_id, struct pt_regs *regs);
+
+extern unsigned long pp5002_gettimeoffset(void);
+
+extern unsigned long pp5020_gettimeoffset(void);
 
 /* */
 extern struct irqaction timer_irq;
@@ -29,32 +32,37 @@ extern struct irqaction timer_irq;
  */
 extern __inline__ void setup_timer(void)
 {
-	/* store in kernel's function pointer */
-	gettimeoffset = ipod_gettimeoffset;
 	set_rtc = ipod_set_rtc;
-
-	/* set up the timer interrupt */
 	timer_irq.handler = ipod_timer_interrupt;
 
 	if ((ipod_get_hw_version() >> 16) > 0x3) {
+		/* store in kernel's function pointer */
+		gettimeoffset = pp5002_gettimeoffset;
+
 		/* clear timer1 */
 		outl(0x0, PP5020_TIMER1);
 		inl(PP5020_TIMER1_ACK);
 
 		/* enable timer, period, trigger value 0x2710 -> 100Hz */
 		outl(0xc0000000 | USECS_PER_INT, PP5020_TIMER1);
+
+		setup_arm_irq(PP5020_TIMER1_IRQ, &timer_irq);
+		enable_irq(PP5020_TIMER1_IRQ);
 	}
 	else {
+		/* store in kernel's function pointer */
+		gettimeoffset = pp5020_gettimeoffset;
+
 		/* clear timer1 */
 		outl(0x0, PP5002_TIMER1);
 		inl(PP5002_TIMER1_ACK);
 
 		/* enable timer, period, trigger value 0x2710 -> 100Hz */
 		outl(0xc0000000 | USECS_PER_INT, PP5002_TIMER1);
-	}
 
-	setup_arm_irq(TIMER1_IRQ, &timer_irq);
-	enable_irq(TIMER1_IRQ);
+		setup_arm_irq(PP5002_TIMER1_IRQ, &timer_irq);
+		enable_irq(PP5002_TIMER1_IRQ);
+	}
 }
 
 #endif
