@@ -1,15 +1,12 @@
 #ifndef __STEROIDS_ASTEROID_H__
 #define __STEROIDS_ASTEROID_H__
 
-#include <nano-X.h>
+#include "grafix.h"
 
 #include "object.h"
 #include "polygon.h"
 #include "ship.h"
 #include "shot.h"
-
-#define PI 3.141592653589793
-#define PI2 6.283185307179586
 
 #define STEROIDS_ASTEROID_RESOLUTION 6
 #define STEROIDS_ASTEROID_NUM 10
