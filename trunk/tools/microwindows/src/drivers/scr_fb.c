@@ -272,7 +272,10 @@ fb_open(PSD psd)
 #ifndef __uClinux__
 	psd->addr = mmap(NULL, psd->size, PROT_READ|PROT_WRITE,MAP_SHARED,fb,0);
 #else
-	psd->addr = mmap(NULL, psd->size, PROT_READ|PROT_WRITE,0,fb,0);
+	// psd->addr = mmap(NULL, psd->size, PROT_READ|PROT_WRITE,0,fb,0);
+#define IPOD_LCD_WIDTH  160
+#define IPOD_LCD_HEIGHT 128
+	psd->addr = malloc(IPOD_LCD_HEIGHT * (IPOD_LCD_WIDTH/4));
 #endif
 #endif
 	if(psd->addr == NULL || psd->addr == (unsigned char *)-1) {
@@ -312,7 +315,8 @@ fb_close(PSD psd)
 	ioctl_setpalette(0, 16, saved_red, saved_green, saved_blue);
   
 	/* unmap framebuffer*/
-	munmap(psd->addr, psd->size);
+	// munmap(psd->addr, psd->size);
+	free(psd->addr);
   
 #if HAVETEXTMODE
 	/* enter text mode*/
