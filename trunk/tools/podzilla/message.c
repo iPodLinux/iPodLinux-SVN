@@ -41,6 +41,7 @@ static int msg_do_keystroke(GR_EVENT * event)
 	case GR_EVENT_TYPE_TIMER:
 	case GR_EVENT_TYPE_KEY_DOWN:
 		pz_close_window(msg_wid);
+		free(msg_message);
 	}
 
 	return ret;
@@ -50,7 +51,7 @@ void new_message_window(char *message)
 {
 	GR_SIZE width, height, base;
 
-	msg_message = message;
+	msg_message = strdup(message);
 
 	GrGetScreenInfo(&screen_info);
 
@@ -71,3 +72,4 @@ void new_message_window(char *message)
 	/* window will auto-close after 6 seconds */
 	timer_id = GrCreateTimer(msg_wid, 6000);
 }
+
