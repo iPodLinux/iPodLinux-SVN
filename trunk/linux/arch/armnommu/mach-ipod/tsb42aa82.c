@@ -1,5 +1,5 @@
 /*
- * ieee1394.c - ieee1394 driver for iPod
+ * tsb43aa82.c - ieee1394 driver for iPod
  *
  * Copyright (c) 2003, Bernard Leach (leachbj@bouncycastle.org)
  *
@@ -866,99 +866,44 @@ static int __init ipod_1394_init(void)
 
 	// interrupts for port c
 
-	// Pin 77 functions as XM2_M_IO
-	// enable firewire chip select
 	outl((inl(0xcf004040) & ~(1<<6)) | (1<<7), 0xcf004040);
 
-	// EXP.IO_CTL = default
-	// EXP1_IO_ACCESS_TIME = 1f (max)
-	// EXP0_IO_ACCESS_TIME = 1f (max)
 	outl(0x00001f1f, 0xcf00401c);
 
-	// DEAD_CYCLE_CTL = default
 	outl(0xffff, 0xcf004020);
 
-	// GPIO_CNF.D = 10110000
 	// port D enable
 	outl(inl(0xcf00000c) | (1<<4)|(1<<5)|(1<<7), 0xcf00000c);
 
-	// GPIO_OE.D |= 10110000
 	// port D output enable
 	outl(inl(0xcf00001c) | (1<<4)|(1<<5)|(1<<7), 0xcf00001c);
 
-	// GPIO_OUT.D 
 	// port D output value ~10000 | 100000
 	outl((inl(0xcf00002c) & ~(1<<4)) | (1<<5), 0xcf00002c);
-
-#if 0
-	if  ( version == 0x10001 || version == 0x10000 || version == 1 ) {
-		// GPIO_CNF.D |= 110
-		// port D enable
-		outl(inl(0xcf00000c) | (1<<1) | (1<<2), 0xcf00000c);
-
-		// GPIO_OE.D |= 110
-		// port D output enable
-		outl(inl(0xcf00001c) | (1<<1) | (1<<2), 0xcf00001c);
-
-		// GPIO_OUT.REG.D |= 110
-		// port D output value | 110
-		outl(inl(0xcf00002c) | (1<<1) | (1<<2), 0xcf00002c);
-		udelay(2);
-
-		// GPIO_OUT.REG.D &= ~10
-		// port D output value 10
-		outl(inl(0xcf00002c) & ~(1<<1), 0xcf00002c);
-
-		// GPIO_OUT.REG.D &= ~100
-		// port D output value 100
-		outl(inl(0xcf00002c) & ~(1<<2), 0xcf00002c);
-		udelay(2);
-
-		// GPIO_OUT.REG.D |= 10
-		// port D output value 10
-		outl(inl(0xcf00002c) | (1<<1), 0xcf00002c);
-
-		// GPIO_OUT.REG.D |= 100
-		// port D output value 100
-		outl(inl(0xcf00002c) | (1<<2), 0xcf00002c);
-		udelay(2);
-	}
-	else if ( version == 0x20000 )
-#endif
 
 	{
 		unsigned r2;
 
-		// GPO_REG | 100
 		// Port E Bit 2 Enable
 		outl(inl(0xcf004048) | (1<<2), 0xcf004048);
 
-		// PIN_MUX_CTL
 		r2 = inl(0xcf004044);
 
-		// GPO_REG | 10000
 		// Port E Bit 4 Enable
 		outl(inl(0xcf004048) | (1<<4), 0xcf004048);
 
-		// GPO_REG & ~100
 		// Port E Bit 2 disable
 		outl(inl(0xcf004048) & ~(1<<2), 0xcf004048);
 
-		// GPO_REG & ~10000
 		// Port E Bit 4 disable
 		outl(inl(0xcf004048) & ~(1<<4), 0xcf004048);
 
-		// GPO_REG | 100
 		// Port E Bit 2 Enable
 		outl(inl(0xcf004048) | (1<<2), 0xcf004048);
 
-		// GPO_REG | 10000
 		// Port E Bit 2 Enable
 		outl(inl(0xcf004048) | (1<<4), 0xcf004048);
 
-		// PIN_MUX_CTL | 10000
-		// LCD power down
-		// Pin 148 functions as GP03_PE.04.o
 		outl(r2 | (1<<4), 0xcf004044);
 	}
 
