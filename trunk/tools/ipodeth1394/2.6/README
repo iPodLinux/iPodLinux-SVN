@@ -1,0 +1,20 @@
+
+iPodEth1394
+===========
+
+This is an ipodlinux compatible ethernet-over-firewire driver for the 2.6
+kernel series. The driver should work on 2.6.4-rc1 and newer and also on some
+older mm kernels (but should work with minor tweaks on about any quite recent 
+2.6).
+
+You might not want to load this module with eth1394 loaded - they might easily
+clash - I haven't tested that.
+
+Compiling:
+----------
+
+Simply do "make" if you're compiling for the current kernel and have the
+sources where the kernel was built. Otherwise do "make KDIR=/kernel/source" if
+you want to build for the kernel in /kernel/source.
+
+dpalffy
