@@ -49,6 +49,15 @@
 # endif
 #endif
 
+#if defined(CONFIG_CPU_PP5002)
+# ifdef _CACHE
+#  define MULTI_CACHE 1
+# else
+#  define _CACHE pp5002
+# endif
+#endif
+
+
 #if defined(CONFIG_CPU_ARM920T) || defined(CONFIG_CPU_ARM922T) || \
     defined(CONFIG_CPU_ARM1020)
 # define MULTI_CACHE 1

@@ -51,7 +51,7 @@
 # endif
 #endif
 
-#if defined(CONFIG_CPU_ARM710) || defined(CONFIG_CPU_S3C4510B)
+#if defined(CONFIG_CPU_ARM710) || defined(CONFIG_CPU_S3C4510B) || defined(CONFIG_CPU_PP5002)
 # ifdef CPU_ABORT_HANDLER
 #  define MULTI_ABORT 1
 # else
