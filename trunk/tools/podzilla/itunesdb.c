@@ -42,7 +42,7 @@ struct itunes_item {
 };
 
 static struct itunes_item main_itunes[2048];
-static struct itunes_item itunes_artist[2048][128];
+static struct itunes_item itunes_artist[2048][512];
 static int songperartist[2048];
 
 static int current_itunes_item = 0;
@@ -225,9 +225,9 @@ static unsigned int get_int(char *p)
 static void parse(char *mountpoint) {
 	char filepos2[80], buf, *curitem;
 	char filepos[128], itemtext[128], artisttext[128], songtext[128];
-	unsigned int oldartist=0, whichartist, whichitem;
+	unsigned int whichitem;
 	int songlength;
-	int i, j, pos=-1, lasti;
+	int pos = -1, lasti;
 
 	curitem = buffer;
 	buf = *curitem;
@@ -246,26 +246,37 @@ static void parse(char *mountpoint) {
 #define MHSD_ID 0x6473686d /* "mhsd" */
 #define MHLT_ID 0x746c686d /* "mhlt" */
 
-			if(id == MHIT_ID) {
-				if(pos>=0) {
-					for(i=pos; i--;) {
-						if(strcmp(main_itunes[i].text, artisttext)==0) {
-							oldartist=1;
-							whichartist=i;
-							break;
-						}
+			/* skip the very first mhit, its doesnt have any song/artist */
+			if (pos == -1 && id == MHIT_ID) {
+				pos++;
+				curitem += get_int(curitem + 4);
+			}
+			else if(id == MHIT_ID) {
+				int oldartist = 0, whichartist;
+				int i;
+
+				for (i = pos - 1; i >= 0; i--) {
+					if (strcmp(main_itunes[i].text, artisttext) == 0) {
+						oldartist = 1;
+						whichartist = i;
+						break;
 					}
 				}
-				if(!oldartist) {
+
+				if (!oldartist) {
 					main_itunes[pos].text = malloc(strlen(artisttext)+1);
 					strcpy(main_itunes[pos].text, artisttext);
 					main_itunes[pos].type = 0;
 					main_itunes[pos].ptr = itunes_artist[pos];
-					whichartist=pos;
-					songperartist[pos]=0;
-					pos++;
+					songperartist[pos] = 0;
+					whichartist = pos++;
 				}
-				oldartist=0;
+
+#ifndef IPOD
+				assert(whichartist >= 0);
+				assert(whichartist < 2048);
+				assert(songperartist[whichartist] < 512);
+#endif
 
 				itunes_artist[whichartist][songperartist[whichartist]].text = malloc(strlen(songtext)+1);
 				strcpy(itunes_artist[whichartist][songperartist[whichartist]].text, songtext);
@@ -275,6 +286,7 @@ static void parse(char *mountpoint) {
 				itunes_artist[whichartist][songperartist[whichartist]].ptr = malloc(strlen(filepos)+1);
 				strcpy(itunes_artist[whichartist][songperartist[whichartist]].ptr, filepos);
 				songperartist[whichartist]++;
+
 				whichitem=0;
 #if 0
 				printf("Filesz : %ld\n", get_int(curitem+34));
@@ -301,11 +313,13 @@ static void parse(char *mountpoint) {
 					int itemlen = get_int(curitem+28);
 					p = curitem + 40;
 
+					itemlen = itemlen / 2;
+
 					if (itemlen > sizeof(itemtext) - 1) {
 						itemlen = sizeof(itemtext) - 1;
 					}
 
-					for (c = 0; c < itemlen/2; c++) {
+					for (c = 0; c < itemlen; c++) {
 						itemtext[c] = *p;
 						p+=2;
 					}
@@ -320,7 +334,10 @@ static void parse(char *mountpoint) {
 						artisttext[sizeof(artisttext)-1] = 0;
 					}
 					if(whichitem==ITEM_FILE) {
+						int j;
+
 						strncpy(filepos2, itemtext, sizeof(filepos2)-1);
+						filepos2[sizeof(filepos2)-1] = 0;
 						for(j=0; filepos2[j]!='\0'; j++) {
 							if(filepos2[j]==':')
 								filepos2[j]='/';
@@ -333,24 +350,31 @@ static void parse(char *mountpoint) {
 				curitem += get_int(curitem+8);
 			}
 			else if(id == MHLP_ID) {
-				if(pos>=0) {
-					for(i=pos; i--;) {
-						if(strcmp(main_itunes[i].text, artisttext)==0) {
-							oldartist=1;
-							whichartist=i;
-							break;
-						}
+				int oldartist = 0, whichartist;
+				int i;
+
+				for (i = pos - 1; i >= 0; i--) {
+					if (strcmp(main_itunes[i].text, artisttext) == 0) {
+						oldartist = 1;
+						whichartist = i;
+						break;
 					}
 				}
-				if(!oldartist) {
+
+				if (!oldartist) {
 					main_itunes[pos].text = malloc(strlen(artisttext)+1);
 					strcpy(main_itunes[pos].text, artisttext);
 					main_itunes[pos].type = 0;
 					main_itunes[pos].ptr = itunes_artist[pos];
-					whichartist=pos;
-					songperartist[pos]=0;
-					pos++;
+					songperartist[pos] = 0;
+					whichartist = pos++;
 				}
+
+#ifndef IPOD
+				assert(whichartist >= 0);
+				assert(whichartist < 2048);
+				assert(songperartist[whichartist] < 512);
+#endif
 
 				itunes_artist[whichartist][songperartist[whichartist]].text = malloc(strlen(songtext)+1);
 				strcpy(itunes_artist[whichartist][songperartist[whichartist]].text, songtext);
