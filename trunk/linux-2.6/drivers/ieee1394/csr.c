@@ -232,9 +232,14 @@ static void add_host(struct hpsb_host *host)
 	host->csr.generation = 2;
 
 	bus_info[1] = __constant_cpu_to_be32(0x31333934);
-	bus_info[2] = cpu_to_be32((1 << CSR_IRMC_SHIFT) |
+	bus_info[2] = cpu_to_be32(
+#ifndef CONFIG_ARCH_IPOD
+				  (1 << CSR_IRMC_SHIFT) |
+#endif
 				  (1 << CSR_CMC_SHIFT) |
+#ifndef CONFIG_ARCH_IPOD
 				  (1 << CSR_ISC_SHIFT) |
+#endif
 				  (0 << CSR_BMC_SHIFT) |
 				  (0 << CSR_PMC_SHIFT) |
 				  (host->csr.cyc_clk_acc << CSR_CYC_CLK_ACC_SHIFT) |
