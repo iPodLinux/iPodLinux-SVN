@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, Bernard Leach (leachbj@bouncycastle.org)
+ * Copyright (c) 2003,2004 Bernard Leach (leachbj@bouncycastle.org)
  */
 
 #ifndef __ASM_ARCH_MEMORY_H
@@ -21,8 +21,7 @@
 
 #define TASK_SIZE	(0xf0000000UL)
 
-#define PHYS_TO_NID(addr)	(0)  /* node  0  */
-#define NR_NODES		1
+#define MEM_SIZE	(CONFIG_DRAM_SIZE)
 
 #endif
 
