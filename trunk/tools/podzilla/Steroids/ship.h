@@ -12,6 +12,10 @@
 #define STEROIDS_SHIP_MAINTHRUST 0.3
 #define STEROIDS_SHIP_RETROTHRUST -0.1
 
+#define STEROIDS_SHIP_EXHAUST_NUM        5
+#define STEROIDS_SHIP_EXHAUST_THRUST     STEROIDS_SHIP_MAINTHRUST * -5
+#define STEROIDS_SHIP_EXHAUST_LIFECYCLES 4
+
 #define STEROIDS_SHIP_STATE_LIVE   0
 #define STEROIDS_SHIP_STATE_THRUST 1
 #define STEROIDS_SHIP_STATE_RETRO  2
@@ -27,12 +31,11 @@ typedef struct SteroidsShip
 {
     int state;
     Steroids_Object shape;
-    Steroids_Object engine;
     float heading;
     int cannon; // Index into point list of shape object
+    int engine; // Index into point list of shape object
 
     Steroids_Polygon *originalShape;
-    Steroids_Polygon *originalEngine;
 
     int dieTime; // Counter for number of frames for the dying sequence
 } Steroids_Ship;

@@ -1,11 +1,12 @@
-#define MWINCLUDECOLORS
-#include <nano-X.h>
 #include <stdlib.h>
 #include <math.h>
+
+#include "grafix.h"
 
 #include "globals.h"
 #include "ship.h"
 #include "ship_protos.h"
+#include "shot_protos.h"
 #include "shot.h"
 #include "polygon.h"
 
@@ -18,9 +19,10 @@ static GR_POINT shipPoint[] = {{ 0, -5},
 			       { 2,  4},
 			       { 0, -5}};
 
-
 Steroids_Vector  startPos = {20, 20};
 Steroids_Polygon modelShip;
+
+static Steroids_Shot     exhaust[STEROIDS_SHIP_EXHAUST_NUM];
 
 
 void initializeModels()
@@ -32,7 +34,6 @@ void initializeModels()
 	modelShip.cog.x = 0;
 	modelShip.cog.y = 0;
         modelShip.nPoints = shipNPoints;
-
 	for (i = 0; i < shipNPoints; i++)
 	{
 	    modelShip.masterPoint[i].x = shipPoint[i].x;
@@ -46,13 +47,19 @@ void initializeModels()
 
 void steroids_ship_init (Steroids_Ship *ship)
 {
+    int i;
+
     initializeModels();
 
-    ship->originalShape = &modelShip;
+    for (i = 0; i < STEROIDS_SHIP_EXHAUST_NUM; i++)
+    {
+	exhaust[i].active = 0;
+    }
 
+    ship->originalShape = &modelShip;
     ship->heading = 0;
     ship->cannon = 0;
-
+    ship->engine = 2;
     ship->state = STEROIDS_SHIP_STATE_LIVE;
 
     // Initialize ship shape object:
@@ -63,7 +70,6 @@ void steroids_ship_init (Steroids_Ship *ship)
     ship->shape.velocity.y = 0;
     ship->shape.accelleration.x = 0;
     ship->shape.accelleration.y = 0;
-
 
     // Move to start position:
     startPos.x = steroids_globals.width / 2;
@@ -87,6 +93,8 @@ void steroids_ship_draw (Steroids_Ship *ship)
 	steroids_object_draw (&ship->shape, 0);
 	break;
     }
+
+    steroids_shot_drawall (exhaust, 5);
 }
 
 
@@ -96,6 +104,9 @@ void steroids_ship_draw (Steroids_Ship *ship)
  */
 void steroids_ship_animate (Steroids_Ship *ship)
 {
+    float           vLen;
+    Steroids_Vector v;
+
     switch (ship->state)
     {
     case STEROIDS_SHIP_STATE_RETRO:
@@ -110,6 +121,20 @@ void steroids_ship_animate (Steroids_Ship *ship)
 	    ship->shape.accelleration.x = 0;
 	    ship->shape.accelleration.y = 0;
 	}
+	break;
+
+    case STEROIDS_SHIP_STATE_THRUST:
+	v.x = ship->shape.velocity.x;
+	v.y = ship->shape.velocity.y;
+	steroids_shot_new (exhaust,
+			   STEROIDS_SHIP_EXHAUST_NUM,
+			   ship->shape.geometry.polygon.point[ship->engine].x,
+			   ship->shape.geometry.polygon.point[ship->engine].y,
+			   &v,
+			   ship->heading,
+			   STEROIDS_SHIP_EXHAUST_THRUST,
+			   STEROIDS_SHIP_EXHAUST_LIFECYCLES);
+
 	break;
 
     case STEROIDS_SHIP_STATE_DIE:
@@ -132,6 +157,7 @@ void steroids_ship_animate (Steroids_Ship *ship)
     }
 
     steroids_object_animate (&ship->shape);
+    steroids_shot_animateall (exhaust, STEROIDS_SHIP_EXHAUST_NUM);
 }
 
 
@@ -147,9 +173,7 @@ void rotate (float angle, Steroids_Ship *ship)
 
     v.x = ship->shape.geometry.polygon.cog.x;
     v.y = ship->shape.geometry.polygon.cog.y;
-
     steroids_object_rotate (ship->heading, &ship->shape);
-
     ship->shape.geometry.polygon.cog.x = ship->originalShape->cog.x;
     ship->shape.geometry.polygon.cog.y = ship->originalShape->cog.y;
     steroids_object_translate (v, &ship->shape);
@@ -237,6 +261,7 @@ void steroids_ship_fire (Steroids_Shot *shots,
     case STEROIDS_SHIP_STATE_RETRO:
     case STEROIDS_SHIP_STATE_THRUST:
 	steroids_shot_newShip (shots,
+			       STEROIDS_SHOT_NUM,
 			       ship);
 	break;
     }

@@ -4,24 +4,30 @@
 
 #include "globals.h"
 #include "shot.h"
+#include "shot_protos.h"
 #include "polygon.h"
 #include "ship.h"
 
 
 /** steroids_shot_new
  *
- *  Allocates a new shot fired from the given ship. If no available shot slots
- *  are available, nothing happens.
+ *  Allocates a new shot based on the given parameters. If no available shot
+ *  slots are available, nothing happens.
  *
  */
-void steroids_shot_newShip (Steroids_Shot *shot,
-			    Steroids_Ship *ship)
+void steroids_shot_new (Steroids_Shot *shot,
+			int n,
+			int x, int y,
+			Steroids_Vector *initialV,
+			float heading,
+			float velocity,
+			int lifeCycles)
 {
     int available = 0;
     int i = 0;
     Steroids_Vector v;
 
-    while (i < STEROIDS_SHOT_NUM
+    while (i < n
 	   && !available)
     {
 	available = !shot[i].active;
@@ -32,33 +38,53 @@ void steroids_shot_newShip (Steroids_Shot *shot,
     {
 	i--;
 	shot[i].active = 1;
-	shot[i].cycles = 0;
+	shot[i].cycles = lifeCycles;
 	shot[i].shape.type = STEROIDS_OBJECT_TYPE_POINT;
 	shot[i].shape.colour = BLACK;
 
-	steroids_vector_fromPolar (ship->heading,
-				   STEROIDS_SHOT_FORCE,
+	steroids_vector_fromPolar (heading,
+				   velocity,
 				   &shot[i].shape.velocity);
-	shot[i].shape.velocity.x += ship->shape.velocity.x;
-	shot[i].shape.velocity.y += ship->shape.velocity.y;
+	shot[i].shape.velocity.x += initialV->x;
+	shot[i].shape.velocity.y += initialV->y;
 
 	shot[i].shape.accelleration.x = 0;
 	shot[i].shape.accelleration.y = 0;
 
 	// Move to start position:
-	v.x = ship->shape.geometry.polygon.point[ship->cannon].x;
-	v.y = ship->shape.geometry.polygon.point[ship->cannon].y;
+	v.x = x;
+	v.y = y;
 
 	steroids_object_rotate (0, &shot[i].shape);
 	steroids_object_translate (v, &shot[i].shape);
     }
 }
 
+/** steroids_shot_new
+ *
+ *  Allocates a new shot fired from the given ship. If no available shot slots
+ *  are available, nothing happens.
+ *
+ */
+void steroids_shot_newShip (Steroids_Shot *shot,
+			    int            n,
+			    Steroids_Ship *ship)
+{
+    steroids_shot_new (shot,
+		       n,
+		       ship->shape.geometry.polygon.point[ship->cannon].x,
+		       ship->shape.geometry.polygon.point[ship->cannon].y,
+		       &ship->shape.velocity,
+		       ship->heading,
+		       STEROIDS_SHOT_FORCE,
+		       STEROIDS_SHOT_CYCLES);
+}
 
-void steroids_shot_drawall (Steroids_Shot *shot)
+
+void steroids_shot_drawall (Steroids_Shot *shot, int n)
 {
     int i;
-    for (i = 0; i < STEROIDS_SHOT_NUM; i++)
+    for (i = 0; i < n; i++)
     {
 	if (shot[i].active)
 	{
@@ -77,10 +103,10 @@ void steroids_shot_draw (Steroids_Shot *shot)
 /** Animates shot according to velocity and accelleration.
  * 
  */
-void steroids_shot_animateall (Steroids_Shot *shot)
+void steroids_shot_animateall (Steroids_Shot *shot, int n)
 {
     int i;
-    for (i = 0; i < STEROIDS_SHOT_NUM; i++)
+    for (i = 0; i < n; i++)
     {
 	if (shot[i].active)
 	{
@@ -90,14 +116,14 @@ void steroids_shot_animateall (Steroids_Shot *shot)
 }
 void steroids_shot_animate (Steroids_Shot *shot)
 {
-    if (shot->cycles > STEROIDS_SHOT_CYCLES)
+    if (shot->cycles < 0)
     {
 	shot->active = 0;
     }
     else
     {
 	steroids_object_animate (&shot->shape);
-	shot->cycles++;
+	shot->cycles--;
     }
 }
 

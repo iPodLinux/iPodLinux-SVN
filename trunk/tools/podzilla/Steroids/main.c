@@ -54,15 +54,10 @@ Steroids_Shot     steroids_shotUFO;
 static void steroids_do_draw()
 {
     pz_draw_header("Steroids");
-//    steroids_ship_drawReserve(root_wid, root_gc);
 }
 
 static void steroids_drawTopLeft()
 {
-/*
-    steroids_ship_drawReserve(steroids_globals.topLeft_wid,
-			      steroids_globals.topLeft_gc);
-*/
 }
 static int handle_topLeft_event (GR_EVENT *event)
 {
@@ -119,16 +114,6 @@ static int steroids_handle_event (GR_EVENT *event)
 		break;
 	    } // keystroke
 	    break;   // key down
-/*
-	case GR_EVENT_TYPE_KEY_UP:
-	    switch (event->keystroke.ch)
-	    {
-	    case 'd': // Play/pause button
-		printf ("play up\n");
-		break;
-	    } // keystroke
-	    break;   // key up
-*/
 	} // event type
 	break; // GAME_STATE_PLAY
 
@@ -173,6 +158,8 @@ static int steroids_handle_event (GR_EVENT *event)
 
 
     case STEROIDS_GAME_STATE_EXIT:
+	GrDestroyGC (steroids_globals.topLeft_gc);
+	GrDestroyGC (steroids_globals.game_gc);
 	pz_close_window(steroids_globals.topLeft_wid);
 	pz_close_window(steroids_globals.game_wid);
 	GrDestroyTimer(steroids_globals.timer_id);
@@ -287,7 +274,7 @@ static void steroids_Game_Loop()
     case STEROIDS_GAME_STATE_PLAY:
 	// Animate
 	steroids_asteroid_animateall (steroids_asteroid);
-	steroids_shot_animateall (steroids_shotShip);
+	steroids_shot_animateall (steroids_shotShip, STEROIDS_SHOT_NUM);
 	steroids_ship_animate (&steroids_ship);
 
 	// Check ship collisions:
@@ -415,7 +402,7 @@ static void steroids_DrawScene()
 	       GR_TFASCII);
 */
 	steroids_asteroid_drawall (steroids_asteroid);
-	steroids_shot_drawall (steroids_shotShip);
+	steroids_shot_drawall (steroids_shotShip, STEROIDS_SHOT_NUM);
 	steroids_ship_draw (&steroids_ship);
 	break;
 
