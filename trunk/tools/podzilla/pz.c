@@ -46,7 +46,9 @@ static unsigned long int last_keypress_event = 0;
 
 #define WHEEL_EVT_MOD   3
 
-char key_pressed = '\0';
+static char key_pressed = '\0';
+
+static int hold_is_on = 0;
 
 /*
 +----+
@@ -68,8 +70,31 @@ static GR_POINT batt_outline[] = {
 	{138, 15},
 	{138, 6}
 };
-
 #define BATT_POLY_POINTS 9
+
+/*
+  +-+
++-+ +-+
+|     |
+|     |
+|     |
++-----+
+*/
+static GR_POINT hold_outline[] = {
+	{8, 9},
+	{9, 9},
+	{9, 6},
+	{10, 5},
+	{13, 5},
+	{14, 6},
+	{14, 9},
+	{15, 9},
+	{15, 14},
+	{8, 14},
+	{8, 9},
+};
+#define HOLD_POLY_POINTS 11
+
 
 extern void new_menu_window();
 extern void beep(void);
@@ -162,6 +187,13 @@ void pz_event_handler(GR_EVENT *event)
 		}
 #endif
 
+		if (event->keystroke.ch == 'h') {
+			if (!hold_is_on) {
+				hold_is_on = 1;
+				draw_hold_status();
+			}
+		}
+
 		key_pressed = event->keystroke.ch;
 		for (i = 0; i < n_opened; i++) {
 			if (windows[i].wid == wid && wid != GR_ROOT_WINDOW_ID) {
@@ -172,6 +204,12 @@ void pz_event_handler(GR_EVENT *event)
 		break;
 
 	case GR_EVENT_TYPE_KEY_UP:
+		if (event->keystroke.ch == 'h') {
+			if (hold_is_on) {
+				hold_is_on = 0;
+				draw_hold_status();
+			}
+		}
 		wid = ((GR_EVENT_KEYSTROKE *)event)->wid;
 		event->keystroke.ch = key_pressed;
 		break;
@@ -191,6 +229,20 @@ static void draw_batt_status()
 	GrFillRect(root_wid, root_gc, 140, 8, 15, 6);
 }
 
+static void draw_hold_status()
+{
+	if (hold_is_on) {
+		GrSetGCForeground(root_gc, BLACK);
+		GrPoly(root_wid, root_gc, HOLD_POLY_POINTS, hold_outline);
+		GrFillRect(root_wid, root_gc, 8, 9, 7, 5);
+	}
+	else {
+		GrSetGCForeground(root_gc, WHITE);
+		GrPoly(root_wid, root_gc, HOLD_POLY_POINTS, hold_outline);
+		GrFillRect(root_wid, root_gc, 8, 9, 7, 5);
+	}
+}
+
 void pz_draw_header(char *header)
 {
 	GR_SIZE width, height, base;
@@ -207,6 +259,7 @@ void pz_draw_header(char *header)
 	GrLine(root_wid, root_gc, 0, HEADER_TOPLINE, screen_info.cols, HEADER_TOPLINE);
 
 	draw_batt_status();
+	draw_hold_status();
 }
 
 GR_WINDOW_ID pz_new_window(int x, int y, int w, int h, void(*do_draw), int(*do_keystroke)(GR_EVENT * event))
