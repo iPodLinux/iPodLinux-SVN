@@ -1,3 +1,8 @@
+leachbj - Mon May 24 2004
+	Fixed partial read/write bug
+	Playback window now plays the file requested
+	Tweaked record/playback buffer sizes
+
 leachbj - Sun May 23 2004
 	Added simple voice recording via microphone
 	Added .raw file playback (44.1kHz only)

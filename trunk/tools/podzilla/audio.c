@@ -22,6 +22,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <string.h>
 
 #include "pz.h"
 
@@ -31,13 +32,17 @@ static GR_SCREEN_INFO screen_info;
 static pthread_t dsp_thread;
 static int mode;
 static volatile int playing = 0, recording = 0, paused = 0;
+static char *pcm_file;
 
 #define RECORD        0
 #define PLAYBACK      1
 #define PLAYBACK_ONLY 2
 
 static volatile int killed;
-static unsigned short dsp_buf[512];
+
+#define DSP_REC_SIZE	512
+#define DSP_PLAY_SIZE	16*1026*2
+static unsigned short dsp_buf[16*1026];
 
 int is_raw_audio_type(char *extension)
 {
@@ -79,7 +84,7 @@ static void * dsp_record(void *filename)
 {
 	int dsp_fd, file_fd;
 
-	file_fd = open((char *)filename, O_WRONLY|O_CREAT|O_TRUNC, 666);
+	file_fd = open((char *)filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR);
 	if (file_fd < 0) {
 		char buf[256];
 		sprintf(buf, "could not open %s\n", filename);
@@ -101,13 +106,15 @@ static void * dsp_record(void *filename)
 
 	while (!killed) {
 		ssize_t n, rem;
+		unsigned short *p = dsp_buf;
 
-		rem = n = read(dsp_fd, (void *)dsp_buf, 512*2);
+		rem = n = read(dsp_fd, (void *)p, DSP_REC_SIZE);
 		if (n > 0) {
 			while (rem) {
-				n = write(file_fd, (void *)dsp_buf, rem);
+				n = write(file_fd, (void *)p, rem);
 				if (n > 0) {
 					rem -= n;
+					p += (n/2);
 				}
 			}
 		}
@@ -153,13 +160,15 @@ static void * dsp_playback(void *filename)
 
 	do {
 		ssize_t n, rem;
+		unsigned short *p = dsp_buf;
 
-		count = rem = n = read(file_fd, (void *)dsp_buf, 512*2);
+		count = rem = n = read(file_fd, (void *)p, DSP_PLAY_SIZE);
 		if (n > 0) {
 			while (rem) {
-				n = write(dsp_fd, (void *)dsp_buf, rem);
+				n = write(dsp_fd, (void *)p, rem);
 				if (n > 0) {
 					rem -= n;
+					p += (n/2);
 				}
 			}
 		}
@@ -181,14 +190,14 @@ no_file:
 
 static void start_recording()
 {
-	if (pthread_create(&dsp_thread, NULL, dsp_record, "test.raw") != 0) {
+	if (pthread_create(&dsp_thread, NULL, dsp_record, pcm_file) != 0) {
 		new_message_window("could not create thread");
 	}
 }
 
 static void start_playback()
 {
-	if (pthread_create(&dsp_thread, NULL, dsp_playback, "test.raw") != 0) {
+	if (pthread_create(&dsp_thread, NULL, dsp_playback, pcm_file) != 0) {
 		new_message_window("could not create thread");
 	}
 }
@@ -241,6 +250,7 @@ static int dsp_do_keystroke(GR_EVENT * event)
 		if (playing || recording) {
 			stop_dsp();
 		}
+		free(pcm_file);
 		pz_close_window(dsp_wid);
 		break;
 
@@ -262,6 +272,7 @@ static int dsp_do_keystroke(GR_EVENT * event)
 void new_record_window(char *filename)
 {
 	mode = RECORD;
+	pcm_file = strdup("test.raw");
 
 	dsp_gc = GrNewGC();
 	GrSetGCUseBackground(dsp_gc, GR_TRUE);
@@ -278,6 +289,7 @@ void new_record_window(char *filename)
 void new_playback_window(char *filename)
 {
 	mode = PLAYBACK_ONLY;
+	pcm_file = strdup(filename);
 
 	dsp_gc = GrNewGC();
 	GrSetGCUseBackground(dsp_gc, GR_TRUE);
