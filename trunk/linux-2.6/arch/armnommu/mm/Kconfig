@@ -26,8 +26,9 @@ config CPU_ARM610
 # ARM710
 config CPU_ARM710
 	bool "Support ARM710 processor" if !ARCH_S3C3410 && !ARCH_ATMEL && ARCH_CLPS7500 && ARCH_RPC
-	default y if ARCH_S3C3410 || ARCH_CLPS7500 || ARCH_ATMEL
-	select CPU_32v3
+	default y if ARCH_S3C3410 || ARCH_CLPS7500 || ARCH_ATMEL || ARCH_IPOD
+	select CPU_32v3 if !ARCH_IPOD
+	select CPU_32v4 if ARCH_IPOD
 	select CPU_CACHE_V3
 	select CPU_COPY_V3
 	select CPU_TLB_V3

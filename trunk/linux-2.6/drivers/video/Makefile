@@ -88,4 +88,5 @@ obj-$(CONFIG_FB_TCX)               += tcx.o sbuslib.o cfbimgblt.o cfbcopyarea.o 
 				      cfbfillrect.o
 obj-$(CONFIG_FB_LEO)               += leo.o sbuslib.o cfbimgblt.o cfbcopyarea.o \
 				      cfbfillrect.o
+obj-$(CONFIG_FB_IPOD)              += ipodfb.o cfbfillrect.o cfbcopyarea.o cfbimgblt.o
 
