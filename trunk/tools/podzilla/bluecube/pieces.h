@@ -23,6 +23,7 @@
 #ifndef __PIECES_H__
 #define __PIECES_H__
 
+extern GR_COLOR StyleColors[];
 extern int Pieces[][4][CLUSTER_X][CLUSTER_Y];
 
 #endif

@@ -18,13 +18,24 @@
  */
 
 /* File: grafix.h === gfx Interface */
+#ifndef __GRAFIX_H__
+#define __GRAFIX_H__
 
 #define MWINCLUDECOLORS
 #include <nano-X.h>
 
 GR_WINDOW_ID tetris_wid;
 GR_GC_ID tetris_gc;
+GR_COLOR tetris_fg;
+GR_COLOR tetris_bg;
 
-void tetris_put_rect(int x, int y, int w, int h, int color);
+#define FILLED  1
+#define OUTLINE 0
+
+#define CLEAR 1
+#define DRAW  0
+
+void tetris_put_rect(int x, int y, int w, int h, int filled, GR_COLOR colour);
 void tetris_draw_values(void);
 void tetris_lose(void);
+#endif

@@ -23,6 +23,7 @@
 #include <time.h>
 #include "grafix.h"
 #include "global.h"
+#include "pieces.h"
 #include "box.h"
 #include "../piezo.h"
 #include "../ipod.h"
@@ -96,7 +97,7 @@ static void tetris_game_loop()
 {
 	if (!byoulose) {
 		if (cluster.dropCount == 0) {
-				DrawCluster(2);
+				DrawCluster(CLEAR);
 				if (MoveCluster(0)) /* If cluster "collides"... */
 					NewCluster();   /* then create a new one ;) */
 		}
@@ -121,6 +122,20 @@ static void tetris_game_loop()
 	tetris_draw_scene();
 }
 
+/*=========================================================================
+// Name: tetris_put_rect()
+// Desc: Draws a rectangle onto the screen
+//=======================================================================*/
+void tetris_put_rect(int x, int y, int w, int h, int filled, GR_COLOR colour)
+{
+	GrSetGCForeground(tetris_gc, colour);
+	if (filled) {
+		GrFillRect(tetris_wid, tetris_gc, x, y, w, h);
+	} else {
+		GrRect(tetris_wid, tetris_gc, x, y, w, h);
+	}
+}
+
 /*========================================================================
 // Name: tetris_draw_scene()
 // Desc: Draws the whole scene!
@@ -130,11 +145,10 @@ static void tetris_draw_scene()
 	if (!byoulose) {
 		/* Draw border of the box */
 		tetris_put_rect(boxdraw.box_x-2, boxdraw.box_y-2,
-				boxdraw.box_width + 2*2, boxdraw.box_height + 2*2, 1);
-		//tetris_put_rect(boxdraw.box_x-1, boxdraw.box_y-1,
-		//		boxdraw.box_width+2, boxdraw.box_height+2, 1);
+		                boxdraw.box_width + 2*2, boxdraw.box_height + 2*2,
+				        OUTLINE, tetris_fg);
 				
-		DrawCluster(3); /* Draw cluster */
+		DrawCluster(DRAW); /* Draw cluster */
 	}
 
 	DrawBox();       /* Draw box bricks */
@@ -163,10 +177,10 @@ void tetris_lose(void)
 		fclose(readfile);
 	}
 		
-	GrSetGCForeground(tetris_gc, WHITE);
+	GrSetGCForeground(tetris_gc, tetris_bg);
 	GrFillRect(tetris_wid, tetris_gc, 0, 0, screen_info.cols,
 	           screen_info.rows-21);
-	GrSetGCForeground(tetris_gc, BLACK);
+	GrSetGCForeground(tetris_gc, tetris_fg);
 	GrText(tetris_wid, tetris_gc, (screen_info.cols/4), 15, "- Game Over -",
 	       -1, GR_TFASCII);
 	sprintf(chYourScore, "Your Score: %d", tetris_score); 
@@ -179,7 +193,7 @@ void tetris_lose(void)
 	       -1, GR_TFASCII);
 	
 	if (tetris_score > readscore) {
-		GrSetGCForeground(tetris_gc, BLACK);
+		GrSetGCForeground(tetris_gc, tetris_fg);
 		GrText(tetris_wid, tetris_gc, 5, 61, "Wow, a new record!!",
 		       -1, GR_TFASCII);
 		sprintf(chYourScore2, "New best score: %i", tetris_score);
@@ -192,9 +206,22 @@ void tetris_lose(void)
 
 static void tetris_init()
 {
+	int i;
+
+	if (screen_info.bpp == 2) {
+		for (i = 0; i < 7; i++) {
+			StyleColors[i] = tetris_fg;
+		}
+		tetris_bg = WHITE;
+		tetris_fg = BLACK;
+	} else {
+		tetris_bg = BLACK;
+		tetris_fg = WHITE;
+	}
+
 	tetris_gc = pz_get_gc(1);
 	GrSetGCUseBackground(tetris_gc, GR_TRUE);
-	GrSetGCBackground(tetris_gc, WHITE);
+	GrSetGCBackground(tetris_gc, tetris_bg);
 
 	tetris_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols,
 	                           screen_info.rows - (HEADER_TOPLINE + 1),
@@ -205,7 +232,10 @@ static void tetris_init()
 
 	GrMapWindow(tetris_wid);
 	
-	GrSetGCForeground(tetris_gc, BLACK);
+	GrSetGCForeground(tetris_gc, tetris_fg);
+	tetris_put_rect(0, 0, screen_info.cols,
+			screen_info.rows - (HEADER_TOPLINE + 1), FILLED, tetris_bg);
+	GrSetGCForeground(tetris_gc, tetris_fg);
 	GrText(tetris_wid, tetris_gc, 1, 20, "Score",  -1, GR_TFASCII);
 	GrText(tetris_wid, tetris_gc, 1, 32, "0",  -1, GR_TFASCII);
 	GrText(tetris_wid, tetris_gc, 1, 45, "Lines",  -1, GR_TFASCII);
@@ -227,7 +257,7 @@ static void tetris_exit(void)
 
 static int tetris_do_keystroke(GR_EVENT * event)
 {
-	int ret = 0;
+	int ret = 0, exit = 0;
 	
 	switch (event->type) {
 		case GR_EVENT_TYPE_TIMER:
@@ -240,42 +270,46 @@ static int tetris_do_keystroke(GR_EVENT * event)
 			if (!byoulose) {
 			switch (event->keystroke.ch) {
 				case '\r':
-					DrawCluster(2);
+					DrawCluster(CLEAR);
 					TurnClusterRight();
 					break;
 				case 'd':
 					MoveCluster(1); /* "drop" cluster...      */
-					DrawCluster(2); /* erase old position     */
+					DrawCluster(CLEAR); /* erase old position     */
 					NewCluster();   /* ... and create new one */
 					break;
 				case 'f':	
 				case 'w':
-					DrawCluster(2);
+					DrawCluster(CLEAR);
 					if (MoveCluster(0))
 						NewCluster();
 					break;
 				case 'l':
-					DrawCluster(2);
+					DrawCluster(CLEAR);
 					MoveClusterLeft();
 					break;
 				case 'r':
-					DrawCluster(2);
+					DrawCluster(CLEAR);
 					MoveClusterRight();
 					break;
 				case 'm':
 					ret=1;
+					exit=1;
 					tetris_exit();
 					break;
 				default:
 					break;
 			}
-			if (!ret) { // yeah i shoudl use something else :(
+			if (!exit) {
 				tetris_game_loop();
-				ret=1;
 			}
 			} else {
-				if (event->keystroke.ch == '\r')
+				switch (event->keystroke.ch) {
+				case '\r':
+				case 'm':
 					tetris_exit();
+					break;
+				}
 			}
 			break;
 		default:
@@ -283,27 +317,6 @@ static int tetris_do_keystroke(GR_EVENT * event)
 	}
 
 	return ret;
-}
-
-/*=========================================================================
-// Name: tetris_put_rect()
-// Desc: Draws a filled rectangle onto the screen
-//=======================================================================*/
-void tetris_put_rect(int x, int y, int w, int h, int color)
-{
-	if (color==0) GrSetGCForeground(tetris_gc, WHITE);
-	if (color==1) GrSetGCForeground(tetris_gc, BLACK);
-	GrRect(tetris_wid, tetris_gc, x, y, w, h);
-	
-	if (color==2) {
-	GrSetGCForeground(tetris_gc, WHITE);
-	GrFillRect(tetris_wid, tetris_gc, x, y, w, h);
-	}
-	
-	if (color==3) {
-	GrSetGCForeground(tetris_gc, BLACK);
-	GrFillRect(tetris_wid, tetris_gc, x, y, w, h);
-	}
 }
 
 void tetris_do_draw()
@@ -314,18 +327,20 @@ void tetris_do_draw()
 
 void tetris_draw_values(void) /*clear and draw score, lines and level values*/
 {
-	char chScore[30], chLines[30], chLevel[30];
+	char buf[12];
 
-	tetris_put_rect(screen_info.cols-(boxdraw.brick_width*6),40,(boxdraw.brick_width*6),(boxdraw.brick_height*6),2); /* clear "old" next preview... */
-	DrawNextPiece(screen_info.cols-(boxdraw.brick_width*6), 40); /*... and draw the new one*/
+	tetris_put_rect(screen_info.cols-(boxdraw.brick_width*5), 40,
+	                (boxdraw.brick_width*5), (boxdraw.brick_height*5),
+	                FILLED, tetris_bg);
+	DrawNextPiece(screen_info.cols-(boxdraw.brick_width*5), 40);
 		
-	GrSetGCForeground(tetris_gc, BLACK);
-	sprintf(chScore, "%d", tetris_score);
-	sprintf(chLines, "%d", tetris_lines);
-	sprintf(chLevel, "%d", tetris_level);
-	GrText(tetris_wid, tetris_gc, 1, 32, chScore,  -1, GR_TFASCII);
-	GrText(tetris_wid, tetris_gc, 1, 57, chLines,  -1, GR_TFASCII);
-	GrText(tetris_wid, tetris_gc, 1, 84, chLevel,  -1, GR_TFASCII);
+	GrSetGCForeground(tetris_gc, tetris_fg);
+	sprintf(buf, "%d", tetris_score);
+	GrText(tetris_wid, tetris_gc, 1, 32, buf,  -1, GR_TFASCII);
+	sprintf(buf, "%d", tetris_lines);
+	GrText(tetris_wid, tetris_gc, 1, 57, buf,  -1, GR_TFASCII);
+	sprintf(buf, "%d", tetris_level);
+	GrText(tetris_wid, tetris_gc, 1, 84, buf,  -1, GR_TFASCII);
 }
 
 
