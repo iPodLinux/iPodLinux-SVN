@@ -190,9 +190,10 @@ extract(FILE *f, int idx, FILE *out)
 	fprintf(stderr, "fseek failed: %s\n", strerror(errno));
 	return -1;
     }
-    
-    if (fwrite(&buf, 512, 1, out) != 1) {
-	fprintf(stderr, "fwrite failed: %s\n", strerror(errno));
+    if (write_entry(image, out, 0x0, 0) == -1)
+	return -1;
+    if (fseek(out, 512, SEEK_SET) == -1) {
+	fprintf(stderr, "fseek failed: %s\n", strerror(errno));
 	return -1;
     }
     if (copysum(f, out, image->len, image->devOffset) == -1)
