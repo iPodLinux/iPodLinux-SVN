@@ -435,6 +435,12 @@ static int __init ipodaudio_init(void)
 			SOUND_MAJOR);
 		return 0;
 	}
+	if (devfs_register_chrdev(SOUND_MAJOR, "dsp", &ipodaudio_fops) < 0) {
+		printk(KERN_WARNING "SOUND: failed to register major %d\n",
+			SOUND_MAJOR);
+		devfs_unregister(devfs_handle);
+		return 0;
+	}
 
 
 	/* initialise shared variables */
@@ -476,7 +482,7 @@ static void __exit ipodaudio_exit(void)
 {
 	ipod_set_process_dma(0);
 
-	devfs_unregister_chrdev(SOUND_MAJOR, "sound");
+	devfs_unregister_chrdev(SOUND_MAJOR, "dsp");
 	devfs_unregister(devfs_handle);
 }
 
