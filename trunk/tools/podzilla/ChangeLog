@@ -1,5 +1,6 @@
 Alastair S - Sun Mar 13 2005
 	matrix now based on cmatrix algorithm, also ported to photo
+	bluecube no longer has its own event loop
 
 Courtney Cavin - Sun Mar 13 2005
 	browser execution now uses absolute path

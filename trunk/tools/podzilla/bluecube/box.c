@@ -351,8 +351,24 @@ static int CheckFullLine()
 void BoxDrawInit()
 {
 	boxdraw.box_l = 1;
-	boxdraw.brick_width = screen_info.cols == 138 ? 4 : 5;
-	boxdraw.brick_height = screen_info.cols == 138 ? 4 : 5;
+	switch (screen_info.cols) {
+		case 138:
+			boxdraw.brick_width = 4;
+			boxdraw.brick_height = 4;
+			break;
+		case 160:
+			boxdraw.brick_width = 5;
+			boxdraw.brick_height = 5;
+			break;
+		case 220:
+			boxdraw.brick_width = 8;
+			boxdraw.brick_height = 8;
+			break;
+		default:
+			boxdraw.brick_width = screen_info.cols / 32;
+			boxdraw.brick_height = screen_info.cols / 32;
+			break;
+	}
 	BoxDrawUpdate();
 	boxdraw.box_x = (screen_info.cols/2)-(boxdraw.box_width/2);
 	boxdraw.box_y = ((screen_info.rows-21)/2)-(boxdraw.box_height/2);
