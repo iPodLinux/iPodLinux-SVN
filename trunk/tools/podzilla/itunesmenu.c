@@ -24,6 +24,7 @@
 #include "ipod.h"
 #include "btree.h"
 #include "itunes_db.h"
+#include "mlist.h"
 
 extern int playlistpos, playlistlength;
 
@@ -38,11 +39,12 @@ struct menulist {
 	int		 (*select)(struct menulist *);
 	char		*(*get_text)(struct menulist *);
 	struct track*	 (*get_track)(struct menulist *);
-	int		 sel_line;
 	GR_WINDOW_ID 	 wid;
 	GR_GC_ID 	 gc;
 	GR_SCREEN_INFO 	 screen_info;
 	GR_SIZE 	 gr_width, gr_height, gr_base;
+	menu_st *itunes_menu;
+	char init;
 	struct menulist	*prevml;
 };
 
@@ -71,7 +73,7 @@ static void draw_itunes_parse(int cnt)
 
 
 static void itunes_draw(struct menulist *ml);
-static int itunes_do_draw();
+static void itunes_do_draw();
 static int itunes_do_keystroke();
 
 struct menulist *new_ml()
@@ -90,7 +92,7 @@ struct menulist *new_ml()
 			ret->screen_info.rows - (HEADER_TOPLINE + 1),
 			itunes_do_draw, itunes_do_keystroke);
 
-	GrSelectEvents(ret->wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN|GR_EVENT_MASK_KEY_UP);
+	GrSelectEvents(ret->wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN|GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_TIMER);
 
 	GrGetGCTextSize(ret->gc, "M", -1, GR_TFASCII, &ret->gr_width,
 			&ret->gr_height, &ret->gr_base);
@@ -98,13 +100,18 @@ struct menulist *new_ml()
 	ret->gr_height += 4;
 
 	GrMapWindow(ret->wid);
-
+	ret->itunes_menu = menu_init(ret->wid, ret->gc, "iTunes",
+			0, 1, screen_info.cols, screen_info.rows -
+			(HEADER_TOPLINE + 1), NULL, NULL);
+	ret->init = 0;
 	ret->prevml = NULL;
-	ret->sel_line = 0;
 	return ret;
 }
 
-
+static void itunes_do_draw()
+{
+	itunes_draw(currentml);
+}
 
 static int get_prev(struct menulist *ml)
 {
@@ -378,68 +385,37 @@ static int select_plist(struct menulist *ml)
 }
 
 
-static void drawline_hlight(struct menulist *ml, int line)
-{
-	GrSetGCForeground(ml->gc, BLACK);
-	GrFillRect(ml->wid, ml->gc, 0, 1 + line * ml->gr_height,
-			ml->screen_info.cols, ml->gr_height);
-	GrSetGCForeground(ml->gc, WHITE);
-	GrSetGCUseBackground(ml->gc, GR_TRUE);
-	GrText(ml->wid, ml->gc, 8, (line + 1) * ml->gr_height - 3,
-			ml->get_text(ml), -1, GR_TFASCII);
-	GrSetGCUseBackground(ml->gc, GR_FALSE);
-}
-
-static void drawline_normal(struct menulist *ml, int line)
-{
-	GrSetGCForeground(ml->gc, WHITE);
-	GrFillRect(ml->wid, ml->gc, 0, 1 + line * ml->gr_height,
-			ml->screen_info.cols, ml->gr_height);
-	GrSetGCForeground(ml->gc, BLACK);
-	GrText(ml->wid, ml->gc, 8, (line + 1) * ml->gr_height - 3,
-			ml->get_text(ml), -1, GR_TFASCII);
-}
 
 
 static void itunes_draw(struct menulist *ml)
 {
-	int i;
-	int offset = 0, offset2 = 0;
+	int counter=0;
 
-	if (ml->sel_line > 5) {
-		ml->sel_line = 5;
-	} else {
-		if (ml->sel_line < 0) ml->sel_line = 0;
+	if (!ml->init)
+	{
+		//add to courtc's menu from the original list.
+		while (currentml->get_prev(currentml))counter--;
+		do 
+		{
+			menu_add_item(currentml->itunes_menu, currentml->get_text(currentml), NULL, 0, 0);
+			counter++;
+		}while (currentml->get_next(currentml));
+			while (counter != 0)
+			{
+				if (counter> 0) {
+					counter--;
+					currentml->get_prev(currentml);
+				}
+				if (counter < 0) {
+					counter++;
+					currentml->get_next(currentml);
+				}
+			}
+
+		ml->init=1;
 	}
 
-	for (i = 0; i < ml->sel_line; i++) {
-		if (ml->get_prev(ml)) offset++;
-	}
-
-	for (i = 0; i < 6; i++) {
-		if (i == offset) {
-			drawline_hlight(ml, i);
-		} else {
-			drawline_normal(ml, i);
-		}
-
-		if (ml->get_next(ml)) {
-			offset2++;
-		} else {
-			break;
-		}
-	}
-
-	for (i = 0; i < offset2 - ml->sel_line; i++) {
-		ml->get_prev(ml);
-	}
-}
-
-static int itunes_do_draw()
-{
-	itunes_draw(currentml);
-
-	return 0;
+	menu_draw(currentml->itunes_menu);
 }
 
 /*
@@ -500,6 +476,9 @@ static int itunes_do_keystroke(GR_EVENT * event)
 	struct menulist *oldml;
 
 	switch (event->type) {
+	case GR_EVENT_TYPE_TIMER:
+		menu_draw_timer(currentml->itunes_menu);
+		break;
 	case GR_EVENT_TYPE_KEY_DOWN:
 		switch (event->keystroke.ch) {
 		case '\r':		/* action key */
@@ -516,15 +495,22 @@ static int itunes_do_keystroke(GR_EVENT * event)
 			if (currentml) itunes_draw(currentml);
 			break;
 
-		case 'l':
-			if (currentml->get_prev(currentml)) currentml->sel_line--;
-			itunes_draw(currentml);
-			ret = 1;
-			break;
 		case 'r':
-			if (currentml->get_next(currentml)) currentml->sel_line++;
-			itunes_draw(currentml);
-			ret = 1;
+			if(currentml->get_next(currentml))
+			{
+				menu_shift_selected(currentml->itunes_menu, 1);
+				itunes_do_draw();
+				ret |= KEY_CLICK;
+			}
+			break;
+
+		case 'l':
+			if(currentml->get_prev(currentml))
+			{
+				menu_shift_selected(currentml->itunes_menu, -1);
+				itunes_do_draw();
+				ret |= KEY_CLICK;
+			}
 			break;
 		}
 		break;
