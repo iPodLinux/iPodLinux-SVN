@@ -130,8 +130,8 @@ static char *find_mount_point(void)
 	while(fgets(input, MAXLINELENGTH-1, file)) {
 		sscanf(input, "%s%s%s", &device, &mountpoint, &filesystem);
 		if(strcmp(device, "/dev/hda2")==0) {
-			if(strcmp(filesystem, "msdos")==0) {
-				printf("/dev/hda2 mounted as msdos, remounting as vfat\n");
+			if(strcmp(filesystem, "vfat")!=0) {
+				printf("/dev/hda2 mounted as %s, remounting as vfat\n", filesystem);
 				sprintf(command, "umount %s", mountpoint);
 				system(command);
 				sprintf(command, "mount -t vfat %s %s", device, mountpoint);
