@@ -86,7 +86,7 @@ static void draw_about() {
 	int i;
 	GR_SIZE width, height, base;
 	char *ptr, ipodgen[18], ipodrev[32];
-	char *cnames[]={"Bernard Leach", "Matthew J. Sahagian", "Courtney Cavin", "matz-josh", "Matthis Rouch", "ansi", "Jens Taprogge", "\0"};
+	char *cnames[]={"Bernard Leach", "Matthew J. Sahagian", "Courtney Cavin", "matz-josh", "Matthis Rouch", "ansi", "Jens Taprogge", "Fredrik Bergholtz", "\0"};
 
 	GrSetGCForeground(about_gc_black, WHITE);
 	GrFillRect(about_wid, about_gc_black, 6, 0, screen_info.cols, screen_info.rows);
