@@ -12,7 +12,6 @@ typedef struct SteroidsPolygon
 {
     GR_POINT cog;      // Center of bounding sphere, and center of rotation
     int      radius;   // Boudning sphere
-    int      colour;
     int      nPoints;
     GR_POINT point[STEROIDS_POLYGON_MAXPOINTS];
     GR_POINT rotPoint[STEROIDS_POLYGON_MAXPOINTS];

@@ -9,7 +9,7 @@ void steroids_polygon_draw (Steroids_Polygon *p,
 			    int clipMode)
 {
     // Draw polygon:
-    GrPoly (steroids_globals.wid, steroids_globals.gc, p->nPoints, p->point);
+    GrPoly (steroids_globals.game_wid, steroids_globals.game_gc, p->nPoints, p->point);
 }
 
 

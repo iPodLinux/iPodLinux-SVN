@@ -35,6 +35,7 @@ void steroids_asteroid_generateShape(Steroids_Asteroid *asteroid,
     Steroids_Vector v;
 
     asteroid->shape.type = STEROIDS_OBJECT_TYPE_POLYGON;
+    asteroid->shape.colour = BLACK;
     asteroid->shape.geometry.polygon.nPoints = STEROIDS_ASTEROID_RESOLUTION;
     asteroid->shape.geometry.polygon.radius = maxRadius;
 
@@ -226,13 +227,15 @@ int steroids_asteroid_collideShip (Steroids_Asteroid *asteroid,
  *
  *  Returns true if an asteroid was hit by any of the shots.
  *
- *  Side effect: The shot that hit is deactivated and the asteroid is split.
+ *  Side effect: The shot that hit is deactivated, the asteroid is split
+ *               and a score is added to the player.
  *
  */
 int steroids_asteroid_collideShot (Steroids_Asteroid *asteroid,
 				   Steroids_Shot     *shot)
 {
     int collided = 0;
+    int c = 0;
     int a;
     int s;
     for (a = 0; a < STEROIDS_ASTEROID_NUM; a++)
@@ -243,11 +246,15 @@ int steroids_asteroid_collideShot (Steroids_Asteroid *asteroid,
 	    {
 		if (shot[s].active)
 		{
-		    collided |= steroids_object_collide (&asteroid[a].shape,
-							 &shot[s].shape);
-		    if (collided)
+		    c = steroids_object_collide (&asteroid[a].shape,
+						 &shot[s].shape);
+		    if (c)
 		    {
+			collided = 1;
 			shot[s].active = 0;
+			steroids_globals.score += (int)(1.0
+							/ asteroid[a].shape.geometry.polygon.radius
+							* 1000);
 			steroids_asteroid_split (&asteroid[a],
 						 asteroid);
 		    }

@@ -18,6 +18,8 @@ typedef struct SteroidsObject
 	Steroids_Polygon polygon;
     } geometry;
 
+    int colour;
+
     Steroids_Vector velocity;
     Steroids_Vector accelleration;
 

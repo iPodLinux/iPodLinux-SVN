@@ -20,11 +20,14 @@
 #define STEROIDS_GAME_STATE_EXIT     5
 #define STEROIDS_GAME_STATE_CREDITS  6
 
+#define STEROIDS_GAME_SHIPS  4
+
 
 typedef struct SteroidsGlobals
 {
     int score;
     int level;
+    int ships;
 
     int gameState;
 
@@ -37,12 +40,19 @@ typedef struct SteroidsGlobals
     int            height;
 
     GR_TIMER_ID    timer_id;
-    GR_WINDOW_ID   wid;
-    GR_GC_ID       gc;
+
+    GR_WINDOW_ID   topLeft_wid;
+    GR_GC_ID       topLeft_gc;
+
+    GR_WINDOW_ID   game_wid;
+    GR_GC_ID       game_gc;
     GR_SCREEN_INFO screen_info;
 
 } Steroids_Globals;
 
+
+//GR_WINDOW_ID root_wid;
+//GR_GC_ID root_gc;
 
 
 Steroids_Globals steroids_globals;
