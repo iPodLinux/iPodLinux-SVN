@@ -11,6 +11,8 @@
 
 extern int color[64];
 extern int piece[64];
+extern int piece_avt[64];
+extern int color_avt[64];
 extern int side;
 extern int xside;
 extern int castle;

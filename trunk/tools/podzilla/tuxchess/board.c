@@ -20,6 +20,8 @@ void init()
 	for (i = 0; i < 64; ++i) {
 		color[i] = init_color[i];
 		piece[i] = init_piece[i];
+		piece_avt[i] = 9;
+		color_avt[i] = 9;
 	}
 	side = LIGHT;
 	xside = DARK;
@@ -88,13 +90,13 @@ BOOL attack(int sq, int s)
 }
 
 
-/* gen() generates pseudo-legal moves for the current position.
+/* gen_moves() generates pseudo-legal moves for the current position.
    It scans the board to find friendly pieces and then determines
    what squares they attack. When it finds a piece/square
    combination, it calls gen_push to put the move on the "move
    stack." */
 
-void gen()
+void gen_moves()
 {
 	int i, j, n;
 
@@ -176,7 +178,7 @@ void gen()
 }
 
 
-/* gen_caps() is basically a copy of gen() that's modified to
+/* gen_caps() is basically a copy of gen_moves() that's modified to
    only generate capture and promote moves. It's used by the
    quiescence search. */
 

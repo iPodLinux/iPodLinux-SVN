@@ -8,16 +8,17 @@
 
 #include <stdio.h>
 #include <string.h>
+
 #include "defs.h"
 #include "data.h"
 #include "protos.h"
-
+#include "../ipod.h"
+#include "nano-X.h"
 
 /* see the beginning of think() */
 #include <setjmp.h>
 jmp_buf env;
 BOOL stop_search;
-
 
 /* think() calls search() iteratively. Search statistics
    are printed depending on the value of output:
@@ -32,7 +33,7 @@ void think(int output)
 	/* some code that lets us longjmp back here and return
 	   from think() when our time is up */
 	stop_search = FALSE;
-	setjmp(env);
+	//setjmp(env);
 	if (stop_search) {
 		
 		/* make sure to take back the line we were searching */
@@ -41,13 +42,21 @@ void think(int output)
 		return;
 	}
 
-	start_time = get_ms();
-	stop_time = start_time + max_time;
+	//start_time = get_ms();
+	//stop_time = start_time + max_time;
+	start_time = 0;
+	stop_time = 1;
 
 	ply = 0;
 	nodes = 0;
+//	gprintf("test1");
+//	sleep(1);
 	memset(pv, 0, sizeof(pv));
+	
+	//for(var=0 ; var<sizeof(pv) ; var++) 
+	//    pv[var]=NULL;
 	memset(history, 0, sizeof(history));
+
 	if (output == 1)
 		printf("ply      nodes  score  pv\n");
 	for (i = 1; i <= max_depth; ++i) {
@@ -56,11 +65,12 @@ void think(int output)
 		if (output == 1)
 			printf("%3d  %9d  %5d ", i, nodes, x);
 		else if (output == 2)
-			printf("%d %d %d %d",
-					i, x, (get_ms() - start_time) / 10, nodes);
+			/*printf("%d %d %d %d",
+					i, x, (get_ms() - start_time) / 10, nodes);*/
+            printf("il faudrait afficher un temps\n");
 		if (output) {
 			for (j = 0; j < pv_length[0]; ++j)
-				printf(" %s", move_str(pv[0][j].b));
+				printf("%s", move_str(pv[0][j].b));
 			printf("\n");
 			fflush(stdout);
 		}
@@ -106,7 +116,7 @@ int search(int alpha, int beta, int depth)
 	c = in_check(side);
 	if (c)
 		++depth;
-	gen();
+	gen_moves();
 	if (follow_pv)  /* are we following the PV? */
 		sort_pv();
 	f = FALSE;
@@ -300,8 +310,8 @@ void checkup()
 {
 	/* is the engine's time up? if so, longjmp back to the
 	   beginning of think() */
-	if (get_ms() >= stop_time) {
+	/*if (get_ms() >= stop_time) {
 		stop_search = TRUE;
 		longjmp(env, 0);
-	}
+	}*/
 }
