@@ -44,6 +44,7 @@ typedef struct {
 	unsigned short type;
 } Directory;
 
+static char current_dir[128];
 int browser_nbEntries = 0;
 int browser_currentSelection = 0;
 int browser_currentBase = 0;
@@ -61,6 +62,10 @@ static void browser_exit()
 		free(browser_entries[i].full_name);
 	}
 	browser_nbEntries = 0;
+
+	if (current_dir[0] != 0) {
+		chdir(current_dir);
+	}
 }
 
 /* the directory to scan */
@@ -291,11 +296,17 @@ static int browser_do_keystroke(GR_EVENT * event)
 	return ret;
 }
 
-void new_browser_window(void)
+void new_browser_window(char *initial_path)
 {
+	if (initial_path) {
+		getcwd(current_dir, sizeof(current_dir));
+		chdir(initial_path);
+	}
+	else {
+		current_dir[0] = 0;
+	}
 
 	GrGetScreenInfo(&screen_info);
-
 
 	browser_gc = GrNewGC();
 	GrSetGCUseBackground(browser_gc, GR_TRUE);
