@@ -3,14 +3,12 @@
 #define TOOLS_H
 
 #define inl(a) (*(volatile unsigned long *) (a))
-#define outl(a,b) (*(volatile unsigned long *) (a) = (b))
-#define inb(a) (*(volatile unsigned char *)(a))
-#define outb(v,a) (*(volatile unsigned char *)(a) = (v))
+#define outl(a,b) (*(volatile unsigned long *) (b) = (a))
+#define inb(a) (*(volatile unsigned char *) (a))
+#define outb(a,b) (*(volatile unsigned char *) (b) = (a))
 
-
-/* wait for action button to be pressed and then released */
-void wait_for_action();
-
+/* find out which ipod revision we're running on */
+void get_ipod_rev();
 
 /* get current usec counter */
 int timer_get_current();
@@ -20,7 +18,6 @@ int timer_check(int clock_start, int usecs);
 
 /* wait for r0 useconds */
 int wait_usec(int usecs);
-
 
 /* wait for LCD with timeout */
 void lcd_wait_write();
