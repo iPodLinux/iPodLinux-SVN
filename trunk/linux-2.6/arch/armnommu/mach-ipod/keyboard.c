@@ -26,27 +26,27 @@
 #undef USE_ARROW_KEYS
 
 /* we use the keycodes and translation is 1 to 1 */
-#define R_SC		19	/* 'r' */
-#define L_SC		38	/* 'l' */
+#define R_SC		KEY_R	/* 'r' */
+#define L_SC		KEY_L	/* 'l' */
 
 #if defined(USE_ARROW_KEYS)
-#define UP_SC		103
-#define LEFT_SC		105
-#define RIGHT_SC	106
-#define DOWN_SC		108
+#define UP_SC		KEY_UP
+#define LEFT_SC		KEY_LEFT
+#define RIGHT_SC	KEY_RIGHT
+#define DOWN_SC		KEY_DOWN
 #else
-#define UP_SC		50	/* 'm' */
-#define LEFT_SC		17	/* 'w' */
-#define RIGHT_SC	33	/* 'f' */
-#define DOWN_SC		32	/* 'd' */
+#define UP_SC		KEY_M	/* 'm' */
+#define LEFT_SC		KEY_W	/* 'w' */
+#define RIGHT_SC	KEY_F	/* 'f' */
+#define DOWN_SC		KEY_D	/* 'd' */
 #endif
 
 #define ACTION_SC	KEY_ENTER	/* '\n' */
 
 /* send ^S and ^Q for the hold switch */
-#define LEFT_CTRL_SC	29
-#define Q_SC		16
-#define S_SC		31
+#define LEFT_CTRL_SC	KEY_LEFTCTRL
+#define Q_SC		KEY_Q
+#define S_SC		KEY_S
 
 static unsigned char ipodkbd_keycode[10] = {
 	R_SC, L_SC, UP_SC, LEFT_SC, RIGHT_SC, DOWN_SC,
@@ -159,6 +159,8 @@ static int ipodkbd_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	if ( source & 0x4 ) {
 		if ( state & 0x4 ) {
 #if defined(DO_CONTRAST)
+			extern void contrast_down(void);
+
 			contrast_down();
 #else
 			input_report_key(&ipodkbd_dev, DOWN_SC, 0);
@@ -191,6 +193,8 @@ static int ipodkbd_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	if ( source & 0x10 ) {
 		if ( state & 0x10 ) {
 #if defined(DO_CONTRAST)
+			extern void contrast_up(void);
+
 			contrast_up();
 #else
 			input_report_key(&ipodkbd_dev, UP_SC, 0);
@@ -248,13 +252,12 @@ done:
 
 static int ipodkbd_open(struct input_dev *dev)
 {
-	printk("ipod open\n");
+	/* TODO: move init code here */
 	return 0;
 }
 
 static void ipodkbd_close(struct input_dev *dev)
 {
-	printk("ipod close\n");
 }
 
 static int __init ipodkbd_init(void)
@@ -296,8 +299,8 @@ static int __init ipodkbd_init(void)
 	ipodkbd_dev.id.product = 0x0001;
 	ipodkbd_dev.id.version = ipod_get_hw_version();
 
-ipodkbd_dev.open = ipodkbd_open;
-ipodkbd_dev.close = ipodkbd_close;
+	ipodkbd_dev.open = ipodkbd_open;
+	ipodkbd_dev.close = ipodkbd_close;
 
 	input_register_device(&ipodkbd_dev);
 
