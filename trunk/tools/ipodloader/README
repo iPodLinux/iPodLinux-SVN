@@ -90,7 +90,7 @@ For developers:
 
 The firmware builder creates a single boot image for the iPod. It loads all
 images into memory, with the first image loaded to 0x28000000 (the default
-load address fi=or both linux and the Apple firmware). Then the loader 
+load address for both linux and the Apple firmware). Then the loader 
 displays tux, decides which image to start, moves the image to its load 
 address if required, and starts it. The internal boot table and the loader 
 are at the end of the image.
