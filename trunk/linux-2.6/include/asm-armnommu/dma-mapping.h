@@ -64,6 +64,14 @@ static inline int dma_is_consistent(dma_addr_t handle)
  */
 extern void * dma_alloc_coherent(struct device *dev, size_t size, dma_addr_t *handle, int gfp);
 
+/*
+ * DMA errors are defined by all-bits-set in the DMA address.
+ */
+static inline int dma_mapping_error(dma_addr_t dma_addr)
+{
+	return dma_addr == ~0;
+}
+
 /**
  * dma_free_coherent - free memory allocated by dma_alloc_coherent
  * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
@@ -243,11 +251,13 @@ dma_unmap_sg(struct device *dev, struct scatterlist *sg, int nents,
  * device again owns the buffer.
  */
 static inline void
-dma_sync_single(struct device *dev, dma_addr_t handle, size_t size,
+dma_sync_single_for_device(struct device *dev, dma_addr_t handle, size_t size,
 		enum dma_data_direction dir)
 {
 	consistent_sync((void *)__bus_to_virt(handle), size, dir);
 }
+
+#define dma_sync_single_for_cpu dma_sync_single_for_device
 
 /**
  * dma_sync_sg
@@ -263,7 +273,7 @@ dma_sync_single(struct device *dev, dma_addr_t handle, size_t size,
  * same rules and usage.
  */
 static inline void
-dma_sync_sg(struct device *dev, struct scatterlist *sg, int nents,
+dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg, int nents,
 	    enum dma_data_direction dir)
 {
 	int i;
@@ -273,6 +283,8 @@ dma_sync_sg(struct device *dev, struct scatterlist *sg, int nents,
 		consistent_sync(virt, sg->length, dir);
 	}
 }
+
+#define dma_sync_sg_for_cpu dma_sync_sg_for_device
 
 #endif
 

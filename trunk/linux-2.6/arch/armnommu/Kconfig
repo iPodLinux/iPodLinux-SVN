@@ -29,14 +29,13 @@ config UCLINUX
 	  only MPU or even NONE, although heavily used in many SoCs.
 
 	  There is an ARM(w/o MMU) uClinux project with a web page at
-	  <http://www.uclinux.org/>.
+	  <http://adam.kaist.ac.kr/~hschoe/>.
 
 config MMU
 	bool
 	default n
 	help
-	  uClinux/ARM kernel has no MMU. For the ARM series with MMU,
-	  architecture "arm" is the choice.
+	  We don't use paged MMU here. 
 
 config MPU
 	bool
@@ -121,6 +120,21 @@ config ARCH_S3C3410
 	  
 	  refer <http://www.samsungsemi.com>.
 
+config ARCH_ESPD_4510B
+	bool "ESPD 4510B / Samsung S3C4510B"
+	help
+	  ESPD 4510B evaluation board built on Samsung's
+	  S3C4510B(KS32C50100) 16/32-bit RISC MCU
+	  is a high performance network controller based
+	  on the ARM7TDMI core.
+	  
+	  refer to  <http://www.espd-inc.com/prod01-arm-samsung4510.htm>
+
+config ARCH_S3C44B0
+	bool "Samsung S3C44B0"
+	help
+	  Samsung's S3C44B0X 16/32-bit SOC(ARM7TDMI) without coprocessor 
+ 
 config ARCH_S5C7375
 	bool "Samsung S5C7375"
 	help
@@ -142,7 +156,9 @@ config DRAM_BASE
 	hex '(S)DRAM Base Address' if SET_MEM_PARAM
 	default 0x01000000 if ARCH_ATMEL
 	default 0x01000000 if ARCH_S3C3410
+	default 0x0C000000 if ARCH_S3C44B0
 	default 0x00000000 if ARCH_S5C7375
+	default 0x00000000 if ARCH_ESPD_4510B
 	default 0x28000000 if ARCH_IPOD
 	default 0x00800000
 
@@ -150,7 +166,9 @@ config DRAM_SIZE
 	hex '(S)DRAM SIZE' if SET_MEM_PARAM
 	default 0x00600000 if ARCH_ATMEL
 	default 0x01000000 if ARCH_S3C3410
+	default 0x01000000 if ARCH_S3C44B0
 	default 0x00400000 if ARCH_S5C7375
+	default 0x00800000 if ARCH_ESPD_4510B
 	default 0x02000000 if ARCH_IPOD
 	default 0x00800000
 
@@ -158,19 +176,25 @@ config FLASH_MEM_BASE
 	hex 'FLASH Base Address' if SET_MEM_PARAM
 	default 0x01600000 if ARCH_ATMEL
 	default 0x00000000 if ARCH_S3C3410
+	default 0x00000000 if ARCH_S3C44B0
 	default 0x08000000 if ARCH_S5C7375
+	default 0x01000000 if ARCH_ESPD_4510B
 	default 0x00400000
 
 config FLASH_SIZE
 	hex 'FLASH Size' if SET_MEM_PARAM
 	default 0x00200000 if ARCH_ATMEL
 	default 0x00200000 if ARCH_S3C3410
+	default 0x00200000 if ARCH_S3C44B0
 	default 0x00200000 if ARCH_S5C7375
+	default 0x00200000 if ARCH_ESPD_4510B
 	default 0x00400000
 
 source "arch/armnommu/mach-atmel/Kconfig"
 source "arch/armnommu/mach-s3c3410/Kconfig"
+source "arch/armnommu/mach-s3c44b0x/Kconfig"
 source "arch/armnommu/mach-s5c7375/Kconfig"
+source "arch/armnommu/mach-espd_4510b/Kconfig"
 source "arch/armnommu/mach-ipod/Kconfig"
 
 source arch/armnommu/mm/Kconfig
@@ -394,16 +418,6 @@ config APM
 	  To compile this driver as a module, choose M here: the
 	  module will be called apm.
 
-config ARTHUR
-	tristate "RISC OS personality"
-	depends on CPU_32
-	help
-	  Say Y here to include the kernel code necessary if you want to run
-	  Acorn RISC OS/Arthur binaries under Linux. This code is still very
-	  experimental; if this sounds frightening, say N and sleep in peace.
-	  You can also say M here to compile this support as a module (which
-	  will be called arthur).
-
 config CMDLINE
 	string "Default kernel command string"
 	default ""
@@ -457,7 +471,7 @@ config LEDS_CPU
 config ALIGNMENT_TRAP
 	bool "Kernel-mode alignment trap handler"
 	depends on CPU_32
-	default n if ARCH_S3C3410 || ARCH_ATMEL
+	default n if ARCH_S3C3410 || ARCH_ATMEL || ARCH_ESPD_4510B
 	help
 	  ARM processors can not fetch/store information which is not
 	  naturally aligned on the bus, i.e., a 4 byte fetch must start at an
@@ -480,8 +494,6 @@ source "drivers/pnp/Kconfig"
 source "drivers/block/Kconfig"
 
 source "drivers/md/Kconfig"
-
-source "drivers/acorn/block/Kconfig"
 
 source "net/Kconfig"
 
@@ -511,8 +523,6 @@ source "drivers/i2c/Kconfig"
 source "drivers/media/Kconfig"
 
 source "fs/Kconfig"
-
-source "arch/arm/oprofile/Kconfig"
 
 source "drivers/video/Kconfig"
 

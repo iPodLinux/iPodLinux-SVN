@@ -2,6 +2,7 @@
  *  linux/arch/armnommu/kernel/module.c
  *
  *  Copyright (C) 2002 Russell King.
+ *  Copyright (C) 2004 Hyok S. Choi, for nommu.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -19,11 +20,16 @@
 
 #include <asm/pgtable.h>
 
+#if 0
+#define DEBUGP(x, args...)	printk(KERN_DEBUG x, ## args)
+#else
+#define DEBUGP(x, args...)
+#endif
+
+
 void *module_alloc(unsigned long size)
 {
-	if (size == 0)
-		return NULL;
-	return vmalloc(size);
+	return size == 0 ? NULL : vmalloc(size);
 }
 
 void module_free(struct module *module, void *region)
@@ -41,68 +47,57 @@ int module_frob_arch_sections(Elf_Ehdr *hdr,
 
 int
 apply_relocate(Elf32_Shdr *sechdrs, const char *strtab, unsigned int symindex,
-	       unsigned int relindex, struct module *module)
+	       unsigned int relsec, struct module *me)
 {
-	Elf32_Shdr *symsec = sechdrs + symindex;
-	Elf32_Shdr *relsec = sechdrs + relindex;
-	Elf32_Shdr *dstsec = sechdrs + relsec->sh_info;
-	Elf32_Rel *rel = (void *)relsec->sh_addr;
 	unsigned int i;
+	Elf32_Rel *rel = (void *)sechdrs[relsec].sh_addr;
+	Elf32_Sym *sym;
+	uint32_t *location;
 
-	for (i = 0; i < relsec->sh_size / sizeof(Elf32_Rel); i++, rel++) {
-		unsigned long loc;
-		Elf32_Sym *sym;
+	DEBUGP("Applying relocate section %u to %u\n", relsec,
+			sechdrs[relsec].sh_info);
+
+	for (i = 0; i < sechdrs[relsec].sh_size / sizeof(*rel); i++) {
 		s32 offset;
+		/* This is where to make the change */
+		location = (void *)sechdrs[sechdrs[relsec].sh_info].sh_addr
+				+ rel[i].r_offset;
+		/* This is the symbol it is referring to. Note that all
+		  undefined symbols have been resolved. */
+		sym = (Elf32_Sym *)sechdrs[symindex].sh_addr
+				+ ELF32_R_SYM(rel[i].r_info);
 
-		offset = ELF32_R_SYM(rel->r_info);
-		if (offset < 0 || offset > (symsec->sh_size / sizeof(Elf32_Sym))) {
-			printk(KERN_ERR "%s: bad relocation, section %d reloc %d\n",
-				module->name, relindex, i);
-			return -ENOEXEC;
-		}
-
-		sym = ((Elf32_Sym *)symsec->sh_addr) + offset;
-
-		if (rel->r_offset < 0 || rel->r_offset > dstsec->sh_size - sizeof(u32)) {
-			printk(KERN_ERR "%s: out of bounds relocation, "
-				"section %d reloc %d offset %d size %d\n",
-				module->name, relindex, i, rel->r_offset,
-				dstsec->sh_size);
-			return -ENOEXEC;
-		}
-
-		loc = dstsec->sh_addr + rel->r_offset;
-
-		switch (ELF32_R_TYPE(rel->r_info)) {
+		switch (ELF32_R_TYPE(rel[i].r_info)) {
 		case R_ARM_ABS32:
-			*(u32 *)loc += sym->st_value;
+			/* We add the value into the location given */
+			*location += sym->st_value;
 			break;
-
 		case R_ARM_PC24:
-			offset = (*(u32 *)loc & 0x00ffffff) << 2;
+			/* Add the value, subtract its position */
+			offset = (*(u32 *)location & 0x00ffffff) << 2;
 			if (offset & 0x02000000)
 				offset -= 0x04000000;
 
-			offset += sym->st_value - loc;
+			offset += sym->st_value - (uint32_t)location;
 			if (offset & 3 ||
 			    offset <= (s32)0xfc000000 ||
 			    offset >= (s32)0x04000000) {
 				printk(KERN_ERR
 				       "%s: relocation out of range, section "
-				       "%d reloc %d sym '%s'\n", module->name,
-				       relindex, i, strtab + sym->st_name);
+				       "%d reloc %d sym '%s'\n", me->name,
+				       relsec, i, strtab + sym->st_name);
 				return -ENOEXEC;
 			}
 
 			offset >>= 2;
 
-			*(u32 *)loc &= 0xff000000;
-			*(u32 *)loc |= offset & 0x00ffffff;
+			*(u32 *)location &= 0xff000000;
+			*(u32 *)location |= offset & 0x00ffffff;
 			break;
 
 		default:
 			printk(KERN_ERR "%s: unknown relocation: %u\n",
-			       module->name, ELF32_R_TYPE(rel->r_info));
+			       me->name, ELF32_R_TYPE(rel[i].r_info));
 			return -ENOEXEC;
 		}
 	}
