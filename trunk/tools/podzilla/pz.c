@@ -78,13 +78,13 @@ void reboot_ipod(void)
 {
 	GrClose();
 	execl("/bin/reboot", "reboot", NULL);
-	exit(1);
+	exit(0);
 }
 
 void quit_podzilla(void)
 {
 	GrClose();
-	exit(1);
+	exit(0);
 }                
 
 void set_wheeldebounce(void)
