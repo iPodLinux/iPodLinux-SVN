@@ -16,6 +16,9 @@
  * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#include <stdlib.h>
+#include <string.h>
+
 #include "pz.h"
 
 static GR_TIMER_ID timer_id;
