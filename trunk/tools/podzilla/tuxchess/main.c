@@ -392,7 +392,6 @@ void do_play(void)
 void do_menu(void)
 {
 	int i;
-	char historic_line[9];
 	FILE *writefile;
 
 	readint = 0;
@@ -409,18 +408,12 @@ void do_menu(void)
 			writeint = color[i];
 			fwrite(&writeint,sizeof(writeint),1,writefile);
 		}
-		historic_line[9] = historic_line1[9];
-		fwrite(&historic_line,sizeof(historic_line),1,writefile);
-		historic_line[9] = historic_line2[9];
-		fwrite(&historic_line,sizeof(historic_line),1,writefile);
-		historic_line[9] = historic_line3[9];
-		fwrite(&historic_line,sizeof(historic_line),1,writefile);
-		historic_line[9] = historic_line4[9];
-		fwrite(&historic_line,sizeof(historic_line),1,writefile);
-		historic_line[9] = historic_line5[9];
-		fwrite(&historic_line,sizeof(historic_line),1,writefile);
-		historic_line[9] = historic_line6[9];
-		fwrite(&historic_line,sizeof(historic_line),1,writefile);
+		fwrite(&historic_line1, sizeof(historic_line1), 1, writefile);
+		fwrite(&historic_line2, sizeof(historic_line2), 1, writefile);
+		fwrite(&historic_line3, sizeof(historic_line3), 1, writefile);
+		fwrite(&historic_line4, sizeof(historic_line4), 1, writefile);
+		fwrite(&historic_line5, sizeof(historic_line5), 1, writefile);
+		fwrite(&historic_line6, sizeof(historic_line6), 1, writefile);
 		fclose(writefile);
 	}
 	else {
@@ -983,6 +976,9 @@ void open_tuxchess_window (void)
 	if (is_mini == 0) {
 		draw_historic();
 	}
+
+	/* make sure the right window has focus so we get input events */
+	GrSetFocus(tuxchess_wid);
 }
 
 void new_tuxchess_window (void)
@@ -998,7 +994,6 @@ void new_tuxchess_window (void)
 void last_tuxchess_window(void)
 {
 	int i;
-	char historic_line[9];
 	FILE *readfile;
 	readint=0;
 
@@ -1018,18 +1013,12 @@ void last_tuxchess_window(void)
 			color_avt[i] = 9;
 		}
 
-		fread(&historic_line,sizeof(historic_line),1,readfile);
-		historic_line1[9] = historic_line[9];
-		fread(&historic_line,sizeof(historic_line),1,readfile);
-		historic_line2[9] = historic_line[9];
-		fread(&historic_line,sizeof(historic_line),1,readfile);
-		historic_line3[9] = historic_line[9];
-		fread(&historic_line,sizeof(historic_line),1,readfile);
-		historic_line4[9] = historic_line[9];
-		fread(&historic_line,sizeof(historic_line),1,readfile);
-		historic_line5[9] = historic_line[9];
-		fread(&historic_line,sizeof(historic_line),1,readfile);
-		historic_line6[9] = historic_line[9];
+		fread(&historic_line1, sizeof(historic_line1), 1, readfile);
+		fread(&historic_line2, sizeof(historic_line2), 1, readfile);
+		fread(&historic_line3, sizeof(historic_line3), 1, readfile);
+		fread(&historic_line4, sizeof(historic_line4), 1, readfile);
+		fread(&historic_line5, sizeof(historic_line5), 1, readfile);
+		fread(&historic_line6, sizeof(historic_line6), 1, readfile);
 
 		fclose(readfile);
 	}
