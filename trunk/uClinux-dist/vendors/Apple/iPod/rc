@@ -3,5 +3,5 @@ mount -t proc proc /proc
 cat /etc/motd
 modprobe tsb43aa82
 modprobe eth1394
-ifconfig eth0 192.168.242.2
+ifconfig eth0 192.168.222.2
 
