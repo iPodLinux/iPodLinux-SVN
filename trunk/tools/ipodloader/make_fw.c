@@ -28,6 +28,10 @@
 #include <errno.h>
 #include <unistd.h>
 
+#ifdef __WIN32__
+#include "getopt.c"
+#endif
+
 #define TBL 0x4200
 
 int be;
@@ -279,7 +283,7 @@ main(int argc, char **argv)
 		    usage();
 		    return 1;
 		}
-		if ((out = fopen(optarg, "w+")) == NULL) {
+		if ((out = fopen(optarg, "wb+")) == NULL) {
 		    fprintf(stderr, "Cannot open output file %s\n", optarg);
 		    return 1;
 		}
@@ -301,7 +305,7 @@ main(int argc, char **argv)
 		    fprintf(stderr, "Only 5 images supported\n");
 		    return 1;
 		}
-		if ((in = fopen(optarg, "r")) == NULL) {
+		if ((in = fopen(optarg, "rb")) == NULL) {
 		    fprintf(stderr, "Cannot open firmware image file %s\n", optarg);
 		    return 1;
 		}
@@ -331,7 +335,7 @@ main(int argc, char **argv)
 		    fprintf(stderr, "Only 5 images supported\n");
 		    return 1;
 		}
-		if ((in = fopen(optarg, "r")) == NULL) {
+		if ((in = fopen(optarg, "rb")) == NULL) {
 		    fprintf(stderr, "Cannot open linux image file %s\n", optarg);
 		    return 1;
 		}
@@ -376,7 +380,7 @@ main(int argc, char **argv)
     }
    
     if (ext) {
-	if ((in = fopen(argv[optind], "r")) == NULL) {
+	if ((in = fopen(argv[optind], "rb")) == NULL) {
 	    fprintf(stderr, "Cannot open firmware image file %s\n", argv[optind]);
 	    return 1;
 	}
@@ -389,7 +393,7 @@ main(int argc, char **argv)
 	fprintf(stderr, "no images specified!\n");
 	return 1;
     }
-    if ((in = fopen(argv[optind], "r")) == NULL) {
+    if ((in = fopen(argv[optind], "rb")) == NULL) {
 	fprintf(stderr, "Cannot open loader image file %s\n", argv[optind]);
 	return 1;
     }
