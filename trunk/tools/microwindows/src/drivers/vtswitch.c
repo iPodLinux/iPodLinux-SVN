@@ -147,8 +147,11 @@ int
 MwInitVt(void)
 {
 	ttyfd = open("/dev/tty0", O_RDONLY);
-	if(ttyfd == -1)
-		return EPRINTF("Error can't open tty0: %m\n");
+	if(ttyfd == -1) {
+		ttyfd = open("/dev/vc/0", O_RDONLY);
+		if(ttyfd == -1)
+			return EPRINTF("Error can't open tty0 or vc/0: %m\n");
+	}
 	
 	/* setup new tty mode*/
 	if(ioctl (ttyfd, VT_GETMODE, &mode) == -1)
