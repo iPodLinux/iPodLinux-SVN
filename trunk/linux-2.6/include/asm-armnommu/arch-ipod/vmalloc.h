@@ -10,9 +10,7 @@
  * Sort of meaningless for non-VM targets.
  */
 #define	VMALLOC_START	0
-#define	VMALLOC_END	0xfffffffff
-
-#define MODULE_START    (PAGE_OFFSET)
+#define	VMALLOC_END	0xffffffff
 
 #endif
 
