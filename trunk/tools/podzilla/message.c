@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #include "pz.h"
 
@@ -154,3 +155,17 @@ void new_message_window(char *message)
 	msg_timer = GrCreateTimer(msg_wid, 6000);
 }
 
+void pz_error(char *msg)
+{
+	new_message_window(msg);
+	fprintf(stderr, "%s", msg);
+}
+
+void pz_perror(char *msg)
+{
+	char fullmsg[1024];
+
+	snprintf(fullmsg, 1023, "%s: %s", msg, strerror(errno));
+	new_message_window(fullmsg);
+	fprintf(stderr, fullmsg);
+}
