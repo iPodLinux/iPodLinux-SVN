@@ -385,8 +385,8 @@ static int ipod_decode_var(struct fb_var_screeninfo *var, struct ipodfb_par *par
 	 *  bitfields, horizontal timing, vertical timing.
 	 */
 
-	if ( var->xres > IPOD_LCD_HEIGHT ||
-		var->yres > IPOD_LCD_WIDTH ||
+	if ( var->xres > IPOD_LCD_WIDTH ||
+		var->yres > IPOD_LCD_HEIGHT ||
 		var->xres_virtual != var->xres ||
 		var->yres_virtual != var->yres ||
 		var->xoffset != 0 ||
