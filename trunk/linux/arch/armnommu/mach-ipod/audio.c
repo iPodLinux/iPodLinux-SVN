@@ -869,10 +869,10 @@ static int __init ipodaudio_init(void)
 		return 0;
 	}
 
-	if (ipod_hw_ver == 0x3) {
-		/* reset I2C */
-		ipod_i2c_init();
+	/* reset I2C */
+	ipod_i2c_init();
 
+	if (ipod_hw_ver == 0x3) {
 		/* reset DAC and ADC fifo */
 		outl(inl(0xc000251c) | 0x10000, 0xc000251c);
 		outl(inl(0xc000251c) | 0x20000, 0xc000251c);
