@@ -104,6 +104,8 @@ char st_sq[3];
 int from = 999;
 int to = 999;
 
+void last_tuxchess_window(void);
+
 /* Process scancode ?! */
 static void process_scancode(int scancode)
 {
