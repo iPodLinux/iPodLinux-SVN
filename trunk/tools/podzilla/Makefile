@@ -6,7 +6,7 @@ ifneq ($(IPOD),)
 
 # iPod build
 CC=arm-elf-gcc
-CFLAGS=-DIPOD
+CFLAGS=-DIPOD -D__linux__
 LDFLAGS=-elf2flt
 MICROWINDOWS = ../microwindows/src
 LIBITUNESDB=../libitunesdb.ipod/src
@@ -28,7 +28,7 @@ LIBITUNESDB=../libitunesdb/src
 
 endif
 
-CFLAGS+=-Wall -g -I$(MICROWINDOWS)/include -g -I$(LIBITUNESDB) -DPZ_VER="\"podzilla v0.1\""
+CFLAGS+=-Wall -g -I$(MICROWINDOWS)/include -g -I$(LIBITUNESDB) -DPZ_VER="\"podzilla v0.2beta\""
 LDFLAGS+=$(MICROWINDOWS)/lib/libnano-X.a $(MICROWINDOWS)/lib/libmwengine.a $(MICROWINDOWS)/lib/libmwdrivers.a $(MICROWINDOWS)/lib/libmwfonts.a $(LIBITUNESDB)/.libs/libitunesdb.a
 
 # enable JPEG support

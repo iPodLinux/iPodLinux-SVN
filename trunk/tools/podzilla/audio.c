@@ -16,6 +16,7 @@
  * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#ifdef __linux__
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
@@ -641,4 +642,4 @@ void new_playback_browse_window(void)
 {
 	new_browser_window(RECORDINGS);
 }
-
+#endif

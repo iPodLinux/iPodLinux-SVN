@@ -15,7 +15,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
-
+#ifdef __linux__
 #ifdef IPOD
 #define USE_LIBINTEL
 #else
@@ -443,3 +443,4 @@ void new_mp3_window(char *filename, char *album, char *artist, char *title, int 
 
 	start_mp3_playback(filename);
 }
+#endif

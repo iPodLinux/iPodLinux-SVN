@@ -54,10 +54,12 @@ Directory browser_entries[MAX_ENTRIES];
 
 extern void new_textview_window(char * filename);
 extern int is_image_type(char *extension);
+#ifdef __linux__
 extern int is_mp3_type(char *extension);
 extern void new_mp3_window(char *filename, char *album, char *artist, char *title, unsigned short len);
 extern int is_raw_audio_type(char *extension);
 extern void new_playback_window(char *filename);
+#endif
 extern int is_text_type(char * extension);
 void new_script_window(char *filename);
 
@@ -226,12 +228,14 @@ static void handle_type_other(char *filename)
 	else if (is_text_type(ext)) {
 		new_textview_window(filename);
 	}
+#ifdef __linux__
 	else if (is_mp3_type(ext)) {
 		new_mp3_window(filename, "Unknown Album", "Unknown Artist", "Unknown Title", 0);
 	}
 	else if (is_raw_audio_type(ext)) {
 		new_playback_window(filename);
 	}
+#endif
 	else if (is_script_type(ext)) {
 		new_script_window(filename);
 	}
