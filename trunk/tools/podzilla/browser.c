@@ -253,11 +253,43 @@ static void browser_vip_open_file()
 	new_exec_window(execline);
 	free(execline);
 }
+static void browser_rmdir(char *dirname)
+{
+	DIR *dir = opendir(dirname);
+	struct stat stat_result;
+	struct dirent *subdir;
+
+	if(strncmp(dirname, ".", strlen(dirname)) == 0 ||
+			strncmp(dirname, "..", strlen(dirname)) == 0)
+		return;
+	chdir(dirname);
+
+	while((subdir = readdir(dir))) {
+		if(strncmp(subdir->d_name, ".", strlen(subdir->d_name)) == 0 ||
+				strncmp(subdir->d_name, "..",
+				strlen(subdir->d_name)) == 0)
+			continue;
+		stat(subdir->d_name, &stat_result);
+		if(S_ISDIR(stat_result.st_mode))
+			browser_rmdir(subdir->d_name);
+		else
+			unlink(subdir->d_name);
+	}
+	chdir("../");
+	rmdir(dirname);
+	closedir(dir);
+}
 
 static void browser_delete_file()
 {
+	struct stat stat_result;
+
 	browser_menu_overlay = browser_menu;
-	if(unlink(current_file) == -1) {
+	stat(current_file, &stat_result);
+	if(S_ISDIR(stat_result.st_mode)) {
+		browser_rmdir(current_file);
+	}
+	else if(unlink(current_file) == -1) {
 		pz_perror(current_file);
 		return;
 	}
@@ -274,11 +306,16 @@ static void browser_action(unsigned short userChoice)
 		{"Yes, Delete it.", browser_delete_file, ACTION_MENU},
 		{0}
 	};
+	
+	current_file = browser_entries[userChoice].full_name;
+	if(strncmp(current_file, ".", strlen(current_file)) == 0 ||
+			strncmp(current_file, "..", strlen(current_file)) == 0)
+		return;
+
 	browser_menu = menu_init(browser_wid, browser_gc,
 			browser_entries[userChoice].name,
 			0, 1, screen_info.cols, screen_info.rows -
 			(HEADER_TOPLINE + 1), browser_menu, NULL);
-	current_file = browser_entries[userChoice].full_name;
 
 	switch (browser_entries[userChoice].type) {
 	case FILE_TYPE_DIRECTORY:
@@ -289,10 +326,10 @@ static void browser_action(unsigned short userChoice)
 			menu_add_item(browser_menu, "Open with viP",
 					browser_vip_open_file, 0, ACTION_MENU |
 					SUB_MENU_PREV);
-		menu_add_item(browser_menu, "Delete",  delete_confirm_menu, 0,
-				SUB_MENU_HEADER);
 		break;
 	}
+	menu_add_item(browser_menu, "Delete",  delete_confirm_menu, 0,
+			SUB_MENU_HEADER);
 }
 
 static int browser_do_keystroke(GR_EVENT * event)
