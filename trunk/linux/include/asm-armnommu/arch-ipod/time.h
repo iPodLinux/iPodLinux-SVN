@@ -36,12 +36,22 @@ extern __inline__ void setup_timer(void)
 	/* set up the timer interrupt */
 	timer_irq.handler = ipod_timer_interrupt;
 
-	/* clear timer1 */
-	outl(0x0, IPOD_TIMER0);
-	inl(IPOD_TIMER0_ACK);
+	if ((ipod_get_hw_version() >> 16) > 0x3) {
+		/* clear timer1 */
+		outl(0x0, PP5020_TIMER1);
+		inl(PP5020_TIMER1_ACK);
 
-	/* enable timer, period, trigger value 0x2710 -> 100Hz */
-	outl(0xc0000000 | USECS_PER_INT, IPOD_TIMER0);
+		/* enable timer, period, trigger value 0x2710 -> 100Hz */
+		outl(0xc0000000 | USECS_PER_INT, PP5020_TIMER1);
+	}
+	else {
+		/* clear timer1 */
+		outl(0x0, PP5002_TIMER1);
+		inl(PP5002_TIMER1_ACK);
+
+		/* enable timer, period, trigger value 0x2710 -> 100Hz */
+		outl(0xc0000000 | USECS_PER_INT, PP5002_TIMER1);
+	}
 
 	setup_arm_irq(TIMER1_IRQ, &timer_irq);
 	enable_irq(TIMER1_IRQ);
