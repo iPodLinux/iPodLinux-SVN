@@ -42,7 +42,7 @@ use vars qw ($project $from_email $dest_email $rpc_uri $sendmail $sync_delay
 ### Configuration
 
 # Project name (as known to CIA).
-$project = 'iPod Linux';
+$project = 'ipodlinux';
 
 # The from address in generated mails.
 $from_email = 'cube@coob.org';
