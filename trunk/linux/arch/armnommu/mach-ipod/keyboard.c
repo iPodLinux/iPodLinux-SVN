@@ -212,6 +212,12 @@ done:
 
 void __init ipodkb_init_hw(void)
 {
+	/* get our hardware type */
+	ipod_hw_ver = ipod_get_hw_version() >> 16;
+	if (ipod_hw_ver > 0x3) {
+		return;
+	}
+
 	outb(~inb(0xcf000030), 0xcf000060);
 	outb(inb(0xcf000040), 0xcf000070);
 
@@ -219,13 +225,10 @@ void __init ipodkb_init_hw(void)
 	outb(inb(0xcf000014) | 0x1, 0xcf000014);
 	outb(inb(0xcf000024) | 0x1, 0xcf000024);
 
-	if ( request_irq(GPIO_IRQ, keyboard_interrupt, SA_SHIRQ, "keyboard", KEYBOARD_DEV_ID) ) {
-		printk("ipodkb: IRQ %d failed\n", GPIO_IRQ);
+	if ( request_irq(PP5002_GPIO_IRQ, keyboard_interrupt, SA_SHIRQ, "keyboard", KEYBOARD_DEV_ID) ) {
+		printk("ipodkb: IRQ %d failed\n", PP5002_GPIO_IRQ);
 	}
 
 	outb(0xff, 0xcf000050);
-
-	/* get our hardware type */
-	ipod_hw_ver = ipod_get_hw_version() >> 16;
 }
 
