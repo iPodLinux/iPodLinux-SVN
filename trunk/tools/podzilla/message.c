@@ -18,7 +18,7 @@
 
 #include "pz.h"
 
-
+static GR_TIMER_ID timer_id;
 static GR_WINDOW_ID msg_wid;
 static GR_GC_ID msg_gc;
 static GR_SCREEN_INFO screen_info;
@@ -37,7 +37,12 @@ static void msg_do_draw(GR_EVENT * event)
 static int msg_do_keystroke(GR_EVENT * event)
 {
 	int ret = 1;
-	pz_close_window(msg_wid);
+	switch (event->type) {
+	case GR_EVENT_TYPE_TIMER:
+	case GR_EVENT_TYPE_KEY_DOWN:
+		pz_close_window(msg_wid);
+	}
+
 	return ret;
 }
 
@@ -59,7 +64,10 @@ void new_message_window(char *message)
 		(screen_info.rows - (height + 10)) >> 1,
 		width + 10, height + 10, msg_do_draw, msg_do_keystroke);
 
-	GrSelectEvents(msg_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN);
+	GrSelectEvents(msg_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN|GR_EVENT_MASK_TIMER);
 
 	GrMapWindow(msg_wid);
+
+	/* window will auto-close after 6 seconds */
+	timer_id = GrCreateTimer(msg_wid, 6000);
 }
