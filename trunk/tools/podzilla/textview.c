@@ -27,8 +27,6 @@
 
 #include "pz.h"
 
-#define LINESPERSCREEN 7
-
 static GR_GC_ID tv_gc;
 static GR_WINDOW_ID tv_wid;
 static GR_WINDOW_INFO tv_winfo;
@@ -36,6 +34,7 @@ static GR_SCREEN_INFO screen_info;
 static char *g_title;
 
 static unsigned int totalLines = 0;
+static int lines_per_screen = 7;
 static unsigned int currentLine = 0;
 static char ** lineData;
 
@@ -44,10 +43,8 @@ void destroy_textview_window(char *msg)
 	pz_close_window(tv_wid);
 	GrDestroyGC(tv_gc);
 	free(g_title);
-	if(msg!=NULL) {
-		fprintf(stderr, "%s\n", msg);
-		new_message_window(msg);
-	}
+	if(msg!=NULL)
+		pz_error(msg);
 }
 
 static void printPage(int startLine, int x, int y, int w, int h)
@@ -56,7 +53,7 @@ static void printPage(int startLine, int x, int y, int w, int h)
 	GR_SIZE width, height, base;
 	GrGetGCTextSize(tv_gc, "M", -1, GR_TFASCII, &width, &height, &base);
 
-	for (i = startLine;i < startLine + LINESPERSCREEN && i < totalLines;i++)
+	for (i = startLine;i < startLine + lines_per_screen && i < totalLines;i++)
 	{
 		GrText(tv_wid, tv_gc, 3, (i - startLine + 1) * height + 4,
 				lineData[i], -1, GR_TFASCII);
@@ -146,7 +143,7 @@ static void drawtext(void)
 	/* calculate scrollbar sizes */
 	float pixPerLine = (tv_winfo.height - 16 - 2) / (float) totalLines;
 	int block_start_pix = 9 + pixPerLine * currentLine;
-	int block_height = 9 + pixPerLine * (currentLine + LINESPERSCREEN) -
+	int block_height = 9 + pixPerLine * (currentLine + lines_per_screen) -
 		block_start_pix;
 
 	GrSetGCForeground(tv_gc, BLACK);
@@ -191,7 +188,7 @@ static int textview_do_keystroke(GR_EVENT * event)
 			free (lineData);
 			break;
 		case 'r':
-			if (currentLine + LINESPERSCREEN < totalLines) {
+			if (currentLine + lines_per_screen < totalLines) {
 				currentLine++;
 				drawtext();
 			}
@@ -204,13 +201,13 @@ static int textview_do_keystroke(GR_EVENT * event)
 			break;
 		case 'f':
 			/* forward key pressed:  go down one screen */
-			if (currentLine + LINESPERSCREEN < totalLines) {
-				currentLine = currentLine + LINESPERSCREEN;
-				if (currentLine + LINESPERSCREEN > totalLines)
+			if (currentLine + lines_per_screen < totalLines) {
+				currentLine = currentLine + lines_per_screen;
+				if (currentLine + lines_per_screen > totalLines)
 					/* if we went down beyond the end of
 					 * the text we go to the end of the
 					 * text */
-				currentLine = totalLines - LINESPERSCREEN;
+				currentLine = totalLines - lines_per_screen;
 				drawtext();
 			}
 			break;
@@ -218,14 +215,14 @@ static int textview_do_keystroke(GR_EVENT * event)
 			/* rewind key pressed:  go up one screen
 			 * if it's already the first line, nothing is done */
 			if (currentLine > 0) {
-				if (currentLine < LINESPERSCREEN)
+				if (currentLine < lines_per_screen)
 					/* if there is not a full screen above
 					 * the  current one go up to the very
 					 * first line */
 					currentLine = 0;
 				else	/* go up one screen */
 					currentLine = currentLine -
-						LINESPERSCREEN;
+						lines_per_screen;
 				drawtext();
 			}
 			break;
@@ -281,6 +278,9 @@ void create_textview_window()
 	GrSelectEvents(tv_wid, GR_EVENT_MASK_EXPOSURE| GR_EVENT_MASK_KEY_UP|
 			GR_EVENT_MASK_KEY_DOWN);
 
+	if(screen_info.cols < 160) /* mini folks */
+		lines_per_screen = 6;
+
 	GrMapWindow(tv_wid);
 	GrGetWindowInfo(tv_wid, &tv_winfo);
 }
@@ -303,8 +303,9 @@ void new_textview_window(char *filename)
 	file_len = ftell(fp);
 	rewind(fp);
 	if(file_len==0) {
+		buf = '\0';
 		while(fgets(tmp, 512, fp)!=NULL) {
-			if((buf = realloc(buf, (strlen(buf) +
+			if((buf = realloc(buf, ((buf=='\0'?0:strlen(buf)) +
 						512) * sizeof(char)))==NULL) {
 				destroy_textview_window("malloc failed");
 				return;
@@ -322,9 +323,14 @@ void new_textview_window(char *filename)
 			return;
 		}
 		if(fread(buf, 1, file_len, fp)!=file_len)
-			new_message_window("unknown read error, continuing");
+			pz_error("unknown read error, continuing");
 	}
-	buf[strlen(buf)+1] = '\0';
+	if(buf=='\0') {
+		destroy_textview_window(NULL);
+		new_message_window("Empty File");
+		return;
+	}
+	buf[strlen(buf)] = '\0';
 
 	buildLineData(buf);
 	free(buf);

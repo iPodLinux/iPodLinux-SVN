@@ -1,3 +1,7 @@
+Courtney Cavin - Fri Feb 14 2005
+	changed some mp3 error messages to pz_perror
+	mini-ized textviewer and fixed a few small bugs
+	
 Courtney Cavin - Fri Feb 12 2005
 	global error functions added
 	please use pz_error for custom errors & pz_perror for errno based ones 
