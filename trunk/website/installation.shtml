@@ -282,7 +282,14 @@ Setting maximal mount count to -1
 <blockquote>
 <code>
 # <b>cd /mnt/tmp</b><br>
-# <b>tar zxf /tmp/uclinux-2.4.24-ipod0.tar.gz</b><br>
+# <b>tar zxf /tmp/ipod_fs_040403.tar.gz</b><br>
+</code>
+</blockquote>
+
+<li>Update the root filesystem with the latest kernel modules.
+<blockquote>
+<code>
+# <b>tar zxf /tmp/uclinux-2.4.24-ipod0.tar.gz lib</b><br>
 </code>
 </blockquote>
 
@@ -480,6 +487,12 @@ pz:unknown:/bin/podzilla
 </code>
 </blockquote>
 
+<li>Update the root filesystem with the latest kernel modules.
+<blockquote>
+<code>
+# <b>tar zxf /tmp/ipod_fs_040403.tar.gz lib</b><br>
+</code>
+</blockquote>
 
 
 <h3>Finishing up</h3>
