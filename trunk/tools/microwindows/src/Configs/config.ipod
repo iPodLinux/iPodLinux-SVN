@@ -97,7 +97,7 @@ NANOWM                   = N
 # define MWPF_TRUECOLOR332  /* pixel is packed 8 bits 3/3/2 truecolor*/
 #
 ####################################################################
-SCREEN_PIXTYPE           = MWPF_PALETTE
+SCREEN_PIXTYPE           = MWPF_TRUECOLOR555
 
 ####################################################################
 #

@@ -29,6 +29,11 @@ endif
 
 ifeq ($(FRAMEBUFFER), Y)
 OBJS += fblin8.o fblin16.o fblin24.o fblin32.o fblin32alpha.o genmem.o fb.o
+ifeq ($(IPOD_LCD), Y)
+OBJS += fblin16ipod.o
+else
+OBJS += fblin16.o
+endif
 
 ifeq ($(FBREVERSE), Y)
 ifeq ($(IPOD_LCD), Y)

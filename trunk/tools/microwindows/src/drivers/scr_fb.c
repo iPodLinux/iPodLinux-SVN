@@ -275,7 +275,9 @@ fb_open(PSD psd)
 	// psd->addr = mmap(NULL, psd->size, PROT_READ|PROT_WRITE,0,fb,0);
 #define IPOD_LCD_WIDTH  160
 #define IPOD_LCD_HEIGHT 128
-	psd->addr = malloc(IPOD_LCD_HEIGHT * (IPOD_LCD_WIDTH/4));
+#define IPOD_PHOTO_LCD_WIDTH	220
+#define IPOD_PHOTO_LCD_HEIGHT	176
+	psd->addr = malloc(IPOD_PHOTO_LCD_HEIGHT * IPOD_PHOTO_LCD_WIDTH*2);
 #endif
 #endif
 	if(psd->addr == NULL || psd->addr == (unsigned char *)-1) {
