@@ -333,7 +333,7 @@ modprobe tsb43aa82<br>
 modprobe eth1394<br>
 ifconfig eth0 192.168.222.2 mtu 170<br>
 mount -t vfat -o ro /dev/hda2 /mnt<br>
-mount -o remount,rw /<br>
+mount -o remount,rw /dev/hda3 /<br>
 hdparm -S 3 /dev/hda
 </code>
 </blockquote>
@@ -485,14 +485,14 @@ pz:unknown:/bin/podzilla
 <blockquote>
 <code>
 # <b>cd /Volumes/iPod</b><br>
-# <b>tar zxf /tmp/uclinux-2.4.24-ipod0.tar.gz</b><br>
+# <b>tar zxf /tmp/ipod_fs_040403.tar.gz</b><br>
 </code>
 </blockquote>
 
 <li>Update the root filesystem with the latest kernel modules.
 <blockquote>
 <code>
-# <b>tar zxf /tmp/ipod_fs_040403.tar.gz lib</b><br>
+# <b>tar zxf /tmp/uclinux-2.4.24-ipod0.tar.gz lib</b><br>
 </code>
 </blockquote>
 
@@ -517,7 +517,7 @@ mknod /dev/ttyp1 c 3 0<br>
 modprobe tsb43aa82<br>
 modprobe eth1394<br>
 ifconfig eth0 192.168.222.2 mtu 170<br>
-mount -o remount,rw /<br>
+mount -o remount,rw /dev/hda3 /<br>
 hdparm -S 3 /dev/hda
 </code>
 </blockquote>
