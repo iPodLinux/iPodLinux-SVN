@@ -269,6 +269,20 @@ void create_textview_window()
 	GrSetGCUseBackground(tv_gc, GR_FALSE);
 	GrSetGCForeground(tv_gc, BLACK);
 
+	/* Truncuating long titles */
+	GrGetGCTextSize(tv_gc, g_title, -1, GR_TFASCII, &width, &height, &base);
+	if (width > screen_info.cols - 46) {
+		snprintf(g_title, strlen(g_title) - 2, "%s", g_title);
+		snprintf(g_title, strlen(g_title) + 4, "%s...", g_title);
+		GrGetGCTextSize(tv_gc, g_title, -1, GR_TFASCII, &width, &height, &base);
+		while (width > screen_info.cols - 46) {
+			snprintf(g_title, strlen(g_title) - 3, "%s", g_title);
+			snprintf(g_title, strlen(g_title) + 4, "%s...", g_title);
+			GrGetGCTextSize(tv_gc, g_title, -1, GR_TFASCII, &width, &height,
+					&base);
+		}
+	}
+
 	tv_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols,
 			screen_info.rows - (HEADER_TOPLINE + 1),
 			textview_do_draw, textview_do_keystroke);
@@ -307,7 +321,7 @@ void new_textview_window(char *filename)
 		while(fgets(tmp, 512, fp)!=NULL) {
 			if((buf = realloc(buf, ((buf=='\0'?0:strlen(buf)) +
 						512) * sizeof(char)))==NULL) {
-				destroy_textview_window("malloc failed");
+				destroy_textview_window("realloc failed");
 				return;
 			}
 			if(file_len==0) {
