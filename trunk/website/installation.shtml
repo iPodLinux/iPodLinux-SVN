@@ -2,6 +2,8 @@
 
 <h1>Linux iPod Installation Guide</h1>
 
+<p><a href="installation_de.shtml">Auf Deutsch</a>
+
 <h2>Introduction</h2>
 
 <p>The Linux on iPod project offers a development platform for building applications that run on the iPod hardware.  Currently we have also developed a basic application that mimics some of the functionality of the existing Apple firmware, over time we hope to add to this application to provide similar functionality to that as the Apple firmware as well as innovations not available with the standard software.
@@ -183,7 +185,7 @@ Last cylinder or +size or +sizeM or +sizeK (1-5, default 5): <b>5</b>
 </code>
 </blockquote>
 
-<li>Review the changes.  Note, this is for a 20GB version, the sda2 partition size will vary.
+<li>Review the changes.  Note, this is for a 20GB iPod, for other iPod versions the sda2 partition size will vary.
 <blockquote>
 <code>
 Command (m for help): <b>p</b><br>
@@ -477,7 +479,7 @@ pz:unknown:/bin/podzilla
 
 <a name="UserlandInstallOSX"><h3>Userland Installation</h3></a>
 
-<p>The <a href="http://sourceforge.net/project/showfiles.php?group_id=73079&package_id=73279&release_id=228438">iPod Linux Userland</a> contains the operating system tools and libraries (including the podzilla and mp3 applications).  This archive should be installed on the root partition of your iPod as created during the partition step above.
+<p>The <a href="http://sourceforge.net/project/showfiles.php?group_id=73079&package_id=73279&release_id=228438">iPod Linux Userland</a> contains the operating system tools and libraries (including the podzilla and mp3 applications).  This archive should be installed on your normal iPod filesystem.
 
 <p>Extract the root filesystem onto the iPod.
 <blockquote>
