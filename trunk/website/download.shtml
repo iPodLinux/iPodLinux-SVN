@@ -13,6 +13,10 @@
 
 <h2>Third-party Software</h2>
 
+<h3>Windows Support</h3>
+
+<p>The <a href="http://sourceforge.net/projects/ipodlinuxinst/">iPodLinuxInst</a> sourceforge project provides a simple Windows installer for iPod Linux.
+
 <h3>Linux</h3>
 
 The vanilla Linux kernel source archives are available via the <a href="http://www.kernel.org/mirrors/">Linux Kernel Archives Mirrors</a>.
