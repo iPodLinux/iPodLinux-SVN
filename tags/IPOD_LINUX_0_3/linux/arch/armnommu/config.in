@@ -1,0 +1,453 @@
+#
+# For a description of the syntax of this configuration file,
+# see Documentation/kbuild/config-language.txt.
+#
+mainmenu_name "Linux Kernel Configuration"
+
+define_bool CONFIG_ARM y
+define_bool CONFIG_SBUS n
+define_bool CONFIG_UID16 y
+define_bool CONFIG_RWSEM_GENERIC_SPINLOCK y
+
+# Begin uclinux additions -----------------------------------------------------
+define_bool CONFIG_UCLINUX y
+define_bool MAGIC_ROM_PTR y
+# End uclinux additions -------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+#                         C o d e    m a t u r i t y
+#------------------------------------------------------------------------------
+mainmenu_option next_comment
+comment 'Code maturity level options'
+bool 'Prompt for development and/or incomplete code/drivers' CONFIG_EXPERIMENTAL
+bool 'Prompt for obsolete code/drivers' CONFIG_OBSOLETE
+endmenu
+#------------------------------------------------------------------------------
+#                      L o a d a b l e    M o d u l e
+#------------------------------------------------------------------------------
+mainmenu_option next_comment
+comment 'Loadable module support'
+bool 'Enable loadable module support' CONFIG_MODULES
+if [ "$CONFIG_MODULES" = "y" ]; then
+   bool '  Set version information on all module symbols' CONFIG_MODVERSIONS
+   bool '  Kernel module loader' CONFIG_KMOD
+fi
+endmenu
+#------------------------------------------------------------------------------
+#                               S y s t e m
+#------------------------------------------------------------------------------
+
+mainmenu_option next_comment
+comment 'System Type'
+choice 'ARM system type'	\
+	 "TI-DSC21		CONFIG_ARCH_DSC21 \
+	  Conexant		CONFIG_ARCH_CNXT \
+	  NET+ARM		CONFIG_ARCH_NETARM \
+	  SWARM			CONFIG_ARCH_SWARM \
+	  Samsung		CONFIG_ARCH_SAMSUNG \
+	  Atmel			CONFIG_ARCH_ATMEL \
+	  iPod			CONFIG_ARCH_IPOD" TI-DSC21
+
+bool 'Generate big endian code' CONFIG_CPU_BIG_ENDIAN
+
+if [ "$CONFIG_ARCH_CNXT" = "y" ]; then
+choice ' Conexant/Mindspeed architecture' \
+   	" P52xxCtrl		CONFIG_ARCH_P52 \
+	  sp_CN9414 		CONFIG_ARCH_SPIPE" P52xxCtrl
+
+  if [ "$CONFIG_ARCH_P52" = "y" ]; then
+  choice ' P52xx board implementation'	\
+	"IAD_EVM		CONFIG_IAD_EVM \
+	 JSCHornet		CONFIG_HORNET" IAD_EVM
+  fi
+fi
+if [ "$CONFIG_ARCH_NETARM" = "y" ]; then
+choice ' NET+ARM Processor type' \
+   	" NET+15		CONFIG_NETARM_NET15 \
+   	  NET+40		CONFIG_NETARM_NET40 \
+   	  NET+50		CONFIG_NETARM_NET50" NET+40
+fi
+
+bool 'Set flash/sdram size and base addr' CONFIG_SET_MEM_PARAM
+if [ "$CONFIG_SET_MEM_PARAM" = "y" ]; then
+   hex '(S)DRAM Base Address' DRAM_BASE 0x00800000
+   hex '(S)DRAM Size ' DRAM_SIZE 0x00800000
+   hex 'FLASH Base Address ' FLASH_MEM_BASE 0x00400000
+   hex 'FLASH Size ' FLASH_SIZE 0x00400000
+fi
+
+# ARM940T
+if [ "$CONFIG_ARCH_CNXT" = "y" ]; then
+   define_bool CONFIG_CPU_32 y
+   define_bool CONFIG_CPU_26 n
+   define_bool CONFIG_CPU_ARM940T y
+   define_bool CONFIG_NO_PGT_CACHE y
+   define_bool CONFIG_CPU_WITH_CACHE y
+   define_bool CONFIG_CPU_WITH_MCR_INSTRUCTION y
+if [ "$CONFIG_SET_MEM_PARAM" = "n" ]; then
+   define_hex DRAM_BASE 0x00800000
+   define_hex DRAM_SIZE 0x00800000
+   define_hex FLASH_MEM_BASE 0x00400000
+   define_hex FLASH_SIZE 0x00400000
+fi
+
+   bool '  ARM940T CPU idle' CONFIG_CPU_ARM940_CPU_IDLE
+   bool '  ARM940T I-Cache on' CONFIG_CPU_ARM940_I_CACHE_ON
+   bool '  ARM940T D-Cache on' CONFIG_CPU_ARM940_D_CACHE_ON
+if [ "$CONFIG_CPU_ARM940_D_CACHE_ON" = "y" ] ; then
+   bool '  Force write through caches on ARM940T' CONFIG_CPU_ARM940_WRITETHROUGH
+fi
+fi
+
+
+if [ "$CONFIG_ARCH_DSC21" = "y" ]; then
+   define_bool CONFIG_CPU_ARM710 y
+   define_bool CONFIG_CPU_32 y
+   define_bool CONFIG_CPU_26 n
+   define_bool CONFIG_NO_PGT_CACHE y
+   define_bool CONFIG_CPU_WITH_CACHE y
+   define_bool CONFIG_CPU_WITH_MCR_INSTRUCTION y
+   if [ "$CONFIG_SET_MEM_PARAM" = "n" ]; then
+   define_hex DRAM_BASE 0x08000000
+   define_hex DRAM_SIZE 0x00200000
+   define_hex FLASH_MEM_BASE 0x08400000
+   define_hex FLASH_SIZE 0x00200000
+   fi
+   define_bool CONFIG_DUMMY_CONSOLE y
+fi
+
+if [ "$CONFIG_ARCH_SWARM" = "y" ]; then
+#  define_bool CONFIG_CPU_ARM610 y
+   define_bool CONFIG_CPU_32 y
+   define_bool CONFIG_CPU_26 n
+   define_bool CONFIG_CPU_32v3 y
+   define_bool CONFIG_CPU_ARM7V3 y
+   define_bool CONFIG_NO_PGT_CACHE y
+   define_bool CONFIG_CPU_WITH_MCR_INSTRUCTION y
+   define_hex FLASH_MEM_BASE 0x00000000
+   define_hex FLASH_SIZE 0x00100000
+fi
+
+if [ "$CONFIG_ARCH_ATMEL" = "y" ]; then
+   define_bool CONFIG_NO_PGT_CACHE y
+   define_bool CONFIG_CPU_ARM710 y
+   define_bool CONFIG_CPU_32 y
+   define_bool CONFIG_CPU_32v4 y
+   define_bool CONFIG_CPU_WITH_CACHE n
+   define_bool CONFIG_CPU_WITH_MCR_INSTRUCTION n
+   define_bool CONFIG_SERIAL_ATMEL y
+   
+   bool 'Serial Console' CONFIG_SERIAL_ATMEL_CONSOLE
+
+   if [ "$CONFIG_SET_MEM_PARAM" = "n" ]; then
+   	define_hex DRAM_BASE 0x01000000
+        define_hex DRAM_SIZE 0x00600000
+        define_hex FLASH_MEM_BASE 0x01600000
+   	define_hex FLASH_SIZE 0x00200000
+   fi
+	
+    hex 'Memory mapped 16-bit io base' CONFIG_MEM16_BASE 0x03000000
+    hex 'Memory mapped 8-bit io base' CONFIG_MEM8_BASE 0x03000000
+    hex '16-bit io base' CONFIG_IO16_BASE 0x02000000
+    hex '8-bit io base' CONFIG_IO8_BASE 0x02000000
+	
+   choice ' Atmel CPU' \
+   	" AT91x40		CONFIG_CPU_AT91X40 \
+	  AT91x63 		CONFIG_CPU_AT91X63" AT91x40
+
+   bool 'Atmel Kernel-Debug hack' CONFIG_ATMEL_DEBUG
+   if [ "$CONFIG_ATMEL_DEBUG" = "y" ]; then
+	hex 'Debug buffer address' AT91_DEBUG_BASE 0x01400000
+   fi
+fi
+
+if [ "$CONFIG_ARCH_NETARM" = "y" ]; then
+   define_bool CONFIG_CPU_ARM710 y
+   define_bool CONFIG_CPU_ARM7TDMI y
+   define_bool CONFIG_CPU_32 y
+   define_bool CONFIG_CPU_26 n
+   define_bool CONFIG_CPU_WITH_CACHE y
+   define_bool CONFIG_CPU_WITH_MCR_INSTRUCTION n
+   define_bool CONFIG_NO_PGT_CACHE y   
+   if [ "$CONFIG_NETARM_NET40" = "y" ]; then
+      bool 'NET+ARM NET+40 Rev2' CONFIG_NETARM_NET40_REV2
+      if [ "$CONFIG_NETARM_NET40_REV2" = "n" ]; then
+         bool 'NET+ARM NET+40 Rev4' CONFIG_NETARM_NET40_REV4
+      fi
+      bool 'NET+ARM PLL Bypass Patch' CONFIG_NETARM_PLL_BYPASS
+      bool 'NET+ARM EMLIN Board' CONFIG_NETARM_EMLIN
+   fi
+#  default memory configuration for Net40 and EMLIN boards
+   if [ "$CONFIG_SET_MEM_PARAM" = "n" ]; then
+      define_hex DRAM_BASE 0x00000000
+      define_hex FLASH_MEM_BASE 0x10000000
+      if [ "$CONFIG_NETARM_EMLIN" = "y" ]; then
+         define_hex DRAM_SIZE 0x01000000
+         define_hex FLASH_SIZE 0x00200000
+      fi
+      if [ "$CONFIG_NETARM_EMLIN" = "n" ]; then
+         define_hex DRAM_SIZE 0x02000000
+         define_hex FLASH_SIZE 0x00800000
+	 define_bool CONFIG_NETARM_EEPROM y   
+      fi
+   fi
+fi
+
+if [ "$CONFIG_ARCH_SAMSUNG" = "y" ]; then
+   choice 'Board Implementation' \
+   "S3C4530-HEI	CONFIG_BOARD_EVS3C4530HEI \
+   S3C4510-SNDS100    CONFIG_BOARD_SNDS100" SNDS100 
+fi
+
+if [ "$CONFIG_BOARD_EVS3C4530HEI" = "y" ]; then
+    define_string CONFIG_CPU_NAME "S3C4530A01-Q"
+    bool ' Enable uCbootloader support' CONFIG_UCBOOTSTRAP
+    define_bool CONFIG_CPU_S3C4530      y
+    define_bool CONFIG_CPU_ARM710       y
+    define_bool CONFIG_CPU_32           y
+    define_bool CONFIG_CPU_26           n
+    define_bool CONFIG_NO_PGT_CACHE     y
+    define_bool CONFIG_CPU_WITH_CACHE   y
+    define_bool CONFIG_CPU_WITH_MCR_INSTRUCTION n
+    define_int  CONFIG_ARM_CLK          50000000
+    define_hex  DRAM_BASE               0x00000000
+    define_hex  DRAM_SIZE               0x007F0000
+    define_hex  FLASH_MEM_BASE          0x01000000
+    define_hex  FLASH_SIZE              0x00200000
+    define_hex  FLASH1_MEM_BASE         0x01200000
+    define_hex  FLASH1_SIZE             0x00200000
+fi
+
+if [ "$CONFIG_BOARD_SNDS100" = "y" ]; then
+   define_bool CONFIG_NO_PGT_CACHE y
+   define_bool CONFIG_CPU_32 y
+   define_bool CONFIG_CPU_26 n
+   define_bool CONFIG_CPU_ARM710 y
+   define_bool CONFIG_CPU_WITH_CACHE y
+   define_bool CONFIG_CPU_WITH_MCR_INSTRUCTION n
+   define_bool CONFIG_SERIAL_SAMSUNG y
+   define_hex DRAM_BASE 0x00000000
+   define_hex DRAM_SIZE 0x00800000
+   define_hex FLASH_MEM_BASE 0x01000000
+   define_hex FLASH_SIZE 0x00200000
+fi
+
+if [ "$CONFIG_ARCH_INTEGRATOR" = "y" ]; then
+   define_bool CONFIG_NO_PGT_CACHE y
+   define_bool CONFIG_CPU_ARM740T y
+   define_bool CONFIG_CPU_32 y
+   define_bool CONFIG_CPU_WITH_CACHE y
+   define_bool CONFIG_CPU_WITH_MCR_INSTRUCTION y
+   define_hex DRAM_BASE 0
+   define_hex DRAM_SIZE 0x04000000
+   define_hex FLASH_MEM_BASE 0x25000000
+   define_hex FLASH_SIZE 0x02000000
+fi
+
+if [ "$CONFIG_ARCH_IPOD" = "y" ]; then
+   define_bool CONFIG_NO_PGT_CACHE y
+   define_bool CONFIG_CPU_ARM710 y
+   define_bool CONFIG_CPU_ARM7TDMI y
+   define_bool CONFIG_CPU_32 y
+   define_bool CONFIG_CPU_26 n
+   define_hex DRAM_BASE 0x28000000
+   define_hex DRAM_SIZE 0x02000000
+   define_hex FLASH_MEM_BASE 0x10000000
+   define_hex FLASH_SIZE 0x00100000
+fi
+
+endmenu
+
+#------------------------------------------------------------------------------
+#                             G e n e r a l
+#------------------------------------------------------------------------------
+mainmenu_option next_comment
+comment 'General setup'
+source drivers/pci/Config.in
+bool 'Support hot-pluggable devices' CONFIG_HOTPLUG
+if [ "$CONFIG_HOTPLUG" = "y" ]; then
+   source drivers/pcmcia/Config.in
+else
+   define_bool CONFIG_PCMCIA n
+fi
+bool 'Networking support' CONFIG_NET
+bool 'System V IPC' CONFIG_SYSVIPC
+bool 'Reduced memory footprint' CONFIG_REDUCED_MEMORY
+bool 'BSD Process Accounting' CONFIG_BSD_PROCESS_ACCT
+bool 'Sysctl support' CONFIG_SYSCTL
+tristate 'NWFPE math emulation' CONFIG_NWFPE
+choice 'Kernel core (/proc/kcore) format' \
+	"ELF		CONFIG_KCORE_ELF	\
+	 A.OUT		CONFIG_KCORE_AOUT" ELF
+define_bool CONFIG_BINFMT_FLAT y
+define_bool CONFIG_KERNEL_ELF y
+
+if [ "$CONFIG_EXPERIMENTAL" = "y" ]; then
+   bool 'Power Management support' CONFIG_PM
+fi
+
+if [ "$CONFIG_CPU_32" = "y" ]; then
+   tristate 'RISC OS personality' CONFIG_ARTHUR
+fi
+if [ "$CONFIG_ARCH_EBSA110" = "y" -o \
+     "$CONFIG_ARCH_SA1100" = "y" -o \
+     "$CONFIG_ARCH_CLPS7500" = "y" -o \
+     "$CONFIG_ARCH_PERSONAL_SERVER" = "y" -o \
+     "$CONFIG_ARCH_CATS" = "y" -o \
+     "$CONFIG_ARCH_ATMEL" = "y" ]; then
+   string 'Default kernel command string' CONFIG_CMDLINE ""
+fi
+if [ "$CONFIG_ARCH_NETWINDER" = "y" -o \
+     "$CONFIG_ARCH_EBSA110" = "y" -o   \
+     "$CONFIG_ARCH_EBSA285" = "y" -o   \
+     "$CONFIG_ARCH_CO285" = "y" -o     \
+     "$CONFIG_ARCH_SA1100" = "y" ]; then
+   bool 'Timer and CPU usage LEDs' CONFIG_LEDS
+   if [ "$CONFIG_LEDS" = "y" ]; then
+      if [ "$CONFIG_ARCH_NETWINDER" = "y" -o \
+	   "$CONFIG_ARCH_EBSA285" = "y" -o   \
+	   "$CONFIG_ARCH_CO285" = "y" -o     \
+	   "$CONFIG_ARCH_SA1100" = "y" ]; then
+         bool '  Timer LED' CONFIG_LEDS_TIMER
+         bool '  CPU usage LED' CONFIG_LEDS_CPU
+      fi
+   fi
+   if [ "$CONFIG_ARCH_EBSA110" = "y" ]; then
+      define_bool CONFIG_LEDS_TIMER y
+   fi
+fi
+if [ "$CONFIG_CPU_32" = "y" -a "$CONFIG_ARCH_EBSA110" != "y" ]; then
+   bool 'Kernel-mode alignment trap handler' CONFIG_ALIGNMENT_TRAP
+fi
+
+if [ "$CONFIG_ARCH_INTEGRATOR" = "y" ]; then
+   bool 'PCI support' CONFIG_PCI_INTEGRATOR
+   define_bool CONFIG_PCI $CONFIG_PCI_INTEGRATOR
+else
+   define_bool CONFIG_PCI n
+fi
+
+endmenu
+#------------------------------------------------------------------------------
+#                           N e t    D e v i c e s
+#------------------------------------------------------------------------------
+if [ "$CONFIG_NET" = "y" ]; then
+   source net/Config.in
+   mainmenu_option next_comment
+   comment 'Network device support'
+   bool 'Network device support?' CONFIG_NETDEVICES
+   if [ "$CONFIG_NETDEVICES" = "y" ]; then
+      source drivers/net/Config.in
+   fi
+   endmenu
+   source net/ax25/Config.in
+   source net/irda/Config.in
+fi
+#------------------------------------------------------------------------------
+#                               A T E / I D E
+#------------------------------------------------------------------------------
+mainmenu_option next_comment
+comment 'ATA/IDE/MFM/RLL support'
+tristate 'ATA/IDE/MFM/RLL support' CONFIG_IDE
+if [ "$CONFIG_IDE" != "n" ]; then
+  source drivers/ide/Config.in
+else
+  define_bool CONFIG_BLK_DEV_IDE_MODES n
+  define_bool CONFIG_BLK_DEV_HD n
+fi
+endmenu
+#------------------------------------------------------------------------------
+#                                  S C S I
+#------------------------------------------------------------------------------
+mainmenu_option next_comment
+comment 'SCSI support'
+tristate 'SCSI support?' CONFIG_SCSI
+if [ "$CONFIG_SCSI" != "n" ]; then
+   source drivers/scsi/Config.in
+fi
+endmenu
+#------------------------------------------------------------------------------
+#                                  I S D N
+#------------------------------------------------------------------------------
+mainmenu_option next_comment
+comment 'ISDN subsystem'
+tristate 'ISDN support' CONFIG_ISDN
+if [ "$CONFIG_ISDN" != "n" ]; then
+   source drivers/isdn/Config.in
+fi
+endmenu
+#------------------------------------------------------------------------------
+#                              C o n s o l e
+#------------------------------------------------------------------------------
+if [ "$CONFIG_VT" = "y" ]; then
+   mainmenu_option next_comment
+   comment 'Console drivers'
+   if [ "$CONFIG_ARCH_ACORN" != "y" -a "$CONFIG_ARCH_EBSA110" != "y" ]; then
+      bool 'VGA text console' CONFIG_VGA_CONSOLE
+   fi
+   bool 'Support Frame buffer devices' CONFIG_FB
+   source drivers/video/Config.in
+   endmenu
+fi
+
+#------------------------------------------------------------------------------
+#                        M i s c    D r i v e r s
+#------------------------------------------------------------------------------
+source drivers/parport/Config.in
+source drivers/mtd/Config.in
+source drivers/pnp/Config.in
+source drivers/block/Config.in
+source fs/Config.in
+source drivers/input/Config.in
+
+source drivers/char/Config.in
+source drivers/usb/Config.in
+source drivers/ieee1394/Config.in
+source drivers/message/i2o/Config.in
+
+if [ "$CONFIG_ARCH_IPOD" = "y" ]; then
+   mainmenu_option next_comment
+   comment 'iPod Stuff'
+   tristate "iPod Audio" CONFIG_AUDIO_IPOD
+   tristate "iPod Keypad support" CONFIG_KB_IPOD
+   dep_tristate "iPod Remote support" CONFIG_REMOTE_IPOD $CONFIG_INPUT_KEYBDEV
+   endmenu
+fi
+
+#------------------------------------------------------------------------------
+#                     K e r n e l    H a c k i n g
+#------------------------------------------------------------------------------
+mainmenu_option next_comment
+comment 'Kernel hacking'
+
+define_bool CONFIG_FRAME_POINTER y
+bool 'Find REVISITS' CONFIG_REVISIT
+bool 'Verbose kernel error messages' CONFIG_DEBUG_ERRORS
+bool 'Verbose user fault messages' CONFIG_DEBUG_USER
+bool 'Include debugging information in kernel binary' CONFIG_DEBUG_INFO
+dep_bool 'Magic SysRq key' CONFIG_MAGIC_SYSRQ $CONFIG_VT
+if [ "$CONFIG_CPU_26" = "y" ]; then
+   bool 'Disable pgtable cache' CONFIG_NO_PGT_CACHE
+fi
+if [ "$CONFIG_EXPERIMENTAL" = "y" ]; then
+   bool 'Kernel low-level debugging functions' CONFIG_DEBUG_LL
+   if [ "$CONFIG_DEBUG_LL" = "y" ]; then
+      if [ "$CONFIG_FOOTBRIDGE" = "y" ]; then
+         bool 'Kernel low-level debugging messages via footbridge serial port' CONFIG_DEBUG_DC21285_PORT
+      fi
+   fi
+   bool 'Non power-of-2 kernel allocator (EXPERIMENTAL)' CONFIG_CONTIGUOUS_PAGE_ALLOC
+   dep_bool '  include /proc/mem_map' CONFIG_MEM_MAP $CONFIG_CONTIGUOUS_PAGE_ALLOC
+fi
+endmenu
+
+
+
+
+
+
+
+
+
+
