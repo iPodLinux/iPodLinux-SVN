@@ -1,3 +1,8 @@
+Courtney Cavin - Fri Feb 11 2005
+	enabled browser execution
+	 - open apps in a seperate virtual terminal
+	 - return to podzilla when execution finished
+
 Matthis - Tue Feb 08 2005
 	bluecube changes:
 	 - falling cubes are colored when falling and white when fell
