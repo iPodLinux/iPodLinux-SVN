@@ -684,38 +684,40 @@ static int ipod_mixer_close(struct inode *inode, struct file *filep)
 
 static int ipod_mixer_ioctl(struct inode *inode, struct file *filp, unsigned int cmd, unsigned long arg)
 {
-	if (_SIOC_DIR(cmd) == _SIOC_READ) {
+	if (cmd == SOUND_MIXER_INFO) {
 		mixer_info info;
+
+		strncpy(info.id, "WM8731", sizeof(info.id));
+		strncpy(info.name, "Wolfson WM8731", sizeof(info.name));
+		if (copy_to_user((void *) arg, &info, sizeof(info)))
+			return -EFAULT;
+		return 0;
+	}
+
+	if (_SIOC_DIR(cmd) == _SIOC_READ) {
 		int val;
 
 		switch (_IOC_NR(cmd)) {
 		/* the devices which can be used as recording devices */
-		case SOUND_MIXER_READ_RECMASK:
+		case SOUND_MIXER_RECMASK:
 			return put_user(SOUND_MASK_LINE | SOUND_MASK_MIC, (int *)arg);
 
 		/* bit mask for each of the stereo channels */
-		case SOUND_MIXER_READ_STEREODEVS:
+		case SOUND_MIXER_STEREODEVS:
 			return put_user(SOUND_MASK_PCM | SOUND_MASK_LINE, (int *)arg);
 
 		/* bit mask for each of the supported channels */
-		case SOUND_MIXER_READ_DEVMASK:
+		case SOUND_MIXER_DEVMASK:
 			return put_user(SOUND_MASK_PCM | SOUND_MASK_LINE | SOUND_MASK_MIC, (int *)arg);
 
 		/* bit mask which describes general capabilities of the mixer */
-		case SOUND_MIXER_READ_CAPS:
+		case SOUND_MIXER_CAPS:
 			/* only one mixer channel can be selected as a
 			   recording source at any one time */
 			return put_user(SOUND_CAP_EXCL_INPUT, (int *)arg);
 
-		case SOUND_MIXER_INFO:
-			strncpy(info.id, "WM8731", sizeof(info.id));
-			strncpy(info.name, "Wolfson WM8731", sizeof(info.name));
-			if (copy_to_user((void *) arg, &info, sizeof(info)))
-				return -EFAULT;
-			return 0;
-
 		/* bit mask for each of the currently active recording sources */
-		case SOUND_MIXER_READ_RECSRC:
+		case SOUND_MIXER_RECSRC:
 			return put_user(ipod_active_rec, (int *)arg);
 
 		case SOUND_MIXER_PCM:		/* codec output level */
@@ -733,7 +735,7 @@ static int ipod_mixer_ioctl(struct inode *inode, struct file *filp, unsigned int
 			return put_user(ipod_mic_boost, (int *)arg);
 		}
 	}
-	else if (_SIOC_DIR(cmd) == _SIOC_WRITE) {
+	else {
 		int val, left, right;
 
 		if (get_user(val, (int *)arg)) {
@@ -742,7 +744,7 @@ static int ipod_mixer_ioctl(struct inode *inode, struct file *filp, unsigned int
 
 		switch (_IOC_NR(cmd)) {
 		/* select the active recording sources 0 == mic */
-		case SOUND_MIXER_WRITE_RECSRC:
+		case SOUND_MIXER_RECSRC:
 			if (val == SOUND_MASK_LINE) {
 				d2a_activate_linein();
 			}
