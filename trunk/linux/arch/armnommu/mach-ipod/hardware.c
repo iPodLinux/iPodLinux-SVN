@@ -1,12 +1,69 @@
 /*
  * hardware.c - special hardware routines for iPod
  *
- * Copyright (c) 2003, Bernard Leach (leachbj@bouncycastle.org)
+ * Copyright (c) 2003,2004 Bernard Leach (leachbj@bouncycastle.org)
  */
 
 #include <linux/config.h>
+#include <linux/module.h>
 #include <linux/delay.h>
+#include <linux/string.h>
 #include <asm/io.h>
+#include <asm/hardware.h>
+
+#define SYSINFO_TAG     (unsigned char *)0x40017f18
+#define SYSINFO_PTR     (struct sysinfo_t **)0x40017f1c
+
+static struct sysinfo_t ipod_sys_info;
+static int ipod_sys_info_set;
+
+void ipod_set_sys_info(void);
+
+/*
+ * 3rd generation (docking) 0x30000, 0x30001
+ * 2nd generation (touch wheel) 0x20000, 0x20001
+ * 1st generation (scroll wheel) iPods 0x10000, 0x10001, 0x10002
+ * failed 0x0
+ */
+unsigned ipod_get_hw_version(void)
+{
+	if (!ipod_sys_info_set) {
+		ipod_set_sys_info();
+	}
+
+	if (ipod_sys_info_set > 0) {
+		return ipod_sys_info.boardHwSwInterfaceRev;
+	}
+
+	return 0x0;
+}
+
+struct sysinfo_t *ipod_get_sysinfo(void)
+{
+	if (!ipod_sys_info_set) {
+		ipod_set_sys_info();
+	}
+
+	if (ipod_sys_info_set > 0) {
+		return &ipod_sys_info;
+	}
+
+	return 0x0;
+}
+
+void ipod_set_sys_info(void)
+{
+	if (!ipod_sys_info_set) {
+		if ( *(unsigned *)SYSINFO_TAG == *(unsigned *)"IsyS" 
+				&& (*SYSINFO_PTR)->IsyS ==  *(unsigned *)"IsyS" ) {
+			memcpy(&ipod_sys_info, *SYSINFO_PTR, sizeof(struct sysinfo_t));
+			ipod_sys_info_set = 1;
+		}
+		else {
+			ipod_sys_info_set = -1;
+		}
+	}
+}
 
 void ipod_hard_reset(void)
 {
@@ -163,4 +220,7 @@ ipod_reboot_to_diskmode(void)
 	/* reset */
 	outl(inl(0xcf005030) | 0x4, 0xcf005030);
 }
+
+EXPORT_SYMBOL(ipod_get_hw_version);
+EXPORT_SYMBOL(ipod_get_sysinfo);
 
