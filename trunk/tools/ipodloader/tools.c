@@ -350,7 +350,7 @@ opto_keypad_read()
 		outl(inl(0x7000c104) | 0xc000000, 0x7000c104);
 
 		if (key_pressed != 0) {
-			return key_pad_val;
+			return key_pad_val ^ 0x1f;
 		}
 	}
 
