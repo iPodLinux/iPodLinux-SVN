@@ -539,7 +539,7 @@ void new_pong_window()
 
 	pong_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), pong_do_draw, pong_do_keystroke);
 
-	GrSelectEvents(pong_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN|GR_EVENT_MASK_TIMER);
+	GrSelectEvents(pong_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN|GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_TIMER);
 
 	GrMapWindow(pong_wid);
 	timer_id = GrCreateTimer(pong_wid, 75); /*Create nano-x timer*/

@@ -593,7 +593,7 @@ void new_record_window()
 
 	dsp_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), dsp_do_draw, dsp_do_keystroke);
 
-	GrSelectEvents(dsp_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN|GR_EVENT_MASK_TIMER);
+	GrSelectEvents(dsp_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_KEY_DOWN|GR_EVENT_MASK_TIMER);
 
 	GrMapWindow(dsp_wid);
 }
@@ -628,7 +628,7 @@ void new_playback_window(char *filename)
 
 	dsp_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), dsp_do_draw, dsp_do_keystroke);
 
-	GrSelectEvents(dsp_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN|GR_EVENT_MASK_TIMER);
+	GrSelectEvents(dsp_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_KEY_DOWN|GR_EVENT_MASK_TIMER);
 
 	GrMapWindow(dsp_wid);
 

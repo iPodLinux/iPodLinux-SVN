@@ -72,7 +72,7 @@ void new_image_window(char *filename)
 
 	image_wid = pz_new_window(0, 0, screen_info.cols, screen_info.rows, image_do_draw, image_do_keystroke);
 
-	GrSelectEvents(image_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN);
+	GrSelectEvents(image_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_KEY_DOWN);
 
 	GrMapWindow(image_wid);
 }

@@ -68,7 +68,7 @@ void new_message_window(char *message)
 		(screen_info.rows - (height + 10)) >> 1,
 		width + 10, height + 10, msg_do_draw, msg_do_keystroke);
 
-	GrSelectEvents(msg_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN|GR_EVENT_MASK_TIMER);
+	GrSelectEvents(msg_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_KEY_DOWN|GR_EVENT_MASK_TIMER);
 
 	GrMapWindow(msg_wid);
 

@@ -336,7 +336,7 @@ void new_mines_window()
 	GrGetScreenInfo(&screen_info);
 	mines_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), mines_do_draw, mines_do_keystroke);
 
-	GrSelectEvents(mines_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN);
+	GrSelectEvents(mines_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_KEY_DOWN);
 
 	GrMapWindow(mines_wid);
 

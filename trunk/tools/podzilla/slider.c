@@ -94,7 +94,7 @@ void new_slider_widget(int SETTING, char *title, int slider_min, int slider_max)
 	slider_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1),
 		slider_do_draw, slider_do_keystroke);
 
-	GrSelectEvents(slider_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN);
+	GrSelectEvents(slider_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_KEY_DOWN);
 
 	pz_draw_header(slider.title);
 

@@ -436,7 +436,7 @@ void new_mp3_window(char *filename, char *album, char *artist, char *title, int 
 
 	mp3_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), mp3_do_draw, mp3_do_keystroke);
 
-	GrSelectEvents(mp3_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN|GR_EVENT_MASK_TIMER);
+	GrSelectEvents(mp3_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_KEY_DOWN|GR_EVENT_MASK_TIMER);
 
 	GrMapWindow(mp3_wid);
 	mp3_do_draw(0);

@@ -323,7 +323,7 @@ void new_browser_window(char *initial_path)
                                     screen_info.rows - (HEADER_TOPLINE + 1),
                                     browser_do_draw, browser_do_keystroke);
 
-	GrSelectEvents(browser_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN);
+	GrSelectEvents(browser_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_KEY_DOWN);
 
 	browser_mscandir("./");
 
