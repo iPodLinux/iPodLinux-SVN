@@ -5726,6 +5726,9 @@ static int __init rs_init(void)
 #ifdef CONFIG_IXP425_DTR0
 	rs_ixp425gpio();
 #endif
+#ifdef CONFIG_ARCH_IPOD
+	ipod_serial_init();
+#endif
 
 	/* Initialize the tty_driver structure */
 	
