@@ -1,7 +1,7 @@
 /*
  * ipodremote.c - remote control line dicipline for iPod
  *
- * Copyright (c) 2003, Bernard Leach (leachbj@bouncycastle.org)
+ * Copyright (c) 2003,2004 Bernard Leach (leachbj@bouncycastle.org)
  */
 
 #include <linux/kernel.h>
@@ -10,8 +10,58 @@
 #include <linux/input.h>
 #include <linux/serio.h>
 #include <linux/init.h>
+#include <asm/hardware.h>
 
-#define IPOD_REMOTE_MAX_LEN	4
+/*
+ * This driver allows input from the remote control to be directed
+ * to the console as key input.
+ *
+ * Once this driver is loaded use the inputattach program to redirect
+ * the serial input to this driver.
+ *
+ * For the third generation iPods:
+ * 	inputattach -ipod3 /dev/ttyS0
+ * For original "scroll-wheel" or second generation "touch-wheel" iPods:
+ * 	inputattach -ipod /dev/ttyS0
+ */
+
+/*
+ * 1g and 2g iPod remotes communicate at 9600 Baud 8N1.  When a
+ * button is pressed on the remote the 4 bytes are generated:
+ *
+ * 0xff 0xfd n 0x00
+ *
+ * The n value varies depending on which button is pressed.  This sequence
+ * will continue until the button is released at which point a single
+ * sequence of:
+ *
+ * 0xff 0xfd 0xf0 0x00
+ *
+ * is sent.
+ *
+ * The possible n values are: 0xf1 -> play/pause, 0xf2 -> volume up,
+ * 0xf3 -> volume down, 0xf4 -> fast forward, 0xf5 -> rewind and
+ * 0xf0 -> no key down.
+ */
+
+/*
+ * 3g iPod remotes comminicate at 19,200 Baud 8N1.  When a button
+ * is pressed or released a stream of bytes is send.  Whilst the button
+ * is held down 7 bytes will be repeated sent in the form:
+ *
+ * 0xff 0x55 0x03 0x02 0x00 n 0xfa
+ *
+ * Where n is either 0x01, 0x02, 0x04, 0x08 or 0x10.  These represent
+ * play/pause, volume up, volume down, fast forward and rewind respectively.
+ *
+ * When the button is released the following bytes will be written one
+ * or more times.
+ *
+ * 0Xff 0X55 0x03 0x02 0x00 0x00 0xfb
+ */
+
+#define IPOD_REMOTE_12G_MAX_LEN	4
+#define IPOD_REMOTE_3G_MAX_LEN	7
 #define N_BUTTONS	5
 
 static int ipod_remote_buttons[] = {
@@ -22,11 +72,12 @@ struct ipod_remote {
 	struct input_dev dev;
 	struct serio *serio;
 
+	unsigned hw_ver;
 	int idx;
-	unsigned char data[IPOD_REMOTE_MAX_LEN];
+	unsigned char data[IPOD_REMOTE_3G_MAX_LEN];
 };
 
-static void ipod_remote_process_input(struct ipod_remote *ipod)
+static void ipod_remote_process_input_12g(struct ipod_remote *ipod)
 {
 	static int last_button = 0;
 
@@ -35,6 +86,44 @@ static void ipod_remote_process_input(struct ipod_remote *ipod)
 	}
 	else {
 		int pos = ipod->data[2] - 0xf1;
+		if ( pos >= 0  && pos < 5 ) {
+			last_button = ipod_remote_buttons[pos];
+			input_report_key(&ipod->dev, last_button, 1);
+		}
+	}
+}
+
+static void ipod_remote_process_input_3g(struct ipod_remote *ipod)
+{
+	static int last_button = -1;
+
+	if ( ipod->data[6] == 0xfb ) {
+		if (last_button >= 0) {
+			input_report_key(&ipod->dev, last_button, 0);
+			last_button = -1;
+		}
+	}
+	else {
+		int pos = -1;
+
+		switch (ipod->data[5]) {
+		case 0x1:
+			pos = 0;
+			break;
+		case 0x2:
+			pos = 1;
+			break;
+		case 0x4:
+			pos = 2;
+			break;
+		case 0x8:
+			pos = 3;
+			break;
+		case 0x10:
+			pos = 4;
+			break;
+		}
+
 		if ( pos >= 0  && pos < 5 ) {
 			last_button = ipod_remote_buttons[pos];
 			input_report_key(&ipod->dev, last_button, 1);
@@ -63,6 +152,7 @@ static void ipod_remote_connect(struct serio *serio, struct serio_dev *dev)
 	ipod->serio->private = ipod;
 	ipod->dev.private = ipod;
 
+	ipod->hw_ver = ipod_get_hw_version() >> 16;
 	ipod->dev.name = "ipod-remote";
 	ipod->dev.idbus = BUS_RS232;
 	ipod->dev.idvendor = SERIO_IPOD_REM;
@@ -102,9 +192,17 @@ static void ipod_remote_interrupt(struct serio *serio, unsigned char data, unsig
 	ipod = serio->private;
 
 	ipod->data[ipod->idx++] = data;
-	if ( ipod->idx == IPOD_REMOTE_MAX_LEN ) {
-		ipod->idx = 0;
-		ipod_remote_process_input(ipod);
+	if (ipod->hw_ver == 0x1 || ipod->hw_ver == 0x2) {
+		if ( ipod->idx == IPOD_REMOTE_12G_MAX_LEN ) {
+			ipod->idx = 0;
+			ipod_remote_process_input_12g(ipod);
+		}
+	}
+	else {
+		if ( ipod->idx == IPOD_REMOTE_3G_MAX_LEN ) {
+			ipod->idx = 0;
+			ipod_remote_process_input_3g(ipod);
+		}
 	}
 }
 
@@ -117,7 +215,7 @@ static struct serio_dev ipod_remote_dev = {
 
 static int __init ipod_remote_init(void)
 {
-	printk("ipod_remote: $Id$\n");
+	printk("ipod_remote: $Id: ipodremote.c,v 1.1 2003/03/21 10:37:18 leachbj Exp $\n");
 
 	serio_register_device(&ipod_remote_dev);
 
