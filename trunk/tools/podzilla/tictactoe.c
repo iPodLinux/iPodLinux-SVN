@@ -148,11 +148,11 @@ void output(int stat)
 {
 	gameRunning = 0;
 	if (stat == XWINS)
-		pz_draw_header ("You Win!");
+		pz_draw_header ("You Wein!");
 	else if (stat == OWINS)
 		pz_draw_header ("You Loose!");
 	else if (stat == TIE)
-		pz_draw_header ("Tie!");
+		pz_draw_header ("Tye!");
 }
 
 
