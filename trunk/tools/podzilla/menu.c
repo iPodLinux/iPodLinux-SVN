@@ -47,6 +47,7 @@ extern void new_pong_window(void);
 extern void new_mines_window(void);
 extern void new_tictactoe_window(void);
 extern void new_tuxchess_window(void);
+extern void last_tuxchess_window(void);
 extern void new_calc_window(void);
 extern void new_poddraw_window(void);
 extern void new_cube_window(void);
@@ -60,6 +61,12 @@ static GR_WINDOW_ID menu_wid;
 static GR_GC_ID menu_gc;
 static menu_st *menuz;
 
+static item_st tuxchess_menu[] = {
+	{"Last Game", last_tuxchess_window, ACTION_MENU},
+	{"New Game", new_tuxchess_window, ACTION_MENU},
+	{0}
+};
+
 static item_st games_menu[] = {
 	{"BlueCube", new_bluecube_window, ACTION_MENU},
 	{"Nimesweeper", new_mines_window, ACTION_MENU},
@@ -67,7 +74,7 @@ static item_st games_menu[] = {
 	{"Pong", new_pong_window, ACTION_MENU},
 	{"Steroids", new_steroids_window, ACTION_MENU},
 	{"Tic-Tac-Toe", new_tictactoe_window, ACTION_MENU},
-	{"TuxChess", new_tuxchess_window, ACTION_MENU},
+	{"TuxChess", tuxchess_menu, SUB_MENU_HEADER},
 	{0}
 };
 
