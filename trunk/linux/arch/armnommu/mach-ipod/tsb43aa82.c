@@ -434,8 +434,6 @@ static int rx_packet(struct ti_ipod *ipod)
 		data = fw_reg_read(LYNX_ARF_DATA);
 		status = fw_reg_read(LYNX_ARF_STATUS);
 
-		printk(KERN_ERR "bogus ARF %x\n", data);
-
 		if ((status & LYNX_XXFSTAT_EMPTY) == LYNX_XXFSTAT_EMPTY) {
 			printk(KERN_ERR "rx_packet cant find pkt start\n");
 			return 0;
@@ -479,6 +477,10 @@ static int rx_packet(struct ti_ipod *ipod)
 		block_len = pkt[3] >> 16;
 
 		for (i = 0; i < (block_len + 3) / 4; i++) {
+			if (fw_reg_read(LYNX_ARF_STATUS) & LYNX_XXFSTAT_EMPTY) {
+				printk(KERN_ERR "ARF empty\n");
+				return 0;
+			}
 			pkt[4+i] = cpu_to_be32(fw_reg_read(LYNX_ARF_DATA));
 		}
 
@@ -867,6 +869,19 @@ static void ipod_1394_fw_int(int irq, struct ti_ipod *ipod)
 			tasklet_schedule(&ipod->tx_tasklet);
 			spin_unlock_irqrestore(&ipod->tx_lock, flags);
 		}
+
+#if 0
+		// we handle these
+		fw_src &= ~(LYNX_INTERRUPT_BusRst|LYNX_INTERRUPT_SelfIDEnd|LYNX_INTERRUPT_ATFEnd|LYNX_INTERRUPT_RxARF);
+
+		fw_src &= ~( LYNX_INTERRUPT_Int | LYNX_INTERRUPT_FairGap | LYNX_INTERRUPT_TxRdy | LYNX_INTERRUPT_CySec| LYNX_INTERRUPT_CyStart| LYNX_INTERRUPT_CyDne| LYNX_INTERRUPT_CyPending| LYNX_INTERRUPT_CyLost| LYNX_INTERRUPT_CyArbFail );
+		if (host->in_bus_reset) {
+			fw_src &= ~( LYNX_INTERRUPT_PhyPkt | LYNX_INTERRUPT_RxPhyReg | LYNX_INTERRUPT_UpdDRFHdr | LYNX_INTERRUPT_DRFEnd );
+		}
+		if (fw_src) {
+			printk("fw_src %04x\n", fw_src);
+		}
+#endif
 	}
 }
 
@@ -1047,7 +1062,7 @@ static int __devinit ipod_1394_init(void)
 {
 	struct ti_ipod *ipod;
 
-	printk("ipod_1394: $Id: tsb43aa82.c,v 1.1 2004/02/19 00:47:27 leachbj Exp $\n");
+	printk("ipod_1394: $Id: tsb43aa82.c,v 1.2 2004/02/19 22:55:36 leachbj Exp $\n");
 
 	ipod_host = hpsb_alloc_host(&ipod_1394_driver, sizeof(struct ti_ipod));
 	if (!ipod_host) {
@@ -1133,7 +1148,9 @@ static int __devinit ipod_1394_init(void)
 		|LYNX_CTRL_ACK_PENDING
 		|LYNX_CTRL_CYCLE_MASTER
 		|LYNX_CTRL_CYCLE_TIMER_ENABLE
-		|LYNX_CTRL_DMA_CLEAR); /* ensure DMA state machines ready */
+		|LYNX_CTRL_DMA_CLEAR	/* ensure DMA state machines ready */
+		|LYNX_CTRL_RCV_UNEXPECT_PKT);
+		// LYNX_CTRL_UNEXPECT_PKT_TO_DRF // receive packets to DRF not ATF
 
 	/* Clear DMAClear (this is a bug in ES1, it should automatically clear) */
 	fw_reg_write(LYNX_CTRL, fw_reg_read(LYNX_CTRL) & ~LYNX_CTRL_DMA_CLEAR);
@@ -1143,6 +1160,12 @@ static int __devinit ipod_1394_init(void)
 
 	/* Clear interrupts */
 	fw_reg_write(LYNX_INTERRUPT, LYNX_INTERRUPT_ALL_CLEAR);
+
+	/*
+	 * disable the dynamic power consumption, this fixes a bug with
+	 * receiving broadcast messages.
+	 */
+	fw_reg_write(LYNX_RESERVED, POWER_CONSUMPTION_DIS);
 
 	/* setup firewire power (4) and firewire (5) interrupts */
 	{
