@@ -273,6 +273,8 @@ void new_image_window(char *filename)
 	loc_y = 0;
 	pad_x = 0;
 	pad_y = 0;
+	zoom_factor=0; zoom_change=0;
+	zoom_fit_level=0; zoom_min=0; zoom_max=0;
 
 	image_gc = pz_get_gc(1);
 	GrSetGCUseBackground(image_gc, GR_FALSE);
