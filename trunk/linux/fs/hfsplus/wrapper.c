@@ -14,6 +14,7 @@
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,5,0)
 #include <linux/buffer_head.h>
 #endif
+#include <asm/unaligned.h>
 
 #include "hfsplus_fs.h"
 #include "hfsplus_raw.h"
@@ -45,7 +46,7 @@ static int hfsplus_read_mdb(unsigned char *bufptr, struct hfsplus_wd *wd)
 		return 0;
 	wd->ablk_start = be16_to_cpu(*(u16 *)(bufptr + HFSP_WRAPOFF_ABLKSTART));
 
-	extent = be32_to_cpu(*(u32 *)(bufptr + HFSP_WRAPOFF_EMBEDEXT));
+	extent = be32_to_cpu(get_unaligned((u32 *)(bufptr + HFSP_WRAPOFF_EMBEDEXT)));
 	wd->embed_start = (extent >> 16) & 0xFFFF;
 	wd->embed_count = extent & 0xFFFF;
 
