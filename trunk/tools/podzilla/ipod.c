@@ -168,7 +168,7 @@ int ipod_load_settings(void)
 
 		ipod_set_setting(CONTRAST, ipod_get_contrast());
 		ipod_set_setting(CLICKER, 1);
-		ipod_set_setting(WHEEL_DEBOUNCE, 200);
+		ipod_set_setting(WHEEL_DEBOUNCE, 3);
 		ipod_set_setting(ACTION_DEBOUNCE, 400);
 		ipod_set_setting(BACKLIGHT_TIMER, 0);
 	}
