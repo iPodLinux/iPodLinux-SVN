@@ -230,8 +230,7 @@ done:
 
 static void key_mini_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
-	unsigned char source, wheel_source, state, wheel_state;
-	static int was_hold = 0;
+	unsigned char source, wheel_source, state, wheel_state = 0;
 
 	/*
 	 * we need some delay for mini, cause hold generates several interrupts,
@@ -241,7 +240,13 @@ static void key_mini_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 
 	/* get source(s) of interupt */
 	source = inb(0x6000d040) & 0x3f;
-	wheel_source = inb(0x6000d044) & 0x30;
+	if (ipod_hw_ver == 0x4) {
+		wheel_source = inb(0x6000d044) & 0x30;
+	}
+	else {
+		source &= 0x20;
+		wheel_source = 0x0;
+	}
 
 	if (source == 0 && wheel_source == 0) {
 		return; 	/* not for us */
@@ -249,28 +254,26 @@ static void key_mini_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 
 	/* get current keypad & wheel status */
 	state = inb(0x6000d030) & 0x3f;
-	wheel_state = inb(0x6000d034) & 0x30;
+	if (ipod_hw_ver == 0x4) {
+		wheel_state = inb(0x6000d034) & 0x30;
+	}
+	else {
+		state &= 0x20;
+	}
 
 	/* toggle interrupt level */
 	outb(~state, 0x6000d060);
-	outb(~wheel_state, 0x6000d064);
-
-	/* TODO need to review */
-	if (was_hold && source == 0x40 && state == 0xbf) {
-		/* ack any active interrupts */
-		outb(source, 0x6000d070);
-		return;
+	if (ipod_hw_ver == 0x4) {
+		outb(~wheel_state, 0x6000d064);
 	}
-	was_hold = 0;
 
 #ifdef CONFIG_VT
 	kbd_pt_regs = regs;
 
-	if ( source & 0x20 ) {
+	if (source & 0x20) {
 		/* mini hold switch is active low */
 		if (state & 0x20) {
 			handle_scancode(HOLD_SC, 0);
-			was_hold = 1;
 		}
 		else {
 			handle_scancode(HOLD_SC, 1);
@@ -323,7 +326,7 @@ static void key_mini_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	}
 
 	if (wheel_source & 0x30) {
-		handle_scroll_wheel((wheel_state & 0x30) >> 4, was_hold, 1);
+		handle_scroll_wheel((wheel_state & 0x30) >> 4, 0, 1);
 	}
 done:
 
@@ -390,8 +393,8 @@ static void key_i2c_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 		outl(0x0, 0x7000c140);	/* clear interrupt status? */
 
 		if ((status & 0x800000ff) == 0x8000001a) {
-			int new_button_mask;
-			int new_wheel_value;
+			int new_button_mask = 0;
+			int new_wheel_value = 0;
 
 			/* NB: highest wheel = 0x5F, clockwise increases */
 			new_wheel_value = ((status << 9) >> 25) & 0xff;
@@ -517,7 +520,7 @@ static void key_i2c_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 
 	if ((inl(reg) & 0x8000000) != 0) {
 		outl(0xffffffff, 0x7000c120);
-		outl(0xffffffff, 0x7000c12d);
+		outl(0xffffffff, 0x7000c124);
 	}
 
 	outl(inl(0x7000c104) | 0xC000000, 0x7000c104);
@@ -532,6 +535,8 @@ void __init ipodkb_init_hw(void)
 	ipod_hw_ver = ipod_get_hw_version() >> 16;
 
 	if (ipod_hw_ver == 0x4) {
+		/* mini */
+
 		/* buttons - enable as input */
 		outl(inl(0x6000d000) | 0x3f, 0x6000d000);
 		outl(inl(0x6000d010) & ~0x3f, 0x6000d010);
@@ -565,8 +570,24 @@ void __init ipodkb_init_hw(void)
 		if (request_irq(PP5020_I2C_IRQ, key_i2c_interrupt, SA_SHIRQ, "keyboard", KEYBOARD_DEV_ID)) {
 			printk("ipodkb: IRQ %d failed\n", PP5020_I2C_IRQ);
 		}
+
+		/* hold button - enable as input */
+		outl(inl(0x6000d000) | 0x20, 0x6000d000);
+		outl(inl(0x6000d010) & ~0x20, 0x6000d010);
+
+		/* hold button - set interrupt levels */
+		outl(~(inl(0x6000d030) & 0x20), 0x6000d060);
+		outl((inl(0x6000d040) & 0x20), 0x6000d070);
+
+		if (request_irq(PP5020_GPIO_IRQ, key_mini_interrupt, SA_SHIRQ, "keyboard", KEYBOARD_DEV_ID)) {
+			printk("ipodkb: IRQ %d failed\n", PP5020_GPIO_IRQ);
+		}
+
+		/* enable interrupts */
+		outl(0x20, 0x6000d050);
 	}
 	else {
+		/* 1g, 2g, 3g */
 		outb(~inb(0xcf000030), 0xcf000060);
 		outb(inb(0xcf000040), 0xcf000070);
 
