@@ -124,7 +124,7 @@ static int is_leap_year(int yr);
 static int calc_weekday(struct shown *shown);
 static void calendar_init();
 static void draw_headers(void);
-static void calendar_draw();
+static void calendar_draw(int redraw, int last);
 
 static void next_month(struct shown *shown, int step);
 static void prev_month(struct shown *shown, int step);
@@ -179,7 +179,7 @@ calendar_do_keystroke(GR_EVENT * event)
 			if (shown.mday > days_in_month[leap_year][shown.mon])
 				next_month(&shown, 1);
 			else {
-				calendar_draw(0);
+				calendar_draw(0, -1);
 			}
 			ret = 1;
 			break;
@@ -189,7 +189,7 @@ calendar_do_keystroke(GR_EVENT * event)
 			if (shown.mday < 1)
 				prev_month(&shown, 1);
 			else {
-				calendar_draw(0);
+				calendar_draw(0, 1);
 			}
 			ret = 1;
 			break;
@@ -296,13 +296,13 @@ cal_draw_rect(const int xoff, const int row) {
 static void
 calendar_do_draw(GR_EVENT * event)
 {
-	calendar_draw(1);
+	calendar_draw(1, 0);
 }
 
 static void
-calendar_draw(int redraw)
+calendar_draw(int redraw, int last)
 {
-	int ws, row, pos, days_per_month, j, istoday;
+	int ws, row, pos, days_per_month, j, istoday, islast;
 	char buffer[9];
 
 	if(redraw) {
@@ -333,6 +333,7 @@ calendar_draw(int redraw)
 		} else {
 			istoday=0;
 		}
+		islast = (j == shown.mday + last) ? 1 : 0;
 		snprintf(buffer, 4, "%02d", j);
 		GrSetGCForeground(calendar_gc, GRAY);
 		GrLine(calendar_wid, calendar_gc,
@@ -346,21 +347,19 @@ calendar_draw(int redraw)
 				ws, ycalpos + (row) * WeekSpace,
 				ws + DaySpace, ycalpos + (row) * WeekSpace);
 
-
 		GrSetGCForeground(calendar_gc, BLACK);
-		
-		if (istoday) {
-			GrSetGCForeground(calendar_gc, GRAY);
-			cal_draw_rect(ws, row);
-			GrSetGCForeground(calendar_gc, BLACK);
-			cal_draw_number(ws + 3, ycalpos + (row-1) * WeekSpace + 3, j);
-		}
+
 		if (j == shown.mday) {
 			GrSetGCForeground(calendar_gc, BLACK);
 			cal_draw_rect(ws, row);
 			GrSetGCForeground(calendar_gc, WHITE);
 			cal_draw_number(ws + 3, ycalpos + (row-1) * WeekSpace + 3, j);
-		} else if (!istoday) {
+		} else if (istoday) {
+			GrSetGCForeground(calendar_gc, GRAY);
+			cal_draw_rect(ws, row);
+			GrSetGCForeground(calendar_gc, BLACK);
+			cal_draw_number(ws + 3, ycalpos + (row-1) * WeekSpace + 3, j);
+		} else if (redraw || islast) {
 			GrSetGCForeground(calendar_gc, WHITE);
 			cal_draw_rect(ws, row);
 			GrSetGCForeground(calendar_gc, BLACK);
@@ -408,7 +407,7 @@ next_month(struct shown *shown, int step)
 		shown->mday = days_in_month[leap_year][shown->mon];
 	}
 	shown->firstday = shown->lastday;
-	calendar_draw(1);
+	calendar_draw(1, 0);
 }
 
 static void
@@ -427,7 +426,7 @@ prev_month(struct shown *shown, int step)
 		shown->mday = days_in_month[leap_year][shown->mon];
 	}
 	shown->firstday += 7 - (days_in_month[leap_year][shown->mon] % 7);
-	calendar_draw(1);
+	calendar_draw(1, 0);
 }
 
 static void
