@@ -1,4 +1,7 @@
 Courtney Cavin - Fri Feb 11 2005
+	new_message_window now wraps lines
+
+Courtney Cavin - Fri Feb 11 2005
 	enabled browser execution
 	 - open apps in a seperate virtual terminal
 	 - return to podzilla when execution finished
