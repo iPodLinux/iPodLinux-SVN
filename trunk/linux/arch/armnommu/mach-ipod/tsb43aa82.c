@@ -1,7 +1,7 @@
 /*
  * tsb43aa82.c - ieee1394 driver for iPod
  *
- * Copyright (c) 2003,2004 Bernard Leach (leachbj@bouncycastle.org)
+ * Copyright (c) 2003,2004 Bernard Leach <leachbj@bouncycastle.org>
  *
  * IEEE1394 controller is the TSB43AA82 (iSphyx II) from Texas Instruments.
  *
@@ -1007,8 +1007,7 @@ static __devinit void ipod_1394_hw_init(void)
 	if (ipod_hw_ver == 0x3)
 	{
 		/* reset device i2c */
-		outl(inl(0xcf005030) | (1<<8), 0xcf005030);
-		outl(inl(0xcf005030) & ~(1<<8), 0xcf005030);
+		ipod_i2c_init();
 
 		/* some i2c magic */
 		ipod_i2c_send(0x8, 0x39, 0);
@@ -1042,7 +1041,7 @@ static int __devinit ipod_1394_init(void)
 {
 	struct ti_ipod *ipod;
 
-	printk("ipod_1394: $Id: tsb43aa82.c,v 1.3 2004/02/25 20:11:13 leachbj Exp $\n");
+	printk("ipod_1394: $Id: tsb43aa82.c,v 1.4 2004/03/02 23:18:38 leachbj Exp $\n");
 
 	ipod_host = hpsb_alloc_host(&ipod_1394_driver, sizeof(struct ti_ipod));
 	if (!ipod_host) {
