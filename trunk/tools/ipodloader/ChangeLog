@@ -1,4 +1,7 @@
 
+Mon Nov 22 12:53:21 CET 2004
+ - Make sure the COP is asleep before we try & wake it up
+
 Wed May 12 21:57:59 CEST 2004
  - Added windows support patch from Phyntos
 
