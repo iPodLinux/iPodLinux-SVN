@@ -21,6 +21,12 @@
 #include <math.h>
 #include "pz.h"
 
+#define SCRW  screen_info.cols
+#define SCRH  (screen_info.rows-HEADER_TOPLINE)
+
+#define LMID  ((SCRW/2)/2)
+#define RMID  (((SCRW/2)/2)+(SCRW/2))
+
 /****************** ISO Lib prototypes ***********************/
 double atan(double x);
 double cos(double x);
@@ -52,7 +58,7 @@ struct Position add(const struct Position,const struct Position);
 /***************************************************************/
 
 void draw_pong() {
-	static int i=0, lastpballx, lastpbally, lastcpoint, lastupoint;
+	static int i=0, k=0, lastpballx, lastpbally, lastcpoint, lastupoint;
 	GR_POINT breakfast[] = {
 		{pball.x-1, pball.y-3},
 		{pball.x-3, pball.y-1},
@@ -81,18 +87,18 @@ void draw_pong() {
 		if(pplayer1.y!=ptmp1.y)
 			GrFillRect(pong_wid, pong_gc, 5, ptmp1.y-10, 4, 20);
 		if(pplayer2.y!=ptmp2.y)
-			GrFillRect(pong_wid, pong_gc, 150, ptmp2.y-10, 4, 20);
+			GrFillRect(pong_wid, pong_gc, SCRW-10, ptmp2.y-10, 4, 20);
 		if(comppoint!=lastcpoint)
-			GrFillRect(pong_wid, pong_gc, 35, 0, 20, 21);
+			GrFillRect(pong_wid, pong_gc, LMID-5, 0, 20, 21);
 		if(userpoint!=lastupoint)
-			GrFillRect(pong_wid, pong_gc, 115, 0, 20, 21);
+			GrFillRect(pong_wid, pong_gc, RMID-5, 0, 20, 21);
 		GrFillPoly(pong_wid, pong_gc, 9, breaks);
 		if(roundover==2)
-			GrFillRect(pong_wid, pong_gc, 95, 40, 40, 14);
+			GrFillRect(pong_wid, pong_gc, (SCRW/2)+15, (SCRH/2)-14, 40, 16);
 	}i=1;
 
 	if(comppoint==11 || userpoint==11)  { //Game Over?
-		GrFillRect(pong_wid, pong_gc, 0, 0, 160, 118);
+		GrFillRect(pong_wid, pong_gc, 0, 0, SCRW, SCRH);
 		gameover=1;
 	}
 
@@ -101,156 +107,156 @@ void draw_pong() {
 	//Score Keeper
 	switch(comppoint) {
 		case 0:
-			GrFillRect(pong_wid, pong_gc, 35, 1, 14, 20);
+			GrFillRect(pong_wid, pong_gc, LMID-5, 1, 14, 20);
 			GrSetGCForeground(pong_gc, WHITE);
-			GrFillRect(pong_wid, pong_gc, 39, 5, 6, 12);
+			GrFillRect(pong_wid, pong_gc, LMID-1, 5, 6, 12);
 			GrSetGCForeground(pong_gc, LTGRAY);
 			break;
 		case 1:
-			GrFillRect(pong_wid, pong_gc, 42, 1, 4, 20);
+			GrFillRect(pong_wid, pong_gc, LMID+2, 1, 4, 20);
 			break;
 		case 2:
-			GrFillRect(pong_wid, pong_gc, 35, 1, 14, 20);
+			GrFillRect(pong_wid, pong_gc, LMID-5, 1, 14, 20);
 			GrSetGCForeground(pong_gc, WHITE);
-			GrFillRect(pong_wid, pong_gc, 35, 5, 10, 4);
-			GrFillRect(pong_wid, pong_gc, 39, 13, 10, 4);
+			GrFillRect(pong_wid, pong_gc, LMID-5, 5, 10, 4);
+			GrFillRect(pong_wid, pong_gc, LMID-1, 13, 10, 4);
 			GrSetGCForeground(pong_gc, LTGRAY);
 			break;
 		case 3:
-			GrFillRect(pong_wid, pong_gc, 35, 1, 14, 20);
+			GrFillRect(pong_wid, pong_gc, LMID-5, 1, 14, 20);
 			GrSetGCForeground(pong_gc, WHITE);
-			GrFillRect(pong_wid, pong_gc, 35, 5, 10, 4);
-			GrFillRect(pong_wid, pong_gc, 35, 13, 10, 4);
+			GrFillRect(pong_wid, pong_gc, LMID-5, 5, 10, 4);
+			GrFillRect(pong_wid, pong_gc, LMID-5, 13, 10, 4);
 			GrSetGCForeground(pong_gc, LTGRAY);
 			break;
 		case 4:
-			GrFillRect(pong_wid, pong_gc, 35, 1, 14, 20);
+			GrFillRect(pong_wid, pong_gc, LMID-5, 1, 14, 20);
 			GrSetGCForeground(pong_gc, WHITE);
-			GrFillRect(pong_wid, pong_gc, 39, 1, 6, 8);
-			GrFillRect(pong_wid, pong_gc, 35, 13, 10, 8);
+			GrFillRect(pong_wid, pong_gc, LMID-1, 1, 6, 8);
+			GrFillRect(pong_wid, pong_gc, LMID-5, 13, 10, 8);
 			GrSetGCForeground(pong_gc, LTGRAY);
 			break;
 		case 5:
-			GrFillRect(pong_wid, pong_gc, 35, 1, 14, 20);
+			GrFillRect(pong_wid, pong_gc, LMID-5, 1, 14, 20);
 			GrSetGCForeground(pong_gc, WHITE);
-			GrFillRect(pong_wid, pong_gc, 39, 5, 10, 4);
-			GrFillRect(pong_wid, pong_gc, 35, 13, 10, 4);
+			GrFillRect(pong_wid, pong_gc, LMID-1, 5, 10, 4);
+			GrFillRect(pong_wid, pong_gc, LMID-5, 13, 10, 4);
 			GrSetGCForeground(pong_gc, LTGRAY);
 			break;
 		case 6:
-			GrFillRect(pong_wid, pong_gc, 35, 1, 14, 20);
+			GrFillRect(pong_wid, pong_gc, LMID-5, 1, 14, 20);
 			GrSetGCForeground(pong_gc, WHITE);
-			GrFillRect(pong_wid, pong_gc, 39, 5, 10, 4);
-			GrFillRect(pong_wid, pong_gc, 39, 13, 6, 4);
+			GrFillRect(pong_wid, pong_gc, LMID-1, 5, 10, 4);
+			GrFillRect(pong_wid, pong_gc, LMID-1, 13, 6, 4);
 			GrSetGCForeground(pong_gc, LTGRAY);
 			break;
 		case 7:
-			GrFillRect(pong_wid, pong_gc, 35, 1, 14, 20);
+			GrFillRect(pong_wid, pong_gc, LMID-5, 1, 14, 20);
 			GrSetGCForeground(pong_gc, WHITE);
-			GrFillRect(pong_wid, pong_gc, 35, 5, 10, 16);
+			GrFillRect(pong_wid, pong_gc, LMID-5, 5, 10, 16);
 			GrSetGCForeground(pong_gc, LTGRAY);
 			break;
 		case 8:
-			GrFillRect(pong_wid, pong_gc, 35, 1, 14, 20);
+			GrFillRect(pong_wid, pong_gc, LMID-5, 1, 14, 20);
 			GrSetGCForeground(pong_gc, WHITE);
-			GrFillRect(pong_wid, pong_gc, 39, 5, 6, 4);
-			GrFillRect(pong_wid, pong_gc, 39, 13, 6, 4);
+			GrFillRect(pong_wid, pong_gc, LMID-1, 5, 6, 4);
+			GrFillRect(pong_wid, pong_gc, LMID-1, 13, 6, 4);
 			GrSetGCForeground(pong_gc, LTGRAY);
 			break;
 		case 9:
-			GrFillRect(pong_wid, pong_gc, 35, 1, 14, 20);
+			GrFillRect(pong_wid, pong_gc, LMID-5, 1, 14, 20);
 			GrSetGCForeground(pong_gc, WHITE);
-			GrFillRect(pong_wid, pong_gc, 39, 5, 6, 4);
-			GrFillRect(pong_wid, pong_gc, 35, 13, 10, 4);
+			GrFillRect(pong_wid, pong_gc, LMID-1, 5, 6, 4);
+			GrFillRect(pong_wid, pong_gc, LMID-5, 13, 10, 4);
 			GrSetGCForeground(pong_gc, LTGRAY);
 			break;
 		case 10:
-			GrFillRect(pong_wid, pong_gc, 29, 1, 4, 20);
-			GrFillRect(pong_wid, pong_gc, 37, 1, 14, 20);
+			GrFillRect(pong_wid, pong_gc, LMID-11, 1, 4, 20);
+			GrFillRect(pong_wid, pong_gc, LMID-3, 1, 14, 20);
 			GrSetGCForeground(pong_gc, WHITE);
-			GrFillRect(pong_wid, pong_gc, 41, 5, 6, 12);
+			GrFillRect(pong_wid, pong_gc, LMID+1, 5, 6, 12);
 			GrSetGCForeground(pong_gc, LTGRAY);
 			break;
 		case 11:
-			GrFillRect(pong_wid, pong_gc, 29, 1, 4, 20);
-			GrFillRect(pong_wid, pong_gc, 37, 1, 4, 20);
+			GrFillRect(pong_wid, pong_gc, LMID-11, 1, 4, 20);
+			GrFillRect(pong_wid, pong_gc, LMID-3, 1, 4, 20);
 			break;
 	}
 	switch(userpoint) {
 		case 0:
-			GrFillRect(pong_wid, pong_gc, 115, 1, 14, 20);
+			GrFillRect(pong_wid, pong_gc, RMID-5, 1, 14, 20);
 			GrSetGCForeground(pong_gc, WHITE);
-			GrFillRect(pong_wid, pong_gc, 119, 5, 6, 12);
+			GrFillRect(pong_wid, pong_gc, RMID-1, 5, 6, 12);
 			GrSetGCForeground(pong_gc, LTGRAY);
 			break;
 		case 1:
-			GrFillRect(pong_wid, pong_gc, 122, 1, 4, 20);
+			GrFillRect(pong_wid, pong_gc, RMID+2, 1, 4, 20);
 			break;
 		case 2:
-			GrFillRect(pong_wid, pong_gc, 115, 1, 14, 20);
+			GrFillRect(pong_wid, pong_gc, RMID-5, 1, 14, 20);
 			GrSetGCForeground(pong_gc, WHITE);
-			GrFillRect(pong_wid, pong_gc, 115, 5, 10, 4);
-			GrFillRect(pong_wid, pong_gc, 119, 13, 10, 4);
+			GrFillRect(pong_wid, pong_gc, RMID-5, 5, 10, 4);
+			GrFillRect(pong_wid, pong_gc, RMID-1, 13, 10, 4);
 			GrSetGCForeground(pong_gc, LTGRAY);
 			break;
 		case 3:
-			GrFillRect(pong_wid, pong_gc, 115, 1, 14, 20);
+			GrFillRect(pong_wid, pong_gc, RMID-5, 1, 14, 20);
 			GrSetGCForeground(pong_gc, WHITE);
-			GrFillRect(pong_wid, pong_gc, 115, 5, 10, 4);
-			GrFillRect(pong_wid, pong_gc, 115, 13, 10, 4);
+			GrFillRect(pong_wid, pong_gc, RMID-5, 5, 10, 4);
+			GrFillRect(pong_wid, pong_gc, RMID-5, 13, 10, 4);
 			GrSetGCForeground(pong_gc, LTGRAY);
 			break;
 		case 4:
-			GrFillRect(pong_wid, pong_gc, 115, 1, 14, 20);
+			GrFillRect(pong_wid, pong_gc, RMID-5, 1, 14, 20);
 			GrSetGCForeground(pong_gc, WHITE);
-			GrFillRect(pong_wid, pong_gc, 119, 1, 6, 8);
-			GrFillRect(pong_wid, pong_gc, 115, 13, 10, 8);
+			GrFillRect(pong_wid, pong_gc, RMID-1, 1, 6, 8);
+			GrFillRect(pong_wid, pong_gc, RMID-5, 13, 10, 8);
 			GrSetGCForeground(pong_gc, LTGRAY);
 			break;
 		case 5:
-			GrFillRect(pong_wid, pong_gc, 115, 1, 14, 20);
+			GrFillRect(pong_wid, pong_gc, RMID-5, 1, 14, 20);
 			GrSetGCForeground(pong_gc, WHITE);
-			GrFillRect(pong_wid, pong_gc, 119, 5, 10, 4);
-			GrFillRect(pong_wid, pong_gc, 115, 13, 10, 4);
+			GrFillRect(pong_wid, pong_gc, RMID-1, 5, 10, 4);
+			GrFillRect(pong_wid, pong_gc, RMID-5, 13, 10, 4);
 			GrSetGCForeground(pong_gc, LTGRAY);
 			break;
 		case 6:
-			GrFillRect(pong_wid, pong_gc, 115, 1, 14, 20);
+			GrFillRect(pong_wid, pong_gc, RMID-5, 1, 14, 20);
 			GrSetGCForeground(pong_gc, WHITE);
-			GrFillRect(pong_wid, pong_gc, 119, 5, 10, 4);
-			GrFillRect(pong_wid, pong_gc, 119, 13, 6, 4);
+			GrFillRect(pong_wid, pong_gc, RMID-1, 5, 10, 4);
+			GrFillRect(pong_wid, pong_gc, RMID-1, 13, 6, 4);
 			GrSetGCForeground(pong_gc, LTGRAY);
 			break;
 		case 7:
-			GrFillRect(pong_wid, pong_gc, 115, 1, 14, 20);
+			GrFillRect(pong_wid, pong_gc, RMID-5, 1, 14, 20);
 			GrSetGCForeground(pong_gc, WHITE);
-			GrFillRect(pong_wid, pong_gc, 115, 5, 10, 16);
+			GrFillRect(pong_wid, pong_gc, RMID-5, 5, 10, 16);
 			GrSetGCForeground(pong_gc, LTGRAY);
 			break;
 		case 8:
-			GrFillRect(pong_wid, pong_gc, 115, 1, 14, 20);
+			GrFillRect(pong_wid, pong_gc, RMID-5, 1, 14, 20);
 			GrSetGCForeground(pong_gc, WHITE);
-			GrFillRect(pong_wid, pong_gc, 119, 5, 6, 4);
-			GrFillRect(pong_wid, pong_gc, 119, 13, 6, 4);
+			GrFillRect(pong_wid, pong_gc, RMID-1, 5, 6, 4);
+			GrFillRect(pong_wid, pong_gc, RMID-1, 13, 6, 4);
 			GrSetGCForeground(pong_gc, LTGRAY);
 			break;
 		case 9:
-			GrFillRect(pong_wid, pong_gc, 115, 1, 14, 20);
+			GrFillRect(pong_wid, pong_gc, RMID-5, 1, 14, 20);
 			GrSetGCForeground(pong_gc, WHITE);
-			GrFillRect(pong_wid, pong_gc, 119, 5, 6, 4);
-			GrFillRect(pong_wid, pong_gc, 115, 13, 10, 4);
+			GrFillRect(pong_wid, pong_gc, RMID-1, 5, 6, 4);
+			GrFillRect(pong_wid, pong_gc, RMID-5, 13, 10, 4);
 			GrSetGCForeground(pong_gc, LTGRAY);
 			break;
 		case 10:
-			GrFillRect(pong_wid, pong_gc, 109, 1, 4, 20);
-			GrFillRect(pong_wid, pong_gc, 117, 1, 14, 20);
+			GrFillRect(pong_wid, pong_gc, RMID-11, 1, 4, 20);
+			GrFillRect(pong_wid, pong_gc, RMID-3, 1, 14, 20);
 			GrSetGCForeground(pong_gc, WHITE);
-			GrFillRect(pong_wid, pong_gc, 121, 5, 6, 12);
+			GrFillRect(pong_wid, pong_gc, RMID+1, 5, 6, 12);
 			GrSetGCForeground(pong_gc, LTGRAY);
 			break;
 		case 11:
-			GrFillRect(pong_wid, pong_gc, 109, 1, 4, 20);
-			GrFillRect(pong_wid, pong_gc, 117, 1, 4, 20);
+			GrFillRect(pong_wid, pong_gc, RMID-11, 1, 4, 20);
+			GrFillRect(pong_wid, pong_gc, RMID-3, 1, 4, 20);
 			break;
 	}
 
@@ -258,98 +264,92 @@ void draw_pong() {
 
 	if(comppoint==11) {//LOSER
 		/*********************** L ************************/
-		GrFillRect(pong_wid, pong_gc, 35, 40, 14, 20);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)-45, (SCRH/2)-14, 14, 20);
 		GrSetGCForeground(pong_gc, WHITE);
-		GrFillRect(pong_wid, pong_gc, 39, 40, 10, 16);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)-41, (SCRH/2)-14, 10, 16);
 		GrSetGCForeground(pong_gc, BLACK);
 		/********************** O ************************/
-		GrFillRect(pong_wid, pong_gc, 53, 40, 14, 20);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)-27, (SCRH/2)-14, 14, 20);
 		GrSetGCForeground(pong_gc, WHITE);
-		GrFillRect(pong_wid, pong_gc, 57, 44, 6, 12);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)-23, (SCRH/2)-10, 6, 12);
 		GrSetGCForeground(pong_gc, BLACK);
 		/********************** S ************************/
-		GrFillRect(pong_wid, pong_gc, 71, 40, 14, 20);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)-9, (SCRH/2)-14, 14, 20);
 		GrSetGCForeground(pong_gc, WHITE);
-		GrFillRect(pong_wid, pong_gc, 75, 44, 10, 4);
-		GrFillRect(pong_wid, pong_gc, 71, 52, 10, 4);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)-5, (SCRH/2)-10, 10, 4);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)-9, (SCRH/2)-2, 10, 4);
 		GrSetGCForeground(pong_gc, BLACK);
 		/********************** E ***********************/
-		GrFillRect(pong_wid, pong_gc, 89, 40, 14, 20);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)+9, (SCRH/2)-14, 14, 20);
 		GrSetGCForeground(pong_gc, WHITE);
-		GrFillRect(pong_wid, pong_gc, 93, 44, 10, 4);
-		GrFillRect(pong_wid, pong_gc, 93, 52, 10, 4);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)+13, (SCRH/2)-10, 10, 4);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)+13, (SCRH/2)-2, 10, 4);
 		GrSetGCForeground(pong_gc, BLACK);
 		/********************** R ***********************/
-		GrFillRect(pong_wid, pong_gc, 107, 40, 16, 20);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)+27, (SCRH/2)-14, 16, 20);
 		GrSetGCForeground(pong_gc, WHITE);
-		GrFillRect(pong_wid, pong_gc, 111, 44, 8, 3);
-		GrFillRect(pong_wid, pong_gc, 111, 52, 4, 8);
-		GrFillRect(pong_wid, pong_gc, 119, 52, 4, 4);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)+31, (SCRH/2)-10, 8, 3);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)+31, (SCRH/2)-2, 4, 8);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)+39, (SCRH/2)-2, 4, 4);
 		GrSetGCForeground(pong_gc, BLACK);
 		return;
 	}
 
 	else if (userpoint==11) { //WINNER
 		/*********************** W ************************/
-		GrFillRect(pong_wid, pong_gc, 35, 40, 20, 20);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)-45, (SCRH/2)-14, 20, 20);
 		GrSetGCForeground(pong_gc, WHITE);
-		GrFillRect(pong_wid, pong_gc, 39, 40, 4, 16);
-		GrFillRect(pong_wid, pong_gc, 47, 40, 4, 16);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)-41, (SCRH/2)-14, 4, 16);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)-33, (SCRH/2)-14, 4, 16);
 		GrSetGCForeground(pong_gc, BLACK);
 		/*********************** I *************************/
-		GrFillRect(pong_wid, pong_gc, 59, 40, 4, 20);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)-21, (SCRH/2)-14, 4, 20);
 		/********************** N *************************/
-		GrFillRect(pong_wid, pong_gc, 67, 40, 14, 20);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)-13, (SCRH/2)-14, 14, 20);
 		GrSetGCForeground(pong_gc, WHITE);
-		GrFillRect(pong_wid, pong_gc, 71, 40, 3, 4);
-		GrFillRect(pong_wid, pong_gc, 74, 40, 3, 8);
-		GrFillRect(pong_wid, pong_gc, 71, 52, 3, 8);
-		GrFillRect(pong_wid, pong_gc, 74, 56, 3, 4);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)-9, (SCRH/2)-14, 3, 4);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)-6, (SCRH/2)-14, 3, 8);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)-9, (SCRH/2)-2, 3, 8);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)-6, (SCRH/2)+2, 3, 4);
 		GrSetGCForeground(pong_gc, BLACK);
 		/********************** N ************************/
-		GrFillRect(pong_wid, pong_gc, 85, 40, 14, 20);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)+5, (SCRH/2)-14, 14, 20);
 		GrSetGCForeground(pong_gc, WHITE);
-		GrFillRect(pong_wid, pong_gc, 89, 40, 3, 4);
-		GrFillRect(pong_wid, pong_gc, 92, 40, 3, 8);
-		GrFillRect(pong_wid, pong_gc, 89, 52, 3, 8);
-		GrFillRect(pong_wid, pong_gc, 92, 56, 3, 4);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)+9, (SCRH/2)-14, 3, 4);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)+12, (SCRH/2)-14, 3, 8);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)+9, (SCRH/2)-2, 3, 8);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)+12, (SCRH/2)+2, 3, 4);
 		GrSetGCForeground(pong_gc, BLACK);
 		/********************** E *************************/
-		GrFillRect(pong_wid, pong_gc, 103, 40, 14, 20);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)+23, (SCRH/2)-14, 14, 20);
 		GrSetGCForeground(pong_gc, WHITE);
-		GrFillRect(pong_wid, pong_gc, 107, 44, 10, 4);
-		GrFillRect(pong_wid, pong_gc, 107, 52, 10, 4);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)+27, (SCRH/2)-10, 10, 4);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)+27, (SCRH/2)-2, 10, 4);
 		GrSetGCForeground(pong_gc, BLACK);
 		/********************** R ***********************/
-		GrFillRect(pong_wid, pong_gc, 121, 40, 16, 20);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)+41, (SCRH/2)-14, 16, 20);
 		GrSetGCForeground(pong_gc, WHITE);
-		GrFillRect(pong_wid, pong_gc, 125, 44, 8, 3);
-		GrFillRect(pong_wid, pong_gc, 125, 52, 4, 8);
-		GrFillRect(pong_wid, pong_gc, 133, 52, 4, 4);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)+45, (SCRH/2)-10, 8, 3);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)+45, (SCRH/2)-2, 4, 8);
+		GrFillRect(pong_wid, pong_gc, (SCRW/2)+53, (SCRH/2)-2, 4, 4);
 		GrSetGCForeground(pong_gc, BLACK);
 		return;
 	}
 
 	if(roundover==1) {
-		GrText(pong_wid, pong_gc, 95, 52, "Ready?", -1, GR_TFASCII);
+		GrText(pong_wid, pong_gc, (SCRW/2)+15, (SCRH/2), "Ready?", -1, GR_TFASCII);
 	}
-	GrLine(pong_wid, pong_gc, 80, 4, 80, 8);
-	GrLine(pong_wid, pong_gc, 80, 12, 80, 16);
-	GrLine(pong_wid, pong_gc, 80, 20, 80, 24);
-	GrLine(pong_wid, pong_gc, 80, 28, 80, 32);
-	GrLine(pong_wid, pong_gc, 80, 36, 80, 40);
-	GrLine(pong_wid, pong_gc, 80, 44, 80, 48);
-	GrLine(pong_wid, pong_gc, 80, 52, 80, 56);
-	GrLine(pong_wid, pong_gc, 80, 60, 80, 64);
-	GrLine(pong_wid, pong_gc, 80, 68, 80, 72);
-	GrLine(pong_wid, pong_gc, 80, 76, 80, 80);
-	GrLine(pong_wid, pong_gc, 80, 84, 80, 88);
-	GrLine(pong_wid, pong_gc, 80, 92, 80, 96);
-	GrLine(pong_wid, pong_gc, 80, 100, 80, 103);
+	
+	for (k = 0; k < ((SCRH-3)/8); k++) {
+		GrLine(pong_wid, pong_gc, (SCRW/2), (((k+1)*4)+(k*4)), (SCRW/2), (((k+2)*4)+(k*4)));
+	}
 
-	GrLine(pong_wid, pong_gc, 0, 103, 160, 103);
+	GrLine(pong_wid, pong_gc, 0, SCRH-5, SCRW, SCRH-5);
+	GrSetGCForeground(pong_gc, WHITE);
+	GrFillRect(pong_wid, pong_gc, 0, SCRH-4, SCRW, 4);
+	GrSetGCForeground(pong_gc, BLACK);
 	GrFillRect(pong_wid, pong_gc, 5, pplayer1.y-10, 4, 20); //computer paddle
-	GrFillRect(pong_wid, pong_gc, 150, pplayer2.y-10, 4, 20); //user paddle
+	GrFillRect(pong_wid, pong_gc, SCRW-10, pplayer2.y-10, 4, 20); //user paddle
 	GrFillPoly(pong_wid, pong_gc, 9, breakfast); //Ball
 
 	ptmp1.y=pplayer1.y;
@@ -362,8 +362,8 @@ void draw_pong() {
 
 static void pong_do_draw() {
 	pz_draw_header("Pong");
-	pplayer2.y=54;
-	pplayer1.y=54;
+	pplayer2.y=(SCRH/2);
+	pplayer1.y=(SCRH/2);
 	comppoint=0;
 	userpoint=0;
 	gameover=0;
@@ -382,17 +382,17 @@ static void pong_do_draw() {
 
 int sane() {
 	char setting[] = "easy";
-	double xl=0,xu=160,yl=5,yu=98,d=10,vmax=500;
+	double xl=0,xu=SCRW,yl=5,yu=(SCRH-10),d=10,vmax=500;
 	float timestep=.3;
-	static double xp1=12, xp2=147;
+	double xp1=12, xp2=(SCRW-13);
 	static int turn=0;
 	vplayer1.x=0;
 	vplayer2.x=0;
 	// vplayer1.y=cpp1;
 	// vplayer2.y=cpp2;
 	if(roundover==2) {  // initialize ball's velocity
-		pball.x=80;
-		pball.y=54;
+		pball.x=(SCRW/2);
+		pball.y=(SCRH/2);
 		if(turn==1)
 			vball.x=-6;
 		else
@@ -427,7 +427,7 @@ int sane() {
 		}
 
 		//player AI(not really, just follows the ball)
-		if(pball.x < 80 && vball.x < 0) {
+		if(pball.x < (SCRW/2) && vball.x < 0) {
 			if(pball.y > pplayer1.y) {
 				if((pball.y-pplayer1.y) < 6)
 					pplayer1.y++;
@@ -442,13 +442,13 @@ int sane() {
 			}
 		}
 		else {
-			if (pplayer1.y < 54) {
-				if((54-pplayer1.y) < 3)
+			if (pplayer1.y < (SCRH/2)) {
+				if(((SCRH/2)-pplayer1.y) < 3)
 					pplayer1.y++;
 				else
 					pplayer1.y+=3;
 			}
-			else if(pplayer1.y > 54)
+			else if(pplayer1.y > (SCRH/2))
 				pplayer1.y-=3;
 		}
 
@@ -517,12 +517,12 @@ static int pong_do_keystroke(GR_EVENT * event) {
 	}
 	if(pplayer2.y<10)
 		pplayer2.y=10;
-	else if(pplayer2.y>88)
-		pplayer2.y=88;
+	else if(pplayer2.y>(SCRH-20))
+		pplayer2.y=(SCRH-20);
 	if(pplayer1.y<10)
 		pplayer1.y=10;
-	else if(pplayer1.y>88)
-		pplayer1.y=88;
+	else if(pplayer1.y>(SCRH-20))
+		pplayer1.y=(SCRH-20);
 	if(!gameover)
 		draw_pong();
 	return ret;

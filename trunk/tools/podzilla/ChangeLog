@@ -1,3 +1,9 @@
+Alastair S - Tue Feb 08 2005
+	MAX_MENU_ITEMS is now a variable
+	menu, Pong, Nimesweeper, and browser are now relative to screen size
+	can now unflag mines in Nimesweeper
+	battery image is now relative to the right side of the screen
+
 Bernard Leach - Friday Feb 04 2005
 	added support for remote in mp3 & wav playback
 

@@ -52,6 +52,8 @@ char *browser_selected_filename = NULL;
 int browser_top = 0;
 Directory browser_entries[MAX_ENTRIES];
 
+int items_offset = 0;
+
 extern void new_textview_window(char * filename);
 extern int is_image_type(char *extension);
 #ifdef __linux__
@@ -146,7 +148,7 @@ static void browser_draw_browser()
 	height += 2;
 
 	y = 5;
-	for (i = begin; i < begin + 6 && i < browser_nbEntries; i++) {
+	for (i = begin; i < begin + 5+items_offset && i < browser_nbEntries; i++) {
 		if (i == browser_currentSelection) {
 			GrSetGCForeground(browser_gc, BLACK);
 			GrFillRect(browser_wid, browser_gc, 0, y + 2,
@@ -284,7 +286,7 @@ static int browser_do_keystroke(GR_EVENT * event)
 		if (browser_currentSelection < browser_nbEntries - 1) {
 			browser_currentSelection++;
 
-			if (browser_top >= 5) {
+			if (browser_top >= 4+items_offset) {
 				browser_currentBase++;
 			} else
 				browser_top++;
@@ -322,6 +324,10 @@ void new_browser_window(char *initial_path)
 	}
 
 	GrGetScreenInfo(&screen_info);
+
+	if (screen_info.cols != 138) { /* not mini */
+		items_offset = 1;
+	}
 
 	browser_gc = GrNewGC();
 	GrSetGCUseBackground(browser_gc, GR_FALSE);

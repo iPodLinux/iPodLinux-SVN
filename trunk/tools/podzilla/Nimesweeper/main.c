@@ -25,6 +25,12 @@
 #include "../pz.h"
 #endif
 
+int ylen = 4;
+int xlen = 4;
+int xoff = 20;
+int yoff = 20;
+int nummines = 1;
+
 #ifdef USE_NCURSES
 int main(int argc, char **argv)
 {
@@ -219,11 +225,11 @@ static void draw_current_pos(int moved)
 	GrSetGCMode(mines_gc, GR_MODE_SET);
 #else
 	GrSetGCForeground(mines_gc, BLACK);
-	GrRect(mines_wid, mines_gc, (Game.x*12)+3, (Game.y*12)+7, 11, 11);
+	GrRect(mines_wid, mines_gc, (Game.x*SQSIZE)+xoff+1, (Game.y*SQSIZE)+yoff+1, SQSIZE-1, SQSIZE-1);
 
 	if (moved) {
 		GrSetGCForeground(mines_gc, WHITE);
-		GrRect(mines_wid, mines_gc, (lastx*12)+3, (lasty*12)+7, 11, 11);
+		GrRect(mines_wid, mines_gc, (lastx*SQSIZE)+xoff+1, (lasty*SQSIZE)+yoff+1, SQSIZE-1, SQSIZE-1);
 
 		lastx = Game.x;
 		lasty = Game.y;
@@ -235,21 +241,24 @@ static void draw_current_pos(int moved)
 static void mines_do_draw()
 {
 	int i,a,b;
-
-	pz_draw_header("Flags left: 12");
+	char buf[18];
+	
+	snprintf(buf, 18, "Flags left: %d", nummines);
+	
+	pz_draw_header(buf);
 
 	GrSetGCForeground(mines_gc, BLACK);
-	for (i = 6; i <= 126; i += 12) {
-		GrLine(mines_wid, mines_gc, 2, i, 158, i);
+	for (i = yoff; i <= yoff+(SQSIZE*ylen); i += SQSIZE) {
+		GrLine(mines_wid, mines_gc, xoff, i, (xlen*SQSIZE)+xoff, i);
 	}
 
-	for (i = 2; i <= 170; i += 12) {
-		GrLine(mines_wid, mines_gc, i, 6, i, 102);
+	for (i = xoff; i <= xoff+(SQSIZE*xlen); i += SQSIZE) {
+		GrLine(mines_wid, mines_gc, i, yoff, i, (ylen*SQSIZE)+yoff);
 	}
 
-	for (i = 0; i < 104;i++){
-		a=i * 12 + 2 - 156*(int)(i/13);
-		b=6+12*(int)(i/13);
+	for (i = 0; i < ylen*xlen;i++){
+		a=i * SQSIZE + xoff - (xlen*SQSIZE)*(int)(i/xlen);
+		b=yoff+SQSIZE*(int)(i/xlen);
 
 		GrFillRect(mines_wid, mines_gc, a+4,b+4, 5, 5);
 	}
@@ -317,6 +326,21 @@ static int mines_do_keystroke(GR_EVENT * event)
 void new_mines_window()
 {
 	FILE *File;
+    GrGetScreenInfo(&screen_info);
+
+    if (screen_info.cols == 138) { /* mini */
+    	ylen = 7;
+		xlen = 11;
+		xoff = 2;
+		yoff = 2;
+		nummines = 10;
+	} else {
+		ylen = 8;
+		xlen = 13;
+		xoff = 2;
+		yoff = 6;
+		nummines = 12;
+	}
 
 	/* check highscore file exists, if not create it*/
 	if ((File = fopen(HIGHSCORES,"r")) == NULL) {
@@ -333,7 +357,6 @@ void new_mines_window()
 	GrSetGCUseBackground(mines_gc, GR_FALSE);
 	GrSetGCMode(mines_gc, GR_MODE_SET);
 
-	GrGetScreenInfo(&screen_info);
 	mines_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), mines_do_draw, mines_do_keystroke);
 
 	GrSelectEvents(mines_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_KEY_DOWN);

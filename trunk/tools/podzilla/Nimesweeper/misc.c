@@ -216,7 +216,7 @@ void CreateScoresFile(void)
 
 		for(i=0;i<ENTRIES;i++)
 		{
-			HighPtr->Time = 9999;
+			HighPtr->Time = 999;
 			HighPtr->Name[0] = 'A';
 			HighPtr->Name[1] = 'A';
 			HighPtr->Name[2] = 'A';

@@ -17,7 +17,8 @@
     You should have received a copy of the GNU General Public License
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
-
+#ifndef __MINE_H__
+#define __MINE_H__
 #include <ctype.h>
 #ifdef USE_NCURSES
 #include <ncurses.h>
@@ -73,13 +74,20 @@
 #define KEY__HELP	('H')  /* To Show on Screen Help */
 #define KEY__QUIT	('Q')  /* To Quit */
 
+#define SQSIZE 12
+int ylen;
+int xlen;
+int xoff;
+int yoff;
+int nummines;
+
 /* Screen Coordinates relative to the grid coordinates */
 #ifdef USE_NCURSES
 #define X x*2+1
 #define Y y+1
 #else
-#define X x*12+5-156*(int)(x/13)
-#define Y 17+12*y
+#define X x*SQSIZE+(xoff+3)-(ylen*xlen)*(int)(x/xlen)
+#define Y (yoff+11)+SQSIZE*y
 #endif
 
 /* Structure for storing dynamic game data */
@@ -183,3 +191,6 @@ void CreateScoresFile(void);
 
 /* For... cheaters :) */
 /* #define CHEATERS_R_US */
+
+#endif
+

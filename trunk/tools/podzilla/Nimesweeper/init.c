@@ -86,9 +86,9 @@ void Init_GameStats(GameStats *Game)
 			exit(3);
 	}
 #else
-	Game->Height = 8;
-	Game->Width  = 13;
-	Game->MinesSet = 12;
+	Game->Height = ylen;
+	Game->Width  = xlen;
+	Game->MinesSet = nummines;
 	Game->x = Game->Width/2;
 	Game->y = Game->Height/2;
 #endif
