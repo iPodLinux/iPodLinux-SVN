@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, Bernard Leach (leachbj@bouncycastle.org)
+ * Copyright (c) 2003,2004 Bernard Leach (leachbj@bouncycastle.org)
  */
 
 #ifndef __ASM_ARCH_IDE_H
@@ -64,6 +64,8 @@ static IDE_INLINE void ide_init_hwif_ports(
 	}
 }
 
+extern void ipod_ide_set_tune(struct hwif_s *hwif);
+
 /*
  * This registers the standard ports for this architecture with the IDE
  * driver.
@@ -81,6 +83,7 @@ static IDE_INLINE void ide_init_default_hwifs(void)
 	outl(0x80002150, 0xc0003004);
 
 	for (index = 0; index < MAX_HWIFS; index++) {
+		struct hwif_s *hwif;
 
 		base = ide_default_io_base(index);
 		if (!base) continue;
@@ -88,17 +91,11 @@ static IDE_INLINE void ide_init_default_hwifs(void)
 		memset(&hw, 0, sizeof(hw));
 		ide_init_hwif_ports(&hw, base, IDE_PRIMARY_CONTROL, NULL);
 		hw.irq = ide_default_irq(base);
-		ide_register_hw(&hw, NULL);
+		ide_register_hw(&hw, &hwif);
+
+		ipod_ide_set_tune(hwif);
 	}
 }
-
-#define ide_request_irq(irq,hand,flg,dev,id)	request_irq((irq),(hand),(flg),(dev),(id))
-#define ide_free_irq(irq,dev_id)		free_irq((irq), (dev_id))
-#define ide_check_region(from,extent)		check_region((from), (extent))
-#define ide_request_region(from,extent,name)	request_region((from), (extent), (name))
-#define ide_release_region(from,extent)		release_region((from), (extent))
-
-#define ide_ack_intr(hwif)              (1)
 
 #endif
 
