@@ -543,6 +543,10 @@ static void DrawScene()
 		WriteText(font, 95, 350, "Level");  /*  Show current LEVEL */
 		WriteText(font, 95, 375, chLevel);
 #else
+		GrSetGCForeground(tetris_gc, WHITE);
+		GrFillRect(tetris_wid, tetris_gc, 1, 20, 45, 15);
+		GrFillRect(tetris_wid, tetris_gc, 1, 45, 45, 15);
+		GrFillRect(tetris_wid, tetris_gc, 1, 72, 45, 15);
 		GrSetGCForeground(tetris_gc, BLACK);
 		GrText(tetris_wid, tetris_gc, 1, 20, "Score",  -1, GR_TFASCII);
 		GrText(tetris_wid, tetris_gc, 1, 32, chScore, -1, GR_TFASCII);
