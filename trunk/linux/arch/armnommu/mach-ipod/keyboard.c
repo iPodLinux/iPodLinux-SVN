@@ -13,6 +13,7 @@
 #include <linux/kbd_ll.h>
 #include <linux/mm.h>
 #include <linux/kbd_kern.h>
+#include <linux/delay.h>
 #include <asm/io.h>
 #include <asm/arch/irqs.h>
 #include <asm/keyboard.h>
@@ -55,6 +56,13 @@ static void keyboard_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	static int prev_scroll = -1;
 	unsigned char source, state;
 
+#ifdef IPOD_3G
+	static int was_hold = 0;
+	/* we need some delay for g3, cause hold generates several interrupts,
+	 * some of them delayed
+	 */
+	udelay(200);
+#endif
 	/* get source of interupts */
 	source = inb(0xcf000040);
 	if ( source == 0 ) {
@@ -63,7 +71,14 @@ static void keyboard_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 
 	/* get current keypad status */
 	state = inb(0xcf000030);
-	outb(~state, 0xcf000060);
+
+#ifdef IPOD_3G
+	if (was_hold && source == 0x40 && state == 0xbf ) {
+		outb(~state, 0xcf000060);
+		goto done;
+	}
+	was_hold = 0;
+#endif
 
 #ifdef CONFIG_VT
 	kbd_pt_regs = regs;
@@ -77,12 +92,6 @@ static void keyboard_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 			/* CTRL-S up */
 			handle_scancode(S_SC, 0);
 			handle_scancode(LEFT_CTRL_SC, 0);
-
-#ifdef IPOD_3G
-			/* hold switch on 3g causes all outputs to go low */
-			/* we shouldn't interpret these as key presses */
-			goto done;
-#endif
 		}
 		else {
 			/* CTRL-Q down */
@@ -92,8 +101,19 @@ static void keyboard_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 			/* CTRL-Q up */
 			handle_scancode(Q_SC, 0);
 			handle_scancode(LEFT_CTRL_SC, 0);
+#ifdef IPOD_3G
+			was_hold = 1;
+#endif
 		}
+#ifdef IPOD_3G
+		/* hold switch on 3g causes all outputs to go low */
+		/* we shouldn't interpret these as key presses */
+		outb(~state, 0xcf000060);
+		goto done;
+#endif
 	}
+
+	outb(~state, 0xcf000060);
 
 	if ( source & 0x1 ) {
 		if ( state & 0x1 ) {
