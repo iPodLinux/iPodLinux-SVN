@@ -56,7 +56,7 @@ void menu_draw(menu_st *menulist);
 void menu_select_item(menu_st *menulist, int sel);
 
 /* selection changer, for the lazy */
-void menu_shift_selected(menu_st *menulist, int num);
+int menu_shift_selected(menu_st *menulist, int num);
 
 void menu_draw_timer(menu_st *menulist);
 

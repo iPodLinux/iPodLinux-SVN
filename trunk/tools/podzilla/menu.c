@@ -191,14 +191,16 @@ static int menu_do_keystroke(GR_EVENT * event)
 			ret |= KEY_CLICK;
 			break;
 		case 'l':
-			menu_shift_selected(menuz, -1);
-			menu_draw(menuz);
-			ret |= KEY_CLICK;
+			if (menu_shift_selected(menuz, -1)) {
+				menu_draw(menuz);
+				ret |= KEY_CLICK;
+			}
 			break;
 		case 'r':
-			menu_shift_selected(menuz, 1);
-			menu_draw(menuz);
-			ret |= KEY_CLICK;
+			if (menu_shift_selected(menuz, 1)) {
+				menu_draw(menuz);
+				ret |= KEY_CLICK;
+			}
 			break;
 		case 'm':
 			if(menuz->parent != NULL) {

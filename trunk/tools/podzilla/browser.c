@@ -413,15 +413,17 @@ static int browser_do_keystroke(GR_EVENT * event)
 			break;
 
 		case 'r':
-			menu_shift_selected(browser_menu, 1);
-			menu_draw(browser_menu);
-			ret |= KEY_CLICK;
+			if (menu_shift_selected(browser_menu, 1)) {
+				menu_draw(browser_menu);
+				ret |= KEY_CLICK;
+			}
 			break;
 
 		case 'l':
-			menu_shift_selected(browser_menu, -1);
-			menu_draw(browser_menu);
-			ret |= KEY_CLICK;
+			if (menu_shift_selected(browser_menu, -1)) {
+				menu_draw(browser_menu);
+				ret |= KEY_CLICK;
+			}
 			break;
 		default:
 			ret |= KEY_UNUSED;
