@@ -98,6 +98,12 @@ static struct menu_item settings_menu[] = {
 	{0, 0, 0}
 };
 
+static struct menu_item reboot_menu[] = {
+	{"Cancel", SUB_MENU_PREV, 0},
+	{"Absolutely", ACTION_MENU, reboot_ipod},
+	{0, 0, 0}
+};
+
 static struct menu_item main_menu[] = {
 	{"Playlists", SUB_MENU_HEADER, 0},
 	{"Browse", SUB_MENU_HEADER, browse_menu},
@@ -105,7 +111,7 @@ static struct menu_item main_menu[] = {
 	{"Settings", SUB_MENU_HEADER, settings_menu},
 	{"File Browser", ACTION_MENU, new_browser_window},
         {"Quit Podzilla", ACTION_MENU, quit_podzilla},
-        {"Reboot iPod", ACTION_MENU, reboot_ipod},
+        {"Reboot iPod", SUB_MENU_HEADER, reboot_menu},
 	{0, 0, 0}
 };
 
