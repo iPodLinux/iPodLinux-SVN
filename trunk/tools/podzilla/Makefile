@@ -59,6 +59,7 @@ OBJS=\
 	itunesmenu.o \
 	tictactoe.o \
 	calc.o \
+	poddraw.o \
 	Steroids/asteroid.o \
 	Steroids/main.o \
 	Steroids/object.o \
