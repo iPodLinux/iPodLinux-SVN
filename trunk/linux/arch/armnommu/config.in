@@ -741,8 +741,9 @@ if [ "$CONFIG_EXPERIMENTAL" = "y" ]; then
 	  8192KB	CONFIG_UNCACHED_8192" 1024KB
        fi
      fi
+   else
+     bool 'Allow allocating large blocks (> 1MB) of memory' CONFIG_NO_MMU_LARGE_ALLOCS
    fi
-   dep_bool '  Allow allocating large blocks (> 1MB) of memory' CONFIG_NO_MMU_LARGE_ALLOCS $CONFIG_CONTIGUOUS_PAGE_ALLOC
 fi
 
 endmenu
