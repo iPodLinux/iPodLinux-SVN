@@ -1,0 +1,559 @@
+<!--#include file="include/iplHeader.html"-->
+
+<h1>Linux iPod Installation Guide</h1>
+
+<h2>Introduction</h2>
+
+<p>The Linux on iPod project offers a development platform for building applications that run on the iPod hardware.  Currently we have also developed a basic application that mimics some of the functionality of the existing Apple firmware, over time we hope to add to this application to provide similar functionality to that as the Apple firmware as well as innovations not available with the standard software.
+
+<p>Installation of Linux on your iPod is a non-destructive process and will leave all your existing configuration and music on your iPod.  The included bootloader will also allow you to choose either the Apple or the Linux software to start at reset.
+
+<p>This document describes how to install Linux on your iPod using a Unix-like system (for example Linux or Mac OSX).  The process is based on the <a href="http://sourceforge.net/project/showfiles.php?group_id=73079&package_id=73283&release_id=228424">2.4.24-ipod0</a> release of the Linux kernel and the <a href="http://sourceforge.net/project/showfiles.php?group_id=73079&package_id=73279&release_id=228438">040403</a> release of the root filesystem.
+
+<p>Any feedback on this documentation is greatly appreciated.
+
+
+<h2>Overview</h2>
+
+<p>This document covers the following sections.
+
+<ul>
+	<li><a href="#Firewire">Firewire/Connection Setup</a>
+	<li><a href="#Linux">Linux Installation</a>
+	<ol>
+		<li>Locating your iPod
+		<li>Backup
+		<li>Partitioning
+		<li>Kernel Installation
+		<li>Userland installation
+		<li>Finishing up
+		<li>Upgrading
+		<li>Uninstalling iPod Linux
+	</ol>
+	<li><a href="#OSX">Mac OSX Installation</a>
+	<ol>
+		<li>Backup
+		<li>Kernel Installation
+                <li>Userland installation
+                <li>Finishing up
+                <li>Upgrading
+                <li>Uninstalling iPod Linux
+	</ol>
+	<li><a href="#Windows">Windows Installation</a>
+</ul>
+
+<a name="Firewire"><h2>Firewire/Connection Setup</h2></a>
+
+<p>In order to install Linux on your iPod you firstly need to have your system configured for your iPod.  If you are using Mac OSX then there is probably nothing further to do, however if you are using Linux (especially if this the first time!) you need to ensure that you have either Firewire or USB correctly configured for your iPod.
+
+<p>To configure Firewire or USB for your system please consult the documentation provided with your operating system.
+
+<p>Once the operating system is configured you need to determine how your operating system identifies your iPod.
+
+<p>To do this you should plug in your iPod to your PC and ensure that it switches to Disk-Mode.  Normally it should do so automatically when the appropriate connection is established by your operating system, however, you can enter forced disk mode by resetting your iPod (hold down menu and play/pause for 3 seconds) and then when the Apple icon appears hold down fast-forward and rewind.
+
+<p>Once in disk mode you should see the message "Do not disconnect." on your iPod.  You should then check your operating system configuration to see how your iPod is configured.
+
+<p>To continue with the installation please go to the operating system specific section of the manual.
+
+
+<a name="Linux"><h2>Linux Installation</h2></a>
+
+<p>This section of the guide details how to install Linux on your iPod using a Linux based PC.  It assumes that you are using a Windows formatted iPod (e.g. FAT32) - if your iPod is HFS+ formatted it is generally easier to reformat as FAT32.
+
+
+<p>Note, with Linux it is necessary to have root permissions to install Linux on your iPod.
+
+<h3>Locating your iPod</h3>
+
+<p>Under Linux you should check the file "/proc/scsi/scsi" for an entry where the Vendor is "Apple" and the model is "iPod".  For example:
+
+<blockquote>
+<code>
+# <b>cat /proc/scsi/scsi</b><br>
+Attached devices:<br>
+Host: scsi0 Channel: 00 Id: 00 Lun: 00<br>
+  Vendor: Apple    Model: iPod             Rev: 1.50<br>
+  Type:   Direct-Access                    ANSI SCSI revision: 02<br>
+</code>
+</blockquote>
+
+<p>The <code>scsi0</code> portion indicates the iPod is the first SCSI device and so will be visible as <code>/dev/sda</code>, if on your system you see <code>scsi1</code> then your iPod would be using device <code>/dev/sdb</code>.  The following example commands will use <code>sda</code> as the device for the iPod, please replace this with the correct device for you configuration.
+
+
+<h3>Backup</h3>
+
+<p>Since we will update the partition information and replace the hard-drive firmware image we will firstly make a backup of this data.  The first backup file is simply a copy of the MBR (master boot record) which contains the partition table for the disk.  The second backup file is a complete backup of the operating system partition on the iPod and includes the Apple iPod operating system (this file is 40MB and can be compressed once the installation process is complete).
+
+<blockquote>
+<code>
+# <b>dd if=/dev/sda of=ipod_boot_sector_backup count=1</b><br>
+# <b>dd if=/dev/sda1 of=ipod_os_partition_backup</b><br>
+</code>
+</blockquote>
+
+<p>Should you need to restore these backups for any reason simply use the following commands.
+
+<blockquote>
+<code>
+# <b>dd if=ipod_boot_sector_backup of=/dev/sda</b><br>
+# <b>dd if=ipod_os_partition_backup of=/dev/sda1</b></br>
+</code>
+</blockquote>
+
+<p>Note, if you want to upgrade the Apple firmware then you should firstly restore the iPod operating system backup.
+
+<p>It is also possible to completely restore your iPod to its factory state by using the restore program from Apple.  This will restore the original operating system and standard partitioning to your iPod.  Unfortunately this will mean any settings or music will have to be copied back to your iPod.
+
+
+<h3>Partitioning</h3>
+
+<p>Now that the backups are done we will add a new partition to the iPod to hold the root file system for Linux.  This is required on Win-iPods as Linux cannot use a FAT partition for its root file system.
+
+<p>The following commands describe a session with fdisk that deletes the existing firmware partition and then creates a new, smaller, partition to hold the firmware.  The additional space is then used to create a new partition which we then format for use with Linux.
+
+<p>Note, the output displayed below is correct for a 20GB iPod, some output will be different for different sized iPods however the values entered by the user remain the same.
+
+<ol>
+<li>Start fdisk.
+<blockquote>
+<code>
+# <b>fdisk /dev/sda</b><br>
+The number of cylinders for this disk is set to 2431.<br>
+There is nothing wrong with that, but this is larger than 1024,<br>
+and could in certain setups cause problems with:<br>
+1) software that runs at boot time (e.g., old versions of LILO)<br>
+2) booting and partitioning software from other OSs<br>
+   (e.g., DOS FDISK, OS/2 FDISK)<br>
+<br>
+Command (m for help):
+</code>
+</blockquote>
+
+<li>Delete the firmware partition.
+<blockquote>
+<code>
+Command (m for help): <b>d</b><br>
+Partition number (1-4): <b>1</b>
+</code>
+</blockquote>
+
+<li>Create a new primary partition with a length of 1 cylinder.
+<blockquote>
+<code>
+Command (m for help): <b>n</b><br>
+Command action<br>
+   e   extended<br>
+   p   primary partition (1-4)<br>
+<b>p</b><br>
+Partition number (1-4): <b>1</b><br>
+First cylinder (1-2431, default 1): <b>1</b><br>
+Last cylinder or +size or +sizeM or +sizeK (1-5, default 5): <b>1</b>
+</code>
+</blockquote>
+
+<li>Activate the first partition.
+<blockquote>
+<code>
+Command (m for help): <b>a</b><br>
+Partition number (1-4): <b>1</b>
+</code>
+</blockquote>
+
+<li>Set partition type to 'Empty'.
+<blockquote>
+<code>
+Command (m for help): <b>t</b><br>
+Partition number (1-4): <b>1</b><br>
+Hex code (type L to list codes): <b>0</b>
+</code>
+</blockquote>
+
+<li>Create the 3rd primary partition from 2nd to 5th Cylinder.
+<blockquote>
+<code>
+Command (m for help): <b>n</b><br>
+Command action<br>
+   e   extended<br>
+   p   primary partition (1-4)<br>
+<b>p</b><br>
+Partition number (1-4): <b>3</b><br>
+First cylinder (1-2431, default 1): <b>2</b><br>
+Last cylinder or +size or +sizeM or +sizeK (1-5, default 5): <b>5</b>
+</code>
+</blockquote>
+
+<li>Review the changes.  Note, this is for a 20GB version, the sda2 partition size will vary.
+<blockquote>
+<code>
+Command (m for help): <b>p</b><br>
+<pre>
+Disk /dev/sda: 20.0 GB, 20000268288 bytes
+255 heads, 63 sectors/track, 2431 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+
+   Device Boot    Start       End    Blocks   Id  System
+/dev/sda1   *         1         1      8001    0  Empty
+/dev/sda2   *         6      2431  19486845    b  Win95 FAT32
+/dev/sda3             2         5     32130   83  Linux
+
+Partition table entries are not in disk order
+</pre>
+</code>
+</blockquote>
+ 
+<li>If everything looks OK, write out the partition table.
+<blockquote>
+<code>
+Command (m for help): <b>w</b>
+</code>
+</blockquote>
+
+<li>fdisk will now exit and we can create the new filesystem.
+<blockquote>
+<code>
+# <b>mke2fs -j /dev/sda3</b>
+</code>
+</blockquote>
+
+<li>Set the maximal mount count to never.
+<blockquote>
+<code>
+# <b>tune2fs -c 0 /dev/sda3</b><br>
+tune2fs 1.34 (25-Jul-2003)<br>
+Setting maximal mount count to -1
+</code>
+</blockquote>
+</ol>
+
+
+<a name="KernelInstallLinux"><h3>Kernel Installation</h3></a>
+
+<p>To install the kernel you need the <a href="http://sourceforge.net/project/showfiles.php?group_id=73079&package_id=101451&release_id=226112">iPod Boot Loader</a>, a version of the <a href="http://sourceforge.net/project/showfiles.php?group_id=73079&package_id=73283&release_id=228424">iPod Linux Kernel</a> and the iPod operating system backup created earlier in the backup process.
+
+<p>Firstly extract the ipodloader and iPod Linux kernel archives into a working directory and check for any last minute release notes.  In the examples below the <code>make_fw</code> tool and <code>loader.bin</code> file are from the ipodloader distribution and the iPod Linux kernel version is <code>uclinux-2.4.24-ipod0.bin</code>.
+
+<ol>
+<li>Extract the Apple OS from the backup image.
+<blockquote>
+<code>
+# <b>make_fw -o apple_os.bin -e 0 ipod_os_partition_backup</b>
+</code>
+</blockquote>
+                                                                                
+<li>Create a new image including the Linux and the Apple OS.
+<blockquote>
+<code>
+# <b>make_fw -o my_sw.bin -l uclinux-2.4.24-ipod0.bin -i apple_os.bin loader.bin</b>
+</code>
+</blockquote>
+                                                                                
+<li>Copy the new image (which is about 4-5 MB in size) back to your iPod.
+<blockquote>
+<code>
+# <b>dd if=my_sw.bin of=/dev/sda1</b>
+</code>
+</blockquote>
+
+<li>Copy the kernel modules onto the iPod (note the directory /mnt/ipod must exist and should not be in use).  The <code>lib</code> directory below refers to the directory from the kernel release and contains the modules directory.
+<blockquote>
+<code>
+# <b>mount -t ext2 /dev/sda3 /mnt/tmp</b><br>
+# <b>cp -r lib /mnt/tmp</b>
+# <b>umount /mnt/tmp</b>
+</code>
+</blockquote>
+</ol>
+
+
+<a name="UserlandInstallLinux"><h3>Userland Installation</h3></a>
+
+<p>The <a href="http://sourceforge.net/project/showfiles.php?group_id=73079&package_id=73279&release_id=228438">iPod Linux Userland</a> contains the operating system tools and libraries (including the podzilla and mp3 applications).  This archive should be installed on the root partition of your iPod as created during the partition step above.
+
+<ol>
+<li>Mount your iPod root partition.
+<blockquote>
+<code>
+# <b>mount -t ext2 /dev/sda3 /mnt/tmp</b><br>
+</code>
+</blockquote>
+
+<li>Extract the root filesystem.
+<blockquote>
+<code>
+# <b>cd /mnt/tmp</b><br>
+# <b>tar zxf /tmp/uclinux-2.4.24-ipod0.tar.gz</b><br>
+</code>
+</blockquote>
+
+<li>Unmount your iPod root partition.
+<blockquote>
+<code>
+# <b>umount /mnt/tmp</b><br>
+</code>
+</blockquote>
+</ol>
+
+
+<h3>Finishing up</h3>
+
+<p>The current release contains a number of usability bugs that can be resolved by executing the following commands.
+
+<ol>
+<li>Mount your iPod root partition.
+<blockquote>
+<code>
+# <b>mount -t ext2 /dev/sda3 /mnt/tmp</b><br>
+</code>
+</blockquote>
+
+<li>Fixes for <code>/etc/rc</code>.  Replace <code>/mnt/tmp/etc/rc</code> with the following:
+<blockquote>
+<code>
+hostname ipod<br>
+mount -t proc proc /proc<br>
+ln -s /dev/pty/m0 /dev/ptyp0<br>
+ln -s /dev/pty/m1 /dev/ptyp1<br>
+ln -s /dev/ide/host0/bus0/target0/lun0/disc /dev/hda<br>
+ln -s /dev/ide/host0/bus0/target0/lun0/part2 /dev/hda2<br>
+ln -s /dev/ide/host0/bus0/target0/lun0/part3 /dev/hda3<br>
+ln -s /dev/tts/1 /dev/ttyS1<br>
+mknod /dev/ttyp0 c 3 0<br>
+mknod /dev/ttyp1 c 3 0<br>
+modprobe tsb43aa82<br>
+modprobe eth1394<br>
+ifconfig eth0 192.168.222.2 mtu 170<br>
+mount -t vfat -o ro /dev/hda2 /mnt<br>
+mount -o remount,rw /<br>
+hdparm -S 3 /dev/hda
+</code>
+</blockquote>
+
+<li>Fixes for <code>/etc/inittab</code>.  Replace <code>/mnt/tmp/etc/inittab</code> with the following:
+<blockquote>
+<code>
+inet:unknown:/bin/inetd<br>
+pz:unknown:/bin/podzilla
+</code>
+</blockquote>
+
+<li>Unmount your iPod root partition.
+<blockquote>
+<code>
+# <b>umount /mnt/tmp</b><br>
+</code>
+</blockquote>
+
+<li>Eject your iPod.  The following command will unload the firewire driver for your iPod.  Once unloaded your iPod will either reboot automatically or display the "OK to disconnect." message.
+<blockquote>
+<code>
+# <b>modprobe -r sbp2</b><br>
+</code>
+</blockquote>
+
+<li>Reboot your iPod.  If the iPod did not automatically reboot hold down the menu and the play/pause buttons for 3 seconds to reboot it.
+</ol>
+
+<p>Using the configuration above on reboot your iPod will automatically start Linux.  You should see the Tux logo and then the normal Linux boot console messages will scroll by.  Once the operating system is booted the Podzilla application will start.  This work-in-progress interface mimics the Apple interface.
+
+<p>When you are finished with Linux you can reboot the iPod by holding down the menu and play/pause buttons for 3 seconds.  When the Apple logo appears hold down the rewind button to start the Apple firmware.
+                                                                                
+
+<h3>Upgrading</h3>
+
+<p>To upgrade to a new version of the kernel simply repeat the process in the <a href="#KernelInstallLinux">Kernel Installation</a> section.
+
+<p>To upgrade to a new version of the user tools simply repeat the process in the <a href="#UserlandInstallLinux">Userland Installation</a> section.
+
+<p>To install a new version of podzilla simply copy the new podzilla binary to your iPod:
+
+<blockquote>
+<code>
+# <b>mount -t ext2 /dev/sda3 /mnt/tmp</b><br>
+# <b>cp podzilla /mnt/tmp/sbin</b></br>
+# <b>umount /mnt/tmp</b><br>
+</code>
+</blockquote>
+
+
+<h3>Uninstalling iPod Linux</h3>
+
+<p>To completely remove Linux from your iPod you should restore the original firmware partition and MBR from your backup files.
+
+<blockquote>
+<code>
+# <b>dd if=ipod_boot_sector_backup of=/dev/sda</b><br>
+# <b>dd if=ipod_os_partition_backup of=/dev/sda1</b></br>
+</code>
+</blockquote>
+
+
+<a name="OSX"><h2>Mac OSX Installation</h2></a>
+
+<p>This section of the guide details how to install Linux on your iPod using a Mac OSX based PC.  To use this portion of the guide your iPod must be formatted with the HFS+ filesystem (this is the default for Mac-iPods).
+
+<h3>Locating your iPod</h3>
+
+<p>With OSX your iPod should be automatically mounted when you plug it into your Mac.  To determine the device name:
+
+<p>Start the Terminal application, and run the mount command.
+<blockquote>
+<code>
+# <b>mount</b><br>
+/dev/disk1s3 on /Volumes/iPod (nodev, nosuid, mounted by leachbj)
+</code>
+</blockquote>
+
+<p>The <code>/dev/disk1s3</code> portion indicates the iPod is the first SCSI device and so will be visible as <code>/dev/disk1</code>, if on your system you see <code>/dev/disk2s3</code> then your iPod would be using device <code>/dev/disk2</code>. In the above example the volume is mounted as <code>/Volumes/iPod</code>.  The <code>iPod</code> portion will be the name of your iPod.
+
+<p>The following example commands will use <code>disk1</code> as the device for the iPod and <code>/Volumes/iPod</code> for the mount point, please replace these with the corrects values for you configuration.
+
+
+<h3>Backup</h3>
+
+<p>The backup file is a complete backup of the operating system partition on the iPod and includes the Apple iPod operating system (this file is 40MB and can be compressed once the installation process is complete).
+
+<blockquote>
+<code>
+# <b>dd if=/dev/disk1s2 of=ipod_os_partition_backup</b><br>
+</code>
+</blockquote>
+
+<p>Should you need to restore the backup for any reason simply use the following commands.
+
+<blockquote>
+<code>
+# <b>dd if=ipod_os_partition_backup of=/dev/disk1s2</b></br>
+</code>
+</blockquote>
+
+<p>Note, if you want to upgrade the Apple firmware then you should firstly restore the iPod operating system backup.
+
+<p>It is also possible to completely restore your iPod to its factory state by using the restore program from Apple.  This will restore the original operating system to your iPod.  Unfortunately this will mean any settings or music will have to be copied back to your iPod.
+
+<a name="KernelInstallOSX"><h3>Kernel Installation</h3></a>
+
+<p>To install the kernel you need the <a href="http://sourceforge.net/project/showfiles.php?group_id=73079&package_id=101451&release_id=226112">iPod Boot Loader</a>, a version of the <a href="http://sourceforge.net/project/showfiles.php?group_id=73079&package_id=73283&release_id=228424">iPod Linux Kernel</a> and the iPod operating system backup created earlier in the backup process.
+
+<p>Firstly extract the ipodloader and iPod Linux kernel archives into a working directory and check for any last minute release notes.  In the examples below the <code>make_fw</code> tool and <code>loader.bin</code> file are from the ipodloader distribution and the iPod Linux kernel version is <code>uclinux-2.4.24-ipod0.bin</code>.
+
+<ol>
+<li>Extract the Apple OS from the backup image.
+<blockquote>
+<code>
+# <b>make_fw -o apple_os.bin -e 0 ipod_os_partition_backup</b>
+</code>
+</blockquote>
+                                                                                
+<li>Create a new image including the Linux and the Apple OS.
+<blockquote>
+<code>
+# <b>make_fw -o my_sw.bin -l uclinux-2.4.24-ipod0.bin -i apple_os.bin loader.bin</b>
+</code>
+</blockquote>
+                                                                                
+<li>Copy the new image (which is about 4-5 MB in size) back to your iPod.
+<blockquote>
+<code>
+# <b>dd if=my_sw.bin of=/dev/disk1s2</b>
+</code>
+</blockquote>
+
+<li>Copy the kernel modules onto the iPod.  The <code>lib</code> directory below refers to the directory from the kernel release and contains the modules directory.
+<blockquote>
+<code>
+# <b>cp -r lib /Volumes/iPod</b>
+</code>
+</blockquote>
+</ol>
+
+
+<a name="UserlandInstallOSX"><h3>Userland Installation</h3></a>
+
+<p>The <a href="http://sourceforge.net/project/showfiles.php?group_id=73079&package_id=73279&release_id=228438">iPod Linux Userland</a> contains the operating system tools and libraries (including the podzilla and mp3 applications).  This archive should be installed on the root partition of your iPod as created during the partition step above.
+
+<p>Extract the root filesystem onto the iPod.
+<blockquote>
+<code>
+# <b>cd /Volumes/iPod</b><br>
+# <b>tar zxf /tmp/uclinux-2.4.24-ipod0.tar.gz</b><br>
+</code>
+</blockquote>
+
+
+
+<h3>Finishing up</h3>
+
+<p>The current release contains a number of usability bugs that can be resolved by executing the following commands.
+
+<ol>
+<li>Fixes for <code>/etc/rc</code>.  Replace <code>/Volumes/iPod/etc/rc</code> with the following:
+<blockquote>
+<code>
+hostname ipod<br>
+mount -t proc proc /proc<br>
+ln -s /dev/pty/m0 /dev/ptyp0<br>
+ln -s /dev/pty/m1 /dev/ptyp1<br>
+ln -s /dev/ide/host0/bus0/target0/lun0/disc /dev/hda<br>
+ln -s /dev/ide/host0/bus0/target0/lun0/part3 /dev/hda3<br>
+ln -s /dev/tts/1 /dev/ttyS1<br>
+mknod /dev/ttyp0 c 3 0<br>
+mknod /dev/ttyp1 c 3 0<br>
+modprobe tsb43aa82<br>
+modprobe eth1394<br>
+ifconfig eth0 192.168.222.2 mtu 170<br>
+mount -o remount,rw /<br>
+hdparm -S 3 /dev/hda
+</code>
+</blockquote>
+
+<li>Fixes for <code>/etc/inittab</code>.  Replace <code>/Volumes/iPod/etc/inittab</code> with the following:
+<blockquote>
+<code>
+inet:unknown:/bin/inetd<br>
+pz:unknown:/bin/podzilla
+</code>
+</blockquote>
+
+<li>Eject your iPod.  Drag your iPod disk icon to the trashcan to unmount and disconnect the iPod. Once unloaded your iPod will either reboot automatically or display the "OK to disconnect." message.
+
+<li>Reboot your iPod.  If the iPod did not automatically reboot hold down the menu and the play/pause buttons for 3 seconds to reboot it.
+</ol>
+
+<p>Using the configuration above on reboot your iPod will automatically start Linux.  You should see the Tux logo and then the normal Linux boot console messages will scroll by.  Once the operating system is booted the Podzilla application will start.  This work-in-progress interface mimics the Apple interface.
+
+<p>When you are finished with Linux you can reboot the iPod by holding down the menu and play/pause buttons for 3 seconds.  When the Apple logo appears hold down the rewind button to start the Apple firmware.
+                                                                                
+
+<h3>Upgrading</h3>
+
+<p>To upgrade to a new version of the kernel simply repeat the process in the <a href="#KernelInstallOSX">Kernel Installation</a> section.
+
+<p>To upgrade to a new version of the user tools simply repeat the process in the <a href="#UserlandInstallOSX">Userland Installation</a> section.
+
+<p>To install a new version of podzilla simply copy the new podzilla binary to your iPod:
+
+<blockquote>
+<code>
+# <b>cp podzilla /Volumes/iPod/sbin</b></br>
+</code>
+</blockquote>
+
+
+<h3>Uninstalling iPod Linux</h3>
+
+<p>To completely remove Linux from your iPod you should restore the original firmware partition from your backup.
+
+<blockquote>
+<code>
+# <b>dd if=ipod_os_partition_backup of=/dev/disk1s2</b></br>
+</code>
+</blockquote>
+
+
+<a name="Windows"><h2>Windows Installation</h2></a>
+
+<p>For installation using a Windows PC please see the <a href="http://sourceforge.net/projects/ipodlinuxinst">ipodlinuxinst</a> project.
+
+
+<!--#include file="include/iplFooter.html"-->
