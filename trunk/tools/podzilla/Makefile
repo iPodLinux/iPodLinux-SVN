@@ -60,6 +60,7 @@ OBJS=\
 	tictactoe.o \
 	calc.o \
 	poddraw.o \
+	playlist.o \
 	Steroids/asteroid.o \
 	Steroids/main.o \
 	Steroids/object.o \

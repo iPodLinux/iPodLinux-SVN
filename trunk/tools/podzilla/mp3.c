@@ -51,18 +51,31 @@ static GR_GC_ID mp3_gc;
 static GR_SCREEN_INFO screen_info;
 static long remaining_time;
 static long total_time;
+static long next_song_time;
 static char current_album[128];
 static char current_artist[128];
 static char current_title[128];
+static char current_pos[20];
+static char next_song[128];
+static int next_song_queued;
 static int dsp_fd, mixer_fd;
 static int dsp_vol;
 static int decoding_finished;
+static int window_open = 0;	/* is the mp3 window open? */
 static int mp3_pause;
 static int rect_x1;
 static int rect_x2;
 static int rect_y1;
 static int rect_y2;
 static int rect_wait;
+
+/*variables from playlist.c*/
+extern int playlistpos;
+extern int playlistlength;
+extern void play_prev_track();
+extern void play_next_track();
+
+static void start_mp3_playback(char *filename);
 
 int is_mp3_type(char *extension)
 {
@@ -123,10 +136,10 @@ static void mp3_do_draw(GR_EVENT * event)
 	GrFillRect(mp3_wid, mp3_gc, 0, 0, screen_info.cols, screen_info.rows);
 	GrSetGCForeground(mp3_gc, BLACK);
 
-	GrText(mp3_wid, mp3_gc, 8, 20, current_album, -1, GR_TFASCII);
-	GrText(mp3_wid, mp3_gc, 8, 34, current_artist, -1, GR_TFASCII);
-	GrText(mp3_wid, mp3_gc, 8, 48, current_title, -1, GR_TFASCII);
-
+	GrText(mp3_wid, mp3_gc, 8, 20, current_pos, -1, GR_TFASCII);
+	GrText(mp3_wid, mp3_gc, 8, 34, current_title, -1, GR_TFASCII);
+	GrText(mp3_wid, mp3_gc, 8, 48, current_artist, -1, GR_TFASCII);
+	GrText(mp3_wid, mp3_gc, 8, 62, current_album, -1, GR_TFASCII);
 	rect_x1 = 8;
 	rect_x2 = screen_info.cols - 8;
 	rect_y1 =  screen_info.rows - (HEADER_TOPLINE + 1) - 18;
@@ -153,6 +166,12 @@ static int mp3_do_keystroke(GR_EVENT * event)
 		break;
 	case 'm':
 		decoding_finished = 1;
+		break;
+	case 'f':
+		play_next_track();
+		break;
+	case 'w':
+		play_prev_track();
 		break;
 	case 'd':
 		mp3_pause = !mp3_pause;
@@ -328,14 +347,21 @@ static void decode_mp3()
 
 	InitMP3Decoder(&DecoderState, &bs);
 
+	mp3_pause = 0;
+	next_song_queued = 0;
 	decoding_finished = 0;
 	while (!decoding_finished) {
 		int refill = 0;
 
 		mp3_event_handler();
 
-		if (mp3_pause)
+		if (mp3_pause) {
 			continue;
+		}
+
+		if (next_song_queued) {
+			return;
+		}
 		
 		switch (DecodeMP3Frame(&bs, pcm, &DecoderState)) {
 		case MP3_FRAME_COMPLETE:
@@ -365,7 +391,11 @@ static void decode_mp3()
 		}
 	}
 
-	pz_close_window(mp3_wid);
+	/* did song finished by itself or was Menu pressed? */
+	if (FillMP3BitStream(&bs) == 0)
+	{
+		play_next_track();
+	}
 }
 #endif
 
@@ -385,46 +415,52 @@ static void start_mp3_playback(char *filename)
 		ioctl(mixer_fd, SOUND_MIXER_READ_PCM, &dsp_vol);
 	}
 
-	pz_draw_header("Buffering...");
-	file = fopen(filename, "r");
-	if (file == 0) {
-		pz_close_window(mp3_wid);
-		close(mixer_fd);
-		close(dsp_fd);
+	do {
+		pz_draw_header("Buffering...");
+		total_time = remaining_time = next_song_time;
+		mp3_do_draw(0);
 
-		new_message_window("Cannot open mp3");
-		return;
-	}
+		file = fopen(filename, "r");
+		if (file == 0) {
+			pz_close_window(mp3_wid);
+			close(mixer_fd);
+			close(dsp_fd);
 
-	fseek(file, 0, SEEK_END);
-	audiobuf_len = ftell(file);
-	audiobufpos = 0;
-	audiobuf = malloc(audiobuf_len);
-	if (audiobuf == 0) {
-		pz_close_window(mp3_wid);
-		close(mixer_fd);
-		close(dsp_fd);
+			new_message_window("Cannot open mp3");
+			return;
+		}
+
+		fseek(file, 0, SEEK_END);
+		audiobuf_len = ftell(file);
+		audiobufpos = 0;
+		audiobuf = malloc(audiobuf_len);
+		if (audiobuf == 0) {
+			pz_close_window(mp3_wid);
+			close(mixer_fd);
+			close(dsp_fd);
+			fclose(file);
+
+			new_message_window("malloc failed");
+			return;
+		}
+
+		fseek(file, 0, SEEK_SET);
+		fread(audiobuf, audiobuf_len, 1, file);
 		fclose(file);
 
-		new_message_window("malloc failed");
-		return;
+		pz_draw_header("MP3 Playback");
+
+		decode_mp3();
+
+		free(audiobuf);
+
+		filename = next_song;
 	}
-
-	fseek(file, 0, SEEK_SET);
-	fread(audiobuf, audiobuf_len, 1, file);
-	fclose(file);
-
-	pz_draw_header("MP3 Playback");
-
-	decoding_finished = 0;
-	mp3_pause = 0;
-
-	decode_mp3();
-
-	free(audiobuf);
+	while (next_song_queued);
 
 	close(mixer_fd);
 	close(dsp_fd);
+	pz_close_window(mp3_wid);
 }
 
 void new_mp3_window(char *filename, char *album, char *artist, char *title, int len)
@@ -438,7 +474,19 @@ void new_mp3_window(char *filename, char *album, char *artist, char *title, int 
 	strncpy(current_title, title, sizeof(current_title)-1);
 	current_title[sizeof(current_title)-1] = 0;
 
-	total_time= remaining_time = len;
+	sprintf(current_pos, "Song %d of %d", playlistpos, playlistlength);
+
+	next_song_time = len;
+	
+	/* play another song when one isn't complete */
+	if (window_open)
+	{
+	    strcpy(next_song, filename);
+	    next_song_queued = 1;
+	    return;
+	}
+
+	window_open = 1;
 
 	mp3_gc = GrNewGC();
 	GrSetGCUseBackground(mp3_gc, GR_TRUE);
@@ -451,8 +499,11 @@ void new_mp3_window(char *filename, char *album, char *artist, char *title, int 
 	GrSelectEvents(mp3_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_KEY_DOWN|GR_EVENT_MASK_TIMER);
 
 	GrMapWindow(mp3_wid);
+	total_time = remaining_time = len;
 	mp3_do_draw(0);
 
 	start_mp3_playback(filename);
+	window_open = 0;
 }
+
 #endif

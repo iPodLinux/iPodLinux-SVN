@@ -100,6 +100,13 @@ static struct menu_item games_menu[] = {
 static char *sample_rate_options[] = {
 	"8 kHz","32 kHz","44.1 kHz","88.2 kHz","96 kHz"
 };
+static char *shuffle_options[] = {
+	"Off","Songs"
+};
+static char *repeat_options[] = {
+	"Off","One","All"
+};
+
 static struct menu_item recording_menu[] = {
 #ifdef __linux__	
 	{"Mic Record", ACTION_MENU, new_record_mic_window, NOSETTING, 0},
@@ -134,10 +141,10 @@ static struct menu_item reset_menu[] = {
 static struct menu_item settings_menu[] = {
 	{"About", ACTION_MENU, about_window, NOSETTING, 0},
 #if 0
-	{"Repeat", BOOLEAN_MENU, 0, REPEAT, 0},
 	{"EQ", BOOLEAN_MENU, 0, EQUILIZER, 0},
-	{"Shuffle", BOOLEAN_MENU, 0, SHUFFLE, 0},
 #endif
+	{"Repeat", OPTION_MENU, repeat_options, REPEAT, 3},
+	{"Shuffle", BOOLEAN_MENU, 0, SHUFFLE, 0},
 	{"Backlight", BOOLEAN_MENU, 0, BACKLIGHT, 0},
 #if 0
 	{"Backlight Timer", ACTION_MENU, set_backlight_timer, NOSETTING, 0},
