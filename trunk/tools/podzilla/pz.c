@@ -24,6 +24,10 @@
 #include "browser.h"
 #include "ipod.h"
 
+/* globals */
+GR_SCREEN_INFO screen_info;
+long hw_version;
+
 static GR_WINDOW_ID root_wid;
 static GR_GC_ID root_gc;
 
@@ -314,10 +318,12 @@ GR_WINDOW_ID pz_new_window(int x, int y, int w, int h, void(*do_draw), int(*do_k
 	return new_wid;
 }
 
+#include <assert.h>
+
 void
 pz_close_window(GR_WINDOW_ID wid)
 {
-	//assert(windows[n_opened-1].wid == wid);
+	assert(windows[n_opened-1].wid == wid);
 
 	GrUnmapWindow(wid);
 	GrDestroyWindow(wid);
