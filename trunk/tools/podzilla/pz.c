@@ -284,8 +284,9 @@ void pz_event_handler(GR_EVENT *event)
 
 void pz_draw_header(char *header)
 {
-	GR_SIZE width, height, base;
-
+	GR_SIZE width, height, base, elwidth;
+	int len;
+	
 	GrSetGCForeground(root_gc, BLACK);
 	GrSetGCBackground(root_gc, WHITE);
 	GrClearWindow(root_wid, 0);
@@ -293,20 +294,24 @@ void pz_draw_header(char *header)
 	GrGetGCTextSize(root_gc, header, -1, GR_TFASCII, &width, &height,
 			&base);
 	if (width > screen_info.cols - 46) {
-		snprintf(header, strlen(header) - 2, "%s", header);
-		snprintf(header, strlen(header) + 4, "%s...", header);
-		GrGetGCTextSize(root_gc, header, -1, GR_TFASCII, &width,
-				 &height, &base);
-		while (width > screen_info.cols - 46) {
-			snprintf(header, strlen(header) - 3, "%s", header);
-			snprintf(header, strlen(header) + 4, "%s...", header);
-			GrGetGCTextSize(root_gc, header, -1, GR_TFASCII,
-					 &width, &height, &base);
+		GrGetGCTextSize(root_gc, "...", -1, GR_TFASCII, &elwidth,
+				&height, &base);
+		len = strlen(header);
+		for (; elwidth + width > screen_info.cols - 46; len--) {
+			GrGetGCTextSize(root_gc, header, len, GR_TFASCII,
+					&width, &height, &base);
 		}
+		GrText(root_wid, root_gc, (screen_info.cols - (width + elwidth))
+				/ 2, HEADER_BASELINE, header, len, GR_TFASCII);
+		GrText(root_wid, root_gc, ((screen_info.cols -
+				(width + elwidth)) / 2) + width,
+				HEADER_BASELINE, "...", -1, GR_TFASCII);
+	}
+	else {
+		GrText(root_wid, root_gc, (screen_info.cols - width) / 2,
+			HEADER_BASELINE, header, -1, GR_TFASCII);
 	}
 
-	GrText(root_wid, root_gc, (screen_info.cols - width) / 2,
-			HEADER_BASELINE, header, -1, GR_TFASCII);
 	GrLine(root_wid, root_gc, 0, HEADER_TOPLINE, screen_info.cols,
 			HEADER_TOPLINE);
 
