@@ -1,0 +1,37 @@
+menu "iPod Options"
+	depends on ARCH_IPOD
+
+	config AUDIO_IPOD
+	tristate "iPod Audio"
+	help
+	  Audio driver for the iPod
+
+	config KB_IPOD
+	depends on INPUT && INPUT_KEYBOARD
+	tristate "iPod Button support"
+	help
+	  Driver for iPod buttons and scroll wheel.
+
+	config REMOTE_IPOD
+	depends on INPUT && INPUT_KEYBOARD
+	tristate "iPod Remote"
+	help
+	  Driver for the iPod remote.  Use the inputattach program to
+	  activate.
+
+	config SKIP_DUMP_CPU_INFO
+	bool
+	default y
+	help
+	  iPod(ARM7TDMI) core does not support cache size
+	  recognition instructions which uses MMU features.
+
+	config REMAP_VECTORS_TO_RAM
+	bool
+	default y
+	help
+	  iPod core does not support ROM and RAM remap
+	  function. we set the trap_init to be initialized
+	  at the begining of DRAM_BASE.
+endmenu
+
