@@ -1,7 +1,7 @@
 /*
  * keyboard.c - keyboard driver for iPod
  *
- * Copyright (c) 2003, Bernard Leach (leachbj@bouncycastle.org)
+ * Copyright (c) 2003,2004 Bernard Leach (leachbj@bouncycastle.org)
  */
 
 #include <linux/module.h>
@@ -17,9 +17,17 @@
 #include <asm/arch/irqs.h>
 #include <asm/keyboard.h>
 
+#undef IPOD_1G
+#define IPOD_2G
+#undef IPOD_3G
+
+/* undefine these to produce keycodes from left/right/up/down */
+#define DO_SCROLLBACK
+#define DO_CONTRAST
+
 /* we use the keycodes and translation is 1 to 1 */
-#define R_SC		0x13
-#define L_SC		0x26
+#define R_SC		19
+#define L_SC		38
 
 #define UP_SC		103
 #define LEFT_SC		105
@@ -35,6 +43,12 @@
 
 /* need to pass something becuase we use a shared irq */
 #define KEYBOARD_DEV_ID	0x4b455942
+
+#if defined(IPOD_1G) || defined(IPOD_2G)
+#define HOLD_SWITCH_IS_ON(c) ((c) & 0x20)
+#else
+#define HOLD_SWITCH_IS_ON(c) (((c) && 0x20) == 0)
+#endif
 
 static void keyboard_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
@@ -54,84 +68,8 @@ static void keyboard_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 #ifdef CONFIG_VT
 	kbd_pt_regs = regs;
 
-	if ( source & 0x1 ) {
-		if ( state & 0x1 ) {
-			//printk("ff up\n");
-#if 0
-			handle_scancode(RIGHT_SC, 0);
-#else
-			scrollfront(0);
-#endif
-		}
-		else {
-#if 0
-			//printk("ff down\n");
-			handle_scancode(RIGHT_SC, 1);
-#endif
-		}
-	}
-	if ( source & 0x2 ) {
-		if ( state & 0x2 ) {
-			//printk("action up\n");
-			handle_scancode(ACTION_SC, 0);
-		}
-		else {
-			//printk("action down\n");
-			handle_scancode(ACTION_SC, 1);
-		}
-	}
-
-	if ( source & 0x4 ) {
-		if ( state & 0x4 ) {
-			//printk("pause up\n");
-#if 0
-			handle_scancode(DOWN_SC, 0);
-#else
-			contrast_down();
-#endif
-		}
-		else {
-			//printk("pause down\n");
-#if 0
-			handle_scancode(DOWN_SC, 1);
-#endif
-		}
-	}
-	if ( source & 0x8 ) {
-		if ( state & 0x8 ) {
-			//printk("rr up\n");
-#if 0
-			handle_scancode(LEFT_SC, 0);
-#else
-			scrollback(0);
-#endif
-		}
-		else {
-			//printk("rr down\n");
-#if 0
-			handle_scancode(LEFT_SC, 1);
-#endif
-		}
-	}
-	if ( source & 0x10 ) {
-		if ( state & 0x10 ) {
-			//printk("menu up\n");
-#if 0
-			handle_scancode(LEFT_SC, 0);
-#else
-			contrast_up();
-#endif
-		}
-		else {
-			//printk("menu down\n");
-#if 0
-			handle_scancode(LEFT_SC, 1);
-#endif
-		}
-	}
 	if ( source & 0x20 ) {
-		if ( state & 0x20 ) {
-			//printk("hold on\n");
+		if ( HOLD_SWITCH_IS_ON(state) ) {
 			/* CTRL-S down */
 			handle_scancode(LEFT_CTRL_SC, 1);
 			handle_scancode(S_SC, 1);
@@ -139,9 +77,14 @@ static void keyboard_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 			/* CTRL-S up */
 			handle_scancode(S_SC, 0);
 			handle_scancode(LEFT_CTRL_SC, 0);
+
+#ifdef IPOD_3G
+			/* hold switch on 3g causes all outputs to go low */
+			/* we shouldn't interpret these as key presses */
+			goto done;
+#endif
 		}
 		else {
-			//printk("hold off\n");
 			/* CTRL-Q down */
 			handle_scancode(LEFT_CTRL_SC, 1);
 			handle_scancode(Q_SC, 1);
@@ -150,6 +93,72 @@ static void keyboard_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 			handle_scancode(Q_SC, 0);
 			handle_scancode(LEFT_CTRL_SC, 0);
 		}
+	}
+
+	if ( source & 0x1 ) {
+		if ( state & 0x1 ) {
+#if defined(DO_SCROLLBACK)
+			scrollfront(0);
+#else
+			handle_scancode(RIGHT_SC, 0);
+#endif
+		}
+#if !defined(DO_SCROLLBACK)
+		else {
+			handle_scancode(RIGHT_SC, 1);
+		}
+#endif
+	}
+	if ( source & 0x2 ) {
+		if ( state & 0x2 ) {
+			handle_scancode(ACTION_SC, 0);
+		}
+		else {
+			handle_scancode(ACTION_SC, 1);
+		}
+	}
+
+	if ( source & 0x4 ) {
+		if ( state & 0x4 ) {
+#if defined(DO_CONTRAST)
+			contrast_down();
+#else
+			handle_scancode(DOWN_SC, 0);
+#endif
+		}
+#if !defined(DO_CONTRAST)
+		else {
+			handle_scancode(DOWN_SC, 1);
+		}
+#endif
+	}
+	if ( source & 0x8 ) {
+		if ( state & 0x8 ) {
+#if defined(DO_SCROLLBACK)
+			scrollback(0);
+#else
+			handle_scancode(LEFT_SC, 0);
+#endif
+		}
+#if !defined(DO_SCROLLBACK)
+		else {
+			handle_scancode(LEFT_SC, 1);
+		}
+#endif
+	}
+	if ( source & 0x10 ) {
+		if ( state & 0x10 ) {
+#if defined(DO_CONTRAST)
+			contrast_up();
+#else
+			handle_scancode(LEFT_SC, 0);
+#endif
+		}
+#if !defined(DO_CONTRAST)
+		else {
+			handle_scancode(LEFT_SC, 1);
+		}
+#endif
 	}
 
 	if ( source & 0xc0 ) {
@@ -183,6 +192,7 @@ static void keyboard_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 
 		prev_scroll = now_scroll;
 	}
+done:
 
 	tasklet_schedule(&keyboard_tasklet);
 #endif /* CONFIG_VT */
