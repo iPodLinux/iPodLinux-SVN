@@ -114,7 +114,7 @@ int ipod_set_backlight(int backlight)
 
 int ipod_set_backlight_timer(int timer)
 {
-	int times[] = {0, 1, 2, 5, 10, 30, 60};
+	int times[] = {0, 1, 2, 5, 10, 30, 60, 0};
 	GrSetScreenSaverTimeout(times[timer]);
 	ipod_set_backlight(timer ? 1 : 0);
 	return 0;

@@ -86,7 +86,7 @@ static item_st stuff_menu[] = {
 };
 
 static char *backlight_options[] = {
-	"Off", "1 sec", "2 secs", "5 secs", "10 secs", "30 secs", "1 min"
+	"Off", "1 sec", "2 secs", "5 secs", "10 secs", "30 secs", "1 min", "On"
 };
 
 static char *sample_rates[] = {
@@ -130,7 +130,7 @@ static item_st settings_menu[] = {
 	{"About", about_window, ACTION_MENU},
 	{"Repeat", repeat_options, OPTION_MENU, REPEAT, 3},
 	{"Shuffle", shuffle_options, OPTION_MENU, SHUFFLE, 2},
-	{"Backlight Timer", backlight_options, OPTION_MENU, BACKLIGHT_TIMER, 7},
+	{"Backlight Timer", backlight_options, OPTION_MENU, BACKLIGHT_TIMER, 8},
 	{"Contrast", set_contrast, ACTION_MENU},
 	{"Wheel Sensitivity", set_wheeldebounce, ACTION_MENU},
 	{"Button Debounce", set_buttondebounce, ACTION_MENU},
