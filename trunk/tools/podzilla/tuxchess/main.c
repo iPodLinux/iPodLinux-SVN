@@ -1,6 +1,7 @@
 /*
  *	TuxChess - Copyright (c) 2002, Steven J. Merrifield
  *	Chess engine - Copyright 1997 Tom Kerrigan
+ *	Modified by djaconil for the iPod
  */
 
 #include <stdio.h>
@@ -8,18 +9,55 @@
 #include <string.h>
 #include <signal.h>
 #include <sys/timeb.h>
+#include <sys/time.h>
 #include "defs.h"
 #include "data.h"
 #include "protos.h"
+#include "../ipod.h"
+#include "../pz.h"
+
+#define LASTGAME ".tuxchess"
 
 #define MWINCLUDECOLORS
 #include "nano-X.h"
 #define TITLE 		"TuxChess"
 #define SCANCODES	64
-#define BM_WIDTH 	394
-#define BM_HEIGHT 	413
+#if 0
+#define BM_WIDTH	394
+#define BM_HEIGHT	413
+#else
+#define BM_WIDTH 	160
+#define BM_HEIGHT 	128
+#endif
 
+#define WHEEL_EVENT_MOD 3
 
+static GR_WINDOW_ID tuxchess_wid;
+static GR_WINDOW_ID historic_wid;
+static GR_WINDOW_ID end_wid;
+static GR_WINDOW_ID message_wid;
+//static GR_TIMER_ID  tuxchess_timer_id;
+
+char cpu_move[8];
+
+/* Horrible code */
+char historic_line1[10];
+char historic_line2[10];
+char historic_line3[10];
+char historic_line4[10];
+char historic_line5[10];
+char historic_line6[10];
+int move_nb;
+char key_pressed ='\0';
+
+static char xcoord='A', ycoord='1', oldx='A', oldy='1';
+static char oldx_curs='M', oldy_curs='9';
+int contr=110, right_hit=0, left_hit=0, click=1, end=0;
+int is_mini=0, readint = 0, writeint = 0;
+char end_type='w';
+void draw_cursor(char x, char y);
+void draw_end(char col);
+static int sel=0;
 struct keycolumn {
         short xoffset;
         short scancode;
@@ -61,110 +99,17 @@ static char *board_position[SCANCODES] = {
 	"A1","B1","C1","D1","E1","F1","G1","H1"};
 
 
-static GR_WINDOW_ID master;	/* id for whole window */             
-static GR_WINDOW_ID board;	/* id for board area */
-static GR_WINDOW_ID text;	/* id for text area */       
-
-static GR_GC_ID	gc;             /* board graphics context */
-static GR_GC_ID text_gc;	/* text area graphics context */
-
-GR_IMAGE_ID     board_image_id;         
-GR_IMAGE_INFO   board_info;         
-int board_w,board_h;
-
-GR_IMAGE_ID     w_p_image_id;	/* white pawn */
-GR_IMAGE_INFO   w_p_info;         
-int w_p_w,w_p_h;
-
-GR_IMAGE_ID     w_n_image_id;	/* white knight */
-GR_IMAGE_INFO   w_n_info;         
-int w_n_w,w_n_h;
-
-GR_IMAGE_ID	w_b_image_id;	/* white bishop */
-GR_IMAGE_INFO	w_b_info;
-int w_b_w,w_b_h;
-
-GR_IMAGE_ID	w_r_image_id;	/* white rook */
-GR_IMAGE_INFO	w_r_info;
-int w_r_w,w_r_h;
-
-GR_IMAGE_ID	w_q_image_id;	/* white queen */
-GR_IMAGE_INFO	w_q_info;
-int w_q_w,w_q_h;
-
-GR_IMAGE_ID	w_k_image_id;	/* white king */
-GR_IMAGE_INFO	w_k_info;
-int w_k_w,w_k_h;
-
-GR_IMAGE_ID     b_p_image_id;	/* black pawn */
-GR_IMAGE_INFO   b_p_info;         
-int b_p_w,b_p_h;
-
-GR_IMAGE_ID     b_n_image_id;	/* black knight */
-GR_IMAGE_INFO   b_n_info;         
-int b_n_w,b_n_h;
-
-GR_IMAGE_ID	b_b_image_id;	/* black bishop */
-GR_IMAGE_INFO	b_b_info;
-int b_b_w,b_b_h;
-
-GR_IMAGE_ID	b_r_image_id;	/* black rook */
-GR_IMAGE_INFO	b_r_info;
-int b_r_w,b_r_h;
-
-GR_IMAGE_ID	b_q_image_id;	/* black queen */
-GR_IMAGE_INFO	b_q_info;
-int b_q_w,b_q_h;
-
-GR_IMAGE_ID	b_k_image_id;	/* black king */
-GR_IMAGE_INFO	b_k_info;
-int b_k_w,b_k_h;
-
-
-extern int load_images(void);
 int start_square = 1;
 char st_sq[3];
 int from = 999;
 int to = 999;
 
-/* ***********************************************************/
-/* get_ms() returns the milliseconds elapsed since midnight,
-   January 1, 1970. */
-BOOL ftime_ok = FALSE;  /* does ftime return milliseconds? */
-int get_ms()
-{
-	struct timeb timebuffer;
-	ftime(&timebuffer);
-	if (timebuffer.millitm != 0)
-		ftime_ok = TRUE;
-	return (timebuffer.time * 1000) + timebuffer.millitm;
-}
-
- 
-/* ***********************************************************/
-static void gprintf(char s[])
-{
-	static char lasttext[128];
-
-        GrSetGCForeground(text_gc,BLACK);
-        GrFillRect(text, text_gc, 0, 0, 394,20);
-        GrSetGCForeground(text_gc,WHITE);
-        GrSetGCBackground(text_gc,BLACK);
-	if (!s)
-		s = lasttext;
-        GrText(text, text_gc, 5, 14, s, strlen(s),0);
-	if (s != lasttext)
-		strcpy(lasttext, s);
-}     
-
-
-/* ***********************************************************/
+/* Process scancode ?! */
 static void process_scancode(int scancode)
 {
 	char sq[3];
 	char fin_sq[3];
 	int i;
-	char temp[5];
 
 	strcpy(sq,"");
 	for (i=0;i<SCANCODES;i++)
@@ -179,7 +124,6 @@ static void process_scancode(int scancode)
 
 	if (start_square)
 	{
-		gprintf(sq);
 		strcpy(st_sq,sq);
 		start_square = 0;
 		from = scancode;
@@ -190,329 +134,1114 @@ static void process_scancode(int scancode)
 		strcpy(fin_sq,sq);
 		start_square = 1;
 		to = scancode;
-		sprintf(temp,"%s%s",st_sq,fin_sq);
-		gprintf(temp);
 	}
 }
 
-/* ***********************************************************/
-/* borrowed from nxkbd */
-static void mouse_hit(int x, int y) 
+/* Draw the message if it's a mini */ 
+void draw_message(char *msg1, char *msg2)
 {
-        int row, column;
+	int offset;
+	GR_GC_ID tuxchess_gc;
+	tuxchess_gc = GrNewGC();	/* Get the graphics context */
 
-        for (row = 0; row < 8; row++) {
-                if (y >= keyrows[row].yoffset &&
-		    y < keyrows[row].yoffset+keyrows[row].height) {
-                        for (column = 0; column < 8; column++) {
-                                if (keyrows[row].columns[column].xoffset == 999) {
-                                        fprintf(stderr, "off end of row\n");
-                                        return;
-                                }
-                                if (x < keyrows[row].columns[column + 1].xoffset) {
-                                        int scancode = keyrows[row].columns[column].scancode;
-                                        process_scancode(scancode);
-                                        return;
-                                }
-                        }
-                }
-        }
-        fprintf(stderr, "off bottom\n");
+	/* Clear the window */
+	GrClearWindow (message_wid, GR_FALSE);
+
+	/* Put the foreground and background in good shapes */
+	GrSetGCForeground(tuxchess_gc, BLACK);
+	GrSetGCBackground(tuxchess_gc, WHITE);
+
+	/* Draw the "window" */
+	GrLine(message_wid, tuxchess_gc, 1, 0, 34, 0);
+	GrLine(message_wid, tuxchess_gc, 1, 16, 34, 16);
+	GrLine(message_wid, tuxchess_gc, 1, 0, 1, 110);
+	GrLine(message_wid, tuxchess_gc, 34, 0, 34, 110);
+	GrLine(message_wid, tuxchess_gc, 1, 110, 34, 110);
+	GrText(message_wid, tuxchess_gc, 3,13, 
+		"Chess", -1, GR_TFASCII);  /* Title in the text box */
+
+	GrText(message_wid, tuxchess_gc, 3,73, msg1, -1, GR_TFASCII);
+
+	if ((strcmp(msg2, "Play") == 0) || (strcmp(msg2, "     ") == 0))
+	{
+		offset = 3;
+		msg2 = "Play";
+	}
+	else
+	{
+		offset = 0;
+	}
+
+	GrText(message_wid, tuxchess_gc, 4+offset,53, msg2, -1, GR_TFASCII);
+}
+
+/* ***********************************************************/
+void init_historic(void)
+{
+	strcpy(historic_line1,"         ");
+	strcpy(historic_line2,"         ");
+	strcpy(historic_line3,"         ");
+	strcpy(historic_line4,"         ");
+	strcpy(historic_line5,"         ");
+	strcpy(historic_line6,"         ");
+	move_nb = 0;
+}
+
+/* ***********************************************************/
+void draw_historic(void)
+{
+	GR_GC_ID tuxchess_gc;
+
+	tuxchess_gc = GrNewGC();	/* Get the graphics context */
+
+	/* Clear the window */
+	GrClearWindow (historic_wid, GR_FALSE);
+
+	/* Put the foreground and background in good shapes */
+	GrSetGCForeground(tuxchess_gc, BLACK);
+	GrSetGCBackground(tuxchess_gc, WHITE);
+
+	/* Draw the "window" */
+	GrLine(historic_wid, tuxchess_gc, 1, 1, 55, 1);
+	GrLine(historic_wid, tuxchess_gc, 1, 1, 1, 104);
+	GrLine(historic_wid, tuxchess_gc, 1, 105, 55, 105);
+	GrLine(historic_wid, tuxchess_gc, 55, 1, 55, 105);
+	GrText(historic_wid, tuxchess_gc, 14,14, 
+		"Moves", -1, GR_TFASCII);	/* Title in the text box */
+	GrLine(historic_wid, tuxchess_gc, 1, 17, 56, 17);
+
+	/* So ugly code since char* arrays seem to confuse my iPod - writes 6 lines */
+	GrText(historic_wid, tuxchess_gc, 6, 33, historic_line1, -1, GR_TFASCII);
+	GrText(historic_wid, tuxchess_gc, 6, 46, historic_line2, -1, GR_TFASCII);
+	GrText(historic_wid, tuxchess_gc, 6, 59, historic_line3, -1, GR_TFASCII);
+	GrText(historic_wid, tuxchess_gc, 6, 72, historic_line4, -1, GR_TFASCII);
+	GrText(historic_wid, tuxchess_gc, 6, 85, historic_line5, -1, GR_TFASCII);
+	GrText(historic_wid, tuxchess_gc, 6, 99, historic_line6, -1, GR_TFASCII);
 }
 
 
 /* ***********************************************************/
-int main(int argc, char* argv[])
+void reorg_historic(int player)
 {
-        GR_EVENT event;
-	GR_WM_PROPERTIES props;
+	char s[12];
 
-	int computer_side;
+	if (player == 1) {
+		sprintf(s, "j1: %c%c-%c%c",oldx,oldy,xcoord,ycoord);
+	}
+	else if (player == 2) {
+		sprintf(s, "j2: %s", cpu_move);
+	}
+	else {
+		strcpy(s, "         ");
+	}
+
+	move_nb++;
+
+	/* So ugly code since char* arrays seem
+	to confuse my iPod */
+	strcpy(historic_line6, historic_line5);
+	strcpy(historic_line5, historic_line4);
+	strcpy(historic_line4, historic_line3);
+	strcpy(historic_line3, historic_line2);
+	strcpy(historic_line2, historic_line1);
+	strcpy(historic_line1, s);
+
+	if (is_mini == 0) {
+		draw_historic();
+	}
+}
+		
+/* Set up a new game */
+void new_game()
+{
+	end = 0;
+	pz_close_window (end_wid);
+	init();
+	gen_moves();
+	max_time = 100000;//1 << 25;
+	max_depth = 1;
+
+	init_historic();
+	print_board();
+	if (is_mini == 0) {
+		draw_historic();
+	}
+	else {
+		draw_message("", "");
+	}
+}
+
+/* Check the validity of the move */
+BOOL check_validity(void)
+{
 	char s[256];
 	int i;
 	BOOL found;
-	char temp[50];	
 
-        if (GrOpen() < 0) {
-                fprintf(stderr, "tuxchess: cannot open graphics\n");
-                exit(1);
-        }
-
-	load_images();
-
-        master = GrNewWindow(GR_ROOT_WINDOW_ID, 0, 0, BM_WIDTH, BM_HEIGHT, 0, WHITE, WHITE);
-        board = GrNewWindow((GR_WINDOW_ID) master, 0, 0, 394, 394, 0, WHITE, WHITE);
-        text = GrNewWindow((GR_WINDOW_ID) master, 0, 393, 394, 20, 0, WHITE, BLACK); 
-
-        GrSelectEvents(master, GR_EVENT_MASK_CLOSE_REQ | GR_EVENT_MASK_EXPOSURE | GR_EVENT_MASK_BUTTON_DOWN);
-
-	props.flags = GR_WM_FLAGS_PROPS | GR_WM_FLAGS_TITLE;
-	props.props = GR_WM_PROPS_BORDER | GR_WM_PROPS_CAPTION | GR_WM_PROPS_CLOSEBOX;
-	props.title = TITLE;
-	GrSetWMProperties(master, &props);
-
-        GrMapWindow(master);
-        GrMapWindow(board);
-        GrMapWindow(text);
-                                   
-        gc = GrNewGC();
-        text_gc = GrNewGC();
-
-	init();
-	gen();
-	max_time = 1 << 25;
-	max_depth = 4;
-
-	if (argc > 1)
-		computer_side = side;	/* computer plays white */
-	else
+	if (to != 999)
 	{
-		computer_side = EMPTY;	/* human plays white */
-		gprintf("Make a move...");
+		/* loop through the moves to see if it's legal */
+		found = FALSE;
+		for (i = 0; i < first_move[1]; ++i) {
+			if (gen_dat[i].m.b.from == from && gen_dat[i].m.b.to == to) 
+			{
+				found = TRUE;
+
+				/* get the promotion piece right */
+				if (gen_dat[i].m.b.bits & 32) {
+					switch (s[4]) 
+					{
+					case 'N':
+						break;
+					case 'B':
+						i += 1;
+						break;
+					case 'R':
+						i += 2;
+						break;
+					default:
+						i += 3;
+						break;
+					}
+				}
+				break;
+			}
+		}
+
+		if (!found || !makemove(gen_dat[i].m.b)) {
+			printf("Illegal move.\n");
+			if (is_mini == 1) {
+				draw_message("     ","Nope");
+			}
+			else {
+				pz_draw_header("Illegal move !");
+			}
+			return FALSE;
+		}
+		else {
+			ply = 0;
+			gen_moves();
+			print_board();
+
+			print_result();
+			to = 999;
+			return TRUE;
+		}
+	} /* if to != 999 */
+	else {
+		return FALSE;
+	}
+}
+
+/* Let's make the iPod think about ;-) */
+void computer_play(void)
+{
+	if (is_mini == 0) {
+		pz_draw_header("computer play");
 	}
 
-        for (;;) 
+	/* think about the move and make it */
+	//sleep(1);
+	printf("think\n");
+	think(2);
+
+	//sleep(1);
+	if (!pv[0][0].u) {
+		printf("No legal moves\n");
+		if (is_mini == 0) {
+			pz_draw_header ("No legal moves");
+		}
+	}
+
+	sprintf(cpu_move,"%s", move_str(pv[0][0].b));
+
+	makemove(pv[0][0].b);
+	ply = 0;
+	gen_moves();
+	if (in_check(LIGHT)) {
+		if (is_mini == 1) {
+			draw_message("     ", "Check");
+		}
+		else {
+			pz_draw_header("Check");
+		}
+	}
+	else
 	{
+		if (is_mini == 1) {
+			draw_message("     ", "Play");
+		}
+		else {
+			pz_draw_header("Your Turn");
+		}
+	}
+}
 
-		if (side == computer_side) 
-		{
-			/* think about the move and make it */
-			think(0);
-			if (!pv[0][0].u) {
-				gprintf("No legal moves");
-				computer_side = EMPTY;
-				continue;
-			}
-			
-			sprintf(temp,"Computer's move: %s\n", move_str(pv[0][0].b));
-			gprintf(temp);
-			makemove(pv[0][0].b);
-			ply = 0;
-			gen();
+/* When pressing play - backlight on/off */
+void do_play(void)
+{
+	static int back = 1;
+
+	ipod_set_backlight(back);
+	back = !back;
+}
+
+/* When pressing menu - quits*/
+void do_menu(void)
+{
+	int i;
+	char historic_line[9];
+	FILE *writefile;
+
+	readint = 0;
+
+	/* Save last board */
+	printf("Save last board \n");
+	pz_draw_header("Saving board...");
+	if ((writefile = fopen(LASTGAME, "w"))) {
+		for (i = 0; i < 64; i++) {
+			writeint = piece[i];
+			fwrite(&writeint,sizeof(writeint),1,writefile);
+		}
+		for (i = 0; i < 64; i++) {
+			writeint = color[i];
+			fwrite(&writeint,sizeof(writeint),1,writefile);
+		}
+		historic_line[9] = historic_line1[9];
+		fwrite(&historic_line,sizeof(historic_line),1,writefile);
+		historic_line[9] = historic_line2[9];
+		fwrite(&historic_line,sizeof(historic_line),1,writefile);
+		historic_line[9] = historic_line3[9];
+		fwrite(&historic_line,sizeof(historic_line),1,writefile);
+		historic_line[9] = historic_line4[9];
+		fwrite(&historic_line,sizeof(historic_line),1,writefile);
+		historic_line[9] = historic_line5[9];
+		fwrite(&historic_line,sizeof(historic_line),1,writefile);
+		historic_line[9] = historic_line6[9];
+		fwrite(&historic_line,sizeof(historic_line),1,writefile);
+		fclose(writefile);
+	}
+	else {
+		printf("Cant write %s\n", LASTGAME);
+	}
+
+	ipod_set_setting(BACKLIGHT, ipod_get_backlight());
+
+	pz_close_window(tuxchess_wid);
+
+	if (end == 2) {
+		pz_close_window(end_wid);
+	}
+
+	if (is_mini == 1) {
+		pz_close_window(message_wid);
+	}
+	else {
+		pz_close_window(historic_wid);
+	}
+
+	//GrDestroyTimer (tuxchess_timer_id);
+}
+
+/* Common function for cursor positionning */
+void new_cursor_position(void)
+{
+	char temp1[5], temp2[12];
+
+	print_board();
+
+	if (in_check(LIGHT))
+	{
+		if (sel) {
+			sprintf(temp2, "Check! %c%c-%c%c",oldx,oldy,xcoord,ycoord);
+		}
+		else {
+			sprintf(temp2, "Check! %c%c-",xcoord,ycoord);
+		}
+		if (is_mini == 0) {
+			pz_draw_header(temp2);
+		}
+	}
+	else
+	{
+		if(sel) {
+			sprintf(temp1,"%c%c-%c%c",oldx,oldy,xcoord,ycoord);
+		}
+		else {
+			sprintf(temp1,"%c%c-",xcoord,ycoord);
+		}
+		if (is_mini == 1) {
+			draw_message(temp1,"     ");
+		}
+		else {
+			pz_draw_header(temp1);
+		}
+	}
+
+	print_result();
+	printf(temp1);
+	printf("\n");
+}
+
+/* Move the cursor to the left horizontally */
+void do_rev(void)
+{
+	oldx_curs = xcoord;
+	oldy_curs = ycoord;
+	if (xcoord>'A') {
+		xcoord--;
+	}
+	else {
+		if (ycoord!='1') {
+			ycoord--;
+			xcoord='H';
+		}
+	}
+
+	new_cursor_position();
+}
+
+/* Move the cursor to the right horizontally */
+void do_fwd(void)
+{
+	oldx_curs = xcoord;
+	oldy_curs = ycoord;
+	if (xcoord<'H') {
+		xcoord++;
+	}
+	else {
+		if (ycoord!='8') {
+			ycoord++;
+			xcoord='A';
+		}
+	}
+	new_cursor_position();
+}
+
+// Select the position of the cursor
+void do_action(void)
+{
+	process_scancode(keyrows[7-(ycoord-'1')].columns[xcoord-'A'].scancode);
+	sel=!sel;
+
+	if (sel==0) {
+		if (check_validity() == TRUE) {
+			reorg_historic(1);
 			print_board();
-			print_result();
-			continue;
+			computer_play();
+			reorg_historic(2);
+			//print_board();
+			new_cursor_position();
 		}
-		
-                GrGetNextEvent(&event);
-                switch(event.type) 
-		{
-			case GR_EVENT_TYPE_CLOSE_REQ:
-				GrClose();
-				exit(0);
-				/* no return*/
-			case GR_EVENT_TYPE_EXPOSURE:
-				print_board();
-				gprintf(NULL);
-				break;
-			case GR_EVENT_TYPE_BUTTON_DOWN:
-				mouse_hit(event.button.x, event.button.y);
-				break;
+	}
+	else {
+		oldx=xcoord;
+		oldy=ycoord;
+	}
+}
+
+/* Move the cursor down */
+void do_right(void)
+{
+	oldx_curs = xcoord;
+	oldy_curs = ycoord;
+	if (ycoord>'1') {
+		ycoord--;
+	}
+	else {
+		if (xcoord!='A') {
+			xcoord--;
+			ycoord='8';
 		}
+	}
 
-		if (to != 999)
-		{
+	new_cursor_position();
+}
 
-			/* loop through the moves to see if it's legal */
-			found = FALSE;
-			for (i = 0; i < first_move[1]; ++i)
-				if (gen_dat[i].m.b.from == from && gen_dat[i].m.b.to == to) 
-				{
-					found = TRUE;
+/* Move the cursor up */
+void do_left(void)
+{
+	oldx_curs = xcoord;
+	oldy_curs = ycoord;
+	if (ycoord<'8') {
+		ycoord++;
+	}
+	else {
+		if (xcoord!='H') {
+			xcoord++;
+			ycoord='1';
+		}
+	}
 
-					/* get the promotion piece right */
-					if (gen_dat[i].m.b.bits & 32)
-						switch (s[4]) 
-						{
-							case 'N':
-								break;
-							case 'B':
-								i += 1;
-								break;
-							case 'R':
-								i += 2;
-								break;
-							default:
-								i += 3;
-								break;
-						}
-					break;
-				} /* if */
+	new_cursor_position();
+}
 
-			if (!found || !makemove(gen_dat[i].m.b))
-				gprintf("Illegal move.\n");
-			else 
-			{
-				ply = 0;
-				gen();
-				print_board();
-				print_result();
-				computer_side = side;
-				to = 999;
-			}
-		} /* if to != 999 */
-	} /* for (;;) */
+/* Draw the cursor */
+void draw_cursor(char coord1, char coord2)
+{
+	int x,y;
+	GR_GC_ID tuxchess_gc;
 
-	return(0); /* never reached */
+	tuxchess_gc = GrNewGC();	/* Get the graphics context */
+	x = (coord1-65)*13;
+	y = 106-((coord2-48)*13);
+
+	GrSetGCForeground(tuxchess_gc,WHITE);
+	GrRect(tuxchess_wid,tuxchess_gc,x,y,13,13);
+	GrSetGCForeground(tuxchess_gc,BLACK);
+	GrRect(tuxchess_wid,tuxchess_gc,x+1,y+1,11,11);
+	GrSetGCForeground(tuxchess_gc,WHITE);
+	GrRect(tuxchess_wid,tuxchess_gc,x+2,y+2,9,9);
+}
+
+/* Draw the rook */
+void draw_rook(int coord_x, int coord_y, char color, GR_GC_ID tuxchess_gc)
+{
+	GR_POINT rook[] = {
+		{coord_x+1, coord_y+1}, {coord_x+3, coord_y+1},
+		{coord_x+3, coord_y+3}, {coord_x+5, coord_y+3},
+		{coord_x+5, coord_y+1}, {coord_x+7, coord_y+1},
+		{coord_x+7, coord_y+3}, {coord_x+9, coord_y+3},
+		{coord_x+9, coord_y+1}, {coord_x+11, coord_y+1}, 
+		{coord_x+11, coord_y+4}, {coord_x+9, coord_y+4},
+		{coord_x+9, coord_y+8}, {coord_x+11, coord_y+8},
+		{coord_x+11, coord_y+11}, {coord_x+1, coord_y+11}, 
+		{coord_x+1, coord_y+8}, {coord_x+3, coord_y+8}, 
+		{coord_x+3, coord_y+4}, {coord_x+1, coord_y+4},
+		{coord_x+1, coord_y+1}
+	};
+
+	if(color == 'w')
+	{
+		GrSetGCForeground(tuxchess_gc,WHITE);
+		GrFillPoly(tuxchess_wid,tuxchess_gc,21,rook);
+		GrSetGCForeground(tuxchess_gc,BLACK);
+		GrPoly(tuxchess_wid,tuxchess_gc,21,rook);
+	}
+	else
+	{
+		GrSetGCForeground(tuxchess_gc,BLACK);
+		GrFillPoly(tuxchess_wid,tuxchess_gc,21,rook);
+	}
+}
+
+/* Draw the queen */
+void draw_queen(int coord_x, int coord_y, char color, GR_GC_ID tuxchess_gc)
+{
+	GR_POINT queen[] = {
+		{coord_x+1, coord_y+1}, {coord_x+4, coord_y+4},
+		{coord_x+6, coord_y+1}, {coord_x+8, coord_y+4},
+		{coord_x+11, coord_y+1}, {coord_x+9, coord_y+10},
+		{coord_x+3, coord_y+10}, {coord_x+1, coord_y+1}
+	};
+
+	if (color == 'w')
+	{
+		GrSetGCForeground(tuxchess_gc,WHITE);
+		GrFillPoly(tuxchess_wid,tuxchess_gc,8,queen);
+		GrSetGCForeground(tuxchess_gc,BLACK);
+		GrPoly(tuxchess_wid,tuxchess_gc,8,queen);
+	}
+	else 
+	{
+		GrSetGCForeground(tuxchess_gc,BLACK);
+		GrFillPoly(tuxchess_wid,tuxchess_gc,8,queen);
+		GrPoly(tuxchess_wid,tuxchess_gc,8,queen);
+	}
+}
+
+/* Draw the knight */
+void draw_knight(int coord_x, int coord_y, char color, GR_GC_ID tuxchess_gc)
+{
+	GR_POINT knight[] = {
+		{coord_x+5, coord_y+1}, {coord_x+8, coord_y+3},
+		{coord_x+11, coord_y+11}, {coord_x+1, coord_y+11},
+		{coord_x+5, coord_y+9}, {coord_x+5, coord_y+4},
+		{coord_x+3, coord_y+6}, {coord_x+1, coord_y+6},
+		{coord_x+5, coord_y+1}
+	};
+
+	if(color == 'w')
+	{
+		GrSetGCForeground(tuxchess_gc,WHITE);
+		GrFillPoly(tuxchess_wid,tuxchess_gc,9,knight);
+		GrSetGCForeground(tuxchess_gc,BLACK);
+		GrPoly(tuxchess_wid,tuxchess_gc,9,knight);
+	}
+	else 
+	{
+		GrSetGCForeground(tuxchess_gc,BLACK);
+		GrFillPoly(tuxchess_wid,tuxchess_gc,9,knight);
+		GrPoly(tuxchess_wid,tuxchess_gc,9,knight);
+	}
+}
+
+/* Draw the king */
+void draw_king(int coord_x, int coord_y, char color, GR_GC_ID tuxchess_gc)
+{
+	GrSetGCForeground(tuxchess_gc,BLACK);
+	GrLine(tuxchess_wid,tuxchess_gc,coord_x+6,coord_y+1,coord_x+6,coord_y+4);
+	GrLine(tuxchess_wid,tuxchess_gc,coord_x+4,coord_y+2,coord_x+8,coord_y+2);
+	if(color == 'w')
+		GrSetGCForeground(tuxchess_gc,WHITE);
+
+	GrFillEllipse(tuxchess_wid,tuxchess_gc,coord_x+6,coord_y+8,4,4);
+	GrSetGCForeground(tuxchess_gc,BLACK);
+	GrEllipse(tuxchess_wid,tuxchess_gc,coord_x+6,coord_y+8,4,4);
+}
+
+/* Draw the bishop */
+void draw_bishop(int coord_x, int coord_y, char color, GR_GC_ID tuxchess_gc)
+{
+	GR_POINT bishop1[] = {
+		{coord_x+7, coord_y+1}, {coord_x+8, coord_y+4},
+		{coord_x+8, coord_y+7}, {coord_x+7, coord_y+10},
+		{coord_x+4, coord_y+10}, {coord_x+1, coord_y+7},
+		{coord_x+1, coord_y+5}, {coord_x+3, coord_y+3}, 
+		{coord_x+7, coord_y+1}
+	};
+
+	GR_POINT bishop2[] = {
+		{coord_x+10, coord_y+1}, {coord_x+11, coord_y+4},
+		{coord_x+11, coord_y+7}, {coord_x+10, coord_y+10},
+		{coord_x+7, coord_y+10}, {coord_x+4, coord_y+7},
+		{coord_x+4, coord_y+5}, {coord_x+6, coord_y+3}, 
+		{coord_x+10, coord_y+1}
+	};
+
+	GR_POINT bishop3[] = {
+		{coord_x+4, coord_y+10}, {coord_x+9, coord_y+10},
+		{coord_x+9, coord_y+12}, {coord_x+4, coord_y+12},
+		{coord_x+4, coord_y+10}
+	};
+
+	if(color == 'w')
+	{
+		GrSetGCForeground(tuxchess_gc,WHITE);
+		GrFillPoly(tuxchess_wid,tuxchess_gc,9,bishop2);
+		GrFillPoly(tuxchess_wid,tuxchess_gc,5,bishop3);
+		GrSetGCForeground(tuxchess_gc,BLACK);
+		GrPoly(tuxchess_wid,tuxchess_gc,9,bishop2);
+		GrPoly(tuxchess_wid,tuxchess_gc,5,bishop3);
+		GrSetGCForeground(tuxchess_gc,WHITE);
+		GrFillPoly(tuxchess_wid,tuxchess_gc,9,bishop1);
+		GrSetGCForeground(tuxchess_gc,BLACK);
+		GrPoly(tuxchess_wid,tuxchess_gc,9,bishop1);
+	}
+	else 
+	{
+		GrSetGCForeground(tuxchess_gc,BLACK);
+		GrFillPoly(tuxchess_wid,tuxchess_gc,9,bishop2);
+		GrFillPoly(tuxchess_wid,tuxchess_gc,5,bishop3);
+		GrSetGCForeground(tuxchess_gc,LTGRAY);
+		GrPoly(tuxchess_wid,tuxchess_gc,9,bishop2);
+		GrPoly(tuxchess_wid,tuxchess_gc,5,bishop3);
+		GrSetGCForeground(tuxchess_gc,BLACK);
+		GrFillPoly(tuxchess_wid,tuxchess_gc,9,bishop1);
+		GrSetGCForeground(tuxchess_gc,LTGRAY);
+		GrPoly(tuxchess_wid,tuxchess_gc,9,bishop1);
+	}
+}
+
+/* Draw the pawn */
+void draw_pawn(int coord_x, int coord_y, char color, GR_GC_ID tuxchess_gc)
+{
+	if(color == 'w')
+	{
+		GrSetGCForeground(tuxchess_gc,WHITE);
+		GrFillEllipse(tuxchess_wid,tuxchess_gc,coord_x+6,coord_y+6,2,4);
+		GrSetGCForeground(tuxchess_gc,BLACK);
+		GrEllipse(tuxchess_wid,tuxchess_gc,coord_x+6,coord_y+6,2,4);
+		GrSetGCForeground(tuxchess_gc,WHITE);
+		GrFillRect(tuxchess_wid,tuxchess_gc,coord_x+3,coord_y+9,7,3);
+		GrSetGCForeground(tuxchess_gc,BLACK);
+		GrRect(tuxchess_wid,tuxchess_gc,coord_x+3,coord_y+9,7,3);
+	}
+	else 
+	{
+		GrSetGCForeground(tuxchess_gc,BLACK);
+		GrFillEllipse(tuxchess_wid,tuxchess_gc,coord_x+6,coord_y+6,2,4);
+		GrSetGCForeground(tuxchess_gc,LTGRAY);
+		GrEllipse(tuxchess_wid,tuxchess_gc,coord_x+6,coord_y+6,2,4);
+		GrSetGCForeground(tuxchess_gc,BLACK);
+		GrFillRect(tuxchess_wid,tuxchess_gc,coord_x+3,coord_y+9,7,3);
+		GrSetGCForeground(tuxchess_gc,LTGRAY);
+		GrRect(tuxchess_wid,tuxchess_gc,coord_x+3,coord_y+9,7,3);
+	}
 }
 
 
+/* Banner drawing */
+static void tuxchess_do_draw()
+{
+	if (is_mini == 0)
+		pz_draw_header("Tuxchess");
+}
+
+
+/* Event handler in Podzilla compiling style */
+static int tuxchess_handle_event(GR_EVENT *event)
+{
+	switch (event->type)
+	{
+/*
+	case GR_EVENT_TYPE_TIMER:
+		tuxchess_Game_Loop();
+		break;
+*/
+
+	case GR_EVENT_TYPE_CLOSE_REQ:
+		GrClose();
+		exit(0);	/* no return*/
+
+	case GR_EVENT_TYPE_KEY_DOWN:
+		switch (event->keystroke.ch)
+		{
+		case'm':
+			do_menu();
+			break;
+
+		case'w':
+			if (end == 0)
+				do_rev();
+			break;
+
+		case'd':
+			if (end == 0)
+				do_play();
+			break;
+
+		case'f':
+			if (end == 0)
+				do_fwd();
+			break;
+
+		case'\r':
+			if (end == 0) {
+				do_action();
+			}
+			else if (end == 1) {
+				draw_end(end_type);
+			}
+			else {
+				new_game();
+			}
+			break;
+
+		case'l':
+			if (end == 0)
+			{
+				do_left();
+			}
+			break;
+
+		case'r':
+			if (end == 0)
+			{
+				do_right();
+			}
+			break;
+		}
+	}
+
+	return 1;
+}
+
+/* End of the game */
+void draw_end(char col)
+{
+	int offset, off_x, off_y;
+
+	if (end == 0) {
+		end = 1;
+		end_type = col;
+	}
+	else {
+		GR_GC_ID end_gc;
+		GR_SCREEN_INFO si;
+
+		GrGetScreenInfo(&si); /* Get screen info */
+		end = 2;
+		if (is_mini == 1) {
+			offset = 0;
+			off_x = 11;
+			off_y = 9;
+		}
+		else {
+			offset = HEADER_TOPLINE+1;
+			off_x = 0;
+			off_y = 0;
+		}
+
+		end_wid = pz_new_window (0,offset,si.cols,
+			si.rows - offset, /* Height of screen - HEADER_TOPLINE */
+			tuxchess_do_draw, tuxchess_handle_event);
+		end_gc = GrNewGC();	// Get the graphics context 
+
+		GrSelectEvents (end_wid, GR_EVENT_MASK_KEY_DOWN | GR_EVENT_MASK_TIMER);
+		GrMapWindow (end_wid);
+
+		/* Put the foreground and background in good shapes */
+		GrSetGCForeground(end_gc, BLACK);
+		GrSetGCBackground(end_gc, WHITE);
+
+		/* Clear the window */
+		GrClearWindow (end_wid, GR_FALSE);
+
+		if (col=='b') {
+			GrText(end_wid, end_gc, 57-off_x,40-off_y, "You Lost", -1, GR_TFASCII);
+		}
+		else if (col=='w') {
+			GrText(end_wid, end_gc, 54-off_x,40-off_y, "Well Done", -1, GR_TFASCII);
+		}
+		else if (col=='d') {
+			GrText(end_wid, end_gc, 67-off_x,40-off_y, "Draw", -1, GR_TFASCII);
+		}
+
+		GrText(end_wid, end_gc, 52-off_x,65-off_y, 
+			"Menu : Quit", -1, GR_TFASCII);
+		GrText(end_wid, end_gc, 33-off_x,80-off_y, 
+			"Action : New Game", -1, GR_TFASCII);
+	}
+}
+
+
+/* ***********************************************************/
+void open_tuxchess_window (void)
+{
+	GR_GC_ID tuxchess_gc;
+	GR_SCREEN_INFO si;
+
+	tuxchess_gc = GrNewGC();	/* Get the graphics context */
+	GrGetScreenInfo(&si); /* Get screen info */
+
+	is_mini = 0;
+	if (si.cols == 138) {
+		is_mini = 1;	// iPod Mini specific displays
+	}
+
+	//is_mini = 1;	//debug
+
+	if (is_mini == 1) {
+		/* Open the window for the board: */
+		tuxchess_wid = pz_new_window (0,2,104,
+			si.rows,
+			tuxchess_do_draw,
+			tuxchess_handle_event);
+
+		/* Open the window for the message on the left : */
+		message_wid = pz_new_window (104,0,si.cols,
+			si.rows,
+			tuxchess_do_draw,
+			tuxchess_handle_event); 
+	} 
+	else {
+		/* Open the window for the board: */
+		tuxchess_wid = pz_new_window (0,HEADER_TOPLINE+1,104,
+			si.rows - HEADER_TOPLINE-1, /* Height of screen - HEADER_TOPLINE */
+			tuxchess_do_draw,
+			tuxchess_handle_event);
+
+		/* Open the window for the historic : */
+		historic_wid = pz_new_window (104,HEADER_TOPLINE+1,si.cols,
+			si.rows - HEADER_TOPLINE-1, /* Height of screen - HEADER_TOPLINE */
+			tuxchess_do_draw,
+			tuxchess_handle_event); 
+	}
+
+	/* Select the types of events you need for your window: */
+	GrSelectEvents (tuxchess_wid, GR_EVENT_MASK_KEY_DOWN | GR_EVENT_MASK_TIMER);
+
+	/* Display the windows : */
+	GrMapWindow (tuxchess_wid);
+	if (is_mini == 1) {
+		GrMapWindow (message_wid);
+		draw_message("A1-","Play");
+	}
+	else {
+		GrMapWindow (historic_wid);
+	}
+
+	/* Create the timer used for animating your application: */
+/*
+	tuxchess_timer_id = GrCreateTimer (tuxchess_wid, 150);
+*/
+
+	tuxchess_do_draw();
+
+	/* Clear the window */
+	GrClearWindow (tuxchess_wid, GR_FALSE);
+
+	gen_moves();
+	max_time = 100000;//1 << 25;
+	max_depth = 1;
+	end = 0;
+
+	print_board();
+	if (is_mini == 0) {
+		draw_historic();
+	}
+}
+
+void new_tuxchess_window (void)
+{
+	init();
+	init_historic();
+	// open_tuxchess_window();
+	last_tuxchess_window();
+}
+
+/* ***********************************************************/
+/* Should load last game board */
+void last_tuxchess_window(void)
+{
+	int i;
+	char historic_line[9];
+	FILE *readfile;
+	readint=0;
+
+	// Load last board
+	printf("Load last board \n");
+	pz_draw_header("Saving board...");
+	if ((readfile = fopen(LASTGAME, "r"))) {
+		for(i = 0; i < 64; i++) {
+			fread(&readint,sizeof(readint),1,readfile);
+			piece[i] = readint;
+			piece_avt[i] = 9;
+		}
+
+		for(i = 0; i < 64; i++) {
+			fread(&readint,sizeof(readint),1,readfile);
+			color[i] = readint;
+			color_avt[i] = 9;
+		}
+
+		fread(&historic_line,sizeof(historic_line),1,readfile);
+		historic_line1[9] = historic_line[9];
+		fread(&historic_line,sizeof(historic_line),1,readfile);
+		historic_line2[9] = historic_line[9];
+		fread(&historic_line,sizeof(historic_line),1,readfile);
+		historic_line3[9] = historic_line[9];
+		fread(&historic_line,sizeof(historic_line),1,readfile);
+		historic_line4[9] = historic_line[9];
+		fread(&historic_line,sizeof(historic_line),1,readfile);
+		historic_line5[9] = historic_line[9];
+		fread(&historic_line,sizeof(historic_line),1,readfile);
+		historic_line6[9] = historic_line[9];
+
+		fclose(readfile);
+	}
+	else {
+		printf("Cant read %s\n", LASTGAME);
+		init();
+	}
+
+	open_tuxchess_window();
+}
 
 /* ***********************************************************/
 /* move_str returns a string with move m in coordinate notation */
 char *move_str(move_bytes m)
 {
-	static char str[6];
+	static char str[8];
 	char c;
 
 	if (m.bits & 32) {
 		switch (m.promote) {
-			case KNIGHT:
-				c = 'n';
-				break;
-			case BISHOP:
-				c = 'b';
-				break;
-			case ROOK:
-				c = 'r';
-				break;
-			default:
-				c = 'q';
-				break;
+		case KNIGHT:
+			c = 'n';
+			break;
+		case BISHOP:
+			c = 'b';
+			break;
+		case ROOK:
+			c = 'r';
+			break;
+		default:
+			c = 'q';
+			break;
 		}
-		sprintf(str, "%c%d%c%d%c",
-				COL(m.from) + 'A',
-				8 - ROW(m.from),
-				COL(m.to) + 'A',
-				8 - ROW(m.to),
-				c);
+		sprintf(str, "%c%d-%c%d%c",
+			COL(m.from) + 'A',
+			8 - ROW(m.from),
+			COL(m.to) + 'A',
+			8 - ROW(m.to),
+			c);
 	}
-	else
-		sprintf(str, "%c%d%c%d",
-				COL(m.from) + 'A',
-				8 - ROW(m.from),
-				COL(m.to) + 'A',
-				8 - ROW(m.to));
+	else {
+		sprintf(str, "%c%d-%c%d",
+			COL(m.from) + 'A',
+			8 - ROW(m.from),
+			COL(m.to) + 'A',
+			8 - ROW(m.to));
+	}
+
 	return str;
 }
 
-
-/* ***********************************************************/
-void print_board(void)
+/*************************************************************/
+void print_board()
 {
-	int row,column,i,x,y;
+	int row,column,i,x,y,x_curs,y_curs,x_curs_old,y_curs_old;
+	static int color_type=1; //gray color
 
-	GrDrawImageToFit(board, gc, 1, 0, board_w, board_h, board_image_id); 
+	GR_GC_ID tuxchess_gc;
 
-	for (row=0;row<8;row++)
-	{
-		for (column=0;column<8;column++)
-		{
+	tuxchess_gc = GrNewGC();	/* Get the graphics context */
+
+	if (end == 1) {
+		reorg_historic(3);
+		end = 0;
+	}
+
+	x_curs = xcoord-65;
+	y_curs = ycoord-49;
+	x_curs_old = oldx_curs-65;
+	y_curs_old = oldy_curs-49;
+
+	/* Draw the pieces */
+	for (row = 0; row < 8; row++) {
+		for (column = 0; column < 8; column++) {
 			i = keyrows[row].columns[column].scancode;
-			switch(color[i])
-			{
+			color_type=!color_type;
+			if (((piece_avt[i] != piece[i])
+				|| (color_avt[i] != color[i]))
+				|| (x_curs_old==column && y_curs_old==7-row)
+				|| (x_curs==column && y_curs==7-row)) {
+				if(color_type==1) {
+					GrSetGCForeground(tuxchess_gc,GRAY);
+				}
+				else {
+					GrSetGCForeground(tuxchess_gc,WHITE);
+				}
+
+				GrFillRect(tuxchess_wid,tuxchess_gc,0+column*13,2+row*13,13,13);
+				x = keyrows[row].columns[column].xoffset/3.75;
+				y = 2+keyrows[row].yoffset/3.75;
+				switch(color[i]) {
 				case LIGHT:
-					switch(piece_char[piece[i]])
-					{
-						case 'P': 
-							x = keyrows[row].columns[column].xoffset;
-							y = keyrows[row].yoffset;
-							GrDrawImageToFit(board, gc, x+10, y+13, w_p_w, w_p_h, w_p_image_id); 
-							break;
-       		                              	case 'N': 
-							x = keyrows[row].columns[column].xoffset;
-							y = keyrows[row].yoffset;
-							GrDrawImageToFit(board, gc, x+9, y+9, w_n_w, w_n_h, w_n_image_id); 
-							break;
-       		                              	case 'B': 
-							x = keyrows[row].columns[column].xoffset;
-							y = keyrows[row].yoffset;
-							GrDrawImageToFit(board, gc, x+9, y+9, w_b_w, w_b_h, w_b_image_id); 
-							break;
-       		                              	case 'R': 
-							x = keyrows[row].columns[column].xoffset;
-							y = keyrows[row].yoffset;
-							GrDrawImageToFit(board, gc, x+9, y+12, w_r_w, w_r_h, w_r_image_id); 
-							break;
-       		                              	case 'Q': 
-							x = keyrows[row].columns[column].xoffset;
-							y = keyrows[row].yoffset;
-							GrDrawImageToFit(board, gc, x+8, y+8, w_q_w, w_q_h, w_q_image_id); 
-							break;
-						case 'K':
-							x = keyrows[row].columns[column].xoffset;
-							y = keyrows[row].yoffset;
-							GrDrawImageToFit(board, gc, x+8, y+5, w_k_w, w_k_h, w_k_image_id); 
-							break;
-                       		        }
+					switch(piece_char[piece[i]]) {
+					case 'P': 
+						draw_pawn(x,y,'w',tuxchess_gc);
+						break;
+					case 'N': 
+						draw_knight(x,y,'w',tuxchess_gc);
+						break;
+					case 'B': 
+						draw_bishop(x,y,'w',tuxchess_gc);
+						break;
+					case 'R': 
+						draw_rook(x,y,'w',tuxchess_gc); 
+						break;
+					case 'Q': 
+						draw_queen(x,y,'w',tuxchess_gc);
+						break;
+					case 'K':
+						draw_king(x,y,'w',tuxchess_gc);
+						break;
+					}
 					break;
 
 				case DARK:
-					switch(piece_char[piece[i]])
-                                        {
-						case 'P': 
-							x = keyrows[row].columns[column].xoffset;
-							y = keyrows[row].yoffset;
-							GrDrawImageToFit(board, gc, x+10, y+13, b_p_w, b_p_h, b_p_image_id); 
-							break;
-       		                              	case 'N': 
-							x = keyrows[row].columns[column].xoffset;
-							y = keyrows[row].yoffset;
-							GrDrawImageToFit(board, gc, x+9, y+9, b_n_w, b_n_h, b_n_image_id); 
-							break;
-       		                              	case 'B': 
-							x = keyrows[row].columns[column].xoffset;
-							y = keyrows[row].yoffset;
-							GrDrawImageToFit(board, gc, x+9, y+9, b_b_w, b_b_h, b_b_image_id); 
-							break;
-       		                              	case 'R': 
-							x = keyrows[row].columns[column].xoffset;
-							y = keyrows[row].yoffset;
-							GrDrawImageToFit(board, gc, x+9, y+12, b_r_w, b_r_h, b_r_image_id); 
-							break;
-       		                              	case 'Q': 
-							x = keyrows[row].columns[column].xoffset;
-							y = keyrows[row].yoffset;
-							GrDrawImageToFit(board, gc, x+8, y+8, b_q_w, b_q_h, b_q_image_id); 
-							break;
-						case 'K':
-							x = keyrows[row].columns[column].xoffset;
-							y = keyrows[row].yoffset;
-							GrDrawImageToFit(board, gc, x+8, y+5, b_k_w, b_k_h, b_k_image_id); 
-							break;
-                       		        }
+					switch(piece_char[piece[i]]) {
+					case 'P':
+						draw_pawn(x,y,'b',tuxchess_gc);
+						break;
+					case 'N': 
+						draw_knight(x,y,'b',tuxchess_gc);
+						break;
+					case 'B': 
+						draw_bishop(x,y,'b',tuxchess_gc);
+						break;
+					case 'R': 
+						draw_rook(x,y,'b',tuxchess_gc);
+						break;
+					case 'Q': 
+						draw_queen(x,y,'b',tuxchess_gc);
+						break;
+					case 'K':
+						draw_king(x,y,'b',tuxchess_gc); 
+						break;
+					}
 					break;
-			} /* switch */
-		} /* for col */
-	} /* for row */
-}
+				} /* switch */
+			}
+			piece_avt[i] = piece[i];
+			color_avt[i] = color[i];
 
+			if (x_curs==column && y_curs==7-row) {
+				draw_cursor(xcoord, ycoord);
+			}
+		} /* for col */
+		color_type=!color_type;
+	} /* for row */
+
+	print_result();
+}
 
 /* ***********************************************************/
 /* print_result() checks to see if the game is over */
 void print_result()
 {
-        int i;
- 
-        /* is there a legal move? */
-        for (i = 0; i < first_move[1]; ++i)
-                if (makemove(gen_dat[i].m.b)) {
-                        takeback();
-                        break;
-                }
-        if (i == first_move[1]) {
-                if (in_check(side)) {
-                        if (side == LIGHT)
-                                gprintf("Black mates");
-                        else
-                                gprintf("White mates");
-                }
-                else
-                        gprintf("Stalemate");
-        }
-        else if (reps() == 3)
-                gprintf("Draw by repetition");
-        else if (fifty >= 100)
-                gprintf("Draw by fifty move rule");
-}             
+	int i;
+
+	/* is there a legal move? */
+	for (i = 0; i < first_move[1]; ++i) {
+		if (makemove(gen_dat[i].m.b)) {
+			takeback();
+			break;
+		}
+	}
+
+	if (i == first_move[1]) {
+		if (in_check(side)) {
+			if (side == LIGHT) {
+				printf("Black mates");
+				if (is_mini == 1) {
+					draw_message("Black","Mates");
+				}
+				else {
+					pz_draw_header("Black mates");
+				}
+				draw_end('b');
+			}
+			else {
+				printf("White mates");
+				if (is_mini == 1) {
+					draw_message("White","Mates");
+				}
+				else {
+					pz_draw_header("White mates");
+				}
+				draw_end('w');
+			}
+		}
+		else {
+			printf("Stalemate");
+			if (is_mini == 0) {
+				pz_draw_header("Stalemate");
+			}
+			else {
+				draw_message("Stale","Mate");
+			}
+			draw_end('d');
+		}
+	}
+/*
+	else if (reps() == 3)
+	{
+		printf("Draw by repetition");
+		if (is_mini == 0)
+			pz_draw_header("Draw by repetition");
+		draw_end('d');
+	}
+*/
+	else if (fifty >= 100) {
+		printf("Draw by fifty move rule");
+		if (is_mini == 0) {
+			pz_draw_header("Draw : fifty moves");
+		}
+		draw_end('d');
+	}
+}
 

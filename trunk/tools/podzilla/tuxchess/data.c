@@ -12,6 +12,8 @@
 /* the board representation */
 int color[64];  /* LIGHT, DARK, or EMPTY */
 int piece[64];  /* PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, or EMPTY */
+int piece_avt[64];
+int color_avt[64];
 int side;  /* the side to move */
 int xside;  /* the side not to move */
 int castle;  /* a bitfield with the castle permissions. if 1 is set,
