@@ -1,5 +1,6 @@
 #define MWINCLUDECOLORS
 #include <nano-X.h>
+#include <stdlib.h>
 #include <math.h>
 
 #include "globals.h"
