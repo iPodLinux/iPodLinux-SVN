@@ -1,4 +1,8 @@
 
+leachbj - Sat October 9 2004
+	added basic line-in recording support
+	minor recording bug fixes
+
 leachbj - Fri October 8 2004
 	removed limit on number of songs per artist
 	fixed some memory overwrites in iTunesDB parsing
