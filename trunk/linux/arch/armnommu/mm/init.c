@@ -635,7 +635,8 @@ void free_initmem(void)
 	if (!machine_is_integrator() &&
 	    !machine_is_p52() &&
 	    !machine_is_atmel() &&
-	    !machine_is_netarm()) {
+	    !machine_is_netarm() &&
+	    !machine_is_ipod()) {
 		free_area((unsigned long)(&__init_begin),
 			  (unsigned long)(&__init_end),
 			  "init");

@@ -40,6 +40,7 @@ ifeq ($(CONFIG_FB),y)
 obj-$(CONFIG_PPC)                 += macmodes.o
 endif
 
+obj-$(CONFIG_FB_IPOD)             += fbgen.o
 obj-$(CONFIG_FB_ACORN)            += acornfb.o
 obj-$(CONFIG_FB_AMIGA)            += amifb.o
 obj-$(CONFIG_FB_PM2)              += pm2fb.o fbgen.o

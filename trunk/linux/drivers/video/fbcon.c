@@ -573,8 +573,11 @@ static void fbcon_setup(int con, int init, int logo)
     int i, charcnt = 256;
     struct fbcon_font_desc *font;
     
+/* disable the logo */
+/*
     if (con != fg_console || (p->fb_info->flags & FBINFO_FLAG_MODULE) ||
         p->type == FB_TYPE_TEXT)
+*/
     	logo = 0;
 
     p->var.xoffset = p->var.yoffset = p->yscroll = 0;  /* reset wrap/pan */

@@ -20,6 +20,11 @@ HEAD_OBJ  = head-arm-dsc21.o
 AFLAGS_head-arm-dsc21.o = -DTEXTADDR=$(TEXTADDR)
 endif
 
+ifeq ($(CONFIG_ARCH_IPOD),y)
+HEAD_OBJ  = head-arm-ipod.o
+AFLAGS_head-arm-ipod.o = -DTEXTADDR=$(TEXTADDR)
+endif
+
 AFLAGS_head-armv.o := -DTEXTADDR=$(TEXTADDR)
 AFLAGS_head-armo.o := -DTEXTADDR=$(TEXTADDR)
 
@@ -52,7 +57,7 @@ export-objs	:= armksyms.o dma.o ecard.o fiq.o io.o oldlatches.o time.o
 
 no-irq-arch	:= $(CONFIG_ARCH_INTEGRATOR) $(CONFIG_ARCH_CLPS711X) \
 		   $(CONFIG_ARCH_FOOTBRIDGE) $(CONFIG_ARCH_EBSA110) \
-		   $(CONFIG_ARCH_SA1100)
+		   $(CONFIG_ARCH_SA1100) $(CONFIG_ARCH_IPOD)
 
 ifneq ($(findstring y,$(no-irq-arch)),y)
   obj-y		+= irq-arch.o

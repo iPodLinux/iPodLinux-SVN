@@ -103,3 +103,5 @@ atmel			ARCH_ATMEL		ATMEL			89
 dsc21                   ARCH_DSC21              DSC21                   115
 snds100			ARCH_SNDS100		SNDS100			90
 evS3C4530HEI		BOARD_EVS3C4530HEI	EVS3C4530HEI		164
+
+ipod			ARCH_IPOD		IPOD			280

@@ -175,6 +175,11 @@ MACHINE          = evS3C4530HEI
 INCDIR           = $(MACHINE)
 endif
 
+ifeq ($(CONFIG_ARCH_IPOD),y)
+MACHINE		 = ipod
+TEXTADDR	 = 0x28008000
+endif
+
 export	LDFLAGS LIBGCC MACHINE PROCESSOR TEXTADDR GZFLAGS
 
 # Only set INCDIR if its not already defined above
@@ -212,6 +217,11 @@ endif
 
 ifeq ($(CONFIG_ARCH_NETARM),y)
 HEAD		:= arch/armnommu/kernel/head-arm-netarm.o \
+		   arch/armnommu/kernel/init_task.o
+endif
+
+ifeq ($(CONFIG_ARCH_IPOD),y)
+HEAD		:= arch/armnommu/kernel/head-arm-ipod.o \
 		   arch/armnommu/kernel/init_task.o
 endif
 
