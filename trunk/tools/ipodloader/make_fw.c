@@ -34,7 +34,11 @@
 
 #define TBL 0x4200
 
-int be;
+/* Some firmwares have padding becore the actual image.  */
+#define IMAGE_PADDING ((fw_version == 3) ? 0x200 : 0)
+#define FIRST_OFFSET (TBL + 0x200 + IMAGE_PADDING)
+
+int be, fw_version = 2;
 
 typedef struct _image {
     char type[4];		/* '' */
@@ -65,7 +69,7 @@ switch_32(unsigned l)
 void
 switch_endian(image_t *image)
 {
-    if (be) {
+   if (be) {
 	image->id = switch_32(image->id);
 	image->devOffset = switch_32(image->devOffset);
 	image->len = switch_32(image->len);
@@ -92,8 +96,9 @@ void
 usage()
 {
     printf("Usage: patch_fw [-h]\n"
-	   "       patch_fw [-v] -o outfile -e img_no fw_file\n"   
-	   "       patch_fw [-v] [-r rev] -o outfile [-i img_from_-e]* [-l raw_img]* ldr_img\n\n"
+	   "       patch_fw [-v] [-3] -o outfile -e img_no fw_file\n"   
+	   "       patch_fw [-v] [-3] [-r rev] -o outfile [-i img_from_-e]* [-l raw_img]* ldr_img\n\n"
+	   "  -3:    extract/create with version 3 firmware (mini, 4g, photo)\n"
 	   "  -e:    extract the image at img_no in boot table to outfile\n"
 	   "         fw_file is an original firmware image\n"
 	   "         the original firmware has the sw at 0, and a flash updater at 1\n"
@@ -186,11 +191,14 @@ extract(FILE *f, int idx, FILE *out)
 {
     image_t *image;
     unsigned char buf[512];
+    unsigned off;
     
     image = (image_t *)buf;
     if (load_entry(image, f, TBL, idx) == -1)
 	return -1;
-    if (fseek(f, image->devOffset, SEEK_SET) == -1) {
+    off = image->devOffset + IMAGE_PADDING;
+
+    if (fseek(f, off, SEEK_SET) == -1) {
 	fprintf(stderr, "fseek failed: %s\n", strerror(errno));
 	return -1;
     }
@@ -200,7 +208,7 @@ extract(FILE *f, int idx, FILE *out)
 	fprintf(stderr, "fseek failed: %s\n", strerror(errno));
 	return -1;
     }
-    if (copysum(f, out, image->len, image->devOffset) == -1)
+    if (copysum(f, out, image->len, off) == -1)
 	return -1;
 		
     return 0;
@@ -262,7 +270,7 @@ main(int argc, char **argv)
     
     /* parse options */
     opterr = 0;
-    while ((c = getopt(argc, argv, "hve:o:i:l:r:")) != -1)
+    while ((c = getopt(argc, argv, "3hve:o:i:l:r:")) != -1)
 	switch (c) {
 	    case 'h':
 		if (verbose || in || out || images_done || ext) {
@@ -276,6 +284,10 @@ main(int argc, char **argv)
 	    case 'v':
 		if (verbose++)
 		    fprintf(stderr, "Warning: multiple -v options specified\n");
+		break;
+	    case '3':
+		fw_version = 3;
+		image.addr = 0x10000000;
 		break;
 	    case 'o':
 		if (out) {
@@ -311,7 +323,7 @@ main(int argc, char **argv)
 		}
 		if (load_entry(images + images_done, in, 0, 0) == -1)
 		    return 1;
-		if (!offset) offset = 0x4400;
+		if (!offset) offset = FIRST_OFFSET;
 		else offset = (offset + 0x1ff) & ~0x1ff;
 		images[images_done].devOffset = offset;
 		if (fseek(out, offset, SEEK_SET) == -1) {
@@ -339,7 +351,7 @@ main(int argc, char **argv)
 		    fprintf(stderr, "Cannot open linux image file %s\n", optarg);
 		    return 1;
 		}
-		if (!offset) offset = 0x4400;
+		if (!offset) offset = FIRST_OFFSET;
 		else offset = (offset + 0x1ff) & ~0x1ff;
 		images[images_done] = image;
 		images[images_done].devOffset = offset;
@@ -379,6 +391,13 @@ main(int argc, char **argv)
 	return 1;
     }
    
+    printf("Generating firmware image compatible with ");
+    if (fw_version == 3) {
+	printf("iPod mini, 4g and iPod photo...\n");
+    } else {
+	printf("1g, 2g and 3g iPods...\n");
+    }
+   
     if (ext) {
 	if ((in = fopen(argv[optind], "rb")) == NULL) {
 	    fprintf(stderr, "Cannot open firmware image file %s\n", argv[optind]);
@@ -412,9 +431,9 @@ main(int argc, char **argv)
 	    return 1;
     }
     if (version) image.vers = version;
-    image.len = offset + len - 0x4400;
-    image.entryOffset = offset - 0x4400;
-    if ((image.chksum = copysum(out, NULL, image.len, 0x4400)) == -1)
+    image.len = offset + len - FIRST_OFFSET;
+    image.entryOffset = offset - FIRST_OFFSET;
+    if ((image.chksum = copysum(out, NULL, image.len, FIRST_OFFSET)) == -1)
 	return 1;
     if (fseek(out, 0x0, SEEK_SET) == -1) {
 	fprintf(stderr, "fseek failed: %s\n", strerror(errno));
@@ -434,7 +453,12 @@ main(int argc, char **argv)
 	fprintf(stderr, "fwrite failed: %s\n", strerror(errno));
 	return 1;
     }
-    version = switch_32(0x0002010c); /* magic */
+    if (fw_version == 3) {
+      version = switch_32(0x0003010c); /* magic */
+    } else {
+      version = switch_32(0x0002010c); /* magic */
+    }
+
     if (fwrite(&version, 4, 1, out) != 1) {
 	fprintf(stderr, "fwrite failed: %s\n", strerror(errno));
 	return 1;
