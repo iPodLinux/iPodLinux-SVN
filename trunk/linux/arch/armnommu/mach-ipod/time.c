@@ -6,23 +6,26 @@
 
 #include <linux/config.h>
 #include <linux/version.h>
+#include <asm/timex.h>
 #include <asm/io.h>
 
 
-#define IPOD_TIMER_STATUS 0xcf001110
-
 /*
- * Set the RTC
+ * Set the RTC to the current kernel time
  */
 extern int ipod_set_rtc(void)
 {
-	return (0);
+	/* TODO: not yet implemented */
+	return 0;
 }
 
 
+/*
+ * Get the number of useconds since the last interrupt
+ */
 extern unsigned long ipod_gettimeoffset(void)
 {
-	return inl(IPOD_TIMER_STATUS);
+	return USECS_PER_INT - (inl(IPOD_TIMER0) & 0xffff);
 }
 
 extern void ipod_timer_interrupt(int irq, void *dev_id, struct pt_regs *regs)
