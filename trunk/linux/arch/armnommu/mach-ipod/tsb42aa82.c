@@ -26,16 +26,12 @@
 #include <asm/byteorder.h>
 #include <asm/io.h>
 #include <asm/irq.h>
+#include <asm/hardware.h>
 
 #include "../../../drivers/ieee1394/ieee1394.h"
 #include "../../../drivers/ieee1394/ieee1394_types.h"
 #include "../../../drivers/ieee1394/hosts.h"
 #include "../../../drivers/ieee1394/ieee1394_core.h"
-
-/* what version are we compiling for */
-#undef IPOD_1G
-#define IPOD_2G
-#undef IPOD_3G
 
 #define RX_SLD	(1<<(31-1))
 #define RS_ISEL	(1<<(31-2))
@@ -907,7 +903,7 @@ static void ipod_1394_interrupt(int irq, void *dev_id, struct pt_regs *regs_are_
 	}
 }
 
-#if defined(IPOD_3G)
+/* needed for 3g only */
 static __devinit void fw_i2c(int data0, int data1)
 {
 	outl(0x6a, 0xc0008000);
@@ -926,35 +922,36 @@ static __devinit void fw_i2c(int data0, int data1)
 	outl(inl(0xc0008000) | (1<<7), 0xc0008000);	/* send cmd */
 	mdelay(10);
 }
-#endif
 
 static __devinit void ipod_1394_hw_init(void)
 {
-	/* firewire stuff */
+	unsigned ipod_hw_ver;
+
+	ipod_hw_ver = ipod_get_hw_version() >> 16;
 
 	/* MIO setup? */
 	outl((inl(0xcf004040) & ~(1<<6)) | (1<<7), 0xcf004040);
 	outl(0x00001f1f, 0xcf00401c);
 	outl(0xffff, 0xcf004020);
 
-#if defined(IPOD_1G) || defined(IPOD_2G)
-/* this is the 1g and 2g init */
+	/* this is the 1g and 2g init */
+	if ( ipod_hw_ver == 0x1 || ipod_hw_ver == 0x2 )
+	{
+		/* port D enable, PD(4) power down and LPS(5) link power staus, and(7?) */
+		outl(inl(0xcf00000c) | (1<<4)|(1<<5)|(1<<7), 0xcf00000c);
 
-	/* port D enable, PD(4) power down and LPS(5) link power staus, and(7?) */
-	outl(inl(0xcf00000c) | (1<<4)|(1<<5)|(1<<7), 0xcf00000c);
+		/* port D output enable */
+		outl(inl(0xcf00001c) | (1<<4)|(1<<5)|(1<<7), 0xcf00001c);
 
-	/* port D output enable */
-	outl(inl(0xcf00001c) | (1<<4)|(1<<5)|(1<<7), 0xcf00001c);
+		/* port D output value ~10000 | 100000 */
+		/* set PD (power down) to low and LPS to high (see 12.4) */
+		outl((inl(0xcf00002c) & ~(1<<4)) | (1<<5), 0xcf00002c);
 
-	/* port D output value ~10000 | 100000 */
-	/* set PD (power down) to low and LPS to high (see 12.4) */
-	outl((inl(0xcf00002c) & ~(1<<4)) | (1<<5), 0xcf00002c);
+		udelay(20);
+	}
 
-	udelay(20);
-#endif
-
-/* this is 1g only */
-#if defined(IPOD_1G)
+	/* this is 1g only */
+	if ( ipod_hw_ver == 0x1 )
 	{
 		/* Reset TSB43AA82 link and PHY (see section 12.5) */
 		outl(inl(0xcf00000c) | (1<<1) | (1<<2) , 0xcf00000c);
@@ -976,10 +973,9 @@ static __devinit void ipod_1394_hw_init(void)
 
 		mdelay(10);
 	}
-#endif
 
-/* this is 2g only */
-#if defined(IPOD_2G)
+	/* this is 2g only */
+	if ( ipod_hw_ver == 0x2 )
 	{
 		unsigned r2;
 
@@ -1010,10 +1006,9 @@ static __devinit void ipod_1394_hw_init(void)
 
 		outl(r2 | (1<<4), 0xcf004044);
 	}
-#endif
 
-#if defined(IPOD_3G)
 	/* this is 3g */
+	if ( ipod_hw_ver == 0x3 )
 	{
 		/* reset device i2c */
 		outl(inl(0xcf005030) | (1<<8), 0xcf005030);
@@ -1041,7 +1036,6 @@ static __devinit void ipod_1394_hw_init(void)
 		outl(inl(0xcf00002c) & ~(1<<7), 0xcf00002c);
 		*/
 	}
-#endif
 
 	if ( fw_reg_read(0x0) != 0x43008203 ) {
 		printk(KERN_ERR "ipod_1394: invalid chip revsion 0x%x\n", fw_reg_read(0x0));
@@ -1052,7 +1046,7 @@ static int __devinit ipod_1394_init(void)
 {
 	struct ti_ipod *ipod;
 
-	printk("ipod_1394: $Id: tsb42aa82.c,v 1.5 2004/01/29 00:36:47 leachbj Exp $\n");
+	printk("ipod_1394: $Id: tsb42aa82.c,v 1.6 2004/02/10 21:24:48 leachbj Exp $\n");
 
 	ipod_host = hpsb_alloc_host(&ipod_1394_driver, sizeof(struct ti_ipod));
 	if ( !ipod_host ) {
