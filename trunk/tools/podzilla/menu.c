@@ -78,11 +78,15 @@ static item_st games_menu[] = {
 	{0}
 };
 
-static item_st entertain_menu[] = {
+static item_st stuff_menu[] = {
 	{"Cube", new_cube_window, ACTION_MENU},
 	{"Matrix", new_matrix_window, ACTION_MENU},
 	{"PodDraw", new_poddraw_window, ACTION_MENU},
 	{0}
+};
+
+static char *backlight_options[] = {
+	"Off", "1 sec", "2 secs", "5 secs", "10 secs", "30 secs", "1 min"
 };
 
 static char *sample_rates[] = {
@@ -111,8 +115,8 @@ static item_st extras_menu[] = {
 	{"Recordings", recording_menu, SUB_MENU_HEADER},
 	{"Calendar", new_calendar_window, ACTION_MENU},
 	{"Calculator", new_calc_window, ACTION_MENU},
-	{"Entertainment", entertain_menu, SUB_MENU_HEADER},
 	{"Games", games_menu, SUB_MENU_HEADER},
+	{"Stuff", stuff_menu, SUB_MENU_HEADER},
 	{0}
 };
 
@@ -126,7 +130,7 @@ static item_st settings_menu[] = {
 	{"About", about_window, ACTION_MENU},
 	{"Repeat", repeat_options, OPTION_MENU, REPEAT, 3},
 	{"Shuffle", shuffle_options, OPTION_MENU, SHUFFLE, 2},
-	{"Backlight", NULL, BOOLEAN_MENU, BACKLIGHT},
+	{"Backlight Timer", backlight_options, OPTION_MENU, BACKLIGHT_TIMER, 7},
 	{"Contrast", set_contrast, ACTION_MENU},
 	{"Wheel Sensitivity", set_wheeldebounce, ACTION_MENU},
 	{"Button Debounce", set_buttondebounce, ACTION_MENU},
@@ -237,9 +241,9 @@ void new_menu_window()
 	GrSelectEvents(menu_wid, GR_EVENT_MASK_EXPOSURE| GR_EVENT_MASK_KEY_UP|
 			GR_EVENT_MASK_KEY_DOWN | GR_EVENT_MASK_TIMER);
 
-	menuz = menu_init(menu_wid, menu_gc, "Main", 0, 1, screen_info.cols, 
-			screen_info.rows - (HEADER_TOPLINE + 1), NULL,
-			main_menu);
+	menuz = menu_init(menu_wid, menu_gc, "podzilla", 0, 1,
+			screen_info.cols, screen_info.rows -
+			(HEADER_TOPLINE + 1), NULL, main_menu);
 
 	GrMapWindow(menu_wid);
 }
