@@ -18,6 +18,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/time.h>
 #include <unistd.h>
 #include "pz.h"
@@ -291,6 +292,18 @@ void pz_draw_header(char *header)
 
 	GrGetGCTextSize(root_gc, header, -1, GR_TFASCII, &width, &height,
 			&base);
+	if (width > screen_info.cols - 46) {
+		snprintf(header, strlen(header) - 2, "%s", header);
+		snprintf(header, strlen(header) + 4, "%s...", header);
+		GrGetGCTextSize(root_gc, header, -1, GR_TFASCII, &width,
+				 &height, &base);
+		while (width > screen_info.cols - 46) {
+			snprintf(header, strlen(header) - 3, "%s", header);
+			snprintf(header, strlen(header) + 4, "%s...", header);
+			GrGetGCTextSize(root_gc, header, -1, GR_TFASCII,
+					 &width, &height, &base);
+		}
+	}
 
 	GrText(root_wid, root_gc, (screen_info.cols - width) / 2,
 			HEADER_BASELINE, header, -1, GR_TFASCII);
