@@ -206,7 +206,7 @@ static inline void ether1394_arp_to_1394arp (struct sk_buff *skb, struct net_dev
 	unsigned char arp_data[2*(dev->addr_len+4)];
 
 	/* Copy the main data that we need */
-	arp_ptr = memcpy (arp_data, arp_ptr + sizeof(struct arphdr), sizeof (arp_data));
+	memcpy (arp_data, arp_ptr + sizeof(struct arphdr), sizeof (arp_data));
 
 	/* Extend the buffer enough for our new header */
 	skb_put (skb, sizeof (struct eth1394_arp) -
@@ -214,7 +214,7 @@ static inline void ether1394_arp_to_1394arp (struct sk_buff *skb, struct net_dev
 
 #define PROCESS_MEMBER(ptr,val,len) \
   memcpy (val, ptr, len); ptr += len
-	arp_ptr += arp1394->hw_addr_len;
+	arp_ptr = arp_data + arp1394->hw_addr_len;
 	PROCESS_MEMBER (arp_ptr, &arp1394->sip, arp1394->ip_addr_len);
 	arp_ptr += arp1394->hw_addr_len;
 	PROCESS_MEMBER (arp_ptr, &arp1394->tip, arp1394->ip_addr_len);
@@ -497,7 +497,7 @@ static inline unsigned short ether1394_parse_encap (struct sk_buff *skb, struct 
 		spin_unlock_irqrestore (&priv->lock, flags);
 
 #define PROCESS_MEMBER(ptr,val,len) \
-  ptr = memcpy (ptr, val, len) + len
+  memcpy (ptr, val, len); ptr += len
                 PROCESS_MEMBER (arp_ptr, src_hw, dev->addr_len);
                 PROCESS_MEMBER (arp_ptr, &arp1394.sip, 4);
                 PROCESS_MEMBER (arp_ptr, dest_hw, dev->addr_len);
