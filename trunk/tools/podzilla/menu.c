@@ -17,7 +17,6 @@
  */
 
 #include <stdio.h>
-#include <assert.h>
 #include <stdlib.h>
 
 #include "pz.h"
@@ -41,6 +40,7 @@ extern void new_itunes_album(void);
 extern void new_itunes_plist(void);
 extern void new_pong_window(void);
 extern void new_mines_window(void);
+extern void new_calc_window(void);
 
 static GR_WINDOW_ID menu_wid;
 static GR_GC_ID menu_gc;
@@ -106,6 +106,7 @@ static struct menu_item extras_menu[] = {
 	{"Contacts", SUB_MENU_HEADER, 0, NOSETTING, 0},
 #endif
 	{"Calendar", ACTION_MENU, new_calendar_window, NOSETTING, 0},
+	{"Calculator", ACTION_MENU, new_calc_window, NOSETTING, 0},
 #if 0
 	{"Notes", SUB_MENU_HEADER, 0, NOSETTING, 0},
 #endif
