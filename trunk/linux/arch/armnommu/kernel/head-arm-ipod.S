@@ -171,7 +171,25 @@ L_0xcf001104:	.word 0xcf001104
 L_0xcf001108:	.word 0xcf001108
 L_0xcf00110c:	.word 0xcf00110c
 
+L_0xcf00000c:	.word 0xcf00000c
+L_0xcf004040:	.word 0xcf004040
+
 cpu_startup:
+	/* enable ttyS0 (remote) */
+	/* outl(inl(0xcf00000c) & ~0x8, 0xcf00000c); */
+	ldr	r1, L_0xcf00000c
+	ldr	r0, [r1]
+	bic	r0, r0, #0x8
+	str	r0, [r1]
+
+	/* enable ttyS1 (piezo) */
+	/* outl(0xcf004040, inl(0xcf004040) & ~0x1000); */
+	ldr	r1, L_0xcf004040
+	ldr	r0, [r1]
+	bic	r0, r0, #0x1000
+	str	r0, [r1]
+
+	/* get important "magic" values */
 	adr	r5, LC0
 	ldmia	r5, {r5, r6, r8, r9, sp}
 
