@@ -42,12 +42,6 @@
 /* need to pass something becuase we use a shared irq */
 #define KEYBOARD_DEV_ID	0x4b455942
 
-#if defined(IPOD_1G) || defined(IPOD_2G)
-#define HOLD_SWITCH_IS_ON(c) ((c) & 0x20)
-#else
-#define HOLD_SWITCH_IS_ON(c) (((c) & 0x20) == 0)
-#endif
-
 static void keyboard_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
 	static int prev_scroll = -1;
@@ -83,7 +77,8 @@ static void keyboard_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	kbd_pt_regs = regs;
 
 	if ( source & 0x20 ) {
-		if ( HOLD_SWITCH_IS_ON(state) ) {
+		if ((ipod_hw_ver == 0x3 && (state & 0x20) == 0 ) || 
+				(state & 0x20)) {
 			/* CTRL-S down */
 			handle_scancode(LEFT_CTRL_SC, 1);
 			handle_scancode(S_SC, 1);
