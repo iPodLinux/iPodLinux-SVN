@@ -45,6 +45,7 @@ OBJS=\
 	othello.o \
 	pong.o \
 	itunesdb.o \
+	calendar.o \
 	bluecube/box.o \
 	bluecube/main.o \
 	bluecube/pieces.o \
