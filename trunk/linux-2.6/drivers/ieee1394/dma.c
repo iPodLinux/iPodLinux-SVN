@@ -183,6 +183,7 @@ void dma_region_sync(struct dma_region *dma, unsigned long offset, unsigned long
 }
 
 #ifdef CONFIG_MMU
+
 /* nopage() handler for mmap access */
 
 static struct page*
@@ -239,4 +240,11 @@ int dma_region_mmap(struct dma_region *dma, struct file *file, struct vm_area_st
 	return 0;
 }
 
-#endif
+#else /* CONFIG_MMU */
+
+int dma_region_mmap(struct dma_region *dma, struct file *file, struct vm_area_struct *vma)
+{
+	return -EINVAL;
+}
+
+#endif /* CONFIG_MMU */
