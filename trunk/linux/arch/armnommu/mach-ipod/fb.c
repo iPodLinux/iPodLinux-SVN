@@ -373,6 +373,10 @@ static int ipod_encode_fix(struct fb_fix_screeninfo *fix, struct ipodfb_par *par
 	memset(fix, 0x0, sizeof(*fix));
 
 	strcpy(fix->id, "iPod");
+	/* required for mmap() */
+	fix->smem_start = ipod_scr;
+	fix->smem_len = IPOD_LCD_HEIGHT * (IPOD_LCD_WIDTH/4);
+
 	fix->type= FB_TYPE_PACKED_PIXELS;
 
 	fix->visual = FB_VISUAL_PSEUDOCOLOR;	/* fixed visual */
