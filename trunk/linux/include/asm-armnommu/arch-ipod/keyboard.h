@@ -13,7 +13,11 @@ extern void ipodkb_init_hw(void);
 #define kbd_translate(sc,kcp,rm)	({ *(kcp) = (sc); 1; })
 #define kbd_unexpected_up(kc)		(0200)
 #define kbd_leds(leds)
+#ifdef CONFIG_KB_IPOD
 #define kbd_init_hw()			ipodkb_init_hw()
+#else
+#define kbd_init_hw()
+#endif
 #define kbd_enable_irq()
 #define kbd_disable_irq()
 
