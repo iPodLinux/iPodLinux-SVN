@@ -6,10 +6,11 @@
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>
 
-	.equ	C_PROCESSOR_ID, 0xc4000000
-	.equ	C_CPU_SLEEP, 0xca
-	.equ	C_CPU_ID, 0x55
-	.equ	C_CFG_COPROC, 0xcf004058
+	.equ	PP5002_PROC_ID,  0xc4000000
+	.equ	PP5002_COP_CTRL, 0xcf004058
+
+	.equ	PP5020_PROC_ID,  0x60000000
+	.equ	PP5020_COP_CTRL, 0x60007004
 
 /*
  * Reset condition :
@@ -42,6 +43,7 @@ ENTRY(stext)
 	str	r0, [r1]
 .endif
 
+.ifdef NOTDEF
 	/* clear and mask all interrupts */
 	ldr	r1, L_0xcf00101c
 	mov	r0, #-1
@@ -69,11 +71,12 @@ ENTRY(stext)
 
 	ldr	r1, L_0xcf00110c
 	ldr	r1, [r1]
+.endif
 
 	/* setup memory mapping */
 	ldr	r1, C_0x40010000
-	ldr	r2, L_install_reloc_start
-	ldr	r3, L_install_reloc_end
+	ldr	r2, =install_reloc_start
+	ldr	r3, =install_reloc_end
 
 	/* copy the code to 0x40010000 */
 1:
@@ -82,11 +85,13 @@ ENTRY(stext)
 	cmp	r2, r3
 	ble	1b
 
-	ldr	r3, C_0x28003f84
-	ldr	r2, C_0xf000f014
-	mov	r1, #0x3b00
-	ldr	r0, C_0xf000f010
-	ldr	r4, C_0x40010000
+	ldr	r3, =0x3f84		/* 4g uses 0x10000f84 */
+	and	r5, pc, #0xff000000	/* adjust for execute address */
+	orr	r3, r3, r5
+	ldr	r2, =0xf000f014
+	mov	r1, #0x3b00		/* 4g uses 0x3a00 */
+	ldr	r0, =0xf000f010
+	ldr	r4, =0x40010000
 	mov	pc, r4
 
 install_reloc_start:
@@ -100,18 +105,38 @@ L_post_reloc_start:	.word post_reloc_start
 install_reloc_end:
 
 post_reloc_start:
+	cmp	r5, #0x28000000
+	bne	pp5020
+
+pp5002:
 	/* check if we are cpu or co-processor */
-	mov	r0, #C_PROCESSOR_ID
+	ldr	r0, =PP5002_PROC_ID
 	ldr	r0, [r0]
 	and	r0, r0, #0xff
-	cmp	r0, #C_CPU_ID
+	cmp	r0, #0x55
 	beq	cpu_startup
 
 	/* we are the co-processor, go to sleep until cpu wakes us up */
-	ldr	r0, L_CFG_COPROC
-	mov	r1, #C_CPU_SLEEP
+	ldr	r0, =PP5002_COP_CTRL
+	mov	r1, #0xca
 	str	r1, [r0]
+	b	cop_startup
 
+pp5020:
+	/* check if we are cpu or co-processor */
+	ldr	r0, =PP5020_PROC_ID
+	ldr	r0, [r0]
+	and	r0, r0, #0xff
+	cmp	r0, #0x55
+	beq	cpu_startup
+
+	/* we are the co-processor, go to sleep until cpu wakes us up */
+	ldr	r0, =PP5020_COP_CTRL
+	mov	r1, #0xca
+	str	r1, [r0]
+	b	cop_startup
+
+cop_startup:
 	/* set stack pointer for FIQ mode */
 	mov	r0, #0xd1
 	msr	CPSR_c, r0
@@ -221,14 +246,9 @@ L_ARMID:	.long 0x41007700
 
 C_0x40010000:	.word 0x40010000
 
-L_install_reloc_start:	.word install_reloc_start
-L_install_reloc_end:	.word install_reloc_end
-
 C_0x28003f84:	.word 0x28003f84
 C_0xf000f014:	.word 0xf000f014
 C_0xf000f010:	.word 0xf000f010
-
-L_CFG_COPROC:	.word C_CFG_COPROC
 
 	.align 8
 LC0:	.long	SYMBOL_NAME(__bss_start)
