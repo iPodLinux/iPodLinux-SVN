@@ -69,7 +69,7 @@ static item_st tuxchess_menu[] = {
 
 static item_st games_menu[] = {
 	{"BlueCube", new_bluecube_window, ACTION_MENU},
-	{"Nimesweeper", new_mines_window, ACTION_MENU},
+	{"Minesweeper", new_mines_window, ACTION_MENU},
 	{"Othello", new_oth_window, ACTION_MENU},
 	{"Pong", new_pong_window, ACTION_MENU},
 	{"Steroids", new_steroids_window, ACTION_MENU},

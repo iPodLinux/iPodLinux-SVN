@@ -1,5 +1,6 @@
 Alastair S - Mon Apr 4 2005
 	title truncation moved to pz_draw_header
+	rewrote minesweeper clone
 
 Alastair S - Fri Apr 1 2005
 	textviewer enhancements - long titles truncated, fixed int scrollbar
