@@ -29,7 +29,6 @@
 static GR_WINDOW_ID about_wid;
 static GR_WINDOW_ID about_bottom_wid;
 static GR_GC_ID about_gc_black;
-static GR_SCREEN_INFO screen_info;
 
 char kern[BUFSIZR], gen[BUFSIZR], fstype[4];
 int page=0, reltop=20, j;
@@ -210,9 +209,7 @@ static int about_parse_keystroke(GR_EVENT * event) {
 }
 
 void about_window() {
-	GrGetScreenInfo(&screen_info);
-
-	about_gc_black = GrNewGC();
+	about_gc_black = pz_get_gc(1);
 	GrSetGCUseBackground(about_gc_black, GR_TRUE);
 	GrSetGCBackground(about_gc_black, WHITE);
 	GrSetGCForeground(about_gc_black, BLACK);

@@ -51,7 +51,6 @@ extern void about_window(void);
 
 static GR_WINDOW_ID menu_wid;
 static GR_GC_ID menu_gc;
-static GR_SCREEN_INFO screen_info;
 
 extern void quit_podzilla(void);
 extern void reboot_ipod(void);
@@ -428,12 +427,11 @@ static int menu_do_keystroke(GR_EVENT * event)
 
 void new_menu_window()
 {
-	GrGetScreenInfo(&screen_info);
 	if (screen_info.cols == 138) { /*mini*/
 		max_menu_items = 5;
 	}
 
-	menu_gc = GrNewGC();
+	menu_gc = pz_get_gc(1);
 	GrSetGCUseBackground(menu_gc, GR_FALSE);
 	GrSetGCForeground(menu_gc, BLACK);
 

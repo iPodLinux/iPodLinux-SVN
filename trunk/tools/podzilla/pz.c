@@ -26,7 +26,6 @@
 
 static GR_WINDOW_ID root_wid;
 static GR_GC_ID root_gc;
-static GR_SCREEN_INFO screen_info;
 
 struct pz_window {
 	GR_WINDOW_ID wid;
@@ -256,6 +255,11 @@ void pz_draw_header(char *header)
 
 	draw_batt_status();
 	draw_hold_status();
+}
+
+GR_GC_ID pz_get_gc(int copy)
+{
+	return (copy ? GrCopyGC(root_gc) : root_gc);
 }
 
 GR_WINDOW_ID pz_new_window(int x, int y, int w, int h, void(*do_draw), int(*do_keystroke)(GR_EVENT * event))

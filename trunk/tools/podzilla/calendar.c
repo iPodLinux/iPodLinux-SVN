@@ -111,7 +111,6 @@ static char *month_name[] = {
 
 static GR_WINDOW_ID calendar_wid;
 static GR_GC_ID calendar_gc;
-static GR_SCREEN_INFO screen_info;
 
 /*
  * leap year -- account for gregorian reformation in 1752
@@ -444,15 +443,13 @@ new_calendar_window(void)
 {
 	calendar_init();
 
-	GrGetScreenInfo(&screen_info);
-
 	if (screen_info.cols < 160) {
 		DaySpace = 19;
 		WeekSpace = 15;
 		ycalpos = 12;
 	}
 
-	calendar_gc = GrNewGC();
+	calendar_gc = pz_get_gc(1);
 	GrSetGCUseBackground(calendar_gc, GR_FALSE);
 	GrSetGCForeground(calendar_gc, BLACK);
 

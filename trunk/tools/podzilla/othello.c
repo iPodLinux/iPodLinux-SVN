@@ -33,7 +33,6 @@ extern void toggle_backlight(void);
 
 static GR_WINDOW_ID oth_wid;
 static GR_GC_ID oth_gc;
-static GR_SCREEN_INFO screen_info;
 int xlocal,ylocal,lastxlocal,lastylocal;
 
 void quit_podzilla(void);
@@ -433,9 +432,7 @@ static int oth_do_keystroke(GR_EVENT * event)
 
 void new_oth_window()
 {
-	GrGetScreenInfo(&screen_info);
-
-	oth_gc = GrNewGC();
+	oth_gc = pz_get_gc(1);
 	GrSetGCUseBackground(oth_gc, GR_FALSE);
 	GrSetGCForeground(oth_gc, BLACK);
 

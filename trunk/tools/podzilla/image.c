@@ -38,7 +38,6 @@ typedef enum {ZOOM_FIT, ZOOM_ACTUAL, ZOOM_MULTIPLY} PZ_ZOOM_TYPE;
 static GR_WINDOW_ID image_wid;
 static GR_GC_ID image_gc;
 static GR_IMAGE_ID image_id;
-static GR_SCREEN_INFO screen_info;
 static GR_IMAGE_INFO image_info;
 static GR_WINDOW_ID image_pixmap;
 
@@ -275,10 +274,9 @@ void new_image_window(char *filename)
 	pad_x = 0;
 	pad_y = 0;
 
-	image_gc = GrNewGC();
+	image_gc = pz_get_gc(1);
 	GrSetGCUseBackground(image_gc, GR_FALSE);
 	GrSetGCForeground(image_gc, BLACK);
-	GrGetScreenInfo(&screen_info);
 	
 	image_wid = pz_new_window(0, 0, screen_info.cols, screen_info.rows,
 			image_do_draw, image_do_keystroke);

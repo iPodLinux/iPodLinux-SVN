@@ -40,7 +40,6 @@ extern void new_browser_window(char *);
 static GR_TIMER_ID timer_id;
 static GR_WINDOW_ID dsp_wid;
 static GR_GC_ID dsp_gc;
-static GR_SCREEN_INFO screen_info;
 #ifdef PZ_USE_THREADS
 static pthread_t dsp_thread;
 #endif
@@ -591,11 +590,10 @@ void new_record_window()
 	paused = 0;
 	currenttime = 0;
 
-	dsp_gc = GrNewGC();
+	dsp_gc = pz_get_gc(1);
 	GrSetGCUseBackground(dsp_gc, GR_TRUE);
 	GrSetGCForeground(dsp_gc, BLACK);
 	GrSetGCBackground(dsp_gc, WHITE);
-	GrGetScreenInfo(&screen_info);
 
 	dsp_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), dsp_do_draw, dsp_do_keystroke);
 
@@ -626,11 +624,10 @@ void new_playback_window(char *filename)
 	paused = 0;
 	currenttime = 0;
 
-	dsp_gc = GrNewGC();
+	dsp_gc = pz_get_gc(1);
 	GrSetGCUseBackground(dsp_gc, GR_TRUE);
 	GrSetGCForeground(dsp_gc, BLACK);
 	GrSetGCBackground(dsp_gc, WHITE);
-	GrGetScreenInfo(&screen_info);
 
 	dsp_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), dsp_do_draw, dsp_do_keystroke);
 

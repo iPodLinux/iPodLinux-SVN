@@ -36,7 +36,6 @@
 
 static GR_WINDOW_ID browser_wid;
 static GR_GC_ID browser_gc;
-static GR_SCREEN_INFO screen_info;
 
 #define FILE_TYPE_PROGRAM 0
 #define FILE_TYPE_DIRECTORY 1
@@ -368,14 +367,13 @@ void new_browser_window(char *initial_path)
 		current_dir[0] = 0;
 	}
 
-	GrGetScreenInfo(&screen_info);
-
 	if (screen_info.cols != 138) { /* not mini */
 		items_offset = 1;
 	}
 
-	browser_gc = GrNewGC();
+	browser_gc = pz_get_gc(1);
 	GrSetGCUseBackground(browser_gc, GR_FALSE);
+	GrSetGCBackground(browser_gc, BLACK);
 	GrSetGCForeground(browser_gc, BLACK);
 
 	browser_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols,

@@ -5,7 +5,7 @@
 *   Jukebox    |    |   (  <_> )  \___|    < | \_\ (  <_> > <  <
 *   Firmware   |____|_  /\____/ \___  >__|_ \|___  /\____/__/\_ \
 *                     \/            \/     \/    \/            \/
-* $Id: $
+* $Id: cube.c,v 1.1 2005/02/15 01:22:03 courtc Exp $
 *
 * Copyright (C) 2002 Damien Teney
 * modified to use int instead of float math by Andreas Zwirtes
@@ -39,7 +39,6 @@
 static GR_WINDOW_ID		cube_wid;
 static GR_GC_ID			cube_gc;
 static GR_TIMER_ID		cube_timer;
-static GR_SCREEN_INFO	screen_info;
 static GR_WINDOW_ID		temp_pixmap;
 
 /* feel free to change the names of these globals - they should probably
@@ -521,15 +520,13 @@ static int cube_handle_event(GR_EVENT * event)
 
 void new_cube_window( void )
 {
-	GrGetScreenInfo(&screen_info);
-
 	if (screen_info.cols==138) {
 		if (!z_off) z_off = 800;
 	} else {
 		if (!z_off) z_off = 600;
 	}
 
-	cube_gc = GrNewGC();
+	cube_gc = pz_get_gc(1);
 	GrSetGCUseBackground(cube_gc, GR_FALSE);
 	GrSetGCForeground(cube_gc, BLACK);
 

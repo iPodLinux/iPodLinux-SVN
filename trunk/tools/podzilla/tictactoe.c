@@ -53,19 +53,16 @@ char board[9];
 int vals[19683]; // This should be reduced.
 enum { XWINS=1, OWINS=-1, TIE=2, NONE=0 };
 
-
 void new_tictactoe_window(void)
 {
-    GR_SCREEN_INFO si;
 	
-    tictactoe_gc = GrNewGC();       /* Get the graphics context */
-    GrGetScreenInfo(&si); /* Get screen info */
+    tictactoe_gc = pz_get_gc(1);       /* Get the graphics context */
 	
     /* Open the window: */
     tictactoe_wid = pz_new_window (0,
 								   21,
-								   si.cols,
-								   si.rows - 21, /* Height of screen - header  */
+								   screen_info.cols,
+								   screen_info.rows - (HEADER_TOPLINE+1),
 								   draw_header,
 								   handle_event);
 	

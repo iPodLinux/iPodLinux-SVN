@@ -242,9 +242,7 @@ void youlose(void)
 
 void InitWindow()
 {
-	GrGetScreenInfo(&screen_info);
-
-	tetris_gc = GrNewGC();
+	tetris_gc = pz_get_gc(1);
 	GrSetGCUseBackground(tetris_gc, GR_TRUE);
 	GrSetGCBackground(tetris_gc, WHITE);
 
