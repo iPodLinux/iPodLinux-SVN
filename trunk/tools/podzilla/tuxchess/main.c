@@ -36,7 +36,7 @@ static GR_WINDOW_ID tuxchess_wid;
 static GR_WINDOW_ID historic_wid;
 static GR_WINDOW_ID end_wid;
 static GR_WINDOW_ID message_wid;
-//static GR_TIMER_ID  tuxchess_timer_id;
+static GR_GC_ID tuxchess_gc;
 
 char cpu_move[8];
 
@@ -143,11 +143,9 @@ static void process_scancode(int scancode)
 void draw_message(char *msg1, char *msg2)
 {
 	int offset;
-	GR_GC_ID tuxchess_gc;
-	tuxchess_gc = GrNewGC();	/* Get the graphics context */
 
 	/* Clear the window */
-	GrClearWindow (message_wid, GR_FALSE);
+	GrClearWindow(message_wid, GR_FALSE);
 
 	/* Put the foreground and background in good shapes */
 	GrSetGCForeground(tuxchess_gc, BLACK);
@@ -192,10 +190,6 @@ void init_historic(void)
 /* ***********************************************************/
 void draw_historic(void)
 {
-	GR_GC_ID tuxchess_gc;
-
-	tuxchess_gc = GrNewGC();	/* Get the graphics context */
-
 	/* Clear the window */
 	GrClearWindow (historic_wid, GR_FALSE);
 
@@ -248,16 +242,16 @@ void reorg_historic(int player)
 	strcpy(historic_line2, historic_line1);
 	strcpy(historic_line1, s);
 
-	if (is_mini == 0) {
+	if (!is_mini) {
 		draw_historic();
 	}
 }
-		
+
 /* Set up a new game */
 void new_game()
 {
 	end = 0;
-	pz_close_window (end_wid);
+	pz_close_window(end_wid);
 	init();
 	gen_moves();
 	max_time = 100000;//1 << 25;
@@ -265,7 +259,7 @@ void new_game()
 
 	init_historic();
 	print_board();
-	if (is_mini == 0) {
+	if (!is_mini) {
 		draw_historic();
 	}
 	else {
@@ -312,7 +306,7 @@ BOOL check_validity(void)
 
 		if (!found || !makemove(gen_dat[i].m.b)) {
 			printf("Illegal move.\n");
-			if (is_mini == 1) {
+			if (is_mini) {
 				draw_message("     ","Nope");
 			}
 			else {
@@ -338,7 +332,7 @@ BOOL check_validity(void)
 /* Let's make the iPod think about ;-) */
 void computer_play(void)
 {
-	if (is_mini == 0) {
+	if (!is_mini) {
 		pz_draw_header("computer play");
 	}
 
@@ -350,7 +344,7 @@ void computer_play(void)
 	//sleep(1);
 	if (!pv[0][0].u) {
 		printf("No legal moves\n");
-		if (is_mini == 0) {
+		if (!is_mini) {
 			pz_draw_header ("No legal moves");
 		}
 	}
@@ -361,7 +355,7 @@ void computer_play(void)
 	ply = 0;
 	gen_moves();
 	if (in_check(LIGHT)) {
-		if (is_mini == 1) {
+		if (is_mini) {
 			draw_message("     ", "Check");
 		}
 		else {
@@ -370,7 +364,7 @@ void computer_play(void)
 	}
 	else
 	{
-		if (is_mini == 1) {
+		if (is_mini) {
 			draw_message("     ", "Play");
 		}
 		else {
@@ -422,20 +416,20 @@ void do_menu(void)
 
 	ipod_set_setting(BACKLIGHT, ipod_get_backlight());
 
-	pz_close_window(tuxchess_wid);
-
 	if (end == 2) {
 		pz_close_window(end_wid);
 	}
 
-	if (is_mini == 1) {
+	if (is_mini) {
 		pz_close_window(message_wid);
 	}
 	else {
 		pz_close_window(historic_wid);
 	}
 
-	//GrDestroyTimer (tuxchess_timer_id);
+	pz_close_window(tuxchess_wid);
+
+	GrDestroyGC(tuxchess_gc);
 }
 
 /* Common function for cursor positionning */
@@ -453,7 +447,7 @@ void new_cursor_position(void)
 		else {
 			sprintf(temp2, "Check! %c%c-",xcoord,ycoord);
 		}
-		if (is_mini == 0) {
+		if (!is_mini) {
 			pz_draw_header(temp2);
 		}
 	}
@@ -465,7 +459,7 @@ void new_cursor_position(void)
 		else {
 			sprintf(temp1,"%c%c-",xcoord,ycoord);
 		}
-		if (is_mini == 1) {
+		if (is_mini) {
 			draw_message(temp1,"     ");
 		}
 		else {
@@ -575,9 +569,7 @@ void do_left(void)
 void draw_cursor(char coord1, char coord2)
 {
 	int x,y;
-	GR_GC_ID tuxchess_gc;
 
-	tuxchess_gc = GrNewGC();	/* Get the graphics context */
 	x = (coord1-65)*13;
 	y = 106-((coord2-48)*13);
 
@@ -590,7 +582,7 @@ void draw_cursor(char coord1, char coord2)
 }
 
 /* Draw the rook */
-void draw_rook(int coord_x, int coord_y, char color, GR_GC_ID tuxchess_gc)
+void draw_rook(int coord_x, int coord_y, char color)
 {
 	GR_POINT rook[] = {
 		{coord_x+1, coord_y+1}, {coord_x+3, coord_y+1},
@@ -621,7 +613,7 @@ void draw_rook(int coord_x, int coord_y, char color, GR_GC_ID tuxchess_gc)
 }
 
 /* Draw the queen */
-void draw_queen(int coord_x, int coord_y, char color, GR_GC_ID tuxchess_gc)
+void draw_queen(int coord_x, int coord_y, char color)
 {
 	GR_POINT queen[] = {
 		{coord_x+1, coord_y+1}, {coord_x+4, coord_y+4},
@@ -637,7 +629,7 @@ void draw_queen(int coord_x, int coord_y, char color, GR_GC_ID tuxchess_gc)
 		GrSetGCForeground(tuxchess_gc,BLACK);
 		GrPoly(tuxchess_wid,tuxchess_gc,8,queen);
 	}
-	else 
+	else
 	{
 		GrSetGCForeground(tuxchess_gc,BLACK);
 		GrFillPoly(tuxchess_wid,tuxchess_gc,8,queen);
@@ -646,7 +638,7 @@ void draw_queen(int coord_x, int coord_y, char color, GR_GC_ID tuxchess_gc)
 }
 
 /* Draw the knight */
-void draw_knight(int coord_x, int coord_y, char color, GR_GC_ID tuxchess_gc)
+void draw_knight(int coord_x, int coord_y, char color)
 {
 	GR_POINT knight[] = {
 		{coord_x+5, coord_y+1}, {coord_x+8, coord_y+3},
@@ -672,7 +664,7 @@ void draw_knight(int coord_x, int coord_y, char color, GR_GC_ID tuxchess_gc)
 }
 
 /* Draw the king */
-void draw_king(int coord_x, int coord_y, char color, GR_GC_ID tuxchess_gc)
+void draw_king(int coord_x, int coord_y, char color)
 {
 	GrSetGCForeground(tuxchess_gc,BLACK);
 	GrLine(tuxchess_wid,tuxchess_gc,coord_x+6,coord_y+1,coord_x+6,coord_y+4);
@@ -686,7 +678,7 @@ void draw_king(int coord_x, int coord_y, char color, GR_GC_ID tuxchess_gc)
 }
 
 /* Draw the bishop */
-void draw_bishop(int coord_x, int coord_y, char color, GR_GC_ID tuxchess_gc)
+void draw_bishop(int coord_x, int coord_y, char color)
 {
 	GR_POINT bishop1[] = {
 		{coord_x+7, coord_y+1}, {coord_x+8, coord_y+4},
@@ -739,7 +731,7 @@ void draw_bishop(int coord_x, int coord_y, char color, GR_GC_ID tuxchess_gc)
 }
 
 /* Draw the pawn */
-void draw_pawn(int coord_x, int coord_y, char color, GR_GC_ID tuxchess_gc)
+void draw_pawn(int coord_x, int coord_y, char color)
 {
 	if(color == 'w')
 	{
@@ -769,7 +761,7 @@ void draw_pawn(int coord_x, int coord_y, char color, GR_GC_ID tuxchess_gc)
 /* Banner drawing */
 static void tuxchess_do_draw()
 {
-	if (is_mini == 0)
+	if (!is_mini)
 		pz_draw_header("Tuxchess");
 }
 
@@ -779,16 +771,6 @@ static int tuxchess_handle_event(GR_EVENT *event)
 {
 	switch (event->type)
 	{
-/*
-	case GR_EVENT_TYPE_TIMER:
-		tuxchess_Game_Loop();
-		break;
-*/
-
-	case GR_EVENT_TYPE_CLOSE_REQ:
-		GrClose();
-		exit(0);	/* no return*/
-
 	case GR_EVENT_TYPE_KEY_DOWN:
 		switch (event->keystroke.ch)
 		{
@@ -852,12 +834,8 @@ void draw_end(char col)
 		end_type = col;
 	}
 	else {
-		GR_GC_ID end_gc;
-		GR_SCREEN_INFO si;
-
-		GrGetScreenInfo(&si); /* Get screen info */
 		end = 2;
-		if (is_mini == 1) {
+		if (is_mini) {
 			offset = 0;
 			off_x = 11;
 			off_y = 9;
@@ -868,34 +846,33 @@ void draw_end(char col)
 			off_y = 0;
 		}
 
-		end_wid = pz_new_window (0,offset,si.cols,
-			si.rows - offset, /* Height of screen - HEADER_TOPLINE */
+		end_wid = pz_new_window (0, offset, screen_info.cols,
+			screen_info.rows - offset,
 			tuxchess_do_draw, tuxchess_handle_event);
-		end_gc = GrNewGC();	// Get the graphics context 
+		GrSelectEvents(end_wid, GR_EVENT_MASK_KEY_DOWN);
 
-		GrSelectEvents (end_wid, GR_EVENT_MASK_KEY_DOWN | GR_EVENT_MASK_TIMER);
-		GrMapWindow (end_wid);
+		GrMapWindow(end_wid);
 
 		/* Put the foreground and background in good shapes */
-		GrSetGCForeground(end_gc, BLACK);
-		GrSetGCBackground(end_gc, WHITE);
+		GrSetGCForeground(tuxchess_gc, BLACK);
+		GrSetGCBackground(tuxchess_gc, WHITE);
 
 		/* Clear the window */
-		GrClearWindow (end_wid, GR_FALSE);
+		GrClearWindow(end_wid, GR_FALSE);
 
 		if (col=='b') {
-			GrText(end_wid, end_gc, 57-off_x,40-off_y, "You Lost", -1, GR_TFASCII);
+			GrText(end_wid, tuxchess_gc, 57-off_x,40-off_y, "You Lost", -1, GR_TFASCII);
 		}
 		else if (col=='w') {
-			GrText(end_wid, end_gc, 54-off_x,40-off_y, "Well Done", -1, GR_TFASCII);
+			GrText(end_wid, tuxchess_gc, 54-off_x,40-off_y, "Well Done", -1, GR_TFASCII);
 		}
 		else if (col=='d') {
-			GrText(end_wid, end_gc, 67-off_x,40-off_y, "Draw", -1, GR_TFASCII);
+			GrText(end_wid, tuxchess_gc, 67-off_x,40-off_y, "Draw", -1, GR_TFASCII);
 		}
 
-		GrText(end_wid, end_gc, 52-off_x,65-off_y, 
+		GrText(end_wid, tuxchess_gc, 52-off_x,65-off_y, 
 			"Menu : Quit", -1, GR_TFASCII);
-		GrText(end_wid, end_gc, 33-off_x,80-off_y, 
+		GrText(end_wid, tuxchess_gc, 33-off_x,80-off_y, 
 			"Action : New Game", -1, GR_TFASCII);
 	}
 }
@@ -904,68 +881,61 @@ void draw_end(char col)
 /* ***********************************************************/
 void open_tuxchess_window (void)
 {
-	GR_GC_ID tuxchess_gc;
-	GR_SCREEN_INFO si;
+	tuxchess_gc = pz_get_gc(1);	/* Get the graphics context */
 
-	tuxchess_gc = GrNewGC();	/* Get the graphics context */
-	GrGetScreenInfo(&si); /* Get screen info */
+	is_mini = (screen_info.cols == 138);
 
-	is_mini = 0;
-	if (si.cols == 138) {
-		is_mini = 1;	// iPod Mini specific displays
-	}
-
-	//is_mini = 1;	//debug
-
-	if (is_mini == 1) {
+	if (is_mini) {
 		/* Open the window for the board: */
-		tuxchess_wid = pz_new_window (0,2,104,
-			si.rows,
+		tuxchess_wid = pz_new_window(0, 2,
+			104,
+			screen_info.rows,
 			tuxchess_do_draw,
 			tuxchess_handle_event);
 
 		/* Open the window for the message on the left : */
-		message_wid = pz_new_window (104,0,si.cols,
-			si.rows,
+		message_wid = pz_new_window(104, 0,
+			screen_info.cols,
+			screen_info.rows,
 			tuxchess_do_draw,
 			tuxchess_handle_event); 
+
+		GrSelectEvents(tuxchess_wid, GR_EVENT_MASK_KEY_DOWN);
+		GrSelectEvents(message_wid, GR_EVENT_MASK_KEY_DOWN);
 	} 
 	else {
 		/* Open the window for the board: */
-		tuxchess_wid = pz_new_window (0,HEADER_TOPLINE+1,104,
-			si.rows - HEADER_TOPLINE-1, /* Height of screen - HEADER_TOPLINE */
+		tuxchess_wid = pz_new_window(0, HEADER_TOPLINE + 1,
+			104,
+			screen_info.rows - HEADER_TOPLINE - 1,
 			tuxchess_do_draw,
 			tuxchess_handle_event);
 
 		/* Open the window for the historic : */
-		historic_wid = pz_new_window (104,HEADER_TOPLINE+1,si.cols,
-			si.rows - HEADER_TOPLINE-1, /* Height of screen - HEADER_TOPLINE */
+		historic_wid = pz_new_window(104, HEADER_TOPLINE + 1,
+			screen_info.cols,
+			screen_info.rows - HEADER_TOPLINE - 1,
 			tuxchess_do_draw,
 			tuxchess_handle_event); 
+
+		GrSelectEvents(tuxchess_wid, GR_EVENT_MASK_KEY_DOWN);
+		GrSelectEvents(historic_wid, GR_EVENT_MASK_KEY_DOWN);
 	}
 
-	/* Select the types of events you need for your window: */
-	GrSelectEvents (tuxchess_wid, GR_EVENT_MASK_KEY_DOWN | GR_EVENT_MASK_TIMER);
-
 	/* Display the windows : */
-	GrMapWindow (tuxchess_wid);
-	if (is_mini == 1) {
-		GrMapWindow (message_wid);
+	GrMapWindow(tuxchess_wid);
+	if (is_mini) {
+		GrMapWindow(message_wid);
 		draw_message("A1-","Play");
 	}
 	else {
-		GrMapWindow (historic_wid);
+		GrMapWindow(historic_wid);
 	}
-
-	/* Create the timer used for animating your application: */
-/*
-	tuxchess_timer_id = GrCreateTimer (tuxchess_wid, 150);
-*/
 
 	tuxchess_do_draw();
 
 	/* Clear the window */
-	GrClearWindow (tuxchess_wid, GR_FALSE);
+	GrClearWindow(tuxchess_wid, GR_FALSE);
 
 	gen_moves();
 	max_time = 100000;//1 << 25;
@@ -973,15 +943,15 @@ void open_tuxchess_window (void)
 	end = 0;
 
 	print_board();
-	if (is_mini == 0) {
+	if (!is_mini) {
 		draw_historic();
 	}
 
 	/* make sure the right window has focus so we get input events */
-	GrSetFocus(tuxchess_wid);
+	// GrSetFocus(tuxchess_wid);
 }
 
-void new_tuxchess_window (void)
+void new_tuxchess_window(void)
 {
 	init();
 	init_historic();
@@ -1112,22 +1082,22 @@ void print_board()
 				case LIGHT:
 					switch(piece_char[piece[i]]) {
 					case 'P': 
-						draw_pawn(x,y,'w',tuxchess_gc);
+						draw_pawn(x,y,'w');
 						break;
 					case 'N': 
-						draw_knight(x,y,'w',tuxchess_gc);
+						draw_knight(x,y,'w');
 						break;
 					case 'B': 
-						draw_bishop(x,y,'w',tuxchess_gc);
+						draw_bishop(x,y,'w');
 						break;
 					case 'R': 
-						draw_rook(x,y,'w',tuxchess_gc); 
+						draw_rook(x,y,'w');
 						break;
 					case 'Q': 
-						draw_queen(x,y,'w',tuxchess_gc);
+						draw_queen(x,y,'w');
 						break;
 					case 'K':
-						draw_king(x,y,'w',tuxchess_gc);
+						draw_king(x,y,'w');
 						break;
 					}
 					break;
@@ -1135,22 +1105,22 @@ void print_board()
 				case DARK:
 					switch(piece_char[piece[i]]) {
 					case 'P':
-						draw_pawn(x,y,'b',tuxchess_gc);
+						draw_pawn(x,y,'b');
 						break;
 					case 'N': 
-						draw_knight(x,y,'b',tuxchess_gc);
+						draw_knight(x,y,'b');
 						break;
 					case 'B': 
-						draw_bishop(x,y,'b',tuxchess_gc);
+						draw_bishop(x,y,'b');
 						break;
 					case 'R': 
-						draw_rook(x,y,'b',tuxchess_gc);
+						draw_rook(x,y,'b');
 						break;
 					case 'Q': 
-						draw_queen(x,y,'b',tuxchess_gc);
+						draw_queen(x,y,'b');
 						break;
 					case 'K':
-						draw_king(x,y,'b',tuxchess_gc); 
+						draw_king(x,y,'b');
 						break;
 					}
 					break;
@@ -1187,7 +1157,7 @@ void print_result()
 		if (in_check(side)) {
 			if (side == LIGHT) {
 				printf("Black mates");
-				if (is_mini == 1) {
+				if (is_mini) {
 					draw_message("Black","Mates");
 				}
 				else {
@@ -1197,7 +1167,7 @@ void print_result()
 			}
 			else {
 				printf("White mates");
-				if (is_mini == 1) {
+				if (is_mini) {
 					draw_message("White","Mates");
 				}
 				else {
@@ -1208,11 +1178,11 @@ void print_result()
 		}
 		else {
 			printf("Stalemate");
-			if (is_mini == 0) {
-				pz_draw_header("Stalemate");
+			if (is_mini) {
+				draw_message("Stale","Mate");
 			}
 			else {
-				draw_message("Stale","Mate");
+				pz_draw_header("Stalemate");
 			}
 			draw_end('d');
 		}
