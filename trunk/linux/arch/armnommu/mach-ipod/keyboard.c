@@ -209,6 +209,7 @@ static void keyboard_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 				break;
 			default:
 				/* only happens if we get out of sync */
+				break;
 			}
 		}
 
