@@ -1333,7 +1333,9 @@ EXPORT_SYMBOL(dma_region_init);
 EXPORT_SYMBOL(dma_region_alloc);
 EXPORT_SYMBOL(dma_region_free);
 EXPORT_SYMBOL(dma_region_sync);
+#ifndef CONFIG_IEEE1394_IPOD
 EXPORT_SYMBOL(dma_region_mmap);
+#endif
 EXPORT_SYMBOL(dma_region_offset_to_bus);
 
 /** iso.c **/
