@@ -100,7 +100,7 @@ struct menulist *new_ml()
 	ret->gr_height += 4;
 
 	GrMapWindow(ret->wid);
-	ret->itunes_menu = menu_init(ret->wid, ret->gc, "iTunes",
+	ret->itunes_menu = menu_init(ret->wid, ret->gc, "Music",
 			0, 1, screen_info.cols, screen_info.rows -
 			(HEADER_TOPLINE + 1), NULL, NULL);
 	ret->init = 0;
@@ -110,6 +110,7 @@ struct menulist *new_ml()
 
 static void itunes_do_draw()
 {
+	pz_draw_header(currentml->itunes_menu->title);
 	itunes_draw(currentml);
 }
 
