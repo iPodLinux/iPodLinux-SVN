@@ -385,8 +385,6 @@ int main(int argc, char **argv)
 	long id, extra;
         int fd;
 	char c;
-	int i;
-	char *ptr;
 
         if (argc < 2 || argc > 3 || !strcmp("--help", argv[1])) {
                 puts("");
@@ -426,13 +424,18 @@ int main(int argc, char **argv)
         }
 
 	if (!strncasecmp(input_types[type].name2, "-ipod", 5)) {
-		if ((ptr = fopen("/proc/cpuinfo", "r")) != NULL) {
-			char gen[512];
+		FILE *file;
 
-			while (fgets(gen, sizeof(gen), ptr)!=NULL)
-				if (strncmp(gen, "Revision", 8)==0)
+		if ((file = fopen("/proc/cpuinfo", "r")) != NULL) {
+			char gen[512];
+			char *ptr;
+			int i;
+
+			while (fgets(gen, sizeof(gen), file) != NULL) {
+				if (strncmp(gen, "Revision", 8) == 0)
 					break;
-			fclose(ptr);
+			}
+			fclose(file);
 			for (i=0; !isspace(gen[i]); i++);
 			for (; isspace(gen[i]); i++);
 			ptr = gen+i+2;
