@@ -527,6 +527,7 @@ static int dsp_do_keystroke(GR_EVENT * event)
 		pz_close_window(dsp_wid);
 		break;
 
+	case '1':
 	case 'd':
 		if (playing || recording) {
 			if (paused) {
@@ -541,6 +542,7 @@ static int dsp_do_keystroke(GR_EVENT * event)
 		dsp_do_draw(0);
 		draw_time();
 		break;
+	case '3':
 	case 'l':
 		if (playing && mixer_fd >= 0 && pcm_vol > 0) {
 			int vol;
@@ -549,6 +551,7 @@ static int dsp_do_keystroke(GR_EVENT * event)
 			ioctl(mixer_fd, SOUND_MIXER_WRITE_PCM, &vol);
 		}
 		break;
+	case '2':
 	case 'r':
 		if (playing && mixer_fd >= 0 && pcm_vol < 100) {
 			int vol;

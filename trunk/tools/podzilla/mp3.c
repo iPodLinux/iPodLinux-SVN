@@ -167,12 +167,15 @@ static int mp3_do_keystroke(GR_EVENT * event)
 	case 'm':
 		decoding_finished = 1;
 		break;
+	case '4':
 	case 'f':
 		play_next_track();
 		break;
+	case '5':
 	case 'w':
 		play_prev_track();
 		break;
+	case '1':
 	case 'd':
 		mp3_pause = !mp3_pause;
 		if (mp3_pause) {
@@ -182,6 +185,7 @@ static int mp3_do_keystroke(GR_EVENT * event)
 			pz_draw_header("MP3 Playback");
 		}
 		break;
+	case '3':
 	case 'l':
 		if (mixer_fd >= 0) {
 			int vol = dsp_vol & 0xff;
@@ -191,6 +195,7 @@ static int mp3_do_keystroke(GR_EVENT * event)
 			}
 		}
 		break;
+	case '2':
 	case 'r':
 		if (mixer_fd >= 0) {
 			int vol = dsp_vol & 0xff;

@@ -1,3 +1,6 @@
+Bernard Leach - Friday Feb 04 2005
+	added support for remote in mp3 & wav playback
+
 Prashant V - Friday Feb 04 2005
 	added music suffle/repeat
 	only playback mp3 files (skips files not ending in .mp3)
