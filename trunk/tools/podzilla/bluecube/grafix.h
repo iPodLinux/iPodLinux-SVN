@@ -19,25 +19,14 @@
 
 /* File: grafix.h === gfx Interface */
 
-#ifndef __GRAFIX_H__
-#define __GRAFIX_H__
-
-#ifdef USE_SDL
-#include "SDL.h"
-
-#define SCREEN_X   640
-#define SCREEN_Y   480
-#define SCREEN_BPP 16
-
-void InitSDLex(void);
-void PutPixel(int x, int y, int r, int g, int b);
-void PutRect(int x, int y, int w, int h, int r, int g, int b);
-void BlitIMG(SDL_Surface *img, int x, int y, int x2, int y2, int w, int h);
-#else
 #define MWINCLUDECOLORS
 #include <nano-X.h>
 
-void PutRect(int x, int y, int w, int h, int r, int g, int b);
-#endif
+GR_WINDOW_ID tetris_wid;
+GR_GC_ID tetris_gc;
+GR_SCREEN_INFO screen_info;
 
-#endif
+void InitWindow(void);
+void PutRect(int x, int y, int w, int h, int color);
+void DrawValues(void);
+void youlose(void);

@@ -22,10 +22,6 @@
 #ifndef __BOX_H__
 #define __BOX_H__
 
-#define STYLE_R(style) StyleColors[style][0]
-#define STYLE_G(style) StyleColors[style][1]
-#define STYLE_B(style) StyleColors[style][2]
-
 /* Brick structure */
 typedef struct
 {
@@ -62,7 +58,7 @@ int  IsBrickSet(int x, int y);              /* Check if a brick is set */
 
 void NewCluster(void);                      /* Create new cluster */
 void SetClusterPiece(void);                 /* Set piece for cluster */
-void DrawCluster(void);                     /* Draw cluster */
+void DrawCluster(int);                     /* Draw cluster */
 void DrawNextPiece(int posX, int posY);     /* Draw next piece ;) */
 void PutCluster(int x, int y);              /* Put cluster into the box */
 int  ClusterCollisionTest(int x, int y);    /* Does the cluster collide somewhere? */
@@ -74,7 +70,7 @@ void TurnClusterRight(void);                /* Rotate cluster */
 int  FullLine(int y);                       /* Is a certain line full? */
 int  CheckFullLine(void);                   /* Remove full lines */
 
-void BrickExplosion(int x, int y, int energy, int density);
+
 void BoxDrawInit(void);
 void BoxDrawUpdate(void);
 void BoxDrawMove(void);
