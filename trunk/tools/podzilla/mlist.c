@@ -402,14 +402,15 @@ void menu_select_item(menu_st *menulist, int sel)
 	}
 }
 /* selection changer, for the lazy */
-void menu_shift_selected(menu_st *menulist, int num)
+int menu_shift_selected(menu_st *menulist, int num)
 {
 	int sel;
 	sel = menulist->sel + num;
 	/* overboard */
 	if(sel < 0 || sel > menulist->num_items - 1)
-		return;
+		return 0;
 	menu_select_item(menulist, sel);
+	return 1;
 }
 
 menu_st *menu_handle_item(menu_st *menulist, int num)
