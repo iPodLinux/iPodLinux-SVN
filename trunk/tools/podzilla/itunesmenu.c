@@ -50,14 +50,14 @@ static void draw_itunes_parse(int cnt)
 {
 	char str[10];
 	sprintf(str, "%i", cnt);
-	
-	GrSetGCUseBackground(currentml->gc, GR_TRUE);
+
+	GrSetGCUseBackground(currentml->gc, GR_FALSE);
 	GrSetGCMode(currentml->gc, GR_MODE_SET);
-	GrSetGCForeground(currentml->gc, BLACK);
+	GrSetGCForeground(currentml->gc, WHITE);
 	GrFillRect(currentml->wid, currentml->gc, 0,
 		   3 * currentml->gr_height,
 		   currentml->screen_info.cols, currentml->gr_height);
-	GrSetGCForeground(currentml->gc, WHITE);
+	GrSetGCForeground(currentml->gc, BLACK);
 	GrText(currentml->wid, currentml->gc, 8, 3 * currentml->gr_height - 3,
 			str, -1, GR_TFASCII);
 }
@@ -69,13 +69,13 @@ static int itunes_do_keystroke();
 
 struct menulist *new_ml()
 {
-	struct menulist *ret = 
+	struct menulist *ret =
 		(struct menulist *) malloc(sizeof(struct menulist));
 	GrGetScreenInfo(&ret->screen_info);
 
 	ret->gc = GrNewGC();
-	GrSetGCUseBackground(ret->gc, GR_TRUE);
-	GrSetGCForeground(ret->gc, WHITE);
+	GrSetGCUseBackground(ret->gc, GR_FALSE);
+	GrSetGCForeground(ret->gc, BLACK);
 
 	ret->wid = pz_new_window(0, HEADER_TOPLINE + 1, ret->screen_info.cols,
 			ret->screen_info.rows - (HEADER_TOPLINE + 1),
@@ -122,12 +122,12 @@ static int get_next(struct menulist *ml)
 static int get_prev_tracklist_artselect(struct menulist *ml)
 {
 	struct tracklist *t = (struct tracklist *) ml->user;
-	
+
 	do {
 		t = (struct tracklist *)
 			btree_prev((struct btree_head *) t);
 	} while (t && (t->track->artist != selartist));
-	
+
 	if (t && (t->track->artist == selartist)) {
 		ml->user = (void *) t;
 		return 1;
@@ -139,7 +139,7 @@ static int get_prev_tracklist_artselect(struct menulist *ml)
 static int get_next_tracklist_artselect(struct menulist *ml)
 {
 	struct tracklist *t = (struct tracklist *) ml->user;
-	
+
 	do {
 		t = (struct tracklist *)
 			btree_next((struct btree_head *) t);
@@ -162,7 +162,7 @@ static int get_prev_array(struct menulist *ml)
 	}
 	return 0;
 }
-	
+
 static int get_next_array(struct menulist *ml)
 {
 	void *n = ml->user + sizeof(void *);
@@ -172,8 +172,8 @@ static int get_next_array(struct menulist *ml)
 	}
 	return 0;
 }
-	
-	
+
+
 static char *get_text_track(struct menulist *ml)
 {
 	return ((struct track *) ml->user)->name;
@@ -219,7 +219,7 @@ static void play_song(struct itdb_track *track)
 	new_mp3_window(track->path, track->album, track->artist, track->title, track->length);
 }
 
-	
+
 static char *get_text_plisttrack(struct menulist *ml)
 {
 	return ((*(atracks *) ml->user)[0])->name;
@@ -233,7 +233,7 @@ static int select_track(struct menulist *ml)
 		fprintf(stderr, "can not get track details. \n");
 	}
 	play_song(track);
-	
+
 	return 0;
 }
 
@@ -266,7 +266,7 @@ static int select_album(struct menulist *ml)
 			&album->tracks);
 
 	itunes_draw(currentml);
-	
+
 	return 0;
 }
 
@@ -275,7 +275,7 @@ static int select_albumlist(struct menulist *ml)
 {
 	struct artist *artist;
 	struct albumlist *al= (struct albumlist *) ml->user;
-	
+
 	currentml = new_ml();
 	currentml->prevml = ml;
 	currentml->get_next = get_next_tracklist_artselect;
@@ -285,13 +285,13 @@ static int select_albumlist(struct menulist *ml)
 
 	currentml->user = (void *) btree_first((struct btree_head *)
 			&al->album->tracks);
-	
+
 	/* make sure a track of the selected artist is selected */
 	artist =  ((struct tracklist *) currentml->user)->track->artist;
 	if (artist != selartist) get_next_tracklist_artselect(currentml);
 
 	itunes_draw(currentml);
-	
+
 	return 0;
 }
 
@@ -321,13 +321,13 @@ static int select_plisttrack(struct menulist *ml)
 	atracks *at = ml->user;
 	struct track *t = (*at)[0];
 
-	
+
 	struct itdb_track *track = db_read_details(t);
 	if (!track) {
 		fprintf(stderr, "can not get track details. \n");
 	}
 	play_song(track);
-	
+
 	return 0;
 }
 
@@ -346,29 +346,29 @@ static int select_plist(struct menulist *ml)
 	currentml->user = plist->tracks;
 
 	itunes_draw(currentml);
-	
+
 	return 0;
 }
 
 
-static void drawline_hlight(struct menulist *ml, int line) 
+static void drawline_hlight(struct menulist *ml, int line)
 {
-	GrSetGCForeground(ml->gc, WHITE);
+	GrSetGCForeground(ml->gc, BLACK);
 	GrFillRect(ml->wid, ml->gc, 0, 1 + line * ml->gr_height,
 			ml->screen_info.cols, ml->gr_height);
-	GrSetGCForeground(ml->gc, BLACK);
-	GrSetGCUseBackground(ml->gc, GR_FALSE);
+	GrSetGCForeground(ml->gc, WHITE);
+	GrSetGCUseBackground(ml->gc, GR_TRUE);
 	GrText(ml->wid, ml->gc, 8, (line + 1) * ml->gr_height - 3,
 			ml->get_text(ml), -1, GR_TFASCII);
-	GrSetGCUseBackground(ml->gc, GR_TRUE);
+	GrSetGCUseBackground(ml->gc, GR_FALSE);
 }
 
-static void drawline_normal(struct menulist *ml, int line) 
+static void drawline_normal(struct menulist *ml, int line)
 {
-	GrSetGCForeground(ml->gc, BLACK);
+	GrSetGCForeground(ml->gc, WHITE);
 	GrFillRect(ml->wid, ml->gc, 0, 1 + line * ml->gr_height,
 			ml->screen_info.cols, ml->gr_height);
-	GrSetGCForeground(ml->gc, WHITE);
+	GrSetGCForeground(ml->gc, BLACK);
 	GrText(ml->wid, ml->gc, 8, (line + 1) * ml->gr_height - 3,
 			ml->get_text(ml), -1, GR_TFASCII);
 }
@@ -395,14 +395,14 @@ static void itunes_draw(struct menulist *ml)
 		} else {
 			drawline_normal(ml, i);
 		}
-		
+
 		if (ml->get_next(ml)) {
 			offset2++;
-		} else { 
+		} else {
 			break;
 		}
 	}
-	
+
 	for (i = 0; i < offset2 - ml->sel_line; i++) {
 		ml->get_prev(ml);
 	}
@@ -465,7 +465,7 @@ void new_itunes_track()
 		free(currentml);
 		return;
 	}
-	
+
 	printf("tracks->parent: %p\n ", ((struct btree_head *) tracks)->parent);
 	currentml->user = (void *) btree_first((struct btree_head *) tracks);
 	printf("currentml->prev: %p\n", ((struct btree_head *) currentml->user)->prev);

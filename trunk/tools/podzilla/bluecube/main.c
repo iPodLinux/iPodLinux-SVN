@@ -1,5 +1,5 @@
 /*
- * BlueCube - just another tetris clone 
+ * BlueCube - just another tetris clone
  * Copyright (C) 2003  Sebastian Falbesoner
  *
  * This program is free software; you can redistribute it and/or
@@ -69,7 +69,7 @@ static GR_WINDOW_ID tetris_wid;
 static GR_GC_ID tetris_gc;
 static GR_SCREEN_INFO screen_info;
 #endif
-                                                                                
+
 
 #ifdef USE_SDL
 /*=========================================================================
@@ -80,11 +80,11 @@ int main(int argc, char *argv[])
 {
 	/* Init randomizer */
 	srand(time(NULL));
-	
+
 	/* Let's init the graphics and sound system */
 	InitSDLex();
 	InitSound();
-	
+
 	/* Load font */
 	font = LoadFontfile("font/font.dat", "font/widths.dat");
 	/* Load soundfiles */
@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
 					case SDLK_p:
 						bPause = 1; /* Activate pause mode */
 						break;
-					
+
 					case SDLK_c:
 						if (!bCrazy)
 							bCrazy = 1;
@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
 							BoxDrawInit();
 							bCrazy = 0;
 						}
-						
+
 					/* Only for debugging...
 					case SDLK_w:
 						if (level < 10) {
@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
 							level--;
 						break;
 					*/
-						
+
 					default: break;
 					}
 					else
@@ -204,7 +204,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Free sounds again */
-	SDL_FreeWAV(sndLine.samples); 
+	SDL_FreeWAV(sndLine.samples);
 	SDL_FreeWAV(sndNextlevel.samples);
 
 	/* Free font again */
@@ -289,7 +289,7 @@ void new_bluecube_window(void)
 
 	GrGetScreenInfo(&screen_info);
 	tetris_gc = GrNewGC();
-	GrSetGCUseBackground(tetris_gc, GR_TRUE);
+	GrSetGCUseBackground(tetris_gc, GR_FALSE);
 	tetris_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), tetris_do_draw, tetris_do_keystroke);
 	GrSelectEvents(tetris_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN|GR_EVENT_MASK_TIMER);
 	GrMapWindow(tetris_wid);
@@ -333,7 +333,7 @@ static void NewGame()
 {
 	InitBox(); /* Clear Box */
 	BoxDrawInit(); /* Init boxdraw values */
-	
+
 	lines = 0; /* Reset lines counter */
 	score = 0; /* Reset score */
 	level = 0; /* Reset level */
@@ -375,7 +375,7 @@ static void MainMenu_Loop()
 			switch (event.key.keysym.sym)
 			{
 			case SDLK_UP:
-				iAuswahl--;      
+				iAuswahl--;
 				if (iAuswahl < 1)
 					iAuswahl = 3;
 				break;
@@ -428,19 +428,19 @@ static void MainMenu_Loop()
 	WriteTextCenter(font, 80, HEADLINE);
 
 	/* Draw "text marker" */
-	PutRect(xPositions[iAuswahl-1]-10, yPositions[iAuswahl-1]+MoveValue, 140, 32, 
+	PutRect(xPositions[iAuswahl-1]-10, yPositions[iAuswahl-1]+MoveValue, 140, 32,
 		0,(iAuswahl-1)*32,(iAuswahl+1)*50);
-	
+
 	for (i=0; i<3; i++)
 		if (i == iAuswahl-1)
 			WriteText(font, xPositions[i]+MoveValue, yPositions[i]+(MoveValue/2), labels[i]);
 		else
 			WriteText(font, xPositions[i], yPositions[i], labels[i]);
-		
+
 	PutRect(0,0,640,40, 32,32,32);
 	PutRect(0,40,640,3,128,128,128);
 	WriteTextCenter(font, 3, "just another tetris clone");
-	
+
 	PutRect(0,437,640,3, 128,128,128);
 	PutRect(0,440,640,40, 32,32,32);
 	WriteTextCenter(font, 445, descriptions[iAuswahl-1]);
@@ -535,7 +535,7 @@ static void DrawScene()
 		sprintf(chLevel, "%d", level);
 #ifdef USE_SDL
 		WriteText(font, 490, 80, "Score");  /*  Show SCORE */
-		WriteText(font, 490, 105, chScore); 
+		WriteText(font, 490, 105, chScore);
 		WriteText(font, 495, 180, "Next");  /*  Show NEXT piece */
 		DrawNextPiece(490, 220);
 		WriteText(font, 490, 350, "Lines"); /*  Show number of killed LINES */
@@ -543,12 +543,12 @@ static void DrawScene()
 		WriteText(font, 95, 350, "Level");  /*  Show current LEVEL */
 		WriteText(font, 95, 375, chLevel);
 #else
-		GrSetGCForeground(tetris_gc, WHITE);
+		GrSetGCForeground(tetris_gc, BLACK);
 		GrText(tetris_wid, tetris_gc, 1, 20, "Score",  -1, GR_TFASCII);
 		GrText(tetris_wid, tetris_gc, 1, 32, chScore, -1, GR_TFASCII);
 		GrText(tetris_wid, tetris_gc, 125, 24, "Next",  -1, GR_TFASCII);
 		DrawNextPiece(130, 40);
-		GrSetGCForeground(tetris_gc, WHITE);
+		GrSetGCForeground(tetris_gc, BLACK);
 		GrText(tetris_wid, tetris_gc, 1, 45, "Lines",  -1, GR_TFASCII);
 		GrText(tetris_wid, tetris_gc, 1, 57, chLines, -1, GR_TFASCII);
 		GrText(tetris_wid, tetris_gc, 1, 72, "Level",  -1, GR_TFASCII);
@@ -567,12 +567,12 @@ static void DrawScene()
 	{
 #ifdef USE_SDL
 		WriteTextCenter(font, 120, "GAME OVER");
-		sprintf(chScore, "Your Score: %d", score); 
+		sprintf(chScore, "Your Score: %d", score);
 		WriteTextCenter(font, 250, chScore);
 #else
-		GrSetGCForeground(tetris_gc, BLACK);
-		GrFillRect(tetris_wid, tetris_gc, 0, 0, 168, 128);
 		GrSetGCForeground(tetris_gc, WHITE);
+		GrFillRect(tetris_wid, tetris_gc, 0, 0, 168, 128);
+		GrSetGCForeground(tetris_gc, BLACK);
 		GrText(tetris_wid, tetris_gc, 45, 35, "- Game Over -",  -1, GR_TFASCII);        sprintf(chScore, "Your Score: %d", score);
 		GrText(tetris_wid, tetris_gc, 35, 65, chScore,  -1, GR_TFASCII);
 #endif
@@ -635,7 +635,7 @@ static void GameOverAnimation()
 	{
 		if (NoParticlesLeft())
 			zustand = STATE_MENU;
-	}	
+	}
 #endif
 }
 
@@ -647,22 +647,22 @@ static void GameOverAnimation()
 void PutRect(int x, int y, int w, int h, int r, int g, int b)
 {
 	// GrSetGCForeground(tetris_gc, MWRGB(r, g, b));
-	GrSetGCForeground(tetris_gc, WHITE);
+	GrSetGCForeground(tetris_gc, BLACK);
 	GrRect(tetris_wid, tetris_gc, x, y, w, h);
 }
 
 void ClearRect(int x, int y, int w, int h)
 {
-	GrSetGCForeground(tetris_gc, BLACK);
-	GrFillRect(tetris_wid, tetris_gc, x, y, w, h);
 	GrSetGCForeground(tetris_gc, WHITE);
+	GrFillRect(tetris_wid, tetris_gc, x, y, w, h);
+	GrSetGCForeground(tetris_gc, BLACK);
 }
 
 void ClearBox(void)
 {
-	GrSetGCForeground(tetris_gc, BLACK);
-	GrFillRect(tetris_wid, tetris_gc, boxdraw.box_x+1, boxdraw.box_y+1, boxdraw.box_width-1, boxdraw.box_height-1);
 	GrSetGCForeground(tetris_gc, WHITE);
+	GrFillRect(tetris_wid, tetris_gc, boxdraw.box_x+1, boxdraw.box_y+1, boxdraw.box_width-1, boxdraw.box_height-1);
+	GrSetGCForeground(tetris_gc, BLACK);
 }
 
 #endif

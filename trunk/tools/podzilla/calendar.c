@@ -179,7 +179,7 @@ draw_headers(void)
 	int ws = XCALENDARPOS;
 
 	for (i = 0; i < 8;) {
-		GrSetGCForeground(calendar_gc, WHITE);
+		GrSetGCForeground(calendar_gc, BLACK);
 		GrText(calendar_wid, calendar_gc, ws + 2,
 		       YCALENDARPOS, Dayname[i++], -1,
 		       GR_TFASCII);
@@ -202,7 +202,7 @@ calendar_draw(int redraw)
 	if(redraw) {
 		clear_calendar();
 
-		GrSetGCForeground(calendar_gc, BLACK);
+		GrSetGCForeground(calendar_gc, WHITE);
 		GrFillRect(calendar_wid, calendar_gc, XCALENDARPOS, YCALENDARPOS,
 			screen_info.cols - XCALENDARPOS, 2 * WeekSpace);
 
@@ -225,23 +225,23 @@ calendar_draw(int redraw)
 
 		if ((pos == 5) || (pos == 6)) {
 			// Wochenende --> Tage in rot schreiben
-			GrSetGCForeground(calendar_gc, LTGRAY);
+			GrSetGCForeground(calendar_gc, GRAY);
 		}
 		else {
-			GrSetGCForeground(calendar_gc, WHITE);
+			GrSetGCForeground(calendar_gc, BLACK);
 		}
 
 		if(j == shown.mday) {
 			// Den selektierten Tag besonders farblich
 			// markieren -->
 			// höchste Prio der Farben
-			GrSetGCForeground(calendar_gc, GRAY);
+			GrSetGCForeground(calendar_gc, LTGRAY);
 			GrText(calendar_wid, calendar_gc, ws + 2, YCALENDARPOS + 2 +
 				row * WeekSpace, buffer, -1, GR_TFASCII);
 		}
 		if ((j == today.mday) && (shown.mon == today.mon)
 			&& (shown.year == today.year)) {
-			GrSetGCForeground(calendar_gc, LTGRAY);
+			GrSetGCForeground(calendar_gc, GRAY);
 		}
 		if(redraw) {
 			GrText(calendar_wid, calendar_gc, ws + 2, YCALENDARPOS + 2 +
@@ -308,7 +308,7 @@ prev_month(struct shown *shown, int step)
 static void
 clear_calendar()
 {
-	GrSetGCForeground(calendar_gc, BLACK);
+	GrSetGCForeground(calendar_gc, WHITE);
 	GrFillRect(calendar_wid, calendar_gc, XCALENDARPOS, YCALENDARPOS - 10, 170, 120);
 }
 
@@ -320,8 +320,8 @@ new_calendar_window(void)
 	GrGetScreenInfo(&screen_info);
 
 	calendar_gc = GrNewGC();
-	GrSetGCUseBackground(calendar_gc, GR_TRUE);
-	GrSetGCForeground(calendar_gc, WHITE);
+	GrSetGCUseBackground(calendar_gc, GR_FALSE);
+	GrSetGCForeground(calendar_gc, BLACK);
 
 	calendar_wid =
 	    pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols,

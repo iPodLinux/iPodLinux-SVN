@@ -39,7 +39,7 @@ int xlocal,ylocal,lastxlocal,lastylocal;
 void quit_podzilla(void);
 void reboot_ipod(void);
 static void oth_set_piece(int pos, int coloresq);
-   
+
 static int current_oth_item = 19;
 static int last_current_oth_item;
 static int status[64];
@@ -57,8 +57,8 @@ static void draw_oth()
 
 	GrGetGCTextSize(oth_gc, "M", -1, GR_TFASCII, &width, &height, &base);
 
-	GrSetGCUseBackground(oth_gc, GR_FALSE);
-	GrSetGCForeground(oth_gc, WHITE);
+	GrSetGCUseBackground(oth_gc, GR_TRUE);
+	GrSetGCForeground(oth_gc, BLACK);
 	GrLine(oth_wid, oth_gc, 33, 8, 127, 8);
 	GrLine(oth_wid, oth_gc, 32, 20, 128, 20);
 	GrLine(oth_wid, oth_gc, 32, 32, 128, 32);
@@ -68,7 +68,7 @@ static void draw_oth()
 	GrLine(oth_wid, oth_gc, 32, 80, 128, 80);
 	GrLine(oth_wid, oth_gc, 32, 92, 128, 92);
 	GrLine(oth_wid, oth_gc, 33, 104, 127, 104);
-	
+
 	GrLine(oth_wid, oth_gc, 32, 9, 32, 103);
 	GrLine(oth_wid, oth_gc, 44, 8, 44, 104);
 	GrLine(oth_wid, oth_gc, 56, 8, 56, 104);
@@ -78,9 +78,9 @@ static void draw_oth()
 	GrLine(oth_wid, oth_gc, 104, 8, 104, 104);
 	GrLine(oth_wid, oth_gc, 116, 8, 116, 104);
 	GrLine(oth_wid, oth_gc, 128, 9, 128, 103);
-	GrSetGCForeground(oth_gc, WHITE);
-	GrSetGCUseBackground(oth_gc, GR_TRUE);
-	
+	GrSetGCForeground(oth_gc, BLACK);
+	GrSetGCUseBackground(oth_gc, GR_FALSE);
+
 	if(current_oth_item < 0)
 		current_oth_item = 63;
 	else if(current_oth_item >= 64)
@@ -89,9 +89,9 @@ static void draw_oth()
 	ylocal=8+12*(int)(current_oth_item/8);
 	lastxlocal=last_current_oth_item * 12 + 32 - 96*(int)(last_current_oth_item/8);
 	lastylocal=8+12*(int)(last_current_oth_item/8);
-	GrRect(oth_wid, oth_gc, xlocal,ylocal, 12, 12); 
+	GrRect(oth_wid, oth_gc, xlocal,ylocal, 12, 12);
 
-	GrSetGCForeground(oth_gc, BLACK);
+	GrSetGCForeground(oth_gc, WHITE);
 	if(current_oth_item != last_current_oth_item) {
 		GrLine(oth_wid, oth_gc, lastxlocal+1,lastylocal+11,lastxlocal+11,lastylocal+11);
 		GrLine(oth_wid, oth_gc, lastxlocal+11,lastylocal+11,lastxlocal+11,lastylocal+1);
@@ -112,13 +112,13 @@ static void oth_set_piece(int pos, int coloresq)
 		{pos*12 +33 -96*(int)(pos/8), 14 +12*(int)(pos/8)}
 	};
 	status[pos] = coloresq;
-	GrSetGCForeground(oth_gc, WHITE);
+	GrSetGCForeground(oth_gc, BLACK);
 	if(coloresq==0)
 		GrFillPoly(oth_wid, oth_gc, 5, cheese);
 	else if(coloresq==1) {
-		GrSetGCForeground(oth_gc, BLACK);
-		GrFillPoly(oth_wid, oth_gc, 5, cheese);
 		GrSetGCForeground(oth_gc, WHITE);
+		GrFillPoly(oth_wid, oth_gc, 5, cheese);
+		GrSetGCForeground(oth_gc, BLACK);
 		GrPoly(oth_wid, oth_gc, 5, cheese);
 	}
 }
@@ -183,9 +183,9 @@ static int endgame(int isOver)
 				break;
 		}
 	}
-	GrSetGCForeground(oth_gc, BLACK);
-	GrFillRect(oth_wid, oth_gc, 32, 8, 97, 97);
 	GrSetGCForeground(oth_gc, WHITE);
+	GrFillRect(oth_wid, oth_gc, 32, 8, 97, 97);
+	GrSetGCForeground(oth_gc, BLACK);
 	sprintf(comp, "Me: %d", computer);
 	sprintf(hum, "You: %d", human);
 	GrText(oth_wid, oth_gc, 35, 32, comp, -1, GR_TFASCII);
@@ -195,7 +195,7 @@ static int endgame(int isOver)
 		GrText(oth_wid, oth_gc, 8, 56, win[s], -1, GR_TFASCII);
 		over=1;
 		printf("\n\nCongratulations! You beat the computer %d to %d !\n\n",human,computer);
-		
+
 	}
 	else if(computer>human) {
 		GrText(oth_wid, oth_gc, 8, 56, lose[s], -1, GR_TFASCII);
@@ -224,7 +224,7 @@ static int testmove(int xy,char test,int side,int dx,int dy,char execute) {
 			found_end='Y';
 		else if(status[xy]==3)
 			break;
-		else 
+		else
 			pieces++;
 		if(xy==0||xy==8||xy==16||xy==24||xy==32||xy==40||xy==48||xy==56) {
 			if(dx==-1)
@@ -236,7 +236,7 @@ static int testmove(int xy,char test,int side,int dx,int dy,char execute) {
 		}
 		xy+=dx;
 		xy+=(dy*8);
-		
+
 	}
 	if(found_end=='Y') {
 		if(execute=='Y') {
@@ -295,7 +295,7 @@ static int validmove(int xy,char test,int side,char execute) {
 }
 
 static int canmove(int side) {
-	int i; 
+	int i;
 	for(i=0;i<64;i++)
 		if(status[i] == 3)
 			if(validmove(i,'N',side,'N'))
@@ -444,8 +444,8 @@ void new_oth_window()
 	GrGetScreenInfo(&screen_info);
 
 	oth_gc = GrNewGC();
-	GrSetGCUseBackground(oth_gc, GR_TRUE);
-	GrSetGCForeground(oth_gc, WHITE);
+	GrSetGCUseBackground(oth_gc, GR_FALSE);
+	GrSetGCForeground(oth_gc, BLACK);
 
 	oth_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), oth_do_draw, oth_do_keystroke);
 

@@ -8,7 +8,7 @@
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation.
-    
+
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -17,7 +17,7 @@
     You should have received a copy of the GNU General Public License
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
-    
+
 #include "mine.h"
 #ifdef USE_NCURSES
 #include <signal.h>
@@ -46,7 +46,7 @@ int main(int argc, char **argv)
         signal(SIGKILL, CleanUp);
         signal(SIGQUIT, CleanUp);
         signal(SIGBUS,  CleanUp);
-	
+
 	/* Set difficulty, initiate variables and screen, start timer.
 	   Exit if a non gameplaying/incorrect argument has been passed, Eg. -v */
 	if( (Game.Difficulty = Args(argc,argv)) == FALSE )
@@ -77,7 +77,7 @@ int main(int argc, char **argv)
 		case KEY_RIGHT:
 			MoveRight(&Game);
 			break;
-		
+
 		/* Show the Help Window */
 		case KEY_F(1):
 		case KEY__HELP:
@@ -112,14 +112,14 @@ int main(int argc, char **argv)
 		case KEY__RESTART:
 			restart = TRUE;
 			break;
-		
+
 		/* Pause game and timer */
 		case KEY__PAUSE:
 			if( Pause(&Game, &start, &stop) == KEY__QUIT )
 				choice = KEY__QUIT;
 			break;
 
-		
+
 		/* Flag/Unflag a square */
 		case KEY__FLAG:
 			/* Test for Winner */
@@ -131,7 +131,7 @@ int main(int argc, char **argv)
 			}
 			break;
 
-		
+
 		/* Uncover a square */
 		case KEY__UNCOVER:
 			/* Only bother if square is unflagged */
@@ -141,19 +141,19 @@ int main(int argc, char **argv)
 					restart = Winner(&Game,FALSE);
 			break;
 
-			
+
 		/* Capture Esc to quit */
 		case 27:
 			choice = KEY__QUIT;
 			break;
-			
+
 #ifdef CHEATERS_R_US		/* For no good cheating s.o.b's	that read the source. :-) */
 		case KEY_F(11):
 			gettimeofday(&stop,NULL);
 			Game.Timer+= (stop.tv_sec - start.tv_sec);
 			restart = Winner(&Game,TRUE);
 			break;
-			
+
 		/* ;-) */
 		case KEY_F(12):
 			if( grid[Game.x][Game.y] == MINED )
@@ -174,7 +174,7 @@ int main(int argc, char **argv)
 	}
 	if( restart == FALSE )
 		choice = KEY__QUIT;
-		
+
 	}while(choice != KEY__QUIT);
 	/* End of do{...}while(); */
 
@@ -205,7 +205,7 @@ static void draw_current_pos(int moved)
 {
 #if 0
 	/* this doesnt seem to work on the ipod? */
-	GrSetGCForeground(mines_gc, BLACK);
+	GrSetGCForeground(mines_gc, WHITE);
 	GrSetGCMode(mines_gc, GR_MODE_XOR);
 	GrFillRect(mines_wid, mines_gc, (Game.x*12)+3, (Game.y*12)+7, 11, 11);
 
@@ -218,11 +218,11 @@ static void draw_current_pos(int moved)
 
 	GrSetGCMode(mines_gc, GR_MODE_SET);
 #else
-	GrSetGCForeground(mines_gc, WHITE);
+	GrSetGCForeground(mines_gc, BLACK);
 	GrRect(mines_wid, mines_gc, (Game.x*12)+3, (Game.y*12)+7, 11, 11);
 
 	if (moved) {
-		GrSetGCForeground(mines_gc, BLACK);
+		GrSetGCForeground(mines_gc, WHITE);
 		GrRect(mines_wid, mines_gc, (lastx*12)+3, (lasty*12)+7, 11, 11);
 
 		lastx = Game.x;
@@ -238,7 +238,7 @@ static void mines_do_draw()
 
 	pz_draw_header("Flags left: 12");
 
-	GrSetGCForeground(mines_gc, WHITE);
+	GrSetGCForeground(mines_gc, BLACK);
 	for (i = 6; i <= 126; i += 12) {
 		GrLine(mines_wid, mines_gc, 2, i, 158, i);
 	}
@@ -327,7 +327,8 @@ void new_mines_window()
 	lasty = Game.y;
 
 	mines_gc = GrNewGC();
-	GrSetGCForeground(mines_gc, WHITE);
+	GrSetGCForeground(mines_gc, BLACK);
+	GrSetGCUseBackground(mines_gc, GR_FALSE);
 	GrSetGCMode(mines_gc, GR_MODE_SET);
 
 	GrGetScreenInfo(&screen_info);
@@ -337,7 +338,7 @@ void new_mines_window()
 
 	GrMapWindow(mines_wid);
 
-	GrSetGCForeground(mines_gc, WHITE);
+	GrSetGCForeground(mines_gc, BLACK);
 }
 
 #endif

@@ -76,9 +76,9 @@ static void draw_time()
 
 static void mp3_do_draw(GR_EVENT * event)
 {
-	GrSetGCForeground(mp3_gc, BLACK);
-	GrFillRect(mp3_wid, mp3_gc, 0, 0, screen_info.cols, screen_info.rows);
 	GrSetGCForeground(mp3_gc, WHITE);
+	GrFillRect(mp3_wid, mp3_gc, 0, 0, screen_info.cols, screen_info.rows);
+	GrSetGCForeground(mp3_gc, BLACK);
 
 	GrText(mp3_wid, mp3_gc, 8, 20, current_album, -1, GR_TFASCII);
 	GrText(mp3_wid, mp3_gc, 8, 34, current_artist, -1, GR_TFASCII);
@@ -91,7 +91,7 @@ static int mp3_do_keystroke(GR_EVENT * event)
 {
         switch (event->keystroke.ch) {
         case '\r':
-        case '\n': 
+        case '\n':
 		break;
 	case 'm':
 		decoding_finished = 1;
@@ -184,7 +184,7 @@ static int abread(void * ptr, size_t size, size_t nmemb)
 	if (copylen + audiobufpos > audiobuf_len) {
 		copylen = audiobuf_len - audiobufpos;
 	}
-	
+
 	memcpy(ptr, audiobuf + audiobufpos, copylen);
 	audiobufpos += copylen;
 
@@ -204,7 +204,7 @@ static int FillMP3BitStream(MP3BitStream *bs)
 	/* Point to ring buffer */
 	StreamBuf = bs->Stream;
 
-	/* Block fill ring buffer from file device using 1 of 3 cases:  
+	/* Block fill ring buffer from file device using 1 of 3 cases:
 	   a) head>tail, b) head<tail, c) head==tail */
 	if (bs->Head < bs->Tail)
 	{
@@ -246,7 +246,7 @@ static void RenderSound(Ipp16s *pcm, MP3DecoderState *ds)
 
 		pz_draw_header("MP3 Playback - Mono!");
 		for (i = 0; i < len; i += MAX_CHAN)
-			pcm[i+1] = pcm[i]; 
+			pcm[i+1] = pcm[i];
 	}
 
 	write(dsp_fd, pcm, sizeof(Ipp16s) * len);
@@ -373,8 +373,8 @@ void new_mp3_window(char *filename, char *album, char *artist, char *title, int 
 	remaining_time = len;
 
 	mp3_gc = GrNewGC();
-	GrSetGCUseBackground(mp3_gc, GR_TRUE);
-	GrSetGCForeground(mp3_gc, WHITE);
+	GrSetGCUseBackground(mp3_gc, GR_FALSE);
+	GrSetGCForeground(mp3_gc, BLACK);
 	GrGetScreenInfo(&screen_info);
 
 	mp3_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), mp3_do_draw, mp3_do_keystroke);

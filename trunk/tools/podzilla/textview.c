@@ -17,7 +17,7 @@
  */
 /* Changes 2004-06-27 by matz-josh:
 	- fixed crash on dos/windows textfiles containing empty lines
-	- the handle on the scrollbar is now at least 2 Pixels high 
+	- the handle on the scrollbar is now at least 2 Pixels high
 	  it has been sometimes invisible (hight 0) in large files
 	- added support for rewind and forward keys:
 	  rewind scrolls up and forward scrolls down one screen.
@@ -41,7 +41,7 @@ static char * g_filename;
 
 static unsigned int totalLines = 0;
 static unsigned int currentLine = 0;
-static char ** lineData; 
+static char ** lineData;
 
 static void printPage(int startLine, int x, int y, int w, int h)
 {
@@ -51,7 +51,7 @@ static void printPage(int startLine, int x, int y, int w, int h)
 
 	for (i = startLine; i < startLine + LINESPERSCREEN && i < totalLines; i++)
 	{
-		GrText(tv_wid, tv_gc, 3, (i - startLine + 1) * height + 4, lineData[i], -1, GR_TFASCII); 
+		GrText(tv_wid, tv_gc, 3, (i - startLine + 1) * height + 4, lineData[i], -1, GR_TFASCII);
 	}
 
 }
@@ -60,7 +60,7 @@ static void printPage(int startLine, int x, int y, int w, int h)
 // I also see many ways to optimize it, but I'm really to lazy to at the moment.
 static void buildLineData()
 {
-	
+
 	char * starttextptr;
 	FILE * fp;
 	long unsigned int file_len;
@@ -76,7 +76,7 @@ static void buildLineData()
 		printf("cannot open file %s\n", g_filename);
 		return;
 	}
-	
+
 	fseek(fp, 0, SEEK_END);
 	file_len = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
@@ -114,7 +114,7 @@ static void buildLineData()
 			if (*curtextptr == '\r')  { //ignore '\r' in dos/windows textfiles
                                 curtextptr++;
 			}
-							
+
 			if (*curtextptr == '\n')
 			{
 				curtextptr++;
@@ -177,8 +177,8 @@ static void drawtext(void)
 	int block_start_pix = 9 + pixPerLine * currentLine;
 	int block_height = 9 + pixPerLine * (currentLine + LINESPERSCREEN) - block_start_pix;
 
-	GrSetGCForeground(tv_gc, WHITE);
-	
+	GrSetGCForeground(tv_gc, BLACK);
+
 	if (block_height < 2)		//for long texts the minimum height of the handle is set to 2
 		block_height = 2;
 
@@ -193,7 +193,7 @@ static void drawtext(void)
 
 	// Draw the Handle on the ScrollBar
 	GrRect (tv_wid , tv_gc , tv_winfo.width - 7, block_start_pix, 4, block_height);
-	GrSetGCForeground(tv_gc, BLACK);
+	GrSetGCForeground(tv_gc, WHITE);
 	GrRect (tv_wid , tv_gc , tv_winfo.width - 6, block_start_pix + 1, 2, block_height - 2);
 }
 
@@ -224,7 +224,7 @@ static int textview_do_keystroke(GR_EVENT * event){
 			break;
 
 		case 'l':
-			
+
 			if (currentLine > 0) {
 				currentLine --;
 				drawtext();
@@ -246,7 +246,7 @@ static int textview_do_keystroke(GR_EVENT * event){
                         // if it's already the first line, nothing is done
 			if (currentLine > 0) {
 				if (currentLine < LINESPERSCREEN) // if there is no full screen above the current one
-					currentLine = 0;	  // go up to the very first line	
+					currentLine = 0;	  // go up to the very first line
 				else	// go up on screen
 					currentLine = currentLine - LINESPERSCREEN;
 				drawtext();
@@ -263,17 +263,17 @@ int is_text_type(char * extension)
 }
 
 void new_textview_window(char * filename)
-{		
+{
 	g_filename = (char *)strdup(filename);
 
 	GrGetScreenInfo(&screen_info);
 
 	tv_gc = GrNewGC();
-	GrSetGCUseBackground(tv_gc, GR_TRUE);
-	GrSetGCForeground(tv_gc, WHITE);
-	
+	GrSetGCUseBackground(tv_gc, GR_FALSE);
+	GrSetGCForeground(tv_gc, BLACK);
+
 	tv_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), textview_do_draw, textview_do_keystroke);
-	
+
 	GrSelectEvents(tv_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN);
 
 	GrMapWindow(tv_wid);

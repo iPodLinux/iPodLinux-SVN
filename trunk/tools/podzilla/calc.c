@@ -36,12 +36,12 @@ static void draw_calc() {
 	GR_SIZE width, height, base;
 
 	GrSetGCUseBackground(calc_gc, GR_FALSE);
-	GrSetGCForeground(calc_gc, WHITE);
+	GrSetGCForeground(calc_gc, BLACK);
 	GrRect(calc_wid, calc_gc, 20, 10, 115, 16);
 	GrGetGCTextSize(calc_gc, mathloc, -1, GR_TFASCII, &width, &height, &base);
-	GrSetGCForeground(calc_gc, BLACK);
-	GrFillRect(calc_wid, calc_gc, 21, 11, 113, 14);
 	GrSetGCForeground(calc_gc, WHITE);
+	GrFillRect(calc_wid, calc_gc, 21, 11, 113, 14);
+	GrSetGCForeground(calc_gc, BLACK);
 	GrText(calc_wid, calc_gc, screen_info.cols-(width+27), 23, mathloc, -1, GR_TFASCII);
 
 	if(current_calc_item < 0)
@@ -52,15 +52,15 @@ static void draw_calc() {
 	ylocal=30+20*(int)(current_calc_item/4);
 	lastxlocal=last_calc_item*30+20-120*(int)(last_calc_item/4);
 	lastylocal=30+20*(int)(last_calc_item/4);
-	GrSetGCForeground(calc_gc, BLACK);
-	GrFillRect(calc_wid, calc_gc, lastxlocal+1, lastylocal+1, 23, 14);
 	GrSetGCForeground(calc_gc, WHITE);
+	GrFillRect(calc_wid, calc_gc, lastxlocal+1, lastylocal+1, 23, 14);
+	GrSetGCForeground(calc_gc, BLACK);
 	GrText(calc_wid, calc_gc, lastxlocal+9, lastylocal+13, num[last_calc_item], -1, GR_TFASCII);
 	GrFillRect(calc_wid, calc_gc, xlocal, ylocal, 25, 16);
-	GrSetGCForeground(calc_gc, BLACK);
+	GrSetGCForeground(calc_gc, WHITE);
 	GrText(calc_wid, calc_gc, xlocal+9, ylocal+13, num[current_calc_item], -1, GR_TFASCII);
 
-	GrSetGCUseBackground(calc_gc, GR_TRUE);
+	GrSetGCUseBackground(calc_gc, GR_FALSE);
 	GrSetGCMode(calc_gc, GR_MODE_SET);
 }
 
@@ -107,7 +107,7 @@ static void calc_do_draw() {
 	pz_draw_header("Calculator");
 	mathloc[0]='\0';
 	numfull = 0;
-	GrSetGCForeground(calc_gc, WHITE);
+	GrSetGCForeground(calc_gc, BLACK);
 	for(i=0; i<=15; i++) {
 		GrRect(calc_wid, calc_gc, i*30+20-120*(int)(i/4), 30+20*(int)(i/4), 25, 16);
 		GrText(calc_wid, calc_gc, i*30+29-120*(int)(i/4), 43+20*(int)(i/4), num[i], -1, GR_TFASCII);
@@ -155,8 +155,8 @@ void new_calc_window() {
 	GrGetScreenInfo(&screen_info);
 
 	calc_gc = GrNewGC();
-	GrSetGCUseBackground(calc_gc, GR_TRUE);
-	GrSetGCForeground(calc_gc, WHITE);
+	GrSetGCUseBackground(calc_gc, GR_FALSE);
+	GrSetGCForeground(calc_gc, BLACK);
 
 	calc_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), calc_do_draw, calc_do_keystroke);
 
