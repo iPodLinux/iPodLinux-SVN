@@ -25,58 +25,18 @@ ENTRY(stext)
 	mov     r0, #0xd3
 	msr     CPSR_c, r0
 
-.ifdef NOTDEF
-	ldr	r1, L_0xcf00502c
-	mov	r0, #0
-	str	r0, [r1]
-
-	ldr	r1, L_0xcf004024
-	mov	r0, #0
-	str	r0, [r1]
-
-	ldr	r1, L_0xcf005000
-	ldr	r0, L_0xb9f
-	str	r0, [r1]
-
-	ldr	r1, L_0xcf005004
-	mov	r0, #0x35
-	str	r0, [r1]
-.endif
-
-.ifdef NOTDEF
-	/* clear and mask all interrupts */
-	ldr	r1, L_0xcf00101c
-	mov	r0, #-1
-	str	r0, [r1]
-
-	ldr	r1, L_0xcf001028
-	mov	r0, #-1
-	str	r0, [r1]
-
-	ldr	r1, L_0xcf001038
-	mov	r0, #-1
-	str	r0, [r1]
-
-	/* clear timers */
-	ldr	r1, L_0xcf001100
-	mov	r0, #0
-	str	r0, [r1]
-
-	ldr	r1, L_0xcf001104
-	ldr	r1, [r1]
-
-	ldr	r1, L_0xcf001108
-	mov	r0, #0
-	str	r0, [r1]
-
-	ldr	r1, L_0xcf00110c
-	ldr	r1, [r1]
-.endif
-
 	/* setup memory mapping */
-	ldr	r1, C_0x40010000
+	ldr	r1, =0x40010000
 	ldr	r2, =install_reloc_start
 	ldr	r3, =install_reloc_end
+
+	/*
+	 * this code is compiled for 0x0 but running at 0x28000000
+	 * or 0x10000000 so we need to adjust
+	 */
+	and	r5, pc, #0xff000000	/* adjust for execute address */
+	orr	r2, r2, r5
+	orr	r3, r3, r5
 
 	/* copy the code to 0x40010000 */
 1:
@@ -85,11 +45,10 @@ ENTRY(stext)
 	cmp	r2, r3
 	ble	1b
 
-	ldr	r3, =0x3f84		/* 4g uses 0x10000f84 */
-	and	r5, pc, #0xff000000	/* adjust for execute address */
-	orr	r3, r3, r5
+	ldr	r3, =0x3f84
+	orr	r3, r3, r5		/* adjust for execute address */
 	ldr	r2, =0xf000f014
-	mov	r1, #0x3b00		/* 4g uses 0x3a00 */
+	mov	r1, #0x3b00
 	ldr	r0, =0xf000f010
 	ldr	r4, =0x40010000
 	mov	pc, r4
@@ -147,54 +106,13 @@ cop_startup:
 	msr	CPSR_c, r0
 	ldr	sp, svc_sp
 
-.ifdef NOTDEF
-	/* copy our FIQ code to 0x4000000 */
-	mov	r1, #0x40000000
-	ldr	r2, L_cop_start
-	ldr	r3, L_cop_end
-
-	/* copy the code to 0x40000000 */
-1:
-	ldr	r4, [r2], #4
-	str	r4, [r1], #4
-	cmp	r2, r3
-	ble	1b
-.endif
-
-.ifdef NOTDEF
-	/* install our FIQ handler */
-	mov	r1, #0x1c
-	ldr	r2, cop_fiq_vec
-	ldr	r2, [r2]
-	str	r2, [r1]
-.endif
-
 	bl	ipod_init_cache
 
 	/* jump to our idle loop */
 	b	cop_idle
 
-cop_fiq_vec:
-	mov	pc, #0x40000000
-
 svc_sp:		.word cop_svc_stack
 fiq_sp:		.word cop_fiq_stack
-
-L_cop_start:	.word cop_fiq
-L_cop_end:	.word cop_end
-
-L_0xcf00502c:	.word 0xcf00502c
-L_0xcf004024:	.word 0xcf004024
-L_0xcf005000:	.word 0xcf005000
-L_0xb9f:	.word 0xb9f
-L_0xcf005004:	.word 0xcf005004
-L_0xcf00101c:	.word 0xcf00101c
-L_0xcf001028:	.word 0xcf001028
-L_0xcf001038:	.word 0xcf001038
-L_0xcf001100:	.word 0xcf001100
-L_0xcf001104:	.word 0xcf001104
-L_0xcf001108:	.word 0xcf001108
-L_0xcf00110c:	.word 0xcf00110c
 
 cpu_startup:
 	/* get important "magic" values */
@@ -208,9 +126,9 @@ cpu_startup:
 	strcc	r4, [r5], #4
 	bcc	1b
 
+	bl	ipod_set_sys_info
 	bl	ipod_init_cache
 	bl	ipod_set_cpu_speed
-	bl	ipod_set_sys_info
 
 	/* put initial values into stack?? */
 	mov	r5, sp
@@ -243,12 +161,6 @@ L_STACK_UNTOUCHED_MAGIC:
 
 L_ARMID:	.long 0x41007700
 
-
-C_0x40010000:	.word 0x40010000
-
-C_0x28003f84:	.word 0x28003f84
-C_0xf000f014:	.word 0xf000f014
-C_0xf000f010:	.word 0xf000f010
 
 	.align 8
 LC0:	.long	SYMBOL_NAME(__bss_start)
