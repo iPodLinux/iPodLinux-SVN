@@ -28,7 +28,7 @@ LIBITUNESDB=../libitunesdb/src
 
 endif
 
-CFLAGS+=-Wall -g -I$(MICROWINDOWS)/include -g -I$(LIBITUNESDB)
+CFLAGS+=-Wall -g -I$(MICROWINDOWS)/include -g -I$(LIBITUNESDB) -DPZ_VER="\"podzilla v0.1\""
 LDFLAGS+=$(MICROWINDOWS)/lib/libnano-X.a $(MICROWINDOWS)/lib/libmwengine.a $(MICROWINDOWS)/lib/libmwdrivers.a $(MICROWINDOWS)/lib/libmwfonts.a $(LIBITUNESDB)/.libs/libitunesdb.a
 
 # enable JPEG support
@@ -49,6 +49,7 @@ OBJS=\
 	message.o \
 	slider.o \
 	audio.o \
+	about.o \
 	othello.o \
 	pong.o \
 	calendar.o \
