@@ -372,6 +372,7 @@ struct input_types input_types[] = {
 { "--twiddler-joy",	"-twidjoy",	B2400, CS8,			SERIO_TWIDJOY,	0x00,	0,	twiddler_init },
 #endif
 { "--ipod-remote",	"-ipod",	B9600, CS8,			SERIO_IPOD_REM,	0x00,	0,	NULL },
+{ "--ipod3-remote",	"-ipod3",	B19200, CS8,			SERIO_IPOD_REM,	0x00,	0,	NULL },
 { "--dump",		"-dump",	B2400, CS8, 			0,		0x00,	0,	dump_init },
 { "", "", 0, 0 }
 
@@ -413,6 +414,7 @@ int main(int argc, char **argv)
 		puts("  --twiddler-joy  -twidjoy  Handykey Twiddler used as a joystick");
 #endif
 		puts("  --ipod-remote   -ipod  iPod remote control");
+		puts("  --ipod3-remote  -ipod3 iPod (third gen) remote control");
 		puts("");
                 return 1;
         }
