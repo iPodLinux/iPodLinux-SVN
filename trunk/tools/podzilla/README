@@ -43,7 +43,7 @@ iPod:
         o make
     2. Build Podzilla
         o check the directories in the Makefile
-	o make
+	o make IPOD=1
 
 Desktop:
     1. Build Microwindows for the desktop
