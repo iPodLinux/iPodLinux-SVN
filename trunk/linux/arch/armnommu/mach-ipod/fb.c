@@ -1,13 +1,14 @@
 /*
  * fb.c - Frame-buffer driver for iPod
  *
- * Copyright (c) 2003, Bernard Leach (leachbj@bouncycastle.org)
+ * Copyright (c) 2003,2004 Bernard Leach (leachbj@bouncycastle.org)
  *
- * The LCD uses the HD66753 controller from Hitachi.
+ * The LCD uses the HD66753 controller from Hitachi (now owned by Renesas).
  */
 
 #include <linux/config.h>
 #include <linux/module.h>
+
 #include <linux/kernel.h>
 #include <linux/errno.h>
 #include <linux/string.h>
@@ -17,7 +18,10 @@
 #include <linux/delay.h>
 #include <linux/fb.h>
 #include <linux/init.h>
+#include <linux/ioctl.h>
+
 #include <asm/io.h>
+#include <asm/uaccess.h>
 
 #include <video/fbcon.h>
 #include <video/fbcon-cfb2.h>
@@ -27,10 +31,9 @@
 
 #define IPOD_LCD_BASE	0xc0001000
 #define IPOD_RTC	0xcf001110
+
 #define IPOD_LCD_WIDTH	160
 #define IPOD_LCD_HEIGHT	128
-
-static int contrast;
 
 /* allow for 2bpp */
 static char ipod_scr[IPOD_LCD_HEIGHT * (IPOD_LCD_WIDTH/4)];
@@ -98,7 +101,7 @@ lcd_cmd_and_data(int cmd, int data_lo, int data_hi)
 }
 
 static unsigned
-read_contrast(void)
+get_contrast(void)
 {
 	unsigned data_lo, data_hi;
 
@@ -110,6 +113,46 @@ read_contrast(void)
 	data_hi = inl(0xc0001008);
 
 	return data_hi & 0xff;
+}
+
+static void
+set_contrast(int contrast)
+{
+	lcd_cmd_and_data(0x4, 0x4, contrast);
+}
+
+static int
+get_backlight(void)
+{
+	return inl(IPOD_LCD_BASE) & 0x2 ? 1 : 0;
+}
+
+static void
+set_backlight(int on)
+{
+	int lcd_state = inl(IPOD_LCD_BASE);
+
+	if (on) {
+		lcd_state = lcd_state | 0x2;
+		outl(lcd_state, IPOD_LCD_BASE);
+
+		/* display control (1 00 0 1) */
+		/* GSH=01 -> 2/3 level grayscale control */
+		/* GSL=00 -> 1/4 level grayscale control */
+		/* REV=0 -> don't reverse */
+		/* D=1 -> display on */
+		lcd_cmd_and_data(0x7, 0x0, 0x11 | 0x2);
+	}
+	else {
+		lcd_state = lcd_state & ~0x2;
+		outl(lcd_state, IPOD_LCD_BASE);
+
+		/* display control (10 0 1) */
+		/* GSL=10 -> 2/4 level grayscale control */
+		/* REV=0 -> don't reverse */
+		/* D=1 -> display on */
+		lcd_cmd_and_data(0x7, 0x0, 0x9);
+	}
 }
 
 static unsigned
@@ -133,7 +176,7 @@ static void
 init_lcd(void)
 {
 	if ( read_controller_id() != HD66753_ID )  {
-		printk(KERN_WARNING "0x%x id?\n", read_controller_id());
+		printk(KERN_ERR "Unknown LCD controller ID: 0x%x id?\n", read_controller_id());
 	}
 
 	/* driver output control - 168x128 -> we use 160x128 */
@@ -144,60 +187,31 @@ init_lcd(void)
 	/* AM=00 -> data is continuously written in parallel */
 	/* LG=00 -> no logical operation */
 	lcd_cmd_and_data(0x5, 0x0, 0x10);
-
-	contrast = read_contrast();
 }
 
-int
-backlight_on_off(int on)
-{
-        int lcd_state = inl(IPOD_LCD_BASE);
-
-        if ( on ) {
-                lcd_state = lcd_state | 0x2;
-		outl(lcd_state, IPOD_LCD_BASE);
-
-		/* display control (1 00 0 1) */
-		/* GSH=01 -> 2/3 level grayscale control */
-		/* GSL=00 -> 1/4 level grayscale control */
-		/* REV=0 -> don't reverse */
-		/* D=1 -> display on */
-		lcd_cmd_and_data(0x7, 0x0, 0x11 | 0x2);
-        }
-        else {
-                lcd_state = lcd_state & ~0x2;
-		outl(lcd_state, IPOD_LCD_BASE);
-
-		/* display control (10 0 1) */
-		/* GSL=10 -> 2/4 level grayscale control */
-		/* REV=0 -> don't reverse */
-		/* D=1 -> display on */
-		lcd_cmd_and_data(0x7, 0x0, 0x9);
-        }
-
-        return 0x0;
-}
 
 void contrast_up(void)
 {
+	int contrast = get_contrast();
 	if ( contrast < 0xff ) {
 		contrast++; 
 		lcd_cmd_and_data(0x4, 0x4, contrast);
 
 #if 0
-		printk("ctrst=0x%x\n", read_contrast());
+		printk("ctrst=0x%x\n", get_contrast());
 #endif
 	}
 }
 
 void contrast_down(void)
 {
+	int contrast = get_contrast();
 	if ( contrast > 0 ) {
 		contrast--; 
 		lcd_cmd_and_data(0x4, 0x4, contrast);
 
 #if 0
-		printk("ctrst=0x%x\n", read_contrast());
+		printk("ctrst=0x%x\n", get_contrast());
 #endif
 	}
 }
@@ -213,24 +227,24 @@ static void ipod_update_display(struct display *p, int sx, int sy, int mx, int m
 		unsigned char *img_data;
 		unsigned char x;
 
-		// move the cursor
+		/* move the cursor */
 		lcd_cmd_and_data(0x11, cursor_pos >> 8, cursor_pos & 0xff);
 
-		// setup for printing
+		/* setup for printing */
 		lcd_prepare_cmd(0x12);
 
-		// cursor pos * image data width
+		/* cursor pos * image data width */
 		img_data = &ipod_scr[y * p->line_length + sx * 2];
 
-		// 160/8 -> 20 == loops 20 times
+		/* 160/8 -> 20 == loops 20 times */
 		for ( x = sx; x < mx; x++ ) {
-			// display a character
+			/* display a character */
 			lcd_send_data(*(img_data + 1), *img_data);
 
 			img_data += 2;
 		}
 
-		// update cursor pos counter
+		/* update cursor pos counter */
 		cursor_pos += 0x20;
 	}
 }
@@ -306,18 +320,18 @@ void ipod_fb_revc(struct display *p, int xx, int yy)
 }
 
 
-    /*
-     *  `switch' for the low level operations
-     */
+/*
+ *  `switch' for the low level operations
+ */
 
 struct display_switch fbcon_ipod = {
-    setup:		ipod_fb_setup,
-    bmove:		ipod_fb_bmove,
-    clear:		ipod_fb_clear,
-    putc:		ipod_fb_putc,
-    putcs:		ipod_fb_putcs,
-    revc:		ipod_fb_revc,
-    fontwidthmask:	FONTWIDTH(8)
+	setup:		ipod_fb_setup,
+	bmove:		ipod_fb_bmove,
+	clear:		ipod_fb_clear,
+	putc:		ipod_fb_putc,
+	putcs:		ipod_fb_putcs,
+	revc:		ipod_fb_revc,
+	fontwidthmask:	FONTWIDTH(8)
 };
 
 static struct ipodfb_info fb_info;
@@ -493,12 +507,13 @@ static int ipod_blank(int blank_mode, const struct fb_info *info)
 {
 	switch (blank_mode) {
 	case VESA_NO_BLANKING:
-		// printk("VESA_NO_BLANKING\n");
+		/* printk(KERN_ERR "VESA_NO_BLANKING\n"); */
 
-		// start oscillation
-		// wait 10ms
-		// cancel standby
-		// turn on LCD power
+		/* start oscillation
+		 * wait 10ms
+		 * cancel standby
+		 * turn on LCD power
+		 */
 		lcd_cmd_and_data(0x0, 0x0, 0x1);
 		udelay(10000);
 		lcd_cmd_and_data(0x3, 0x15, 0x0);
@@ -508,23 +523,23 @@ static int ipod_blank(int blank_mode, const struct fb_info *info)
 
 	case VESA_VSYNC_SUSPEND:
 	case VESA_HSYNC_SUSPEND:
-		// printk("VESA_XSYNC_BLANKING\n");
+		/* printk(KERN_ERR "VESA_XSYNC_BLANKING\n"); */
 
-		// go to SLP = 1
-		// 10101 00001100
+		/* go to SLP = 1 */
+		/* 10101 00001100 */
 		lcd_cmd_and_data(0x3, 0x15, 0x0);
 		lcd_cmd_and_data(0x3, 0x15, 0x2);
 		break;
 
 	case VESA_POWERDOWN:
-		// printk("VESA_POWERDOWN\n");
+		/* printk(KERN_ERR "VESA_POWERDOWN\n"); */
 
-		// got to standby
+		/* got to standby */
 		lcd_cmd_and_data(0x3, 0x15, 0x1);
 		break;
 
 	default:
-		printk("unknown blank value %d\n", blank_mode);
+		/* printk(KERN_ERR "unknown blank value %d\n", blank_mode); */
 		return -EINVAL;
 	}
 
@@ -570,19 +585,67 @@ struct fbgen_hwswitch ipod_switch = {
 /* ------------------------------------------------------------------------- */
 
 
-    /*
-     *  Frame buffer operations
-     */
+/*
+ *  Frame buffer operations
+ */
 
 static int ipod_fp_open(const struct fb_info *info, int user)
 {
 	return 0;
 }
 
-    /*
-     *  In most cases the `generic' routines (fbgen_*) should be satisfactory.
-     *  However, you're free to fill in your own replacements.
-     */
+#define FBIOGET_CONTRAST	_IOR('F', 0x22, int)
+#define FBIOPUT_CONTRAST	_IOW('F', 0x23, int)
+
+#define FBIOGET_BACKLIGHT	_IOR('F', 0x24, int)
+#define FBIOPUT_BACKLIGHT	_IOW('F', 0x25, int)
+
+#define IPOD_MIN_CONTRAST 0
+#define IPOD_MAX_CONTRAST 0x7f
+
+static int ipod_fb_ioctl(struct inode *inode, struct file *file, u_int cmd,
+	u_long arg, int con, struct fb_info *info)
+
+{
+	int val;
+
+	switch (cmd) {
+	case FBIOGET_CONTRAST:
+		val = get_contrast();
+		if (put_user(val, (int *)arg))
+			return -EFAULT;
+		break;
+
+	case FBIOPUT_CONTRAST:
+		val = (int)arg;
+		if (val < IPOD_MIN_CONTRAST || val > IPOD_MAX_CONTRAST)
+			return -EINVAL;
+		set_contrast(val);
+		break;
+
+	case FBIOGET_BACKLIGHT:
+		val = get_backlight();
+		if (put_user(val, (int *)arg))
+			return -EFAULT;
+		break;
+
+	case FBIOPUT_BACKLIGHT:
+		val = (int)arg;
+		set_backlight(val);
+		break;
+
+	default:
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+
+/*
+ *  In most cases the `generic' routines (fbgen_*) should be satisfactory.
+ *  However, you're free to fill in your own replacements.
+ */
 
 static struct fb_ops ipodfb_ops = {
 	owner:		THIS_MODULE,
@@ -593,15 +656,16 @@ static struct fb_ops ipodfb_ops = {
 	fb_get_cmap:	fbgen_get_cmap,
 	fb_set_cmap:	fbgen_set_cmap,
 	fb_pan_display:	fbgen_pan_display,
+	fb_ioctl:	ipod_fb_ioctl,
 };
 
 
 /* ------------ Hardware Independent Functions ------------ */
 
 
-    /*
-     *  Initialization
-     */
+/*
+ *  Initialization
+ */
 
 int __init ipodfb_init(void)
 {
@@ -640,9 +704,9 @@ int __init ipodfb_init(void)
 }
 
 
-    /*
-     *  Cleanup
-     */
+/*
+ *  Cleanup
+ */
 
 void ipodfb_cleanup(struct fb_info *info)
 {
@@ -656,9 +720,9 @@ void ipodfb_cleanup(struct fb_info *info)
 }
 
 
-    /*
-     *  Setup
-     */
+/*
+ *  Setup
+ */
 
 int __init ipodfb_setup(char *options)
 {
@@ -671,19 +735,20 @@ int __init ipodfb_setup(char *options)
 /* ------------------------------------------------------------------------- */
 
 
-    /*
-     *  Modularization
-     */
+/*
+ *  Modularization
+ */
 
 #ifdef MODULE
 MODULE_LICENSE("GPL");
 int init_module(void)
 {
-    return ipodfb_init();
+	return ipodfb_init();
 }
 
 void cleanup_module(void)
 {
-    ipodfb_cleanup(void);
+	ipodfb_cleanup(void);
 }
 #endif /* MODULE */
+
