@@ -18,15 +18,21 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
 #include <linux/soundcard.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <time.h>
 #include <byteswap.h>
+
 #include "pz.h"
 #include "ipod.h"
+
+extern void new_browser_window(char *);
 
 static GR_WINDOW_ID dsp_wid;
 static GR_GC_ID dsp_gc;
@@ -75,7 +81,7 @@ int write_32_le(int file_fd, unsigned int value)
 #ifdef IS_BIG_ENDIAN
 	value = bswap_32(value);
 #endif
-	write(file_fd, &value, 4);
+	return write(file_fd, &value, 4) == 4;
 }
 
 int write_16_le(int file_fd, unsigned short value)
@@ -83,7 +89,7 @@ int write_16_le(int file_fd, unsigned short value)
 #ifdef IS_BIG_ENDIAN
 	value = bswap_16(value);
 #endif
-	write(file_fd, &value, 2);
+	return write(file_fd, &value, 2) == 2;
 }
 
 int write_wav_header(int file_fd, int samplerate, int channels)
@@ -105,7 +111,6 @@ int write_wav_header(int file_fd, int samplerate, int channels)
 
 	return 0;
 }
-
 
 int is_raw_audio_type(char *extension)
 {
@@ -161,7 +166,7 @@ static void * dsp_record(void *filename)
 	file_fd = open((char *)filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR);
 	if (file_fd < 0) {
 		char buf[256];
-		sprintf(buf, "could not open %s\n", filename);
+		sprintf(buf, "could not open %s\n", (char *)filename);
 		new_message_window(buf);
 		goto no_file;
 	}
@@ -240,7 +245,7 @@ static void * dsp_playback(void *filename)
 	file_fd = open((char *)filename, O_RDONLY);
 	if (file_fd < 0) {
 		char buf[256];
-		sprintf(buf, "could not open %s\n", filename);
+		sprintf(buf, "could not open %s\n", (char *)filename);
 		new_message_window(buf);
 		goto no_file;
 	}
@@ -327,8 +332,6 @@ static void resume_dsp()
 
 static int dsp_do_keystroke(GR_EVENT * event)
 {
-	int ret = 1;
-
 	switch (event->keystroke.ch) {
 	case '\r':
 	case '\n':
