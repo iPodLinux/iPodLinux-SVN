@@ -98,13 +98,18 @@ static void draw_itunes()
 	GrSetGCMode(itunes_gc, GR_MODE_SET);
 }
 
+void *mountitunes(void);
+
 static void itunes_do_draw()
 {
-	if(!already_opened)
+	if(!already_opened) {
 		pz_draw_header("Loading...");
-	else
+		mountitunes();
+	}
+	else {
 		pz_draw_header("Artists");
-	draw_itunes();
+		draw_itunes();
+	}
 }
 
 static char *find_mount_point(void)
@@ -257,8 +262,6 @@ int parse(char *mountpoint) {
 					main_itunes[pos].ptr = itunes_artist[pos];
 					whichartist=pos;
 					songperartist[pos]=0;
-					if(pos==11)
-						draw_itunes();
 					pos++;
 				}
 				oldartist=0;
@@ -327,7 +330,7 @@ int parse(char *mountpoint) {
 					}
 				}
 
-				curitem += get_int(curitem+4);
+				curitem += get_int(curitem+8);
 			}
 			else if(id == MHLP_ID) {
 				if(pos>=0) {
@@ -390,6 +393,7 @@ int parse(char *mountpoint) {
 	free(buffer);
 	already_opened=1;
 	pz_draw_header("Artists");
+	draw_itunes();
 }
 
 static int itunes_do_keystroke(GR_EVENT * event)
@@ -469,16 +473,6 @@ static int itunes_do_keystroke(GR_EVENT * event)
 
 void new_itunes_window()
 {
-	pthread_attr_t pattr;
-	pthread_t parser;
-	int status;
-
-	pthread_attr_init(&pattr);
-	//pthread_attr_setdetachstate(&pattr, PTHREAD_CREATE_DETACHED);
-
-	if(!already_opened)
-		pthread_create(&parser, &pattr, mountitunes, NULL);
-
 	GrGetScreenInfo(&screen_info);
 
 	itunes_gc = GrNewGC();
