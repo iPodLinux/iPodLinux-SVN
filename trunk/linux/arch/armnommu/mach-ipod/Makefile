@@ -15,10 +15,10 @@ obj-y += arch.o cop.o dma.o hardware.o irq.o time.o
 
 obj-$(CONFIG_AUDIO_IPOD)	+= audio.o
 obj-$(CONFIG_FB_IPOD)		+= fb.o
-obj-$(CONFIG_IEEE1394_IPOD)	+= tsb42aa82.o
+obj-$(CONFIG_IEEE1394_IPOD)	+= tsb43aa82.o
 obj-$(CONFIG_KB_IPOD)		+= keyboard.o
 obj-$(CONFIG_REMOTE_IPOD)	+= ipodremote.o
 
-export-objs		:= audio.o fb.o tsb42aa82.o keyboard.o ipodremote.o hardware.o
+export-objs		:= audio.o fb.o tsb43aa82.o keyboard.o ipodremote.o hardware.o
 
 include $(TOPDIR)/Rules.make
