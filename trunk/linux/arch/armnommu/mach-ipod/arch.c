@@ -22,15 +22,6 @@ static void __init
 ipod_fixup(struct machine_desc *desc, struct param_struct *params,
 	char **cmdline, struct meminfo *mi)
 {
-#ifdef CONFIG_BLK_DEV_RAM
-	extern void __ramdisk_data, __ramdisk_data_end, _text;
-
-	setup_ramdisk(1, 0, 0, CONFIG_BLK_DEV_RAM_SIZE);
-	setup_initrd((int)&__ramdisk_data,
-		(int)&__ramdisk_data_end - (int)&__ramdisk_data);
-#else
-	strcpy(*cmdline, "root=/dev/hda2 rw");
-#endif
 }
 
 MACHINE_START(IPOD, "iPod")
