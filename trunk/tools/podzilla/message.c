@@ -18,6 +18,7 @@
  */
 
 #include <ctype.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -152,10 +153,16 @@ void new_message_window(char *message)
 	msg_timer = GrCreateTimer(msg_wid, 6000);
 }
 
-void pz_error(char *msg)
+void pz_error(char *fmt, ...)
 {
+	va_list ap;
+	char msg[1024];
+
+	va_start(ap, fmt);
+	vsnprintf(msg, 1023, fmt, ap);
+	va_end(ap);
 	new_message_window(msg);
-	fprintf(stderr, "%s", msg);
+	fprintf(stderr, "%s\n", msg);
 }
 
 void pz_perror(char *msg)
@@ -164,5 +171,5 @@ void pz_perror(char *msg)
 
 	snprintf(fullmsg, 1023, "%s: %s", msg, strerror(errno));
 	new_message_window(fullmsg);
-	fprintf(stderr, fullmsg);
+	fprintf(stderr, "%s\n", fullmsg);
 }

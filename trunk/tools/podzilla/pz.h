@@ -52,7 +52,7 @@ void new_image_window(char *filename);
 
 /* message.c */
 void new_message_window(char *message);
-void pz_error(char *msg);
+void pz_error(char *fmt, ...);
 void pz_perror(char *msg);
 
 void new_slider_widget(int setting, char *title, int slider_min, int slider_max);
