@@ -29,7 +29,8 @@ double oldnum;
 int numfull;
 
 static int current_calc_item = 0;
-static int last_current_calc_item;
+static int last_calc_item;
+char *num[]={"7","8","9","/","4","5","6","*","1","2","3","-","0",".","=","+"};
 
 static void draw_calc() {
 	GR_SIZE width, height, base;
@@ -49,51 +50,16 @@ static void draw_calc() {
 		current_calc_item = 0;
 	xlocal=current_calc_item*30+20-120*(int)(current_calc_item/4);
 	ylocal=30+20*(int)(current_calc_item/4);
-	lastxlocal=last_current_calc_item*30+20-120*(int)(last_current_calc_item/4);
-	lastylocal=30+20*(int)(last_current_calc_item/4);
+	lastxlocal=last_calc_item*30+20-120*(int)(last_calc_item/4);
+	lastylocal=30+20*(int)(last_calc_item/4);
 	GrSetGCForeground(calc_gc, BLACK);
-	GrFillRect(calc_wid, calc_gc, lastxlocal, lastylocal, 25, 16);
-	GrSetGCForeground(calc_gc, GRAY);
+	GrFillRect(calc_wid, calc_gc, lastxlocal+1, lastylocal+1, 23, 14);
+	GrSetGCForeground(calc_gc, WHITE);
+	GrText(calc_wid, calc_gc, lastxlocal+9, lastylocal+13, num[last_calc_item], -1, GR_TFASCII);
 	GrFillRect(calc_wid, calc_gc, xlocal, ylocal, 25, 16);
-	GrSetGCForeground(calc_gc, WHITE);
+	GrSetGCForeground(calc_gc, BLACK);
+	GrText(calc_wid, calc_gc, xlocal+9, ylocal+13, num[current_calc_item], -1, GR_TFASCII);
 
-	GrRect(calc_wid, calc_gc, 20, 30, 25, 16);
-	GrText(calc_wid, calc_gc, 29, 43, "7", -1, GR_TFASCII);
-	GrRect(calc_wid, calc_gc, 50, 30, 25, 16);
-	GrText(calc_wid, calc_gc, 59, 43, "8", -1, GR_TFASCII);
-	GrRect(calc_wid, calc_gc, 80, 30, 25, 16);
-	GrText(calc_wid, calc_gc, 89, 43, "9", -1, GR_TFASCII);
-	GrRect(calc_wid, calc_gc, 110, 30, 25, 16);
-	GrText(calc_wid, calc_gc, 119, 43, "/", -1, GR_TFASCII);
-
-	GrRect(calc_wid, calc_gc, 20, 50, 25, 16);
-	GrText(calc_wid, calc_gc, 29, 63, "4", -1, GR_TFASCII);
-	GrRect(calc_wid, calc_gc, 50, 50, 25, 16);
-	GrText(calc_wid, calc_gc, 59, 63, "5", -1, GR_TFASCII);
-	GrRect(calc_wid, calc_gc, 80, 50, 25, 16);
-	GrText(calc_wid, calc_gc, 89, 63, "6", -1, GR_TFASCII);
-	GrRect(calc_wid, calc_gc, 110, 50, 25, 16);
-	GrText(calc_wid, calc_gc, 119, 63, "*", -1, GR_TFASCII);
-
-	GrRect(calc_wid, calc_gc, 20, 70, 25, 16);
-	GrText(calc_wid, calc_gc, 29, 83, "1", -1, GR_TFASCII);
-	GrRect(calc_wid, calc_gc, 50, 70, 25, 16);
-	GrText(calc_wid, calc_gc, 59, 83, "2", -1, GR_TFASCII);
-	GrRect(calc_wid, calc_gc, 80, 70, 25, 16);
-	GrText(calc_wid, calc_gc, 89, 83, "3", -1, GR_TFASCII);
-	GrRect(calc_wid, calc_gc, 110, 70, 25, 16);
-	GrText(calc_wid, calc_gc, 119, 77, "_", -1, GR_TFASCII);
-
-	GrRect(calc_wid, calc_gc, 20, 90, 25, 16);
-	GrText(calc_wid, calc_gc, 29, 103, "0", -1, GR_TFASCII);
-	GrRect(calc_wid, calc_gc, 50, 90, 25, 16);
-	GrText(calc_wid, calc_gc, 59, 103, ".", -1, GR_TFASCII);
-	GrRect(calc_wid, calc_gc, 80, 90, 25, 16);
-	GrText(calc_wid, calc_gc, 89, 103, "=", -1, GR_TFASCII);
-	GrRect(calc_wid, calc_gc, 110, 90, 25, 16);
-	GrText(calc_wid, calc_gc, 119, 103, "+", -1, GR_TFASCII);
-
-	GrSetGCForeground(calc_gc, WHITE);
 	GrSetGCUseBackground(calc_gc, GR_TRUE);
 	GrSetGCMode(calc_gc, GR_MODE_SET);
 }
@@ -119,7 +85,6 @@ void calc_do_math(int pos) {
 		littr=0;
 	}
 	else {
-		char num[]={'7','8','9','y','4','5','6','y','1','2','3','y','0','.'};
 		if(opr==14&& tog) {
 			numfull=0;
 			mathloc[0]='\0';
@@ -132,15 +97,21 @@ void calc_do_math(int pos) {
 		littr++;
 		//add number to string
 		if(littr<16)
-			sprintf(mathloc, "%s%c", mathloc, num[pos]);
+			sprintf(mathloc, "%s%s", mathloc, num[pos]);
 	}
 
 }
 
 static void calc_do_draw() {
+	int i;
 	pz_draw_header("Calculator");
 	mathloc[0]='\0';
 	numfull = 0;
+	GrSetGCForeground(calc_gc, WHITE);
+	for(i=0; i<=15; i++) {
+		GrRect(calc_wid, calc_gc, i*30+20-120*(int)(i/4), 30+20*(int)(i/4), 25, 16);
+		GrText(calc_wid, calc_gc, i*30+29-120*(int)(i/4), 43+20*(int)(i/4), num[i], -1, GR_TFASCII);
+	}
 	draw_calc();
 }
 
@@ -159,14 +130,14 @@ static int calc_do_keystroke(GR_EVENT * event) {
 			draw_calc();
 			break;
 		case 'l':
-			last_current_calc_item = current_calc_item;
+			last_calc_item = current_calc_item;
 			current_calc_item--;
 			draw_calc();
 			ret = 1;
 			break;
 		case 'r':
 
-			last_current_calc_item = current_calc_item;
+			last_calc_item = current_calc_item;
 			current_calc_item++;
 			draw_calc();
 			ret = 1;

@@ -1,23 +1,21 @@
 /*
  * acalendar.c, a simple calendar for AV3xx
- * 
+ *
  * Copyright 2004, Goetz Minuth
  * Copyright 2004, Bernard Leach, ported to iPod
- * 
+ *
  * This File is free software; I give unlimited permission to copy and/or
- * distribute it, with or without modifications, as long as this notice is 
- * preserved. 
+ * distribute it, with or without modifications, as long as this notice is
+ * preserved.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <time.h>
 #include "pz.h"
 #include "piezo.h"
@@ -47,6 +45,7 @@ struct shown {
 struct today today;
 static int leap_year;
 struct shown shown;
+static int last_mday;
 
 static void clear_calendar();
 
@@ -65,13 +64,13 @@ static GR_GC_ID calendar_gc;
 static GR_SCREEN_INFO screen_info;
 
 /*
- * leap year -- account for gregorian reformation in 1752 
+ * leap year -- account for gregorian reformation in 1752
  */
 static int is_leap_year(int yr);
 
 /*
  * searches the weekday of the first day in month, relative to the given
- * values 
+ * values
  */
 static int calc_weekday(struct shown *shown);
 static void calendar_init();
@@ -80,15 +79,12 @@ static void calendar_draw();
 
 static void next_month(struct shown *shown, int step);
 static void prev_month(struct shown *shown, int step);
-static void next_day(struct shown *shown, int step);
-static void prev_day(struct shown *shown, int step);
-
 
 static int
 calendar_do_keystroke(GR_EVENT * event)
 {
 	int ret = 0;
-
+	last_mday = shown.mday;
 	switch (event->keystroke.ch) {
 	case 'w':
 		prev_month(&shown, 0);
@@ -106,13 +102,22 @@ calendar_do_keystroke(GR_EVENT * event)
 		break;
 
 	case 'r':
-		next_day(&shown, 1);
+		shown.mday++;
+		if (shown.mday > days_in_month[leap_year][shown.mon])
+			next_month(&shown, 1);
+		else {
+			calendar_draw(0);
+		}
 		ret = 1;
 		break;
 
 	case 'l':
-
-		prev_day(&shown, 1);
+		shown.mday--;
+		if (shown.mday < 1)
+			prev_month(&shown, 1);
+		else {
+			calendar_draw(0);
+		}
 		ret = 1;
 		break;
 	}
@@ -122,7 +127,7 @@ calendar_do_keystroke(GR_EVENT * event)
 
 
 /*
- * leap year -- account for gregorian reformation in 1752 
+ * leap year -- account for gregorian reformation in 1752
  */
 static int
 is_leap_year(int yr)
@@ -133,7 +138,7 @@ is_leap_year(int yr)
 
 /*
  * searches the weekday of the first day in month, relative to the given
- * values 
+ * values
  */
 static int
 calc_weekday(struct shown *shown)
@@ -151,7 +156,7 @@ calendar_init()
 	time(&now);
 	tm = localtime(&now);
 
-	today.wday = tm->tm_wday;
+	today.wday = tm->tm_wday - 1;
 	today.year = tm->tm_year + 1900;
 	today.mon = tm->tm_mon + 1;
 	today.mday = tm->tm_mday;
@@ -185,30 +190,31 @@ draw_headers(void)
 static void
 calendar_do_draw(GR_EVENT * event)
 {
-	calendar_draw();
+	calendar_draw(1);
 }
 
 static void
-calendar_draw()
+calendar_draw(int redraw)
 {
 	int ws, row, pos, days_per_month, j;
 	char buffer[9];
 
-	clear_calendar();
+	if(redraw) {
+		clear_calendar();
 
-	GrSetGCForeground(calendar_gc, BLACK);
-	GrFillRect(calendar_wid, calendar_gc, XCALENDARPOS, YCALENDARPOS,
-		   screen_info.cols - XCALENDARPOS, 2 * WeekSpace);
+		GrSetGCForeground(calendar_gc, BLACK);
+		GrFillRect(calendar_wid, calendar_gc, XCALENDARPOS, YCALENDARPOS,
+			screen_info.cols - XCALENDARPOS, 2 * WeekSpace);
 
-	snprintf(buffer, 9, "%s %04d", month_name[shown.mon - 1], shown.year);
-	pz_draw_header(buffer);
+		snprintf(buffer, 9, "%s %04d", month_name[shown.mon - 1], shown.year);
+		pz_draw_header(buffer);
 
-	draw_headers();
+		draw_headers();
 
-	if (shown.firstday > 6) {
-		shown.firstday -= 7;
+		if (shown.firstday > 6) {
+			shown.firstday -= 7;
+		}
 	}
-
 	row = 1;
 	pos = shown.firstday;
 	days_per_month = days_in_month[leap_year][shown.mon];
@@ -225,25 +231,29 @@ calendar_draw()
 			GrSetGCForeground(calendar_gc, WHITE);
 		}
 
-		if (j == shown.mday) {
+		if(j == shown.mday) {
 			// Den selektierten Tag besonders farblich
 			// markieren -->
 			// höchste Prio der Farben
 			GrSetGCForeground(calendar_gc, GRAY);
+			GrText(calendar_wid, calendar_gc, ws + 2, YCALENDARPOS + 2 +
+				row * WeekSpace, buffer, -1, GR_TFASCII);
 		}
-
 		if ((j == today.mday) && (shown.mon == today.mon)
-		    && (shown.year == today.year)) {
+			&& (shown.year == today.year)) {
 			GrSetGCForeground(calendar_gc, LTGRAY);
 		}
-
-		GrText(calendar_wid, calendar_gc, ws + 2, YCALENDARPOS + 2 +
-		       row * WeekSpace, buffer, -1, GR_TFASCII);
-
+		if(redraw) {
+			GrText(calendar_wid, calendar_gc, ws + 2, YCALENDARPOS + 2 +
+				row * WeekSpace, buffer, -1, GR_TFASCII);
+		}
+		if(j == last_mday) {
+			GrText(calendar_wid, calendar_gc, ws + 2, YCALENDARPOS + 2 +
+				row * WeekSpace, buffer, -1, GR_TFASCII);
+		}
 		if (shown.mday == j) {
 			shown.wday = pos;
 		}
-
 		ws += DaySpace;
 		pos++;
 		if (pos >= 7) {
@@ -265,14 +275,15 @@ next_month(struct shown *shown, int step)
 		shown->year++;
 		leap_year = is_leap_year(shown->year);
 	}
-	else if (step > 0) {
-		shown->mday = shown->mday - days_in_month[leap_year][shown->mon - 1];
+	if (step > 0) {
+		//shown->mday = shown->mday - days_in_month[leap_year][shown->mon - 1];
+		shown->mday = 1;
 	}
 	else if (shown->mday > days_in_month[leap_year][shown->mon]) {
 		shown->mday = days_in_month[leap_year][shown->mon];
 	}
 	shown->firstday = shown->lastday;
-	calendar_draw();
+	calendar_draw(1);
 }
 
 static void
@@ -291,31 +302,7 @@ prev_month(struct shown *shown, int step)
 		shown->mday = days_in_month[leap_year][shown->mon];
 	}
 	shown->firstday += 7 - (days_in_month[leap_year][shown->mon] % 7);
-	calendar_draw();
-}
-
-static void
-next_day(struct shown *shown, int step)
-{
-	shown->mday += step;
-	if (shown->mday > days_in_month[leap_year][shown->mon]) {
-		next_month(shown, step);
-	}
-	else {
-		calendar_draw();
-	}
-}
-
-static void
-prev_day(struct shown *shown, int step)
-{
-	shown->mday -= step;
-	if (shown->mday < 1) {
-		prev_month(shown, step);
-	}
-	else {
-		calendar_draw();
-	}
+	calendar_draw(1);
 }
 
 static void
