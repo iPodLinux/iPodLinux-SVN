@@ -17,10 +17,7 @@
 #include <asm/io.h>
 #include <asm/arch/irqs.h>
 #include <asm/keyboard.h>
-
-#undef IPOD_1G
-#define IPOD_2G
-#undef IPOD_3G
+#include <asm/hardware.h>
 
 /* undefine these to produce keycodes from left/right/up/down */
 #define DO_SCROLLBACK
@@ -55,14 +52,17 @@ static void keyboard_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
 	static int prev_scroll = -1;
 	unsigned char source, state;
-
-#ifdef IPOD_3G
+	unsigned ipod_hw_ver;
 	static int was_hold = 0;
+
+	ipod_hw_ver = ipod_get_hw_version() >> 16;
+		
 	/* we need some delay for g3, cause hold generates several interrupts,
 	 * some of them delayed
 	 */
-	udelay(200);
-#endif
+	if (ipod_hw_ver == 0x3) 
+		udelay(250);
+
 	/* get source of interupts */
 	source = inb(0xcf000040);
 	if ( source == 0 ) {
@@ -71,14 +71,13 @@ static void keyboard_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 
 	/* get current keypad status */
 	state = inb(0xcf000030);
+	outb(~state, 0xcf000060);
 
-#ifdef IPOD_3G
-	if (was_hold && source == 0x40 && state == 0xbf ) {
-		outb(~state, 0xcf000060);
-		goto done;
+	if (ipod_hw_ver == 0x3) {
+		if (was_hold && source == 0x40 && state == 0xbf )
+			goto done;
+		was_hold = 0;
 	}
-	was_hold = 0;
-#endif
 
 #ifdef CONFIG_VT
 	kbd_pt_regs = regs;
@@ -101,19 +100,14 @@ static void keyboard_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 			/* CTRL-Q up */
 			handle_scancode(Q_SC, 0);
 			handle_scancode(LEFT_CTRL_SC, 0);
-#ifdef IPOD_3G
-			was_hold = 1;
-#endif
+			if (ipod_hw_ver == 0x3)
+				was_hold = 1;
 		}
-#ifdef IPOD_3G
 		/* hold switch on 3g causes all outputs to go low */
 		/* we shouldn't interpret these as key presses */
-		outb(~state, 0xcf000060);
-		goto done;
-#endif
+		if (ipod_hw_ver == 0x3)
+			goto done;
 	}
-
-	outb(~state, 0xcf000060);
 
 	if ( source & 0x1 ) {
 		if ( state & 0x1 ) {
