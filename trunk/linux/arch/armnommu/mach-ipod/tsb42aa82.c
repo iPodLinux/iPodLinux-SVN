@@ -415,8 +415,9 @@ static int tx_raw_packet(struct ti_ipod *ipod, struct hpsb_packet *packet)
 	r = fw_reg_read(0x60);
 	fw_reg_write(0x60, (r & ~0xff) | 0x24 | (r & 0x4 ? 0 : 0x4));
 
+	/* bits 24,25,26 are always 1 in both quads */
 	fw_reg_write(WRITE_FIRST, packet->header[0] | 0x00e0);
-	fw_reg_write(WRITE_UPDATE, packet->header[1] | 0xffff);
+	fw_reg_write(WRITE_UPDATE, packet->header[1] | 0x00e0);
 
 	/* write to ATF & release timer */
 	/* TXN_TIMER_CONTROL */
@@ -1046,7 +1047,7 @@ static int __devinit ipod_1394_init(void)
 {
 	struct ti_ipod *ipod;
 
-	printk("ipod_1394: $Id: tsb42aa82.c,v 1.6 2004/02/10 21:24:48 leachbj Exp $\n");
+	printk("ipod_1394: $Id: tsb42aa82.c,v 1.7 2004/02/12 10:24:51 leachbj Exp $\n");
 
 	ipod_host = hpsb_alloc_host(&ipod_1394_driver, sizeof(struct ti_ipod));
 	if ( !ipod_host ) {
