@@ -4,9 +4,9 @@
 
 <h2>Einf&uuml;hrung</h2>
 
-<p>Das &quot;Linux on iPod&quot; Projekt bietet eine Entwicklungsplattform zur Erstellung von Programmen, die auf dem iPod laufen.  Zur Zeit haben wir auch ein einfaches Programm, das die Funktionalit&auml;t der vorhandenen Apple Firmware nachahmt.  Auf l&auml;ngere Zeit hin hoffen wir zu diesem Programm &auml;hnliche Funktionen wie bei der Apple Firmware hinzuf&uuml;gen zu k&ouml;nnen, auch soll es um F&auml;higkeiten erweitert werden die der original Apple-Firmware nicht bietet.
+<p>Das &quot;Linux on iPod&quot; Projekt bietet eine Entwicklungsplattform zur Erstellung von Programmen, die auf dem iPod laufen.  Zur Zeit haben wir auch ein einfaches Programm, das die Funktionalit&auml;t der vorhandenen Apple Firmware nachahmt.  Auf l&auml;ngere Zeit hin hoffen wir zu diesem Programm &auml;hnliche Funktionen wie bei der Apple Firmware hinzuf&uuml;gen zu k&ouml;nnen, auch soll es um F&auml;higkeiten erweitert werden die die original Apple-Firmware nicht bietet.
 
-<p>Die Installation von Linux auf dem iPod beeinflusst weder die vorhandene Musik noch die aktuelle Konfiguration.  Durch den mitinstallierten Bootloader kann w&auml;hrend eines Neustarts frei gew&auml;hlt werden ob die Apple, oder die Linux Firmware starten soll.
+<p>Die Installation von Linux auf dem iPod beeinflusst weder die vorhandene Musik noch die aktuelle Konfiguration.  Durch den mitinstallierten Bootloader kann w&auml;hrend eines Neustarts frei gew&auml;hlt werden ob die Apple oder die Linux Firmware starten soll.
 
 <p>Dieses Dokument beschreibt die Installation auf einem Unix &auml;hnlichem Betriebssystem (als Beispiel Linux oder Mac OS X). Hierzu werden die Kernel Version <a href="http://sourceforge.net/project/showfiles.php?group_id=73079&package_id=73283&release_id=228424">2.4.24-ipod0</a> und das <a href="http://sourceforge.net/project/showfiles.php?group_id=73079&package_id=73279&release_id=228438">040403</a> Rootdateisystem verwandt.
 
@@ -27,7 +27,7 @@
 		<li>Kernel Installation
 		<li>Installation des Rootdateisystems
 		<li>Weitere Hinweise
-		<li>Upgrade (verbessern der Firmware)
+		<li>Upgrade (aktualisieren der Firmware)
 		<li>Deinstallieren von Linux (auf dem iPod)
 	</ol>
 	<li><a href="#OSX">Mac OS X Installation</a>
@@ -37,7 +37,7 @@
 		<li>Kernel Installation
 		<li>Installation des Rootdateisystems
 		<li>Weitere Hinweise
-		<li>Upgrade (verbessern der Firmware)
+		<li>Upgrade (aktualisieren der Firmware)
 		<li>Deinstallieren von Linux (auf dem iPod)
 	</ol>
 	<li><a href="#Windows">Windows Installation</a>
@@ -45,17 +45,17 @@
 
 <a name="Firewire"><h2>FireWire/Einrichten der Verbindung</h2></a>
 
-<p>Um Linux auf den iPod zu installieren, m&uuml;ssen Sie zuerst das Betriebssystem konfiguriert haben.  L&auml;uft Mac OS X auf dem Rechner, ist eigentlich nichts zu tun, l&auml;uft aber Linux auf dem Rechner (besonders wenn dies das erste mal ist) muss man wissen, ob USB/FireWire korrekt eingestellt ist f&uuml;r die Benutzung mit dem iPod.
+<p>Um Linux auf den iPod zu installieren, m&uuml;ssen Sie zuerst das Betriebssystem konfiguriert haben.  L&auml;uft Mac OS X auf dem Rechner, ist eigentlich nichts zu tun, l&auml;uft aber Linux auf dem Rechner (besonders wenn dies das erste mal ist) muss man wissen, ob USB/FireWire korrekt f&uuml;r die Benutzung mit dem iPod eingestellt ist.
 
 <p>Zum konfigurieren von USB/FireWire sehen Sie bitte die Dokumentation zu ihrem Betriebssystems ein.
 
-<p>Wenn das Betriebssystem volst&auml;ndig konfiguriert ist, muss festgestellt werden, wie das Betriebssystem den iPod identifiziert.
+<p>Wenn das Betriebssystem vollst&auml;ndig konfiguriert ist, muss festgestellt werden, wie das Betriebssystem den iPod identifiziert.
 
-<p>Daf&uuml;r m&uuml;ssen Sie den iPod an den Rechner anschlie&szlig;en und den &quot;Disk-Mode&quot; beim iPod aktivieren.  Normalerweise sollte dies automatisch funktionieren, wenn die Verbindung zum Betriebssystem aufgebaut wird.  Dennoch kann man den &quot;Disk-Mode&quot; aufrufen w&auml;hrend des Neustartens eines iPod's auch manuell aufrufen: Nach einem iPod Reset (durch 5 sek&uuml;ndiges festhalten der Men&uuml; und Play/Pause Taste) m&uuml;ssen Sie, w&auml;hrend das Apple Logo zu sehen ist, die Tasten "Schneller Vorlauf" und "R&uuml;ckspluen" gleichzeitig gedr&uuml;ckt halten.
+<p>Daf&uuml;r m&uuml;ssen Sie den iPod an den Rechner anschlie&szlig;en und den &quot;Disk-Mode&quot; beim iPod aktivieren.  Normalerweise sollte dies automatisch funktionieren, wenn die Verbindung zum Betriebssystem aufgebaut wird.  Dennoch kann man den &quot;Disk-Mode&quot; w&auml;hrend des Neustartens eines iPod's auch manuell aufrufen: Nach einem iPod Reset (durch 5 sek&uuml;ndiges festhalten der Men&uuml; und Play/Pause Taste) m&uuml;ssen Sie, w&auml;hrend das Apple Logo zu sehen ist, die Tasten "Schneller Vorlauf" und "R&uuml;ckspluen" gleichzeitig gedr&uuml;ckt halten.
 
 <p>Sobald der &quot;Disk-Mode&quot; aktiviert ist, sollte die Nachricht &quot;Bitte nicht trennen.&quot; erscheinen.  Nun sollten Sie die Betriebssystemkonfiguration pr&uuml;fen um zu sehen, wie der iPod konfiguriert ist.
 
-<p>Um mit der Installation fortzufahren, lesen Sie den, zu ihrem Betriebssystem passenden Abschnitt.
+<p>Um mit der Installation fortzufahren, lesen Sie den zu ihrem Betriebssystem passenden Abschnitt.
 
 
 <a name="Linux"><h2>Linux Installation</h2></a>
@@ -79,12 +79,12 @@ Host: scsi0 Channel: 00 Id: 00 Lun: 00<br>
 </code>
 </blockquote>
 
-<p>Der <code>scsi0</code> Teil gibt an, ob der iPod das erste SCSI Ger&auml;t ist, also wird es <code>/dev/sda</code> sein.  Sollte es aber <code>scsi1</code>, dann w&uuml;rde <code>/dev/sdb</code> benutzt werden.  Die folgenden Beispiel-Befehle werden <code>sda</code> als Ger&auml;t f&uuml;r den iPod benutzen.  Eventuell m&uuml;ssen Sie dies ersetzen mit der korrekten Bezeichnung f&uuml;r die Konfiguration.
+<p>Der <code>scsi0</code> Teil gibt an, ob der iPod das erste SCSI Ger&auml;t ist, also wird es <code>/dev/sda</code> sein.  Sollte es aber <code>scsi1</code> sein, dann w&uuml;rde <code>/dev/sdb</code> benutzt werden.  Die folgenden Beispiel-Befehle werden <code>sda</code> als Ger&auml;t f&uuml;r den iPod benutzen.  Eventuell m&uuml;ssen sie dies mit der korrekten Bezeichnung f&uuml;r Ihre Konfiguration ersetzen.
 
 
 <h3>Sicherung (Backup)</h3>
 
-<p>Bevor Sie die Partitionen Informationen aktualisieren und die Firmware ersetzen werden, wird eine Sicherung dieser Daten erstellt.  Die erste Sicherung ist eine einfache Kopie der MBR (&quot;master boot record&quot; in etwa Hauptstartdatensatz), welche die Partitionstabelle der Festplatte enth&auml;lt.  Die zweite Sicherung ist eine komplette Sicherung der Betriebssystems Partition auf dem iPod und schlie&szlig;t das Apple iPod Betriebssystem (die Datei ist ca. 40MB gro&szlig; und kann nach der Installation komprimiert werden) ein.
+<p>Bevor Sie die Partitions-Informationen aktualisieren und die Firmware ersetzen werden, wird eine Sicherung dieser Daten erstellt.  Die erste Sicherung ist eine einfache Kopie des MBR (&quot;master boot record&quot; in etwa Hauptstartdatensatz), welcher die Partitionstabelle der Festplatte enth&auml;lt.  Die zweite Sicherung ist eine komplette Sicherung der Betriebssystems Partition auf dem iPod und schlie&szlig;t das Apple iPod Betriebssystem (die Datei ist ca. 40MB gro&szlig; und kann nach der Installation komprimiert werden) ein.
 
 <blockquote>
 <code>
@@ -102,16 +102,16 @@ Host: scsi0 Channel: 00 Id: 00 Lun: 00<br>
 </code>
 </blockquote>
 
-<p>Anmerkung: Wenn Sie die Apple Firmware aktualisieren m&ouml;chten, sollten Sie erst die iPod Betriebssystem Partition  wiederherstellen.
+<p>Anmerkung: Wenn Sie die Apple Firmware aktualisieren m&ouml;chten, sollten Sie erst die iPod Betriebssystem Partition wiederherstellen.
 
-<p>Es ist auch m&ouml;glich den iPod auf den Fabrikzustand zur&uuml;ckzusetzen.  Durch die Benutzung des Apple Wiederherstellungsprogramm.  Dies wird den iPod komplett zur&uuml;cksetzen(unwiderruflich), nicht nur das Betriebssystem, sondern auch alle pers&ouml;nlichen Einstellungen und die Musik werden gel&ouml;scht.
+<p>Durch die Benutzung des Apple Wiederherstellungsprogramms ist es auch m&ouml;glich, den iPod auf den Fabrikzustand zur&uuml;ckzusetzen.  Dies wird den iPod komplett zur&uuml;cksetzen(unwiderruflich), nicht nur das Betriebssystem, sondern auch alle pers&ouml;nlichen Einstellungen und die Musik werden gel&ouml;scht.
 
 
 <h3>Partitionierung</h3>
 
-<p>Jetzt, da die Sicherungen erstellt wurden, wird eine neue Partition auf dem iPod f&uuml;r das Rootdateisystem angelegt.  Dies wird ben&ouml;tigt auf der Windows Version des iPods ben&ouml;tigt, weil Linux die FAT formatierte Partition nicht als Rootdateisystem verwenden kann.
+<p>Jetzt, da die Sicherungen erstellt wurden, wird eine neue Partition auf dem iPod f&uuml;r das Rootdateisystem angelegt.  Dies wird auf der Windows Version des iPods ben&ouml;tigt, weil Linux die FAT formatierte Partition nicht als Rootdateisystem verwenden kann.
 
-<p>Die folgenden Befehle beschreiben wie man mit &quot;fdisk&quot; die vorhandene Firmware Partition l&ouml;scht und eine neue, kleinere f&uuml;r die Firmware erstellt.  Der &uuml;brig bleibende Platz wird dann benutzt zum erstellen einer, f&uuml;r Linux formatierten, Partition.
+<p>Die folgenden Befehle beschreiben wie man mit &quot;fdisk&quot; die vorhandene Firmware Partition l&ouml;scht und eine neue, kleinere f&uuml;r die Firmware erstellt.  Der &uuml;brigbleibende Platz wird dann zum erstellen einer f&uuml;r Linux formatierten Partition benutzt.
 
 <p>Anmerkung: Die folgende Ausgabe (output) ist f&uuml;r einen 20GB iPod ausgelegt. Also wird die Ausgabe bei anderen iPodgr&ouml;&szlig;en variieren.  Dennoch bleiben die Werte, die eingegeben werden m&uuml;ssen, die gleichen.
 
@@ -170,7 +170,7 @@ Hex code (type L to list codes): <b>0</b>
 </code>
 </blockquote>
 
-<li>Erstellen der 3. prim&auml;r Partition vom 2. zum 5. Zylinder:
+<li>Erstellen der 3. Prim&auml;rpartition vom 2. zum 5. Zylinder:
 <blockquote>
 <code>
 Command (m for help): <b>n</b><br>
@@ -184,7 +184,7 @@ Last cylinder or +size or +sizeM or +sizeK (1-5, default 5): <b>5</b>
 </code>
 </blockquote>
 
-<li>Sie sollten die &Auml;nderungen &uuml;berpr&uuml;fen.  Anmerkung: Dies ist f&uuml;r eine 20GB iPod, die sda2 Partitionsgr&ouml;&szlig;e wird variieren.
+<li>Sie sollten die &Auml;nderungen &uuml;berpr&uuml;fen.  Anmerkung: Dies ist f&uuml;r einen 20GB iPod, die sda2 Partitionsgr&ouml;&szlig;e wird variieren.
 <blockquote>
 <code>
 Command (m for help): <b>p</b><br>
@@ -210,7 +210,7 @@ Command (m for help): <b>w</b>
 </code>
 </blockquote>
 
-<li>&quot;fdisk&quot; wird nun beenden und Sie k&ouml;nnen das neue Dateisystem erstellen.
+<li>&quot;fdisk&quot; wird nun beendet und Sie k&ouml;nnen das neue Dateisystem erstellen.
 <blockquote>
 <code>
 # <b>mke2fs -j /dev/sda3</b>
@@ -230,7 +230,7 @@ Setting maximal mount count to -1
 
 <a name="KernelInstallLinux"><h3>Kernel Installation</h3></a>
 
-<p>Zum Installieren des Kernels wird der <a href="http://sourceforge.net/project/showfiles.php?group_id=73079&package_id=101451&release_id=226112">iPod Boot Loader</a>, eine Version von <a href="http://sourceforge.net/project/showfiles.php?group_id=73079&package_id=73283&release_id=228424">iPod Linux Kernel</a> und die Sicherung des iPod Betriebssystems (weiter oben erstellt in dem Sicherungsprozess) ben&ouml;tigt.
+<p>Zum Installieren des Kernels wird der <a href="http://sourceforge.net/project/showfiles.php?group_id=73079&package_id=101451&release_id=226112">iPod Boot Loader</a>, <a href="http://sourceforge.net/project/showfiles.php?group_id=73079&package_id=73283&release_id=228424">des iPod Linux Kernels</a> und die Sicherung des iPod Betriebssystems (weiter oben erstellt in dem Sicherungsprozess) ben&ouml;tigt.
 
 <p>Zuerst m&uuml;ssen Sie das &quot;ipodloader&quot; und &quot;iPod Linux Kernel&quot; Archiv in ein Arbeitsverzeichnis extrahieren und es auf etwaige "last minute" release notes pr&uuml;fen.  Im unterem Beispiel sind das <code>make_fw</code> Tool und das <code>loader.bin</code> Image von der ipodloader Distribution und die Version des iPod Linux Kernel ist <code>uclinux-2.4.24-ipod0.bin</code>.
 
@@ -256,7 +256,7 @@ Setting maximal mount count to -1
 </code>
 </blockquote>
 
-<li>Kopieren der Kernel Module auf den iPod (Anmerkung: das Verzeichnis <code>&quot;/mnt/ipod</code> muss vorhanden sein, darf aber nicht benutzt sein). Das <code>lib</code> Verzeichnis unten geh&ouml;rt zum Verzeichnis der Kernelrelease (Version) und enth&auml;lt die Module.
+<li>Kopieren der Kernel Module auf den iPod (Anmerkung: das Verzeichnis <code>/mnt/ipod</code> muss vorhanden sein, darf aber nicht benutzt sein). Das <code>lib</code> Verzeichnis unten geh&ouml;rt zum Verzeichnis des Kernelreleases (Version) und enth&auml;lt die Module.
 <blockquote>
 <code>
 # <b>mount -t ext2 /dev/sda3 /mnt/tmp</b><br>
@@ -269,7 +269,7 @@ Setting maximal mount count to -1
 
 <a name="UserlandInstallLinux"><h3>Userland Installation</h3></a>
 
-<p>Das <a href="http://sourceforge.net/project/showfiles.php?group_id=73079&package_id=73279&release_id=228438">iPod Linux Userland</a> enth&auml;lt die Betriebssystem Tools und Bibliotheken (Library) (einschlie&szlig;lich der podzilla und den MP3 Programmen).  Dieses Archiv sollte installiert sein auf das Rootdateisystem des iPods.  Das Rootdateisystem ist oben erstellt worden w&auml;hrend des Partitionierungsschrittes.
+<p>Das <a href="http://sourceforge.net/project/showfiles.php?group_id=73079&package_id=73279&release_id=228438">iPod Linux Userland</a> enth&auml;lt die Betriebssystem Tools und Bibliotheken (Library) (einschlie&szlig;lich der podzilla und den MP3 programme).  Dieses Archiv muss auf das Rootdateisystem des iPods installiert werden.  Das Rootdateisystem ist oben w&auml;hrend des Partitionierungsschrittes erstellt worden.
 
 <ol>
 <li>Die iPod root-Partition mounten:
@@ -287,7 +287,7 @@ Setting maximal mount count to -1
 </code>
 </blockquote>
 
-<li>Aktualisieren Sie das root-Dateisystem mit den letzten Kernel-Modulen.
+<li>Aktualisieren des root-Dateisystem mit den letzten Kernel-Modulen.
 <blockquote>
 <code>
 # <b>tar zxf /tmp/uclinux-2.4.24-ipod0.tar.gz lib</b><br>
@@ -362,12 +362,12 @@ pz:unknown:/bin/podzilla
 <li>Nun m&uuml;ssen Sie den iPod neu starten.  Sollte der iPod nicht automatisch neu starten, halten Sie die Tasten &quot;Menu&quot; und &quot;Play/Pause&quot; f&uuml;r ca. 5 Sekunden gedr&uuml;ckt.
 </ol>
 
-<p>Nach der Konfiguration wird automatisch Linux gestartet.  Sie sollten das Tux-Logo und dann die normalen Linux Bootkonsole sehen.  Wenn das Betriebssystem gestartet ist, wird das Programm &quot;podzilla&quot; starten.  Diese &quot;work-in-progress&quot; Oberfl&auml; ahmt das Interface der Apple Firmware nach.
+<p>Nach der Konfiguration wird automatisch Linux gestartet.  Sie sollten das Tux-Logo und dann die normale Linux-Bootkonsole sehen.  Wenn das Betriebssystem gestartet ist, wird das Programm &quot;podzilla&quot; starten.  Diese &quot;work-in-progress&quot; Oberfl&auml;che ahmt das Interface der Apple Firmware nach.
 
-<p>Wenn Sie vom Linux Betriebssystem wieder auf die normal Apple Firmware Oberfl&auml;che wechseln m&ouml;chten, starten Sie Ihren iPod neu (f&uuml;hren sie einen Reset durch, wie oben beschrieben), und halten sie, sobald das Apple Logo erscheint, die &quot;R&uuml;ckspluen&quot; Taste durchgehend gedr&uuml;ckt.  Ein Tux-Logo wird erscheinen, dann wird die Normale Apple Firmware wie gewohnt starten.
+<p>Wenn Sie vom Linux Betriebssystem wieder auf die normale Apple Firmware Oberfl&auml;che wechseln m&ouml;chten, starten Sie Ihren iPod neu (f&uuml;hren sie einen Reset durch, wie oben beschrieben), und halten sie, sobald das Apple Logo erscheint, die &quot;R&uuml;ckspluen&quot; Taste durchgehend gedr&uuml;ckt.  Ein Tux-Logo wird erscheinen, dann wird die normale Apple Firmware wie gewohnt starten.
 
 
-<h3>Upgrade (verbessern der Linux Firmware)</h3>
+<h3>Upgrade (aktualisieren der Linux Firmware)</h3>
 
 <p>Zum upgrade auf eine neue Kernel-Version m&uuml;ssen Sie nur die Schritte im Abschnitt <a href="#KernelInstallLinux">Kernel Installation</a> wiederholen.
 
@@ -412,14 +412,14 @@ pz:unknown:/bin/podzilla
 </code>
 </blockquote>
 
-<p>Der <code>/dev/disk1s3</code> Teil gibt an, dass der iPod das erste SCSI Ger&auml;t ist und auch als <code>/dev/disk1</code> sichtbar wird, wenn Sie auf Ihrem System <code>/dev/disk2s3</code> sehen, dann wird <code>/dev/disk2</code> als Device benutzt. In dem Beispiel oben ist das Volumen gemountet als <code>/Volumes/iPod</code>.  Der <code>iPod</code> Teil bezeichnet hier den Namen ihres iPods.
+<p>Der <code>/dev/disk1s3</code> Teil gibt an, dass der iPod das erste SCSI Ger&auml;t ist und auch als <code>/dev/disk1</code> sichtbar wird, wenn Sie auf Ihrem System <code>/dev/disk2s3</code> sehen, dann wird <code>/dev/disk2</code> als Device benutzt. In dem Beispiel oben ist der iPod gemountet als <code>/Volumes/iPod</code>.  Der <code>iPod</code> Teil bezeichnet hier den Namen ihres iPods.
 
-<p>Die folgenden Beispielbefehle werden <code>disk1</code> als Device f&uuml;r den iPod und <code>/Volumes/iPod</code>f&uuml;r den &quot;mount point&quot;(in diesem Ordner werden alle Objekte angezeigt, die auf dem Volumen vorhanden sind) benutzen. Ersetzen Sie diese Werte mit den korrekten Werten ihrer Konfiguration, falls notwendig.
+<p>Die folgenden Beispielbefehle werden <code>disk1</code> als Device f&uuml;r den iPod und <code>/Volumes/iPod</code> f&uuml;r den &quot;mount point&quot;(in diesem Ordner werden alle Objekte angezeigt, die auf der iPod vorhanden sind) benutzen. Ersetzen Sie diese Werte mit den korrekten Werten ihrer Konfiguration, falls notwendig.
 
 
 <h3>Sicherung (Backup)</h3>
 
-<p>Die Sicherung ist eine komplette Sicherung der Betriebssystems Partition auf dem iPod und schlie&szlig;t das Apple iPod Betriebssystem (die Datei ist ca. 40MB gro&szlig; und kann nach der Installation komprimiert werden) ein.
+<p>Die Sicherung ist eine komplette Sicherung der Betriebssystems-Partition auf dem iPod und schlie&szlig;t das Apple iPod Betriebssystem (die Datei ist ca. 40MB gro&szlig; und kann nach der Installation komprimiert werden) ein.
 
 <blockquote>
 <code>
@@ -435,14 +435,14 @@ pz:unknown:/bin/podzilla
 </code>
 </blockquote>
 
-<p>Anmerkung: Wenn Sie die Apple Firmware aktualisieren m&ouml;chten, sollten Sie erst die iPod Betriebssystem Partition  wiederherstellen.
+<p>Anmerkung: Wenn Sie die Apple Firmware aktualisieren m&ouml;chten, sollten Sie erst die iPod Betriebssystem Partition wiederherstellen.
 
-<p>Es ist auch m&ouml;glich den iPod auf den Fabrikzustand zur&uuml;ckzusetzen durch das benutzen des Apple Wiederherstellungsprogramm.  Dies wird den iPod komplett zur&uuml;cksetzen(unwiderruflich), nicht nur das Betriebssystem, sondern auch alle pers&ouml;nlichen Einstellungen und die Musik werden gel&ouml;scht.
+<p>Durch die Benutzung des Apple Wiederherstellungsprogramms ist es auch m&ouml;glich, den iPod auf den Fabrikzustand zur&uuml;ckzusetzen.  Dies wird den iPod komplett zur&uuml;cksetzen(unwiderruflich), nicht nur das Betriebssystem, sondern auch alle pers&ouml;nlichen Einstellungen und die Musik werden gel&ouml;scht.
 
 
 <a name="KernelInstallOSX"><h3>Kernel Installation</h3></a>
 
-<p>Zum Installieren des Kernels wird der <a href="http://sourceforge.net/project/showfiles.php?group_id=73079&package_id=101451&release_id=226112">iPod Boot Loader</a>, eine Version von <a href="http://sourceforge.net/project/showfiles.php?group_id=73079&package_id=73283&release_id=228424">iPod Linux Kernel</a> und die Sicherung des iPod Betriebssystems (weiter oben erstellt in dem Sicherungsprozess) ben&ouml;tigt.
+<p>Zum Installieren des Kernels wird der <a href="http://sourceforge.net/project/showfiles.php?group_id=73079&package_id=101451&release_id=226112">iPod Boot Loader</a>, <a href="http://sourceforge.net/project/showfiles.php?group_id=73079&package_id=73283&release_id=228424">des iPod Linux Kernels</a> und die Sicherung des iPod Betriebssystems (weiter oben erstellt in dem Sicherungsprozess) ben&ouml;tigt.
 
 <p>Zuerst m&uuml;ssen Sie das &quot;ipodloader&quot; und &quot;iPod Linux Kernel&quot; Archiv in ein Arbeitsverzeichnis extrahieren und es auf etwaige "last minute" release notes pr&uuml;fen.  Im unterem Beispiel sind das <code>make_fw</code> Tool und das <code>loader.bin</code> Image von der ipodloader Distribution und die Version des iPod Linux Kernel ist <code>uclinux-2.4.24-ipod0.bin</code>.
 
@@ -468,7 +468,7 @@ pz:unknown:/bin/podzilla
 </code>
 </blockquote>
 
-<li>Kopieren der Kernel Module auf den iPod. Das <code>lib</code> Verzeichnis unten geh&ouml;rt zum Verzeichnis von der Kernel release (Version) und enth&auml;lt die Module.
+<li>Kopieren der Kernel Module auf den iPod. Das <code>lib</code> Verzeichnis unten geh&ouml;rt zum Verzeichnis des Kernelreleases (Version) und enth&auml;lt die Module.
 <blockquote>
 <code>
 # <b>cp -r lib /Volumes/iPod</b>
@@ -479,7 +479,7 @@ pz:unknown:/bin/podzilla
 
 <a name="UserlandInstallOSX"><h3>Userland Installation</h3></a>
 
-<p>Das <a href="http://sourceforge.net/project/showfiles.php?group_id=73079&package_id=73279&release_id=228438">iPod Linux Userland</a> enth&auml;lt die Betriebssystem Tools und Bibliotheken (Library) (einschlie&szlig;lich der podzilla und den MP3 Programmen).  Dieses Archiv sollte installiert sein auf das Rootdateisystem des iPods.
+<p>Das <a href="http://sourceforge.net/project/showfiles.php?group_id=73079&package_id=73279&release_id=228438">iPod Linux Userland</a> enth&auml;lt die Betriebssystem Tools und Bibliotheken (Library) (einschlie&szlig;lich der podzilla und den MP3 programme).  Dieses Archiv muss auf das Rootdateisystem des iPods installiert werden.
 
 <p>Extrahieren des Rootdateisystems auf &quot;root&quot;:
 <blockquote>
@@ -490,7 +490,7 @@ pz:unknown:/bin/podzilla
 </code>
 </blockquote>
 
-<li>Update the root filesystem with the latest kernel modules.
+<li>Aktualisieren des root-Dateisystem mit den letzten Kernel-Modulen.
 <blockquote>
 <code>
 # <b>tar zxf /tmp/ipod_fs_040403.tar.gz lib</b><br>
@@ -536,12 +536,12 @@ pz:unknown:/bin/podzilla
 <li>Nun m&uuml;ssen Sie den iPod neu starten.  Sollte der iPod nicht automatisch neu starten, halten Sie die Tasten &quot;Menu&quot; und &quot;Play/Pause&quot; f&uuml;r ca. 5 Sekunden gedr&uuml;ckt.
 </ol>
 
-<p>Nach der Konfiguration wird automatisch Linux gestartet.  Sie sollten das Tux-Logo und dann die normalen Linux Bootkonsole sehen.  Wenn das Betriebssystem gestartet ist, wird das Programm &quot;podzilla&quot; starten.  Diese &quot;work-in-progress&quot; Oberfl&auml; ahmt das Interface der Apple Firmware nach.
+<p>Nach der Konfiguration wird automatisch Linux gestartet.  Sie sollten das Tux-Logo und dann die normale Linux-Bootkonsole sehen.  Wenn das Betriebssystem gestartet ist, wird das Programm &quot;podzilla&quot; starten.  Diese &quot;work-in-progress&quot; Oberfl&auml;che ahmt das Interface der Apple Firmware nach.
 
-<p>Wenn Sie vom Linux Betriebssystem wieder auf die normal Apple Firmware Oberfl&auml;che wechseln m&ouml;chten, starten Sie Ihren iPod neu (f&uuml;hren sie einen Reset durch, wie oben beschrieben), und halten sie, sobald das Apple Logo erscheint, die &quot;R&uuml;ckspluen&quot; Taste durchgehend gedr&uuml;ckt.  Ein Tux-Logo wird erscheinen, dann wird die Normale Apple Firmware wie gewohnt starten.
+<p>Wenn Sie vom Linux Betriebssystem wieder auf die normale Apple Firmware Oberfl&auml;che wechseln m&ouml;chten, starten Sie Ihren iPod neu (f&uuml;hren sie einen Reset durch, wie oben beschrieben), und halten sie, sobald das Apple Logo erscheint, die &quot;R&uuml;ckspluen&quot; Taste durchgehend gedr&uuml;ckt.  Ein Tux-Logo wird erscheinen, dann wird die normale Apple Firmware wie gewohnt starten.
 
 
-<h3>Upgrade (verbessern der Linux Firmware)</h3>
+<h3>Upgrade (aktualisieren der Linux Firmware)</h3>
 
 <p>Zum upgrade auf eine neue Kernel-Version m&uuml;ssen Sie nur die Schritte im Abschnitt <a href="#KernelInstallOSX">Kernel Installation</a> wiederholen.
 
@@ -559,7 +559,7 @@ pz:unknown:/bin/podzilla
 
 <h3>Deinstallieren von Linux (auf dem iPod)</h3>
 
-<p>Um Linux komplett von Ihrem iPod zu entfernen sollten Sie die originale Firmware Partition wiederherstellen von Ihren Sicherungskopien wieder herstellen.
+<p>Um Linux komplett von Ihrem iPod zu entfernen sollten Sie die originale Firmware Partition von Ihren Sicherungskopien wieder herstellen.
 
 <blockquote>
 <code>
