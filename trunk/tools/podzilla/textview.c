@@ -106,7 +106,7 @@ static void buildLineData(char *starttextptr)
 			GrGetGCTextSize(tv_gc, sol, curtextptr - sol + 1,
 					GR_TFASCII, &width, &height, &base);
 
-			if(width > tv_winfo.width - 15) {
+			if(width > tv_winfo.width - 16) {
 				char *optr;
 				
 				/* backtrack to the last word */
@@ -137,33 +137,46 @@ static void buildLineData(char *starttextptr)
 	lineData = localAr;
 }
 
+static void draw_scrollbar(const int height, const int y_top)
+{
+	int y_bottom = y_top + height;
+
+	/* draw the containing box */
+	GrRect(tv_wid, tv_gc, tv_winfo.width - 8, 1, 8, tv_winfo.height - 1);
+	GrSetGCForeground(tv_gc, WHITE);
+	/* erase the scrollbar */
+	GrFillRect(tv_wid, tv_gc, tv_winfo.width - (8 - 1), 1 + 1, 
+			(8 - 2), y_top - (1 + 1));
+	GrFillRect(tv_wid, tv_gc, tv_winfo.width - (8 - 1), y_bottom, (8 - 2), 
+			(tv_winfo.height - 3) - y_bottom);
+	GrSetGCForeground(tv_gc, GRAY);
+	/* draw the bar */
+	GrFillRect(tv_wid, tv_gc, tv_winfo.width - (8 - 1), y_top, (8 - 2), height);
+	GrSetGCForeground(tv_gc, BLACK);
+}
+
 static void drawtext(void)
 {
-	/* calculate scrollbar sizes */
-	float pixPerLine = (tv_winfo.height - 16 - 2) / (float) totalLines;
-	int block_start_pix = 9 + pixPerLine * currentLine;
-	int block_height = 9 + pixPerLine * (currentLine + lines_per_screen) -
-		block_start_pix;
+	int per = (totalLines - lines_per_screen) <= lines_per_screen ?
+		lines_per_screen * 100 / totalLines :
+		lines_per_screen * 100 / (totalLines - lines_per_screen);
+	int height = (tv_winfo.height - 2) * (per < 3 ? 3 : per) / 100;
+	int y_top = ((((tv_winfo.height - 3) - height) * 100) * currentLine /
+			((totalLines - lines_per_screen) )) / 100 + 2;
+	static int last_y_top;
 
+	GrSetGCForeground(tv_gc, WHITE);
+	GrFillRect(tv_wid, tv_gc, 0, 0, tv_winfo.width - 8, tv_winfo.height);
 	GrSetGCForeground(tv_gc, BLACK);
-
-	if (block_height < 2) /* the minimum height of the handle is set to 2 */
-		block_height = 2;
-
-	GrClearWindow(tv_wid, 0);
-
+	
 	/* Draw the text */
 	printPage(currentLine, 0,0,0,0);
-
-	/* Draw the ScrollBar track */
-	GrRect(tv_wid, tv_gc, tv_winfo.width - 6, 8, 2, tv_winfo.height - 16 );
-
-	/* Draw the Handle on the ScrollBar */
-	GrRect(tv_wid, tv_gc, tv_winfo.width - 7, block_start_pix, 4,
-			block_height);
-	GrSetGCForeground(tv_gc, WHITE);
-	GrRect(tv_wid, tv_gc, tv_winfo.width - 6, block_start_pix + 1, 2,
-			block_height - 2);
+	
+	if (totalLines >= lines_per_screen && y_top != last_y_top) {
+		draw_scrollbar(height, y_top);
+	}
+	
+	last_y_top = y_top;
 }
 
 static void textview_do_draw()
