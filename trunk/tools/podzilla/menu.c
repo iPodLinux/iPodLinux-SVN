@@ -295,125 +295,129 @@ static int menu_do_keystroke(GR_EVENT * event)
 	int ret = 0;
 	int option_menu_val;
 
-	switch (event->keystroke.ch) {
-	case '\r':		/* action key */
-	case '\n':
-		ret = 1;
-		switch (menu[current_menu_item].type) {
-		case SUB_MENU_HEADER:
-			if (menu[current_menu_item].ptr != 0) {
-				menu_stack[menu_stack_pos] = menu;
-				menu_item_stack[menu_stack_pos] =
-					current_menu_item;
-				top_menu_item_stack[menu_stack_pos++] =
-					top_menu_item;
-
-				pz_draw_header(menu[current_menu_item].text);
-				menu = (struct menu_item *)menu[current_menu_item].ptr;
-				current_menu_item = 0;
-				top_menu_item = 0;
+	switch(event->type) {
+	case GR_EVENT_TYPE_KEY_DOWN:
+		switch (event->keystroke.ch) {
+		case '\r':		/* action key */
+		case '\n':
+			ret = 1;
+			switch (menu[current_menu_item].type) {
+			case SUB_MENU_HEADER:
+				if (menu[current_menu_item].ptr != 0) {
+					menu_stack[menu_stack_pos] = menu;
+					menu_item_stack[menu_stack_pos] =
+						current_menu_item;
+					top_menu_item_stack[menu_stack_pos++] =
+						top_menu_item;
+	
+					pz_draw_header(menu[current_menu_item].text);
+					menu = (struct menu_item *)menu[current_menu_item].ptr;
+					current_menu_item = 0;
+					top_menu_item = 0;
+					draw_menu();
+				}
+				break;
+			case ACTION_MENU:
+				if (menu[current_menu_item].ptr != 0) {
+					((menu_action_t) menu[current_menu_item].ptr)();
+				}
+				break;
+			case ACTION_MENU_PREV_SUB:
+				if (menu[current_menu_item].ptr != 0) {
+					((menu_action_t) menu[current_menu_item].ptr)();
+				}
+				event->keystroke.ch = 'm';
+				menu_do_keystroke(event);
+				break;
+			case SUB_MENU_PREV:
+				event->keystroke.ch = 'm';
+				menu_do_keystroke(event);
+				break;
+			case BOOLEAN_MENU:
+				if (menu[current_menu_item].setting_id != NOSETTING) {
+					if (ipod_get_setting(menu[current_menu_item].setting_id)) {
+						ipod_set_setting(menu[current_menu_item].setting_id,0);
+					} else {
+						ipod_set_setting(menu[current_menu_item].setting_id,1);
+					}
+				}
+				if (menu[current_menu_item].ptr != 0) {
+					((menu_action_t) menu[current_menu_item].ptr)();
+				}
 				draw_menu();
-			}
-			break;
-		case ACTION_MENU:
-			if (menu[current_menu_item].ptr != 0) {
-				((menu_action_t) menu[current_menu_item].ptr)();
-			}
-			break;
-		case ACTION_MENU_PREV_SUB:
-			if (menu[current_menu_item].ptr != 0) {
-				((menu_action_t) menu[current_menu_item].ptr)();
-			}
-			event->keystroke.ch = 'm';
-			menu_do_keystroke(event);
-			break;
-		case SUB_MENU_PREV:
-			event->keystroke.ch = 'm';
-			menu_do_keystroke(event);
-			break;
-		case BOOLEAN_MENU:
-			if (menu[current_menu_item].setting_id != NOSETTING) {
-				if (ipod_get_setting(menu[current_menu_item].setting_id)) {
-					ipod_set_setting(menu[current_menu_item].setting_id,0);
-				} else {
-					ipod_set_setting(menu[current_menu_item].setting_id,1);
+				break;
+			case OPTION_MENU:
+				if ((menu[current_menu_item].setting_id != NOSETTING) &&
+					(menu->ptr != 0)) {
+					option_menu_val = ipod_get_setting(
+						menu[current_menu_item].setting_id);
+					option_menu_val++;
+					if ((option_menu_val >= menu[current_menu_item].item_count) ||
+						(option_menu_val < 0)) {
+						option_menu_val = 0;
+					}
+					ipod_set_setting(menu[current_menu_item].setting_id,
+						option_menu_val);
 				}
+				draw_menu();
+				break;
 			}
-			if (menu[current_menu_item].ptr != 0) {
-				((menu_action_t) menu[current_menu_item].ptr)();
-			}
-			draw_menu();
 			break;
-		case OPTION_MENU:
-			if ((menu[current_menu_item].setting_id != NOSETTING) &&
-				(menu->ptr != 0)) {
-				option_menu_val = ipod_get_setting(
-					menu[current_menu_item].setting_id);
-				option_menu_val++;
-				if ((option_menu_val >= menu[current_menu_item].item_count) ||
-					(option_menu_val < 0)) {
-					option_menu_val = 0;
-				}
-				ipod_set_setting(menu[current_menu_item].setting_id,
-					option_menu_val);
-			}
-			draw_menu();
-			break;
-		}
-		break;
-
-	case 'm':		/* menu key */
-		ret = 1;
-		if (menu_stack_pos > 0) {
-			menu = menu_stack[--menu_stack_pos];
-			current_menu_item = menu_item_stack[menu_stack_pos];
-			top_menu_item = top_menu_item_stack[menu_stack_pos];
-
-			pz_draw_header(menu[current_menu_item].text);
-			draw_menu();
+	
+		case 'm':		/* menu key */
 			ret = 1;
-		}
-		break;
-	case 'l':
-#ifdef IPOD
-		lcount++;
-		if (lcount < 1) {
+			if (menu_stack_pos > 0) {
+				menu = menu_stack[--menu_stack_pos];
+				current_menu_item = menu_item_stack[menu_stack_pos];
+				top_menu_item = top_menu_item_stack[menu_stack_pos];
+	
+				pz_draw_header(menu[current_menu_item].text);
+				draw_menu();
+				ret = 1;
+			}
 			break;
-		}
-		lcount = 0;
+		case 'l':
+#ifdef 	IPOD
+			lcount++;
+			if (lcount < 1) {
+				break;
+			}
+			lcount = 0;
 #endif
-		if (current_menu_item) {
-			if (current_menu_item == top_menu_item) {
-				top_menu_item--;
+			if (current_menu_item) {
+				if (current_menu_item == top_menu_item) {
+					top_menu_item--;
+				}
+				current_menu_item--;
+				draw_menu();
+				ret = 1;
 			}
-			current_menu_item--;
-			draw_menu();
-			ret = 1;
-		}
-		break;
+			break;
 
 #ifndef IPOD
-	case 'q':
-		GrClose();
-		exit(0);
-		break;
+		case 'q':
+			GrClose();
+			exit(0);
+			break;
 #endif
 
-	case 'r':
+		case 'r':
 #ifdef IPOD
-		rcount++;
-		if (rcount < 1) {
-			break;
-		}
-		rcount = 0;
-#endif
-		if (menu[current_menu_item + 1].text != 0) {
-			current_menu_item++;
-			if (current_menu_item - max_menu_items == top_menu_item) {
-				top_menu_item++;
+			rcount++;
+			if (rcount < 1) {
+				break;
 			}
-			draw_menu();
-			ret = 1;
+			rcount = 0;
+#endif
+			if (menu[current_menu_item + 1].text != 0) {
+				current_menu_item++;
+				if (current_menu_item - max_menu_items == top_menu_item) {
+					top_menu_item++;
+				}
+				draw_menu();
+				ret = 1;
+			}
+			break;
 		}
 		break;
 	}

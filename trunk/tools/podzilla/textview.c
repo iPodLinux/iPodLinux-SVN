@@ -170,7 +170,7 @@ static void drawtext(void)
 			block_height - 2);
 }
 
-static void textview_do_draw(GR_EVENT * event)
+static void textview_do_draw()
 {
 	pz_draw_header(g_title);
 	drawtext();
@@ -180,52 +180,59 @@ static int textview_do_keystroke(GR_EVENT * event)
 {
 	int i;
 	int ret = 1;
-	switch (event->keystroke.ch) {
-	case 'm':
-	case 'q':
-		destroy_textview_window(NULL);
-		for (i = 0; i < totalLines; i++)
-			free(lineData[i]);
-		free (lineData);
-		break;
-	case 'r':
-		if (currentLine + LINESPERSCREEN < totalLines) {
-			currentLine++;
-			drawtext();
-		}
-		break;
-	case 'l':
-		if (currentLine > 0) {
-			currentLine--;
-			drawtext();
-		}
-		break;
-	case 'f':
-		/* forward key pressed:  go down one screen */
-		if (currentLine + LINESPERSCREEN < totalLines) {
-			currentLine = currentLine + LINESPERSCREEN;
-			if (currentLine + LINESPERSCREEN > totalLines)
-				/* if we went down beyond the end of the text
-				 * we go to the end of the text */
+	switch (event->type) {
+	case GR_EVENT_TYPE_KEY_DOWN:
+		switch (event->keystroke.ch) {
+		case 'm':
+		case 'q':
+			destroy_textview_window(NULL);
+			for (i = 0; i < totalLines; i++)
+				free(lineData[i]);
+			free (lineData);
+			break;
+		case 'r':
+			if (currentLine + LINESPERSCREEN < totalLines) {
+				currentLine++;
+				drawtext();
+			}
+			break;
+		case 'l':
+			if (currentLine > 0) {
+				currentLine--;
+				drawtext();
+			}
+			break;
+		case 'f':
+			/* forward key pressed:  go down one screen */
+			if (currentLine + LINESPERSCREEN < totalLines) {
+				currentLine = currentLine + LINESPERSCREEN;
+				if (currentLine + LINESPERSCREEN > totalLines)
+					/* if we went down beyond the end of
+					 * the text we go to the end of the
+					 * text */
 				currentLine = totalLines - LINESPERSCREEN;
-			drawtext();
+				drawtext();
+			}
+			break;
+		case 'w':
+			/* rewind key pressed:  go up one screen
+			 * if it's already the first line, nothing is done */
+			if (currentLine > 0) {
+				if (currentLine < LINESPERSCREEN)
+					/* if there is not a full screen above
+					 * the  current one go up to the very
+					 * first line */
+					currentLine = 0;
+				else	/* go up one screen */
+					currentLine = currentLine -
+						LINESPERSCREEN;
+				drawtext();
+			}
+			break;
+		default:
+			ret = 0;
 		}
 		break;
-	case 'w':
-		/* rewind key pressed:  go up one screen
-		 * if it's already the first line, nothing is done */
-		if (currentLine > 0) {
-			if (currentLine < LINESPERSCREEN)
-				/* if there is not a full screen above the
-				 * current one go up to the very first line */
-				currentLine = 0;
-			else	/* go up one screen */
-				currentLine = currentLine - LINESPERSCREEN;
-			drawtext();
-		}
-		break;
-	default:
-		ret = 0;
 	}
 	return ret;
 }

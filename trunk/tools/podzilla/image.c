@@ -57,7 +57,7 @@ static void image_blit_pixmap(void)
 		screen_info.rows - pad_y, image_pixmap, loc_x, loc_y, 0);
 }
 
-static void image_do_draw(GR_EVENT * event)
+static void image_do_draw()
 {
 	if(image_pixmap)
 		image_blit_pixmap();	
@@ -192,62 +192,64 @@ void zoom(PZ_ZOOM_TYPE type, float factor)
 
 static int image_do_keystroke(GR_EVENT * event)
 {
-	int ret = 0; /* Don't make that piezo click.  Someone should really fix
-			this in the pz event handler. */
-	switch (event->keystroke.ch)
-	{
-	case 'm': /* Free and exit */
-		pz_close_window(image_wid);
-		GrDestroyWindow(image_pixmap);
-		GrFreeImage(image_id);
-		GrDestroyGC(image_gc);
-		break;
-	case '\r': /* Change scroll direction */
-		if (scroll_dir == SCROLL_VERT && oversized_x == 1)
-			scroll_dir = SCROLL_HORIZ;
-		else if (scroll_dir == SCROLL_HORIZ && oversized_y == 1)
-			scroll_dir = SCROLL_VERT;
-		break;
-	case 'r': /* Scroll right/down */
-		if(scroll_dir == SCROLL_HORIZ && oversized_x == 1)
-		{
-			loc_x += SCROLL_SPEED; 
-			if (loc_x > pixmap_width - screen_info.cols)
-				loc_x = pixmap_width - screen_info.cols;
-		} 
-		else if (scroll_dir == SCROLL_VERT && oversized_y == 1)
-		{
-			loc_y += SCROLL_SPEED;
-			if (loc_y > pixmap_height - screen_info.rows)
-				loc_y = pixmap_height - screen_info.rows;
+	int ret = 0;
+	switch(event->type) {
+	case GR_EVENT_TYPE_KEY_DOWN:
+		switch (event->keystroke.ch) {
+		case 'm': /* Free and exit */
+			pz_close_window(image_wid);
+			GrDestroyWindow(image_pixmap);
+			GrFreeImage(image_id);
+			GrDestroyGC(image_gc);
+			break;
+		case '\r': /* Change scroll direction */
+			if (scroll_dir == SCROLL_VERT && oversized_x == 1)
+				scroll_dir = SCROLL_HORIZ;
+			else if (scroll_dir == SCROLL_HORIZ && oversized_y == 1)
+				scroll_dir = SCROLL_VERT;
+			break;
+		case 'r': /* Scroll right/down */
+			if(scroll_dir == SCROLL_HORIZ && oversized_x == 1)
+			{
+				loc_x += SCROLL_SPEED; 
+				if (loc_x > pixmap_width - screen_info.cols)
+					loc_x = pixmap_width - screen_info.cols;
+			} 
+			else if (scroll_dir == SCROLL_VERT && oversized_y == 1)
+			{
+				loc_y += SCROLL_SPEED;
+				if (loc_y > pixmap_height - screen_info.rows)
+					loc_y = pixmap_height - screen_info.rows;
+			}
+			image_blit_pixmap();
+			break;
+		case 'l': /* Scroll left/up */
+			if(scroll_dir == SCROLL_HORIZ && oversized_x == 1)
+			{
+				loc_x -= SCROLL_SPEED;
+				if (loc_x < 0)
+					loc_x = 0;
+			}
+			else if (scroll_dir == SCROLL_VERT && oversized_y == 1)
+			{
+				loc_y -= SCROLL_SPEED;
+				if (loc_y < 0)
+					loc_y = 0;
+			}
+			image_blit_pixmap();
+			break;		
+		case 'w': /* Zoom out */
+			zoom(ZOOM_MULTIPLY, 0.5);
+			break;
+		case 'f': /* Zoom in */
+			zoom(ZOOM_MULTIPLY, 2.0);
+			break;
+		case 'd': /* Zoom fit/actual */
+			zoom(play_btn_toggle, 0);
+		default:
+			ret = 0;
+			break;
 		}
-		image_blit_pixmap();
-		break;
-	case 'l': /* Scroll left/up */
-		if(scroll_dir == SCROLL_HORIZ && oversized_x == 1)
-		{
-			loc_x -= SCROLL_SPEED;
-			if (loc_x < 0)
-				loc_x = 0;
-		}
-		else if (scroll_dir == SCROLL_VERT && oversized_y == 1)
-		{
-			loc_y -= SCROLL_SPEED;
-			if (loc_y < 0)
-				loc_y = 0;
-		}
-		image_blit_pixmap();
-		break;		
-	case 'w': /* Zoom out */
-		zoom(ZOOM_MULTIPLY, 0.5);
-		break;
-	case 'f': /* Zoom in */
-		zoom(ZOOM_MULTIPLY, 2.0);
-		break;
-	case 'd': /* Zoom fit/actual */
-		zoom(play_btn_toggle, 0);
-	default:
-		ret = 0;
 		break;
 	}
 	return ret;

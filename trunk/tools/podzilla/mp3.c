@@ -131,7 +131,7 @@ static void draw_volume()
 	draw_bar(bar_length);
 }
 
-static void mp3_do_draw(GR_EVENT * event)
+static void mp3_do_draw()
 {
 	GrSetGCForeground(mp3_gc, WHITE);
 	GrFillRect(mp3_wid, mp3_gc, 0, 0, screen_info.cols, screen_info.rows);
@@ -163,53 +163,56 @@ static void mp3_refresh_state()
 
 static int mp3_do_keystroke(GR_EVENT * event)
 {
-	switch (event->keystroke.ch) {
-	case '\r':
-	case '\n':
-		break;
-	case 'm':
-		decoding_finished = 1;
-		break;
-	case '4':
-	case 'f':
-		play_next_track();
-		break;
-	case '5':
-	case 'w':
-		play_prev_track();
-		break;
-	case '1':
-	case 'd':
-		mp3_pause = !mp3_pause;
-		if (mp3_pause) {
-			pz_draw_header("MP3 Playback - ||");
-		}
-		else {
-			pz_draw_header("MP3 Playback");
-		}
-		break;
-	case '3':
-	case 'l':
-		if (mixer_fd >= 0) {
-			int vol = dsp_vol & 0xff;
-			if (vol > 0) {
-				vol--;
-				vol = dsp_vol = vol << 8 | vol;
+	switch (event->type) {
+	case GR_EVENT_TYPE_KEY_DOWN:
+		switch (event->keystroke.ch) {
+		case '\r':
+		case '\n':
+			break;
+		case 'm':
+			decoding_finished = 1;
+			break;
+		case '4':
+		case 'f':
+			play_next_track();
+			break;
+		case '5':
+		case 'w':
+			play_prev_track();
+			break;
+		case '1':
+		case 'd':
+			mp3_pause = !mp3_pause;
+			if (mp3_pause) {
+				pz_draw_header("MP3 Playback - ||");
 			}
-		}
-		break;
-	case '2':
-	case 'r':
-		if (mixer_fd >= 0) {
-			int vol = dsp_vol & 0xff;
-			if (vol < 100) {
-				vol++;
-				vol = dsp_vol = vol << 8 | vol;
+			else {
+				pz_draw_header("MP3 Playback");
 			}
+			break;
+		case '3':
+		case 'l':
+			if (mixer_fd >= 0) {
+				int vol = dsp_vol & 0xff;
+				if (vol > 0) {
+					vol--;
+					vol = dsp_vol = vol << 8 | vol;
+				}
+			}
+			break;
+		case '2':
+		case 'r':
+			if (mixer_fd >= 0) {
+				int vol = dsp_vol & 0xff;
+				if (vol < 100) {
+					vol++;
+					vol = dsp_vol = vol << 8 | vol;
+				}
+			}
+			break;
 		}
 		break;
 	}
-
 	return 1;
 }
 

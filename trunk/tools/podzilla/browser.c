@@ -306,47 +306,52 @@ static void browser_selection_activated(unsigned short userChoice)
 static int browser_do_keystroke(GR_EVENT * event)
 {
 	int ret = 0;
-	switch (event->keystroke.ch) {
-	case '\r':
-	case '\n':
-		browser_selection_activated(browser_currentSelection);
-		GrClearWindow(browser_wid, 1);
-		browser_draw_browser();
-		ret = 1;
-		break;
 
-	case 'm':
-	case 'q':
-		browser_exit();
-		pz_close_window(browser_wid);
-		ret = 1;
-		break;
-
-	case 'r':
-		if (browser_currentSelection < browser_nbEntries - 1) {
-			browser_currentSelection++;
-
-			if (browser_top >= 4+items_offset) {
-				browser_currentBase++;
-			} else
-				browser_top++;
+	switch(event->type) {
+	case GR_EVENT_TYPE_KEY_DOWN:
+		switch (event->keystroke.ch) {
+		case '\r':
+		case '\n':
+			browser_selection_activated(browser_currentSelection);
+			GrClearWindow(browser_wid, 1);
 			browser_draw_browser();
 			ret = 1;
-		}
+			break;
 
-		break;
-	case 'l':
+		case 'm':
+		case 'q':
+			browser_exit();
+			pz_close_window(browser_wid);
+			ret = 1;
+			break;
 
-		if (browser_currentSelection > 0) {
-			browser_currentSelection--;
+		case 'r':
+			if (browser_currentSelection < browser_nbEntries - 1) {
+				browser_currentSelection++;
 
-			if (browser_top == 0) {
-				browser_currentBase--;
-			} else {
-				browser_top--;
+				if (browser_top >= 4+items_offset) {
+					browser_currentBase++;
+				} else
+					browser_top++;
+				browser_draw_browser();
+				ret = 1;
 			}
-			browser_draw_browser();
-			ret = 1;
+
+			break;
+		case 'l':
+
+			if (browser_currentSelection > 0) {
+				browser_currentSelection--;
+
+				if (browser_top == 0) {
+					browser_currentBase--;
+				} else {
+					browser_top--;
+				}
+				browser_draw_browser();
+				ret = 1;
+			}
+			break;
 		}
 		break;
 	}

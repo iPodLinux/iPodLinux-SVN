@@ -493,33 +493,36 @@ static int itunes_do_keystroke(GR_EVENT * event)
 	int ret = 0;
 	struct menulist *oldml;
 
-	switch (event->keystroke.ch) {
-	case '\r':		/* action key */
-	case '\n':
-		currentml->select(currentml);
-		break;
+	switch (event->type) {
+	case GR_EVENT_TYPE_KEY_DOWN:
+		switch (event->keystroke.ch) {
+		case '\r':		/* action key */
+		case '\n':
+			currentml->select(currentml);
+			break;
 
-	case 'm':		/* menu key */
-		ret = 1;
-		pz_close_window(currentml->wid);
-		oldml = currentml;
-		currentml = currentml->prevml;
-		free(oldml);
-		if (currentml) itunes_draw(currentml);
-		break;
+		case 'm':		/* menu key */
+			ret = 1;
+			pz_close_window(currentml->wid);
+			oldml = currentml;
+			currentml = currentml->prevml;
+			free(oldml);
+			if (currentml) itunes_draw(currentml);
+			break;
 
-	case 'l':
-		if (currentml->get_prev(currentml)) currentml->sel_line--;
-		itunes_draw(currentml);
-		ret = 1;
-		break;
-	case 'r':
-		if (currentml->get_next(currentml)) currentml->sel_line++;
-		itunes_draw(currentml);
-		ret = 1;
+		case 'l':
+			if (currentml->get_prev(currentml)) currentml->sel_line--;
+			itunes_draw(currentml);
+			ret = 1;
+			break;
+		case 'r':
+			if (currentml->get_next(currentml)) currentml->sel_line++;
+			itunes_draw(currentml);
+			ret = 1;
+			break;
+		}
 		break;
 	}
-
 	return ret;
 }
 

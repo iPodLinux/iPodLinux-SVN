@@ -170,35 +170,41 @@ static void about_start_draw() {
 
 static int about_parse_keystroke(GR_EVENT * event) {
 	int ret=1;
-	switch (event->keystroke.ch) {
-	case '\r':
-	case '\n':
-		page=!page;
-		draw_about();
-		break;
-	case 'l':
-		if(page) {
-			reltop+=3;
-			if(reltop>20)
-				reltop=20;
+
+	switch(event->type) {
+	case GR_EVENT_TYPE_KEY_DOWN:
+		switch (event->keystroke.ch) {
+		case '\r':
+		case '\n':
+			page=!page;
 			draw_about();
+			break;
+		case 'l':
+			if(page) {
+				reltop+=3;
+				if(reltop>20)
+					reltop=20;
+				draw_about();
+			}
+			break;
+		case 'r':
+			if(page) {
+				reltop-=3;
+				if(reltop<-1*((j+1)*15-screen_info.cols)-60)
+					reltop=-1*((j+1)*15-screen_info.cols)-60;
+				draw_about();
+			}
+			break;
+		case 'm':
+			GrUnmapWindow(about_bottom_wid);
+			GrDestroyWindow(about_bottom_wid);
+			pz_close_window(about_wid);
+			GrDestroyGC(about_gc_black);
+			break;
+		default:
+			ret=0;
 		}
 		break;
-	case 'r':
-		if(page) {
-			reltop-=3;
-			if(reltop<-1*((j+1)*15-screen_info.cols)-60)
-				reltop=-1*((j+1)*15-screen_info.cols)-60;
-			draw_about();
-		}
-		break;
-	case 'm':
-		GrUnmapWindow(about_bottom_wid);
-		GrDestroyWindow(about_bottom_wid);
-		pz_close_window(about_wid);
-		break;
-	default:
-		ret=0;
 	}
 	return ret;
 }

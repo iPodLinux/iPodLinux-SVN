@@ -1,6 +1,7 @@
 Courtney Cavin - Fri Feb 12 2005
 	global error functions added
 	please use pz_error for custom errors & pz_perror for errno based ones 
+	allowed for KEY_UP events to be recognized by applications
 
 Courtney Cavin - Fri Feb 11 2005
 	new_message_window now wraps lines
