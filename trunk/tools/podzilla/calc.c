@@ -181,9 +181,6 @@ static int calc_do_keystroke(GR_EVENT * event) {
 		}
 		break;
 
-	case GR_EVENT_TYPE_TIMEOUT:
-		break;
-
 	default:
 		ret |= EVENT_UNUSED;
 		break;

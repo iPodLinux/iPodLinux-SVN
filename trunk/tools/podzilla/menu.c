@@ -50,7 +50,6 @@ extern void new_calc_window(void);
 extern void new_poddraw_window(void);
 extern void new_cube_window(void);
 extern void new_matrix_window(void);
-extern void start_menu(void);
 extern void about_window(void);
 
 extern void quit_podzilla(void);
