@@ -174,7 +174,7 @@ static inline void cf_unit_end(struct config_rom_ptr *cr)
 /* read 32 bit value from firewire chip */
 static unsigned fw_reg_read(int addr)
 {
-	// read from little endian controller
+	/* read from little endian controller */
 	return (inw(0x30000000 + (addr * 2) + 0) & 0xff)
 		| ((inw(0x30000000 + (addr * 2) + 2) & 0xff) << 8)
 		| ((inw(0x30000000 + (addr * 2) + 4) & 0xff) << 16)
@@ -184,7 +184,7 @@ static unsigned fw_reg_read(int addr)
 /* write 32 bit value to firewire chip */
 static void fw_reg_write(int addr, unsigned val)
 {
-	// write to little endian controller
+	/* write to little endian controller */
 	outw(val, 0x30000000 + (addr * 2) + 0);
 	outw(val >> 8, 0x30000000 + (addr * 2) + 2);
 	outw(val >> 16, 0x30000000 + (addr * 2) + 4);
@@ -274,11 +274,11 @@ static void init_config_rom(struct ti_ipod *ipod)
 
 	/* Bus info block */
 	cf_unit_begin(&cr, 0);
-	cf_put_1quad(&cr, 0x31333934);	// Bus ID == "1394"
-	cf_put_1quad(&cr, 0x00ff6002);	// Bus options (based iPod f/w)
-					// 6 -> 2^7 == max_rec
-	cf_put_1quad(&cr, 0x00000000);	// vendor id, chip id high */
-	cf_put_1quad(&cr, 0x024f3638);	// chip id low
+	cf_put_1quad(&cr, 0x31333934);	/* Bus ID == "1394" */
+	cf_put_1quad(&cr, 0x00ff6002);	/* Bus options (based iPod f/w) */
+					/* 6 -> 2^7 == max_rec */
+	cf_put_1quad(&cr, 0x00000000);	/* vendor id, chip id high */
+	cf_put_1quad(&cr, 0x024f3638);	/* chip id low */
 	cf_unit_end(&cr);
 
 	/* IEEE P1212 suggests the initial ROM header CRC should only
@@ -306,26 +306,29 @@ static void init_config_rom(struct ti_ipod *ipod)
 
 	ipod->csr_config_rom_length = cr.data - ipod->csr_config_rom_cpu;
 
-	// Configuration ROM control register
-        // set the rom size
-	// 31-2 == 29
-	// 31-18 == 13
-	// multiplies arg_r1 by 4 to get bytes
+	/* Configuration ROM control register
+         * set the rom size
+	 * 31-2 == 29
+	 * 31-18 == 13
+	 * multiplies arg_r1 by 4 to get bytes
+	 */
 	fw_reg_write(0x8c, (ipod->csr_config_rom_length << (31-13)) | (ipod->csr_config_rom_length << (31-29)));
 
-	// Log/ROM control register
-	// 00000000000000001000010000000000 (1<<15) | (1<<10)
-	// Set XLOG=1
+	/* Log/ROM control register
+	 * 00000000000000001000010000000000 (1<<15) | (1<<10)
+	 * Set XLOG=1
+	 */
 	fw_reg_write(0xf8, (1<<(31-16))|(1<<(31-21)));
 
 	for (i = 0; i < ipod->csr_config_rom_length; i++) {
-		// log data register, write the ROM data
+		/* log data register, write the ROM data */
 		fw_reg_write(0xfc, be32_to_cpu(ipod->csr_config_rom_cpu[i]));
 	}
 
-	// log/rom control register
- 	//  100000000000000 (1<<14) (31-14 -> 17 == ROMValid)
-	// 1000000000000000 (1<<15) (31-15 -> 16 == XLOG)
+	/* log/rom control register
+ 	 *  100000000000000 (1<<14) (31-14 -> 17 == ROMValid)
+	 * 1000000000000000 (1<<15) (31-15 -> 16 == XLOG)
+	 */
 	fw_reg_write(0xf8, (fw_reg_read(0xf8) & ~(1<<(31-16))) | (1<<(31-17)));
 }
 
@@ -347,8 +350,8 @@ static int tx_packet(struct ti_ipod *ipod, struct hpsb_packet *packet)
 {
 	unsigned r = 0;
 
-	// write to ATF & hold timer
-	// TXN_TIMER_CONTROL
+	/* write to ATF & hold timer */
+	/* TXN_TIMER_CONTROL */
 	r = fw_reg_read(0x60);
 	fw_reg_write(0x60, (r & ~0xff) | 0x24 | (r & 0x4 ? 0 : 0x4));
 
@@ -400,8 +403,8 @@ static int tx_packet(struct ti_ipod *ipod, struct hpsb_packet *packet)
 		}
 	}
 
-	// write to ATF & release timer
-	// TXN_TIMER_CONTROL
+	/* write to ATF & release timer */
+	/* TXN_TIMER_CONTROL */
 	fw_reg_write(0x60,  (fw_reg_read(0x60) & ~0xff) | 0x26);
 
 	return 1;
@@ -411,16 +414,16 @@ static int tx_raw_packet(struct ti_ipod *ipod, struct hpsb_packet *packet)
 {
 	unsigned r = 0;
 
-	// write to ATF & hold timer
-	// TXN_TIMER_CONTROL
+	/* write to ATF & hold timer */
+	/* TXN_TIMER_CONTROL */
 	r = fw_reg_read(0x60);
 	fw_reg_write(0x60, (r & ~0xff) | 0x24 | (r & 0x4 ? 0 : 0x4));
 
 	fw_reg_write(WRITE_FIRST, packet->header[0] | 0x00e0);
 	fw_reg_write(WRITE_UPDATE, packet->header[1] | 0xffff);
 
-	// write to ATF & release timer
-	// TXN_TIMER_CONTROL
+	/* write to ATF & release timer */
+	/* TXN_TIMER_CONTROL */
 	fw_reg_write(0x60,  (fw_reg_read(0x60) & ~0xff) | 0x26);
 
 	return 1;
@@ -431,8 +434,8 @@ static void rx_packet(struct hpsb_host *host)
 	static quadlet_t data[1024], status;
 	int i;
 	int tcode;
-	// unsigned arf;
-	// int avail;
+	/* unsigned arf; */
+	/* int avail; */
 
 	if ( !(fw_reg_read(0x30) & 0x8000) ) {
 		printk(KERN_ERR "ARF sts: 0x%04x\n", fw_reg_read(0x30));
@@ -444,8 +447,8 @@ static void rx_packet(struct hpsb_host *host)
 		}
 	}
 
-	// arf = fw_reg_read(0x30);
-	// avail = (arf << 7) >> 23;
+	/* arf = fw_reg_read(0x30); */
+	/* avail = (arf << 7) >> 23; */
 
 	status = fw_reg_read(0x80);
 
@@ -485,7 +488,7 @@ static void rx_packet(struct hpsb_host *host)
 		data[3] = fw_reg_read(0x80);
 		block_len = data[3] >> 16;
 
-		// if ( block_len > 500 ) printk("block_len %d arf 0x%08x\n", block_len, fw_reg_read(0x30));
+		/* if ( block_len > 500 ) printk("block_len %d arf 0x%08x\n", block_len, fw_reg_read(0x30)); */
 
 		for (i = 0; i < (block_len + 3) / 4; i++) {
 			int to = 0;
@@ -501,7 +504,7 @@ static void rx_packet(struct hpsb_host *host)
 			data[4+i] = cpu_to_be32(fw_reg_read(0x80));
 		}
 
-		// if ( block_len > 500 ) printk("done\n");
+		/* if ( block_len > 500 ) printk("done\n"); */
 
 		hpsb_packet_received(host, data, 16 + block_len, 0);
 	}
@@ -538,8 +541,8 @@ else {
 			printk(KERN_ERR ">ARF sts: 0x%04x\n", fw_reg_read(0x30));
 			printk(KERN_ERR "ack err\n");
 			printk("ack 0x%04x\n", r);
-			// clear the ATF (only do this on timeout!)
-			// fw_reg_write(0x2c, 0x10a0);
+			/* clear the ATF (only do this on timeout!) */
+			/* fw_reg_write(0x2c, 0x10a0); */
 			printk("tcode 0x%x tlabel 0x%x datalen %d\n", ipod->packet->tcode, ipod->packet->tlabel, ipod->packet->data_size);
 			hpsb_packet_sent(ipod->host, ipod->packet, ACKX_SEND_ERROR);
 		}
@@ -553,9 +556,10 @@ else {
 				if ( ((r>>4) & 0xf) == 1 && response ) {
 					printk(KERN_DEBUG "premature end? %d rx %d\n", ((fw_reg_read(0x30) << 7) >> 23), ipod->rx_state);
 
-					// TODO: we should really just read the
-					// reply and add to packet then
-					// send back the ACK_COMPLETE
+					/* TODO: we should really just read the
+					 * reply and add to packet then
+					 * send back the ACK_COMPLETE
+					 */
 					hpsb_packet_sent(ipod->host, ipod->packet, 0x2);
 				}
 				else {
@@ -569,7 +573,7 @@ else {
 					else {
 						rx_packet(ipod->host);
 
-						// if we have no more data ignore any interrupt
+						/* if we have no more data ignore any interrupt */
 						if ( ((fw_reg_read(0x30) << 7) >> 23) == 0 ) ipod->rx_state = RX_READY;
 					}
 				}
@@ -597,7 +601,7 @@ else {
 		if ( packet ) {
 			ipod->packet = packet;
 			ipod->tx_state = TX_BUSY;
-			// spin_unlock_irqrestore(&ipod->tx_lock, flags);
+			/* spin_unlock_irqrestore(&ipod->tx_lock, flags); */
 
 			if (packet->type == hpsb_async) {
 				tx_packet(ipod, packet);
@@ -634,11 +638,11 @@ static int ipod_1394_transmit_packet(struct hpsb_host *host, struct hpsb_packet 
 		return 0;
 	}
 
-	// spin_lock_bh(&ipod->tx_list_lock);
+	/* spin_lock_bh(&ipod->tx_list_lock); */
 	spin_lock(&ipod->tx_list_lock);
 	list_add_tail(&packet->driver_list, &ipod->tx_list);
 	tasklet_schedule(&ipod->tx_tasklet);
-	// spin_unlock_bh(&ipod->tx_list_lock);
+	/* spin_unlock_bh(&ipod->tx_list_lock); */
 	spin_unlock(&ipod->tx_list_lock);
 
 	return 1;
@@ -711,7 +715,7 @@ static int ipod_1394_devctl(struct hpsb_host *host, enum devctl_cmd command, int
 		break;
 
 	case GET_CYCLE_COUNTER:
-		retval = fw_reg_read(0x14);	// Cycle Timer Register
+		retval = fw_reg_read(0x14);	/* Cycle Timer Register */
 		printk("devctl:get_cycle=0x%x\n", retval);
 		break;
 
@@ -775,16 +779,16 @@ static void handle_selfid(struct ti_ipod *ipod, struct hpsb_host *host,
 	quadlet_t q0;
 	size_t size;
 
-//	printk(KERN_ERR "phyid: 0x%x\n", phyid);
-//	printk(KERN_ERR "isroot: %d\n", isroot);
+/*	printk(KERN_ERR "phyid: 0x%x\n", phyid); */
+/*	printk(KERN_ERR "isroot: %d\n", isroot); */
 
 	size = fw_reg_read(0x9c) & 0x1ff;
-//	printk("size = %d\n", size);
+/*	printk("size = %d\n", size); */
 
 	while (size > 0) {
 		q0 = fw_reg_read(0xac);		/* read from DRF */
 		if ( (q0 & 0x80000000) == 0 ) {
-//			printk(KERN_ERR "ignored 0x%x received\n", q0);
+/*			printk(KERN_ERR "ignored 0x%x received\n", q0); */
 		}
 		else {
 			printk(KERN_ERR "SelfID packet 0x%x received\n", q0);
@@ -797,7 +801,7 @@ static void handle_selfid(struct ti_ipod *ipod, struct hpsb_host *host,
 		size--;
 	}
 
-//	printk(KERN_ERR "SelfID complete\n");
+/*	printk(KERN_ERR "SelfID complete\n"); */
 
 	hpsb_selfid_complete(host, phyid, isroot);
 }
@@ -807,10 +811,10 @@ static void ipod_1394_fw_int(int irq, struct ti_ipod *ipod)
 	struct hpsb_host *host = ipod->host;
 	unsigned fw_src;
 
-	// interrupt source
+	/* interrupt source */
 	fw_src = fw_reg_read(0xc);
 	if ( fw_src ) {
-		// ack the interrupt
+		/* ack the interrupt */
 		fw_reg_write(0xc, fw_src);
 
 		if ( fw_src & BUS_RESET ) {
@@ -828,22 +832,17 @@ static void ipod_1394_fw_int(int irq, struct ti_ipod *ipod)
 					goto selfid_not_valid;
 				}
 
-				bus_reset = fw_reg_read(0x24);	// Bus Reset Register
+				bus_reset = fw_reg_read(0x24);	/* Bus Reset Register */
 
-				// 00000000000000001111000000000000
 				if ( bus_reset & 0xf000 ) {
 					printk(KERN_ERR "bus reset err 0x%x\n", (bus_reset & 0xf000) >> 12);
 				}
 				else {
 					int phyid = -1, isroot = 0;
 
-//					printk(KERN_ERR "bus_reset:0x%x\n", bus_reset);
-//					printk(KERN_ERR "misc:0x%x\n", fw_reg_read(0x4));
-					// 00000000001111110000000000000000
 					phyid =  (bus_reset & 0x3f0000) >> 16;
 
-					// 00000000000000001000000000000000
-					isroot = (fw_reg_read(0x4) & 0x8000) != 0;	// micellaneous register
+					isroot = (fw_reg_read(0x4) & 0x8000) != 0;	/* micellaneous register */
 
 					handle_selfid(ipod, host, phyid, isroot);
 				}
@@ -931,9 +930,9 @@ static __devinit void fw_i2c(int data0, int data1)
 
 static __devinit void ipod_1394_hw_init(void)
 {
-	// firewire stuff
+	/* firewire stuff */
 
-	// MIO setup?
+	/* MIO setup? */
 	outl((inl(0xcf004040) & ~(1<<6)) | (1<<7), 0xcf004040);
 	outl(0x00001f1f, 0xcf00401c);
 	outl(0xffff, 0xcf004020);
@@ -941,14 +940,14 @@ static __devinit void ipod_1394_hw_init(void)
 #if defined(IPOD_1G) || defined(IPOD_2G)
 /* this is the 1g and 2g init */
 
-	// port D enable, PD(4) power down and LPS(5) link power staus, and(7?)
+	/* port D enable, PD(4) power down and LPS(5) link power staus, and(7?) */
 	outl(inl(0xcf00000c) | (1<<4)|(1<<5)|(1<<7), 0xcf00000c);
 
-	// port D output enable
+	/* port D output enable */
 	outl(inl(0xcf00001c) | (1<<4)|(1<<5)|(1<<7), 0xcf00001c);
 
-	// port D output value ~10000 | 100000
-	// set PD (power down) to low and LPS to high (see 12.4)
+	/* port D output value ~10000 | 100000 */
+	/* set PD (power down) to low and LPS to high (see 12.4) */
 	outl((inl(0xcf00002c) & ~(1<<4)) | (1<<5), 0xcf00002c);
 
 	udelay(20);
@@ -984,27 +983,27 @@ static __devinit void ipod_1394_hw_init(void)
 	{
 		unsigned r2;
 
-		// Port E Bit 2 Enable
+		/* Port E Bit 2 Enable */
 		outl(inl(0xcf004048) | (1<<2), 0xcf004048);
 
 		r2 = inl(0xcf004044);
 
-		// Port E Bit 4 output high
+		/* Port E Bit 4 output high */
 		outl(inl(0xcf004048) | (1<<4), 0xcf004048);
 
 		udelay(0x14);
 
-		// Port E Bit 2 output low
+		/* Port E Bit 2 output low */
 		outl(inl(0xcf004048) & ~(1<<2), 0xcf004048);
-		// Port E Bit 4 output low
+		/* Port E Bit 4 output low */
 		outl(inl(0xcf004048) & ~(1<<4), 0xcf004048);
 
 		udelay(0x14);
 
-		// Port E Bit 2 output high
+		/* Port E Bit 2 output high */
 		outl(inl(0xcf004048) | (1<<2), 0xcf004048);
 		udelay(0x1);
-		// Port E Bit 2 output high
+		/* Port E Bit 2 output high */
 		outl(inl(0xcf004048) | (1<<4), 0xcf004048);
 
 		udelay(0x14);
@@ -1020,7 +1019,7 @@ static __devinit void ipod_1394_hw_init(void)
 		outl(inl(0xcf005030) | (1<<8), 0xcf005030);
 		outl(inl(0xcf005030) & ~(1<<8), 0xcf005030);
 
-		// some i2c magic
+		/* some i2c magic */
 		fw_i2c(0x39, 0);
 		fw_i2c(0x3a, 0);
 		fw_i2c(0x3b, 0);
@@ -1032,10 +1031,15 @@ static __devinit void ipod_1394_hw_init(void)
 		fw_i2c(0x3b, 0);
 		fw_i2c(0x3c, 0);
 
-		// enable GPIO port D bit 7 & set it to low
+		/* don't enable GPIO port D bit 7 & set it to low
+		 * this seems to enable firewire DMA which messes
+		 * with the ide driver
+		 */
+		/*
 		outl(inl(0xcf00000c) | (1<<7), 0xcf00000c);
 		outl(inl(0xcf00001c) | (1<<7), 0xcf00001c);
 		outl(inl(0xcf00002c) & ~(1<<7), 0xcf00002c);
+		*/
 	}
 #endif
 
@@ -1048,7 +1052,7 @@ static int __devinit ipod_1394_init(void)
 {
 	struct ti_ipod *ipod;
 
-	printk("ipod_1394: $Id: tsb42aa82.c,v 1.4 2004/01/26 22:17:30 leachbj Exp $\n");
+	printk("ipod_1394: $Id: tsb42aa82.c,v 1.5 2004/01/29 00:36:47 leachbj Exp $\n");
 
 	ipod_host = hpsb_alloc_host(&ipod_1394_driver, sizeof(struct ti_ipod));
 	if ( !ipod_host ) {
@@ -1076,12 +1080,12 @@ static int __devinit ipod_1394_init(void)
 
 	ipod_1394_hw_init();
 
-	// setup firewire power (4) and firewire (5) interrupts
+	/* setup firewire power (4) and firewire (5) interrupts */
 
-	// enable port c bits 4 & 5
+	/* enable port c bits 4 & 5 */
 	outb(inb(0xcf000008) | (1<<4) | (1<<5), 0xcf000008);
 
-	// pin 4 & 5 is input
+	/* pin 4 & 5 is input */
 	outb(inl(0xcf000018) & ~((1<<4) | (1<<5)), 0xcf000018);
 
 	outb(~inb(0xcf000038), 0xcf000068);
@@ -1090,42 +1094,46 @@ static int __devinit ipod_1394_init(void)
 	outb(inb(0xcf000048), 0xcf000078);
 	outb((1<<4)|(1<<5), 0xcf000058);
 
-	// set CRF size to 0x0 (we dont use it)
+	/* set CRF size to 0x0 (we dont use it) */
 	fw_reg_write(0x40, 0x1000);
-	// set CTQ size to 0x0 (we dont use it)
+	/* set CTQ size to 0x0 (we dont use it) */
 	fw_reg_write(0x3c, 0x1000);
-	// set ARF size to 0xb4
-	// clear the ARF
+	/* set ARF size to 0xb4 */
+	/* clear the ARF */
 	fw_reg_write(0x30, 0x10b4);
-	// set ATF size to 0xb4
-	// clear the ATF
+	/* set ATF size to 0xb4 */
+	/* clear the ATF */
 	fw_reg_write(0x2c, 0x10b4);
-// ATF default size is 0x80		(0x2c)
-// ARF default size is 0x8e		(0x30)
-// CTQ default size is 0xf		(0x3c)
-// CRF default size is 0x4b (min 0x44) (0x40)
-// MTQ fixed size 3
-// MRF fixed size 15
 
-	// rxsld,rsisel,tren,reset tr,split transaction enable,
-	// auto retry,cycle master,cyle timer enable,dma block clear*/
+	/*
+	 * ATF default size is 0x80		(0x2c)
+	 * ARF default size is 0x8e		(0x30)
+	 * CTQ default size is 0xf		(0x3c)
+	 * CRF default size is 0x4b (min 0x44) (0x40)
+	 * MTQ fixed size 3
+	 * MRF fixed size 15
+	 */
+
+	/* rxsld,rsisel,tren,reset tr,split transaction enable, */
+	/* auto retry,cycle master,cyle timer enable,dma block clear*/
 	fw_reg_write(CONTROL_REG, (0x6420cb00 | (1<<(31-18))|(1<<(31-24))) & ~(1<(31-25)));
-	// finish dma clear
+	/* finish dma clear */
 	fw_reg_write(CONTROL_REG, (0x6420ca00 | (1<<(31-18))|(1<<(31-24))) & ~(1<(31-25)));
 
-	// DMA control
-	// 00111100001000000110110010000011
-	// 2 3 4 5 10 17 18 20 21 24 30 31
-	// DRF enable
-	// DTF enable
-	// DRF packetizer enable
-	// DTF packetizer enable
-	// Recieve confirm for each packet
-	// Data read fetchsize == 011
-	// Data transmit fetchsize == 001
-	// DTF header insert
-	// DRF clear
-	// DTF clear
+	/* DMA control
+	 * 00111100001000000110110010000011
+	 * 2 3 4 5 10 17 18 20 21 24 30 31
+	 * DRF enable
+	 * DTF enable
+	 * DRF packetizer enable
+	 * DTF packetizer enable
+	 * Recieve confirm for each packet
+	 * Data read fetchsize == 011
+	 * Data transmit fetchsize == 001
+	 * DTF header insert
+	 * DRF clear
+	 * DTF clear
+	 */
 	fw_reg_write(0x90, 0x3c206c83);
 
 	fw_reg_write(0xc0, 0x0);
