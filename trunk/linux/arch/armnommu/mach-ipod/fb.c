@@ -141,7 +141,7 @@ set_backlight(int on)
 		/* GSL=00 -> 1/4 level grayscale control */
 		/* REV=0 -> don't reverse */
 		/* D=1 -> display on */
-		lcd_cmd_and_data(0x7, 0x0, 0x11 | 0x2);
+		lcd_cmd_and_data(0x7, 0x0, 0x11 /* | 0x2 */);
 	}
 	else {
 		lcd_state = lcd_state & ~0x2;
@@ -151,7 +151,7 @@ set_backlight(int on)
 		/* GSL=10 -> 2/4 level grayscale control */
 		/* REV=0 -> don't reverse */
 		/* D=1 -> display on */
-		lcd_cmd_and_data(0x7, 0x0, 0x9);
+		lcd_cmd_and_data(0x7, 0x0, 0x9 /* | 0x2 */);
 	}
 }
 
@@ -187,6 +187,9 @@ init_lcd(void)
 	/* AM=00 -> data is continuously written in parallel */
 	/* LG=00 -> no logical operation */
 	lcd_cmd_and_data(0x5, 0x0, 0x10);
+
+	/* backlight off & set grayscale */
+	set_backlight(0);
 }
 
 
@@ -509,6 +512,8 @@ static int ipod_pan_display(struct fb_var_screeninfo *var,
 
 static int ipod_blank(int blank_mode, const struct fb_info *info)
 {
+	static int backlight_on = -1;
+
 	switch (blank_mode) {
 	case VESA_NO_BLANKING:
 		/* printk(KERN_ERR "VESA_NO_BLANKING\n"); */
@@ -522,12 +527,19 @@ static int ipod_blank(int blank_mode, const struct fb_info *info)
 		udelay(10000);
 		lcd_cmd_and_data(0x3, 0x15, 0x0);
 		lcd_cmd_and_data(0x3, 0x15, 0xc);
-		lcd_cmd_and_data(0x7, 0x0, 0x11);
+
+		if (backlight_on != -1) {
+			set_backlight(backlight_on);
+		}
+		backlight_on = -1;
 		break;
 
 	case VESA_VSYNC_SUSPEND:
 	case VESA_HSYNC_SUSPEND:
 		/* printk(KERN_ERR "VESA_XSYNC_BLANKING\n"); */
+		if (backlight_on == -1) {
+			backlight_on = get_backlight();
+		}
 
 		/* go to SLP = 1 */
 		/* 10101 00001100 */
@@ -537,6 +549,9 @@ static int ipod_blank(int blank_mode, const struct fb_info *info)
 
 	case VESA_POWERDOWN:
 		/* printk(KERN_ERR "VESA_POWERDOWN\n"); */
+		if (backlight_on == -1) {
+			backlight_on = get_backlight();
+		}
 
 		/* got to standby */
 		lcd_cmd_and_data(0x3, 0x15, 0x1);
