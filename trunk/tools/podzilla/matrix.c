@@ -117,7 +117,7 @@ static void matrix_var_init(void)
 	lines = (matrix_info.height/COL_H)+1;
 	cols = (matrix_info.width/COL_W)+1;
 
-	matrix = nmalloc(sizeof(cmatrix) * (lines + 1));
+	matrix = nmalloc(sizeof(cmatrix *) * (lines + 1));
 	for (i = 0; i <= lines; i++)
 		matrix[i] = nmalloc(sizeof(cmatrix) * cols);
 
