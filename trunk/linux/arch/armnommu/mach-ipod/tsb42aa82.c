@@ -836,11 +836,11 @@ static int __init ipod_1394_init(void)
 {
 	struct ti_ipod *ipod;
 
-	printk(KERN_ERR "ipod_1394_init: start\n");
+	printk("ipod_1394: $Id$\n");
 
 	ipod_host = hpsb_alloc_host(&ipod_1394_driver, sizeof(struct ti_ipod));
 	if ( !ipod_host ) {
-		printk(KERN_ERR "ipod_1394_init: failed to allocate control structure\n");
+		printk(KERN_ERR "ipod_1394: failed to allocate control structure\n");
 		return -ENOMEM;
 	}
 
@@ -848,7 +848,7 @@ static int __init ipod_1394_init(void)
 	ipod->host = ipod_host;
 	ipod->csr_config_rom_cpu = kmalloc(CONFIG_ROM_LEN, GFP_KERNEL);
 	if ( ipod->csr_config_rom_cpu == NULL ) {
-		printk(KERN_ERR "Failed to allocate buffer config rom");
+		printk(KERN_ERR "ipod_1394: Failed to allocate buffer config rom");
 	}
 
 	spin_lock_init(&ipod->phy_reg_lock);
@@ -859,7 +859,7 @@ static int __init ipod_1394_init(void)
 	tasklet_init(&ipod->tx_tasklet, tx_tasklet, (unsigned long)ipod);
 
 	if ( request_irq(GPIO_IRQ, ipod_1394_interrupt, SA_SHIRQ, IPOD_1394_DRIVER_NAME, ipod) ) {
-		printk(KERN_ERR "ipod_1394_init: IRQ %d failed\n", GPIO_IRQ);
+		printk(KERN_ERR "ipod_1394: IRQ %d failed\n", GPIO_IRQ);
 	}
 
 	// firewire stuff
@@ -907,7 +907,9 @@ static int __init ipod_1394_init(void)
 		outl(r2 | (1<<4), 0xcf004044);
 	}
 
-	printk(KERN_ERR "rev=0x%x\n", fw_reg_read(0x0)); // == 0x43008203
+	if ( fw_reg_read(0x0) != 0x43008203 ) {
+		printk(KERN_ERR "ipod_1394: invalid chip revsion 0x%x\n", fw_reg_read(0x0));
+	}
 
 	// setup battery and firewire interrupts
 
