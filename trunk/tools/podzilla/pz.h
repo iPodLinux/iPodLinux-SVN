@@ -32,8 +32,8 @@
 #define FONT_HEIGHT 14
 
 /* pz.c */
-GR_SCREEN_INFO screen_info;
-long hw_version;
+extern GR_SCREEN_INFO screen_info;
+extern long hw_version;
 
 void pz_draw_header(char *header);
 GR_GC_ID pz_get_gc(int copy);
