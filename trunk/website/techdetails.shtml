@@ -1,0 +1,42 @@
+<!--#include file="include/iplHeader.html"-->
+
+<h1>Linux on iPod - Technical Notes</h1>
+
+<p>This page is pretty much a place holder for the moment.  Below you can find some links to other sources of information that I have found interesting.
+
+
+<h1>iPod Information on the Web</h1>
+
+<h2>Articles on the iPod</h2>
+
+<p><a href="http://www.designchain.com/coverstory.asp?issue=summer02">Inside the Apple iPod Design Triumph</a>.  An interesting article on how Apple chose off the shelf components to put together the iPod design.
+
+<p><a href="http://www.eetimes.com/sys/uth/OEG20020326S0045">Apple's iPod packs a pricey punch</a>.  Another article, has some nice diagrams.
+
+<p><a href="http://www.chipmunk.nl/iPod/">Complete iPod disassembly</a>.  Photos of the inside of an iPod.
+
+<p><a href="http://www.maushammer.com/systems/ipod-remote/ipod-remote.html">iPod Remote Control Protocol</a>.  A good discussion of the iPod remote control connectors and protocols.
+
+
+<h2>Product Pages</h2>
+
+<p><a href="http://www.portalplayer.com/products/publications.htm">Portal Player's PP50xx</a> range.  The Portalplayer chip is the "system-on-chip" that drives the iPod.  Unfortunately not too many details here.
+
+<p><a href="http://www.arm.com/techdocs.nsf/html/ARM7Docs">ARM7 Documentation.</a>.  The Powerportal chip contains two ARM7TDMI cores.
+
+<p><a href="http://focus.ti.com/docs/prod/folders/print/tsb43aa82.html">TSB43AA82</a>.  Texas Instrument's IEEE-1394 chip.
+
+<p><a href="http://www.toshiba.com/taissdd/products/features/MK1003GAL-Over.shtml">TOSHIBA MK5002MAL</a>.  The 10GB HDD version.
+
+<p><a href="http://www.wolfsonmicro.com/product.asp?pid=25">WM8721</a>.  The Wolfson DAC (this is where the sound comes out :).
+
+<p>The LCD controller is actually a Hitachi chip (now owned by Renesas Technology Europe), the <a href="http://www.eu.renesas.com/products/lcd_controller/datasheets/greyscalestn_eu.html">HD66753</a>.  Thanks readers!
+
+<!--
+
+<a href="http://www.semiconductors.philips.com/acrobat/various/I2SBUS.pdf">I2S BUS Specification</a>
+
+-->
+
+
+<!--#include file="include/iplFooter.html"-->

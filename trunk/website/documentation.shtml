@@ -1,0 +1,19 @@
+<!--#include file="include/iplHeader.html"-->
+
+<h1>Linux on iPod - Documentation</h1>
+
+<p>As is the case with many OpenSource projects the documentation can only be described as a work-in-progress!
+
+<p>The currently available documentation:
+
+<ul>
+	<p>The <a href="build.shtml">Build Instructions</a>.
+	<p>The <a href="manual.shtml">User Manual</a>.
+	<p>A short <a href="partitioning.shtml">Partitioning</a> HOWTO.
+	<p>A few thoughts on the <a href="projects.shtml">project</a>.
+	<p>The <a href="faq.shtml">FAQ's</a>.
+	<p>Some basic <a href="techdetails.shtml">technical details</a> for the iPod.
+	<p>Getting started with <a href="firewire.shtml">IEEE1394</a> (firewire) on Linux.
+</ul>
+
+<!--#include file="include/iplFooter.html"-->

@@ -1,0 +1,16 @@
+<!--#include file="include/iplHeader.html"-->
+
+<h1>Linux on iPod - Screenshots</h1>
+<p>The following images are photos taken of the kernel startup messages.
+
+<ul>
+
+<a href="images/ipod_podzilla.jpg"><img src="images/ipod_podzilla_thumb.jpg" border="0"></a>
+<a href="images/ipod_browser.jpg"><img src="images/ipod_browser_thumb.jpg" border="0"></a>
+<img src="images/linuxOnIPod3.jpg" border="0">
+<img src="images/linuxOnIPod2.jpg" border="0">
+
+</ul>
+
+<!--#include file="include/iplFooter.html"-->
+
