@@ -24,9 +24,12 @@
 #include "ipod.h"
 #include "btree.h"
 #include "itunes_db.h"
-#ifdef __linux__
-extern void new_mp3_window(char *filename, char *album, char *artist, char *title, int len);
-#endif
+
+extern int playlistpos, playlistlength;
+
+extern void add_track_to_queue(struct track* song);
+extern void clear_play_queue();
+extern void start_play_queue();
 
 struct menulist {
 	void		*user;
@@ -47,6 +50,8 @@ struct menulist {
 
 static struct menulist *currentml;
 static struct artist	*selartist = NULL;
+
+void queue_all_tracks(struct menulist * ml);
 
 
 static void draw_itunes_parse(int cnt)
@@ -217,13 +222,24 @@ static char *get_text_plist(struct menulist *ml)
 }
 
 
-static void play_song(struct itdb_track *track)
+static void play_song(struct menulist *ml, struct track *track)
 {
-#ifdef __linux__
-	char mpath[128];
-	snprintf(mpath, 127, "/%s", track->path);
-	new_mp3_window(mpath, track->album, track->artist, track->title, track->length);
-#endif
+	static int queuesong = 0;
+
+	if (queuesong == 0) {
+		queuesong = 1;
+		queue_all_tracks(ml);
+		queuesong = 0;
+
+		/* all the songs have now been added, time to play songs. */
+		start_play_queue();
+
+		/* clear the play list info */
+		clear_play_queue();
+	}
+	else {
+		add_track_to_queue(track);
+	}
 }
 
 
@@ -238,8 +254,10 @@ static int select_track(struct menulist *ml)
 	struct itdb_track *track = db_read_details((struct track *)ml->user);
 	if (!track) {
 		fprintf(stderr, "can not get track details. \n");
+		return 0;
 	}
-	play_song(track);
+
+	play_song(ml, ((struct tracklist *)ml->user)->track);
 
 	return 0;
 }
@@ -251,9 +269,10 @@ static int select_tracklist(struct menulist *ml)
 			((struct tracklist *) ml->user)->track);
 	if (!track) {
 		fprintf(stderr, "can not get track details. \n");
+		return 0;
 	}
 
-	play_song(track);
+	play_song(ml, ((struct tracklist *)ml->user)->track);
 
 	return 0;
 }
@@ -332,12 +351,13 @@ static int select_plisttrack(struct menulist *ml)
 	struct itdb_track *track = db_read_details(t);
 	if (!track) {
 		fprintf(stderr, "can not get track details. \n");
+		return 0;
 	}
-	play_song(track);
+
+	play_song(ml, t);
 
 	return 0;
 }
-
 
 static int select_plist(struct menulist *ml)
 {
@@ -415,12 +435,68 @@ static void itunes_draw(struct menulist *ml)
 	}
 }
 
-
 static int itunes_do_draw()
 {
 	itunes_draw(currentml);
 
 	return 0;
+}
+
+/*
+ * This function is called to queue up all tracks in the current menu
+ * in the play queue.  It does this by going through the menu and calling
+ * select on each item which will then call this function again - during
+ * the second call though the actual item will be queued.
+ *
+ * Yes this is a hack, and it will be simplified hopefully!
+ */
+void queue_all_tracks(struct menulist * ml)
+{
+	int tracknum = 0;
+
+	if (playlistlength != 0) {
+		clear_play_queue();
+	}
+
+	playlistpos = 1;
+
+	/*go through list and printf*/
+	while (currentml->get_prev(currentml))
+	{    
+		playlistpos++;
+		tracknum--;
+		currentml->sel_line--;
+		//itunes_draw(currentml);
+	}
+
+	/*is now at the top*/
+	/*now go down to bottom and printf*/
+	printf("Playlistpos : %d\n", playlistpos);
+	while (1)
+	{
+		currentml->select(currentml);
+		if (!currentml->get_next(currentml)) {
+			break;
+		}
+		tracknum++;
+		currentml->sel_line++;
+	}
+
+	while (tracknum != 0)
+	{
+		if (tracknum > 0) {
+			tracknum--;
+			currentml->get_prev(currentml);
+			currentml->sel_line--;
+		}
+		if (tracknum < 0) {
+			tracknum++;
+			currentml->get_next(currentml);
+			currentml->sel_line++;
+		}
+	}
+
+	itunes_draw(currentml);
 }
 
 static int itunes_do_keystroke(GR_EVENT * event)
@@ -539,11 +615,12 @@ void new_itunes_plist()
 	}
 
 	if (plists) {
-	currentml->user = (void *) btree_first((struct btree_head *) plists);
+		currentml->user = (void *) btree_first((struct btree_head *) plists);
 	}
 	else {
-	currentml->user = 0;
+		currentml->user = 0;
 	}
 
 	itunes_draw(currentml);
 }
+

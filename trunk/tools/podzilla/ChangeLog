@@ -1,3 +1,8 @@
+Prashant V - Friday Feb 04 2005
+	added music suffle/repeat
+	only playback mp3 files (skips files not ending in .mp3)
+	added Song queuing with next & previous support
+
 Courtney Cavin - Fri Feb 04 2005
 	textviewer has better memory management
 	 - no longer crashes on particular files
