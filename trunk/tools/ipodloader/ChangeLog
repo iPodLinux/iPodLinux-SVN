@@ -1,3 +1,10 @@
+
+Wed May 12 21:57:59 CEST 2004
+ - Added windows support patch from Phyntos
+
+Sat May  8 21:02:09 CEST 2004
+ - use new tux.c (our logo) thanks mikey
+
 ipodloader-0.3.1, Wed Nov 19 12:58:42 UTC 2003
 
  - big-endian fix for the extract code
