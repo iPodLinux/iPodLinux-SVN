@@ -168,6 +168,23 @@ void DrawCluster()
 		}
 }
 
+#ifndef USE_SDL
+void ClearCluster(void)
+{
+	int x, y;
+
+	for (y=0; y<CLUSTER_Y; y++)
+		for (x=0; x<CLUSTER_X; x++)
+		{
+			if (cluster.data[x][y])
+				ClearRect(
+					boxdraw.box_x + (cluster.x+x)*(boxdraw.brick_width+boxdraw.box_l), 
+					boxdraw.box_y + (cluster.y+y)*(boxdraw.brick_height+boxdraw.box_l),
+					boxdraw.brick_width, boxdraw.brick_height);
+		}
+}
+#endif
+
 /*=========================================================================
 // Name: DrawNextPiece()
 // Desc: Draws the next cluster (see whats coming next...) onto the screen
@@ -175,6 +192,11 @@ void DrawCluster()
 void DrawNextPiece(int posX, int posY)
 {
 	int x, y;
+
+#ifndef USE_SDL
+	ClearRect(posX, posY, CLUSTER_X * (boxdraw.brick_width+boxdraw.box_l),
+			CLUSTER_Y*(boxdraw.brick_height+boxdraw.box_l));
+#endif
 
 	for (y=0; y<CLUSTER_Y; y++)
 		for (x=0; x<CLUSTER_X; x++)
@@ -369,6 +391,10 @@ int CheckFullLine()
 		case 3: score += 5000;  break;
 		case 4: score += 10000; break;
 		}
+
+#ifndef USE_SDL
+		ClearBox();
+#endif
 
 		return 1;
 	}

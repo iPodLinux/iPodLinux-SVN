@@ -223,6 +223,8 @@ static void tetris_do_draw()
 
 static int tetris_do_keystroke(GR_EVENT * event)
 {
+	ClearCluster();
+
 	switch (event->type) {
 	case GR_EVENT_TYPE_TIMER:
 		cluster.dropCount--;  /* Decrease time until the next fall */;
@@ -517,11 +519,6 @@ static void DrawScene()
 
 	if (bCrazy)
 		WriteText(font, 250, 30+(boxdraw.box_x), "Cr4zY m0d3!"); /* woo hoo! */
-#else
-	/* clear the screen */
-	GrSetGCForeground(tetris_gc, BLACK);
-	GrFillRect(tetris_wid, tetris_gc, 0, 0, screen_info.cols, screen_info.rows);
-	GrSetGCForeground(tetris_gc, WHITE);
 #endif
 
 	if (!bGameOver)
@@ -653,5 +650,20 @@ void PutRect(int x, int y, int w, int h, int r, int g, int b)
 	GrSetGCForeground(tetris_gc, WHITE);
 	GrRect(tetris_wid, tetris_gc, x, y, w, h);
 }
+
+void ClearRect(int x, int y, int w, int h)
+{
+	GrSetGCForeground(tetris_gc, BLACK);
+	GrFillRect(tetris_wid, tetris_gc, x, y, w, h);
+	GrSetGCForeground(tetris_gc, WHITE);
+}
+
+void ClearBox(void)
+{
+	GrSetGCForeground(tetris_gc, BLACK);
+	GrFillRect(tetris_wid, tetris_gc, boxdraw.box_x+1, boxdraw.box_y+1, boxdraw.box_width-1, boxdraw.box_height-1);
+	GrSetGCForeground(tetris_gc, WHITE);
+}
+
 #endif
 
