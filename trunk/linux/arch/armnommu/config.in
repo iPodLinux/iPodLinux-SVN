@@ -401,6 +401,15 @@ source drivers/char/Config.in
 source drivers/usb/Config.in
 source drivers/ieee1394/Config.in
 source drivers/message/i2o/Config.in
+
+if [ "$CONFIG_ARCH_IPOD" = "y" ]; then
+   mainmenu_option next_comment
+   comment 'iPod Stuff'
+   tristate "iPod Audio" CONFIG_AUDIO_IPOD
+   tristate "iPod Keypad support" CONFIG_KB_IPOD
+   endmenu
+fi
+
 #------------------------------------------------------------------------------
 #                     K e r n e l    H a c k i n g
 #------------------------------------------------------------------------------
