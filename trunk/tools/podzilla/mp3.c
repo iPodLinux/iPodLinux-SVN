@@ -15,7 +15,6 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
-#ifdef __linux__
 #ifdef IPOD
 #define USE_LIBINTEL
 #else
@@ -29,7 +28,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
+#ifdef __linux__
 #include <linux/soundcard.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -153,7 +154,9 @@ static void mp3_do_draw(GR_EVENT * event)
 
 static void mp3_refresh_state()
 {
+#ifdef __linux__
 	ioctl(mixer_fd, SOUND_MIXER_WRITE_PCM, &dsp_vol);
+#endif
 	rect_wait = RECT_CYCLES;
 	draw_volume();
 }
@@ -416,9 +419,11 @@ static void start_mp3_playback(char *filename)
 		return;
 	}
 	mixer_fd = open("/dev/mixer", O_RDWR);
+#ifdef __linux__
 	if (mixer_fd >= 0) {
 		ioctl(mixer_fd, SOUND_MIXER_READ_PCM, &dsp_vol);
 	}
+#endif
 
 	do {
 		pz_draw_header("Buffering...");
@@ -510,5 +515,3 @@ void new_mp3_window(char *filename, char *album, char *artist, char *title, int 
 	start_mp3_playback(filename);
 	window_open = 0;
 }
-
-#endif
