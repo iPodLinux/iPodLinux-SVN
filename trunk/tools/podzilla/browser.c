@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include "pz.h"
+#include "piezo.h"
 
 static GR_WINDOW_ID browser_wid;
 static GR_GC_ID browser_gc;
@@ -208,19 +209,22 @@ static void browser_selection_activated(unsigned short userChoice)
 	}
 }
 
-static void browser_do_keystroke(GR_EVENT * event)
+static int browser_do_keystroke(GR_EVENT * event)
 {
+	int ret = -1;
 	switch (event->keystroke.ch) {
 	case '\r':
 	case '\n':
 		browser_selection_activated(browser_currentSelection);
 		browser_draw_browser();
+		ret = 0;
 		break;
 
 	case 'm':
 	case 'q':
 		browser_exit();
 		pz_close_window(browser_wid);
+		ret = 0;
 		break;
 
 	case 'r':
@@ -232,6 +236,7 @@ static void browser_do_keystroke(GR_EVENT * event)
 			} else
 				browser_top++;
 			browser_draw_browser();
+			ret = 0;
 		}
 
 		break;
@@ -247,9 +252,11 @@ static void browser_do_keystroke(GR_EVENT * event)
 			}
 
 			browser_draw_browser();
+			ret = 0;
 		}
 		break;
 	}
+	return ret;
 
 }
 
@@ -263,7 +270,8 @@ static void browser_event_handler(GR_EVENT *event)
 		break;
 
 	case GR_EVENT_TYPE_KEY_DOWN:
-		browser_do_keystroke(event);
+		if (browser_do_keystroke(event) == 0)
+			beep();
 		break;
 	}
 }

@@ -30,5 +30,7 @@ int ipod_set_backlight(int backlight);
 
 int ipod_set_blank_mode(int blank);
 
+void ipod_beep(void);
+
 #endif
 
