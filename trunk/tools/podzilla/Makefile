@@ -42,7 +42,10 @@ OBJS=\
 	message.o \
 	slider.o \
 	audio.o \
-	othello.o
+	othello.o \
+	bluecube/box.o \
+	bluecube/main.o \
+	bluecube/pieces.o
 
 all: podzilla
 

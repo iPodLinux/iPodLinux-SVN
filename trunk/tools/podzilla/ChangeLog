@@ -1,3 +1,9 @@
+leachbj - Thu June 17 2004
+	Fixed up scroll wheel sensitivity
+	Cleaned up some menu names
+	Sliders now display heading correctly
+	Added BlueCube (tetris clone) port from Matthis
+	
 leachbj - Sun June 06 2004
 	In browser, execute .sh files as shell scripts
 	Removed un-implemented menus to avoid confusion

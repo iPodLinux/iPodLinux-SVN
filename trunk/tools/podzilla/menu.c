@@ -30,6 +30,7 @@ extern void set_wheeldebounce(void);
 extern void set_buttondebounce(void);
 extern void new_record_window(void);
 extern void new_oth_window(void);
+extern void new_bluecube_window(void);
 
 static GR_WINDOW_ID menu_wid;
 static GR_GC_ID menu_gc;
@@ -68,6 +69,7 @@ static struct menu_item browse_menu[] = {
 
 static struct menu_item games_menu[] = {
 	{"Othello", ACTION_MENU, new_oth_window},
+	{"BlueCube", ACTION_MENU, new_bluecube_window},
 	{0, 0, 0}
 };
 
@@ -101,7 +103,7 @@ static struct menu_item settings_menu[] = {
 	{"Backlight Timer", ACTION_MENU, set_backlight_timer},
 #endif
 	{"Contrast", ACTION_MENU, set_contrast},
-	{"Wheel Debounce", ACTION_MENU, set_wheeldebounce},
+	{"Wheel Sensitivity", ACTION_MENU, set_wheeldebounce},
 	{"Button Debounce", ACTION_MENU, set_buttondebounce},
 #if 0
 	{"Alarms", SUB_MENU_HEADER, 0},
