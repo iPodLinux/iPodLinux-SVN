@@ -38,7 +38,8 @@
 #define IMAGE_PADDING ((fw_version == 3) ? 0x200 : 0)
 #define FIRST_OFFSET (TBL + 0x200 + IMAGE_PADDING)
 
-int be, fw_version = 2;
+int be;
+unsigned short fw_version = 2;
 
 typedef struct _image {
     char type[4];		/* '' */
@@ -64,6 +65,16 @@ switch_32(unsigned l)
 	    | ((l & 0xff0000) >> 8)
 	    | ((l & 0xff000000) >> 24);
     return l;
+}
+
+unsigned short
+switch_16(unsigned short s)
+{
+	if (be) {
+		return ((s & 0xff) << 8) | ((s & 0xff00) >> 8);
+	} else {
+		return s;
+	}
 }
 
 void
@@ -192,7 +203,11 @@ extract(FILE *f, int idx, FILE *out)
     image_t *image;
     unsigned char buf[512];
     unsigned off;
-    
+
+    fseek(f, 0x100 + 10, SEEK_SET);
+    fread(&fw_version, sizeof(fw_version), 1, f);
+    fw_version = switch_16(fw_version);
+
     image = (image_t *)buf;
     if (load_entry(image, f, TBL, idx) == -1)
 	return -1;
