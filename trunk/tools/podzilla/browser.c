@@ -39,7 +39,7 @@
 static GR_WINDOW_ID browser_key_timer;
 static GR_WINDOW_ID browser_wid;
 static GR_GC_ID browser_gc;
-static menu_st *browser_menu;
+static menu_st *browser_menu, *browser_menu_overlay;
 
 #define FILE_TYPE_PROGRAM 0
 #define FILE_TYPE_DIRECTORY 1
@@ -53,6 +53,7 @@ typedef struct {
 } Directory;
 
 static char current_dir[128];
+static char *current_file;
 static int browser_nbEntries = 0;
 static Directory browser_entries[MAX_ENTRIES];
 
@@ -195,7 +196,7 @@ static void handle_type_other(char *filename)
 			new_exec_window(filename);
 		}
 		else {
-			new_message_window("Unknown Filetype");
+			new_message_window("No Default Action for this Filetype");
 		}
 	}
 	else if (is_image_type(ext)) {
@@ -220,7 +221,7 @@ static void handle_type_other(char *filename)
 		new_exec_window(filename);
 	}
 	else  {
-		new_message_window("Unknown Filetype");
+		new_message_window("No Default Action for this Filetype");
 	}
 }
 
@@ -238,6 +239,59 @@ static void browser_selection_activated(unsigned short userChoice)
 	}
 }
 
+static void browser_vip_open_file()
+{
+	int len;
+	char *execline;
+	
+	len = strlen(current_file) + 5;
+	execline = (char *)malloc(len * sizeof(char));
+	snprintf(execline, len, "viP %s", current_file);
+	new_exec_window(execline);
+	free(execline);
+}
+
+static void browser_delete_file()
+{
+	browser_menu_overlay = browser_menu;
+	if(unlink(current_file) == -1) {
+		pz_perror(current_file);
+		return;
+	}
+	
+	while(browser_menu_overlay->parent != NULL)
+		browser_menu_overlay = menu_destroy(browser_menu_overlay);
+	menu_delete_item(browser_menu_overlay, browser_menu_overlay->sel);
+}
+
+static void browser_action(unsigned short userChoice)
+{
+	static item_st delete_confirm_menu[] = {
+		{"Whoops. No thanks.", NULL, SUB_MENU_PREV},
+		{"Yes, Delete it.", browser_delete_file, ACTION_MENU},
+		{0}
+	};
+	browser_menu = menu_init(browser_wid, browser_gc,
+			browser_entries[userChoice].name,
+			0, 1, screen_info.cols, screen_info.rows -
+			(HEADER_TOPLINE + 1), browser_menu, NULL);
+	current_file = browser_entries[userChoice].full_name;
+
+	switch (browser_entries[userChoice].type) {
+	case FILE_TYPE_DIRECTORY:
+		break;
+	case FILE_TYPE_PROGRAM:
+	case FILE_TYPE_OTHER:
+		if(access("/bin/viP", X_OK) == 0)
+			menu_add_item(browser_menu, "Open with viP",
+					browser_vip_open_file, 0, ACTION_MENU |
+					SUB_MENU_PREV);
+		menu_add_item(browser_menu, "Delete",  delete_confirm_menu, 0,
+				SUB_MENU_HEADER);
+		break;
+	}
+}
+
 static int browser_do_keystroke(GR_EVENT * event)
 {
 	int ret = 0;
@@ -248,7 +302,7 @@ static int browser_do_keystroke(GR_EVENT * event)
 			GrDestroyTimer(browser_key_timer);
 			browser_key_timer = 0;
 			menu_handle_timer(browser_menu, 1);
-			browser_selection_activated(browser_menu->sel);
+			browser_action(browser_menu->items[browser_menu->sel].orig_pos);
 			browser_do_draw();
 		}
 		else
@@ -259,16 +313,32 @@ static int browser_do_keystroke(GR_EVENT * event)
 		switch (event->keystroke.ch) {
 		case '\r':
 		case '\n':
-			browser_key_timer = GrCreateTimer(browser_wid, 500);
+			if(browser_menu->parent == NULL)
+				browser_key_timer = GrCreateTimer(browser_wid,
+						500);
+			else {
+				menu_handle_timer(browser_menu, 1);
+				browser_menu = menu_handle_item(browser_menu, 
+						browser_menu->sel);
+				if(browser_menu_overlay) {
+					browser_menu = browser_menu_overlay;
+					browser_menu_overlay = 0;
+				}
+				browser_do_draw();
+			}	
 			break;
 
 		case 'm':
 		case 'q':
-			menu_destroy(browser_menu);
+			browser_menu = menu_destroy(browser_menu);
+			ret |= KEY_CLICK;
+			if(browser_menu != NULL) {
+				browser_do_draw();
+				break;
+			}
 			browser_exit();
 			GrDestroyGC(browser_gc);
 			pz_close_window(browser_wid);
-			ret |= KEY_CLICK;
 			break;
 
 		case 'r':
@@ -294,7 +364,7 @@ static int browser_do_keystroke(GR_EVENT * event)
 				GrDestroyTimer(browser_key_timer);
 				browser_key_timer = 0;
 				menu_handle_timer(browser_menu, 1);
-				browser_selection_activated(browser_menu->sel);
+				browser_selection_activated(browser_menu->items[browser_menu->sel].orig_pos);
 				browser_do_draw();
 			}
 			break;
@@ -331,6 +401,7 @@ void new_browser_window(char *initial_path)
 			GR_EVENT_MASK_TIMER);
 
 	browser_menu = NULL;
+	browser_menu_overlay = NULL;
 	browser_mscandir("./");
 
 	GrMapWindow(browser_wid);
