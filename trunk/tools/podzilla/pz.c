@@ -17,8 +17,9 @@
  */
 
 #include <stdio.h>
-//#include <assert.h>
+#include <stdlib.h>
 #include <sys/time.h>
+#include <unistd.h>
 #include "pz.h"
 #include "browser.h"
 #include "ipod.h"
@@ -37,9 +38,11 @@ static struct pz_window windows[10];
 static int n_opened = 0;
 /* int BACKLIGHT_TIMER = 10; // in seconds */
 
+#ifdef IPOD
 static unsigned long int last_button_event = 0;
-static unsigned long int last_keypress_event = 0;
 static unsigned long int wheel_evt_count = 0;
+#endif
+static unsigned long int last_keypress_event = 0;
 
 #define WHEEL_EVT_MOD   3
 
@@ -67,6 +70,9 @@ static GR_POINT batt_outline[] = {
 };
 
 #define BATT_POLY_POINTS 9
+
+extern void new_menu_window();
+extern void beep(void);
 
 void reboot_ipod(void)
 {

@@ -42,7 +42,6 @@ static void oth_set_piece(int pos, int coloresq);
    
 static int current_oth_item = 19;
 static int last_current_oth_item;
-static int in_contrast = 0;
 static int status[64];
 static int testb[64];
 static int over = 0;
@@ -187,8 +186,8 @@ static int endgame(int isOver)
 	GrSetGCForeground(oth_gc, BLACK);
 	GrFillRect(oth_wid, oth_gc, 32, 8, 97, 97);
 	GrSetGCForeground(oth_gc, WHITE);
-	sprintf(comp, "Me: %d\0", computer);
-	sprintf(hum, "You: %d\0", human);
+	sprintf(comp, "Me: %d", computer);
+	sprintf(hum, "You: %d", human);
 	GrText(oth_wid, oth_gc, 35, 32, comp, -1, GR_TFASCII);
 	GrText(oth_wid, oth_gc, 80, 32, hum, -1, GR_TFASCII);
 

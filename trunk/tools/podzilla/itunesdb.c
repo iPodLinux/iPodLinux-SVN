@@ -47,7 +47,6 @@ static int songperartist[2048];
 
 static int current_itunes_item = 0;
 static int top_itunes_item = 0;
-static int in_contrast = 0;
 
 static struct itunes_item *itunes = main_itunes;
 static struct itunes_item *itunes_stack[5];
@@ -56,6 +55,10 @@ static int top_itunes_item_stack[5];
 static int itunes_stack_pos = 0;
 static char *buffer;
 static int already_opened = 0;
+
+extern void new_mp3_window(char *filename);
+static void mountitunes(void);
+static void parse(char *);
 
 static void draw_itunes()
 {
@@ -98,8 +101,6 @@ static void draw_itunes()
 	GrSetGCMode(itunes_gc, GR_MODE_SET);
 }
 
-void *mountitunes(void);
-
 static void itunes_do_draw()
 {
 	if(!already_opened) {
@@ -119,7 +120,6 @@ static char *find_mount_point(void)
 	char input[MAXLINELENGTH];
 	char device[MAXLINELENGTH];
 	char filesystem[MAXLINELENGTH];
-	char itunesloc[MAXLINELENGTH];
 	char command[2*MAXLINELENGTH];
 	int mounted=0;
 
@@ -127,13 +127,15 @@ static char *find_mount_point(void)
 
 	if ((file = fopen("/proc/mounts", "r")) == NULL){
 		printf("Unable to open mounts!\n");
-		return;
+		pz_close_window(itunes_wid);
+		new_message_window("Unable to open mounts!");
+		return NULL;
 	}
 
 	printf("Checking mounts for /dev/hda2\n");
 
 	while(fgets(input, MAXLINELENGTH-1, file)) {
-		sscanf(input, "%s%s%s", &device, &mountpoint, &filesystem);
+		sscanf(input, "%s%s%s", device, mountpoint, filesystem);
 		if(strcmp(device, "/dev/hda2")==0) {
 			if(strcmp(filesystem, "vfat")!=0) {
 				printf("/dev/hda2 mounted as %s, remounting as vfat\n", filesystem);
@@ -151,17 +153,16 @@ static char *find_mount_point(void)
 	if(!mounted) {
 		printf("/dev/hda2 not found in mounts.. Mounting..\n");
 		system("mkdir /mnt/music");
-		system("mount -t vfat /dev/hda2 /mnt/music");
-		sprintf(mountpoint, "/mnt/music");
+		system("mount -t vfat -o ro /dev/hda2 /mnt/music");
+		strcpy(mountpoint, "/mnt/music");
 	}
 
 	return mountpoint;
 }
 
-void *mountitunes() {
+static void mountitunes(void) {
 	char itunesloc[MAXLINELENGTH];
 	char mountpoint[MAXLINELENGTH];
-
 	char msg[MAXLINELENGTH];
 	long fs;
 
@@ -169,7 +170,7 @@ void *mountitunes() {
 
 	mountpoint[0] = 0;
 
-	strcat(itunesloc, "/iPod_Control/iTunes/iTunesDB");
+	strcpy(itunesloc, "/iPod_Control/iTunes/iTunesDB");
 	if((itunesdb = fopen(itunesloc, "rb"))==NULL) {
 		strcpy(itunesloc, "iTunesDB");
 		if((itunesdb = fopen(itunesloc, "rb"))==NULL) {
@@ -182,6 +183,7 @@ void *mountitunes() {
 	}
 
 	if(itunesdb ==NULL) {
+		pz_close_window(itunes_wid);
 		new_message_window("Error: can't open file.\n");
 		return;
 	}
@@ -189,17 +191,17 @@ void *mountitunes() {
 	printf("File found at: %s. Parsing...\n", itunesloc);
 	fseek(itunesdb, 0, SEEK_END);
 	fs = ftell(itunesdb);
-	printf("File size: %dK\n", fs/1024);
+	printf("File size: %ldK\n", fs/1024);
 	rewind(itunesdb);
 
 	buffer = malloc(fs * sizeof(char));
 	if(buffer==NULL) {
-		sprintf(msg, "malloc: %d\n", fs);
+		sprintf(msg, "malloc: %ld\n", fs);
 		new_message_window(msg);
 		return;
 	}
 	if(fread(buffer, 1, fs, itunesdb)!=fs) {
-		sprintf(msg, "read: %d\n", fs);
+		sprintf(msg, "read: %ld\n", fs);
 		new_message_window(msg);
 		return;
 	}
@@ -207,12 +209,12 @@ void *mountitunes() {
 
 	parse(mountpoint);
 
-	printf("Thread finished parsing...\n");
+	printf("Finished parsing...\n");
 }
 
 static unsigned int get_int(char *p)
 {
-	if ((int)p&0x3==0) {
+	if (((int)p&0x3)==0) {
 		return *(unsigned int *)p;
 	}
 	else {
@@ -220,17 +222,16 @@ static unsigned int get_int(char *p)
 	}
 }
 
-int parse(char *mountpoint) {
+static void parse(char *mountpoint) {
 	char filepos2[80], buf, *curitem;
 	char filepos[128], itemtext[128], artisttext[128], songtext[128];
-	unsigned int isitem=0, oldartist=0, whichartist, songpos, whichitem;
+	unsigned int oldartist=0, whichartist, whichitem;
 	int songlength;
 	int i, j, pos=-1, lasti;
 
 	curitem = buffer;
 	buf = *curitem;
 
-	printf("Begin!\n");
 	while(1) {
 		if(((int)curitem)%2==0 && buf=='m') {
 			unsigned long id;
@@ -293,8 +294,7 @@ int parse(char *mountpoint) {
 #define ITEM_SONG	1
 #define ITEM_FILE	2
 #define ITEM_ARTIST	4
-				if(whichitem==ITEM_ARTIST || whichitem==ITEM_SONG || whichitem==ITEM_FILE)
-				{
+				if(whichitem==ITEM_ARTIST || whichitem==ITEM_SONG || whichitem==ITEM_FILE) {
 					int c = 0;
 					char *p;
 
@@ -421,7 +421,8 @@ static int itunes_do_keystroke(GR_EVENT * event)
 		case 1:
 			if (itunes[current_itunes_item].ptr != 0) {
 				//printf("File: %s\n", itunes[current_itunes_item].ptr);
-				new_mp3_window(itunes[current_itunes_item].ptr, main_itunes[itunes_item_stack[(itunes_stack_pos)-1]].text, itunes[current_itunes_item].text);
+				// new_mp3_window(itunes[current_itunes_item].ptr, main_itunes[itunes_item_stack[(itunes_stack_pos)-1]].text, itunes[current_itunes_item].text);
+				new_mp3_window(itunes[current_itunes_item].ptr);
 			}
 			break;
 		}

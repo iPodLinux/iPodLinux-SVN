@@ -20,10 +20,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/stat.h>
 #include <dirent.h>
 #include <string.h>
-#include <stdbool.h>
 
 #include "pz.h"
 #include "piezo.h"
@@ -52,6 +52,13 @@ char *browser_selected_filename = NULL;
 int browser_top = 0;
 Directory browser_entries[MAX_ENTRIES];
 
+extern void new_textview_window(char * filename);
+extern int is_image_type(char *extension);
+extern int is_mp3_type(char *extension);
+extern void new_mp3_window(char *filename);
+extern int is_raw_audio_type(char *extension);
+extern void new_playback_window(char *filename);
+extern int is_text_type(char * extension);
 void new_script_window(char *filename);
 
 static void browser_exit()

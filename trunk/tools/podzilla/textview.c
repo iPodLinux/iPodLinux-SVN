@@ -27,7 +27,7 @@
 #include "pz.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdbool.h>
+#include <string.h>
 #include <ctype.h>
 #define LINESPERSCREEN 7
 
@@ -105,7 +105,7 @@ static void buildLineData()
 
 		localAr[currentLine] = (char *) malloc(100);
 		sol = curtextptr;
-		while (true)
+		while (1)
 		{
 			GR_SIZE width, height, base;
 
@@ -255,7 +255,7 @@ static int textview_do_keystroke(GR_EVENT * event){
 	return ret;
 }
 
-bool is_text_type(char * extension)
+int is_text_type(char * extension)
 {
 	return strcmp(extension, ".txt") == 0;
 }

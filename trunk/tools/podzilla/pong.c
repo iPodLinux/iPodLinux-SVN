@@ -52,8 +52,7 @@ struct Position add(const struct Position,const struct Position);
 /***************************************************************/
 
 void draw_pong() {
-	static int i=0, j, lastpballx, lastpbally, lastcpoint, lastupoint;
-	GR_SIZE width, height, base;
+	static int i=0, lastpballx, lastpbally, lastcpoint, lastupoint;
 	GR_POINT breakfast[] = {
 		{pball.x-1, pball.y-3},
 		{pball.x-3, pball.y-1},

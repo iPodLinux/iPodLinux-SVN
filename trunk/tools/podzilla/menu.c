@@ -18,6 +18,7 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include "pz.h"
 #include "ipod.h"
@@ -163,7 +164,6 @@ static struct menu_item main_menu[] = {
 
 static int current_menu_item = 0;
 static int top_menu_item = 0;
-static int in_contrast = 0;
 
 static struct menu_item *menu = main_menu;
 static struct menu_item *menu_stack[5];
@@ -222,8 +222,10 @@ static void menu_do_draw()
 
 static int menu_do_keystroke(GR_EVENT * event)
 {
+#ifdef IPOD
 	static int rcount = 0;
 	static int lcount = 0;
+#endif
 	int ret = 0;
 
 	switch (event->keystroke.ch) {

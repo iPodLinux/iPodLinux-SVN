@@ -30,6 +30,7 @@
 #include <stdio.h>
 
 #include "ipod.h"
+#include "pz.h"
 
 #define FBIOGET_CONTRAST	_IOR('F', 0x22, int)
 #define FBIOSET_CONTRAST	_IOW('F', 0x23, int)
@@ -146,7 +147,7 @@ int ipod_load_settings(void)
         FILE *fp;
 	int x;
 
-	if (fp = fopen(IPOD_SETTINGS_FILE, "r")) {
+	if ((fp = fopen(IPOD_SETTINGS_FILE, "r")) != 0) {
 	        if (fread(settings_buffer, sizeof(int), 100, fp) != 100) {
 			printf("Failed to read Podzilla settings from %s.\n", IPOD_SETTINGS_FILE);
 		}
@@ -171,24 +172,30 @@ int ipod_load_settings(void)
 		ipod_set_setting(WHEEL_DEBOUNCE, 3);
 		ipod_set_setting(ACTION_DEBOUNCE, 400);
 		ipod_set_setting(BACKLIGHT_TIMER, 0);
+		ipod_set_setting(DSPFREQUENCY, 44100);
 	}
+
+	return 0;
 }
 
 int ipod_save_settings(void)
 {
 	FILE *fp;
-        int x;
 
-	if (fp = fopen(IPOD_SETTINGS_FILE, "w")) {
+	if ((fp = fopen(IPOD_SETTINGS_FILE, "w")) != 0) {
 		if (fwrite(settings_buffer, sizeof(int), 100, fp) != 100) {
 			printf("Failed to write Podzilla settings to %s.\n", IPOD_SETTINGS_FILE);
+			new_message_window("Write failed.");
 		}
 
 		fclose(fp);
 	}
 	else {
 		printf("Failed to open %s to save settings.\n", IPOD_SETTINGS_FILE);
+		new_message_window("Save failed.");
 	}
+
+	return 0;
 }
 
 void ipod_reset_settings(void)
