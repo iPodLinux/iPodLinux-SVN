@@ -151,6 +151,9 @@ static void browser_do_draw()
 	if(browser_wid == GrGetFocus()) {
 		pz_draw_header(browser_menu->title);
 		menu_draw(browser_menu);
+		GrSetGCForeground(browser_gc, WHITE);
+		GrLine(browser_wid, browser_gc, 0, 0, screen_info.cols, 0);
+		GrSetGCForeground(browser_gc, BLACK);
 	}
 }
 
