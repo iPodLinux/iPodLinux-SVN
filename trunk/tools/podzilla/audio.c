@@ -620,8 +620,9 @@ void new_playback_window(char *filename)
 	currenttime = 0;
 
 	dsp_gc = GrNewGC();
-	GrSetGCUseBackground(dsp_gc, GR_FALSE);
+	GrSetGCUseBackground(dsp_gc, GR_TRUE);
 	GrSetGCForeground(dsp_gc, BLACK);
+	GrSetGCBackground(dsp_gc, WHITE);
 	GrGetScreenInfo(&screen_info);
 
 	dsp_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), dsp_do_draw, dsp_do_keystroke);
