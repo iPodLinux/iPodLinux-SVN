@@ -31,6 +31,7 @@ extern void set_wheeldebounce(void);
 extern void set_buttondebounce(void);
 extern void new_record_window(void);
 extern void new_playback_browse_window(void);
+extern void new_calendar_window(void);
 extern void new_oth_window(void);
 extern void new_bluecube_window(void);
 extern void new_itunes_window(void);
@@ -102,7 +103,9 @@ static struct menu_item extras_menu[] = {
 #if 0
 	{"Clock", SUB_MENU_HEADER, 0, NOSETTING},
 	{"Contacts", SUB_MENU_HEADER, 0, NOSETTING},
-	{"Calendar", SUB_MENU_HEADER, 0, NOSETTING},
+#endif
+	{"Calendar", ACTION_MENU, new_calendar_window, NOSETTING},
+#if 0
 	{"Notes", SUB_MENU_HEADER, 0, NOSETTING},
 #endif
 	{"Games", SUB_MENU_HEADER, games_menu, NOSETTING},
