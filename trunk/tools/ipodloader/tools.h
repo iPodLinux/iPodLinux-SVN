@@ -31,13 +31,6 @@ void lcd_prepare_cmd(int cmd);
 /* send LCD command and data */
 void lcd_cmd_and_data(int cmd, int data_lo, int data_hi);
 
-/* reset the LCD */
-void reset_lcd();
-
-/* turn the back light on or off */
-int backlight_on_off(int on);
-
-
 typedef struct _img {
 	unsigned short offy;		// #0
 	unsigned short offx;		// #2
@@ -51,5 +44,7 @@ typedef struct _img {
 } img;
 
 void display_image(img *img, int draw_bg);
+
+int opto_keypad_read();
 
 #endif

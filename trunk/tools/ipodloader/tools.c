@@ -284,3 +284,76 @@ display_image(img *img, int draw_bg)
 	wait_usec(15);
 }
 
+static void
+ser_opto_keypad_cfg(int val)
+{
+	int start_time;
+
+	outl(inl(0x6000d004) & ~0x80, 0x6000d004);
+
+	outl(inl(0x7000c104) | 0xc000000, 0x7000c104);
+	outl(val, 0x7000c120);
+	outl(inl(0x7000c100) | 0x80000000, 0x7000c100);
+
+	outl(inl(0x6000d024) & ~0x10, 0x6000d024);
+	outl(inl(0x6000d014) | 0x10, 0x6000d014);
+
+	start_time = timer_get_current();
+	do {
+		if ((inl(0x7000c104) & 0x80000000) == 0) {
+			break;
+		}
+	} while (timer_check(start_time, 1500) != 0);
+
+	outl(inl(0x7000c100) & ~0x80000000, 0x7000c100);
+
+	outl(inl(0x6000d004) | 0x80, 0x6000d004);
+	outl(inl(0x6000d024) | 0x10, 0x6000d024);
+	outl(inl(0x6000d014) & ~0x10, 0x6000d014);
+
+	outl(inl(0x7000c104) | 0xc000000, 0x7000c104);
+	outl(inl(0x7000c100) | 0x60000000, 0x7000c100);
+}
+
+int
+opto_keypad_read()
+{
+	int loop_cnt, had_io = 0;
+
+	for (loop_cnt = 5; loop_cnt != 0;)
+	{
+		int key_pressed = 0, start_time, key_pad_val;
+
+		ser_opto_keypad_cfg(0x8000023a);
+
+		start_time = timer_get_current();
+		do {
+			if (inl(0x7000c104) & 0x4000000) {
+				had_io = 1;
+				break;
+			}
+
+			if (had_io != 0) {
+				break;
+			}
+		} while (timer_check(start_time, 1500) != 0);
+
+		key_pad_val = inl(0x7000c140);
+		if ((key_pad_val & ~0x7fff0000) != 0x8000023a) {
+			loop_cnt--;
+		} else {
+			key_pad_val = (key_pad_val << 11) >> 27;
+			key_pressed = 1;
+		}
+
+		outl(inl(0x7000c100) | 0x60000000, 0x7000c100);
+		outl(inl(0x7000c104) | 0xc000000, 0x7000c104);
+
+		if (key_pressed != 0) {
+			return key_pad_val;
+		}
+	}
+
+	return 0;
+}
+

@@ -54,15 +54,10 @@ init_keyboard(void)
 		/* mini keyboard init */
                 outl(inl(0x6000d000) | 0x3f, 0x6000d000);
                 outl(inl(0x6000d010) & ~0x3f, 0x6000d010);
-	} else if (ipod_ver == 5) {
-		/* 4g keyboard init */
-		outl(inl(0x60005030) | (1<<12), 0x60005030);
-		outl(inl(0x60005030) & ~(1<<12), 0x60005030);
+	} else if (ipod_ver >= 5) {
+		/* 4g/photo keyboard init */
 
-		outl(0xffffffff, 0x7000c120);
-		outl(0xffffffff, 0x7000c124);
-		outl(0xc00a1f00, 0x7000c100);
-		outl(0x1000000, 0x7000c104);
+		/* nothing to do */
 	}
 }
 
@@ -85,8 +80,12 @@ key_pressed(void)
 		if ((state & 0x2) == 0) return 2;
 		if ((state & 0x04) == 0) return 3;
 		if ((state & 0x08) == 0) return 4;
-	} else if(ipod_ver == 5) {
-		if (inl(0x7000c140) & 0x400) return 1;
+	} else if(ipod_ver >= 5) {
+		state = opto_keypad_read();
+		if ((state & 0x4) == 0) return 1;
+		if ((state & 0x10) == 0) return 2;
+		if ((state & 0x8) == 0) return 3;
+		if ((state & 0x2) == 0) return 4;
 	}
 
 	return 0;
@@ -125,7 +124,12 @@ loader(void)
     get_ipod_rev();
     if (ipod_ver > 3) padding = 0x4600;
 
-    display_image(&tux_hdr, 0x0);
+    if (ipod_ver == 6) {
+	// not yet
+    } else {
+	display_image(&tux_hdr, 0x0);
+    }
+
     wait_usec(300);
 
     init_keyboard();
