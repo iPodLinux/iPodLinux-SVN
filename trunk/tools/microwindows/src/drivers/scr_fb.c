@@ -127,7 +127,10 @@ fb_open(PSD psd)
 		env = "/dev/fb0";
 	fb = open(env, O_RDWR);
 	if(fb < 0) {
-		EPRINTF("Error opening %s: %m. Check kernel config\n", env);
+		fb = open("/dev/fb/0", O_RDWR);
+	}
+	if(fb < 0) {
+		EPRINTF("Error opening %s and /dev/fb/0: %m. Check kernel config\n", env);
 		return NULL;
 	}
 	if(ioctl(fb, FBIOGET_FSCREENINFO, &fb_fix) == -1 ||
@@ -230,7 +233,10 @@ fb_open(PSD psd)
 	/* open tty, enter graphics mode*/
 	tty = open ("/dev/tty0", O_RDWR);
 	if(tty < 0) {
-		EPRINTF("Error can't open /dev/tty0: %m\n");
+		tty = open ("/dev/vc/0", O_RDWR);
+	}
+	if(tty < 0) {
+		EPRINTF("Error can't open /dev/tty0 or /dev/vc/0: %m\n");
 		goto fail;
 	}
 	if(ioctl (tty, KDSETMODE, KD_GRAPHICS) == -1) {
@@ -311,6 +317,9 @@ fb_close(PSD psd)
 #if HAVETEXTMODE
 	/* enter text mode*/
 	tty = open ("/dev/tty0", O_RDWR);
+	if(tty < 0) {
+		tty = open ("/dev/vc/0", O_RDWR);
+	}
 	ioctl(tty, KDSETMODE, KD_TEXT);
 	close(tty);
 #endif
