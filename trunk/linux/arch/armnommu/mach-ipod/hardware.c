@@ -1,4 +1,3 @@
-
 /*
  * hardware.c - special hardware routines for iPod
  *
@@ -11,7 +10,7 @@
 
 void ipod_hard_reset(void)
 {
-	outl(inl(0xcf001110) | 0x4, 0xcf001110);
+	outl(inl(0xcf005030) | 0x4, 0xcf005030);
 }
 
 /* make startup piezo noise */
