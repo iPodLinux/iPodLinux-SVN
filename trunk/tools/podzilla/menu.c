@@ -51,7 +51,7 @@ static GR_SCREEN_INFO screen_info;
 extern void quit_podzilla(void);
 extern void reboot_ipod(void);
 
-#define MAX_MENU_ITEMS 5
+#define MAX_MENU_ITEMS 6
 
 struct menu_item {
 	char *text;		/* Menu text to be displayed */
@@ -198,7 +198,7 @@ static void draw_menu()
 	struct menu_item *m = &menu[top_menu_item];
 
 	GrGetGCTextSize(menu_gc, "M", -1, GR_TFASCII, &width, &height, &base);
-	height += 5;
+	height += 4;
 
 	i = 0;
 	while (i <= 5) {
