@@ -37,12 +37,6 @@ extern void new_bluecube_window(void);
 extern void new_itunes_window(void);
 extern void new_pong_window(void);
 extern void new_mines_window(void);
-extern void record_set_8(void);
-extern void record_set_32(void);
-extern void record_set_44(void);
-extern void record_set_88(void);
-extern void record_set_96(void);
-
 
 static GR_WINDOW_ID menu_wid;
 static GR_GC_ID menu_gc;
@@ -54,118 +48,121 @@ extern void reboot_ipod(void);
 #define MAX_MENU_ITEMS 5
 
 struct menu_item {
-	char *text;
-	int type;
-	void *ptr;
-	int setting_id;
+	char *text;		/* Menu text to be displayed */
+	int type;		/* Menu type */
+	void *ptr;		/* For OPTION_MENU types a pointer to an */
+				/* options string, all other menu types, */
+				/* optional procedure ptr */
+	int setting_id; /* If type is BOOLEAN_MENU or OPTION_MENU */
+			/* this can be an index into the global settings */
+	int item_count; /* For OPTION_MENU types, number of option items */
 };
 
+/* menu types */
 #define DISPLAY_MENU	0
 #define SUB_MENU_HEADER	1
 #define ACTION_MENU	2
 #define BOOLEAN_MENU	3
-#define SUB_MENU_PREV	4
-#define ACTION_MENU_PREV_SUB	5
+#define OPTION_MENU	4
+#define SUB_MENU_PREV	5
+#define ACTION_MENU_PREV_SUB	6
 
-#define NOSETTING -1 /* This is for menu items not associated with global settings */
+#define NOSETTING -1 /* For menu items not associated with global settings */
+
+#define MENUSTR_TRUE "On"
+#define MENUSTR_FALSE "Off"
+
+#define MENU_PIXELOFFSET 8 /* pixels from screen border where menu text is drawn */
 
 typedef void (*menu_action_t) (void);
 
 static struct menu_item games_menu[] = {
-	{"Othello", ACTION_MENU, new_oth_window, NOSETTING},
-	{"BlueCube", ACTION_MENU, new_bluecube_window, NOSETTING},
-	{"Pong", ACTION_MENU, new_pong_window, NOSETTING},
-	{"Nimesweeper", ACTION_MENU, new_mines_window, NOSETTING},
-	{0, 0, 0, NOSETTING}
+	{"Othello", ACTION_MENU, new_oth_window, NOSETTING, 0},
+	{"BlueCube", ACTION_MENU, new_bluecube_window, NOSETTING, 0},
+	{"Pong", ACTION_MENU, new_pong_window, NOSETTING, 0},
+	{"Nimesweeper", ACTION_MENU, new_mines_window, NOSETTING, 0},
+	{0, 0, 0, NOSETTING, 0}
 };
 
-
-static struct menu_item sample_rate_menu[] = {
-	{"8 kHz", ACTION_MENU_PREV_SUB, record_set_8, NOSETTING},
-	{"32 kHz", ACTION_MENU_PREV_SUB, record_set_32, NOSETTING},
-	{"44.1 kHz", ACTION_MENU_PREV_SUB, record_set_44, NOSETTING},
-	{"88.2 kHz", ACTION_MENU_PREV_SUB, record_set_88, NOSETTING},
-	{"96 kHz", ACTION_MENU_PREV_SUB, record_set_96, NOSETTING},
-	{0, 0, 0, NOSETTING}
+static char *sample_rate_options[] = {
+	"8 kHz","32 kHz","44.1 kHz","88.2 kHz","96 kHz"
 };
-
 static struct menu_item recording_menu[] = {
-	{"Mic Record", ACTION_MENU, new_record_window, NOSETTING},
+	{"Mic Record", ACTION_MENU, new_record_window, NOSETTING, 0},
 #if 0
-	{"Line In Record", ACTION_MENU, new_record_window, NOSETTING},
+	{"Line In Record", ACTION_MENU, new_record_window, NOSETTING, 0},
 #endif
-	{"Playback", ACTION_MENU, new_playback_browse_window, NOSETTING},
-	{"Sample Rate", SUB_MENU_HEADER, sample_rate_menu, NOSETTING},
-	{0, 0, 0, NOSETTING}
+	{"Playback", ACTION_MENU, new_playback_browse_window, NOSETTING, 0},
+	{"Sample Rate", OPTION_MENU, sample_rate_options, DSPFREQUENCY, 5},
+	{0, 0, 0, NOSETTING, 0}
 };
+
 static struct menu_item extras_menu[] = {
-	{"Recordings", SUB_MENU_HEADER, recording_menu, NOSETTING},
+	{"Recordings", SUB_MENU_HEADER, recording_menu, NOSETTING, 0},
 #if 0
-	{"Clock", SUB_MENU_HEADER, 0, NOSETTING},
-	{"Contacts", SUB_MENU_HEADER, 0, NOSETTING},
+	{"Clock", SUB_MENU_HEADER, 0, NOSETTING, 0},
+	{"Contacts", SUB_MENU_HEADER, 0, NOSETTING, 0},
 #endif
-	{"Calendar", ACTION_MENU, new_calendar_window, NOSETTING},
+	{"Calendar", ACTION_MENU, new_calendar_window, NOSETTING, 0},
 #if 0
-	{"Notes", SUB_MENU_HEADER, 0, NOSETTING},
+	{"Notes", SUB_MENU_HEADER, 0, NOSETTING, 0},
 #endif
-	{"Games", SUB_MENU_HEADER, games_menu, NOSETTING},
-	{0, 0, 0, NOSETTING}
+	{"Games", SUB_MENU_HEADER, games_menu, NOSETTING, 0},
+	{0, 0, 0, NOSETTING, 0}
 };
-
-
 
 static struct menu_item reset_menu[] = {
-	{"Cancel", SUB_MENU_PREV, 0, NOSETTING},
-	{"Absolutely", ACTION_MENU, ipod_reset_settings, NOSETTING},
-	{0, 0, 0, NOSETTING}
+	{"Cancel", SUB_MENU_PREV, 0, NOSETTING, 0},
+	{"Absolutely", ACTION_MENU, ipod_reset_settings, NOSETTING, 0},
+	{0, 0, 0, NOSETTING, 0}
 };
 
 static struct menu_item settings_menu[] = {
 #if 0
-	{"About", SUB_MENU_HEADER, 0, NOSETTING},
+	{"About", SUB_MENU_HEADER, 0, NOSETTING, 0},
+	{"Repeat", BOOLEAN_MENU, 0, REPEAT, 0},
+	{"EQ", BOOLEAN_MENU, 0, EQUILIZER, 0},
+	{"Shuffle", BOOLEAN_MENU, 0, SHUFFLE, 0},
 #endif
-	{"Repeat", BOOLEAN_MENU, 0, REPEAT},
-	{"EQ", BOOLEAN_MENU, 0, EQUILIZER},
-	{"Shuffle", BOOLEAN_MENU, 0, SHUFFLE},
-	{"Backlight", BOOLEAN_MENU, 0, BACKLIGHT},
+	{"Backlight", BOOLEAN_MENU, 0, BACKLIGHT, 0},
 #if 0
-	{"Backlight Timer", ACTION_MENU, set_backlight_timer, NOSETTING},
+	{"Backlight Timer", ACTION_MENU, set_backlight_timer, NOSETTING, 0},
 #endif
-	{"Contrast", ACTION_MENU, set_contrast, NOSETTING},
-	{"Wheel Sensitivity", ACTION_MENU, set_wheeldebounce, NOSETTING},
-	{"Button Debounce", ACTION_MENU, set_buttondebounce, NOSETTING},
+	{"Contrast", ACTION_MENU, set_contrast, NOSETTING, 0},
+	{"Wheel Sensitivity", ACTION_MENU, set_wheeldebounce, NOSETTING, 0},
+	{"Button Debounce", ACTION_MENU, set_buttondebounce, NOSETTING, 0},
 #if 0
-	{"Alarms", SUB_MENU_HEADER, 0, NOSETTING},
-	{"Contacts", SUB_MENU_HEADER, 0, NOSETTING},
+	{"Alarms", SUB_MENU_HEADER, 0, NOSETTING, 0},
+	{"Contacts", SUB_MENU_HEADER, 0, NOSETTING, 0},
 #endif
-	{"Clicker", BOOLEAN_MENU, 0, CLICKER},
+	{"Clicker", BOOLEAN_MENU, 0, CLICKER, 0},
 #if 0
-	{"Language", SUB_MENU_HEADER, 0, NOSETTING},
-	{"Legal", SUB_MENU_HEADER, 0, NOSETTING},
+	{"Language", SUB_MENU_HEADER, 0, NOSETTING, 0},
+	{"Legal", SUB_MENU_HEADER, 0, NOSETTING, 0},
 #endif
-	{"Reset All Settings", SUB_MENU_HEADER, reset_menu, NOSETTING},
-	{"Save Settings", ACTION_MENU, ipod_save_settings, NOSETTING},
-	{"Load Settings", ACTION_MENU, ipod_load_settings, NOSETTING},
-	{0, 0, 0, NOSETTING}
+	{"Reset All Settings", SUB_MENU_HEADER, reset_menu, NOSETTING, 0},
+	{"Save Settings", ACTION_MENU, ipod_save_settings, NOSETTING, 0},
+	{"Load Settings", ACTION_MENU, ipod_load_settings, NOSETTING, 0},
+	{0, 0, 0, NOSETTING, 0}
 };
 
 static struct menu_item reboot_menu[] = {
-	{"Cancel", SUB_MENU_PREV, 0, NOSETTING},
-	{"Absolutely", ACTION_MENU, reboot_ipod, NOSETTING},
-	{0, 0, 0, NOSETTING}
+	{"Cancel", SUB_MENU_PREV, 0, NOSETTING, 0},
+	{"Absolutely", ACTION_MENU, reboot_ipod, NOSETTING, 0},
+	{0, 0, 0, NOSETTING, 0}
 };
 
 static struct menu_item main_menu[] = {
 #if 0
-	{"Playlists", SUB_MENU_HEADER, 0, NOSETTING},
+	{"Playlists", SUB_MENU_HEADER, 0, NOSETTING, 0},
 #endif
-	{"Music", ACTION_MENU, new_itunes_window, NOSETTING},
-	{"Extras", SUB_MENU_HEADER, extras_menu, NOSETTING},
-	{"Settings", SUB_MENU_HEADER, settings_menu, NOSETTING},
-	{"File Browser", ACTION_MENU, new_browser_window, NOSETTING},
-	{"Quit Podzilla", ACTION_MENU, quit_podzilla, NOSETTING},
-	{"Reboot iPod", SUB_MENU_HEADER, reboot_menu, NOSETTING},
-	{0, 0, 0, NOSETTING}
+	{"Music", ACTION_MENU, new_itunes_window, NOSETTING, 0},
+	{"Extras", SUB_MENU_HEADER, extras_menu, NOSETTING, 0},
+	{"Settings", SUB_MENU_HEADER, settings_menu, NOSETTING, 0},
+	{"File Browser", ACTION_MENU, new_browser_window, NOSETTING, 0},
+	{"Quit Podzilla", ACTION_MENU, quit_podzilla, NOSETTING, 0},
+	{"Reboot iPod", SUB_MENU_HEADER, reboot_menu, NOSETTING, 0},
+	{0, 0, 0, NOSETTING, 0}
 };
 
 static int current_menu_item = 0;
@@ -181,6 +178,11 @@ static void draw_menu()
 {
 	int i;
 	GR_SIZE width, height, base;
+	GR_SIZE rj_width, rj_height, rj_base;
+	GR_COORD menu_draw_x, menu_draw_y;
+	int option_menu_val;
+	char **option_menu_strings;
+
 	struct menu_item *m = &menu[top_menu_item];
 
 	GrGetGCTextSize(menu_gc, "M", -1, GR_TFASCII, &width, &height, &base);
@@ -206,19 +208,39 @@ static void draw_menu()
 		}	
 
 		if (m->text != 0) {
-			GrText(menu_wid, menu_gc, 8, 1 + (i + 1) * height - 4, m->text, -1, GR_TFASCII);
+			menu_draw_x = MENU_PIXELOFFSET;
+			menu_draw_y = 1 + ((i + 1) * height - 4);
+			GrText(menu_wid, menu_gc, menu_draw_x, menu_draw_y,
+				m->text, -1, GR_TFASCII);
 
-			if ((m->type==BOOLEAN_MENU) && (m->setting_id != NOSETTING))
-			{
+			if ((m->type == BOOLEAN_MENU) && (m->setting_id != NOSETTING)) {
 				if (!ipod_get_setting(m->setting_id)) {
-					GrText(menu_wid, menu_gc, 130, 1 + (i + 1) * height - 4, "Off", -1, GR_TFASCII);
-				
-				}
-				else {
-					GrText(menu_wid, menu_gc, 130, 1 + (i + 1) * height - 4, "On", -1, GR_TFASCII);
-				
+					GrGetGCTextSize(menu_gc, MENUSTR_FALSE,
+						-1,	GR_TFASCII, &rj_width, &rj_height, &rj_base);
+					menu_draw_x = (screen_info.cols - rj_width) - MENU_PIXELOFFSET;
+					GrText(menu_wid, menu_gc, menu_draw_x, 
+						menu_draw_y, MENUSTR_FALSE, -1, GR_TFASCII);
+				} else {
+					GrGetGCTextSize(menu_gc, MENUSTR_TRUE, -1,
+						GR_TFASCII, &rj_width, &rj_height, &rj_base);
+					menu_draw_x = (screen_info.cols - rj_width) - MENU_PIXELOFFSET;
+					GrText(menu_wid, menu_gc, menu_draw_x,
+						menu_draw_y, MENUSTR_TRUE, -1, GR_TFASCII);
 				}
 			}
+			else if ((m->type == OPTION_MENU) && (m->setting_id != NOSETTING) &&
+					 (m->ptr != 0)) {
+				option_menu_val = ipod_get_setting(m->setting_id);
+				if(option_menu_val < m->item_count) {
+					option_menu_strings = (char **)m->ptr;
+					GrGetGCTextSize(menu_gc,option_menu_strings[option_menu_val],
+						-1,	GR_TFASCII, &rj_width, &rj_height, &rj_base);
+					menu_draw_x = (screen_info.cols - rj_width) - MENU_PIXELOFFSET;
+					GrText(menu_wid, menu_gc, menu_draw_x, menu_draw_y,
+						option_menu_strings[option_menu_val], -1, GR_TFASCII);
+				}
+			}
+			
 			m++;
 		}
 
@@ -245,6 +267,7 @@ static int menu_do_keystroke(GR_EVENT * event)
 	static int lcount = 0;
 #endif
 	int ret = 0;
+	int option_menu_val;
 
 	switch (event->keystroke.ch) {
 	case '\r':		/* action key */
@@ -295,7 +318,22 @@ static int menu_do_keystroke(GR_EVENT * event)
 			if (menu[current_menu_item].ptr != 0) {
 				((menu_action_t) menu[current_menu_item].ptr)();
 			}
-			draw_menu(); /* note: probably need to remember position */
+			draw_menu();
+			break;
+		case OPTION_MENU:
+			if ((menu[current_menu_item].setting_id != NOSETTING) &&
+			   (menu->ptr != 0)) {
+				option_menu_val = ipod_get_setting(
+					menu[current_menu_item].setting_id);
+				option_menu_val++;
+				if ((option_menu_val >= menu[current_menu_item].item_count) ||
+					(option_menu_val < 0)) {
+					option_menu_val = 0;
+				}
+				ipod_set_setting(menu[current_menu_item].setting_id,
+					option_menu_val);
+			}
+			draw_menu();
 			break;
 		}
 		break;

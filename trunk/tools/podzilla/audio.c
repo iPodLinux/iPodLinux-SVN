@@ -128,6 +128,25 @@ int is_raw_audio_type(char *extension)
 	return strcmp(extension, ".raw") == 0 || strcmp(extension, ".wav") == 0;
 }
 
+int get_user_sample_rate()
+{
+	int setting = ipod_get_setting(DSPFREQUENCY);
+	
+	switch (setting) {
+	case 0:
+		return 8000;
+	case 1:
+		return 32000;
+	case 2:
+		return 44100;
+	case 3:
+		return 88200;
+	case 4:
+		return 96000;
+	}
+	return 41000;
+}
+
 static void set_dsp_rate(int fd, int rate)
 {
 	/* sample rate */
@@ -204,11 +223,7 @@ static void * dsp_record(void *filename)
 		goto no_audio;
 	}
 
-	samplerate = ipod_get_setting(DSPFREQUENCY);
-	if (samplerate == 0) {
-		samplerate = 44100;
-	}
-
+	samplerate = get_user_sample_rate();
 	set_dsp_channels(dsp_fd, channels);
 	set_dsp_rate(dsp_fd, samplerate);
 
@@ -473,30 +488,6 @@ static int dsp_do_keystroke(GR_EVENT * event)
 	return 1;
 }
 
-void record_set_8()
-{
-	ipod_set_setting(DSPFREQUENCY, 8000);
-}
-
-void record_set_32()
-{
-	ipod_set_setting(DSPFREQUENCY, 32000);
-}
-
-void record_set_44()
-{
-	ipod_set_setting(DSPFREQUENCY, 44100);
-}
-
-void record_set_88()
-{
-	ipod_set_setting(DSPFREQUENCY, 88200);
-}
-
-void record_set_96()
-{
-	ipod_set_setting(DSPFREQUENCY, 96000);
-}
 
 void new_record_window(char *filename)
 {
