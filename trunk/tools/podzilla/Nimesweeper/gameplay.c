@@ -19,6 +19,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
 #include "mine.h"
+#include "../pz.h"
 
 /* Function that will clear a path when a "clear" square
    has been uncovered. It recursively calls itself when
@@ -561,8 +562,8 @@ int ChangeDifficultyLevel(GameStats *Game)
 int Winner(GameStats *Game, int winner)
 {
 	register int x_coord,y_coord;
-	char ch;
 #ifdef USE_NCURSES
+	char ch;
 	WINDOW *WinnerWin;
 #endif
 
@@ -588,7 +589,7 @@ int Winner(GameStats *Game, int winner)
 		GrSetGCForeground(mines_gc, BLACK);
 		GrText(mines_wid, mines_gc, 20, 12, "Well Done!",  -1, GR_TFASCII);
 
-		sprintf(timestring,"Time: %i seconds", Game->Timer);
+		sprintf(timestring,"Time: %4ld seconds", Game->Timer);
 		GrText(mines_wid, mines_gc, 20, 26, timestring,  -1, GR_TFASCII);
 #endif
 

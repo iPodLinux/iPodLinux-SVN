@@ -34,13 +34,17 @@
 #include "credits.h"
 #endif
 
+#include "../pz.h"
+
+extern void ClearCluster(void);
+
 #ifdef USE_SDL
 extern SDL_Surface* screen;
 
 Uint32 TimeLeft(void);
+static void MainMenu_Loop(void);
 #endif
 static void NewGame(void);
-static void MainMenu_Loop(void);
 static void Game_Loop(void);
 static void DrawScene(void);
 void StartGameOverAnimation(void);

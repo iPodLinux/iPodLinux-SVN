@@ -25,6 +25,8 @@
 #include "btree.h"
 #include "itunes_db.h"
 
+extern void new_mp3_window(char *filename, char *album, char *artist, char *title, int len);
+
 struct menulist {
 	void		*user;
 	int		 (*get_prev)(struct menulist *);

@@ -8,7 +8,7 @@
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation.
-    
+
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -17,8 +17,10 @@
     You should have received a copy of the GNU General Public License
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
-    
+
+#include <string.h>
 #include "mine.h"
+#include "../pz.h"
 
 /* Gets name of player and adds a new high score to relevant
    position in HIGHSCORES file through WriteNewRecord(). */
@@ -28,10 +30,10 @@ void NewHighScore(GameStats *Game)
 	WINDOW *HighScoreWin;
 #endif
 	char name[MAXNAME];
-	unsigned int i,Input = FALSE;
 	int Position = FALSE;
-	
+
 #ifdef USE_NCURSES
+	unsigned int i,Input = FALSE;
 	echo();
 	HighScoreWin = Draw_HighScoreWin(Game->Width,Game->Height);
 	wattron(HighScoreWin,A_BOLD | COLOR_PAIR(7));
@@ -47,7 +49,7 @@ void NewHighScore(GameStats *Game)
 		fflush(stdin);
 		mvwgetnstr(HighScoreWin,11,10,name,NAMELEN);
 		name[NAMELEN] = '\0';
-		/* Only accept chars A-Z,a-z, 
+		/* Only accept chars A-Z,a-z,
 		   Space and '-', for the name. */
 		for(i=0;i<MAXNAME;i++)
 		{
@@ -57,7 +59,7 @@ void NewHighScore(GameStats *Game)
 				Input = TRUE;
 				break;
 			}
-			
+
 			if( NameCharIsOk(name[i]) )
 				Input = TRUE;
 			else
@@ -81,7 +83,7 @@ void NewHighScore(GameStats *Game)
 		}
 	}
 	while( Input == FALSE );
-	
+
 	/* So the file chars are 100% known */
 	for(i=0;i<MAXNAME;i++)
 	{
@@ -90,7 +92,7 @@ void NewHighScore(GameStats *Game)
 		else
 			name[i] = '\0';
 	}
-	
+
 	noecho();
 	werase(HighScoreWin);
 #else
@@ -140,9 +142,9 @@ int  ShowHighScores(GameStats *Game, int Position)
 #endif
 	HighScores HighArray[10];
 	int i;
-	char *Levels[] = {"Newbie","Easy","Medium","Hard"};
-		
+
 #ifdef USE_NCURSES
+	char *Levels[] = {"Newbie","Easy","Medium","Hard"};
 	HighScoreWin = Draw_HighScoreWin(Game->Width,Game->Height);
 	curs_set(0);
 #endif
@@ -158,7 +160,7 @@ int  ShowHighScores(GameStats *Game, int Position)
 #endif
 		return FALSE;
 	}
-	
+
 	/* Locate "top ten" times, using difficulty as the offset */
 	if( fseek(ScoresFile,sizeof(HighScores)*(Game->Difficulty-1)*10,SEEK_SET) != 0 )
 	{
@@ -187,9 +189,9 @@ int  ShowHighScores(GameStats *Game, int Position)
 #endif
 		return FALSE;
 	}
-	
+
 	fclose(ScoresFile);
-	
+
 	/* Print the array, highlighting new entry (if there is one) */
 #ifdef USE_NCURSES
 	wattron(HighScoreWin, COLOR_PAIR(7));
@@ -227,7 +229,7 @@ int  ShowHighScores(GameStats *Game, int Position)
 #endif
 		}
 	}
-	
+
 #ifdef USE_NCURSES
 	wrefresh(HighScoreWin);
 	getch();
@@ -246,12 +248,12 @@ int WriteNewRecord(long int Timer,int Difficulty,char *Name)
 {
 	FILE *ScoresFile;
 	HighScores HighArray[10];
-	
+
 	int position,i;
 
 	if( (ScoresFile = OpenFile("rb")) == NULL )
 		return FALSE;
-	
+
 	/* Locate "top ten" times, using difficulty as the offset */
 	if( fseek(ScoresFile,sizeof(HighScores)*(Difficulty-1)*10,SEEK_SET) != 0 )
 	{
@@ -277,11 +279,11 @@ int WriteNewRecord(long int Timer,int Difficulty,char *Name)
 
 	/* Copy time taken to array */
 	HighArray[position].Time = Timer;
-	
+
 	/* Copy Name to Array */
 	for(i=0;i<MAXNAME;i++)
-		HighArray[position].Name[i] = *(Name+i);	
-	
+		HighArray[position].Name[i] = *(Name+i);
+
 	/* Make *Sure* that Name ends with NULL, just to be safe */
 	HighArray[position].Name[NAMELEN] = '\0';
 
@@ -301,28 +303,28 @@ int WriteNewRecord(long int Timer,int Difficulty,char *Name)
 		return FALSE;
 	}
 	fclose(ScoresFile);
-	
+
 	/* Remember the array starts with 0... */
 	return position+1;
 }
 
 /* Checks if time taken will make it into top ten,
-   returns TRUE or FALSE. */ 
+   returns TRUE or FALSE. */
 int  IsHighScore(long int time, int difficulty)
 {
 	FILE *ScoresFile;
 	HighScores HighArray[40];
-	
+
 	if( (ScoresFile = OpenFile("rb")) == NULL )
 		return FALSE;
-	
+
 	/* Read entire file into an array */
 	if( fread(&HighArray,sizeof(HighArray),1,ScoresFile) != 1 )
 	{
 		FileError(ScoresFile,"read");
 		return FALSE;
 	}
-	
+
 	fclose(ScoresFile);
 
 	switch(difficulty)
@@ -338,7 +340,7 @@ int  IsHighScore(long int time, int difficulty)
 				return FALSE;
 			else
 				return TRUE;
-			break;	
+			break;
 		case 3:
 			if( HighArray[29].Time < time )
 				return FALSE;
