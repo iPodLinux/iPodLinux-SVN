@@ -145,11 +145,19 @@ int hpsb_get_tlabel(struct hpsb_packet *packet)
 	}
 
 	spin_lock_irqsave(&tp->lock, flags);
-	
+
+#ifndef CONFIG_ARCH_IPOD
 	packet->tlabel = find_next_zero_bit(tp->pool, 64, tp->next);
 	if (packet->tlabel > 63)
 		packet->tlabel = find_first_zero_bit(tp->pool, 64);
 	tp->next = (packet->tlabel + 1) % 64;
+#else
+	packet->tlabel = find_next_zero_bit(tp->pool, 0xe, tp->next);
+	if (packet->tlabel > 0xe)
+		packet->tlabel = find_first_zero_bit(tp->pool, 0xe);
+	tp->next = (packet->tlabel + 1) % 0xe;
+#endif
+
 	/* Should _never_ happen */
 	BUG_ON(test_and_set_bit(packet->tlabel, tp->pool));
 	tp->allocations++;
