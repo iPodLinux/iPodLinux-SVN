@@ -779,6 +779,7 @@ irq_prio_swarm:
 
 #define IDE_INT0_MASK	(1 << IDE_INT0_IRQ)
 #define SER0_MASK	(1 << SER0_IRQ)
+#define I2S_MASK	(1 << I2S_IRQ)
 #define SER1_MASK	(1 << SER1_IRQ)
 #define TIMER1_MASK	(1 << TIMER1_IRQ)
 #define GPIO_MASK	(1 << GPIO_IRQ)
@@ -816,6 +817,10 @@ cop_fiq_loc:	.word	cop_fiq
 
 		tst	\irqstat, #SER1_MASK
 		movne	\irqnr, #SER1_IRQ
+		bne	1001f
+
+		tst	\irqstat, #I2S_MASK
+		movne	\irqnr, #I2S_IRQ
 		bne	1001f
 
 		tst	\irqstat, #SER0_MASK
