@@ -27,7 +27,7 @@ LDFLAGS+=$(MICROWINDOWS)/lib/libnano-X.a $(MICROWINDOWS)/lib/libmwengine.a $(MIC
 # enable JPEG support
 LDFLAGS += -ljpeg
 
-LDFLAGS += -lpthread
+LDFLAGS += -lpthread -lm
 
 OBJS=\
 	pz.o \
@@ -43,6 +43,7 @@ OBJS=\
 	slider.o \
 	audio.o \
 	othello.o \
+	pong.o \
 	bluecube/box.o \
 	bluecube/main.o \
 	bluecube/pieces.o
