@@ -5,7 +5,7 @@
 *   Jukebox    |    |   (  <_> )  \___|    < | \_\ (  <_> > <  <
 *   Firmware   |____|_  /\____/ \___  >__|_ \|___  /\____/__/\_ \
 *                     \/            \/     \/    \/            \/
-* $Id: cube.c,v 1.2 2005/02/25 03:38:02 courtc Exp $
+* $Id: cube.c,v 1.3 2005/03/06 23:05:39 coobert Exp $
 *
 * Copyright (C) 2002 Damien Teney
 * modified to use int instead of float math by Andreas Zwirtes
@@ -58,6 +58,8 @@ static char	xy_or_z = 'x';
 static int	solid=1;
 static int zoom_out=0;
 static int zoom_in=0;
+static int paused=0;
+static int photo=0;
 
 struct point_3D {
 	long x, y, z;
@@ -270,6 +272,7 @@ static void cube_zoom_in( void )
 static void cube_draw(void)
 {
 	int i;
+	GR_COLOR colour; // limey alert!
 	GR_POINT faces[6][5] = {
 		{
 			{point2D[0].x, point2D[0].y},
@@ -341,18 +344,25 @@ static void cube_draw(void)
 		for (i = 3; i < 6; i++) { /* we can only see the front 3 faces... */
 			switch(z_avgs_f[i].place) {
 				case 0:
+					colour = (photo==0) ? LTGRAY : RED;
+					break;
 				case 1:
-					GrSetGCForeground(cube_gc, LTGRAY);
+					colour = (photo==0) ? LTGRAY : GREEN;
 					break;
 				case 2:
+					colour = (photo==0) ? GRAY : BLUE;
+					break;
 				case 3:
-					GrSetGCForeground(cube_gc, GRAY);
-				break;
+					colour = (photo==0) ? GRAY : YELLOW;
+					break;
 				case 4:
+					colour = (photo==0) ? BLACK : MAGENTA;
+					break;
 				case 5:
-					GrSetGCForeground(cube_gc, BLACK);
-				break;
+					colour = (photo==0) ? BLACK : CYAN;
+					break;
 			}
+			GrSetGCForeground(cube_gc, colour);
 			GrFillPoly(temp_pixmap, cube_gc, 5, faces[z_avgs_f[i].place]);
 		}
 	} else {
@@ -427,7 +437,7 @@ static int cube_handle_event(GR_EVENT * event)
 	switch( event->type )
 	{
 		case( GR_EVENT_TYPE_TIMER ):
-			cube_loop();
+			if (!paused) cube_loop();
 			break;
 		case( GR_EVENT_TYPE_KEY_DOWN ):
 			switch( event->keystroke.ch )
@@ -451,6 +461,7 @@ static int cube_handle_event(GR_EVENT * event)
 							strncpy(t_ax[0], "[x]", 4);
 							break;
 					}
+					ret |= KEY_CLICK;
 					break;
 				case 'p': /* play/pause */
 				case 'd': /*or this */
@@ -497,10 +508,13 @@ static int cube_handle_event(GR_EVENT * event)
 							break;
 					}
 					break;
+				case 'h': /* hold */
+					paused=1;
+					break;
 				case 'm':
 					GrDestroyTimer( cube_timer );
 					pz_close_window( cube_wid );
-					ret = 1;
+					ret |= KEY_CLICK;
 					break;
 			}
 			break;
@@ -513,6 +527,9 @@ static int cube_handle_event(GR_EVENT * event)
 				case 'w': /* |<< */
 					zoom_out = 0;
 					break;
+				case 'h': /* hold */
+					paused = 0;
+					break;
 			}
 			break;
 	}
@@ -521,7 +538,10 @@ static int cube_handle_event(GR_EVENT * event)
 
 void new_cube_window( void )
 {
-	if (screen_info.cols==138) {
+	if (screen_info.cols==220) {
+		photo = 1;
+		if (!z_off) z_off = 400;
+	} else if (screen_info.cols==138) {
 		if (!z_off) z_off = 800;
 	} else {
 		if (!z_off) z_off = 600;
