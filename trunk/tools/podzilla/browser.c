@@ -189,9 +189,10 @@ static void handle_type_other(char *filename)
 
 	if (is_image_type(ext)) {
 		new_image_window(filename);
-
 	} else if (is_text_type(ext)) {
 		new_textview_window(filename);
+	} else if (is_mp3_type(ext)) {
+		new_mp3_window(filename);
 	} else {
 
 		new_message_window(filename);
@@ -201,12 +202,11 @@ static void handle_type_other(char *filename)
 static void browser_selection_activated(unsigned short userChoice)
 {
 	switch (browser_entries[userChoice].type) {
-	case FILE_TYPE_PROGRAM:
-		break;
 	case FILE_TYPE_DIRECTORY:
 		chdir(browser_entries[userChoice].full_name);
 		browser_mscandir("./");
 		break;
+	case FILE_TYPE_PROGRAM:
 	case FILE_TYPE_OTHER:
 		handle_type_other(browser_entries[userChoice].full_name);
 		break;
