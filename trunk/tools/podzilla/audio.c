@@ -22,7 +22,9 @@
 #include <linux/soundcard.h>
 #include <fcntl.h>
 #include <unistd.h>
+#ifdef PZ_USE_THREADS
 #include <pthread.h>
+#endif
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -38,7 +40,9 @@ static GR_TIMER_ID timer_id;
 static GR_WINDOW_ID dsp_wid;
 static GR_GC_ID dsp_gc;
 static GR_SCREEN_INFO screen_info;
+#ifdef PZ_USE_THREADS
 static pthread_t dsp_thread;
+#endif
 static int mode;
 static volatile int playing = 0, recording = 0, paused = 0;
 static char pcm_file[128];
@@ -59,8 +63,8 @@ static volatile int killed;
 #define RECORDINGS "Recordings"
 #endif
 
-#define DSP_REC_SIZE	512
-#define DSP_PLAY_SIZE	16*1024*2
+#define DSP_REC_SIZE	4*1024*2
+#define DSP_PLAY_SIZE	4*1024*2
 
 static unsigned short dsp_buf[16*1024];
 
@@ -245,6 +249,7 @@ static void * dsp_record(void *filename)
 	if (mixer_fd >= 0) {
 		ioctl(mixer_fd, SOUND_MIXER_WRITE_RECSRC, &recording_src);
 		close(mixer_fd);
+		mixer_fd = -1;
 	}
 
 	killed = 0;
@@ -266,6 +271,9 @@ static void * dsp_record(void *filename)
 	while (!killed) {
 		ssize_t n, rem;
 		unsigned short *p = dsp_buf;
+#ifndef PZ_USE_THREADS
+		GR_EVENT event;
+#endif
 
 		if (paused && !localpaused) {
 			localpaused = 1;
@@ -278,7 +286,7 @@ static void * dsp_record(void *filename)
 		}
 
 		if (!paused) {
-			rem = n = read(dsp_fd, (void *)p, DSP_REC_SIZE);
+			rem = n = read(dsp_fd, (void *)p, DSP_REC_SIZE * (samplerate > 8000 ? 2 : 1));
 			if (n > 0) {
 				while (rem) {
 					n = write(file_fd, (void *)p, rem);
@@ -289,6 +297,18 @@ static void * dsp_record(void *filename)
 				}
 			}
 		}
+
+#ifndef PZ_USE_THREADS
+		if (paused || GrPeekEvent(&event)) {
+repeat:
+			GrGetNextEventTimeout(&event, 1000);
+			if (event.type != GR_EVENT_TYPE_TIMEOUT) {
+				pz_event_handler(&event);
+
+				if (GrPeekEvent(&event)) goto repeat;
+			}
+		}
+#endif
 	}
 
 	if (!localpaused) {
@@ -329,14 +349,14 @@ static void * dsp_playback(void *filename)
 	file_fd = open((char *)filename, O_RDONLY);
 	if (file_fd < 0) {
 		char buf[256];
-		sprintf(buf, "could not open %s\n", (char *)filename);
+		sprintf(buf, "Cant open %s\n", (char *)filename);
 		new_message_window(buf);
 		goto no_file;
 	}
 
 	dsp_fd = open("/dev/dsp", O_WRONLY);
 	if (dsp_fd < 0) {
-		new_message_window("could not open /dev/dsp");
+		new_message_window("Cant open /dev/dsp");
 		goto no_audio;
 	}
 
@@ -370,6 +390,9 @@ static void * dsp_playback(void *filename)
 	do {
 		ssize_t n, rem;
 		unsigned short *p = dsp_buf;
+#ifndef PZ_USE_THREADS
+		GR_EVENT event;
+#endif
 
 		if (paused && !localpaused) {
 			localpaused = 1;
@@ -382,7 +405,7 @@ static void * dsp_playback(void *filename)
 		}
 
 		if (!paused) {
-			count = rem = n = read(file_fd, (void *)p, DSP_PLAY_SIZE);
+			count = rem = n = read(file_fd, (void *)p, DSP_PLAY_SIZE * (samplerate > 8000 ? 2 : 1));
 			if (n > 0) {
 				while (rem) {
 					n = write(dsp_fd, (void *)p, rem);
@@ -393,6 +416,18 @@ static void * dsp_playback(void *filename)
 				}
 			}
 		}
+
+#ifndef PZ_USE_THREADS
+		if (paused || GrPeekEvent(&event)) {
+repeat:
+			GrGetNextEventTimeout(&event, 1000);
+			if (event.type != GR_EVENT_TYPE_TIMEOUT)
+			{
+				pz_event_handler(&event);
+				if (GrPeekEvent(&event)) goto repeat;
+			}
+		}
+#endif
 	} while (!killed && count > 0);
 
 	if (mixer_fd >= 0) {
@@ -406,40 +441,47 @@ static void * dsp_playback(void *filename)
 		GrDestroyTimer(timer_id);
 	}
 
-#if 0
 	if (!killed) {
 		pz_close_window(dsp_wid);
 	}
-#endif
 
 no_audio:
 	close(file_fd);
 
 no_file:
 	playing = 0;
-	dsp_do_draw(0);
 
 	return NULL;
 }
 
 static void start_recording()
 {
+#ifdef PZ_USE_THREADS
 	if (pthread_create(&dsp_thread, NULL, dsp_record, pcm_file) != 0) {
 		new_message_window("could not create thread");
 	}
+#else
+	dsp_record(pcm_file);
+#endif
 }
 
 static void start_playback()
 {
+#ifdef PZ_USE_THREADS
 	if (pthread_create(&dsp_thread, NULL, dsp_playback, pcm_file) != 0) {
 		new_message_window("could not create thread");
 	}
+#else
+	dsp_playback(pcm_file);
+#endif
 }
 
 static void stop_dsp()
 {
 	killed = 1;
+#ifdef PZ_USE_THREADS
 	pthread_join(dsp_thread, NULL);
+#endif
 }
 
 static void pause_dsp()
@@ -475,7 +517,6 @@ static int dsp_do_keystroke(GR_EVENT * event)
 				start_recording();
 			}
 		}
-		dsp_do_draw(0);
 		break;
 
 	case 'm':
@@ -589,9 +630,9 @@ void new_playback_window(char *filename)
 
 	GrMapWindow(dsp_wid);
 
-#if 0
+	dsp_do_draw(0);
+
 	start_playback();
-#endif
 }
 
 void new_playback_browse_window(void)
