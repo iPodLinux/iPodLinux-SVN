@@ -20,8 +20,8 @@
 #include <asm/hardware.h>
 
 /* undefine these to produce keycodes from left/right/up/down */
-#define DO_SCROLLBACK
-#define DO_CONTRAST
+#undef DO_SCROLLBACK
+#undef DO_CONTRAST
 #undef USE_ARROW_KEYS
 
 /* we use the keycodes and translation is 1 to 1 */
