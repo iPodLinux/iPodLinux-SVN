@@ -207,6 +207,8 @@ set_backlight(int on)
 				outl(inl(0x70000084) & ~0x2000000, 0x70000084);
 				outl(0x80000000, 0x7000a010);
 			}
+		} else if (ipod_hw_ver == 0x04) {
+			outl(((0x100 | (on ? 1 : 0)) << 3), 0x6000d804 + 0x20);
 		}
 	}
 	else {
