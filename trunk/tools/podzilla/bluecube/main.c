@@ -209,11 +209,11 @@ static void tetris_init()
 	int i;
 
 	if (screen_info.bpp == 2) {
+		tetris_bg = WHITE;
+		tetris_fg = BLACK;
 		for (i = 0; i < 7; i++) {
 			StyleColors[i] = tetris_fg;
 		}
-		tetris_bg = WHITE;
-		tetris_fg = BLACK;
 	} else {
 		tetris_bg = BLACK;
 		tetris_fg = WHITE;
