@@ -153,7 +153,7 @@ int ipod_load_settings(void)
 		}
 		else {
 			/* loop may seem pointless, but it's not, or is it? */
-			for(x = 0; x <= 100 ; x++) {
+			for(x = 0; x < 100 ; x++) {
 				ipod_set_setting(x, ipod_get_setting(x));
 			}
 		}
@@ -161,13 +161,15 @@ int ipod_load_settings(void)
 		fclose(fp);
 	}
 	else {
+		int contrast = ipod_get_contrast();
+
 		printf("Failed to open %s to read settings, using defaults.\n", IPOD_SETTINGS_FILE);
 
-		for (x = 1 ; x <= 100 ; x++) {
+		for (x = 0 ; x < 100 ; x++) {
 			ipod_set_setting(x, 0);
 		}
 
-		ipod_set_setting(CONTRAST, ipod_get_contrast());
+		ipod_set_setting(CONTRAST, contrast);
 		ipod_set_setting(CLICKER, 1);
 		ipod_set_setting(WHEEL_DEBOUNCE, 3);
 		ipod_set_setting(ACTION_DEBOUNCE, 400);
