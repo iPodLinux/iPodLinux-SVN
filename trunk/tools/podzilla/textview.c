@@ -172,8 +172,9 @@ static void drawtext(void)
 	/* Draw the text */
 	printPage(currentLine, 0,0,0,0);
 	
-	if (totalLines >= lines_per_screen && y_top != last_y_top) {
+	if (totalLines > lines_per_screen && y_top != last_y_top) {
 		draw_scrollbar(height, y_top);
+		printf("tl: %d\n", totalLines);
 	}
 	
 	last_y_top = y_top;
