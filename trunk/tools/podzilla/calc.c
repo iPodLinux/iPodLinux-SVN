@@ -26,7 +26,7 @@ static GR_SCREEN_INFO screen_info;
 int xlocal,ylocal,lastxlocal,lastylocal;
 char mathloc[16];
 double oldnum;
-int numfull;
+int numfull, littr;
 
 static int current_calc_item = 0;
 static int last_calc_item;
@@ -65,7 +65,7 @@ static void draw_calc() {
 }
 
 void calc_do_math(int pos) {
-	static int opr, tog, littr;
+	static int opr, tog;
 	if((pos==3 || pos==7 || pos==11 || pos>13)&&mathloc[0]!='\0') {
 		//convert string to double, store
 		if(numfull) {
@@ -107,6 +107,7 @@ static void calc_do_draw() {
 	pz_draw_header("Calculator");
 	mathloc[0]='\0';
 	numfull = 0;
+	littr = 0;
 	GrSetGCForeground(calc_gc, BLACK);
 	for(i=0; i<=15; i++) {
 		GrRect(calc_wid, calc_gc, i*30+20-120*(int)(i/4), 30+20*(int)(i/4), 25, 16);
@@ -145,6 +146,7 @@ static int calc_do_keystroke(GR_EVENT * event) {
 			ret = 1;
 			break;
 		case 'm':
+			GrDestroyGC(calc_gc);
 			GrUnmapWindow(calc_wid);
 			GrDestroyWindow(calc_wid);
 			ret = 1;
