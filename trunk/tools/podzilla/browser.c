@@ -256,9 +256,9 @@ static void browser_vip_open_file()
 	int len;
 	char *execline;
 	
-	len = strlen(current_dir) + strlen(current_file) + 6;
+	len = strlen(current_dir) + strlen(current_file) + 8;
 	execline = (char *)malloc(len * sizeof(char));
-	snprintf(execline, len, "viP %s/%s", current_dir, current_file);
+	snprintf(execline, len, "viP \"%s/%s\"", current_dir, current_file);
 	new_exec_window(execline);
 	free(execline);
 }
