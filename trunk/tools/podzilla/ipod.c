@@ -17,7 +17,9 @@
  */
 
 #include <fcntl.h>
+#ifdef IPOD
 #include <linux/fb.h>
+#endif
 #include <sys/ioctl.h>
 #include <errno.h>
 #include <sys/types.h>
@@ -98,11 +100,13 @@ int ipod_set_backlight(int backlight)
  */
 int ipod_set_blank_mode(int blank)
 {
+#ifdef IPOD
 	if (ipod_ioctl(FBIOBLANK, (int *) blank) < 0) {
 		return -1;
 	}
 
 	return 0;
+#endif
 }
 
 void ipod_beep(void)
