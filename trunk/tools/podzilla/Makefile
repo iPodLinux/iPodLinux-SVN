@@ -102,6 +102,7 @@ OBJS=\
 	cube.o \
 	matrix.o \
 	mlist.o \
+	minesweeper.o \
 	Steroids/asteroid.o \
 	Steroids/main.o \
 	Steroids/object.o \
@@ -112,11 +113,6 @@ OBJS=\
 	bluecube/box.o \
 	bluecube/main.o \
 	bluecube/pieces.o \
-	Nimesweeper/gameplay.o \
-	Nimesweeper/init.o \
-	Nimesweeper/main.o \
-	Nimesweeper/misc.o \
-	Nimesweeper/scores.o \
 	tuxchess/board.o \
 	tuxchess/data.o \
 	tuxchess/eval.o \
