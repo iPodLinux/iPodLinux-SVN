@@ -8,13 +8,6 @@
 /* this is called from drivers/block/blkmem.c */
 #define HARD_RESET_NOW() ipod_hard_reset()
 
-/* the machine dependent  bootmem reserve and free routines */
-#define MACH_RESERVE_BOOTMEM()
-#define MACH_FREE_BOOTMEM()
-                                                                                
-/* yes, freeing initmem is not okay */
-#define DO_FREE_INITMEM()       (0)
-
 #ifndef __ASSEMBLY__
 struct sysinfo_t {
 	unsigned IsyS;  /* == "IsyS" */
