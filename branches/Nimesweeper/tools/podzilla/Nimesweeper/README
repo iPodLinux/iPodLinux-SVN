@@ -1,0 +1,147 @@
+*********************************************
+
+******** README for nimesweeper v1.0 ********
+
+*********************************************
+
+
+This will eventually be a proper README file, but for now
+
+it is just a collection of notes.
+
+
+WHAT IS NIMESWEEPER?
+
+Nimesweeper is a full colour, ncurses based minesweeper clone.
+
+
+COST?
+
+An Email would be nice (See bottom).
+
+
+LICENSE?
+
+It may be freely distributed under the terms of the GNU General 
+
+Public License.
+
+(See COPYING)
+
+
+ON WHICH PLATFORMS WILL IT WORK?
+
+Good question. Well, I know for a fact that it works on an
+
+i686 running Linux with Ncurses-5.2, but as to what else; I have
+
+no idea. It doesn't use any specialised code, it is all ANSI C, so 
+
+I guess it should work on anything that has ncurses, like *BSD
+
+for example. But like I said, I really don't know for sure. You can
+
+always try it out, I would appreciate it if anybody lets me know on
+
+which systems it works on, and which it doesn't.
+
+
+INSTALLING
+
+No need for ./configure, just "make" and "make install".
+
+"make install" should be done (preferably) as root, but this is
+
+only due to where the default install directories are.
+
+The default directory for the binary is /usr/bin, if you
+
+would rather it somewhere else, edit the "bindir = " value in 
+
+the Makefile to wherever you want it to be installed to.
+
+The default directory for the highscores file is 
+
+/usr/share/nimesweeper, again, if you would rather it somewhere
+
+else, then you will have to edit the Makefile. Change "SourceDir"
+
+(and SourceFile if you wish) to whatever you want.
+
+** NB. Be sure that you the edit the value '#define HIGHSCORES' 
+
+in mine.h to your chosen path if you change either "SourceDir" 
+
+or "SourceFile" in the Makefile. **
+
+( When I get around to it, I will automate all of this... )
+
+The install will prompt you to create a new highscores file, I
+
+recommend saying yes to it. Then all you have to do is maybe 
+
+change the permissions for the highscore directory and file.
+
+And that's it.
+
+
+UNINSTALLING
+
+Simply "make uninstall".
+
+There is only one binary (nimsweeper), and a highscores directory 
+
+containing one file anyway (/usr/share/nimesweeper/HighScores.dat).
+
+
+FAQ
+
+1) What is this check.c file for?
+
+It just dumps the contents of the highscores file to the screen,
+
+nothing fancy...
+
+"make check" will build the binary.
+
+2) When I resize the terminal...
+
+It sometimes messes up? Don't resize the terminal. :)
+
+3) What did you use to develop nimesweeper?
+
+nedit / vim
+
+gcc version 2.95.3 (20010315)
+
+Linux kernel 2.4.19 i686
+
+Linux From Scratch 3.3 "distro", if you can call it a distro.
+
+See www.linuxfromscratch.org for more information.
+
+Ncurses-5.2
+
+Glibc-2.2.5
+
+Docs:
+
+"The C Programming Language" www.amazon.com
+
+"NCURSES-Programming-HOWTO" www.tldp.org
+
+
+TODO
+
+A proper README and INSTALL file.
+
+Maybe a save game function.
+
+Maybe add mouse support...
+
+Maybe...
+
+
+EMAIL
+
+d4n13l@lycos.com
