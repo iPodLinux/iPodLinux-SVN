@@ -295,7 +295,8 @@ if [ "$CONFIG_ARCH_EBSA110" = "y" -o \
      "$CONFIG_ARCH_CLPS7500" = "y" -o \
      "$CONFIG_ARCH_PERSONAL_SERVER" = "y" -o \
      "$CONFIG_ARCH_CATS" = "y" -o \
-     "$CONFIG_ARCH_ATMEL" = "y" ]; then
+     "$CONFIG_ARCH_ATMEL" = "y" -o \
+     "$CONFIG_ARCH_IPOD" = "y" ]; then
    string 'Default kernel command string' CONFIG_CMDLINE ""
 fi
 if [ "$CONFIG_ARCH_NETWINDER" = "y" -o \
