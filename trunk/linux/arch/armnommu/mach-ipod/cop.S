@@ -30,7 +30,7 @@ cop_fiq:
 	beq	1f
 
 	mov	lr, pc
-	ldr	pc, L_ipod_proc_dma
+	ldr	pc, L_ipod_handle_dma
 
 	nop
 	nop
@@ -69,7 +69,7 @@ cop_sleep:
 
 L_CFG_COPROC:	.word C_CFG_COPROC
 
-L_ipod_proc_dma:.word ipod_process_dma
+L_ipod_handle_dma:.word ipod_handle_dma
 
 L_lcd_base:	.word 0xc0001000
 
