@@ -484,6 +484,15 @@ CONFIG_NLS_DEFAULT="iso8859-1"
 # CONFIG_NLS_UTF8 is not set
 
 #
+# Input core support
+#
+CONFIG_INPUT=y
+CONFIG_INPUT_KEYBDEV=y
+# CONFIG_INPUT_MOUSEDEV is not set
+# CONFIG_INPUT_JOYDEV is not set
+# CONFIG_INPUT_EVDEV is not set
+
+#
 # Character devices
 #
 # CONFIG_LEDMAN is not set
@@ -516,8 +525,8 @@ CONFIG_SERIAL=y
 # CONFIG_INPUT_PCIGAME is not set
 # CONFIG_INPUT_CS461X is not set
 # CONFIG_INPUT_EMU10K1 is not set
-# CONFIG_INPUT_SERIO is not set
-# CONFIG_INPUT_SERPORT is not set
+CONFIG_INPUT_SERIO=y
+CONFIG_INPUT_SERPORT=y
 
 #
 # Joysticks
@@ -606,6 +615,7 @@ CONFIG_IEEE1394_RAWIO=m
 #
 CONFIG_AUDIO_IPOD=y
 CONFIG_KB_IPOD=y
+CONFIG_REMOTE_IPOD=y
 
 #
 # Kernel hacking
