@@ -2581,6 +2581,12 @@ static void __init probe_for_hwifs (void)
 		h8300_ide_init();
 	}
 #endif
+#ifdef CONFIG_ARCH_IPOD
+	{
+		extern void ipod_ide_register(void);
+		ipod_ide_register();
+	}
+#endif
 }
 
 void __init ide_init_builtin_subdrivers (void)

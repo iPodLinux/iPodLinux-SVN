@@ -699,6 +699,7 @@ if [ "$CONFIG_ARCH_IPOD" = "y" ]; then
    tristate "iPod Audio" CONFIG_AUDIO_IPOD
    tristate "iPod Keypad support" CONFIG_KB_IPOD
    dep_tristate "iPod Remote support" CONFIG_REMOTE_IPOD $CONFIG_INPUT_KEYBDEV
+   dep_tristate "iPod IDE support" CONFIG_IDE_IPOD $CONFIG_BLK_DEV_IDE
    endmenu
 fi
 
