@@ -11,7 +11,7 @@ O_TARGET		:= ipod.o
 
 # Object file lists.
 
-obj-y += arch.o cop.o dma.o hardware.o irq.o time.o
+obj-y += arch.o cop.o dma.o hardware.o irq.o time.o pcf50605.o
 
 obj-$(CONFIG_AUDIO_IPOD)	+= audio.o
 obj-$(CONFIG_FB_IPOD)		+= fb.o
