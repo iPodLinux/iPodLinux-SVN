@@ -446,9 +446,18 @@ static void key_i2c_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 				new_button_mask |= 0x20;
 
 				if (wheel_bits16_22 != -1) {
-					int diff;
+					int diff, tmp_diff;
 
-					diff = (new_wheel_value - wheel_bits16_22) % 94;
+					tmp_diff = new_wheel_value - wheel_bits16_22;
+					if ((tmp_diff < 0 ? -tmp_diff : tmp_diff) > 30) {
+						if (wheel_bits16_22 > new_wheel_value) { 
+							wheel_bits16_22 -= 96;
+						}
+						else { 
+							wheel_bits16_22 += 96;
+						}
+					}
+					diff = new_wheel_value - wheel_bits16_22;
 					if (diff > 0) {
 						while (diff-- > 0) {
 							if (countr > 2) {
