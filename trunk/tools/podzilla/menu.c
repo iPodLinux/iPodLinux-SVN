@@ -28,6 +28,7 @@ extern void new_browser_window(void);
 extern void toggle_backlight(void);
 extern void set_wheeldebounce(void);
 extern void set_buttondebounce(void);
+extern void new_record_window(void);
 
 static GR_WINDOW_ID menu_wid;
 static GR_GC_ID menu_gc;
@@ -63,6 +64,7 @@ static struct menu_item browse_menu[] = {
 };
 
 static struct menu_item extras_menu[] = {
+	{"Voice Record", ACTION_MENU, new_record_window},
 	{"Clock", SUB_MENU_HEADER, 0},
 	{"Contacts", SUB_MENU_HEADER, 0},
 	{"Calendar", SUB_MENU_HEADER, 0},

@@ -210,6 +210,9 @@ static void handle_type_other(char *filename)
 	else if (is_mp3_type(ext)) {
 		new_mp3_window(filename);
 	}
+	else if (is_raw_audio_type(ext)) {
+		new_playback_window(filename);
+	}
 	else  {
 		new_message_window(filename);
 	}

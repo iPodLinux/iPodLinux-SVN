@@ -6,12 +6,12 @@ ifneq ($(IPOD),)
 
 # iPod build
 CC=arm-elf-gcc
-CFLAGS=-DIPOD 
+CFLAGS=-DIPOD -D_REENTRANT
 LDFLAGS=-elf2flt
 MICROWINDOWS = ../microwindows/src
 
-# enable for JPEG support
-# LDFLAGS+=-L ../jpeg-6b
+# enable JPEG support
+LDFLAGS+=-L ../jpeg-6b
 else
 
 CC=gcc
@@ -24,8 +24,10 @@ endif
 CFLAGS+=-I$(MICROWINDOWS)/include -g
 LDFLAGS+=$(MICROWINDOWS)/lib/libnano-X.a $(MICROWINDOWS)/lib/libmwengine.a $(MICROWINDOWS)/lib/libmwdrivers.a $(MICROWINDOWS)/lib/libmwfonts.a
 
-# enable for JPEG support
-# LDFLAGS += -ljpeg
+# enable JPEG support
+LDFLAGS += -ljpeg
+
+LDFLAGS += -lpthread
 
 OBJS=\
 	pz.o \
@@ -38,7 +40,8 @@ OBJS=\
 	textview.o \
 	mp3.o \
 	message.o \
-	slider.o
+	slider.o \
+	audio.o
 
 all: podzilla
 
