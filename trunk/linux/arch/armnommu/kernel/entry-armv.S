@@ -1043,6 +1043,10 @@ cop_fiq_loc:	.word	cop_fiq
 		ldr 	\base, =(0x64004100)
 		ldr	\irqstat, [\base]
 
+		tst	\irqstat, #PP5020_GPIO_MASK
+		movne	\irqnr, #PP5020_GPIO_IRQ
+		bne	1001f
+
 		tst	\irqstat, #PP5020_SER0_MASK
 		movne	\irqnr, #PP5020_SER0_IRQ
 		bne	1001f
