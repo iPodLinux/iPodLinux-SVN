@@ -36,6 +36,7 @@
 #define FBIOSET_BACKLIGHT	_IOW('F', 0x25, int)
 
 #define FB_DEV_NAME		"/dev/fb0"
+#define FB_DEVFS_NAME		"/dev/fb/0"
 
 static int ipod_ioctl(int request, int *arg)
 {
@@ -43,6 +44,7 @@ static int ipod_ioctl(int request, int *arg)
 	int fd;
 
 	fd = open(FB_DEV_NAME, O_NONBLOCK);
+	if (fd < 0) fd = open(FB_DEVFS_NAME, O_NONBLOCK);
 	if (fd < 0) {
 		return -1;
 	}
@@ -115,7 +117,8 @@ void ipod_beep(void)
 	static int fd = -1; 
 	static char buf;
 
-	if (fd == -1 && (fd = open("/dev/ttyS1", O_WRONLY)) == -1) 
+	if (fd == -1 && (fd = open("/dev/ttyS1", O_WRONLY)) == -1
+			&& (fd = open("/dev/tts/1", O_WRONLY)) == -1) 
 		return;
     
 	write(fd, &buf, 1);
