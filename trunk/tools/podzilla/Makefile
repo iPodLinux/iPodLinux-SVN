@@ -47,7 +47,12 @@ OBJS=\
 	itunesdb.o \
 	bluecube/box.o \
 	bluecube/main.o \
-	bluecube/pieces.o
+	bluecube/pieces.o \
+	Nimesweeper/gameplay.o \
+	Nimesweeper/init.o \
+	Nimesweeper/main.o \
+	Nimesweeper/misc.o \
+	Nimesweeper/scores.o
 
 all: podzilla
 
