@@ -116,7 +116,12 @@ OBJS=\
 	Nimesweeper/init.o \
 	Nimesweeper/main.o \
 	Nimesweeper/misc.o \
-	Nimesweeper/scores.o
+	Nimesweeper/scores.o \
+	tuxchess/board.o \
+	tuxchess/data.o \
+	tuxchess/eval.o \
+	tuxchess/main.o \
+	tuxchess/search.o
 
 ifneq ($(IPOD),)
 OBJS+=\

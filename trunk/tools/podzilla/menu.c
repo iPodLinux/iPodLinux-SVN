@@ -46,6 +46,7 @@ extern void new_itunes_plist(void);
 extern void new_pong_window(void);
 extern void new_mines_window(void);
 extern void new_tictactoe_window(void);
+extern void new_tuxchess_window(void);
 extern void new_calc_window(void);
 extern void new_poddraw_window(void);
 extern void new_cube_window(void);
@@ -66,6 +67,7 @@ static item_st games_menu[] = {
 	{"Pong", new_pong_window, ACTION_MENU},
 	{"Steroids", new_steroids_window, ACTION_MENU},
 	{"Tic-Tac-Toe", new_tictactoe_window, ACTION_MENU},
+	{"TuxChess", new_tuxchess_window, ACTION_MENU},
 	{0}
 };
 
