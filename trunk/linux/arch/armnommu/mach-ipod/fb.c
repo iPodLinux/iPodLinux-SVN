@@ -173,7 +173,7 @@ get_backlight(void)
 	if (ipod_hw_ver >= 0x04)
 	{
 		/* is Port B bit 4 on or off */
-		if (inl(0x6000d804 + 0x20) & (1<<3)) {
+		if (inl(0x6000d824) & (1<<3)) {
 			if (ipod_hw_ver == 0x5 || ipod_hw_ver == 0x6) {
 				return (inl(0x7000a010) >> 16) & 0xff;
 			}
@@ -194,11 +194,19 @@ set_backlight(int on)
 {
 	if (ipod_hw_ver >= 0x4)
 	{
-		/* set Port B bit 4 on or off */
-		outl(((0x100 | (on ? 1 : 0)) << 3), 0x6000d804 + 0x20);
-
 		if (ipod_hw_ver == 0x5 || ipod_hw_ver == 0x6) {
-			outl(0x80000000 | ((on & 0xff) << 16), 0x7000a010);
+			if (on) {
+				/* brightness full */
+				outl(0x80000000 | (0xff << 16), 0x7000a010);
+
+				/* set port b bit 3 on */
+				outl(((0x100 | 1) << 3), 0x6000d824);
+			}
+			else {
+				/* fades backlght off on 4g */
+				outl(inl(0x70000084) & ~0x2000000, 0x70000084);
+				outl(0x80000000, 0x7000a010);
+			}
 		}
 	}
 	else {
@@ -277,27 +285,12 @@ init_lcd(void)
 	}
 
 	if (ipod_hw_ver > 0x4) {
-		/* Port B - output high for bit 2 & 3 */
-		outl(inl(0x6000d024) | 0x4, 0x6000d024);	// bit 2
-		outl(inl(0x6000d024) | 0x8, 0x6000d024);	// bit 3
-
-		/* */
+		outl(inl(0x6000d004) | 0x4, 0x6000d004); /* port b bit 2 */
+		outl(inl(0x6000d004) | 0x8, 0x6000d004); /* port b bit 3 */
 		outl(inl(0x70000084) | 0x2000000, 0x70000084);
-		outl(inl(0x70000080) | 0x2000000,  0x70000080);
+		outl(inl(0x70000080) | 0x2000000, 0x70000080);
 
-		/* */
-		outl(inl(0x70000084) & ~0x2000000, 0x70000084);
-		outl(inl(0x70000010) & ~0xc, 0x70000010);
-
-		/* enable device 0x20000 */
-		outl(inl(0x6000600c) | 0x20000, 0x6000600c);
-
-		/* reset device 0x20000 */
-		outl(inl(0x60006004) | 0x20000, 0x60006004);
-		outl(inl(0x60006004) & ~0x20000, 0x60006004);
-
-		/* set default PWM setting */
-		outl(0x80000000, 0x7000a010);
+		outl(inl(0x6000600c) | 0x20000,    0x6000600c);
 	}
 
 	/* backlight off & set grayscale */
