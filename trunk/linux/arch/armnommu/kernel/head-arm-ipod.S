@@ -48,7 +48,7 @@ ENTRY(stext)
 	ldr	r3, =0x3f84
 	orr	r3, r3, r5		/* adjust for execute address */
 	ldr	r2, =0xf000f014
-	mov	r1, #0x3b00
+	mov	r1, #0x3a00
 	ldr	r0, =0xf000f010
 	ldr	r4, =0x40010000
 	mov	pc, r4
@@ -65,6 +65,10 @@ install_reloc_end:
 
 post_reloc_start:
 	cmp	r5, #0x28000000
+	mov	r0, #0x40000000
+	moveq	r1, #0x0	/* we are a PP5002 */
+	movne	r1, #0x1	/* we are a PP5020 */
+	str	r1, [r0]
 	bne	pp5020
 
 pp5002:
@@ -91,7 +95,7 @@ pp5020:
 
 	/* we are the co-processor, go to sleep until cpu wakes us up */
 	ldr	r0, =PP5020_COP_CTRL
-	mov	r1, #0xca
+	mov	r1, #0x80000000
 	str	r1, [r0]
 	b	cop_startup
 
