@@ -15,9 +15,9 @@ obj-y += arch.o cop.o dma.o hardware.o irq.o time.o
 
 obj-$(CONFIG_AUDIO_IPOD)	+= audio.o
 obj-$(CONFIG_FB_IPOD)		+= fb.o
-obj-$(CONFIG_IEEE1394_IPOD)	+= ieee1394.o
+obj-$(CONFIG_IEEE1394_IPOD)	+= tsb42aa82.o
 obj-$(CONFIG_KB_IPOD)		+= keyboard.o
 
-export-objs		:= audio.o fb.o ieee1394.o keyboard.o
+export-objs		:= audio.o fb.o tsb42aa82.o keyboard.o
 
 include $(TOPDIR)/Rules.make
