@@ -131,6 +131,14 @@
 #   define CPU_NAME cpu_arm1026
 #  endif
 # endif
+# ifdef CONFIG_CPU_PP5002
+#  ifdef CPU_NAME
+#   undef  MULTI_CPU
+#   define MULTI_CPU
+#  else
+#   define CPU_NAME cpu_pp5002
+#  endif
+# endif
 #endif
 
 #ifndef MULTI_CPU
