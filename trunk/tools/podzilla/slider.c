@@ -33,17 +33,26 @@ struct slider_widget {
 
 static struct slider_widget slider;
 
+#define SHEIGHT	10
+#define SBORDER	1
+#define SXOFF	15
+
+#define SYOFF	(((screen_info.rows-(HEADER_TOPLINE+1))/2)-(SHEIGHT/2))
+#define SXIN	(screen_info.cols-(SXOFF*2))
+
 static void slider_do_draw(void)
 {
 	int filler;
-
-	filler = ((int)((slider.value * 128) / slider.max));
+	
+	filler = ((int)((slider.value * (SXIN-(SBORDER*2))) / slider.max));
 	GrSetGCForeground(slider_gc, BLACK);
-	GrRect(slider_wid, slider_gc, 15, 40, 130, 10);
-	GrFillRect(slider_wid, slider_gc, 15, 40, 130, 10);
+	GrRect(slider_wid, slider_gc, SXOFF, SYOFF, SXIN, SHEIGHT);
 	GrSetGCForeground(slider_gc, WHITE);
-	GrFillRect(slider_wid, slider_gc, 16 , 41, filler, 8);
-	GrSetGCForeground(slider_gc, BLACK);
+	GrFillRect(slider_wid, slider_gc, SXOFF+SBORDER+filler, SYOFF+SBORDER,
+	           (SXIN-(SBORDER*2))-filler, SHEIGHT-(SBORDER*2));
+	GrSetGCForeground(slider_gc, GRAY);
+	GrFillRect(slider_wid, slider_gc, SXOFF+SBORDER, SYOFF+SBORDER,
+	           filler, SHEIGHT-(SBORDER*2));
 }
 
 static int slider_do_keystroke(GR_EVENT * event)
