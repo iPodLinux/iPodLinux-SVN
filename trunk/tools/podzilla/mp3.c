@@ -417,8 +417,7 @@ static void start_mp3_playback(char *filename)
 	dsp_fd = open("/dev/dsp", O_WRONLY);
 	if (dsp_fd < 0) {
 		pz_close_window(mp3_wid);
-
-		new_message_window("Cannot open /dev/dsp");
+		pz_perror("/dev/dsp");
 		return;
 	}
 	mixer_fd = open("/dev/mixer", O_RDWR);
@@ -436,10 +435,9 @@ static void start_mp3_playback(char *filename)
 		file = fopen(filename, "r");
 		if (file == 0) {
 			pz_close_window(mp3_wid);
+			pz_perror(filename);
 			close(mixer_fd);
 			close(dsp_fd);
-
-			new_message_window("Cannot open mp3");
 			return;
 		}
 
