@@ -113,6 +113,8 @@ cop_startup:
 svc_sp:		.word cop_svc_stack
 fiq_sp:		.word cop_fiq_stack
 
+	.ltorg	/* dump literal pool to avoid section problems */
+
 cpu_startup:
 	/* get important "magic" values */
 	adr	r5, LC0
