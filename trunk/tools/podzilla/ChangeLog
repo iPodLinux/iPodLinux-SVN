@@ -1,4 +1,27 @@
+leachbj - Sat May 8 2004
+	Merged Matthew's changes in
+	Fixed backlight timer to work with GR_EVENT_TYPE_TIMEOUT
+	Fixed reboot.
+
+Matthew J. Sahagian - Sat Apr 10, 2004
+	Added Backlight timer support for turning backlight off
+	Support for turning backlight on at keypress
+	Simplified event handling
+
+Matthew J. Sahagian - Fri Apr 9, 2004
+	Removed the "current directory" leading "." from file browser listing
+	Changed "previous directory" "." to a double << listing
+	Files without extensions are displayed as text
+
+Matthew J. Sahagian - Thu Apr 08, 2004
+	Added support for saving settings (contrast,clicker etc)
+		Settings->Save Settings
+		Settings->Load Settings
+		Settings->Reset Settings
+	Podzilla no longer exits on menu keypress at toplevel
+	Added quit function
 
 podzilla - 0.1 - Wed Feb 25 23:06:35 CET 2004
 	Initial release
+
 

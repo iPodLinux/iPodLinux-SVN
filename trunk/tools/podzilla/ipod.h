@@ -19,6 +19,32 @@
 #ifndef __IPOD_H__
 #define __IPOD_H__
 
+/* Global Settings */
+
+/* DISPLAY SETINGS 0 - 9 */
+
+#define CONTRAST 0
+#define BACKLIGHT 1
+#define BACKLIGHT_TIMER 2
+
+/* AUDIO SETTIGNS 10 - 19 */
+
+#define CLICKER 10
+#define VOLUME 11
+#define EQUILIZER 12
+
+/* PLAYLIST SETTINGS 20 - 29 */
+ 
+#define SHUFFLE 20
+#define REPEAT 21
+
+/* OTHER SETTINGS 30 - 99 */
+
+#define LANGUAGE 30
+#define WHEEL_DEBOUNCE  31
+#define ACTION_DEBOUNCE 32
+#define KEY_DEBOUNCE 33
+
 #define MIN_CONTRAST	0
 #define MAX_CONTRAST	128
 
@@ -27,6 +53,14 @@ int ipod_set_contrast(int contrast);
 
 int ipod_get_backlight(void);
 int ipod_set_backlight(int backlight);
+
+int ipod_load_settings(void);
+int ipod_save_settings(void);
+
+void ipod_reset_settings(void);
+
+int ipod_set_setting(int setting, int value);
+int ipod_get_setting(int setting);
 
 int ipod_set_blank_mode(int blank);
 

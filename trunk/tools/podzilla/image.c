@@ -24,7 +24,7 @@ static GR_GC_ID image_gc;
 static GR_IMAGE_ID image_id;
 static GR_SCREEN_INFO screen_info;
 
-static void image_do_draw(void)
+static void image_do_draw(GR_EVENT * event)
 {
 	GR_IMAGE_INFO image_info;
 	int offx = 0, offy = 0;
@@ -40,21 +40,11 @@ static void image_do_draw(void)
 	GrDrawImageToFit(image_wid, image_gc, offx, offy, image_info.width, image_info.height, image_id);
 }
 
-static void image_event_handler(GR_EVENT *event)
+static int image_do_keystroke(GR_EVENT * event)
 {
-	int i;
-
-	switch (event->type) {
-	case GR_EVENT_TYPE_EXPOSURE:
-		image_do_draw();
-		break;
-
-	case GR_EVENT_TYPE_KEY_DOWN:
-		/* any key exits */
-		pz_close_window(image_wid);
-		GrFreeImage(image_id);
-		break;
-	}
+	int ret = 1;
+	pz_close_window(image_wid);
+	return ret;
 }
 
 int is_image_type(char *extension)
@@ -78,7 +68,7 @@ void new_image_window(char *filename)
 	GrSetGCForeground(image_gc, WHITE);
 	GrGetScreenInfo(&screen_info);
 
-	image_wid = pz_new_window(0, 0, screen_info.cols, screen_info.rows, image_event_handler);
+	image_wid = pz_new_window(0, 0, screen_info.cols, screen_info.rows, image_do_draw, image_do_keystroke);
 
 	GrSelectEvents(image_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN);
 

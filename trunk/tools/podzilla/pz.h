@@ -29,11 +29,12 @@
 
 /* pz.c */
 void pz_draw_header(char *header);
-GR_WINDOW_ID pz_new_window(int x, int y, int w, int h, GR_FNCALLBACKEVENT event_handler);
+GR_WINDOW_ID pz_new_window(int x, int y, int w, int h, void(*do_draw), int(*keystroke)(GR_EVENT * event));
 void pz_close_window(GR_WINDOW_ID wid);
 
 /* display.c */
-void new_contrast_window(void);
+void set_backlight_timer(void);
+void set_contrast(void);
 void toggle_backlight(void);
 
 /* image.c */
@@ -42,5 +43,7 @@ void new_image_window(char *filename);
 
 /* message.c */
 void new_message_window(char *message);
+
+void new_slider_widget(int setting, char *title, int slider_min, int slider_max);
 
 #endif

@@ -37,7 +37,8 @@ OBJS=\
 	piezo.o \
 	textview.o \
 	mp3.o \
-	message.o
+	message.o \
+	slider.o
 
 all: podzilla
 

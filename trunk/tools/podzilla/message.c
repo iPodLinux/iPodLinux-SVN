@@ -24,7 +24,7 @@ static GR_GC_ID msg_gc;
 static GR_SCREEN_INFO screen_info;
 static char *msg_message;
 
-static void msg_do_draw(void)
+static void msg_do_draw(GR_EVENT * event)
 {
 	GR_SIZE width, height, base;
 
@@ -34,20 +34,11 @@ static void msg_do_draw(void)
 	GrText(msg_wid, msg_gc, 5, base + 5, msg_message, -1, GR_TFASCII);
 }
 
-static void msg_event_handler(GR_EVENT *event)
+static int msg_do_keystroke(GR_EVENT * event)
 {
-	int i;
-
-	switch (event->type) {
-	case GR_EVENT_TYPE_EXPOSURE:
-		msg_do_draw();
-		break;
-
-	case GR_EVENT_TYPE_KEY_DOWN:
-		/* any key exits */
-		pz_close_window(msg_wid);
-		break;
-	}
+	int ret = 1;
+	pz_close_window(msg_wid);
+	return ret;
 }
 
 void new_message_window(char *message)
@@ -66,7 +57,7 @@ void new_message_window(char *message)
 
 	msg_wid = pz_new_window((screen_info.cols - (width + 10)) >> 1,
 		(screen_info.rows - (height + 10)) >> 1,
-		width + 10, height + 10, msg_event_handler);
+		width + 10, height + 10, msg_do_draw, msg_do_keystroke);
 
 	GrSelectEvents(msg_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN);
 
