@@ -189,6 +189,9 @@ static void handle_type_other(char *filename)
 	if (is_image_type(ext)) {
 		new_image_window(filename);
 	}
+	if (is_text_type(ext)) {
+		new_textview_window(filename);
+	}
 	else {
 		new_message_window(filename);
 	}
