@@ -184,6 +184,8 @@ void dma_region_sync(struct dma_region *dma, unsigned long offset, unsigned long
 	pci_dma_sync_sg(dma->dev, &dma->sglist[first], last - first + 1, dma->direction);
 }
 
+#ifndef CONFIG_IEEE1394_IPOD
+
 /* nopage() handler for mmap access */
 
 static struct page*
@@ -237,3 +239,5 @@ int dma_region_mmap(struct dma_region *dma, struct file *file, struct vm_area_st
 
 	return 0;
 }
+
+#endif /* ifndef CONFIG_IEEE1394_IPOD */
