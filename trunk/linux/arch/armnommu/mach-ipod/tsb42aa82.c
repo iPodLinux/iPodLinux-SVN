@@ -1,7 +1,7 @@
 /*
  * tsb43aa82.c - ieee1394 driver for iPod
  *
- * Copyright (c) 2003, Bernard Leach (leachbj@bouncycastle.org)
+ * Copyright (c) 2003,2004 Bernard Leach (leachbj@bouncycastle.org)
  *
  * IEEE1394 controller is the TSB43AA82 (iSphyx II) from Texas Instruments.
  *
@@ -407,6 +407,25 @@ static int tx_packet(struct ti_ipod *ipod, struct hpsb_packet *packet)
 	return 1;
 }
 
+static int tx_raw_packet(struct ti_ipod *ipod, struct hpsb_packet *packet)
+{
+	unsigned r = 0;
+
+	// write to ATF & hold timer
+	// TXN_TIMER_CONTROL
+	r = fw_reg_read(0x60);
+	fw_reg_write(0x60, (r & ~0xff) | 0x24 | (r & 0x4 ? 0 : 0x4));
+
+	fw_reg_write(WRITE_FIRST, packet->header[0] | 0x00e0);
+	fw_reg_write(WRITE_UPDATE, packet->header[1] | 0xffff);
+
+	// write to ATF & release timer
+	// TXN_TIMER_CONTROL
+	fw_reg_write(0x60,  (fw_reg_read(0x60) & ~0xff) | 0x26);
+
+	return 1;
+}
+
 static void rx_packet(struct hpsb_host *host)
 {
 	static quadlet_t data[1024], status;
@@ -511,8 +530,9 @@ static void tx_tasklet(unsigned long data)
 
 		if ( fw_reg_read(0x60) & 0x200000 ) {
 			printk(KERN_ERR "ATErr\n");
+			hpsb_packet_sent(ipod->host, ipod->packet, ACKX_SEND_ERROR);
 		}
-
+else {
 		r = fw_reg_read(0x4);
 		if ( r & (1<<(31-23)) ) {
 			printk(KERN_ERR ">ARF sts: 0x%04x\n", fw_reg_read(0x30));
@@ -531,8 +551,11 @@ static void tx_tasklet(unsigned long data)
 				int response = ipod->packet->expect_response;
 
 				if ( ((r>>4) & 0xf) == 1 && response ) {
-					printk(KERN_ERR "premature end?\n");
+					printk(KERN_DEBUG "premature end? %d rx %d\n", ((fw_reg_read(0x30) << 7) >> 23), ipod->rx_state);
 
+					// TODO: we should really just read the
+					// reply and add to packet then
+					// send back the ACK_COMPLETE
 					hpsb_packet_sent(ipod->host, ipod->packet, 0x2);
 				}
 				else {
@@ -545,10 +568,14 @@ static void tx_tasklet(unsigned long data)
 					}
 					else {
 						rx_packet(ipod->host);
+
+						// if we have no more data ignore any interrupt
+						if ( ((fw_reg_read(0x30) << 7) >> 23) == 0 ) ipod->rx_state = RX_READY;
 					}
 				}
 			}
 		}
+}
 	}
 
 	if ( ipod->rx_state == RX_BUSY ) {
@@ -572,7 +599,12 @@ static void tx_tasklet(unsigned long data)
 			ipod->tx_state = TX_BUSY;
 			// spin_unlock_irqrestore(&ipod->tx_lock, flags);
 
-			tx_packet(ipod, packet);
+			if (packet->type == hpsb_async) {
+				tx_packet(ipod, packet);
+			}
+			else if (packet->type == hpsb_raw) {
+				tx_raw_packet(ipod, packet);
+			}
 		}
 	}
 
@@ -593,10 +625,10 @@ static int ipod_1394_transmit_packet(struct hpsb_host *host, struct hpsb_packet 
 
 	switch ( packet->type ) {
 	case hpsb_async:
+	case hpsb_raw:
 		break;
 
 	case hpsb_iso:
-	case hpsb_raw:
 	default:
 		printk(KERN_ERR "cannot do pkt type 0x%x\n", packet->type);
 		return 0;
@@ -620,11 +652,62 @@ static int ipod_1394_devctl(struct hpsb_host *host, enum devctl_cmd command, int
 {
 	struct ti_ipod *ipod = host->hostdata;
 	int retval = 0;
+	int phy_reg;
 
 	switch (command) {
 	case RESET_BUS:
 		printk("devctl:RESET\n");
-		set_phy_reg_mask(ipod, 1, 0x40);
+		switch (arg)
+		{
+		case SHORT_RESET:
+			set_phy_reg_mask(ipod, 5, 0x40); /* set ISBR */
+			break;
+		case LONG_RESET:
+			set_phy_reg_mask(ipod, 1, 0x40); /* set IBR */
+			break;
+
+		case SHORT_RESET_NO_FORCE_ROOT:
+			phy_reg = get_phy_reg(ipod, 1);
+			if (phy_reg & 0x80) {
+				phy_reg &= ~0x80;
+				set_phy_reg(ipod, 1, phy_reg); /* clear RHB */
+			}
+										
+			phy_reg = get_phy_reg(ipod, 5);
+			phy_reg |= 0x40;
+			set_phy_reg(ipod, 5, phy_reg); /* set ISBR */
+			break;
+
+		case LONG_RESET_NO_FORCE_ROOT:
+			phy_reg = get_phy_reg(ipod, 1);
+			phy_reg &= ~0x80;
+			phy_reg |= 0x40;
+			set_phy_reg(ipod, 1, phy_reg); /* clear RHB, set IBR */
+			break;
+
+		case SHORT_RESET_FORCE_ROOT:
+			phy_reg = get_phy_reg(ipod, 1);
+			if (!(phy_reg & 0x80)) {
+				phy_reg |= 0x80;
+				set_phy_reg(ipod, 1, phy_reg); /* set RHB */
+			}
+									
+			phy_reg = get_phy_reg(ipod, 5);
+			phy_reg |= 0x40;
+			set_phy_reg(ipod, 5, phy_reg); /* set ISBR */
+			break;
+
+		case LONG_RESET_FORCE_ROOT:
+			phy_reg = get_phy_reg(ipod, 1);
+			phy_reg |= 0xc0;
+			set_phy_reg(ipod, 1, phy_reg); /* set RHB and IBR */
+			break;
+
+		default:
+			set_phy_reg_mask(ipod, 1, 0x40);
+			break;
+		}
+
 		break;
 
 	case GET_CYCLE_COUNTER:
@@ -676,47 +759,6 @@ static int ipod_1394_devctl(struct hpsb_host *host, enum devctl_cmd command, int
 	return retval;
 }
 
-#if 0
-static int ipod_1394_isoctl(struct hpsb_iso *iso, enum isoctl_cmd cmd, unsigned long arg)
-{
-	switch (cmd) {
-	case XMIT_INIT:
-	case XMIT_START:
-	case XMIT_STOP:
-	case XMIT_QUEUE:
-	case XMIT_SHUTDOWN:
-	case RECV_INIT:
-	case RECV_START:
-	case RECV_STOP:
-	case RECV_RELEASE:
-	case RECV_FLUSH:
-	case RECV_SHUTDOWN:
-	case RECV_LISTEN_CHANNEL:
-	case RECV_UNLISTEN_CHANNEL:
-	case RECV_SET_CHANNEL_MASK:
-		return 0;
-								
-	default:
-		printk(KERN_ERR "ohci_isoctl cmd %d not implemented yet", cmd);
-		break;
-	}
-
-	return -EINVAL;
-}
-#endif
-
-
-#if 0
-/* This function is mainly to redirect local CSR reads/locks to the iso
- * management registers (bus manager id, bandwidth available, channels
- * available) to the hardware registers in OHCI.  reg is 0,1,2,3 for bus         * mgr, bwdth avail, ch avail hi, ch avail lo respectively (the same ids         * as OHCI uses).  data and compare are the new data and expected data
- * respectively, return value is the old value.
- */
-static quadlet_t ipod_1394_hw_csr_reg(struct hpsb_host *host, int reg, quadlet_t data, quadlet_t compare)
-{
-	return -1;
-}
-#endif
 
 #define IPOD_1394_DRIVER_NAME	"ipod1394"
 
@@ -725,13 +767,9 @@ static struct hpsb_host_driver ipod_1394_driver = {
 	.get_rom = ipod_1394_get_rom,
 	.transmit_packet = ipod_1394_transmit_packet,
 	.devctl = ipod_1394_devctl,
-	// .isoctl = ipod_1394_isoctl,
-#if 0
-	hw_csr_reg: ipod_1394_hw_csr_reg
-#endif
 };
 
-static void handle_selfid(struct ti_ipod *ohci, struct hpsb_host *host,
+static void handle_selfid(struct ti_ipod *ipod, struct hpsb_host *host,
 				int phyid, int isroot)
 {
 	quadlet_t q0;
@@ -891,7 +929,7 @@ static __devinit void fw_i2c(int data0, int data1)
 }
 #endif
 
-static __devinit void ipod_1394_hw_init()
+static __devinit void ipod_1394_hw_init(void)
 {
 	// firewire stuff
 
@@ -913,7 +951,7 @@ static __devinit void ipod_1394_hw_init()
 	// set PD (power down) to low and LPS to high (see 12.4)
 	outl((inl(0xcf00002c) & ~(1<<4)) | (1<<5), 0xcf00002c);
 
-	mdelay(20):
+	udelay(20);
 #endif
 
 /* this is 1g only */
@@ -924,16 +962,17 @@ static __devinit void ipod_1394_hw_init()
 		outl(inl(0xcf00001c) | (1<<1) | (1<<2), 0xcf00001c);
 		outl(inl(0xcf00002c) | (1<<1) | (1<<2), 0xcf00002c);
 
-		mdelay(10);
+		udelay(0x14);
 
 		/* XRESETL */
 		outl(inl(0xcf00002c) & ~(1<<1), 0xcf00002c);
 		/* XRESETP */
 		outl(inl(0xcf00002c) & ~(1<<2), 0xcf00002c);
 
-		mdelay(10);
+		udelay(0x14);
 
 		outl(inl(0xcf00002c) | (1<<1), 0xcf00002c);
+		udelay(0x1);
 		outl(inl(0xcf00002c) | (1<<2), 0xcf00002c);
 
 		mdelay(10);
@@ -953,21 +992,22 @@ static __devinit void ipod_1394_hw_init()
 		// Port E Bit 4 output high
 		outl(inl(0xcf004048) | (1<<4), 0xcf004048);
 
-		mdelay(10);
+		udelay(0x14);
 
 		// Port E Bit 2 output low
 		outl(inl(0xcf004048) & ~(1<<2), 0xcf004048);
 		// Port E Bit 4 output low
 		outl(inl(0xcf004048) & ~(1<<4), 0xcf004048);
 
-		mdelay(10);
+		udelay(0x14);
 
 		// Port E Bit 2 output high
 		outl(inl(0xcf004048) | (1<<2), 0xcf004048);
+		udelay(0x1);
 		// Port E Bit 2 output high
 		outl(inl(0xcf004048) | (1<<4), 0xcf004048);
 
-		mdelay(10);
+		udelay(0x14);
 
 		outl(r2 | (1<<4), 0xcf004044);
 	}
@@ -1008,7 +1048,7 @@ static int __devinit ipod_1394_init(void)
 {
 	struct ti_ipod *ipod;
 
-	printk("ipod_1394: $Id: tsb42aa82.c,v 1.3 2004/01/25 14:02:35 leachbj Exp $\n");
+	printk("ipod_1394: $Id: tsb42aa82.c,v 1.4 2004/01/26 22:17:30 leachbj Exp $\n");
 
 	ipod_host = hpsb_alloc_host(&ipod_1394_driver, sizeof(struct ti_ipod));
 	if ( !ipod_host ) {
