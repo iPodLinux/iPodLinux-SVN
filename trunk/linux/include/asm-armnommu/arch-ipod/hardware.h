@@ -47,7 +47,7 @@ struct sysinfo_t {
 	unsigned iram_zero;
 	unsigned iram_base;
 	unsigned iram_size;
-	unsigned irame_zero2;
+	unsigned iram_zero2;
 								
 	char pad7[120];
 
