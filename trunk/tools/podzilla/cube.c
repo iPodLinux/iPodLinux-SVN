@@ -5,11 +5,11 @@
 *   Jukebox    |    |   (  <_> )  \___|    < | \_\ (  <_> > <  <
 *   Firmware   |____|_  /\____/ \___  >__|_ \|___  /\____/__/\_ \
 *                     \/            \/     \/    \/            \/
-* $Id: cube.c,v 1.1 2005/02/15 01:22:03 courtc Exp $
+* $Id: cube.c,v 1.2 2005/02/25 03:38:02 courtc Exp $
 *
 * Copyright (C) 2002 Damien Teney
 * modified to use int instead of float math by Andreas Zwirtes
-* ported to iPod Linux/podzilla by Alastair S (coob)
+* ported to iPod Linux/podzilla and solid rendering by Alastair S (coob)
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -40,10 +40,6 @@ static GR_WINDOW_ID		cube_wid;
 static GR_GC_ID			cube_gc;
 static GR_TIMER_ID		cube_timer;
 static GR_WINDOW_ID		temp_pixmap;
-
-/* feel free to change the names of these globals - they should probably
- * be in some kind of struct:
- */
 
 static int dist=70;
 
@@ -395,6 +391,11 @@ static void cube_clear_screen( void )
 
 static void cube_do_draw( void )
 {
+	pz_draw_header( "Cube" );
+}
+
+static void cube_loop( void )
+{
 	cube_clear_screen();
 	cube_rotate(xa,ya,za);
 	if (zoom_out)
@@ -426,7 +427,7 @@ static int cube_handle_event(GR_EVENT * event)
 	switch( event->type )
 	{
 		case( GR_EVENT_TYPE_TIMER ):
-			cube_do_draw();
+			cube_loop();
 			break;
 		case( GR_EVENT_TYPE_KEY_DOWN ):
 			switch( event->keystroke.ch )
@@ -544,13 +545,9 @@ void new_cube_window( void )
 	x_off = screen_info.cols/2;
 	y_off = (screen_info.rows - (HEADER_TOPLINE + 1))/2;
 
-	pz_draw_header( "Cube" );
-
 	temp_pixmap = GrNewPixmap(screen_info.cols,
 								(screen_info.rows - (HEADER_TOPLINE + 1)),
 						 		NULL);
 	
-	cube_init();
-	
-	cube_do_draw();
+	cube_init();	
 }
