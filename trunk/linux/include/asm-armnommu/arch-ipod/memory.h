@@ -5,8 +5,16 @@
 #ifndef __ASM_ARCH_MEMORY_H
 #define __ASM_ARCH_MEMORY_H
 
-#define PHYS_OFFSET	(DRAM_BASE)
+/*
+ * These should be the same as the definitions in asm/memory.h
+ * without the '__' at the beginning.
+ */
+#define __virt_to_bus(x) ((unsigned long) (x))
+#define __bus_to_virt(x) ((void *) (x))
+#define __virt_to_phys(x) ((unsigned long) (x))
+#define __phys_to_virt(x) ((void *) (x))
 
+#define PHYS_OFFSET	(DRAM_BASE)
 #define PAGE_OFFSET	PHYS_OFFSET
 
 /* user space process size - 16MB */
