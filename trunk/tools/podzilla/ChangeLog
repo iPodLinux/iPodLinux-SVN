@@ -1,4 +1,8 @@
 
+leachbj - Fri October 8 2004
+	increased maximum number of songs per artist to 512
+	fixed some memory overwrites in iTunesDB parsing
+
 ansi - Fri October 8 2004
 	new OPTION_MENU support
 	cleaned up BOOLEAN_MENU support display
