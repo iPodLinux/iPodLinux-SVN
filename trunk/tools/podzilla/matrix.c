@@ -38,14 +38,13 @@ static GR_TIMER_ID		matrix_timer;
 typedef struct cmatrix {
 	int val;
 	int bold;
-	int draw;
 } cmatrix;
 
 /* Global variables, unfortunately */
-static cmatrix **matrix = (cmatrix **) NULL;   /* The matrix has you */
-static int *length = NULL;			/* Length of cols in each line */
-static int *spaces = NULL;			/* spaces left to fill */
-static int *updates = NULL;			/* What does this do again? :) */
+static cmatrix **matrix = (cmatrix **) NULL; /* The matrix has you */
+static int *length = NULL;                   /* Length of cols in each line */
+static int *spaces = NULL;                   /* spaces left to fill */
+static int *updates = NULL;                  /* What does this do again? :) */
 
 static int inverted = 0, running = 0, tmbeatcmp = 5, photo = 0;
 static int lines, cols;
@@ -132,7 +131,6 @@ static void matrix_var_init(void)
 		for (j = 0; j <= cols - 1; j++ ) {
 			matrix[i][j].val = -1;
 			matrix[i][j].bold = 0;
-			matrix[i][j].draw = 0;
 		}
 	}
 
@@ -188,7 +186,7 @@ static void matrix_loop(void)
 	int i, j = 0, y, z, firstcoldone = 0;
 	static int count = 0;
 	GR_COLOR fg;
-	
+		
 	count++;
 	if (count > 4)
 		count = 1;
@@ -232,17 +230,14 @@ static void matrix_loop(void)
 					matrix[z][j].val = 129;
 					matrix[lines][j].bold = 1;
 					matrix_blit_char(z - 1, j, matrix[z][j].val);
-					matrix[z][j].draw = 0;
 					continue;
 				}
 
 				matrix[i][j].val = (int) rand() % (MAXCHARS-1) + 1;
-				matrix[i][j].draw = 2;
 
 				if (matrix[i - 1][j].bold == 2) {
 					matrix[i - 1][j].bold = 1;
 					matrix[i][j].bold = 2;
-					matrix[i][j].draw = 0;
 				}
 
 				/* If we're at the top of the collumn and it's reached its
@@ -253,7 +248,6 @@ static void matrix_loop(void)
 				if (y > length[j] || firstcoldone) {
 					matrix[z][j].val = 129;
 					matrix[0][j].val = -1;
-					matrix[0][j].draw = 0;
 				}
 				firstcoldone = 1;
 				i++;
@@ -287,10 +281,8 @@ static void matrix_loop(void)
 						matrix_blit_char(i - 1, j, 2);
 					else if (matrix[i][j].val == -1)
 						matrix_blit_char(i - 1, j, 129);
-					else if (matrix[i][j].draw == 2) {
+					else
 						matrix_blit_char(i - 1, j, matrix[i][j].val);
-						matrix[i][j].draw = 1;
-					}
 				}
 			}
 		}
@@ -352,6 +344,7 @@ static int matrix_handle_event(GR_EVENT * event)
 		case 'p': /* play/pause */
 		case 'd': /*or this */
 			running = 0;
+			//matrix_clear_screen();
 			matrix_free_var();
 			if (matrix_info.height == screen_info.rows) {
 				GrResizeWindow(matrix_wid, screen_info.cols,
@@ -362,10 +355,10 @@ static int matrix_handle_event(GR_EVENT * event)
 				GrResizeWindow(matrix_wid, screen_info.cols, screen_info.rows);
 				GrMoveWindow(matrix_wid, 0, 0);
 			}
-			matrix_clear_screen();
 			matrix_var_init();
+			matrix_clear_screen();
 			matrix_loop();
-			running=1;
+			running = 1;
 			break;
 		case 'l': /* CCW spin */
 			matrix_timer_adjust(1);
