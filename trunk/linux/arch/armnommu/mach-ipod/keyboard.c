@@ -14,6 +14,7 @@
 #include <linux/mm.h>
 #include <linux/kbd_kern.h>
 #include <linux/delay.h>
+#include <linux/input.h>
 #include <asm/io.h>
 #include <asm/arch/irqs.h>
 #include <asm/keyboard.h>
@@ -22,30 +23,18 @@
 /* undefine these to produce keycodes from left/right/up/down */
 #undef DO_SCROLLBACK
 #undef DO_CONTRAST
-#undef USE_ARROW_KEYS
 
 /* we use the keycodes and translation is 1 to 1 */
-#define R_SC		19	/* 'r' */
-#define L_SC		38	/* 'l' */
+#define R_SC		KEY_R
+#define L_SC		KEY_L
 
-#if defined(USE_ARROW_KEYS)
-#define UP_SC		103
-#define LEFT_SC		105
-#define RIGHT_SC	106
-#define DOWN_SC		108
-#else
-#define UP_SC		50	/* 'm' */
-#define LEFT_SC		17	/* 'w' */
-#define RIGHT_SC	33	/* 'f' */
-#define DOWN_SC		32	/* 'd' */
-#endif
+#define UP_SC		KEY_M
+#define LEFT_SC		KEY_W
+#define RIGHT_SC	KEY_F
+#define DOWN_SC		KEY_D
 
-#define ACTION_SC	28	/* '\n' */
-
-/* send ^S and ^Q for the hold switch */
-#define LEFT_CTRL_SC	29
-#define Q_SC		16
-#define S_SC		31
+#define HOLD_SC		KEY_H
+#define ACTION_SC	KEY_ENTER
 
 /* need to pass something becuase we use a shared irq */
 #define KEYBOARD_DEV_ID	0x4b455942
@@ -88,32 +77,29 @@ static void keyboard_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	kbd_pt_regs = regs;
 
 	if ( source & 0x20 ) {
-		if ((ipod_hw_ver == 0x3 && (state & 0x20) == 0 ) || 
-				(state & 0x20)) {
-			/* CTRL-S down */
-			handle_scancode(LEFT_CTRL_SC, 1);
-			handle_scancode(S_SC, 1);
-
-			/* CTRL-S up */
-			handle_scancode(S_SC, 0);
-			handle_scancode(LEFT_CTRL_SC, 0);
-		}
-		else {
-			/* CTRL-Q down */
-			handle_scancode(LEFT_CTRL_SC, 1);
-			handle_scancode(Q_SC, 1);
-
-			/* CTRL-Q up */
-			handle_scancode(Q_SC, 0);
-			handle_scancode(LEFT_CTRL_SC, 0);
-			if (ipod_hw_ver == 0x3) {
+		if (ipod_hw_ver == 0x3) {
+			/* 3g hold switch is active low */
+			if (state & 0x20) {
+				handle_scancode(HOLD_SC, 0);
 				was_hold = 1;
 			}
-		}
-		/* hold switch on 3g causes all outputs to go low */
-		/* we shouldn't interpret these as key presses */
-		if (ipod_hw_ver == 0x3) {
+			else {
+				handle_scancode(HOLD_SC, 1);
+			}
+
+			/* hold switch on 3g causes all outputs to go low */
+			/* we shouldn't interpret these as key presses */
 			goto done;
+		}
+		else {
+			if (state & 0x20) {
+				handle_scancode(HOLD_SC, 1);
+				was_hold = 1;
+			}
+			else {
+				handle_scancode(HOLD_SC, 0);
+				was_hold = 0;
+			}
 		}
 	}
 
@@ -195,7 +181,7 @@ static void keyboard_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 		if ( prev_scroll == -1 ) {
 			prev_scroll = now_scroll;
 		}
-		else {
+		else if (!was_hold) {
 			switch (scroll_state[prev_scroll][now_scroll]) {
 			case 1:
 				/* 'l' keypress */
