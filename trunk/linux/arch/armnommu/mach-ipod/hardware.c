@@ -1,7 +1,7 @@
 /*
  * hardware.c - special hardware routines for iPod
  *
- * Copyright (c) 2003,2004 Bernard Leach <leachbj@bouncycastle.org>
+ * Copyright (c) 2003-2005 Bernard Leach <leachbj@bouncycastle.org>
  */
 
 #include <linux/config.h>
@@ -14,12 +14,6 @@
 #include <asm/io.h>
 #include <asm/hardware.h>
 #include <asm/system.h>
-
-#define SYSINFO_TAG     (unsigned char *)0x40017f18
-#define SYSINFO_PTR     (struct sysinfo_t **)0x40017f1c
-
-/* this must match the value in audio.c */
-#define DMA_HANDLER	(ipod_dma_handler_t *)0x40000010
 
 static struct sysinfo_t ipod_sys_info;
 static int ipod_sys_info_set;

@@ -1,7 +1,7 @@
 /*
  * ipod_audio.c - audio driver for iPod
  *
- * Copyright (c) 2003,2004 Bernard Leach <leachbj@bouncycastle.org>
+ * Copyright (c) 2003-2005 Bernard Leach <leachbj@bouncycastle.org>
  */
 
 #include <linux/module.h>
@@ -27,14 +27,6 @@
 #define D2A_POWER_OFF   1
 #define D2A_POWER_SB    2
 #define D2A_POWER_ON    3
-
-/* locations for our shared variables */
-#define DMA_READ_OFF	0x40000000
-#define DMA_WRITE_OFF	0x40000004
-#define DMA_ACTIVE	0x40000008
-#define DMA_STEREO	0x4000000c
-#define DMA_HANDLER	0x40000010
-#define DMA_BASE	0x40000014
 
 /* length of shared buffer in half-words (starting at DMA_BASE) */
 #define BUF_LEN		(46*1024)
