@@ -1,0 +1,25 @@
+
+Podzilla v0.1
+-------------
+
+Podzilla is a basic GUI for the iPod.  Although it looks like the Apple
+version it is actually a re-write and at the moment mostly just a proof
+of concept.
+
+The working parts;
+    o Basic menu navigation
+    o Settings, Contrast
+    o Backlight
+    o File Browser
+    o Image display (select a .jpg/.gif/.bmp)
+
+Other working parts will be added over time.
+
+Note, the battery display is static!  It does not represent the battery
+charge.
+
+Sofar this program is the work of;
+
+Bernard Leach <leachbj@bouncycastle.org>
+Damien Marchal <marchal@lazarus.lifl.fr>
+
