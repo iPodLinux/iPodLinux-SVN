@@ -27,6 +27,18 @@ loader.bin: loader
 make_fw: make_fw.c
 	$(HOSTCC) $(HOSTCFLAGS) -o make_fw make_fw.c
 
+bin_dist: make_fw loader.bin
+	mkdir ipodloader-$(VER)
+	cp README make_fw loader.bin ipodloader-$(VER)
+	tar zcf ../ipodloader-$(VER).tar.gz ipodloader-$(VER)
+	rm -rf ipodloader-$(VER)
+
+src_dist:
+	mkdir ipodloader-src-$(VER)
+	cp README Makefile arm_elf_40.x *.[sch]  ipodloader-src-$(VER)
+	tar zcf ../ipodloader-src-$(VER).tar.gz ipodloader-src-$(VER)
+	rm -rf ipodloader-src-$(VER)
+
 .PHONY: clean
 clean:
 	rm -f make_fw loader.bin loader startup.o loader.o make_fw.o \
