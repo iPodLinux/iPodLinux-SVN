@@ -1,3 +1,8 @@
+Courtney Cavin - Thu Mar 10 2005
+	added a delayed keypress menu in the filebrowser, current options:
+	 - Delete
+	 - Open in viP (if viP is located in /bin/)
+
 Courtney Cavin - Wed Mar 9 2005
 	fix for menu xoring on the ipod photo using a revision check
 
