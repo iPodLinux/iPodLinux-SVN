@@ -61,6 +61,7 @@ CONFIG_KERNEL_ELF=y
 # CONFIG_PM is not set
 # CONFIG_ARTHUR is not set
 # CONFIG_ALIGNMENT_TRAP is not set
+# CONFIG_PCI is not set
 
 #
 # Networking options
@@ -271,15 +272,6 @@ CONFIG_DUMMY_CONSOLE=y
 # CONFIG_FB_CYBER2000 is not set
 # CONFIG_FB_SA1100 is not set
 CONFIG_FB_IPOD=y
-# CONFIG_FB_MATROX is not set
-# CONFIG_FB_ATY is not set
-# CONFIG_FB_RADEON is not set
-# CONFIG_FB_ATY128 is not set
-# CONFIG_FB_SIS is not set
-# CONFIG_FB_NEOMAGIC is not set
-# CONFIG_FB_3DFX is not set
-# CONFIG_FB_VOODOO1 is not set
-# CONFIG_FB_TRIDENT is not set
 # CONFIG_FB_VIRTUAL is not set
 CONFIG_FBCON_ADVANCED=y
 # CONFIG_FBCON_MFB is not set
