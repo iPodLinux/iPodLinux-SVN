@@ -5,6 +5,8 @@
 
 <h2>Introduction</h2>
 
+<p><b>Note:</b> These instructions are somewhat of out date, please check the forums for more current details.
+
 <p>This short guide will take you through the procedure of building the uClinux system for your iPod.  At present there is no binary distribution, this is intentional as currently it is quite experimental and not meant for general consumption.  Hopefully the system will be stable enough shortly (and some usable applications will show up) so that a binary distribution makes sense.
 
 <p>This procedure is not simple, but hopefully is relatively easy to follow.  Feedback for improving these instructions is welcome!
@@ -124,8 +126,8 @@
 
 <blockquote><code>
 cd .. <br>
-cvs -d:pserver:anonymous@cvs.ipodlinux.sourceforge.net:/cvsroot/ipodlinux login <br>
-cvs -z3 -d:pserver:anonymous@cvs.ipodlinux.sourceforge.net:/cvsroot/ipodlinux co linux <br>
+cvs -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/ipodlinux login <br>
+cvs -z3 -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/ipodlinux co linux <br>
 cp -r linux/* linux-2.4.20<br>
 </code></blockquote>
 
