@@ -92,7 +92,7 @@ main(int argc, char **argv)
 		exit(1);
 	}
 
-	in = fopen(argv[1], "r+");
+	in = fopen(argv[1], "rb+");
     
 	if (in != NULL)
 	{
@@ -112,7 +112,7 @@ main(int argc, char **argv)
 		unsigned char temp = 0;
 		unsigned long devoff;
 
-		patch = fopen(argv[2], "r");
+		patch = fopen(argv[2], "rb");
 		if ( patch != NULL ) {
 			fseek(patch, 0x0, SEEK_END);
 			len = ftell(patch);
