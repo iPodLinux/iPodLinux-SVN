@@ -22,17 +22,25 @@
 /* undefine these to produce keycodes from left/right/up/down */
 #define DO_SCROLLBACK
 #define DO_CONTRAST
+#undef USE_ARROW_KEYS
 
 /* we use the keycodes and translation is 1 to 1 */
-#define R_SC		19
-#define L_SC		38
+#define R_SC		19	/* 'r' */
+#define L_SC		38	/* 'l' */
 
+#if defined(USE_ARROW_KEYS)
 #define UP_SC		103
 #define LEFT_SC		105
 #define RIGHT_SC	106
 #define DOWN_SC		108
+#else
+#define UP_SC		50	/* 'm' */
+#define LEFT_SC		17	/* 'w' */
+#define RIGHT_SC	33	/* 'f' */
+#define DOWN_SC		32	/* 'd' */
+#endif
 
-#define ACTION_SC	28
+#define ACTION_SC	28	/* '\n' */
 
 /* send ^S and ^Q for the hold switch */
 #define LEFT_CTRL_SC	29
@@ -42,20 +50,20 @@
 /* need to pass something becuase we use a shared irq */
 #define KEYBOARD_DEV_ID	0x4b455942
 
+static unsigned ipod_hw_ver;
+
 static void keyboard_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
 	static int prev_scroll = -1;
 	unsigned char source, state;
-	unsigned ipod_hw_ver;
 	static int was_hold = 0;
 
-	ipod_hw_ver = ipod_get_hw_version() >> 16;
-		
 	/* we need some delay for g3, cause hold generates several interrupts,
 	 * some of them delayed
 	 */
-	if (ipod_hw_ver == 0x3) 
+	if (ipod_hw_ver == 0x3) {
 		udelay(250);
+	}
 
 	/* get source of interupts */
 	source = inb(0xcf000040);
@@ -68,8 +76,11 @@ static void keyboard_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	outb(~state, 0xcf000060);
 
 	if (ipod_hw_ver == 0x3) {
-		if (was_hold && source == 0x40 && state == 0xbf )
-			goto done;
+		if (was_hold && source == 0x40 && state == 0xbf) {
+			/* ack any active interrupts */
+			outb(source, 0xcf000070);
+			return;
+		}
 		was_hold = 0;
 	}
 
@@ -95,13 +106,15 @@ static void keyboard_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 			/* CTRL-Q up */
 			handle_scancode(Q_SC, 0);
 			handle_scancode(LEFT_CTRL_SC, 0);
-			if (ipod_hw_ver == 0x3)
+			if (ipod_hw_ver == 0x3) {
 				was_hold = 1;
+			}
 		}
 		/* hold switch on 3g causes all outputs to go low */
 		/* we shouldn't interpret these as key presses */
-		if (ipod_hw_ver == 0x3)
+		if (ipod_hw_ver == 0x3) {
 			goto done;
+		}
 	}
 
 	if ( source & 0x1 ) {
@@ -160,12 +173,12 @@ static void keyboard_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 #if defined(DO_CONTRAST)
 			contrast_up();
 #else
-			handle_scancode(LEFT_SC, 0);
+			handle_scancode(UP_SC, 0);
 #endif
 		}
 #if !defined(DO_CONTRAST)
 		else {
-			handle_scancode(LEFT_SC, 1);
+			handle_scancode(UP_SC, 1);
 		}
 #endif
 	}
@@ -224,5 +237,8 @@ void __init ipodkb_init_hw(void)
 	}
 
 	outb(0xff, 0xcf000050);
+
+	/* get our hardware type */
+	ipod_hw_ver = ipod_get_hw_version() >> 16;
 }
 
