@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2004 Damien Marchal, Bernard Leach
+ * Copyright (C) 2005 Courtney Cavin
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -227,7 +228,11 @@ static int is_binary_type(char *filename)
 {
 	FILE *fp;
 	unsigned char header[12];
+	struct stat ftype; 
 
+	stat(filename, &ftype); 
+	if(S_ISBLK(ftype.st_mode)||S_ISCHR(ftype.st_mode))
+		return 0;
 	if((fp = fopen(filename, "r"))==NULL) {
 		fprintf(stderr, "Can't open \"%s\"\n", filename);
 		return 0;
