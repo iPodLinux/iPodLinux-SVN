@@ -257,7 +257,7 @@ static int select_track(struct menulist *ml)
 		return 0;
 	}
 
-	play_song(ml, ((struct tracklist *)ml->user)->track);
+	play_song(ml, (struct track *)ml->user);
 
 	return 0;
 }
