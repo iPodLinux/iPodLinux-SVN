@@ -323,8 +323,8 @@ static int ipodaudio_open(struct inode *inode, struct file *filep)
 		}
 
 		ipod_set_process_dma(ipodaudio_process_pb_dma);
-		outl(inl(0xcf00103c) | (1 << DMA_OUT_IRQ) , 0xcf00103c);
-		outl((1 << DMA_OUT_IRQ), 0xcf001034);
+		outl(inl(0xcf00103c) | (1 << PP5002_DMA_OUT_IRQ) , 0xcf00103c);
+		outl((1 << PP5002_DMA_OUT_IRQ), 0xcf001034);
 	}
 
 	if (filep->f_mode & FMODE_READ) {
@@ -375,7 +375,7 @@ static int ipodaudio_close(struct inode *inode, struct file *filep)
 	if (filep->f_mode & FMODE_WRITE) {
 		ipodaudio_txdrain();
 
-		outl((1 << DMA_OUT_IRQ), 0xcf001038);
+		outl((1 << PP5002_DMA_OUT_IRQ), 0xcf001038);
 		ipod_set_process_dma(0);
 	}
 
@@ -383,7 +383,7 @@ static int ipodaudio_close(struct inode *inode, struct file *filep)
 		volatile int *dma_active = (int *)DMA_ACTIVE;
 
 		*dma_active = 0;
-		outl((1 << DMA_IN_IRQ), 0xcf001038);
+		outl((1 << PP5002_DMA_IN_IRQ), 0xcf001038);
 		ipod_set_process_dma(0);
 	}
 
@@ -505,8 +505,8 @@ static ssize_t ipodaudio_read(struct file *filp, char *buf, size_t count, loff_t
 		*dma_active = 1;
 
 		ipod_set_process_dma(ipodaudio_process_rec_dma);
-		outl(inl(0xcf00103c) | (1 << DMA_IN_IRQ) , 0xcf00103c);
-		outl((1 << DMA_IN_IRQ), 0xcf001034);
+		outl(inl(0xcf00103c) | (1 << PP5002_DMA_IN_IRQ) , 0xcf00103c);
+		outl((1 << PP5002_DMA_IN_IRQ), 0xcf001034);
 
 		*r_off = 0;
 		*w_off = 0;
@@ -843,7 +843,12 @@ static struct file_operations ipod_mixer_fops = {
 
 static int __init ipodaudio_init(void)
 {
-	printk("ipodaudio: (c) Copyright 2003,2004 Bernard Leach <leachbj@bouncycastle.org>\n");
+	printk("ipodaudio: (c) Copyright 2003-2005 Bernard Leach <leachbj@bouncycastle.org>\n");
+
+	ipod_hw_ver = ipod_get_hw_version() >> 16;
+	if (ipod_hw_ver > 0x3) {
+		return 0;
+	}
 
 	dsp_devfs_handle = devfs_register(NULL, "dsp", DEVFS_FL_DEFAULT,
 			SOUND_MAJOR, SND_DEV_DSP,
@@ -864,7 +869,6 @@ static int __init ipodaudio_init(void)
 		return 0;
 	}
 
-	ipod_hw_ver = ipod_get_hw_version() >> 16;
 	if (ipod_hw_ver == 0x3) {
 		/* reset I2C */
 		ipod_i2c_init();
