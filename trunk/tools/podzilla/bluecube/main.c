@@ -47,6 +47,7 @@ int tetris_level;               /* Current level */
 
 static int zustand;   /* Current state */
 static int byoulose;  /* youlose Animation? */
+static short int softdrop_held; /* ugly hack */
 
 /*========================================================================
 // Name: new_bluecube_window()
@@ -96,7 +97,7 @@ static void tetris_new_game()
 static void tetris_game_loop()
 {
 	if (!byoulose) {
-		if (cluster.dropCount == 0) {
+		if (cluster.dropCount == 0 || softdrop_held) {
 				DrawCluster(CLEAR);
 				if (MoveCluster(0)) /* If cluster "collides"... */
 					NewCluster();   /* then create a new one ;) */
@@ -258,31 +259,46 @@ static void tetris_exit(void)
 static int tetris_do_keystroke(GR_EVENT * event)
 {
 	int ret = 0, exit = 0;
+	static int drop = 0, paused = 0;
 	
 	switch (event->type) {
 		case GR_EVENT_TYPE_TIMER:
-			if (!byoulose) {
+			if (!byoulose && !paused) {
 				cluster.dropCount--;
 				tetris_game_loop();
 			}
 			break;
+		case GR_EVENT_TYPE_KEY_UP:
+			switch (event->keystroke.ch) {
+				case 'd':
+					drop = 0;
+					break;
+				case 'h':
+					paused = 0;
+					break;
+				case 'f':
+				case 'w':
+					softdrop_held = 0;
+			}
+			break;
 		case GR_EVENT_TYPE_KEY_DOWN:
-			if (!byoulose) {
+			if (!byoulose && !paused) {
 			switch (event->keystroke.ch) {
 				case '\r':
 					DrawCluster(CLEAR);
 					TurnClusterRight();
 					break;
 				case 'd':
+					if (!drop) {
+					drop = 1;
 					MoveCluster(1); /* "drop" cluster...      */
 					DrawCluster(CLEAR); /* erase old position     */
 					NewCluster();   /* ... and create new one */
+					}
 					break;
 				case 'f':	
 				case 'w':
-					DrawCluster(CLEAR);
-					if (MoveCluster(0))
-						NewCluster();
+					softdrop_held = 1;
 					break;
 				case 'l':
 					DrawCluster(CLEAR);
@@ -297,10 +313,12 @@ static int tetris_do_keystroke(GR_EVENT * event)
 					exit=1;
 					tetris_exit();
 					break;
+				case 'h':
+					paused = 1;
 				default:
 					break;
 			}
-			if (!exit) {
+			if (!exit && !paused) {
 				tetris_game_loop();
 			}
 			} else {
