@@ -55,7 +55,7 @@ static GR_SCREEN_INFO screen_info;
 extern void quit_podzilla(void);
 extern void reboot_ipod(void);
 
-#define MAX_MENU_ITEMS 6
+static int max_menu_items = 6;
 
 struct menu_item {
 	char *text;		/* Menu text to be displayed */
@@ -272,7 +272,7 @@ static void draw_menu()
 
 		i++;
 
-		if (i == MAX_MENU_ITEMS)
+		if (i == max_menu_items)
 			break;
 	}
 
@@ -304,9 +304,9 @@ static int menu_do_keystroke(GR_EVENT * event)
 			if (menu[current_menu_item].ptr != 0) {
 				menu_stack[menu_stack_pos] = menu;
 				menu_item_stack[menu_stack_pos] =
-				    current_menu_item;
+					current_menu_item;
 				top_menu_item_stack[menu_stack_pos++] =
-				    top_menu_item;
+					top_menu_item;
 
 				pz_draw_header(menu[current_menu_item].text);
 				menu = (struct menu_item *)menu[current_menu_item].ptr;
@@ -346,7 +346,7 @@ static int menu_do_keystroke(GR_EVENT * event)
 			break;
 		case OPTION_MENU:
 			if ((menu[current_menu_item].setting_id != NOSETTING) &&
-			   (menu->ptr != 0)) {
+				(menu->ptr != 0)) {
 				option_menu_val = ipod_get_setting(
 					menu[current_menu_item].setting_id);
 				option_menu_val++;
@@ -409,7 +409,7 @@ static int menu_do_keystroke(GR_EVENT * event)
 #endif
 		if (menu[current_menu_item + 1].text != 0) {
 			current_menu_item++;
-			if (current_menu_item - MAX_MENU_ITEMS == top_menu_item) {
+			if (current_menu_item - max_menu_items == top_menu_item) {
 				top_menu_item++;
 			}
 			draw_menu();
@@ -423,6 +423,9 @@ static int menu_do_keystroke(GR_EVENT * event)
 void new_menu_window()
 {
 	GrGetScreenInfo(&screen_info);
+	if (screen_info.cols == 138) { /*mini*/
+		max_menu_items = 5;
+	}
 
 	menu_gc = GrNewGC();
 	GrSetGCUseBackground(menu_gc, GR_FALSE);

@@ -50,26 +50,6 @@ static char key_pressed = '\0';
 
 static int hold_is_on = 0;
 
-/*
-+----+
-|    ++
-| ||  |
-| ||  |
-|    ++
-+----+
-*/
-
-static GR_POINT batt_outline[] = {
-	{138, 6},
-	{156, 6},
-	{156, 8},
-	{157, 8},
-	{157, 12},
-	{156, 12},
-	{156, 15},
-	{138, 15},
-	{138, 6}
-};
 #define BATT_POLY_POINTS 9
 
 /*
@@ -124,8 +104,19 @@ void set_buttondebounce(void)
 
 static void draw_batt_status()
 {
+	GR_POINT batt_outline[] = {
+		{screen_info.cols-22, 6},
+		{screen_info.cols-4, 6},
+		{screen_info.cols-4, 8},
+		{screen_info.cols-3, 8},
+		{screen_info.cols-3, 12},
+		{screen_info.cols-4, 12},
+		{screen_info.cols-4, 15},
+		{screen_info.cols-22, 15},
+		{screen_info.cols-22, 6}
+	};
 	GrPoly(root_wid, root_gc, BATT_POLY_POINTS, batt_outline);
-	GrFillRect(root_wid, root_gc, 140, 8, 15, 6);
+	GrFillRect(root_wid, root_gc, screen_info.cols-20, 8, 15, 6);
 }
 
 static void draw_hold_status()

@@ -33,7 +33,7 @@ void ClearPath(register int x, register int y, int width, int height)
 	mvwaddch(GameWin,Y,X,CLEAR | COLOR_PAIR(3));
 #else
 	GrSetGCForeground(mines_gc, WHITE);
-	GrFillRect(mines_wid, mines_gc, (x*12)+3, (y*12)+7, 11, 11);
+	GrFillRect(mines_wid, mines_gc, (x*SQSIZE)+xoff+1, (y*SQSIZE)+yoff+1, SQSIZE-1, SQSIZE-1);
 #endif
 
 	flags[x][y] = TRUE;
@@ -114,7 +114,7 @@ void ShowRemainingFlags(GameStats *Game)
 	wrefresh(FlagsWin);
 #else
 	char bombstring[32];
-	sprintf(bombstring,"Flags left: %i   ", Game->MinesSet - Game->Guesses);
+	sprintf(bombstring,"Flags left: %i", Game->MinesSet - Game->Guesses);
 	pz_draw_header(bombstring);
 #endif
 }
@@ -130,24 +130,26 @@ void MarkSquare(register int x, register int y)
 		mvwaddch(GameWin,Y,X,FLAG | COLOR_PAIR(8) | A_BOLD);
 #else
 		GrSetGCForeground(mines_gc, WHITE);
-	        GrFillRect(mines_wid, mines_gc, X-2, Y-11, 12, 12);
+		GrFillRect(mines_wid, mines_gc, X-2, Y-11, SQSIZE, SQSIZE);
 		GrSetGCForeground(mines_gc, BLACK);
 		GrText(mines_wid, mines_gc, X, Y, "P", -1, GR_TFASCII);
-		GrRect(mines_wid, mines_gc, (x*12)+2, (y*12)+6, 13, 13);
+		GrRect(mines_wid, mines_gc, (x*SQSIZE)+xoff, (y*SQSIZE)+yoff, SQSIZE+1, SQSIZE+1);
 #endif
 		flags[x][y] = FLAGGED;
 		break;
 	/* If the square is flagged: unflag it. */
 	case FLAGGED:
 #ifdef USE_NCURSES
-                mvwaddch(GameWin,Y,X,UNKNOWN | COLOR_PAIR(1) | A_BOLD);
+		mvwaddch(GameWin,Y,X,UNKNOWN | COLOR_PAIR(1) | A_BOLD);
 #else
+		GrSetGCForeground(mines_gc, WHITE);
+		GrFillRect(mines_wid, mines_gc, X-2, Y-10, SQSIZE-1, SQSIZE-1);
 		GrSetGCForeground(mines_gc, BLACK);
-		GrText(mines_wid, mines_gc, X, Y, " ", -1, GR_TFASCII);
+		GrFillRect(mines_wid, mines_gc, X+1, Y-7, 5, 5);
 #endif
-                flags[x][y] = FALSE;
+		flags[x][y] = FALSE;
 		break;
-        }
+	}
 }
 
 
@@ -200,7 +202,6 @@ int FlagSquare(GameStats *Game)
 		}
 	}
 
-	/* Flag square */
 	MarkSquare(Game->x,Game->y);
 #ifndef USE_NCURSES
 	ShowRemainingFlags(Game);	/* XXX is this a bug?? */
@@ -408,11 +409,11 @@ int Uncover(int x, int y, int width, int height)
 		mvwaddch(GameWin,Y,X, ('0'+grid[x][y]) | COLOR_PAIR(6) | A_BOLD);
 #else
 		GrSetGCForeground(mines_gc, WHITE);
-		GrFillRect(mines_wid, mines_gc, (x*12)+3, (y*12)+7, 11, 11);
+		GrFillRect(mines_wid, mines_gc, (x*SQSIZE)+xoff+1, (y*SQSIZE)+yoff+1, SQSIZE-1, SQSIZE-1);
 		sprintf(numberofbombs,"%i", grid[x][y]);
 		GrSetGCForeground(mines_gc, BLACK);
 		GrText(mines_wid, mines_gc, X, Y, numberofbombs, -1, GR_TFASCII);
-		GrRect(mines_wid, mines_gc, (x*12)+2, (y*12)+6, 13, 13);
+		GrRect(mines_wid, mines_gc, (x*SQSIZE)+xoff, (y*SQSIZE)+yoff, SQSIZE+1, SQSIZE+1);
 #endif
 		break;
 	case 0:
@@ -557,11 +558,10 @@ int ChangeDifficultyLevel(GameStats *Game)
 }
 #endif
 
-
 /* Function to deal with a win or loss */
 int Winner(GameStats *Game, int winner)
 {
-	register int x_coord,y_coord;
+	register int x,y;
 #ifdef USE_NCURSES
 	char ch;
 	WINDOW *WinnerWin;
@@ -581,16 +581,18 @@ int Winner(GameStats *Game, int winner)
 		char timestring[64];
 
 		GrSetGCForeground(mines_gc, WHITE);
-		GrFillRect(mines_wid, mines_gc, 0, 6, 160, 114);
+		GrFillRect(mines_wid, mines_gc, 0, 0, screen_info.cols, screen_info.rows-HEADER_TOPLINE);
 		GrSetGCForeground(mines_gc, BLACK);
 
-		pz_draw_header(" Clear!      ");
+		pz_draw_header("Clear!");
 
 		GrSetGCForeground(mines_gc, BLACK);
-		GrText(mines_wid, mines_gc, 20, 12, "Well Done!",  -1, GR_TFASCII);
+		GrLine(mines_wid, mines_gc, (screen_info.cols/2)-9, 0, (screen_info.cols/2)-9, screen_info.rows);
+		GrText(mines_wid, mines_gc, 4, 12, "Well Done!",  -1, GR_TFASCII);
 
-		sprintf(timestring,"Time: %4ld seconds", Game->Timer);
-		GrText(mines_wid, mines_gc, 20, 26, timestring,  -1, GR_TFASCII);
+		sprintf(timestring,"%4ld sec", Game->Timer);
+		GrText(mines_wid, mines_gc, 4, 32, "Time:",  -1, GR_TFASCII);
+		GrText(mines_wid, mines_gc, 4, 44, timestring,  -1, GR_TFASCII);
 #endif
 
 		if( CheckScoresFile() == TRUE )
@@ -601,7 +603,14 @@ int Winner(GameStats *Game, int winner)
 				mvwaddstr(FlagsWin,1,1,"       A New Record!      ");
 				wrefresh(FlagsWin);
 #else
-				GrText(mines_wid, mines_gc, 20, 40, "A New Record!", -1, GR_TFASCII);
+				GrSetGCForeground(mines_gc, BLACK);
+				GrFillRect(mines_wid, mines_gc, 6, 52, 46, 28);
+				//GrSetGCForeground(mines_gc, LTGREY);
+				//GrFillRect(mines_wid, mines_gc, 8-1, 50-1, 32-2, 28-2);
+				GrSetGCForeground(mines_gc, WHITE);
+				GrText(mines_wid, mines_gc, 18, 64, "New", -1, GR_TFASCII);
+				GrText(mines_wid, mines_gc, 10, 76, "Record!", -1, GR_TFASCII);
+				GrSetGCForeground(mines_gc, BLACK);
 #endif
 				NewHighScore(Game);
 #ifdef USE_NCURSES
@@ -617,27 +626,27 @@ int Winner(GameStats *Game, int winner)
 		mvwaddstr(FlagsWin,1,1,"                          ");
 #endif
 		/* Show all mines that are still covered */
-		for(x_coord = 0;x_coord<Game->Width;x_coord++)
-               		for(y_coord=0;y_coord<Game->Height;y_coord++)
-                        	if( grid[x_coord][y_coord] == MINED
-				    && flags[x_coord][y_coord] != FLAGGED ) {
+		for(x = 0;x<Game->Width;x++)
+			for(y=0;y<Game->Height;y++)
+				if( grid[x][y] == MINED
+						&& flags[x][y] != FLAGGED ) {
 #ifdef USE_NCURSES
-                                	mvwaddch(GameWin,y_coord+1,x_coord*2+1,MINE | COLOR_PAIR(2));
+					mvwaddch(GameWin,y+1,x*2+1,MINE | COLOR_PAIR(2));
 #else
 					GrSetGCForeground(mines_gc, BLACK);
-					GrText(mines_wid, mines_gc, x_coord*12+5-156*(int)(x_coord/13), 17+12*y_coord, "X", -1, GR_TFASCII);
+					GrText(mines_wid, mines_gc, X, Y, "X", -1, GR_TFASCII);
 #endif
 				}
 
 #ifdef USE_NCURSES
-	        mvwaddch(GameWin,Game->Y,Game->X,MINE | A_BLINK | A_BOLD | COLOR_PAIR(2));
+		mvwaddch(GameWin,Game->Y,Game->X,MINE | A_BLINK | A_BOLD | COLOR_PAIR(2));
 		wrefresh(GameWin);
-	        WinnerWin = Draw_WinnerWin(Game->Width,Game->Height);
+		WinnerWin = Draw_WinnerWin(Game->Width,Game->Height);
 		wattron(WinnerWin,A_BLINK | A_BOLD | COLOR_PAIR(2));
 		mvwprintw(WinnerWin,3,5,"You trod on a mine!");
 		wattroff(WinnerWin,A_BLINK | A_BOLD);
 #else
-		pz_draw_header(" You trod on a mine!           ");
+		pz_draw_header("You trod on a mine!  ");
 #endif
 	}
 

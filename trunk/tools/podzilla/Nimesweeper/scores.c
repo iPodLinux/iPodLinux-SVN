@@ -22,6 +22,8 @@
 #include "mine.h"
 #include "../pz.h"
 
+#define HOF_XOFF ((screen_info.cols/2)/2)+(screen_info.cols/2)-40
+
 /* Gets name of player and adds a new high score to relevant
    position in HIGHSCORES file through WriteNewRecord(). */
 void NewHighScore(GameStats *Game)
@@ -198,9 +200,9 @@ int  ShowHighScores(GameStats *Game, int Position)
 	mvwprintw(HighScoreWin,1,3,"Nimesweeper Hall of Fame");
 	mvwprintw(HighScoreWin,3,7,"Difficulty %6s",Levels[Game->Difficulty-1]);
 #else
-	GrText(mines_wid, mines_gc, 20, 52, "Hall of Fame:",  -1, GR_TFASCII);
+	GrText(mines_wid, mines_gc, HOF_XOFF, 12, "Hall of Fame:",  -1, GR_TFASCII);
 #endif
-	for(i=0;i<10;i++)
+	for(i=0;i<7;i++)
 	{
 		if( Position == i+1 )
 		{
@@ -212,8 +214,8 @@ int  ShowHighScores(GameStats *Game, int Position)
 #else
 			char scorestring[128];
 
-			sprintf(scorestring,"%-2d  %-10s  %-5ld",i+1,HighArray[i].Name,HighArray[i].Time);
-			GrText(mines_wid, mines_gc,20, 70+i*12,scorestring,  -1, GR_TFASCII);
+			sprintf(scorestring," %-2d  %-5s  %-4ld", i+1, HighArray[i].Name, HighArray[i].Time);
+			GrText(mines_wid, mines_gc, HOF_XOFF, 26+i*12,scorestring,  -1, GR_TFASCII);
 #endif
 		}
 		else
@@ -224,8 +226,8 @@ int  ShowHighScores(GameStats *Game, int Position)
 #else
 			char scorestring[128];
 
-			sprintf(scorestring,"%-2d  %-10s  %-5ld",i+1,HighArray[i].Name,HighArray[i].Time);
-			GrText(mines_wid, mines_gc,20, 70+i*12,scorestring,  -1, GR_TFASCII);
+			sprintf(scorestring, " %-2d  %-5s  %-4ld", i+1, HighArray[i].Name, HighArray[i].Time);
+			GrText(mines_wid, mines_gc, HOF_XOFF, 26+i*12,scorestring,  -1, GR_TFASCII);
 #endif
 		}
 	}

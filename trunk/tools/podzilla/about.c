@@ -92,7 +92,7 @@ static void draw_about() {
 			"Courtney Cavin", "matz-josh", "Matthis Rouch",
 		       	"ansi", "Jens Taprogge", "Fredrik Bergholtz",
 			"Jeffrey Nelson", "Scott Lawrence",
-			"Cameron Nishiyama", "Prashant V", "\0"};
+			"Cameron Nishiyama", "Prashant V", "Alastair S", "\0"};
 
 	GrSetGCForeground(about_gc_black, WHITE);
 	GrFillRect(about_wid, about_gc_black, 6, 0, screen_info.cols,
