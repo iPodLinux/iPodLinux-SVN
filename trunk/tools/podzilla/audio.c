@@ -23,7 +23,8 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <string.h>
-
+#include <time.h>
+#include <byteswap.h>
 #include "pz.h"
 
 static GR_WINDOW_ID dsp_wid;
@@ -41,17 +42,62 @@ static char *pcm_file;
 static volatile int killed;
 
 #define DSP_REC_SIZE	512
-#define DSP_PLAY_SIZE	16*1026*2
-static unsigned short dsp_buf[16*1026];
+#define DSP_PLAY_SIZE	16*1024*2
+
+static unsigned short dsp_buf[16*1024];
+
+int write_32_le(int file_fd, unsigned int value)
+{
+#ifdef IS_BIG_ENDIAN
+	value = bswap_32(value);
+#endif
+	write(file_fd, &value, 4);
+}
+
+int write_16_le(int file_fd, unsigned short value)
+{
+#ifdef IS_BIG_ENDIAN
+	value = bswap_16(value);
+#endif
+	write(file_fd, &value, 2);
+}
+
+int write_wav_header(int file_fd, int samplerate, int channels)
+{
+	write(file_fd, "RIFF", 4);
+	write_32_le(file_fd, 0);	// remaining length after this header
+	write(file_fd, "WAVE", 4);
+
+	/* fmt chunck */
+	write(file_fd, "fmt ", 4);
+	write_32_le(file_fd, 16);	// length of fmt is 16
+
+	write_16_le(file_fd, 1);		// WAVE_FORMAT_PCM
+	write_16_le(file_fd, channels);		// no. channels
+	write_32_le(file_fd, samplerate);	// sample rate
+	write_32_le(file_fd, samplerate * channels * 2);// avg bytes per second
+	write_16_le(file_fd, channels * 2);	// block align
+	write_16_le(file_fd, 16);		// bits per sample
+
+	return 0;
+}
+
 
 int is_raw_audio_type(char *extension)
 {
-	return strcmp(extension, ".raw") == 0;
+	return strcmp(extension, ".raw") == 0 || strcmp(extension, ".wav") == 0;
 }
 
 static void set_dsp_rate(int fd, int rate)
 {
+	/* sample rate */
 	ioctl(fd, SNDCTL_DSP_SPEED, &rate);
+}
+
+static void set_dsp_channels(int fd, int channels)
+{
+	/* set mono or stereo */
+	ioctl(fd,SNDCTL_DSP_CHANNELS, &channels);
 }
 
 static void dsp_do_draw(GR_EVENT * event)
@@ -83,6 +129,10 @@ static void dsp_do_draw(GR_EVENT * event)
 static void * dsp_record(void *filename)
 {
 	int dsp_fd, file_fd;
+	int samplerate = 44100;
+	int channels = 1;
+	int start_pos;
+	int filelength;
 
 	file_fd = open((char *)filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR);
 	if (file_fd < 0) {
@@ -98,11 +148,18 @@ static void * dsp_record(void *filename)
 		goto no_audio;
 	}
 
-	set_dsp_rate(dsp_fd, 44100);
-
+	set_dsp_rate(dsp_fd, samplerate);
+	set_dsp_channels(dsp_fd, channels);
 	killed = 0;
 	recording = 1;
 	paused = 0;
+
+	write_wav_header(file_fd, samplerate, channels);
+
+	/* start of data chunk */
+	start_pos = (int)lseek(file_fd, 0, SEEK_CUR);
+	write(file_fd, "data", 4);
+	write_32_le(file_fd, 0);	// dummy length value
 
 	while (!killed) {
 		ssize_t n, rem;
@@ -119,6 +176,17 @@ static void * dsp_record(void *filename)
 			}
 		}
 	}
+
+	/* get file length by position which is 1 more than last */
+	filelength = (int)lseek(file_fd, 1, SEEK_CUR) - 1;
+
+	/* correct length value for the data chunk */
+	lseek(file_fd, start_pos + 4, SEEK_SET);
+	write_32_le(file_fd, filelength - (start_pos + 8));
+
+	/* correct length value for the RIFF header */
+	lseek(file_fd, 4, SEEK_SET);
+	write_32_le(file_fd, filelength - 8);
 
 	close(dsp_fd);
 
@@ -145,6 +213,9 @@ static void * dsp_playback(void *filename)
 		new_message_window(buf);
 		goto no_file;
 	}
+
+	/* skip over WAV header */
+	lseek(file_fd, 44, SEEK_SET);
 
 	dsp_fd = open("/dev/dsp", O_WRONLY);
 	if (dsp_fd < 0) {
@@ -182,9 +253,7 @@ no_audio:
 no_file:
 
 	playing = 0;
-	if (mode == PLAYBACK) mode = RECORD;
-	dsp_do_draw(0);
-
+	pz_close_window(dsp_wid);
 	return NULL;
 }
 
@@ -271,9 +340,20 @@ static int dsp_do_keystroke(GR_EVENT * event)
 
 void new_record_window(char *filename)
 {
-	mode = RECORD;
-	pcm_file = strdup("test.raw");
+	char myfilename[128];
+	time_t now;
+	struct tm *tm;
 
+	time(&now);
+	tm = localtime(&now);
+
+	/* MMDDYYYY HHMMSS */
+	sprintf(myfilename, "Recordings/%02d%02d%04d %02d%02d%02d.wav",
+		tm->tm_mon+1, tm->tm_mday, tm->tm_year + 1900, tm->tm_hour,
+		tm->tm_min, tm->tm_sec);
+
+	pcm_file = strdup(myfilename);
+	mode = RECORD;
 	dsp_gc = GrNewGC();
 	GrSetGCUseBackground(dsp_gc, GR_TRUE);
 	GrSetGCForeground(dsp_gc, WHITE);
