@@ -367,8 +367,11 @@ struct input_types input_types[] = {
 { "--h3600ts",          "-ipaq",     	B115200, CS8,                   SERIO_H3600,	0x00,   0,      NULL },
 { "--stowawaykbd",      "-ipaqkbd",     B115200, CS8,                   SERIO_STOWAWAY, 0x00,   0,      NULL },
 { "--ps2serkbd",	"-ps2ser",	B1200, CS8,			SERIO_PS2SER,	0x00,	1,	NULL },
+#if 0
 { "--twiddler",		"-twid",	B2400, CS8,			SERIO_TWIDKBD,	0x00,	0,	twiddler_init },
 { "--twiddler-joy",	"-twidjoy",	B2400, CS8,			SERIO_TWIDJOY,	0x00,	0,	twiddler_init },
+#endif
+{ "--ipod-remote",	"-ipod",	B9600, CS8,			SERIO_IPOD_REM,	0x00,	0,	NULL },
 { "--dump",		"-dump",	B2400, CS8, 			0,		0x00,	0,	dump_init },
 { "", "", 0, 0 }
 
@@ -405,8 +408,11 @@ int main(int argc, char **argv)
                 puts("  --h3600ts       -ipaq  Ipaq h3600 touchscreen");
 		puts("  --stowawaykbd   -ipaqkbd  Stowaway keyboard");
 		puts("  --ps2serkbd     -ps2ser PS/2 via serial keyboard");
+#if 0
 		puts("  --twiddler      -twid   Handykey Twiddler chording keyboard");
 		puts("  --twiddler-joy  -twidjoy  Handykey Twiddler used as a joystick");
+#endif
+		puts("  --ipod-remote   -ipod  iPod remote control");
 		puts("");
                 return 1;
         }
