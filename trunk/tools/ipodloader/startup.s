@@ -96,7 +96,14 @@ init_bss:
 	ldr	r1, =startup_loc
 	str	r0, [r1]
 
-	/* wake up co-processor */
+	/* make sure COP is sleeping */
+	ldr	r4, =0xcf004050
+1:
+	ldr	r3, [r4]
+	ands	r3, r3, #0x4000
+	beq	1b
+
+	/* wake up COP */
 	ldr	r4, =0xcf004058
 	mov	r3, #C_CPU_WAKE
 	strh	r3, [r4]
