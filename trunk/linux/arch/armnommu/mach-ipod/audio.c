@@ -17,6 +17,8 @@
 #include <linux/major.h>
 #include <linux/delay.h>
 #include <linux/soundcard.h>
+#include <linux/sound.h>
+#include <linux/devfs_fs_kernel.h>
 #include <asm/uaccess.h>
 #include <asm/io.h>
 #include <asm/arch/irqs.h>
@@ -46,6 +48,7 @@
 static int ipodaudio_isopen;
 static int ipodaudio_power_state;
 static unsigned ipod_hw_ver;
+static devfs_handle_t devfs_handle;
 
 static void
 set_clock_enb(unsigned short clks, int on)
@@ -423,11 +426,16 @@ static int __init ipodaudio_init(void)
 
 	printk("ipodaudio: (c) Copyright 2003,2004 Bernard Leach (leachbj@bouncycastle.org)\n\n");
 
-	if ( register_chrdev(SOUND_MAJOR, "sound", &ipodaudio_fops) < 0 ) {
+	devfs_handle = devfs_register(NULL, "dsp", DEVFS_FL_DEFAULT,
+			SOUND_MAJOR, SND_DEV_DSP,
+			S_IFCHR | S_IWUSR | S_IRUSR,
+			&ipodaudio_fops, NULL);
+	if (devfs_handle < 0) {
 		printk(KERN_WARNING "SOUND: failed to register major %d\n",
 			SOUND_MAJOR);
 		return 0;
 	}
+
 
 	/* initialise shared variables */
 	*r_off = 0;
@@ -468,7 +476,8 @@ static void __exit ipodaudio_exit(void)
 {
 	ipod_set_process_dma(0);
 
-	unregister_chrdev(SOUND_MAJOR, "sound");
+	devfs_unregister_chrdev(SOUND_MAJOR, "sound");
+	devfs_unregister(devfs_handle);
 }
 
 module_init(ipodaudio_init);
