@@ -24,8 +24,9 @@
 #include "ipod.h"
 #include "btree.h"
 #include "itunes_db.h"
-
+#ifdef __linux__
 extern void new_mp3_window(char *filename, char *album, char *artist, char *title, int len);
+#endif
 
 struct menulist {
 	void		*user;
@@ -218,9 +219,11 @@ static char *get_text_plist(struct menulist *ml)
 
 static void play_song(struct itdb_track *track)
 {
+#ifdef __linux__
 	char mpath[128];
 	snprintf(mpath, 127, "/%s", track->path);
 	new_mp3_window(mpath, track->album, track->artist, track->title, track->length);
+#endif
 }
 
 
