@@ -66,8 +66,8 @@ void new_image_window(char *filename)
 	}
 
 	image_gc = GrNewGC();
-	GrSetGCUseBackground(image_gc, GR_TRUE);
-	GrSetGCForeground(image_gc, WHITE);
+	GrSetGCUseBackground(image_gc, GR_FALSE);
+	GrSetGCForeground(image_gc, BLACK);
 	GrGetScreenInfo(&screen_info);
 
 	image_wid = pz_new_window(0, 0, screen_info.cols, screen_info.rows, image_do_draw, image_do_keystroke);

@@ -199,21 +199,21 @@ static void draw_menu()
 	i = 0;
 	while (i <= 5) {
 		if (i + top_menu_item == current_menu_item) {
-			GrSetGCForeground(menu_gc, WHITE);
+			GrSetGCForeground(menu_gc, BLACK);
 			GrFillRect(menu_wid, menu_gc, 0,
 				   1 + i * height,
 				   screen_info.cols, height);
-			GrSetGCForeground(menu_gc, BLACK);
-			GrSetGCUseBackground(menu_gc, GR_FALSE);
-		} else {
+			GrSetGCForeground(menu_gc, WHITE);
 			GrSetGCUseBackground(menu_gc, GR_TRUE);
+		} else {
+			GrSetGCUseBackground(menu_gc, GR_FALSE);
 			GrSetGCMode(menu_gc, GR_MODE_SET);
-			GrSetGCForeground(menu_gc, BLACK);
+			GrSetGCForeground(menu_gc, WHITE);
 			GrFillRect(menu_wid, menu_gc, 0,
 				   1 + i * height,
 				   screen_info.cols, height);
-			GrSetGCForeground(menu_gc, WHITE);
-		}	
+			GrSetGCForeground(menu_gc, BLACK);
+		}
 
 		if (m->text != 0) {
 			menu_draw_x = MENU_PIXELOFFSET;
@@ -226,7 +226,7 @@ static void draw_menu()
 					GrGetGCTextSize(menu_gc, MENUSTR_FALSE,
 						-1,	GR_TFASCII, &rj_width, &rj_height, &rj_base);
 					menu_draw_x = (screen_info.cols - rj_width) - MENU_PIXELOFFSET;
-					GrText(menu_wid, menu_gc, menu_draw_x, 
+					GrText(menu_wid, menu_gc, menu_draw_x,
 						menu_draw_y, MENUSTR_FALSE, -1, GR_TFASCII);
 				} else {
 					GrGetGCTextSize(menu_gc, MENUSTR_TRUE, -1,
@@ -248,7 +248,7 @@ static void draw_menu()
 						option_menu_strings[option_menu_val], -1, GR_TFASCII);
 				}
 			}
-			
+
 			m++;
 		}
 
@@ -393,7 +393,7 @@ static int menu_do_keystroke(GR_EVENT * event)
 			current_menu_item++;
 			if (current_menu_item - MAX_MENU_ITEMS == top_menu_item) {
 				top_menu_item++;
-			} 
+			}
 			draw_menu();
 			ret = 1;
 		}
@@ -407,8 +407,8 @@ void new_menu_window()
 	GrGetScreenInfo(&screen_info);
 
 	menu_gc = GrNewGC();
-	GrSetGCUseBackground(menu_gc, GR_TRUE);
-	GrSetGCForeground(menu_gc, WHITE);
+	GrSetGCUseBackground(menu_gc, GR_FALSE);
+	GrSetGCForeground(menu_gc, BLACK);
 
 	menu_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), menu_do_draw, menu_do_keystroke);
 

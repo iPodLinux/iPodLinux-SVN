@@ -136,7 +136,7 @@ int is_raw_audio_type(char *extension)
 int get_user_sample_rate()
 {
 	int setting = ipod_get_setting(DSPFREQUENCY);
-	
+
 	switch (setting) {
 	case 0:
 		return 8000;
@@ -179,9 +179,9 @@ static void dsp_do_draw(GR_EVENT * event)
 		pz_draw_header("Playback");
 	}
 
-	GrSetGCForeground(dsp_gc, BLACK);
-	GrFillRect(dsp_wid, dsp_gc, 0, 0, screen_info.cols, screen_info.rows);
 	GrSetGCForeground(dsp_gc, WHITE);
+	GrFillRect(dsp_wid, dsp_gc, 0, 0, screen_info.cols, screen_info.rows);
+	GrSetGCForeground(dsp_gc, BLACK);
 
 	if (playing || recording) {
 		GrText(dsp_wid, dsp_gc, 8, 20, "Press action to stop", -1, GR_TFASCII);
@@ -586,8 +586,8 @@ void new_record_window()
 	currenttime = 0;
 
 	dsp_gc = GrNewGC();
-	GrSetGCUseBackground(dsp_gc, GR_TRUE);
-	GrSetGCForeground(dsp_gc, WHITE);
+	GrSetGCUseBackground(dsp_gc, GR_FALSE);
+	GrSetGCForeground(dsp_gc, BLACK);
 	GrGetScreenInfo(&screen_info);
 
 	dsp_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), dsp_do_draw, dsp_do_keystroke);
@@ -620,8 +620,8 @@ void new_playback_window(char *filename)
 	currenttime = 0;
 
 	dsp_gc = GrNewGC();
-	GrSetGCUseBackground(dsp_gc, GR_TRUE);
-	GrSetGCForeground(dsp_gc, WHITE);
+	GrSetGCUseBackground(dsp_gc, GR_FALSE);
+	GrSetGCForeground(dsp_gc, BLACK);
 	GrGetScreenInfo(&screen_info);
 
 	dsp_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), dsp_do_draw, dsp_do_keystroke);

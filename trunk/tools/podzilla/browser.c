@@ -84,7 +84,7 @@ static void browser_mscandir(char *dira)
 	struct dirent *subdir;
 	int size;
 
-	// not very good for fragmentation... 
+	// not very good for fragmentation...
 	for (i = 0; i < browser_nbEntries; i++) {
 		free(browser_entries[i].full_name);
 	}
@@ -145,18 +145,18 @@ static void browser_draw_browser()
 	y = 5;
 	for (i = begin; i < begin + 6 && i < browser_nbEntries; i++) {
 		if (i == browser_currentSelection) {
-			GrSetGCForeground(browser_gc, WHITE);
+			GrSetGCForeground(browser_gc, BLACK);
 			GrFillRect(browser_wid, browser_gc, 0, y + 2,
 				   screen_info.cols, height);
-			GrSetGCForeground(browser_gc, BLACK);
-			GrSetGCUseBackground(browser_gc, GR_FALSE);
-		} else {
+			GrSetGCForeground(browser_gc, WHITE);
 			GrSetGCUseBackground(browser_gc, GR_TRUE);
+		} else {
+			GrSetGCUseBackground(browser_gc, GR_FALSE);
 			GrSetGCMode(browser_gc, GR_MODE_SET);
-			GrSetGCForeground(browser_gc, BLACK);
+			GrSetGCForeground(browser_gc, WHITE);
 			GrFillRect(browser_wid, browser_gc, 0, y + 2,
 				   screen_info.cols, height);
-			GrSetGCForeground(browser_gc, WHITE);
+			GrSetGCForeground(browser_gc, BLACK);
 		}
 
 		y += height;
@@ -170,7 +170,7 @@ static void browser_draw_browser()
 				browser_entries[i].name, -1, GR_TFASCII);
 		}
 
-		GrSetGCForeground(browser_gc, GRAY);
+		GrSetGCForeground(browser_gc, LTGRAY);
 		switch (browser_entries[i].type) {
 		case FILE_TYPE_PROGRAM:
 			GrText(browser_wid, browser_gc, 1, y, "x", -1,
@@ -192,12 +192,12 @@ static void browser_draw_browser()
 	}
 
 	/* clear bottom portion of display */
-	GrSetGCUseBackground(browser_gc, GR_TRUE);
+	GrSetGCUseBackground(browser_gc, GR_FALSE);
 	GrSetGCMode(browser_gc, GR_MODE_SET);
-	GrSetGCForeground(browser_gc, BLACK);
+	GrSetGCForeground(browser_gc, WHITE);
 	GrFillRect(browser_wid, browser_gc, 0, y + 2, screen_info.cols,
 		   screen_info.rows - (y + 2));
-	GrSetGCForeground(browser_gc, WHITE);
+	GrSetGCForeground(browser_gc, BLACK);
 }
 
 static void browser_do_draw(GR_EVENT *event)
@@ -247,7 +247,7 @@ static void browser_selection_activated(unsigned short userChoice)
 		chdir(browser_entries[userChoice].full_name);
 		browser_mscandir("./");
 		break;
-	case FILE_TYPE_PROGRAM:		
+	case FILE_TYPE_PROGRAM:
 	case FILE_TYPE_OTHER:
 		handle_type_other(browser_entries[userChoice].full_name);
 		break;
@@ -262,7 +262,7 @@ static int browser_do_keystroke(GR_EVENT * event)
 	case '\n':
 		browser_selection_activated(browser_currentSelection);
 		browser_draw_browser();
-		ret = 1;		
+		ret = 1;
 		break;
 
 	case 'm':
@@ -316,8 +316,8 @@ void new_browser_window(char *initial_path)
 	GrGetScreenInfo(&screen_info);
 
 	browser_gc = GrNewGC();
-	GrSetGCUseBackground(browser_gc, GR_TRUE);
-	GrSetGCForeground(browser_gc, WHITE);
+	GrSetGCUseBackground(browser_gc, GR_FALSE);
+	GrSetGCForeground(browser_gc, BLACK);
 
 	browser_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols,
                                     screen_info.rows - (HEADER_TOPLINE + 1),

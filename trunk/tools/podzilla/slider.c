@@ -38,12 +38,12 @@ static void slider_do_draw(void)
 	int filler;
 
 	filler = ((int)((slider.value * 128) / slider.max));
-	GrSetGCForeground(slider_gc, WHITE);
+	GrSetGCForeground(slider_gc, BLACK);
 	GrRect(slider_wid, slider_gc, 15, 40, 130, 10);
 	GrFillRect(slider_wid, slider_gc, 15, 40, 130, 10);
-	GrSetGCForeground(slider_gc, BLACK);
-	GrFillRect(slider_wid, slider_gc, 16 , 41, filler, 8);
 	GrSetGCForeground(slider_gc, WHITE);
+	GrFillRect(slider_wid, slider_gc, 16 , 41, filler, 8);
+	GrSetGCForeground(slider_gc, BLACK);
 }
 
 static int slider_do_keystroke(GR_EVENT * event)
@@ -88,10 +88,10 @@ void new_slider_widget(int SETTING, char *title, int slider_min, int slider_max)
 	GrGetScreenInfo(&screen_info);
 
 	slider_gc = GrNewGC();
-	GrSetGCUseBackground(slider_gc, GR_TRUE);
-	GrSetGCForeground(slider_gc, WHITE);
+	GrSetGCUseBackground(slider_gc, GR_FALSE);
+	GrSetGCForeground(slider_gc, BLACK);
 
-	slider_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), 
+	slider_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1),
 		slider_do_draw, slider_do_keystroke);
 
 	GrSelectEvents(slider_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN);

@@ -85,13 +85,13 @@ void quit_podzilla(void)
 {
 	GrClose();
 	exit(0);
-}                
+}
 
 void set_wheeldebounce(void)
 {
 	new_slider_widget(WHEEL_DEBOUNCE, "Wheel Sensitivity", 1, 20);
 }
-                                                                                
+
 void set_buttondebounce(void)
 {
 	new_slider_widget(ACTION_DEBOUNCE, "Action Debounce", 100, 500);
@@ -128,13 +128,13 @@ void pz_event_handler(GR_EVENT *event)
 
 	case GR_EVENT_TYPE_KEY_DOWN:
 		wid = ((GR_EVENT_KEYSTROKE *)event)->wid;
-	
+
 		/* If backlight timer isn't off and backlight isn't on turn it on. */
-	
+
 		last_keypress_event = curtime;
 
 		if (ipod_get_setting(BACKLIGHT_TIMER) > 0) {
-			ipod_set_setting(BACKLIGHT, 1);	
+			ipod_set_setting(BACKLIGHT, 1);
 		}
 
 #ifdef IPOD
@@ -195,8 +195,8 @@ void pz_draw_header(char *header)
 {
 	GR_SIZE width, height, base;
 
-	GrSetGCForeground(root_gc, WHITE);
-	GrSetGCBackground(root_gc, BLACK);
+	GrSetGCForeground(root_gc, BLACK);
+	GrSetGCBackground(root_gc, WHITE);
 	GrClearWindow(root_wid, 0);
 
 	GrGetGCTextSize(root_gc, header, -1, GR_TFASCII, &width, &height,
@@ -216,7 +216,7 @@ GR_WINDOW_ID pz_new_window(int x, int y, int w, int h, void(*do_draw), int(*do_k
 			    GR_WM_PROPS_CLOSEBOX,
 			    "Podzilla",
 			    root_wid,
-			    x, y, w, h, BLACK);
+			    x, y, w, h, WHITE);
 
 	/* FIXME: assumes always ok */
 
@@ -249,8 +249,8 @@ main(int argc, char **argv)
 	}
 
 	root_gc = GrNewGC();
-	GrSetGCUseBackground(root_gc, GR_TRUE);
-	GrSetGCForeground(root_gc, WHITE);
+	GrSetGCUseBackground(root_gc, GR_FALSE);
+	GrSetGCForeground(root_gc, BLACK);
 	GrGetScreenInfo(&screen_info);
 
 	root_wid = GrNewWindowEx(GR_WM_PROPS_APPFRAME |
@@ -258,7 +258,7 @@ main(int argc, char **argv)
 			    GR_WM_PROPS_CLOSEBOX,
 			    "Podzilla",
 			    GR_ROOT_WINDOW_ID,
-			    0, 0, screen_info.cols, screen_info.rows, BLACK);
+			    0, 0, screen_info.cols, screen_info.rows, WHITE);
 
 	GrSelectEvents(root_wid, GR_EVENT_MASK_EXPOSURE |
 		       GR_EVENT_MASK_CLOSE_REQ | GR_EVENT_MASK_KEY_DOWN);
