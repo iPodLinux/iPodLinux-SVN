@@ -951,7 +951,10 @@ GsTerminate(void)
 #if VTSWITCH
 	MwRedrawVt(mwvterm);
 #endif
+
+#if !NONETWORK
 	exit(0);
+#endif
 }
 
 /*
