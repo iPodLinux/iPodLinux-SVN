@@ -1,0 +1,154 @@
+<!--#include file="include/iplHeader.html"-->
+
+
+<h1>Linux on iPod - FAQs</h1>
+
+<h2>1 General questions</h2>
+
+<h3>1.1 What is this?</h3>
+
+<p class="faqans">Currently the project is focused on porting the <a href="http://www.uclinux.org">uClinux</a> kernel to the iPod.  Ideally the kernel will support all the hardware features available on the iPod.
+
+
+<h3>1.2 Why would you do that?</h3>
+
+<p class="faqans">A number of reasons, but mainly because its there.
+
+
+<h3>1.2.1 No, really!  What are some of the goals?</h3>
+
+<p class="faqans">hope to make a fully functional linux from the ipod that will be able to play a greater variety of formats, have better features and even be compatible with external hardware like flash card readers so you can copy your camera photos directly to your Linux iPod ;)
+
+
+<h3>1.3 But the Apple iPod firmware rocks!!</h3>
+
+<p class="faqans">Yes it is quite good.  And if it does everything you want it to do please feel free to keep using it.  If it doesn't then perhaps the uClinux kernel is a good place to experiment.
+
+
+<h3>1.4 But the iPod is a MP3 player not a PDA!!</h3>
+
+<p class="faqans">No one said anything about a PDA.  This is all about running Linux not converting the iPod into a PDA.
+
+
+<h2>2 Linux Questions</h2>
+
+<h3>2.1 What is uClinux?</h3>
+
+<p class="faqans"><a href="http://www.uclinux.org">uClinux</a> is a special variant of the Linux kernel that does not require a MMU (a memory management unit).
+
+<h3>2.2 But the iPod has a MMU!</h3>
+
+<p class="faqans">Well it has some MMU type facilities but at present they are not sufficient to support the Linux kernel.
+
+<h3>2.3 Why is there no support for USB/audio input recording/...</h3>
+
+<p class="faqans">Because it hasn't been written yet.  This may be for a number of reasons such as time or insufficient documentation.  As stated previous the goal is to support all hardware features on the iPod so hopefully we will get there eventually.
+
+<h3>2.4 How was the port done?</h3>
+
+<p class="faqans">With a lot of hard work :)  Unfortunately there is not a lot of technical information available for the hardware platform and so a lot of reverse engineering was required to determine how things work.  Much of it was guess-work and much of it still is.  Hopefully the hardware vendors will be more open in the future with their technical documentation.
+
+<h3>2.5 How can you debug the kernel?</h3>
+
+<p class="faqans">Unfortunately there is no simple debug technique.  If you open your iPod case it may be possible to use the JTAG interface or hook into one of the serial ports but I've never opened my iPod so you'll have to look elsewhere for assistance there.  One of the serial ports for the iPod is connected to the headphone jack, at least as an input, it could be possible to use that but I've never tried.
+
+<h3>2.6 Is there an easier way to build all this stuff?</h3>
+
+<p class="faqans">Probably, but its not quite ready for the hungry masses.  If you are interested enough to try it out its best to know how some of it fits together.  When things are a little more debugged they will evolve to be a little more user friendly.
+
+
+<h2>3 Applications</h2>
+
+<h3>3.1 What applications can it run?</h3>
+
+<p class="faqans">In theory most applications that run on uClinux can run on the iPod however there are important limitations;
+
+<p class="faqans"><bl>
+<li>The iPod does not have a FPU (floating point unit) so things like mpg123 won't run too nicely.  Integer based versions of MP3 players however are available and will run.
+<li>The frame buffer does not support <code>mmap()</code> so X11 would not run.
+<li>Since we are running on uClinux the <code>fork()</code> system call is not supported (<code>vfork()</code> however is available).
+</bl>
+
+<h3>3.2 Is there a MP3 player</h3>
+
+<p class="faqans">The <a href="http://www.mars.org/home/rob/proj/mpeg/">MAD</a> player runs, however it is not quite real-time.
+
+<p class="faqans">Intel has a highly optimised library for the ARM processor that includes MP3 decoding support.  Their sample player runs quite well however it isn't perfect.  The podzilla filebrowser will use this player to play a selected mp3 file.
+
+<h3>3.3 Is there a OGG player</h3>
+
+<p class="faqans">The <a href="http://www.xiph.org/ogg/vorbis/">Tremor</a> player is running at about 80% real-time.
+
+
+<h3>3.4 Can you imagine a Beowolf cluster...</h3>
+
+<p class="faqans">There was an April fools about a bunch of <a href="http://www.ipoding.com/modules.php?op=modload&name=News&file=article&sid=848&mode=thread&order=0">Buddhists ordering a heap of iPods</a>.  Too bad... if it were true perhaps they could have clustered them to solve the ancient mysteries...
+
+<p class="faqans">Translation, yes, but its just silly.
+
+
+<h2>4 Compatibility</h2>
+
+<h3>4.1 Can I still run the Apple firmware?</h3>
+
+<p class="faqans">The boot loader allows you to choose to load either the standard firmware or Linux after a reset.
+
+<h3>4.2 Will I lose my music?  Playlists?</h3>
+
+<p class="faqans">No.  Your current preferences, music and playlists will remain.  The clock however will be reset.
+
+<h3>4.3 Can I access my music and playlists from Linux?</h3>
+
+<p class="faqans">Probably.  At this point the software support is still very immature.  I haven't tried any of the software available for accessing the iTunes database under Linux.
+
+<h3>4.4 Does this work with Mac and Win iPods?</h3>
+
+<p class="faqans">Yes, both Mac and Win iPods work.
+
+<h3>4.5 Will this work with newer iPods?</h3>
+
+<p class="faqans">The only unsupported iPod version is the mini.  The original scroll wheel (gen-1), touch wheel (gen-2) and dock (gen-3) iPods all work fine.
+
+
+
+<h2>5 Troubleshooting</h2>
+
+<h3>5.1 I patched my firmware and now I just get the Apple logo!</h3>
+
+<p class="faqans">This means the kernel isn't booting.  If you hear the system continually rebooting then there is a problem at the bootloader level, if on the otherhand it appears to have hung then its an early kernel problem.  In either case you probably need to re-install the kernel.
+
+<h3>5.2 How can I reset the iPod?</h3>
+
+<p class="faqans">Hold down the menu and the pause/play buttons for 4 or 5 seconds.  This will trigger a hardware reset.
+
+<h3>5.3 How can I start the diskmode?</h3>
+
+<p class="faqans">After a reset (see previous question) press and hold the fastforward and rewind keys until you see the "OK to disconnect" message.  You need to reset the iPod to leave the diskmode.
+
+<h3>5.4 How can I restore my iPod firmware?</h3>
+
+<p class="faqans">Firstly you need to connect your iPod to the host computer with the iPod in diskmode (see previous question).  Then simply use the <code>dd</code> command to copy your firmware backup to the iPod.
+
+<h3>5.5 My iPod is really messed up how can I fix it?</h3>
+
+<p class="faqans">Probably the firmware partition is not right, you can use the Apple provided restore utility to restore the iPod to the "factory" condition.  This means it will erase your music so a fully sync will be required.  Simply run the restore tool and click 'restore'.  See <a href="http://manuals.info.apple.com/Apple_Support_Area/Manuals/hardware/0342158iPodUGWin.PDF">iPod Manual</a> for more information.
+
+<h3>5.6 Can you send me firmware x.y?</h3>
+
+<p class="faqans">No.  That software is copyright Apple.  You can probably download it from them however.
+
+<h3>5.7 I need further help!</h3>
+
+<p class="faqans">Please see the <a href="support.shtml">support page</a> for more information on the mailing list and forums.
+
+<h2>6 Legal Issues</h2>
+
+<h3>6.1 Is this legal?</h3>
+
+<p class="faqans">I am not aware of any legal issues in using this software.  Having said that I am not a lawyer, nor could I possibly know all the laws that may apply in your particular locale so if you have any concerns either contact someone who would know, or, don't use the software.
+
+<h3>6.2 How is the software licensed?</h3>
+
+<p class="faqans">The software I have written is licensed under the GNU public license.  There is of course much software required that I have not written.  This software is mostly GNU licensed however the details may vary so please consult the original documentation for the details.
+
+<!--#include file="include/iplFooter.html"-->

@@ -1,0 +1,41 @@
+BODY, TD, P, BR, LI, OL, UL {
+	color : #333333;
+	font-family : Arial;
+	font-size : 9pt;
+}
+
+A {
+	color : #000033;
+	font-family : Arial;
+	font-size : 9pt;
+}
+
+.tiny {
+	font-size : 8pt;
+}
+
+A.nav {
+	color : #666666;
+	font-size : 9pt;
+}
+
+.nav {
+	font-size : 9pt;
+}
+
+P.faqans {
+	margin : 2em;
+	margin-top : 15px;
+	margin-bottom : 15px;
+}
+
+.footer {
+	color : #999999;
+	font-size : 7pt;
+}
+
+A.footer:active, A.footer:link, A.footer:visited {
+	color : #999999;
+	font-size : 7pt;
+}
+

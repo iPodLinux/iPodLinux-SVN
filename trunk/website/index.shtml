@@ -1,0 +1,123 @@
+<!--#include file="include/iplHeader.html"-->
+
+<h1>Linux on iPod</h1>
+<p><img src="images/linuxOnIPod1.jpg" align="right" border="0">This site provides details of my venture into porting Linux to the <a href="http://www.apple.com/ipod/">iPod</a>.
+
+<p>Unfortunately the iPod is considered a "closed-platform" by Apple and technical info is virtually non-existant so this has involved a fair bit of guess work, reverse-engineering and experimentation!  But the end result is a Linux kernel (based on the <a href="http://www.uclinux.org">uClinux</a> port) running on the 'Pod.
+
+<p>I hope that this initial port provides some inspiration to others out there to see what more they can get the iPod to do!
+
+<p>If you're new here, the <a href="faq.shtml">FAQ</a> may be a good place to get started.
+
+
+<h2>News</h2>
+<p>Saturday 3rd April 2004
+<ul>
+	<li>A release version of the 2.4.24 kernel is now available for download!  This version includes full support for first, second and third generation iPods (no iPod mini support) including audio, firewire and remote.
+	<p>The other important inclusion with this release is the demo podzilla program.  Podzilla is a basic GUI demo similar to the native Apple firmware, it has a very simple mp3 player which can be run by running the file browser and selecting a .mp3 file, during playback the pause/play button will pause and menu will exit back to podzilla.
+</ul>
+
+<p>Saturday 7th Feburary 2004
+<ul>
+	<li>Its been just over one year now since this site went live and with over 1/2 a million page views and over 2000 downloads it seems there is still some interest here which is great.
+	<p>The CVS version of the port has been updated to 2.4.24 which isn't too exciting but does add HFS+ support.  Firewire is still not working on 3rd gen iPods but we're still looking.  SBP2 support is getting better and hopefully will be working soon.
+	<p>Some work on GUI development is also underway.  Something should be demo'able shortly.
+</ul>
+
+<p>Tuesday 18th November 2003
+<ul>
+	<li>After long time Tux is back on the iPod!  New comer to the iPod Linux team Daniel Palffy has put in a great effort and written a boot loader which, when combined with my eye-candy image loader lets you not only see Tux but boot either the Apple or Linux without modifying hard-drive.
+	<p>Check out the iPod Boot Loader in the <a href="http://sourceforge.net/project/showfiles.php?group_id=73079">files</a> section on sourceforge for more information.
+</ul>
+
+<!--
+
+<p>Sunday 22nd June 2003
+<ul>
+	<li>Well its been a while.... Unfortunately not a lot of progress on the iPod Linux front.  I've just started a new job this month (at <a href="http://www.diamos.de">DIAMOS</a>) and that has been keeping me quite busy!
+	<p>Fortunately it hasn't been a complete standstill.  Thanks to the generous donations from <a href="http://www.sik.com">SiK</a> of a compact flash card reader, and their neat FireJuice power supply, I have been able to make some progress on the SBP2 support (the protocol for external Firewire disks).  Sofar I have had some limited success in talking to the drive but it is looking promising.  The main changes to support this are now in CVS.
+	<p>The other news is that unfortuantely the latest revision iPods (docking version) don't seem to work with the current release of the Linux port.  Hopefully a patch will be found that can resolve this problem.
+</ul>
+
+<p>Monday 24th March 2003
+<ul>
+	<li>A new release has just gone up on the website.  This is a full release that includes kernel binaries as well as a new root filesystem containing some useful tools.
+	<p>Relative to the last source patch this release includes a line dicipline driver for the remote control as well as serial support.
+	<p>Unfortunately this release has only received only minimal testing so if there are any problems please take them up on the mailing list or in the forums.
+</ul>
+
+<p>Wednesday 12th March 2003
+<ul>
+	<li>Firewire is going!  After a painfull stretch of debugging and endless reboots I have finally connect to the iPod with a telnet connection across firwire.  Its still early stages here but this dramatically improves the development possibilities.
+	<p>A new patch taken from the head of CVS is now available. Binaries to follow shortly.
+	<p>In other news we now have an IRC channel up and running.  Please drop by (irc.freenode.net #ipodlinux) and say hello.  Thanks to Mattias (aka Snorlax) for setting this up.
+</ul>
+
+
+<p>Monday 17th Feb 2003
+<ul>
+	<li>Well its been a busy couple of weeks!  Firstly, thanks to all the great feedback I have received from all, its all been very encouraging!
+	<p>I've just committed changes to the LCD driver that greatly improve the performance as well as changes to the keyboard driver that add support for the scroll wheel and hold switch.  I've also been working on some firewire tests and can now sucessfully talk to the controller.
+</ul>
+
+
+<p>Tuesday 4th Feb 2003
+<ul>
+	<li>Thanks for visiting <a href="http://apple.slashdot.org/apple/03/02/04/0420208.shtml?tid=137&tid=106">slashdotters</a>!
+</ul>
+
+<p>Monday 3rd Feb 2003
+<ul>
+	<li>Move website to SourceForge.
+</ul>
+
+
+<p>Sunday 2th Feb 2003<br>
+<ul>
+	<li>Initial version of the website online.
+</ul>
+
+<p>Thursday 30th Jan 2003<br>
+<ul>
+	<li>Just got the graphics and layout style back from Trav!  Thanks for the great work.  You can find more of Trav's excellence at <a href="http://www.prozacblues.com">his website</a>.
+</ul>
+
+<p>Monday 27th Jan 2003<br>
+<ul>
+	<li>Put together a simple website.
+</ul>
+-->
+
+<h2>Status</h2>
+<p>Last updated: 7th Feburary 2004
+
+<p>Currently the kernel (2.4.24) includes the following features:
+<ul>
+	<li>Frame buffer
+	<li>Audio device (44.1kHz 16bit little-endian)
+	<li>Firewire
+	<li>Directional buttons, scroll wheel &amp; hold switch via tty interface
+	<li>Remote control
+	<li>Piezo
+	<li>HDD support
+	<li>FAT (and UMSDOS) filesystem support
+	<li>HPFS+ filesystem system
+</ul>
+
+<p>The following features are not present:
+<ul>
+	<li>Power Management (suspend etc)
+	<li>Battery Status
+	<li>Flash support
+</ul>
+
+<h2>Getting Started</h2>
+<p>Please note, this software is experimental, it is not for the faint of heart, if you are concerned for the well being of your iPod you probably shouldn't proceed any further!
+<p>Please see the <a href="build.shtml">Building uClinux for iPod</a> page for instructions.
+
+
+<h2>iPod Technical Info</h2>
+<p>If you are interested in the iPod hardware you can find some of the technical details the <a href="techdetails.shtml">here</a>.
+
+<!--#include file="include/iplFooter.html"-->
+

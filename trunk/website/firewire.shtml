@@ -1,0 +1,7 @@
+<!--#include file="include/iplHeader.html"-->
+
+<h1>Firewire on Linux</h1>
+
+<p>Sorry, I haven't gotten around to this part yet.  In the mean time take a look at <a href="http://www.linux1394.org/">Linux1394.org</a> for information on IEEE 1394 on Linux.
+
+<!--#include file="include/iplFooter.html"-->

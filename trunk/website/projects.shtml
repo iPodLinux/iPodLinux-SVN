@@ -1,0 +1,38 @@
+<!--#include file="include/iplHeader.html"-->
+
+<h1>Project Outline</h1>
+
+<p>Currently, the Linux on iPod project is a little nebulous in its aims and structure.  For me it provides the chance to publish the work I have done and provide a watershed for like-minded developers.  I don't expect that this one project will suit everyone and other more focused projects will likely develop.  Below are some of the things I am personally interested in and expect to address over time.
+
+<h2>Kernel Development</h2>
+
+<p>The majority of the kernel drivers have now be written but still some remain (and others deserve some more attention!).
+
+<ul>
+	<li>Remote control driver (now complete!)
+	<p>A kernel driver to allow input via the remote control.  It may even be possible to develop a full serial based keyboard.
+
+	<li>Piezo driver (basic support done)
+	<p>Allow applications to use the buzzer!
+
+	<li>Battery status
+	<p>A kernel driver (APM interface?) for monitoring the battery and its charge status.
+
+	<li>CPU frequency control
+	<p>One way to reduce power usage is with clock scaling.  The <a href="http://www.brodo.de/cpufreq/">cpufreq</a> patch looks like a good starting point.
+
+	<li>Frame buffer
+	<p>A mmap() hack?  Backlight handling, power management.  Performance.
+
+	<li>HFS+ Installation documentation
+	<p>Being able to support Mac iPods out of the box would be nice.
+
+	<li>Firmware generation
+	<p>The current patching technique is not all that great.  It should be easy enough to build the firmware file from scratch rather than patch the backup firmware file.
+
+	<li>GUI
+	<p>A full replacement firmware will need a new graphical interface.  To any GUI designers out there I'd be interested in seeing dummy mock-ups of possible interfaces.
+</ul>
+
+
+<!--#include file="include/iplFooter.html"-->
