@@ -1,3 +1,10 @@
+Courtney Cavin - Mon Jan 3 2005
+	paths to mp3s are now absolute
+
+Fredrik Bergholtz - Mon Jan 3 2005
+	asteroids are now lethal, and you only have five ships.
+	destroying asteroids gives you a score relative to the asteroid size.
+
 leachbj - Sat Dec 18 2004
 	added hold switch feedback
 
