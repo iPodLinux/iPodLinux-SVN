@@ -580,7 +580,7 @@ CONFIG_IEEE1394=y
 #   Texas Instruments PCILynx requires I2C bit-banging
 #
 # CONFIG_IEEE1394_OHCI1394 is not set
-CONFIG_IEEE1394_IPOD=m
+CONFIG_IEEE1394_IPOD=y
 
 #
 # Protocol Drivers
