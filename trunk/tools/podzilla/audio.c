@@ -42,7 +42,10 @@ static pthread_t dsp_thread;
 static int mode;
 static volatile int playing = 0, recording = 0, paused = 0;
 static char pcm_file[128];
-long currenttime = 0;
+static long currenttime = 0;
+static int mixer_fd = -1;
+static int pcm_vol = -1;
+
 
 #define RECORD        0
 #define PLAYBACK      1
@@ -134,7 +137,7 @@ static void set_dsp_rate(int fd, int rate)
 static void set_dsp_channels(int fd, int channels)
 {
 	/* set mono or stereo */
-	ioctl(fd,SNDCTL_DSP_CHANNELS, &channels);
+	ioctl(fd, SNDCTL_DSP_CHANNELS, &channels);
 }
 
 static void dsp_do_draw(GR_EVENT * event)
@@ -299,6 +302,12 @@ static void * dsp_playback(void *filename)
 		goto no_audio;
 	}
 
+	mixer_fd = open("/dev/mixer", O_RDWR);
+	if (mixer_fd >= 0) {
+		ioctl(mixer_fd, SOUND_MIXER_READ_PCM, &pcm_vol);
+		pcm_vol = pcm_vol & 0xff;
+	}
+
 	/* assume a basic WAV header, jump to number channels */
 	lseek(file_fd, 22, SEEK_SET);
 	channels = read_16_le(file_fd);
@@ -346,6 +355,11 @@ static void * dsp_playback(void *filename)
 			}
 		}
 	} while (!killed && count > 0);
+
+	if (mixer_fd >= 0) {
+		close(mixer_fd);
+		mixer_fd = -1;
+	}
 
 	close(dsp_fd);
 
@@ -437,6 +451,22 @@ static int dsp_do_keystroke(GR_EVENT * event)
 		}
 		dsp_do_draw(0);
 		draw_time();
+		break;
+	case 'l':
+		if (playing && mixer_fd >= 0 && pcm_vol > 0) {
+			int vol;
+			pcm_vol--;
+			vol = pcm_vol << 8 | pcm_vol;
+			ioctl(mixer_fd, SOUND_MIXER_WRITE_PCM, &vol);
+		}
+		break;
+	case 'r':
+		if (playing && mixer_fd >= 0 && pcm_vol < 100) {
+			int vol;
+			pcm_vol++;
+			vol = pcm_vol << 8 | pcm_vol;
+			ioctl(mixer_fd, SOUND_MIXER_WRITE_PCM, &vol);
+		}
 		break;
 	}
 
