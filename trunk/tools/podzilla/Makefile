@@ -10,9 +10,14 @@ CFLAGS=-DIPOD
 LDFLAGS=-elf2flt
 MICROWINDOWS = ../microwindows/src
 LIBITUNESDB=../libitunesdb.ipod/src
+IPP=/usr/local/ipp/ippsa11
 
 # enable JPEG support
 LDFLAGS+=-L ../jpeg-6b
+
+CFLAGS+=-I$(IPP)/include
+LDFLAGS+=$(IPP)/lib/ippAC_SA11LNX_r.a $(IPP)/lib/ippSP_SA11LNX_r.a
+
 else
 
 CC=gcc
@@ -23,13 +28,13 @@ LIBITUNESDB=../libitunesdb/src
 
 endif
 
-CFLAGS+=-D_REENTRANT -Wall -g -I$(MICROWINDOWS)/include -g -I$(LIBITUNESDB)
+CFLAGS+=-Wall -g -I$(MICROWINDOWS)/include -g -I$(LIBITUNESDB)
 LDFLAGS+=$(MICROWINDOWS)/lib/libnano-X.a $(MICROWINDOWS)/lib/libmwengine.a $(MICROWINDOWS)/lib/libmwdrivers.a $(MICROWINDOWS)/lib/libmwfonts.a $(LIBITUNESDB)/.libs/libitunesdb.a
 
 # enable JPEG support
 LDFLAGS += -ljpeg
 
-LDFLAGS += -lpthread -lm
+LDFLAGS += -lm
 
 OBJS=\
 	pz.o \
@@ -59,6 +64,11 @@ OBJS=\
 	Nimesweeper/main.o \
 	Nimesweeper/misc.o \
 	Nimesweeper/scores.o
+
+ifneq ($(IPOD),)
+OBJS+=\
+	mp3decoder.o
+endif
 
 all: podzilla
 
