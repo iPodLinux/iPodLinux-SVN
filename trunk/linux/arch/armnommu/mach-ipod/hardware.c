@@ -13,6 +13,7 @@
 #include <linux/timer.h>
 #include <asm/io.h>
 #include <asm/hardware.h>
+#include <asm/system.h>
 
 #define SYSINFO_TAG     (unsigned char *)0x40017f18
 #define SYSINFO_PTR     (struct sysinfo_t **)0x40017f1c
@@ -61,6 +62,7 @@ void ipod_set_sys_info(void)
 				&& (*SYSINFO_PTR)->IsyS ==  *(unsigned *)"IsyS" ) {
 			memcpy(&ipod_sys_info, *SYSINFO_PTR, sizeof(struct sysinfo_t));
 			ipod_sys_info_set = 1;
+			system_rev = ipod_sys_info.boardHwSwInterfaceRev;
 		}
 		else {
 			ipod_sys_info_set = -1;
