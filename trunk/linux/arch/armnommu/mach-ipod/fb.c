@@ -223,9 +223,16 @@ init_lcd(void)
 		printk(KERN_ERR "Unknown LCD controller ID: 0x%x id?\n", read_controller_id());
 	}
 
-	/* driver output control - 168x128 -> we use 160x128 */
+	/* driver output control */
 	/* CMS=0, SGS=1 */
-	lcd_cmd_and_data(0x1, 0x1, 0xf);
+	if (ipod_hw_ver == 0x4) {
+		/* driver output control - 160x112 (ipod mini) */
+		lcd_cmd_and_data(0x1, 0x0, 0xd);
+	}
+	else {
+		/* driver output control - 160x128 */
+		lcd_cmd_and_data(0x1, 0x1, 0xf);
+	}
 
 	/* ID=1 -> auto decrement address counter */
 	/* AM=00 -> data is continuously written in parallel */
@@ -750,12 +757,12 @@ int __init ipodfb_init(void)
 		break;
 		
 	case 5: /* 4g */
-		
 		lcd_width = IPOD_STD_LCD_WIDTH;
 		lcd_height = IPOD_STD_LCD_HEIGHT;
 		lcd_base = IPOD_PP5020_LCD_BASE;
 		lcd_rtc = IPOD_PP5020_RTC;
 		break;
+
 	case 3: /* 3g */
 	case 2: /* 2g */
 	case 1: /* 1g */
