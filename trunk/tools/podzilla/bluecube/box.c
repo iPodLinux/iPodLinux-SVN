@@ -26,17 +26,30 @@
 #include "grafix.h"
 #include "pieces.h"
 #include "box.h"
+#include "../pz.h"
 
-extern int lines, score;
-extern int level;
-extern int nextPiece;
+
+extern int tetris_lines, tetris_score;
+extern int tetris_level;
+extern int tetris_next_piece;
 const int intervals[11] = {9, 8, 7, 6, 5, 4, 3, 3, 2, 2, 1};
 
 CBoxDraw boxdraw;
 CCluster cluster;
-CBrick box[BOX_BRICKS_X][BOX_BRICKS_Y];
+static CBrick box[BOX_BRICKS_X][BOX_BRICKS_Y];
 
-/* Function prototypes from other source files */
+/* Static function prototypes */
+
+static void SetBrick(int x, int y, int style);   /* Activate a brick */
+
+static void SetClusterPiece(void);               /* Set piece for cluster */
+static void PutCluster(int x, int y);            /* Put cluster into box */
+static int  ClusterCollisionTest(int x, int y);  /* Cluster collides? */
+
+static int  FullLine(int y);                     /* Is a certain line full? */
+static int  CheckFullLine(void);                 /* Remove full lines */
+
+static void BoxDrawUpdate(void);
 
 /*=========================================================================
 // Name: InitBox()
@@ -60,19 +73,12 @@ void DrawBox()
 	int x, y;
 
 	for (y=0; y<BOX_BRICKS_Y; y++)
-		for (x=0; x<BOX_BRICKS_X; x++)
-		{
-			if (box[x][y].style)
-			{
-				PutRect(
+		for (x=0; x<BOX_BRICKS_X; x++) {
+			if (box[x][y].style) {
+				tetris_put_rect(
 					boxdraw.box_x + x*(boxdraw.brick_width + boxdraw.box_l), 
 					boxdraw.box_y + y*(boxdraw.brick_height+ boxdraw.box_l),
 					boxdraw.brick_width, boxdraw.brick_height, 1);
-				
-				PutRect(
-					2+boxdraw.box_x+x*(boxdraw.brick_width + boxdraw.box_l),
-					2+boxdraw.box_y+y*(boxdraw.brick_height+ boxdraw.box_l),
-					boxdraw.brick_width-4, boxdraw.brick_height-4,1);
 			}
 		}
 }
@@ -82,21 +88,9 @@ void DrawBox()
 // Name: SetBrick()
 // Desc: Changes a brick's style
 //=======================================================================*/
-void SetBrick(int x, int y, int style)
+static void SetBrick(int x, int y, int style)
 {
 	box[x][y].style = style;
-}
-
-/*=========================================================================
-// Name: IsBrickSet()
-// Desc: Checks if a brick is set
-//=======================================================================*/
-int IsBrickSet(int x, int y)
-{
-	if (box[x][y].style)
-		return 1;
-	else
-		return 0;
 }
 
 /*=========================================================================
@@ -109,15 +103,15 @@ void NewCluster()
 	cluster.x = 3;
 	cluster.y = 0;
 	cluster.turnValue = 0;
-	cluster.pieceValue = nextPiece;
+	cluster.pieceValue = tetris_next_piece;
 	SetClusterPiece();
-	cluster.dropCount = intervals[level];
+	cluster.dropCount = intervals[tetris_level];
 
-	nextPiece = rand()%7;
-	DrawValues();
+	tetris_next_piece = rand()%7;
+	tetris_draw_values();
 	
 	if (ClusterCollisionTest(cluster.x, cluster.y))
-		youlose(); /* No space left for cluster? -> youlose! */
+		tetris_lose(); /* No space left for cluster? -> youlose! */
 }
 
 
@@ -125,7 +119,7 @@ void NewCluster()
 // Name: SetClusterPiece()
 // Desc: Fills the datafield of the cluster with a certain piece
 //=======================================================================*/
-void SetClusterPiece()
+static void SetClusterPiece()
 {
 	int x, y;
 
@@ -147,10 +141,12 @@ void DrawCluster(int colorvar)
 		for (x=0; x<CLUSTER_X; x++)
 		{
 			if (cluster.data[x][y])
-				PutRect(
-					boxdraw.box_x + (cluster.x+x)*(boxdraw.brick_width+boxdraw.box_l), 
-					boxdraw.box_y + (cluster.y+y)*(boxdraw.brick_height+boxdraw.box_l),
-					boxdraw.brick_width, boxdraw.brick_height,colorvar);
+				tetris_put_rect(
+					boxdraw.box_x + (cluster.x+x) *
+					(boxdraw.brick_width + boxdraw.box_l), 
+					boxdraw.box_y + (cluster.y+y)
+					* (boxdraw.brick_height + boxdraw.box_l),
+					boxdraw.brick_width, boxdraw.brick_height, colorvar);
 		}
 }
 
@@ -164,8 +160,8 @@ void DrawNextPiece(int posX, int posY)
 
 	for (y=0; y<CLUSTER_Y; y++)
 		for (x=0; x<CLUSTER_X; x++)
-			if (Pieces[nextPiece][0][x][y])
-				PutRect(
+			if (Pieces[tetris_next_piece][0][x][y])
+				tetris_put_rect(
 					posX + x*(boxdraw.brick_width+boxdraw.box_l),
 					posY + y*(boxdraw.brick_height+boxdraw.box_l),
 					boxdraw.brick_width, boxdraw.brick_height,3);
@@ -175,7 +171,7 @@ void DrawNextPiece(int posX, int posY)
 // Name: PutCluster()
 // Desc: Puts the cluster into the box
 //=======================================================================*/
-void PutCluster(int x, int y)
+static void PutCluster(int x, int y)
 {
 	int cX, cY;
 
@@ -191,7 +187,7 @@ void PutCluster(int x, int y)
 // Name: ClusterCollisionTest()
 // Desc: Checks if cluster collides with bricks/walls
 //=======================================================================*/
-int ClusterCollisionTest(int x, int y)
+static int ClusterCollisionTest(int x, int y)
 {
 	int X, Y, cX, cY;
 
@@ -229,7 +225,7 @@ int MoveCluster(int bDown)
 			{
 				PutCluster(cluster.x, y);
 				if (!CheckFullLine())
-					score += 200;
+					tetris_score += 200;
 				return 1;
 			}
 		}
@@ -240,12 +236,12 @@ int MoveCluster(int bDown)
 		{
 			PutCluster(cluster.x, cluster.y);
 			if (!CheckFullLine())
-				score += 100;
+				tetris_score += 100;
 			return 1;
 		}
 
 		cluster.y++; /* Let the cluster "fall" */
-		cluster.dropCount = intervals[level];
+		cluster.dropCount = intervals[tetris_level];
 		return 0;
 	}
 }
@@ -300,7 +296,7 @@ void TurnClusterRight()
 // Name: FullLine()
 // Desc: Checks if a certain line is full
 //=======================================================================*/
-int FullLine(int y)
+static int FullLine(int y)
 {
 	int x;
 
@@ -316,42 +312,30 @@ int FullLine(int y)
 // Name: CheckFullLine()
 // Desc: Remove all full lines in the box
 //=======================================================================*/
-int CheckFullLine()
+static int CheckFullLine()
 {
 	int counter = 0; /* Number of the killed lines */
 	int y, newX, newY;
 
-
-		
 	for (y=BOX_BRICKS_Y-1; y>0; y--)
-		while (FullLine(y)) /* Remove lines */
-		{
+		while (FullLine(y)) { /* Remove lines */
 			for (newY=y; newY>0; newY--)
-				for (newX=0; newX<BOX_BRICKS_X; newX++)
-				{
+				for (newX=0; newX<BOX_BRICKS_X; newX++) {
 					box[newX][newY].style = box[newX][newY-1].style;
 				}
 			counter++;
 		}
-		
-		
 
-	if (counter) /* Were some lines killed? */
-	{   
-	
-		PutRect(52,7,58, 93,2); /* clear the inside of the tetris board */
-		lines += counter; /* Increase lines counter */
-		switch (counter)  /* Increase score */
-		{
-		case 1: score += 1000;  break;
-		case 2: score += 2500;  break;
-		case 3: score += 5000;  break;
-		case 4: score += 10000; break;
+	if (counter) { /* Were some lines killed? */
+		tetris_put_rect(boxdraw.box_x, boxdraw.box_y, /* clear tetris board */
+		                boxdraw.box_width, boxdraw.box_height, 2);
+		tetris_lines += counter; /* Increase lines counter */
+		switch (counter)  { /* Increase score */
+			case 1: tetris_score += 1000;  break;
+			case 2: tetris_score += 2500;  break;
+			case 3: tetris_score += 5000;  break;
+			case 4: tetris_score += 10000; break;
 		}
-		
-		
-
-
 		return 1;
 	}
 
@@ -366,19 +350,19 @@ int CheckFullLine()
 //=======================================================================*/
 void BoxDrawInit()
 {
-	boxdraw.box_l = 2;
-	boxdraw.brick_width  = 4;
-	boxdraw.brick_height = 4;
+	boxdraw.box_l = 1;
+	boxdraw.brick_width = screen_info.cols == 138 ? 4 : 5;
+	boxdraw.brick_height = screen_info.cols == 138 ? 4 : 5;
 	BoxDrawUpdate();
-	boxdraw.box_x = 52;
-	boxdraw.box_y = 7;
+	boxdraw.box_x = (screen_info.cols/2)-(boxdraw.box_width/2);
+	boxdraw.box_y = ((screen_info.rows-21)/2)-(boxdraw.box_height/2);
 }
 
 /*=========================================================================
 // Name: BoxDrawUpdate()
 // Desc: Updates the boxdraw structure
 //=======================================================================*/
-void BoxDrawUpdate()
+static void BoxDrawUpdate()
 {
 	boxdraw.box_width  = (BOX_BRICKS_X*boxdraw.brick_width +
 						 (BOX_BRICKS_X - 1)*boxdraw.box_l);

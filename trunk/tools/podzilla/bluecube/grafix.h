@@ -25,7 +25,6 @@
 GR_WINDOW_ID tetris_wid;
 GR_GC_ID tetris_gc;
 
-void InitWindow(void);
-void PutRect(int x, int y, int w, int h, int color);
-void DrawValues(void);
-void youlose(void);
+void tetris_put_rect(int x, int y, int w, int h, int color);
+void tetris_draw_values(void);
+void tetris_lose(void);
