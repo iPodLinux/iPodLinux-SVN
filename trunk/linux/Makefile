@@ -1,6 +1,6 @@
 VERSION = 2
 PATCHLEVEL = 4
-SUBLEVEL = 20
+SUBLEVEL = 24
 EXTRAVERSION = -uc0
 
 KERNELRELEASE=$(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
@@ -8,6 +8,9 @@ KERNELRELEASE=$(VERSION).$(PATCHLEVEL).$(SUBLEVEL)$(EXTRAVERSION)
 ARCH := armnommu
 # ARCH := m68knommu
 # ARCH := h8300
+# ARCH := niosnommu
+# ARCH := e1nommu
+
 ifndef ARCH
 ARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ -e s/arm.*/arm/ -e s/sa110/arm/)
 endif
@@ -27,6 +30,8 @@ HOSTCFLAGS	= -Wall -Wstrict-prototypes -O2 -fomit-frame-pointer
 # CROSS_COMPILE 	= m68k-elf-
 CROSS_COMPILE 	= arm-elf-
 # CROSS_COMPILE 	= h8300-elf-
+# CROSS_COMPILE 	= nios-elf-
+# CROSS_COMPILE		= e1-coff-
 ifndef CROSS_COMPILE
 CROSS_COMPILE 	=
 endif
@@ -50,10 +55,13 @@ DEPMOD		= /sbin/depmod
 MODFLAGS	= -DMODULE
 CFLAGS_KERNEL	=
 PERL		= perl
+AWK		= awk
+RPM 		:= $(shell if [ -x "/usr/bin/rpmbuild" ]; then echo rpmbuild; \
+		    	else echo rpm; fi)
 
 export	VERSION PATCHLEVEL SUBLEVEL EXTRAVERSION KERNELRELEASE ARCH \
 	CONFIG_SHELL TOPDIR HPATH HOSTCC HOSTCFLAGS CROSS_COMPILE AS LD CC \
-	CPP AR NM STRIP OBJCOPY OBJDUMP MAKE MAKEFILES GENKSYMS MODFLAGS PERL
+	CPP AR NM STRIP OBJCOPY OBJDUMP MAKE MAKEFILES GENKSYMS MODFLAGS PERL AWK
 
 .PHONY: dummy
 
@@ -104,6 +112,7 @@ export MODLIB
 #
 
 CPPFLAGS := -D__KERNEL__ -I$(HPATH)
+CPPFLAGS += $(KERNEL_EXTRA_CFLAGS)
 
 ifndef CONFIG_FULLDEBUG
 CFLAGS := $(CPPFLAGS) -Wall -Wstrict-prototypes -Wno-trigraphs -O2 \
@@ -150,13 +159,13 @@ CORE_FILES	=kernel/kernel.o mm/mm.o fs/fs.o ipc/ipc.o
 NETWORKS	=net/network.o
 
 LIBS		=$(TOPDIR)/lib/lib.a
-SUBDIRS		=kernel drivers mm fs net ipc lib
+SUBDIRS		=kernel drivers mm fs net ipc lib crypto
 
 else # CONFIG_UCLINUX
 CORE_FILES	=kernel/kernel.o mmnommu/mmnommu.o fs/fs.o ipc/ipc.o
 NETWORKS	=net/network.o
 LIBS		=$(TOPDIR)/lib/lib.a
-SUBDIRS		=kernel drivers mmnommu fs net ipc lib
+SUBDIRS		=kernel drivers mmnommu fs net ipc lib crypto
 endif # CONFIG_UCLINUX
 
 DRIVERS-n :=
@@ -164,13 +173,12 @@ DRIVERS-y :=
 DRIVERS-m :=
 DRIVERS-  :=
 
-DRIVERS-$(CONFIG_ACPI) += drivers/acpi/acpi.o
+DRIVERS-$(CONFIG_ACPI_BOOT) += drivers/acpi/acpi.o
 DRIVERS-$(CONFIG_PARPORT) += drivers/parport/driver.o
 DRIVERS-y += drivers/char/char.o \
 	drivers/block/block.o \
 	drivers/misc/misc.o \
-	drivers/net/net.o \
-	drivers/media/media.o
+	drivers/net/net.o
 DRIVERS-$(CONFIG_AGP) += drivers/char/agp/agp.o
 DRIVERS-$(CONFIG_DRM_NEW) += drivers/char/drm/drm.o
 DRIVERS-$(CONFIG_DRM_OLD) += drivers/char/drm-4.0/drm.o
@@ -211,6 +219,8 @@ DRIVERS-$(CONFIG_PARIDE) += drivers/block/paride/paride.a
 DRIVERS-$(CONFIG_HAMRADIO) += drivers/net/hamradio/hamradio.o
 DRIVERS-$(CONFIG_TC) += drivers/tc/tc.a
 DRIVERS-$(CONFIG_USB) += drivers/usb/usbdrv.o
+DRIVERS-$(CONFIG_USB_GADGET) += drivers/usb/gadget/built-in.o
+DRIVERS-y +=drivers/media/media.o
 DRIVERS-$(CONFIG_INPUT) += drivers/input/inputdrv.o
 DRIVERS-$(CONFIG_HIL) += drivers/hil/hil.o
 DRIVERS-$(CONFIG_I2O) += drivers/message/i2o/i2o.o
@@ -222,6 +232,7 @@ DRIVERS-$(CONFIG_GSC) += drivers/gsc/gscbus.o
 DRIVERS-$(CONFIG_BLUEZ) += drivers/bluetooth/bluetooth.o
 DRIVERS-$(CONFIG_HOTPLUG_PCI) += drivers/hotplug/vmlinux-obj.o
 DRIVERS-$(CONFIG_ISDN_BOOL) += drivers/isdn/vmlinux-obj.o
+DRIVERS-$(CONFIG_CRYPTO) += crypto/crypto.o
 
 DRIVERS := $(DRIVERS-y)
 
@@ -250,6 +261,7 @@ CLEAN_FILES = \
 	drivers/scsi/53c700_d.h \
 	net/khttpd/make_times_h \
 	net/khttpd/times.h \
+	net/ipsec/*.c \
 	submenu*
 # directories removed with 'make clean'
 CLEAN_DIRS = \
@@ -258,6 +270,7 @@ CLEAN_DIRS = \
 # files removed with 'make mrproper'
 MRPROPER_FILES = \
 	include/linux/autoconf.h include/linux/version.h \
+	lib/crc32table.h lib/gen_crc32table \
 	drivers/net/hamradio/soundmodem/sm_tbl_{afsk1200,afsk2666,fsk9600}.h \
 	drivers/net/hamradio/soundmodem/sm_tbl_{hapn4800,psk4800}.h \
 	drivers/net/hamradio/soundmodem/sm_tbl_{afsk2400_7,afsk2400_8}.h \
@@ -373,7 +386,7 @@ include/linux/compile.h: $(CONFIGURATION) include/linux/version.h newversion
 	 ([ -x /bin/domainname ] && /bin/domainname > .ver1) || \
 	 echo > .ver1
 	@echo \#define LINUX_COMPILE_DOMAIN \"`cat .ver1 | $(uts_truncate)`\" >> .ver
-	@echo \#define LINUX_COMPILER \"`$(CC) $(CFLAGS) -v 2>&1 | tail -1`\" >> .ver
+	@echo \#define LINUX_COMPILER \"`$(CC) $(CFLAGS) -v 2>&1 | tail -n 1`\" >> .ver
 	@mv -f .ver $@
 	@rm -f .ver1
 
@@ -523,12 +536,13 @@ sums:
 	find . -type f -print | sort | xargs sum > .SUMS
 
 dep-files: scripts/mkdep archdep include/linux/version.h
-	scripts/mkdep -- init/*.c > .depend
-	scripts/mkdep -- `find $(FINDHPATH) \( -name SCCS -o -name .svn \) -prune -o -follow -name \*.h ! -name modversions.h -print` > .hdepend
+	rm -f .depend .hdepend
 	$(MAKE) $(patsubst %,_sfdep_%,$(SUBDIRS)) _FASTDEP_ALL_SUB_DIRS="$(SUBDIRS)"
 ifdef CONFIG_MODVERSIONS
 	$(MAKE) update-modverfile
 endif
+	find $(FINDHPATH) \( -name SCCS -o -name .svn \) -prune -o -follow -name \*.h ! -name modversions.h -print | xargs scripts/mkdep --  > .hdepend
+	scripts/mkdep -- init/*.c > .depend
 
 ifdef CONFIG_MODVERSIONS
 MODVERFILE := $(TOPDIR)/include/linux/modversions.h
@@ -604,5 +618,5 @@ rpm:	clean spec
 	rm $(KERNELPATH) ; \
 	cd $(TOPDIR) ; \
 	. scripts/mkversion > .version ; \
-	rpm -ta $(TOPDIR)/../$(KERNELPATH).tar.gz ; \
+	$(RPM) -ta $(TOPDIR)/../$(KERNELPATH).tar.gz ; \
 	rm $(TOPDIR)/../$(KERNELPATH).tar.gz

@@ -6,7 +6,10 @@
 # for more details.
 #
 # Copyright (C) 1995-2001 by Russell King
-# Addition of S3C4530 by Arcturus Networks Inc.
+# Addition of
+#  (c) Copyright 2001-2002 - S3C4530 by Arcturus Networks Inc.
+#  (c) Copyright 2002-2003 - S3C2500 by Arcturus Networks Inc.
+#  
 
 LINKFLAGS	:=-p -X -T arch/armnommu/vmlinux.lds
 GZFLAGS		:=-9
@@ -33,9 +36,9 @@ arch-$(CONFIG_CPU_32v3)		:=-march=armv3
 arch-$(CONFIG_CPU_32v4)		:=-march=armv4
 arch-$(CONFIG_CPU_32v5)		:=-march=armv5
 
-proc-$(CONFIG_CPU_32v3)		:=-marmv3m
-proc-$(CONFIG_CPU_32v4)		:=-marmv4
-proc-$(CONFIG_CPU_32v5)		:=-marmv5
+proc-$(CONFIG_CPU_32v3)		:=-march=armv3m
+proc-$(CONFIG_CPU_32v4)		:=-march=armv4
+proc-$(CONFIG_CPU_32v5)		:=-march=armv5
 
 tune-$(CONFIG_CPU_ARM7V3)	:=-mtune=arm610
 tune-$(CONFIG_CPU_ARM610)	:=-mtune=arm610
@@ -130,8 +133,8 @@ endif
 ifeq ($(CONFIG_ARCH_DSC21),y)
 MACHINE 	 = dsc21
 TEXTADDR	 = 0x02000000
-DATAADDR   = 0x08000000
-INCDIR     = dsc21
+DATAADDR	 = 0x08000000
+INCDIR		 = dsc21
 #LINKFLAGS	 = -X -T arch/armnommu/vmlinux.lds
 endif
 
@@ -139,6 +142,13 @@ ifeq ($(CONFIG_ARCH_P52),y)
 TEXTADDR	 = 0x900000
 MACHINE		 = p52
 CFLAGS		+= -DNO_MM -DMAGIC_ROM_PTR
+endif
+
+ifeq ($(CONFIG_ARCH_CX821XX),y)
+MACHINE		= cx821xx
+TEXTADDR	= 0x800000
+CFLAGS		+= -DNO_MM -DMAGIC_ROM_PTR
+LINKFLAGS	+= -T arch/armnommu/mach-$(MACHINE)/ramlinux.lds
 endif
 
 ifeq ($(CONFIG_ARCH_SPIPE),y)
@@ -153,10 +163,45 @@ endif
 
 ifeq ($(CONFIG_ARCH_NETARM),y)
 MACHINE 	 = netarm
-TEXTADDR	 = 0x00008000
+# This allows it to use the internal bootloader.
+TEXTADDR	 = 0x00000000
 INCDIR  	 = netarm
 CFLAGS		+= -mcpu=arm7tdmi
 #LINKFLAGS	 = -X -T arch/armnommu/vmlinux.lds
+endif
+
+ifeq ($(CONFIG_ARCH_TA7S),y)
+  ifeq ($(CONFIG_USE_A7HAL),y)
+    CFLAGS += -I$(HPATH)/asm/arch/a7hal \
+	  -I$(HPATH)/asm/arch/a7hal/soft
+  endif
+  PROCESSOR	 = armv
+  MACHINE 	 = ta7s
+  TEXTADDR	 = 0x00000000
+  INCDIR  	 = ta7s
+endif
+
+ifeq ($(CONFIG_ARCH_TA7V),y)
+  ifeq ($(CONFIG_ARCH_TA7VL),y)
+	CFLAGS += -DA7VL
+  endif
+  ifeq ($(CONFIG_ARCH_TA7VE),y)
+	CFLAGS += -DA7VE
+  endif
+  ifeq ($(CONFIG_ARCH_TA7VC),y)
+	CFLAGS += -DA7VC
+  endif
+  ifeq ($(CONFIG_ARCH_TA7VT),y)
+	CFLAGS += -DA7VT
+  endif
+  ifeq ($(CONFIG_USE_A7HAL),y)
+    CFLAGS += -I$(HPATH)/asm/arch/a7hal \
+	  -I$(HPATH)/asm/arch/a7hal/soft
+  endif
+  PROCESSOR	 = armv
+  MACHINE 	 = ta7s
+  TEXTADDR	 = 0x00000000
+  INCDIR  	 = ta7s
 endif
 
 ifeq ($(CONFIG_ARCH_SWARM),y)
@@ -172,7 +217,36 @@ endif
 ifeq ($(CONFIG_BOARD_EVS3C4530HEI),y)
 TEXTADDR         = 0x00020000
 MACHINE          = evS3C4530HEI
+#INCDIR           = $(MACHINE)
+endif
+
+ifeq ($(CONFIG_BOARD_SMDK2500),y)
+MACHINE		= SMDK2500
+#INCDIR		= $(MACHINE)
+TEXTADDR	= 0x20000
+endif
+
+ifeq ($(CONFIG_BOARD_S3C2500REFRGP),y)
+MACHINE		= S3C2500REFRGP
+#INCDIR		= $(MACHINE)
+TEXTADDR	= 0x20000
+endif
+
+ifeq ($(CONFIG_BOARD_SMDK40100),y)
+TEXTADDR   	 = 0x01020000
+MACHINE          = S3C3410
 INCDIR           = $(MACHINE)
+endif
+
+ifeq ($(CONFIG_BOARD_MBA44),y)
+TEXTADDR   	 = 0x0c000000
+MACHINE          = S3C44B0X
+INCDIR           = $(MACHINE)
+CORE_FILES	:= $(CORE_FILES) romfs.o
+endif
+
+ifeq ($(CONFIG_ARCH_C5471), y)
+MACHINE         = c5471
 endif
 
 ifeq ($(CONFIG_ARCH_IPOD),y)
@@ -195,13 +269,15 @@ SUBDIRS		+= $(MACHDIR)
 CORE_FILES	:= $(MACHDIR)/$(MACHINE).o $(CORE_FILES)
 endif
 
+HEAD		:= arch/armnommu/kernel/head-$(PROCESSOR).o
 ifeq ($(CONFIG_ARCH_DSC21),y)
-HEAD		:= arch/armnommu/kernel/head-arm-dsc21.o \
-		   arch/armnommu/kernel/init_task.o
-else
-HEAD		:= arch/armnommu/kernel/head-$(PROCESSOR).o \
-		   arch/armnommu/kernel/init_task.o
+HEAD		:= arch/armnommu/kernel/head-arm-dsc21.o
 endif
+ifeq ($(CONFIG_ARCH_C5471),y)
+HEAD		:= arch/armnommu/kernel/head-arm-c5471.o
+endif
+HEAD		+= arch/armnommu/kernel/init_task.o
+
 SUBDIRS		+= arch/armnommu/kernel arch/armnommu/mm arch/armnommu/lib arch/armnommu/nwfpe
 CORE_FILES	:= arch/armnommu/kernel/kernel.o arch/armnommu/mm/mm.o $(CORE_FILES)
 LIBS		:= arch/armnommu/lib/lib.a $(LIBS) $(LIBGCC)
@@ -223,6 +299,14 @@ endif
 ifeq ($(CONFIG_ARCH_IPOD),y)
 HEAD		:= arch/armnommu/kernel/head-arm-ipod.o \
 		   arch/armnommu/kernel/init_task.o
+endif
+
+#
+# If you want the kernel build to build modules outside of the tree
+# then define this and pass it to the main linux makefile
+#
+ifdef EXTRA_MODULE_DIRS
+SUBDIRS += $(EXTRA_MODULE_DIRS)
 endif
 
 MAKEBOOT	 = $(MAKE) -C arch/$(ARCH)/boot LINUX=$(LINUX)
@@ -248,7 +332,11 @@ ifeq ($(CONFIG_ARCH_DSC21),y)
 	@sed 's/DATAADDR/$(DATAADDR)/' <tmp.ld >$@
 	$(RM) tmp.ld
 else
-	@sed 's/TEXTADDR/$(TEXTADDR)/' <$< >$@	
+ifeq ($(CONFIG_ARCH_C5471),y)
+	@sed 's/TEXTADDR/$(FLASH_MEM_BASE)/;s/DATAADDR/$(DRAM_BASE)/' <$< >$@
+else
+	@sed 's/TEXTADDR/$(TEXTADDR)/' <$< >$@
+endif
 endif
 
 arch/armnommu/kernel arch/armnommu/mm arch/armnommu/lib: dummy

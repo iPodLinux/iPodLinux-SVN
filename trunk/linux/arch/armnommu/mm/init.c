@@ -51,7 +51,9 @@
 static unsigned long totalram_pages;
 extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
 extern char _stext, _text, _etext, _end, __init_begin, __init_end;
-
+#ifdef CONFIG_RAM_ATTACHED_ROMFS
+extern unsigned int _ramstart;
+#endif
 /*
  * The sole use of this is to pass memory configuration
  * data from paging_init to mem_init.
@@ -175,7 +177,11 @@ find_bootmap_pfn(int node, struct meminfo *mi, unsigned int bootmap_pages)
 {
 	unsigned int start_pfn, bank, bootmap_pfn;
 
+#ifndef CONFIG_RAM_ATTACHED_ROMFS
 	start_pfn   = V_PFN_UP(&_end);
+#else	
+	start_pfn   = V_PFN_UP(_ramstart);
+#endif  
 	bootmap_pfn = 0;
 
 	for (bank = 0; bank < mi->nr_banks; bank ++) {
@@ -343,8 +349,11 @@ static __init void reserve_node_zero(unsigned int bootmap_pfn, unsigned int boot
 	 * Register the kernel text and data with bootmem.
 	 * Note that this can only be in node 0.
 	 */
+#ifndef CONFIG_RAM_ATTACHED_ROMFS
 	reserve_bootmem_node(pgdat, __pa(&_stext), &_end - &_stext);
-
+#else
+  reserve_bootmem_node(pgdat, __pa(&_stext), _ramstart - ((unsigned int)(&_stext)));
+#endif
 #if defined(CONFIG_CPU_32) && !defined(CONFIG_UCLINUX)
 	/*
 	 * Reserve the page tables.  These are already in use,
@@ -368,8 +377,10 @@ static __init void reserve_node_zero(unsigned int bootmap_pfn, unsigned int boot
 	 */
 
 	if (machine_is_integrator() || machine_is_snds100() ||
-            machine_is_evS3C4530HEI() )
+	    machine_is_netarm()    || machine_is_evS3C4530HEI() ||
+	    machine_is_smdk2500() || machine_is_S3C2500REFRGP() )
 		reserve_bootmem_node(pgdat, 0, __pa(&_stext));
+
 
 	/*
 	 * These should likewise go elsewhere.  They pre-reserve
@@ -467,9 +478,16 @@ void __init bootmem_init(struct meminfo *mi)
 
 
 #ifdef CONFIG_BLK_DEV_INITRD
+/*
+ * For arches that compile in the ramdisk data we do not need
+ * to reserve the memory. Memory for the initrd device will be
+ * reserved with the kernel data section.
+ */
+#if !defined(CONFIG_BLK_DEV_RAMDISK_DATA)
 	if (initrd_node >= 0)
 		reserve_bootmem_node(NODE_DATA(initrd_node), __pa(initrd_start),
 				     initrd_end - initrd_start);
+#endif
 #endif
 
 	if (map_pg != bootmap_pfn + bootmap_pages)
@@ -548,7 +566,7 @@ void __init paging_init(struct meminfo *mi, struct machine_desc *mdesc)
 #else
 	{
 	  unsigned long zone_size[MAX_NR_ZONES] = {0,0,0};
-	  
+
 	  zone_size[ZONE_DMA] = 0;
 	  zone_size[ZONE_NORMAL] = (END_MEM - PAGE_OFFSET) >> PAGE_SHIFT;
 
@@ -575,7 +593,11 @@ void __init mem_init(void)
 	int i, node;
 
 	codepages = &_etext - &_text;
+#ifndef CONFIG_RAM_ATTACHED_ROMFS
 	datapages = &_end - &_etext;
+#else 
+	datapages = _ramstart - ((unsigned int)&_etext);
+#endif  
 	initpages = &__init_end - &__init_begin;
 
 	high_memory = (void *)__va(meminfo.end);
@@ -641,8 +663,11 @@ void free_initmem(void)
 {
 	if (!machine_is_integrator() &&
 	    !machine_is_p52() &&
+	    !machine_is_cx821xx() &&
 	    !machine_is_atmel() &&
-	    !machine_is_netarm()) {
+	    !machine_is_netarm() &&
+	    !machine_is_ta7v() &&
+	    !machine_is_ta7s()) {
 		free_area((unsigned long)(&__init_begin),
 			  (unsigned long)(&__init_end),
 			  "init");
