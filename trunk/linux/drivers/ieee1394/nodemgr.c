@@ -1221,6 +1221,8 @@ static void nodemgr_node_probe(struct host_info *hi, int generation)
  * bit). Other IRM responsibilities go in here as well. */
 static void nodemgr_do_irm_duties(struct hpsb_host *host)
 {
+/* The iPod driver currently cannot send broadcast writes! */
+#ifndef CONFIG_IEEE1394_IPOD
 	quadlet_t bc;
         
 	if (!host->is_irm)
@@ -1251,6 +1253,7 @@ static void nodemgr_do_irm_duties(struct hpsb_host *host)
 			hpsb_reset_bus(host, LONG_RESET_FORCE_ROOT);
 		}
 	}
+#endif
 }
 
 /* We need to ensure that if we are not the IRM, that the IRM node is capable of
@@ -1261,7 +1264,8 @@ static int nodemgr_check_irm_capability(struct hpsb_host *host, int cycles)
 	quadlet_t bc;
 	int status;
 
-	if (host->is_irm)
+	/* if irm_id == -1 then there is no IRM on this bus */
+	if (host->is_irm  || host->irm_id == (nodeid_t)-1)
 		return 1;
 
 	status = hpsb_read(host, LOCAL_BUS | (host->irm_id),
