@@ -122,6 +122,26 @@ void set_buttondebounce(void)
 	new_slider_widget(ACTION_DEBOUNCE, "Action Debounce", 100, 500);
 }
 
+static void draw_batt_status()
+{
+	GrPoly(root_wid, root_gc, BATT_POLY_POINTS, batt_outline);
+	GrFillRect(root_wid, root_gc, 140, 8, 15, 6);
+}
+
+static void draw_hold_status()
+{
+	if (hold_is_on) {
+		GrSetGCForeground(root_gc, BLACK);
+		GrPoly(root_wid, root_gc, HOLD_POLY_POINTS, hold_outline);
+		GrFillRect(root_wid, root_gc, 8, 9, 7, 5);
+	}
+	else {
+		GrSetGCForeground(root_gc, WHITE);
+		GrPoly(root_wid, root_gc, HOLD_POLY_POINTS, hold_outline);
+		GrFillRect(root_wid, root_gc, 8, 9, 7, 5);
+	}
+}
+
 void pz_event_handler(GR_EVENT *event)
 {
 	int i;
@@ -220,26 +240,6 @@ void pz_event_handler(GR_EVENT *event)
 
 	default:
 		printf("AN UNKNOWN EVENT OCCURED!!\n");
-	}
-}
-
-static void draw_batt_status()
-{
-	GrPoly(root_wid, root_gc, BATT_POLY_POINTS, batt_outline);
-	GrFillRect(root_wid, root_gc, 140, 8, 15, 6);
-}
-
-static void draw_hold_status()
-{
-	if (hold_is_on) {
-		GrSetGCForeground(root_gc, BLACK);
-		GrPoly(root_wid, root_gc, HOLD_POLY_POINTS, hold_outline);
-		GrFillRect(root_wid, root_gc, 8, 9, 7, 5);
-	}
-	else {
-		GrSetGCForeground(root_gc, WHITE);
-		GrPoly(root_wid, root_gc, HOLD_POLY_POINTS, hold_outline);
-		GrFillRect(root_wid, root_gc, 8, 9, 7, 5);
 	}
 }
 
