@@ -22,5 +22,13 @@
 #define __arch_getw(a) (*(volatile unsigned short *)(a))
 #define __arch_putw(v,a) (*(volatile unsigned short *)(a) = (v))
 
+/* These are required by the serial driver */
+#define readb(addr)			__raw_readb(addr)
+#define readw(addr)			__raw_readw(addr)
+#define readl(addr)			__raw_readl(addr)
+#define writeb(val,addr)		__raw_writeb(val,addr)
+#define writew(val,addr)		__raw_writew(val,addr)
+#define writel(val,addr)		__raw_writel(val,addr)
+
 #endif
 
