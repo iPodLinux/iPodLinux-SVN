@@ -479,7 +479,7 @@ static int __init ipodaudio_init(void)
 	volatile int *w_off = (int *)DMA_WRITE_OFF;
 	volatile int *dma_active = (int *)DMA_ACTIVE;
 
-	printk("ipodaudio: (c) Copyright 2003, Bernard Leach (leachbj@bouncycastle.org\n\n");
+	printk("ipodaudio: (c) Copyright 2003, Bernard Leach (leachbj@bouncycastle.org)\n\n");
 
 	if ( register_chrdev(SOUND_MAJOR, "sound", &ipodaudio_fops) < 0 ) {
 		printk(KERN_WARNING "SOUND: failed to register major %d\n",
