@@ -1,7 +1,7 @@
 /*
  * hardware.c - special hardware routines for iPod
  *
- * Copyright (c) 2003,2004 Bernard Leach (leachbj@bouncycastle.org)
+ * Copyright (c) 2003,2004 Bernard Leach <leachbj@bouncycastle.org>
  */
 
 #include <linux/config.h>
@@ -258,6 +258,20 @@ ipod_i2c_wait_not_busy(void)
 	return -ETIMEDOUT;
 }
 
+void
+ipod_i2c_init(void)
+{
+	static int i2c_init = 0;
+
+	if (i2c_init == 0) {
+		i2c_init = 1;
+
+		/* reset I2C */
+                outl(inl(0xcf005030) | (1<<8), 0xcf005030);
+		outl(inl(0xcf005030) & ~(1<<8), 0xcf005030);
+	}
+}
+
 int
 ipod_i2c_send_bytes(unsigned int addr, unsigned int len, unsigned char *data)
 {
@@ -308,7 +322,7 @@ ipod_serial_init(void)
 	int hw_ver = ipod_get_hw_version() >> 16;
 
 	/* enable ttyS1 (piezo) */
-	outl(inl(0xcf004040) & ~0x1000, 0xcf004040);
+	outl(inl(0xcf004040) & ~(1<<12), 0xcf004040);
 	if (hw_ver == 0x3) {
 		/* port c, bit 0 and 3 disabled */
 		outl(inl(0xcf00000c) & ~((1<<0)|(1<<3)), 0xcf00000c);
@@ -320,7 +334,7 @@ ipod_serial_init(void)
 		/* 1000000000011100, 16,4,3,2 */
 		// outl(0x801c, 0xcf004048);
 
-		outl((inl(0xcf004040) & ~(1<<10)) | (1<<11) | (1<<8) | (1<<4), 0xcf004040);
+		outl(inl(0xcf004040) | (1<<8) | (1<<4), 0xcf004040);
 		outl(0x801c, 0xcf004048);
 	}
 	else {
@@ -329,66 +343,7 @@ ipod_serial_init(void)
 	}
 
 	/* enable ttyS0 (remote) */
-	if (hw_ver == 0x3) {
-#if 0
-		outl(inl(0xcf00000c) | 0x10, 0xcf00000c);
-		outl(inl(0xcf00001c) & ~0x10, 0xcf00001c);
-
-		// sub_0_28001CE4(0)
-		outl(inl(0xcf004048) & ~0x8, 0xcf004048);
-
-		// sub_0_28001C9C(0)
-		outl(inl(0xcf00000c) | 0x20, 0xcf00000c);
-		outl(inl(0xcf00001c) | 0x20, 0xcf00001c);
-		outl(inl(0xcf00002c) & ~0x20, 0xcf00001c);
-
-		// sub_0_28001C58(0)
-		outl(inl(0xcf004040) | 0x400, 0xcf004040);
-		outl(inl(0xcf004040) & ~0x800, 0xcf004040);
-		outl(inl(0xcf004048) & ~0x2, 0xcf004048);
-
-		// sub_0_28001C58(1)
-		outl(inl(0xcf004040) | 0x400, 0xcf004040);
-		outl(inl(0xcf004040) & ~0x800, 0xcf004040);
-		outl(inl(0xcf004048) | 0x2, 0xcf004048);
-
-		// sub_0_28001C10(0)
-		outl(inl(0xcf000008) | 0x40, 0xcf000008);
-		outl(inl(0xcf000018) | 0x40, 0xcf000018);
-		outl(inl(0xcf000028) & ~0x40, 0xcf000028);
-
-		udelay(1); /* Hold reset for at least 1000ns */
-
-		// sub_0_28001C10(1)
-		outl(inl(0xcf000008) | 0x40, 0xcf000008);
-		outl(inl(0xcf000018) | 0x40, 0xcf000018);
-		outl(inl(0xcf000028) | 0x40, 0xcf000028);
-
-		// sub_0_2800AB2C
-		outl(inl(0xcf005030) | 0x100, 0xcf005030);
-		outl(inl(0xcf005030) & ~0x100, 0xcf005030);
-
-		outl(0x1, 0xc0008020);
-		outl(0x0, 0xc0008030);
-		outl(0x51, 0xc000802c);
-		outl(0x0, 0xc000803c);
-
-		outl(inl(0xcf005000) | 0x2, 0xcf005000);
-
-		outl(inl(0xc000251c) | 0x10000, 0xc000251c);
-		outl(inl(0xc000251c) & ~0x10000, 0xc000251c);
-		outl(inl(0xc000251c) | 0x30000, 0xc000251c);
-		outl(0x15, 0xc0002500);
-
-		outl(inl(0xcf00000c) | 0x40, 0xcf00000c);
-		outl(inl(0xcf00001c) & ~0x40, 0xcf00000c);
-
-		outl(0x7, 0xc0008034);
-		outl(0x0, 0xc0008038);
-		// end sub_0_2800AB2C
-#endif
-	}
-	else {
+	if (hw_ver != 0x3) {
 		outl(inl(0xcf00000c) & ~0x8, 0xcf00000c);
 	}
 
@@ -416,22 +371,24 @@ ipod_serial_init(void)
 	}
 }
 
-static ipod_dma_handler_t ipod_dma_handler;
+/* put our ptr in on chip ram to avoid caching problems */
+static ipod_dma_handler_t * ipod_dma_handler = SYSINFO_TAG;
 
 void ipod_set_process_dma(ipod_dma_handler_t new_handler)
 {
-	ipod_dma_handler = new_handler;
+	*ipod_dma_handler = new_handler;
 }
 
 void ipod_handle_dma(void)
 {
-	if (ipod_dma_handler != 0) {
-		ipod_dma_handler();
+	if (*ipod_dma_handler != 0) {
+		(*ipod_dma_handler)();
 	}
 }
 
 EXPORT_SYMBOL(ipod_get_hw_version);
 EXPORT_SYMBOL(ipod_get_sysinfo);
+EXPORT_SYMBOL(ipod_i2c_init);
 EXPORT_SYMBOL(ipod_i2c_send_bytes);
 EXPORT_SYMBOL(ipod_i2c_send);
 EXPORT_SYMBOL(ipod_serial_init);
