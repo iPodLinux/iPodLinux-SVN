@@ -36,6 +36,7 @@ OBJS=\
 	ipod.o \
 	menu.o \
 	piezo.o \
+	textview.o \
 	message.o
 
 all: podzilla
