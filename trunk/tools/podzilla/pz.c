@@ -97,7 +97,7 @@ void set_buttondebounce(void)
 	new_slider_widget(ACTION_DEBOUNCE, "Action Debounce", 100, 500);
 }
 
-static void event_handler(GR_EVENT *event)
+void pz_event_handler(GR_EVENT *event)
 {
 	int i;
 	unsigned long int curtime;
@@ -273,7 +273,7 @@ main(int argc, char **argv)
 		GR_EVENT event;
 
 		GrGetNextEventTimeout(&event, 1000);
-		event_handler(&event);
+		pz_event_handler(&event);
 	}
 
 	return 0;
