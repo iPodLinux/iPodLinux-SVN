@@ -235,7 +235,7 @@ test_endian(void)
 int
 main(int argc, char **argv)
 {
-    char c;
+    int c;
     int verbose = 0, i, ext = 0;
     FILE *in = NULL, *out = NULL;
     image_t images[5];
