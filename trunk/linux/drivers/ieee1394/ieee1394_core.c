@@ -1066,7 +1066,9 @@ static void __exit ieee1394_cleanup(void)
 	/* it's ok to pass a NULL devfs_handle to devfs_unregister */
 	devfs_unregister(ieee1394_devfs_handle);
 	
+#ifdef CONFIG_PROC_FS
 	remove_proc_entry("ieee1394", proc_bus);
+#endif
 }
 
 module_init(ieee1394_init);
