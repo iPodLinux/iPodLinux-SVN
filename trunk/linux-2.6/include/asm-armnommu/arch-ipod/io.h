@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, Bernard Leach (leachbj@bouncycastle.org)
+ * Copyright (c) 2003,2004 Bernard Leach (leachbj@bouncycastle.org)
  */
 
 #ifndef __ASM_ARCH_IO_H
@@ -16,23 +16,14 @@
  * If we define __io then asm/io.h will take care of most of the
  * inb & friends macros.
  */
-#define PCI_IO_VADDR      (0x0)
-#define PCI_MEMORY_VADDR  (0x0)
+#define __io(a)			(a)
 
-#define __io(a)			(PCI_IO_VADDR + (a))
+/*
+ * If we define __mem_pci,__mem_isa then asm/io.h will take care of
+ * readsw & friends macros.
+ */
 #define __mem_pci(a)		((unsigned long)(a))
-#define __mem_isa(a)		(PCI_MEMORY_VADDR + (unsigned long)(a))
-
-/*
- * Validate the pci memory address for ioremap.
- */
-#define iomem_valid_addr(iomem,size)	(1)
-
-
-/*
- * Convert PCI memory space to a CPU physical address
- */
-#define iomem_to_phys(iomem)	(iomem)
+#define __mem_isa(a)		((unsigned long)(a))
 
 #endif
 
