@@ -1,6 +1,7 @@
 Alastair S - Sat Mar 5 2005
 	bluecube: mini-ised; global functions made static where needed
 	ambiguously named globals renamed
+	calendar no longer redraws everything when scrolling through
 
 Alastair S - Thu Mar 3 2005
 	added matrix, a matrix screen simulation
