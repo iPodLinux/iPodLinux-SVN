@@ -1,3 +1,14 @@
+leachbj - Mon Jun 28 2004
+	fixed crash in textview when a line contains only tabs
+
+matz-josh - Sun July 27 2004
+	fixed crash on dos/windows textfiles containing empty lines
+	the handle on the scrollbar is now at least 2 Pixels high 
+	  it has been sometimes invisible (hight 0) in large files
+	added support for rewind and forward keys:
+	  rewind scrolls up and forward scrolls down one screen.
+	removed flicker, when trying to scroll beyond the last(first) line of text
+
 leachbj - Thu June 17 2004
 	Fixed up scroll wheel sensitivity
 	Cleaned up some menu names

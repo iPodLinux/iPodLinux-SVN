@@ -15,6 +15,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
+/* Changes 2004-06-27 by matz-josh:
+	- fixed crash on dos/windows textfiles containing empty lines
+	- the handle on the scrollbar is now at least 2 Pixels high 
+	  it has been sometimes invisible (hight 0) in large files
+	- added support for rewind and forward keys:
+	  rewind scrolls up and forward scrolls down one screen.
+	- removed flicker, when trying to scroll beyond the last(first) line of text
+*/
 
 #include "pz.h"
 #include <stdlib.h>
@@ -101,6 +109,10 @@ static void buildLineData()
 		{
 			GR_SIZE width, height, base;
 
+			if (*curtextptr == '\r')  { //ignore '\r' in dos/windows textfiles
+                                curtextptr++;
+			}
+							
 			if (*curtextptr == '\n')
 			{
 				curtextptr++;
@@ -135,6 +147,9 @@ static void buildLineData()
 		}
 
 		localAr[currentLine][charcnt] = 0;
+		while (charcnt && localAr[currentLine][charcnt-1] == '\t') {
+			localAr[currentLine][--charcnt] = 0;
+		}
 
 		// trim the line down to size
 		temp = localAr[currentLine];
@@ -161,6 +176,9 @@ static void drawtext(void)
 	int block_height = 9 + pixPerLine * (currentLine + LINESPERSCREEN) - block_start_pix;
 
 	GrSetGCForeground(tv_gc, WHITE);
+	
+	if (block_height < 2)		//for long texts the minimum height of the handle is set to 2
+		block_height = 2;
 
 	// Clear the Screen
 	GrClearWindow(tv_wid, 0);
@@ -196,17 +214,41 @@ static int textview_do_keystroke(GR_EVENT * event){
 			break;
 
 		case 'r':
-			if (currentLine + LINESPERSCREEN < totalLines)
+			if (currentLine + LINESPERSCREEN < totalLines) {
 				currentLine ++;
-			drawtext();
+				drawtext();
+			}
 			ret = 1;
 			break;
 
 		case 'l':
 			
-			if (currentLine > 0)
+			if (currentLine > 0) {
 				currentLine --;
-			drawtext();
+				drawtext();
+			}
+			ret = 1;
+			break;
+                case 'f':
+                        // forward key pressed:  go down one screen
+			if (currentLine + LINESPERSCREEN < totalLines) {
+	                        currentLine = currentLine + LINESPERSCREEN;
+				if (currentLine + LINESPERSCREEN > totalLines)  // if we went down beyond the end of the text
+					currentLine = totalLines - LINESPERSCREEN; // we go to the end of the text
+		                drawtext();
+			}
+			ret = 1;
+			break;
+                case 'w':
+			// rewind key pressed:  go up one screen
+                        // if it's already the first line, nothing is done
+			if (currentLine > 0) {
+				if (currentLine < LINESPERSCREEN) // if there is no full screen above the current one
+					currentLine = 0;	  // go up to the very first line	
+				else	// go up on screen
+					currentLine = currentLine - LINESPERSCREEN;
+				drawtext();
+			}
 			ret = 1;
 			break;
 	}
