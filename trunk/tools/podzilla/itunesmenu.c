@@ -83,7 +83,7 @@ struct menulist *new_ml()
 			ret->screen_info.rows - (HEADER_TOPLINE + 1),
 			itunes_do_draw, itunes_do_keystroke);
 
-	GrSelectEvents(ret->wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN|GR_EVENT_MASK_KEY_UP);
+	GrSelectEvents(ret->wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN);
 
 	GrGetGCTextSize(ret->gc, "M", -1, GR_TFASCII, &ret->gr_width,
 			&ret->gr_height, &ret->gr_base);
@@ -218,7 +218,9 @@ static char *get_text_plist(struct menulist *ml)
 
 static void play_song(struct itdb_track *track)
 {
-	new_mp3_window(track->path, track->album, track->artist, track->title, track->length);
+	char mpath[128];
+	snprintf(mpath, 127, "/%s", track->path);
+	new_mp3_window(mpath, track->album, track->artist, track->title, track->length);
 }
 
 
