@@ -1041,7 +1041,7 @@ static int __devinit ipod_1394_init(void)
 {
 	struct ti_ipod *ipod;
 
-	printk("ipod_1394: $Id: tsb43aa82.c,v 1.5 2004/05/17 18:22:13 leachbj Exp $\n");
+	printk("ipod_1394: $Id: tsb43aa82.c,v 1.6 2004/12/18 14:17:31 leachbj Exp $\n");
 
 	ipod_host = hpsb_alloc_host(&ipod_1394_driver, sizeof(struct ti_ipod));
 	if (!ipod_host) {
@@ -1063,8 +1063,8 @@ static int __devinit ipod_1394_init(void)
 
 	tasklet_init(&ipod->tx_tasklet, tx_tasklet, (unsigned long)ipod);
 
-	if (request_irq(GPIO_IRQ, ipod_1394_interrupt, SA_SHIRQ, IPOD_1394_DRIVER_NAME, ipod)) {
-		printk(KERN_ERR "ipod_1394: IRQ %d failed\n", GPIO_IRQ);
+	if (request_irq(PP5002_GPIO_IRQ, ipod_1394_interrupt, SA_SHIRQ, IPOD_1394_DRIVER_NAME, ipod)) {
+		printk(KERN_ERR "ipod_1394: IRQ %d failed\n", PP5002_GPIO_IRQ);
 	}
 
 	ipod_1394_hw_init();
@@ -1179,7 +1179,7 @@ static void __exit ipod_1394_exit(void)
 	hpsb_remove_host(ipod->host);
 
 	/* free the IRQ */
-	free_irq(GPIO_IRQ, ipod);
+	free_irq(PP5002_GPIO_IRQ, ipod);
 
         /* Wait and kill tasklet */
         tasklet_kill(&ipod->tx_tasklet);
