@@ -61,6 +61,7 @@ CONFIG_KERNEL_ELF=y
 # CONFIG_PM is not set
 # CONFIG_ARTHUR is not set
 # CONFIG_ALIGNMENT_TRAP is not set
+# CONFIG_PCI is not set
 
 #
 # Networking options
@@ -271,15 +272,6 @@ CONFIG_DUMMY_CONSOLE=y
 # CONFIG_FB_CYBER2000 is not set
 # CONFIG_FB_SA1100 is not set
 CONFIG_FB_IPOD=y
-# CONFIG_FB_MATROX is not set
-# CONFIG_FB_ATY is not set
-# CONFIG_FB_RADEON is not set
-# CONFIG_FB_ATY128 is not set
-# CONFIG_FB_SIS is not set
-# CONFIG_FB_NEOMAGIC is not set
-# CONFIG_FB_3DFX is not set
-# CONFIG_FB_VOODOO1 is not set
-# CONFIG_FB_TRIDENT is not set
 # CONFIG_FB_VIRTUAL is not set
 CONFIG_FBCON_ADVANCED=y
 # CONFIG_FBCON_MFB is not set
@@ -484,13 +476,23 @@ CONFIG_NLS_DEFAULT="iso8859-1"
 # CONFIG_NLS_UTF8 is not set
 
 #
+# Input core support
+#
+CONFIG_INPUT=y
+CONFIG_INPUT_KEYBDEV=y
+# CONFIG_INPUT_MOUSEDEV is not set
+# CONFIG_INPUT_JOYDEV is not set
+# CONFIG_INPUT_EVDEV is not set
+
+#
 # Character devices
 #
 # CONFIG_LEDMAN is not set
 # CONFIG_DS1302 is not set
 CONFIG_VT=y
 CONFIG_VT_CONSOLE=y
-# CONFIG_SERIAL is not set
+CONFIG_SERIAL=y
+# CONFIG_SERIAL_CONSOLE is not set
 # CONFIG_SERIAL_EXTENDED is not set
 # CONFIG_SERIAL_NONSTANDARD is not set
 # CONFIG_UNIX98_PTYS is not set
@@ -515,8 +517,8 @@ CONFIG_VT_CONSOLE=y
 # CONFIG_INPUT_PCIGAME is not set
 # CONFIG_INPUT_CS461X is not set
 # CONFIG_INPUT_EMU10K1 is not set
-# CONFIG_INPUT_SERIO is not set
-# CONFIG_INPUT_SERPORT is not set
+CONFIG_INPUT_SERIO=y
+CONFIG_INPUT_SERPORT=y
 
 #
 # Joysticks
@@ -578,7 +580,7 @@ CONFIG_IEEE1394=y
 #   Texas Instruments PCILynx requires I2C bit-banging
 #
 # CONFIG_IEEE1394_OHCI1394 is not set
-CONFIG_IEEE1394_IPOD=m
+CONFIG_IEEE1394_IPOD=y
 
 #
 # Protocol Drivers
@@ -605,6 +607,7 @@ CONFIG_IEEE1394_RAWIO=m
 #
 CONFIG_AUDIO_IPOD=y
 CONFIG_KB_IPOD=y
+CONFIG_REMOTE_IPOD=y
 
 #
 # Kernel hacking
@@ -616,5 +619,5 @@ CONFIG_FRAME_POINTER=y
 # CONFIG_DEBUG_INFO is not set
 # CONFIG_MAGIC_SYSRQ is not set
 # CONFIG_DEBUG_LL is not set
-# CONFIG_CONTIGUOUS_PAGE_ALLOC is not set
-# CONFIG_MEM_MAP is not set
+CONFIG_CONTIGUOUS_PAGE_ALLOC=y
+CONFIG_MEM_MAP=y
