@@ -33,6 +33,7 @@
 
 /* pz.c */
 GR_SCREEN_INFO screen_info;
+long hw_version;
 
 void pz_draw_header(char *header);
 GR_GC_ID pz_get_gc(int copy);

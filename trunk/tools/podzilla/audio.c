@@ -573,6 +573,11 @@ void new_record_window()
 	time_t now;
 	struct tm *tm;
 
+	if (!hw_version || hw_version < 30000 || hw_version >= 40000 ) { // 3G only
+		pz_error("Recording is unsupported on this hardware.");
+		return;
+	}
+
 	time(&now);
 	tm = localtime(&now);
 
@@ -616,6 +621,11 @@ void new_record_line_in_window()
 
 void new_playback_window(char *filename)
 {
+	if (!hw_version || hw_version >= 40000) { // no playback > 3G
+		pz_error("Audio playback is unsupported on this hardware.");
+		return;
+	}
+	
 	mode = PLAYBACK;
 	strncpy(pcm_file, filename, sizeof(pcm_file) - 1);
 
