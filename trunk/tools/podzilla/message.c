@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2004 Bernard Leach
+ * Copyright (C) 2005 Courtney Cavin
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,35 +17,104 @@
  * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#include <ctype.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "pz.h"
 
-static GR_TIMER_ID timer_id;
+static GR_TIMER_ID msg_timer;
 static GR_WINDOW_ID msg_wid;
 static GR_GC_ID msg_gc;
 static GR_SCREEN_INFO screen_info;
-static char *msg_message;
+static char **msglines;
+static int linenum;
+
+static void msg_build_msg(char *msg_message)
+{
+	char *curtextptr;
+	int currentLine = 0;
+
+	curtextptr = msg_message;
+	if((msglines = (char **)malloc(sizeof(char *) * 8))==NULL) {
+		fprintf(stderr, "malloc failed");
+		return;
+	}
+	
+	while(*curtextptr != '\0' || currentLine > 8) {
+		char *sol;
+
+		sol = curtextptr;
+		while (1) {
+			GR_SIZE width, height, base;
+
+			if(*curtextptr == '\r') /* ignore '\r' */
+				curtextptr++;
+			if(*curtextptr == '\n') {
+				curtextptr++;
+				break;
+			}
+			else if(*curtextptr == '\0')
+				break;
+
+			GrGetGCTextSize(msg_gc, sol, curtextptr - sol +
+					1, GR_TFASCII, &width, &height, &base);
+
+			if(width > screen_info.cols - 15) {
+				char *optr;
+		
+				/* backtrack to the last word */
+				for(optr=curtextptr; optr>sol; optr--) {
+					if(isspace(*optr)||*optr=='\t') {
+						curtextptr=optr;
+						curtextptr++;
+						break;
+					}
+				}
+				break;
+			}
+			curtextptr++;
+		}
+
+		if((msglines[currentLine] = malloc((curtextptr-sol + 1) *
+						sizeof(char)))==NULL) {
+			fprintf(stderr, "malloc failed");
+			return;
+		}
+		snprintf(msglines[currentLine], curtextptr-sol+1, "%s", sol);
+		currentLine++;
+	}
+	linenum = currentLine;
+}
+
 
 static void msg_do_draw(GR_EVENT * event)
 {
-	GR_SIZE width, height, base;
+	GR_WINDOW_INFO winfo;
+	int i;
 
-	GrGetGCTextSize(msg_gc, msg_message, -1, GR_TFASCII, &width, &height, &base);
+	GrGetWindowInfo(msg_wid, &winfo);
 
-	GrRect(msg_wid, msg_gc, 1, 1, width + 8, height + 8);
-	GrText(msg_wid, msg_gc, 5, base + 5, msg_message, -1, GR_TFASCII);
+	GrRect(msg_wid, msg_gc, 1, 1, winfo.width - 2, winfo.height - 2);
+	for(i=linenum; i; i--)
+		GrText(msg_wid, msg_gc, 5, (((winfo.height-10) /
+				linenum) * i), msglines[i-1], -1,
+				GR_TFASCII);
 }
 
 static int msg_do_keystroke(GR_EVENT * event)
 {
-	int ret = 1;
+	int ret = 1, i;
 	switch (event->type) {
 	case GR_EVENT_TYPE_TIMER:
 	case GR_EVENT_TYPE_KEY_DOWN:
 		pz_close_window(msg_wid);
-		free(msg_message);
+		GrDestroyGC(msg_gc);
+		GrDestroyTimer(msg_timer);
+		for(i = linenum; i; i--)
+			free(msglines[i-1]);
+		free(msglines);
 	}
 
 	return ret;
@@ -53,8 +123,7 @@ static int msg_do_keystroke(GR_EVENT * event)
 void new_message_window(char *message)
 {
 	GR_SIZE width, height, base;
-
-	msg_message = strdup(message);
+	int i, maxwidth;
 
 	GrGetScreenInfo(&screen_info);
 
@@ -62,17 +131,26 @@ void new_message_window(char *message)
 	GrSetGCUseBackground(msg_gc, GR_FALSE);
 	GrSetGCForeground(msg_gc, BLACK);
 
-	GrGetGCTextSize(msg_gc, message, -1, GR_TFASCII, &width, &height, &base);
+	msg_build_msg(message);
+	maxwidth = 0;
+	for(i=linenum; i; i--) {
+		GrGetGCTextSize(msg_gc, msglines[i-1], -1, GR_TFASCII, &width,
+				&height, &base);
+		if(width > maxwidth)
+			maxwidth = width;
+	}
 
-	msg_wid = pz_new_window((screen_info.cols - (width + 10)) >> 1,
-		(screen_info.rows - (height + 10)) >> 1,
-		width + 10, height + 10, msg_do_draw, msg_do_keystroke);
+	msg_wid = pz_new_window((screen_info.cols - (maxwidth + 10)) >> 1,
+		(screen_info.rows - (((height + 3) * linenum) + 10)) >> 1,
+		maxwidth + 10, ((height + 3) * linenum) + 10,
+		msg_do_draw, msg_do_keystroke);
 
-	GrSelectEvents(msg_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_KEY_DOWN|GR_EVENT_MASK_TIMER);
+	GrSelectEvents(msg_wid, GR_EVENT_MASK_EXPOSURE| GR_EVENT_MASK_KEY_UP|
+			GR_EVENT_MASK_KEY_DOWN| GR_EVENT_MASK_TIMER);
 
 	GrMapWindow(msg_wid);
 
 	/* window will auto-close after 6 seconds */
-	timer_id = GrCreateTimer(msg_wid, 6000);
+	msg_timer = GrCreateTimer(msg_wid, 6000);
 }
 
