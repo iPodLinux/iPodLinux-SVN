@@ -1,3 +1,10 @@
+leachbj - Sat Nov  6 2004
+	implemented integrated mp3 playback
+	implemented non-threaded version of audio recording & playback
+	fixed settings reset to ensure that the contrast is not set to 0
+	load settings now loads load contrast setting correctly
+	made reset settings return to parent menu
+
 Courtney Cavin - Sun Oct 24 2004
 	calculator now uses inverse text for current selection
 	calendar no longer redraws entire screen on selection change
