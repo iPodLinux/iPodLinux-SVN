@@ -8,6 +8,9 @@
 #include <linux/module.h>
 #include <linux/delay.h>
 #include <linux/string.h>
+#include <linux/errno.h>
+#include <linux/sched.h>
+#include <linux/timer.h>
 #include <asm/io.h>
 #include <asm/hardware.h>
 
@@ -221,6 +224,196 @@ ipod_reboot_to_diskmode(void)
 	outl(inl(0xcf005030) | 0x4, 0xcf005030);
 }
 
+#define IPOD_I2C_CTRL	0xc0008000
+#define IPOD_I2C_ADDR	0xc0008004
+#define IPOD_I2C_DATA0	0xc000800c
+#define IPOD_I2C_STATUS	0xc000801c
+
+/* IPOD_I2C_CTRL bit definitions */
+#define IPOD_I2C_SEND	0x80
+
+/* IPOD_I2C_STATUS bit definitions */
+#define IPOD_I2C_BUSY	(1<<6)
+
+#define POLL_TIMEOUT (HZ)
+
+static int
+ipod_i2c_wait_not_busy(void)
+{
+	unsigned long timeout;
+
+	timeout = jiffies + POLL_TIMEOUT;
+	while (time_before(jiffies, timeout)) {
+		if (!(inb(IPOD_I2C_STATUS) & IPOD_I2C_BUSY)) {
+			return 0;
+		}
+		yield();
+	}
+
+	return -ETIMEDOUT;
+}
+
+int
+ipod_i2c_send_bytes(unsigned int addr, unsigned int len, unsigned char *data)
+{
+	int data_addr;
+	int i;
+
+	if (len < 1 || len > 4) {
+		return -EINVAL;
+	}
+
+	if (ipod_i2c_wait_not_busy() < 0) {
+		return -ETIMEDOUT;
+	}
+
+	// clear top 15 bits, left shift 1
+	outb((addr << 17) >> 16, IPOD_I2C_ADDR);
+
+	outb(inb(IPOD_I2C_CTRL) & ~0x20, IPOD_I2C_CTRL);
+
+	data_addr = IPOD_I2C_DATA0;
+	for ( i = 0; i < len; i++ ) {
+		outb(*data++, data_addr);
+
+		data_addr += 4;
+	}
+
+	outb((inb(IPOD_I2C_CTRL) & ~0x26) | ((len-1) << 1), IPOD_I2C_CTRL);
+
+	outb(inb(IPOD_I2C_CTRL) | IPOD_I2C_SEND, IPOD_I2C_CTRL);
+
+	return 0x0;
+}
+
+int
+ipod_i2c_send(unsigned int addr, int data0, int data1)
+{
+	unsigned char data[2];
+											
+	data[0] = data0;
+	data[1] = data1;
+
+	return ipod_i2c_send_bytes(addr, 2, data);
+}
+
+void
+ipod_serial_init(void)
+{
+	int hw_ver = ipod_get_hw_version() >> 16;
+
+	/* enable ttyS1 (piezo) */
+	outl(inl(0xcf004040) & ~0x1000, 0xcf004040);
+	if (hw_ver == 0x3) {
+		/* port c, bit 0 and 3 disabled */
+		outl(inl(0xcf00000c) & ~((1<<0)|(1<<3)), 0xcf00000c);
+	}
+
+	if (hw_ver == 0x3) {
+		/* 100100010001, 11,8,4,0 */
+		// outl(0x911, 0xcf004040);
+		/* 1000000000011100, 16,4,3,2 */
+		// outl(0x801c, 0xcf004048);
+
+		outl((inl(0xcf004040) & ~(1<<10)) | (1<<11) | (1<<8) | (1<<4), 0xcf004040);
+		outl(0x801c, 0xcf004048);
+	}
+	else {
+		/* 011110010001, 10,9,8,7,4,0 */
+		// outl(0x791, 0xcf004040);
+	}
+
+	/* enable ttyS0 (remote) */
+	if (hw_ver == 0x3) {
+#if 0
+		outl(inl(0xcf00000c) | 0x10, 0xcf00000c);
+		outl(inl(0xcf00001c) & ~0x10, 0xcf00001c);
+
+		// sub_0_28001CE4(0)
+		outl(inl(0xcf004048) & ~0x8, 0xcf004048);
+
+		// sub_0_28001C9C(0)
+		outl(inl(0xcf00000c) | 0x20, 0xcf00000c);
+		outl(inl(0xcf00001c) | 0x20, 0xcf00001c);
+		outl(inl(0xcf00002c) & ~0x20, 0xcf00001c);
+
+		// sub_0_28001C58(0)
+		outl(inl(0xcf004040) | 0x400, 0xcf004040);
+		outl(inl(0xcf004040) & ~0x800, 0xcf004040);
+		outl(inl(0xcf004048) & ~0x2, 0xcf004048);
+
+		// sub_0_28001C58(1)
+		outl(inl(0xcf004040) | 0x400, 0xcf004040);
+		outl(inl(0xcf004040) & ~0x800, 0xcf004040);
+		outl(inl(0xcf004048) | 0x2, 0xcf004048);
+
+		// sub_0_28001C10(0)
+		outl(inl(0xcf000008) | 0x40, 0xcf000008);
+		outl(inl(0xcf000018) | 0x40, 0xcf000018);
+		outl(inl(0xcf000028) & ~0x40, 0xcf000028);
+
+		udelay(1); /* Hold reset for at least 1000ns */
+
+		// sub_0_28001C10(1)
+		outl(inl(0xcf000008) | 0x40, 0xcf000008);
+		outl(inl(0xcf000018) | 0x40, 0xcf000018);
+		outl(inl(0xcf000028) | 0x40, 0xcf000028);
+
+		// sub_0_2800AB2C
+		outl(inl(0xcf005030) | 0x100, 0xcf005030);
+		outl(inl(0xcf005030) & ~0x100, 0xcf005030);
+
+		outl(0x1, 0xc0008020);
+		outl(0x0, 0xc0008030);
+		outl(0x51, 0xc000802c);
+		outl(0x0, 0xc000803c);
+
+		outl(inl(0xcf005000) | 0x2, 0xcf005000);
+
+		outl(inl(0xc000251c) | 0x10000, 0xc000251c);
+		outl(inl(0xc000251c) & ~0x10000, 0xc000251c);
+		outl(inl(0xc000251c) | 0x30000, 0xc000251c);
+		outl(0x15, 0xc0002500);
+
+		outl(inl(0xcf00000c) | 0x40, 0xcf00000c);
+		outl(inl(0xcf00001c) & ~0x40, 0xcf00000c);
+
+		outl(0x7, 0xc0008034);
+		outl(0x0, 0xc0008038);
+		// end sub_0_2800AB2C
+#endif
+	}
+	else {
+		outl(inl(0xcf00000c) & ~0x8, 0xcf00000c);
+	}
+
+	/* 3g ttyS0 init */
+	if (hw_ver == 0x3) {
+		ipod_i2c_send(0x8, 0x24, 0xf5);
+		ipod_i2c_send(0x8, 0x25, 0xf8);
+		ipod_i2c_send(0x8, 0x26, 0xf5);
+		ipod_i2c_send(0x8, 0x34, 0x02);
+		ipod_i2c_send(0x8, 0x1b, 0xf9);
+
+		// sub_0_2800147C(0)
+		outl(inl(0xcf004044) | (1<<4), 0xcf004044);
+		outl(inl(0xcf004048) & ~(1<<4), 0xcf004048);
+
+		/* port c bit 3 output 1 */
+		// sub_0_28001434(1)
+		outl(inl(0xcf000008) | (1<<3), 0xcf000008);
+		outl(inl(0xcf000018) | (1<<3), 0xcf000018);
+		outl(inl(0xcf000028) | (1<<3), 0xcf000028);
+
+		// rmt_uart_init
+		outl(inl(0xcf00000c) & ~0x1, 0xcf00000c);
+		outl(inl(0xcf00000c) & ~0x8, 0xcf00000c);
+	}
+}
+
 EXPORT_SYMBOL(ipod_get_hw_version);
 EXPORT_SYMBOL(ipod_get_sysinfo);
+EXPORT_SYMBOL(ipod_i2c_send_bytes);
+EXPORT_SYMBOL(ipod_i2c_send);
+EXPORT_SYMBOL(ipod_serial_init);
 

@@ -65,6 +65,9 @@ struct sysinfo_t {
 
 extern unsigned ipod_get_hw_version(void);
 extern struct sysinfo_t *ipod_get_sysinfo(void);
+extern int ipod_i2c_send_bytes(unsigned int addr, unsigned int len, unsigned char *data);
+extern int ipod_i2c_send(unsigned int addr, int data0, int data1);
+extern void ipod_serial_init(void);
 #endif
 
 #endif
