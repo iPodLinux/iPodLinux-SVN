@@ -78,10 +78,6 @@ static void browser_exit()
 		free(browser_entries[i].full_name);
 	}
 	browser_nbEntries = 0;
-
-	if (current_dir[0] != 0) {
-		chdir(current_dir);
-	}
 }
 
 /* the directory to scan */
@@ -145,6 +141,18 @@ static void browser_mscandir(char *dira)
 	closedir(dir);
 }
 
+static void browser_exec_file(char *filename)
+{
+	int len;
+	char *path;
+
+	len = strlen(filename) + strlen(current_dir) + 2;
+	path = (char *)malloc(len * sizeof(char));
+	snprintf(path, len, "%s/%s", current_dir, filename);
+	new_exec_window(path);
+	free(path);
+}
+
 static void browser_do_draw()
 {
 	/* window is focused */
@@ -196,7 +204,7 @@ static void handle_type_other(char *filename)
 			new_textview_window(filename);
 		}
 		else if (is_binary_type(filename)) {
-			new_exec_window(filename);
+			browser_exec_file(filename);
 		}
 		else {
 			new_message_window("No Default Action for this Filetype");
@@ -215,13 +223,13 @@ static void handle_type_other(char *filename)
 	}
 #endif /* __linux __ */
 	else if (is_script_type(ext)) {
-		new_exec_window(filename);
+		browser_exec_file(filename);
 	}
 	else if (is_text_type(ext)||is_ascii_file(filename)) {
 		new_textview_window(filename);
 	}
 	else if (is_binary_type(filename)) {
-		new_exec_window(filename);
+		browser_exec_file(filename);
 	}
 	else  {
 		new_message_window("No Default Action for this Filetype");
@@ -233,6 +241,7 @@ static void browser_selection_activated(unsigned short userChoice)
 	switch (browser_entries[userChoice].type) {
 	case FILE_TYPE_DIRECTORY:
 		chdir(browser_entries[userChoice].full_name);
+		getcwd(current_dir, sizeof(current_dir));
 		browser_mscandir("./");
 		break;
 	case FILE_TYPE_PROGRAM:
@@ -247,9 +256,9 @@ static void browser_vip_open_file()
 	int len;
 	char *execline;
 	
-	len = strlen(current_file) + 5;
+	len = strlen(current_dir) + strlen(current_file) + 6;
 	execline = (char *)malloc(len * sizeof(char));
-	snprintf(execline, len, "viP %s", current_file);
+	snprintf(execline, len, "viP %s/%s", current_dir, current_file);
 	new_exec_window(execline);
 	free(execline);
 }
@@ -442,12 +451,9 @@ static int browser_do_keystroke(GR_EVENT * event)
 void new_browser_window(char *initial_path)
 {
 	if (initial_path) {
-		getcwd(current_dir, sizeof(current_dir));
 		chdir(initial_path);
 	}
-	else {
-		current_dir[0] = 0;
-	}
+	getcwd(current_dir, sizeof(current_dir));
 
 	browser_gc = pz_get_gc(1);
 	GrSetGCUseBackground(browser_gc, GR_FALSE);
