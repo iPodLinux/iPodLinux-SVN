@@ -318,13 +318,12 @@ void new_textview_window(char *filename)
 		}
 	}
 	else {
-		if((buf = malloc(file_len+1))==NULL) {
-			destroy_textview_window("malloc failed");
+		if((buf = calloc(file_len+1, 1))==NULL) {
+			destroy_textview_window("calloc failed");
 			return;
 		}
 		if(fread(buf, 1, file_len, fp)!=file_len)
 			pz_error("unknown read error, continuing");
-		buf[file_len] = '\0';
 	}
 	if(buf=='\0') {
 		destroy_textview_window(NULL);
