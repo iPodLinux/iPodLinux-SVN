@@ -70,6 +70,17 @@ pci_unmap_single(struct pci_dev *hwdev, dma_addr_t dma_addr, size_t size, int di
 	/* nothing to do */
 }
 
+static inline dma_addr_t pci_map_page(struct pci_dev *hwdev, struct page *page,
+                                      unsigned long offset, size_t size, int direction)
+{
+	return (dma_addr_t)(page - mem_map) * PAGE_SIZE + offset;
+}
+
+static inline void pci_unmap_page(struct pci_dev *hwdev, dma_addr_t dma_address,                                  size_t size, int direction)
+{
+	/* Nothing to do */
+}
+
 /* Map a set of buffers described by scatterlist in streaming
  * mode for DMA.  This is the scather-gather version of the
  * above pci_map_single interface.  Here the scatter gather list
