@@ -2,6 +2,9 @@
 /* misc.c part of Nimesweeper */
 /*  Copyright (C) 2002 by Daniel Burnett
 
+    Copyright (C) 2004 by Matthis Rouch (iPod port)
+	- with lots of code taken from Courtney Cavin's ipod-othello port
+
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation.
@@ -88,9 +91,12 @@ int Args(int Argc, char **Argv)
 /* To handle signals */
 void CleanUp(int signal)
 {
+#ifdef USE_NCURSES
 	clear();
 	refresh();
 	endwin();
+#endif
+
 	fprintf(stderr,"\n*** Caught Signal ");
 
 	switch(signal)
@@ -142,12 +148,16 @@ FILE *OpenFile(char *Mode)
 	
 	if( (File = fopen(HIGHSCORES,Mode)) == NULL )
 	{
+#ifdef USE_NCURSES
 		beep();
 		def_prog_mode();
 		endwin();
+#endif
 		perror(HIGHSCORES);
 		sleep(2);
+#ifdef USE_NCURSES
 		reset_prog_mode();
+#endif
 		return NULL;
 	}
 	else
@@ -157,15 +167,19 @@ FILE *OpenFile(char *Mode)
 /* Prints error message if fread or fwrite fail */
 void FileError(FILE *File, char *Type)
 {
+#ifdef USE_NCURSES
 	beep();
 	def_prog_mode();
 	endwin();
+#endif
 	fprintf(stderr,"A %s error has occured\n",Type);
 	perror(HIGHSCORES);
 	clearerr(File);
 	fclose(File);
 	sleep(2);
+#ifdef USE_NCURSES
 	reset_prog_mode();
+#endif
 }
 
 /* To create and initialise a new Highscores file.
@@ -180,15 +194,24 @@ void CreateScoresFile(void)
 	
 	HighPtr = HighArray;
 
+#ifdef USE_NCURSES
 	printf("Create new highscores file (%s) [y/N]?",HIGHSCORES);
 	fflush(stdin);	
 	ch = fgetc(stdin);
+#else
+	ch = 'y';
+#endif
 	if( ch == 'Y' || ch == 'y' )
 	{
 		if( (ScoresFile = fopen(HIGHSCORES,"wb")) == NULL )
 		{
+#ifdef USE_NCURSES
 			perror(HIGHSCORES);
 			exit(7);
+#else
+			fprintf(stderr,"%s has not been created.\n",HIGHSCORES);
+			return;
+#endif
 		}
 
 		for(i=0;i<ENTRIES;i++)
@@ -241,24 +264,32 @@ int CheckScoresFile(void)
 	if( fseek(ScoresFile,0L,SEEK_END) != 0)
 	{
 		fclose(ScoresFile);
+#ifdef USE_NCURSES
 		beep();
 		def_prog_mode();
 		endwin();
+#endif
 		fprintf(stderr,"Could not access end of %s\n",HIGHSCORES);
 		sleep(2);
+#ifdef USE_NCURSES
 		reset_prog_mode();
+#endif
 		return FALSE;
 	}
 
 	if( ftell(ScoresFile) != (sizeof(HighScores)) * 40 )
 	{
 		fclose(ScoresFile);
+#ifdef USE_NCURSES
 		beep();
 		def_prog_mode();
 		endwin();
+#endif
 		fprintf(stderr,"%s is corrupt\n",HIGHSCORES);
 		sleep(2);
+#ifdef USE_NCURSES
 		reset_prog_mode();
+#endif
 		return FALSE;
 	}
 	
@@ -284,13 +315,17 @@ int CheckScoresFile(void)
 		/* greater than a 72 Hour best time? Unless they were stoned maybe... */
 		if( HighPtr->Time > 259200 || HighPtr->Time < 0 )
 		{
+#ifdef USE_NCURSES
 			beep();
 			def_prog_mode();
 			endwin();
+#endif
 			fprintf(stderr,"%s looks like it is corrupt\n",HIGHSCORES);
 			fprintf(stderr,"The time \"%ld\" is too far out.\n",HighPtr->Time);
 			sleep(2);
+#ifdef USE_NCURSES
 			reset_prog_mode();
+#endif
 			return FALSE;
 		}
 		for(j=0;j<NAMELEN;j++)
@@ -302,25 +337,33 @@ int CheckScoresFile(void)
 			}
 			else
 			{
+#ifdef USE_NCURSES
 				beep();
 				def_prog_mode();
 				endwin();
+#endif
 				fprintf(stderr,"%s looks like it is corrupt.\n",HIGHSCORES);
 				fprintf(stderr,"The name \"%s\" has invalid characters.\n",HighPtr->Name);
 				sleep(2);
+#ifdef USE_NCURSES
 				reset_prog_mode();
+#endif
 				return FALSE;
 			} 
 		}
 		if( HighPtr->Name[NAMELEN] != '\0' )
 		{
+#ifdef USE_NCURSES
 			beep();
 			def_prog_mode();
 			endwin();
+#endif
 			fprintf(stderr,"%s looks like it is corrupt\n",HIGHSCORES);
 			fprintf(stderr,"No terminating null value found for name.\n");
 			sleep(2);
+#ifdef USE_NCURSES
 			reset_prog_mode();
+#endif
 			return FALSE;
 		}
 			

@@ -2,6 +2,9 @@
 /* gameplay.c part of Nimesweeper */
 /*  Copyright (C) 2002 by Daniel Burnett
 
+    Copyright (C) 2004 by Matthis Rouch (iPod port)
+	- with lots of code taken from Courtney Cavin's ipod-othello port
+
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation.
@@ -25,7 +28,13 @@
    their limits. */
 void ClearPath(register int x, register int y, int width, int height)
 {
+#ifdef USE_NCURSES
 	mvwaddch(GameWin,Y,X,CLEAR | COLOR_PAIR(3));
+#else
+	GrSetGCForeground(mines_gc, BLACK);
+	GrFillRect(mines_wid, mines_gc, (x*12)+3, (y*12)+7, 11, 11);
+#endif
+
 	flags[x][y] = TRUE;
 	
 	/* Uncover any surrounding numbered squares */
@@ -85,6 +94,7 @@ void ClearPath(register int x, register int y, int width, int height)
 /* Function to show the number of unused flags */
 void ShowRemainingFlags(GameStats *Game)
 {
+#ifdef USE_NCURSES
 	mvwprintw(FlagsWin,1,2,"Flags remaining (");
 	waddch(FlagsWin,FLAG | COLOR_PAIR(8) | A_BOLD);
 	wprintw(FlagsWin,") - ");
@@ -101,6 +111,11 @@ void ShowRemainingFlags(GameStats *Game)
 	wprintw(FlagsWin,"%3d",Game->MinesSet - Game->Guesses);
 	wattroff(FlagsWin, COLOR_PAIR(2) | COLOR_PAIR(7) | A_BOLD);
 	wrefresh(FlagsWin);
+#else
+	char bombstring[32];
+	sprintf(bombstring,"Flags left: %i   ", Game->MinesSet - Game->Guesses);
+	pz_draw_header(bombstring);
+#endif
 }
 
 /* Function to Flag/Unflag a square. */
@@ -110,13 +125,25 @@ void MarkSquare(register int x, register int y)
 	{
 	/* If the sqaure is unflagged: flag it.*/
 	case FALSE:
+#ifdef USE_NCURSES
 		mvwaddch(GameWin,Y,X,FLAG | COLOR_PAIR(8) | A_BOLD);
+#else
+		GrSetGCForeground(mines_gc, BLACK);
+	        GrFillRect(mines_wid, mines_gc, X-2, Y-11, 12, 12);
+		GrSetGCForeground(mines_gc, WHITE);
+		GrText(mines_wid, mines_gc, X, Y, "P", -1, GR_TFASCII);
+		GrRect(mines_wid, mines_gc, (x*12)+2, (y*12)+6, 13, 13);
+#endif
 		flags[x][y] = FLAGGED;
 		break;
 	/* If the square is flagged: unflag it. */
 	case FLAGGED:
-		
+#ifdef USE_NCURSES
                 mvwaddch(GameWin,Y,X,UNKNOWN | COLOR_PAIR(1) | A_BOLD);
+#else
+		GrSetGCForeground(mines_gc, WHITE);
+		GrText(mines_wid, mines_gc, X, Y, " ", -1, GR_TFASCII);
+#endif
                 flags[x][y] = FALSE;
 		break;
         }
@@ -132,8 +159,10 @@ int FlagSquare(GameStats *Game)
 	if( (Game->MinesSet - Game->Guesses) <= FALSE
 	    && flags[Game->x][Game->y] == FALSE )
 	{
+#ifdef USE_NCURSES
 		flash();
 		beep();
+#endif
 		return FALSE;
 	}
 		
@@ -172,6 +201,9 @@ int FlagSquare(GameStats *Game)
 
 	/* Flag square */
 	MarkSquare(Game->x,Game->y);
+#ifndef USE_NCURSES
+	ShowRemainingFlags(Game);	/* XXX is this a bug?? */
+#endif
 	
 	/* Test for a winner */
 	if( Game->Correct >= Game->MinesSet )
@@ -180,7 +212,7 @@ int FlagSquare(GameStats *Game)
 		return FALSE;
 }
 
-
+#ifdef USE_NCURSES
 /* Moves cursor Up */
 void MoveUp(GameStats *Game)
 {
@@ -193,20 +225,38 @@ void MoveDown(GameStats *Game)
 	if( ++Game->y > Game->Height-1 )
 		Game->y = 0;
 }
+#endif
 /* Moves cursor left */
 void MoveLeft(GameStats *Game)
 {
 	if( --Game->x < 0 )
+	{
 		Game->x = Game->Width-1;
+#ifndef USE_NCURSES
+		if(--Game->y < 0)
+		{
+			Game->y = Game->Height-1;
+		}
+#endif
+	}
+
 }
 /* Moves cursor right */
 void MoveRight(GameStats *Game)
 {
 	if( ++Game->x > Game->Width-1 )
+	{
 		Game->x = 0;
+#ifndef USE_NCURSES
+		if(++Game->y > Game->Height-1)
+		{
+			Game->y = 0;
+		}
+#endif
+	}
 }
 
-
+#ifdef USE_NCURSES
 /* Help function: displays on-screen help */
 void ShowHelp(int Width, int Height)
 {
@@ -257,6 +307,7 @@ void ShowHelp(int Width, int Height)
 	redrawwin(GameWin);
 	curs_set(1);
 }
+#endif
 
 
 /* Function to uncover numbers surrounding a "clear" square.
@@ -306,10 +357,13 @@ void UncoverBoundary(register int x, register int y, int width, int height)
    Returns 1 on a mine, 0 otherwise */
 int Uncover(int x, int y, int width, int height)
 {
+#ifndef USE_NCURSES
+	char numberofbombs[8];
+#endif
 
-flags[x][y] = TRUE;
-switch(grid[x][y])
-{
+	flags[x][y] = TRUE;
+	switch(grid[x][y])
+	{
 	/* Oops, someone uncovered a mine */
 	case MINED:
 		return TRUE;
@@ -319,27 +373,46 @@ switch(grid[x][y])
 	case 8:
 	case 7:
 	case 6: /* Bold magenta */
+#ifdef USE_NCURSES
 		mvwaddch(GameWin,Y,X, ('0'+grid[x][y]) | COLOR_PAIR(5) | A_BOLD);
 		break;
+#endif
 	case 5:
+#ifdef USE_NCURSES
 		/* Magenta */
 		mvwaddch(GameWin,Y,X, ('0'+grid[x][y]) | COLOR_PAIR(5));
 		break;
+#endif
 	case 4:
+#ifdef USE_NCURSES
 		/* Red */
 		mvwaddch(GameWin,Y,X, ('0'+grid[x][y]) | COLOR_PAIR(2));
 		break;
+#endif
 	case 3:
+#ifdef USE_NCURSES
 		/* Bold red */
 		mvwaddch(GameWin,Y,X, ('0'+grid[x][y]) | COLOR_PAIR(2) | A_BOLD);
 		break;
+#endif
 	case 2:
+#ifdef USE_NCURSES
 		/* Yellow */
 		mvwaddch(GameWin,Y,X, ('0'+grid[x][y]) | COLOR_PAIR(4));
 		break;
+#endif
 	case 1:
+#ifdef USE_NCURSES
 		/* Bold blue */
 		mvwaddch(GameWin,Y,X, ('0'+grid[x][y]) | COLOR_PAIR(6) | A_BOLD);
+#else
+		GrSetGCForeground(mines_gc, BLACK);
+		GrFillRect(mines_wid, mines_gc, (x*12)+3, (y*12)+7, 11, 11);
+		sprintf(numberofbombs,"%i", grid[x][y]);
+		GrSetGCForeground(mines_gc, WHITE);
+		GrText(mines_wid, mines_gc, X, Y, numberofbombs, -1, GR_TFASCII);
+		GrRect(mines_wid, mines_gc, (x*12)+2, (y*12)+6, 13, 13);
+#endif
 		break;
 	case 0:
 		ClearPath(x,y,width,height);
@@ -347,13 +420,16 @@ switch(grid[x][y])
 	
 	/* This "shouldn't" ever happen, but... */
 	default:
+#ifdef USE_NCURSES
 		endwin();
+#endif
 		fprintf(stderr,"Uncover::grid[x][y] is out of range\n");
 		exit(1);
-}
-return 0;
+	}
+	return 0;
 }
 
+#ifdef USE_NCURSES
 /* Pauses game, "stops/starts" timer. */
 int Pause(GameStats *Game, struct timeval *start, struct timeval *stop)
 {
@@ -380,8 +456,9 @@ int Pause(GameStats *Game, struct timeval *start, struct timeval *stop)
 	gettimeofday(start,NULL);
 	return TRUE;
 }
+#endif
 
-
+#ifdef USE_NCURSES
 /* Function that changes the difficulty, 
    returns TRUE is it is changed, FALSE otherwise */
 int ChangeDifficultyLevel(GameStats *Game)
@@ -477,7 +554,7 @@ int ChangeDifficultyLevel(GameStats *Game)
 	curs_set(1);
 	return RetVal;
 }
-
+#endif
 
 
 /* Function to deal with a win or loss */
@@ -485,10 +562,13 @@ int Winner(GameStats *Game, int winner)
 {
 	register int x_coord,y_coord;
 	char ch;
+#ifdef USE_NCURSES
 	WINDOW *WinnerWin;
+#endif
 	
 	if( winner == TRUE )
 	{
+#ifdef USE_NCURSES
 		mvwaddstr(FlagsWin,1,1,"           Clear          ");
 		WinnerWin = Draw_WinnerWin(Game->Width,Game->Height);
 		wattron(WinnerWin,COLOR_PAIR(1) | A_BOLD);
@@ -496,35 +576,71 @@ int Winner(GameStats *Game, int winner)
 		wattroff(WinnerWin,COLOR_PAIR(1) | A_BOLD);
 		wattron(WinnerWin,COLOR_PAIR(7));
 		mvwprintw(WinnerWin,4,5,"Time  %4ld seconds",Game->Timer);
+#else
+		char timestring[64];
+
+		GrSetGCForeground(mines_gc, BLACK);
+		GrFillRect(mines_wid, mines_gc, 0, 6, 160, 114);
+		GrSetGCForeground(mines_gc, WHITE);
+
+		pz_draw_header(" Clear!      ");
+
+		GrSetGCForeground(mines_gc, WHITE);
+		GrText(mines_wid, mines_gc, 20, 12, "Well Done!",  -1, GR_TFASCII);
+
+		sprintf(timestring,"Time: %i seconds", Game->Timer);
+		GrText(mines_wid, mines_gc, 20, 26, timestring,  -1, GR_TFASCII);
+#endif
+
 		if( CheckScoresFile() == TRUE )
 		{
 			if( IsHighScore(Game->Timer,Game->Difficulty) == TRUE )
 			{
+#ifdef USE_NCURSES
 				mvwaddstr(FlagsWin,1,1,"       A New Record!      ");
 				wrefresh(FlagsWin);
+#else
+				GrText(mines_wid, mines_gc, 20, 40, "A New Record!", -1, GR_TFASCII);
+#endif
 				NewHighScore(Game);
+#ifdef USE_NCURSES
 				redrawwin(WinnerWin);
+#endif
 			}
 		}
 	}
 	else
 	{
+#ifdef USE_NCURSES
 		flash();
 		mvwaddstr(FlagsWin,1,1,"                          ");
+#endif
 		/* Show all mines that are still covered */
 		for(x_coord = 0;x_coord<Game->Width;x_coord++)
                		for(y_coord=0;y_coord<Game->Height;y_coord++)
                         	if( grid[x_coord][y_coord] == MINED 
-				    && flags[x_coord][y_coord] != FLAGGED )
+				    && flags[x_coord][y_coord] != FLAGGED ) {
+#ifdef USE_NCURSES
                                 	mvwaddch(GameWin,y_coord+1,x_coord*2+1,MINE | COLOR_PAIR(2));
+#else
+					GrSetGCForeground(mines_gc, WHITE);
+					GrText(mines_wid, mines_gc, x_coord*12+5-156*(int)(x_coord/13), 17+12*y_coord, "X", -1, GR_TFASCII);
+#endif
+				}
+
+#ifdef USE_NCURSES
 	        mvwaddch(GameWin,Game->Y,Game->X,MINE | A_BLINK | A_BOLD | COLOR_PAIR(2));
 		wrefresh(GameWin);
 	        WinnerWin = Draw_WinnerWin(Game->Width,Game->Height);
 		wattron(WinnerWin,A_BLINK | A_BOLD | COLOR_PAIR(2));
 		mvwprintw(WinnerWin,3,5,"You trod on a mine!");
 		wattroff(WinnerWin,A_BLINK | A_BOLD);
+#else
+		pz_draw_header(" You trod on a mine!                     ");
+#endif
 	}
 
+#ifdef USE_NCURSES
 	curs_set(0);
 	wattron(WinnerWin,COLOR_PAIR(7));
 	mvwaddstr(WinnerWin,6,2,"(");
@@ -546,7 +662,8 @@ int Winner(GameStats *Game, int winner)
 		return FALSE;
 	else
 		return TRUE;
+#else
+	return TRUE;
+#endif
 }
-
-
 
