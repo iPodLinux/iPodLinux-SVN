@@ -1,3 +1,10 @@
+Courtney Cavin - Fri Feb 04 2005
+	textviewer has better memory management
+	 - no longer crashes on particular files
+	 - malloc/free's replaced with realloc's
+	filebrowser now opens any ascii file, including those in /proc
+	string viewing can now be done with new_stringview_window
+
 David Carne - Thursday Feb 03 2005
 	semi-fixed volume scroll for mp3 playback
 
