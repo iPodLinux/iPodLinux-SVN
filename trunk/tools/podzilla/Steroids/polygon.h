@@ -19,7 +19,8 @@ typedef struct SteroidsPolygon
 } Steroids_Polygon;
 
 void steroids_polygon_draw (Steroids_Polygon *p,
-			    int clipMode);
+			    int clipMode,
+			    GR_WINDOW_ID wid);
 
 
 /** Copies a polygon from source to target.

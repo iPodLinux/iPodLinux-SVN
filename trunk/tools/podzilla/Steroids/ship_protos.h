@@ -6,7 +6,7 @@
 
 void steroids_ship_init (Steroids_Ship *ship);
 
-void steroids_ship_draw (Steroids_Ship *ship);
+void steroids_ship_draw (Steroids_Ship *ship, GR_WINDOW_ID wid);
 
 void steroids_ship_drawReserve (GR_WINDOW_ID wid, GR_GC_ID gc);
 void steroids_ship_eraseReserve (int ships, GR_WINDOW_ID wid, GR_GC_ID gc);

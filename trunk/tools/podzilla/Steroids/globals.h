@@ -45,14 +45,11 @@ typedef struct SteroidsGlobals
     GR_GC_ID       topLeft_gc;
 
     GR_WINDOW_ID   game_wid;
+    GR_WINDOW_ID   temp_wid;
     GR_GC_ID       game_gc;
-    GR_SCREEN_INFO screen_info;
 
 } Steroids_Globals;
 
-
-//GR_WINDOW_ID root_wid;
-//GR_GC_ID root_gc;
 
 
 Steroids_Globals steroids_globals;

@@ -79,22 +79,22 @@ void steroids_ship_init (Steroids_Ship *ship)
 }
 
 
-void steroids_ship_draw (Steroids_Ship *ship)
+void steroids_ship_draw (Steroids_Ship *ship, GR_WINDOW_ID wid)
 {
     switch (ship->state)
     {
     case STEROIDS_SHIP_STATE_LIVE:
     case STEROIDS_SHIP_STATE_RETRO:
     case STEROIDS_SHIP_STATE_THRUST:
-	steroids_object_draw (&ship->shape, 0);
+	steroids_object_draw (&ship->shape, 0, wid);
 	break;
 
     case STEROIDS_SHIP_STATE_DIE:
-	steroids_object_draw (&ship->shape, 0);
+	steroids_object_draw (&ship->shape, 0, wid);
 	break;
     }
 
-    steroids_shot_drawall (exhaust, 5);
+    steroids_shot_drawall (exhaust, 5, wid);
 }
 
 

@@ -30,8 +30,8 @@ void steroids_shot_newShip (Steroids_Shot *shot,
 			    Steroids_Ship *ship);
 
 
-void steroids_shot_drawall (Steroids_Shot *shot, int n);
-void steroids_shot_draw (Steroids_Shot *shot);
+void steroids_shot_drawall (Steroids_Shot *shot, int n, GR_WINDOW_ID wid);
+void steroids_shot_draw (Steroids_Shot *shot, GR_WINDOW_ID wid);
 
 /** Animates shot according to velocity and accelleration.
  * 

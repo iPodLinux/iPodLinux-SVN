@@ -3,19 +3,20 @@
 #include "object.h"
 
 void steroids_object_draw (Steroids_Object *o,
-			    int clipMode)
+			   int clipMode,
+			   GR_WINDOW_ID wid)
 {
     GrSetGCForeground (steroids_globals.game_gc, o->colour);
     switch (o->type)
     {
     case STEROIDS_OBJECT_TYPE_POINT:
-	GrPoint (steroids_globals.game_wid,
+	GrPoint (wid,
 		 steroids_globals.game_gc,
 		 o->geometry.point.x,
 		 o->geometry.point.y);
 	break;
     case STEROIDS_OBJECT_TYPE_POLYGON:
-	steroids_polygon_draw (&o->geometry.polygon, clipMode);
+	steroids_polygon_draw (&o->geometry.polygon, clipMode, wid);
 	break;
     }
 }
