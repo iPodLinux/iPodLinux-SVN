@@ -171,7 +171,7 @@ static void set_dsp_channels(int fd, int channels)
 	ioctl(fd, SNDCTL_DSP_CHANNELS, &channels);
 }
 
-static void dsp_do_draw(GR_EVENT * event)
+static void dsp_do_draw()
 {
 	if (mode == RECORD) {
 		pz_draw_header("Record");
@@ -497,74 +497,76 @@ static void resume_dsp()
 
 static int dsp_do_keystroke(GR_EVENT * event)
 {
-	if (event->type == GR_EVENT_TYPE_TIMER) {
+	switch (event->type) {
+	case GR_EVENT_TYPE_TIMER:
 		currenttime = currenttime + 1;
 		draw_time();
-		return 1;
-	}
-
-	switch (event->keystroke.ch) {
-	case '\r':
-	case '\n':
-		if (playing || recording) {
-			stop_dsp();
+		break;
+	case GR_EVENT_TYPE_KEY_DOWN:
+		switch (event->keystroke.ch) {
+		case '\r':
+		case '\n':
+			if (playing || recording) {
+				stop_dsp();
+				pz_close_window(dsp_wid);
+			}
+			else {
+				if (mode == PLAYBACK) {
+					start_playback();
+				}
+				else {
+					start_recording();
+				}
+			}
+			break;
+	
+		case 'm':
+			if (playing || recording) {
+				stop_dsp();
+			}
 			pz_close_window(dsp_wid);
-		}
-		else {
-			if (mode == PLAYBACK) {
-				start_playback();
+			break;
+	
+		case '1':
+		case 'd':
+			if (playing || recording) {
+				if (paused) {
+					/* timer_id = GrCreateTimer(dsp_wid, 1000); draw_time(); */
+					resume_dsp();
+				}
+				else {
+					pause_dsp();
+					/*GrDestroyTimer(timer_id); draw_time();*/
+				}
 			}
-			else {
-				start_recording();
+			dsp_do_draw(0);
+			draw_time();
+			break;
+		case '3':
+		case 'l':
+			if (playing && mixer_fd >= 0 && pcm_vol > 0) {
+				int vol;
+				pcm_vol--;
+				vol = pcm_vol << 8 | pcm_vol;
+				ioctl(mixer_fd, SOUND_MIXER_WRITE_PCM, &vol);
 			}
-		}
-		break;
-
-	case 'm':
-		if (playing || recording) {
-			stop_dsp();
-		}
-		pz_close_window(dsp_wid);
-		break;
-
-	case '1':
-	case 'd':
-		if (playing || recording) {
-			if (paused) {
-				/* timer_id = GrCreateTimer(dsp_wid, 1000); draw_time(); */
-				resume_dsp();
+			break;
+		case '2':
+		case 'r':
+			if (playing && mixer_fd >= 0 && pcm_vol < 100) {
+				int vol;
+				pcm_vol++;
+				vol = pcm_vol << 8 | pcm_vol;
+				ioctl(mixer_fd, SOUND_MIXER_WRITE_PCM, &vol);
 			}
-			else {
-				pause_dsp();
-				/*GrDestroyTimer(timer_id); draw_time();*/
-			}
-		}
-		dsp_do_draw(0);
-		draw_time();
-		break;
-	case '3':
-	case 'l':
-		if (playing && mixer_fd >= 0 && pcm_vol > 0) {
-			int vol;
-			pcm_vol--;
-			vol = pcm_vol << 8 | pcm_vol;
-			ioctl(mixer_fd, SOUND_MIXER_WRITE_PCM, &vol);
-		}
-		break;
-	case '2':
-	case 'r':
-		if (playing && mixer_fd >= 0 && pcm_vol < 100) {
-			int vol;
-			pcm_vol++;
-			vol = pcm_vol << 8 | pcm_vol;
-			ioctl(mixer_fd, SOUND_MIXER_WRITE_PCM, &vol);
+			break;
 		}
 		break;
 	}
 
 	return 1;
 }
-
+	
 
 void new_record_window()
 {

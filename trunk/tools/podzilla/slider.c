@@ -49,28 +49,32 @@ static void slider_do_draw(void)
 static int slider_do_keystroke(GR_EVENT * event)
 {
 	int ret = 0;
-	switch (event->keystroke.ch) {
-	case '\r':
-	case 'm':
-		pz_close_window(slider_wid);
-		ret = 1;
-		break;
-
-	case 'l':
-		if (slider.value) {
-			slider.value--;
-			ipod_set_setting(slider.setting, slider.value);
-			slider_do_draw();
+	switch (event->type) {
+	case GR_EVENT_TYPE_KEY_DOWN:
+		switch (event->keystroke.ch) {
+		case '\r':
+		case 'm':
+			pz_close_window(slider_wid);
 			ret = 1;
-		}
-		break;
+			break;
+	
+		case 'l':
+			if (slider.value) {
+				slider.value--;
+				ipod_set_setting(slider.setting, slider.value);
+				slider_do_draw();
+				ret = 1;
+			}
+			break;
 
-	case 'r':
-		if (slider.value < slider.max - 1) {
-			slider.value++;
-			ipod_set_setting(slider.setting, slider.value);
-			slider_do_draw();
-			ret = 1;
+		case 'r':
+			if (slider.value < slider.max - 1) {
+				slider.value++;
+				ipod_set_setting(slider.setting, slider.value);
+				slider_do_draw();
+				ret = 1;
+			}
+			break;
 		}
 		break;
 	}

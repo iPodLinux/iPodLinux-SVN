@@ -85,43 +85,47 @@ calendar_do_keystroke(GR_EVENT * event)
 {
 	int ret = 0;
 	last_mday = shown.mday;
-	switch (event->keystroke.ch) {
-	case 'w':
-		prev_month(&shown, 0);
-		ret = 1;
-		break;
+	switch(event->type) {
+	case GR_EVENT_TYPE_KEY_DOWN:
+		switch (event->keystroke.ch) {
+		case 'w':
+			prev_month(&shown, 0);
+			ret = 1;
+			break;
 
-	case 'f':
-		next_month(&shown, 0);
-		ret = 1;
-		break;
+		case 'f':
+			next_month(&shown, 0);
+			ret = 1;
+			break;
 
-	case 'm':
-		pz_close_window(calendar_wid);
-		ret = 1;
-		break;
+		case 'm':
+			pz_close_window(calendar_wid);
+			ret = 1;
+			break;
 
-	case 'r':
-		shown.mday++;
-		if (shown.mday > days_in_month[leap_year][shown.mon])
-			next_month(&shown, 1);
-		else {
-			calendar_draw(0);
+		case 'r':
+			shown.mday++;
+			if (shown.mday > days_in_month[leap_year][shown.mon])
+				next_month(&shown, 1);
+			else {
+				calendar_draw(0);
+			}
+			ret = 1;
+			break;
+
+		case 'l':
+			shown.mday--;
+			if (shown.mday < 1)
+				prev_month(&shown, 1);
+			else {
+				calendar_draw(0);
+			}
+			ret = 1;
+			break;
 		}
-		ret = 1;
 		break;
 
-	case 'l':
-		shown.mday--;
-		if (shown.mday < 1)
-			prev_month(&shown, 1);
-		else {
-			calendar_draw(0);
-		}
-		ret = 1;
-		break;
 	}
-
 	return ret;
 }
 

@@ -271,48 +271,51 @@ static int mines_do_keystroke(GR_EVENT * event)
 	/* keystrokes during gameplay */
 	if (restart==2)
 	{
-		switch (event->keystroke.ch)
-		{
-		case 'l':
-			MoveLeft(&Game);
-			draw_current_pos(TRUE);
-			break;
+		switch(event->type) {
+		case GR_EVENT_TYPE_KEY_DOWN:
+			switch (event->keystroke.ch) {
+			case 'l':
+				MoveLeft(&Game);
+				draw_current_pos(TRUE);
+				break;
 
-		case 'r':
-			MoveRight(&Game);
-			draw_current_pos(TRUE);
-			break;
+			case 'r':
+				MoveRight(&Game);
+				draw_current_pos(TRUE);
+				break;
 
-		case 'm':
-			pz_close_window(mines_wid);
-			break;
+			case 'm':
+				pz_close_window(mines_wid);
+				break;
 
-		/* Flag/Unflag a square */
-		case 'd':
-			/* Test for Winner */
-			if( FlagSquare(&Game) == TRUE )
-			{
-				gettimeofday(&stop,NULL);
-				Game.Timer += (stop.tv_sec - start.tv_sec);
-				restart = Winner(&Game,TRUE);
-			}
-			else {
-				draw_current_pos(FALSE);
-			}
-			break;
-
-
-		/* Uncover a square */
-		case '\r':
-			/* Only bother if square is unflagged */
-			if( flags[Game.x][Game.y] == FALSE ) {
-				/* Uncover sqaure and test for a mine */
-				if( Uncover(Game.x,Game.y,Game.Width,Game.Height) == TRUE ) {
-					restart = Winner(&Game,FALSE);
+			/* Flag/Unflag a square */
+			case 'd':
+				/* Test for Winner */
+				if( FlagSquare(&Game) == TRUE )
+				{
+					gettimeofday(&stop,NULL);
+					Game.Timer += (stop.tv_sec - start.tv_sec);
+					restart = Winner(&Game,TRUE);
 				}
 				else {
 					draw_current_pos(FALSE);
 				}
+				break;
+
+
+			/* Uncover a square */
+			case '\r':
+				/* Only bother if square is unflagged */
+				if( flags[Game.x][Game.y] == FALSE ) {
+					/* Uncover sqaure and test for a mine */
+					if( Uncover(Game.x,Game.y,Game.Width,Game.Height) == TRUE ) {
+						restart = Winner(&Game,FALSE);
+					}
+					else {
+						draw_current_pos(FALSE);
+					}
+				}
+				break;
 			}
 			break;
 		}

@@ -118,7 +118,9 @@ static void calc_do_draw() {
 static int calc_do_keystroke(GR_EVENT * event) {
 	int ret = 0;
 
-	switch (event->keystroke.ch) {
+	switch(event->type) {
+	case GR_EVENT_TYPE_KEY_DOWN:
+		switch (event->keystroke.ch) {
 		case '\r':
 		case '\n':
 			calc_do_math(current_calc_item);
@@ -147,6 +149,8 @@ static int calc_do_keystroke(GR_EVENT * event) {
 			GrDestroyWindow(calc_wid);
 			ret = 1;
 			break;
+		}
+		break;
 	}
 	return ret;
 }

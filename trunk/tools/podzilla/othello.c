@@ -371,14 +371,14 @@ static void computermove(int side) {
 
 static int oth_do_keystroke(GR_EVENT * event)
 {
-	static int rcount = 0;
-	static int lcount = 0;
 	int ret = 0;
-
-	if(!over) {
-		if(canmove(0)) {
-			/*keystrokes during gameplay*/
-			switch (event->keystroke.ch) {
+	switch (event->type) {
+	case GR_EVENT_TYPE_KEY_DOWN:
+		if(!over) {
+			if(canmove(0)) {
+				/*keystrokes during gameplay*/
+				switch (event->keystroke.ch) {
+				case '\n':
 				case '\r':
 					if(validmove(current_oth_item, 'N', 0, 'Y') > 0) {
 						if(!over)
@@ -386,54 +386,46 @@ static int oth_do_keystroke(GR_EVENT * event)
 					}
 					ret = 1;
 					break;
-			case 'l':
-				lcount++;
-				if (lcount < 1) {
-					break;
-				}
-				lcount = 0;
-				last_current_oth_item = current_oth_item;
-				current_oth_item--;
-				while(validmove(current_oth_item,'N',0,'N') == 0) {
-				//while(status[current_oth_item] != 3) {
+				case 'l':
+					last_current_oth_item = current_oth_item;
 					current_oth_item--;
-					if(current_oth_item < 0)
-						current_oth_item = 63;
-				}
-				draw_oth();
-				ret = 1;
-				break;
-			case 'r':
-				rcount++;
-				if (rcount < 1) {
+					while(validmove(current_oth_item,'N',0,'N') == 0) {
+				//while(status[current_oth_item] != 3) {
+						current_oth_item--;
+						if(current_oth_item < 0)
+							current_oth_item = 63;
+					}
+					draw_oth();
+					ret = 1;
+					break;
+				case 'r':
+					last_current_oth_item = current_oth_item;
+					current_oth_item++;
+					while(validmove(current_oth_item,'N',0,'N') == 0) {
+					//while(status[current_oth_item] != 3) {
+						current_oth_item++;
+						if(current_oth_item > 63)
+							current_oth_item = 0;
+					}
+					draw_oth();
+					ret = 1;
 					break;
 				}
-				rcount = 0;
-				last_current_oth_item = current_oth_item;
-				current_oth_item++;
-				while(validmove(current_oth_item,'N',0,'N') == 0) {
-				//while(status[current_oth_item] != 3) {
-					current_oth_item++;
-					if(current_oth_item > 63)
-						current_oth_item = 0;
-				}
-				draw_oth();
-				ret = 1;
-				break;
 			}
+			else if (canmove(1)) {
+				computermove(1);
+				draw_oth();
+			}
+			else
+				endgame(1);
 		}
-		else if (canmove(1)) {
-			computermove(1);
-			draw_oth();
+		/*global keystrokes*/
+		switch (event->keystroke.ch) {
+		case 'm':
+			pz_close_window(oth_wid);
+			ret = 1;
+			break;
 		}
-		else
-			endgame(1);
-	}
-	/*global keystrokes*/
-	switch (event->keystroke.ch) {
-	case 'm':
-		pz_close_window(oth_wid);
-		ret = 1;
 		break;
 	}
 	return ret;

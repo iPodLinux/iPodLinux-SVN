@@ -223,6 +223,11 @@ void pz_event_handler(GR_EVENT *event)
 		}
 		wid = ((GR_EVENT_KEYSTROKE *)event)->wid;
 		event->keystroke.ch = key_pressed;
+		for (i = 0; i < n_opened; i++) {
+			if (windows[i].wid == wid && wid != GR_ROOT_WINDOW_ID) {
+				windows[i].keystroke(event);
+			}
+		}
 		break;
 
 	case GR_EVENT_TYPE_TIMER:
