@@ -778,6 +778,8 @@ irq_prio_swarm:
 #include <asm/arch/irqs.h>
 
 #define IDE_INT0_MASK	(1 << IDE_INT0_IRQ)
+#define SER0_MASK	(1 << SER0_IRQ)
+#define SER1_MASK	(1 << SER1_IRQ)
 #define TIMER1_MASK	(1 << TIMER1_IRQ)
 #define GPIO_MASK	(1 << GPIO_IRQ)
 #define DMA_OUT_MASK	(1 << DMA_OUT_IRQ)
@@ -810,6 +812,14 @@ cop_fiq_loc:	.word	cop_fiq
 
 		tst	\irqstat, #IDE_INT0_MASK
 		movne	\irqnr, #IDE_INT0_IRQ
+		bne	1001f
+
+		tst	\irqstat, #SER1_MASK
+		movne	\irqnr, #SER1_IRQ
+		bne	1001f
+
+		tst	\irqstat, #SER0_MASK
+		movne	\irqnr, #SER0_IRQ
 		bne	1001f
 
 		tst	\irqstat, #TIMER1_MASK
