@@ -6,7 +6,7 @@ ifneq ($(IPOD),)
 
 # iPod build
 CC=arm-elf-gcc
-CFLAGS=-DIPOD -D_REENTRANT
+CFLAGS=-DIPOD -D_REENTRANT -Wall
 LDFLAGS=-elf2flt
 MICROWINDOWS = ../microwindows/src
 
@@ -15,7 +15,7 @@ LDFLAGS+=-L ../jpeg-6b
 else
 
 CC=gcc
-CFLAGS=
+CFLAGS=-Wall
 LDFLAGS=-L/usr/X11R6/lib -lX11
 MICROWINDOWS = ../../../src/microwindows-0.90/src
 
