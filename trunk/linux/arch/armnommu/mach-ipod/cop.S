@@ -51,12 +51,10 @@ cop_idle:
 	msr     cpsr_c, r0
 
 cop_sleep:
-.ifdef NOTDEF
 	/* put us (co-processor) to sleep */
 	ldr	r4, L_CFG_COPROC
 	mov	r3, #C_CPU_SLEEP
 	strh	r3, [r4]
-.endif
 
 	nop
 	nop
