@@ -3,6 +3,7 @@
  *
  * Copyright 2004, Goetz Minuth
  * Copyright 2004, Bernard Leach, ported to iPod
+ * Copyright 2005, Alastair S, funkified
  *
  * This File is free software; I give unlimited permission to copy and/or
  * distribute it, with or without modifications, as long as this notice is
@@ -20,11 +21,60 @@
 #include "pz.h"
 #include "piezo.h"
 
-#define DaySpace  23
-#define WeekSpace 15
+static int DaySpace = 22;
+static int WeekSpace = 15;
 
-#define XCALENDARPOS 2
-#define YCALENDARPOS 12
+#define XCALPOS 2
+static int ycalpos = 13;
+
+/*char labels[] = "MTWTFSS";
+
+char calfont[7][24] = {
+	{0x00, 0x00, 0x00, 0x86, 0x01, 0xC0, 0xCE, 0x01, 0x80, 0xFE, 0x39, 0xCF,
+	 0xB6, 0x6D, 0x5B, 0x86, 0x6D, 0x1B, 0x86, 0x6D, 0x1B, 0x86, 0x39, 0x1B},
+	{0x00, 0x00, 0x40, 0x78, 0x00, 0x00, 0x30, 0x00, 0x00, 0x30, 0x9B, 0xC3,
+	 0x30, 0xDB, 0x06, 0x30, 0xDB, 0x07, 0x30, 0xDB, 0x80, 0x30, 0x9E, 0x03},
+	{0x00, 0x00, 0x00, 0x86, 0x01, 0x18, 0xB6, 0x01, 0x18, 0xB6, 0x39, 0x1E,
+	 0xFE, 0x6D, 0x1B, 0xFE, 0x7D, 0x1B, 0xCC, 0x0C, 0x1B, 0xCC, 0x38, 0x1E},
+	{0x00, 0x00, 0xC0, 0x78, 0x03, 0x80, 0x30, 0x03, 0x80, 0x30, 0xCF, 0x06,
+	 0x30, 0xDB, 0xC6, 0x30, 0xDB, 0x06, 0x30, 0xDB, 0xC6, 0x30, 0x9B, 0xC7},
+	{0x00, 0x00, 0x40, 0xE0, 0xC1, 0x40, 0x60, 0x00, 0xC0, 0x60, 0xD4, 0x00,
+	 0xE0, 0xDC, 0x00, 0x60, 0xCC, 0x40, 0x60, 0xCC, 0x00, 0x60, 0xCC, 0x80},
+	{0x00, 0x00, 0x40, 0x70, 0x00, 0x43, 0xD8, 0x00, 0xC3, 0x38, 0x9C, 0x07,
+	 0x70, 0x30, 0x03, 0xE0, 0x3C, 0x43, 0xD8, 0x36, 0x03, 0x70, 0x3C, 0x86},
+	{0x00, 0x00, 0x40, 0x38, 0x00, 0x40, 0x6C, 0x00, 0xC0, 0x1C, 0xDB, 0x03,
+	 0x38, 0xDB, 0x06, 0x70, 0xDB, 0x46, 0x6C, 0xDB, 0x06, 0x38, 0xDE, 0x86},
+};*/
+		
+static GR_BITMAP cal_font[10][6] = { //remove when font support works...
+	{0x6700, 0x9700, 0x9700, 0x9700, 0x9700, 0x6700}, // 0
+	{0x2700, 0x6700, 0x2700, 0x2700, 0x2700, 0x2700}, // 1
+	{0x6700, 0x9700, 0x1700, 0x2700, 0x4700, 0xF700}, // 2
+	{0x6700, 0x9700, 0x2700, 0x1700, 0x9700, 0x6700}, // 3
+	{0x2700, 0x6700, 0xA700, 0xF700, 0x2700, 0x2700}, // 4
+	{0xE700, 0x8700, 0xE700, 0x1700, 0x1700, 0xE700}, // 5
+	{0x6700, 0x8700, 0xE700, 0x9700, 0x9700, 0x6700}, // 6
+	{0xF700, 0x1700, 0x2700, 0x4700, 0x4700, 0x4700}, // 7
+	{0x6700, 0x9700, 0x6700, 0x9700, 0x9700, 0x6700}, // 8
+	{0x6700, 0x9700, 0x9700, 0x7700, 0x1700, 0x6700}, // 9
+};
+
+static GR_BITMAP cal_header_font[7][16] = {
+	{0x0000, 0x0000, 0x6180, 0x0300, 0x7380, 0x0100, 0x7F9C, 0xF300, 
+	 0x6DB6, 0xDA00, 0x61B6, 0xD800, 0x61B6, 0xD800, 0x619C, 0xD800}, // Mon
+	{0x0000, 0x0200, 0x1E00, 0x0000, 0x0C00, 0x0000, 0x0CD9, 0xC300, 
+	 0x0CDB, 0x6000, 0x0CDB, 0xE000, 0x0CDB, 0x0100, 0x0C79, 0xC000}, // Tue
+	{0x0000, 0x0000, 0x6180, 0x1800, 0x6D80, 0x1800, 0x6D9C, 0x7800, 
+	 0x7FB6, 0xD800, 0x7FBE, 0xD800, 0x3330, 0xD800, 0x331C, 0x7800}, // Wed
+	{0x0000, 0x0300, 0x1EC0, 0x0100, 0x0CC0, 0x0100, 0x0CF3, 0x6000, 
+	 0x0CDB, 0x6300, 0x0CDB, 0x6000, 0x0CDB, 0x6300, 0x0CD9, 0xE300}, // Thu
+	{0x0000, 0x0200, 0x0783, 0x0200, 0x0600, 0x0300, 0x062B, 0x0000, 
+	 0x073B, 0x0000, 0x0633, 0x0200, 0x0633, 0x0000, 0x0633, 0x0100}, // Fri
+	{0x0000, 0x0200, 0x0E00, 0xC200, 0x1B00, 0xC300, 0x1C39, 0xE000, 
+	 0x0E0C, 0xC000, 0x073C, 0xC200, 0x1B6C, 0xC000, 0x0E3C, 0x6100}, // Sat
+	{0x0000, 0x0200, 0x1C00, 0x0200, 0x3600, 0x0300, 0x38DB, 0xC000, 
+	 0x1CDB, 0x6000, 0x0EDB, 0x6200, 0x36DB, 0x6000, 0x1C7B, 0x6100}, // Sun
+};
 
 struct today {
 	int mday;		/* day of the month */
@@ -79,6 +129,28 @@ static void calendar_draw();
 
 static void next_month(struct shown *shown, int step);
 static void prev_month(struct shown *shown, int step);
+
+/*
+static void cal_print_bmps(void)
+{
+	int i, j;
+	GR_BITMAP *imagebits;
+	for (i=0; i < 7; i++) {
+		imagebits = GrNewBitmapFromData(22, 8, 22, 8, calfont[i],
+		GR_BMDATA_BYTEREVERSE);
+		//printf("%d\n", GR_BITMAP_SIZE(22, 8));
+		printf("\t{");
+		for (j=0; j < 16; j++) {
+			if (j==16-1) {
+				printf("0x%04X}, // %c\n", imagebits[j], labels[i]);
+			} else {
+				printf("0x%04X, ", imagebits[j]);
+				if (j==7)
+					printf("\n\t ");
+			}
+		}
+	}
+}*/
 
 static int
 calendar_do_keystroke(GR_EVENT * event)
@@ -178,17 +250,48 @@ static void
 draw_headers(void)
 {
 	int i;
-	char *Dayname[8] =
-	    { "Mo", "Tu", "We", "Th", "Fr", "Sa", "Su", "" };
-	int ws = XCALENDARPOS;
-
-	for (i = 0; i < 8;) {
+	int ws = XCALPOS;
+	int clip[7][2] = { // dirty, dirty hack until fonts are supported.
+		{4, 9}, {4, 7}, {4, 9}, {4, 7}, {3, 9}, {4, 8}, {4, 8}
+	};
+	
+	for (i = 0; i < 7; i++) {
 		GrSetGCForeground(calendar_gc, BLACK);
-		GrText(calendar_wid, calendar_gc, ws + 2,
-		       YCALENDARPOS, Dayname[i++], -1,
-		       GR_TFASCII);
+		if (screen_info.cols > 138) {
+		GrBitmap(calendar_wid, calendar_gc, ws, ycalpos-11, 22, 8,
+		         cal_header_font[i]);
+		} else {
+			GrBitmap(calendar_wid, calendar_gc, ws+clip[i][0],
+			         ycalpos-11, 22, 8,
+			         cal_header_font[i]);
+			GrSetGCForeground(calendar_gc, WHITE);
+			GrFillRect(calendar_wid, calendar_gc, ws+clip[i][0]+clip[i][1],
+			           ycalpos-11, 22-clip[i][1], 8);
+		}
 		ws += DaySpace;
 	}
+}
+
+static void
+cal_draw_number(const GR_COORD x, const GR_COORD y, const int number)
+{
+	int tens, units, off=2;
+	if (number<100) {
+		units = number%10;
+		if (number-units) {
+			tens = (number-units)/10;
+			GrBitmap(calendar_wid, calendar_gc, x, y, 5, 6, cal_font[tens]);
+			off=5;
+		}
+		GrBitmap(calendar_wid, calendar_gc, x+off, y, 5, 6, cal_font[units]);
+	}
+}
+
+static void
+cal_draw_rect(const int xoff, const int row) {
+	GrFillRect(calendar_wid, calendar_gc,
+		xoff + 1, ycalpos + (row-1) * WeekSpace + 1,
+		DaySpace - 1, WeekSpace - 1);
 }
 
 static void
@@ -200,15 +303,15 @@ calendar_do_draw(GR_EVENT * event)
 static void
 calendar_draw(int redraw)
 {
-	int ws, row, pos, days_per_month, j;
+	int ws, row, pos, days_per_month, j, istoday;
 	char buffer[9];
 
 	if(redraw) {
 		clear_calendar();
 
 		GrSetGCForeground(calendar_gc, WHITE);
-		GrFillRect(calendar_wid, calendar_gc, XCALENDARPOS, YCALENDARPOS,
-			screen_info.cols - XCALENDARPOS, 2 * WeekSpace);
+		GrFillRect(calendar_wid, calendar_gc, XCALPOS, ycalpos,
+			screen_info.cols - XCALPOS, 2 * WeekSpace);
 
 		snprintf(buffer, 9, "%s %04d", month_name[shown.mon - 1], shown.year);
 		pz_draw_header(buffer);
@@ -222,50 +325,69 @@ calendar_draw(int redraw)
 	row = 1;
 	pos = shown.firstday;
 	days_per_month = days_in_month[leap_year][shown.mon];
-	ws = XCALENDARPOS + (pos * DaySpace);
+	ws = XCALPOS + (pos * DaySpace);
 
 	for (j = 1; j <= days_per_month; j++) {
-		snprintf(buffer, 4, "%02d", j);
-
-		if ((pos == 5) || (pos == 6)) {
-			// Wochenende --> Tage in rot schreiben
-			GrSetGCForeground(calendar_gc, GRAY);
-		}
-		else {
-			GrSetGCForeground(calendar_gc, BLACK);
-		}
-
-		if(j == shown.mday) {
-			// Den selektierten Tag besonders farblich
-			// markieren -->
-			// höchste Prio der Farben
-			GrSetGCForeground(calendar_gc, LTGRAY);
-			GrText(calendar_wid, calendar_gc, ws + 2, YCALENDARPOS + 2 +
-				row * WeekSpace, buffer, -1, GR_TFASCII);
-		}
 		if ((j == today.mday) && (shown.mon == today.mon)
 			&& (shown.year == today.year)) {
+			istoday=1;
+		} else {
+			istoday=0;
+		}
+		snprintf(buffer, 4, "%02d", j);
+		GrSetGCForeground(calendar_gc, GRAY);
+		GrLine(calendar_wid, calendar_gc,
+			ws, ycalpos + (row-1) * WeekSpace,
+			ws, ycalpos + row * WeekSpace);
+		GrLine(calendar_wid, calendar_gc,
+			ws, ycalpos + (row-1) * WeekSpace,
+			ws + DaySpace, ycalpos + (row-1) * WeekSpace);
+		if (j + 7 > days_per_month)
+			GrLine(calendar_wid, calendar_gc,
+				ws, ycalpos + (row) * WeekSpace,
+				ws + DaySpace, ycalpos + (row) * WeekSpace);
+
+
+		GrSetGCForeground(calendar_gc, BLACK);
+		
+		if (istoday) {
 			GrSetGCForeground(calendar_gc, GRAY);
+			cal_draw_rect(ws, row);
+			GrSetGCForeground(calendar_gc, BLACK);
+			cal_draw_number(ws + 3, ycalpos + (row-1) * WeekSpace + 3, j);
 		}
-		if(redraw) {
-			GrText(calendar_wid, calendar_gc, ws + 2, YCALENDARPOS + 2 +
-				row * WeekSpace, buffer, -1, GR_TFASCII);
+		if (j == shown.mday) {
+			GrSetGCForeground(calendar_gc, BLACK);
+			cal_draw_rect(ws, row);
+			GrSetGCForeground(calendar_gc, WHITE);
+			cal_draw_number(ws + 3, ycalpos + (row-1) * WeekSpace + 3, j);
+		} else if (!istoday) {
+			GrSetGCForeground(calendar_gc, WHITE);
+			cal_draw_rect(ws, row);
+			GrSetGCForeground(calendar_gc, BLACK);
+			cal_draw_number(ws + 3, ycalpos + (row-1) * WeekSpace + 3, j);
 		}
-		if(j == last_mday) {
-			GrText(calendar_wid, calendar_gc, ws + 2, YCALENDARPOS + 2 +
-				row * WeekSpace, buffer, -1, GR_TFASCII);
-		}
+		
 		if (shown.mday == j) {
 			shown.wday = pos;
 		}
 		ws += DaySpace;
 		pos++;
-		if (pos >= 7) {
+		if (pos >= 7 && j != days_per_month) {
+			GrSetGCForeground(calendar_gc, GRAY);
+			GrLine(calendar_wid, calendar_gc,
+				ws, ycalpos + (row-1) * WeekSpace,
+				ws, ycalpos + row * WeekSpace);
 			row++;
 			pos = 0;
-			ws = XCALENDARPOS;
+			ws = XCALPOS;
 		}
 	}
+
+	GrSetGCForeground(calendar_gc, GRAY);
+	GrLine(calendar_wid, calendar_gc,
+		ws, ycalpos + (row-1) * WeekSpace,
+		ws, ycalpos + row * WeekSpace);
 
 	shown.lastday = pos;
 }
@@ -313,7 +435,8 @@ static void
 clear_calendar()
 {
 	GrSetGCForeground(calendar_gc, WHITE);
-	GrFillRect(calendar_wid, calendar_gc, XCALENDARPOS, YCALENDARPOS - 10, 170, 120);
+	GrFillRect(calendar_wid, calendar_gc, 0, 0, screen_info.cols,
+	           screen_info.rows);
 }
 
 void
@@ -322,6 +445,12 @@ new_calendar_window(void)
 	calendar_init();
 
 	GrGetScreenInfo(&screen_info);
+
+	if (screen_info.cols < 160) {
+		DaySpace = 19;
+		WeekSpace = 15;
+		ycalpos = 12;
+	}
 
 	calendar_gc = GrNewGC();
 	GrSetGCUseBackground(calendar_gc, GR_FALSE);
@@ -332,7 +461,8 @@ new_calendar_window(void)
 			  screen_info.rows - (HEADER_TOPLINE + 1),
 			  calendar_do_draw, calendar_do_keystroke);
 
-	GrSelectEvents(calendar_wid, GR_EVENT_MASK_EXPOSURE | GR_EVENT_MASK_KEY_UP | GR_EVENT_MASK_KEY_DOWN);
+	GrSelectEvents(calendar_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_UP
+	               |GR_EVENT_MASK_KEY_DOWN);
 
 	GrMapWindow(calendar_wid);
 }
