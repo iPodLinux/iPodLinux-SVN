@@ -227,6 +227,9 @@ ipod_reboot_to_diskmode(void)
 #define IPOD_I2C_CTRL	0xc0008000
 #define IPOD_I2C_ADDR	0xc0008004
 #define IPOD_I2C_DATA0	0xc000800c
+#define IPOD_I2C_DATA1	0xc0008010
+#define IPOD_I2C_DATA2	0xc0008014
+#define IPOD_I2C_DATA3	0xc0008018
 #define IPOD_I2C_STATUS	0xc000801c
 
 /* IPOD_I2C_CTRL bit definitions */
