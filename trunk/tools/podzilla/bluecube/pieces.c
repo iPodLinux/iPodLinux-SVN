@@ -20,8 +20,21 @@
 /* File: pieces.c === Contains only data (the pieces and the colortable for them) */
 
 #include "global.h"
+#include "grafix.h"
 #include "pieces.h"
 
+/******************************/
+/* Color table for the pieces */
+/******************************/
+GR_COLOR StyleColors[] = {
+	GR_RGB(128,128,255),
+	GR_RGB(255,255,0  ),
+	GR_RGB(255,128,128),
+	GR_RGB(64 ,255,0  ),
+	GR_RGB(0  ,255,255),
+	GR_RGB(255,255,255),
+	GR_RGB(16 ,255,128)
+};
 
 /********************************************/
 /* All the pieces with their rotation forms */

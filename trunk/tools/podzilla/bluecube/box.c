@@ -78,7 +78,8 @@ void DrawBox()
 				tetris_put_rect(
 					boxdraw.box_x + x*(boxdraw.brick_width + boxdraw.box_l), 
 					boxdraw.box_y + y*(boxdraw.brick_height+ boxdraw.box_l),
-					boxdraw.brick_width, boxdraw.brick_height, 1);
+					boxdraw.brick_width, boxdraw.brick_height,
+					OUTLINE, StyleColors[box[x][y].style-1]);
 			}
 		}
 }
@@ -133,20 +134,27 @@ static void SetClusterPiece()
 // Name: DrawCluster()
 // Desc: Draws the cluster onto the screen
 //=======================================================================*/
-void DrawCluster(int colorvar)
+void DrawCluster(int clear)
 {
 	int x, y;
+	GR_COLOR colour;
 
 	for (y=0; y<CLUSTER_Y; y++)
 		for (x=0; x<CLUSTER_X; x++)
 		{
-			if (cluster.data[x][y])
+			if (cluster.data[x][y]) {
+				if (clear)
+					colour = tetris_bg;
+				else
+					colour = StyleColors[cluster.data[x][y]-1];
 				tetris_put_rect(
 					boxdraw.box_x + (cluster.x+x) *
 					(boxdraw.brick_width + boxdraw.box_l), 
 					boxdraw.box_y + (cluster.y+y)
 					* (boxdraw.brick_height + boxdraw.box_l),
-					boxdraw.brick_width, boxdraw.brick_height, colorvar);
+					boxdraw.brick_width, boxdraw.brick_height,
+					FILLED, colour);
+				}
 		}
 }
 
@@ -164,7 +172,8 @@ void DrawNextPiece(int posX, int posY)
 				tetris_put_rect(
 					posX + x*(boxdraw.brick_width+boxdraw.box_l),
 					posY + y*(boxdraw.brick_height+boxdraw.box_l),
-					boxdraw.brick_width, boxdraw.brick_height,3);
+					boxdraw.brick_width, boxdraw.brick_height,
+					FILLED, StyleColors[Pieces[tetris_next_piece][0][x][y]-1]);
 }
 
 /*=========================================================================
@@ -328,7 +337,8 @@ static int CheckFullLine()
 
 	if (counter) { /* Were some lines killed? */
 		tetris_put_rect(boxdraw.box_x, boxdraw.box_y, /* clear tetris board */
-		                boxdraw.box_width, boxdraw.box_height, 2);
+		                boxdraw.box_width, boxdraw.box_height,
+		                FILLED, tetris_bg);
 		tetris_lines += counter; /* Increase lines counter */
 		switch (counter)  { /* Increase score */
 			case 1: tetris_score += 1000;  break;
