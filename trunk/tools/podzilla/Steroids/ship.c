@@ -104,7 +104,6 @@ void steroids_ship_draw (Steroids_Ship *ship)
  */
 void steroids_ship_animate (Steroids_Ship *ship)
 {
-    float           vLen;
     Steroids_Vector v;
 
     switch (ship->state)
