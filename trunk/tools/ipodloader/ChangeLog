@@ -1,0 +1,25 @@
+ipodloader-0.3.1, Wed Nov 19 12:58:42 UTC 2003
+
+ - big-endian fix for the extract code
+
+ipodloader-0.3
+
+ - first official release
+ - code relocates itself to SRAM
+ - cop handling fixed
+ - C code no longer needs to be PIC
+ - tux added
+
+ipodloader-0.1
+
+ - boot table moved into the loader
+ - loads from 0x4400 to avoid memmove'ing the first image
+ - optimized memmove
+ - patch_fw replaced with make_fw, generating everything except boot sector
+ - supports up to 5 images
+
+ipodloader-0.0
+
+ - first brute-force working code
+ - two images supported.
+
