@@ -499,10 +499,6 @@ static inline unsigned short ether1394_parse_encap (struct sk_buff *skb, struct 
   memcpy (ptr, val, len); ptr += len
                 PROCESS_MEMBER (arp_ptr, src_hw, dev->addr_len);
                 PROCESS_MEMBER (arp_ptr, &arp1394.sip, 4);
-		/* convert all ARP requests to have come from a broadcast */
-		if ( arp1394.opcode == __constant_htons(ARPOP_REQUEST) ) {
-			*(u16 *)dest_hw = __constant_htons(0xffff);
-		}
                 PROCESS_MEMBER (arp_ptr, dest_hw, dev->addr_len);
                 PROCESS_MEMBER (arp_ptr, &arp1394.tip, 4);
 #undef PROCESS_MEMBER
