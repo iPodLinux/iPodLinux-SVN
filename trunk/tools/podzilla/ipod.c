@@ -20,6 +20,10 @@
 #include <linux/fb.h>
 #include <sys/ioctl.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <string.h>
 
 #include "ipod.h"
 
@@ -100,3 +104,20 @@ int ipod_set_blank_mode(int blank)
 
 	return 0;
 }
+
+void ipod_beep(void)
+{
+#ifdef IPOD
+	static int fd = -1; 
+	static char buf;
+
+	if (fd == -1 && (fd = open("/dev/ttyS1", O_WRONLY)) == -1) 
+		return;
+    
+	write(fd, &buf, 1);
+#else
+	if (isatty(1))
+		printf("\a");
+#endif
+}
+

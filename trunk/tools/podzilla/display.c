@@ -35,13 +35,15 @@ static void contrast_do_draw(void)
 	GrSetGCForeground(disp_gc, WHITE);
 }
 
-static void contrast_do_keystroke(GR_EVENT * event)
+static int contrast_do_keystroke(GR_EVENT * event)
 {
+	int ret = -1;
 	switch (event->keystroke.ch) {
 	case '\r':
 	case '\n':
 	case 'm':
 		pz_close_window(disp_wid);
+		ret = 0;
 		break;
 
 	case 'l':
@@ -60,6 +62,7 @@ static void contrast_do_keystroke(GR_EVENT * event)
 		}
 		break;
 	}
+	return ret;
 }
 
 static void contrast_event_handler(GR_EVENT *event)
@@ -72,7 +75,8 @@ static void contrast_event_handler(GR_EVENT *event)
 		break;
 
 	case GR_EVENT_TYPE_KEY_DOWN:
-		contrast_do_keystroke(event);
+		if (contrast_do_keystroke(event) == 0)
+			beep();
 		break;
 	}
 }

@@ -21,6 +21,7 @@
 
 #include "pz.h"
 #include "ipod.h"
+#include "piezo.h"
 
 extern void new_contrast_window(void);
 extern void new_browser_window(void);
@@ -75,7 +76,7 @@ static struct menu_item settings_menu[] = {
 	{"Contrast", ACTION_MENU, new_contrast_window},
 	{"Alarms", SUB_MENU_HEADER, 0},
 	{"Contacts", SUB_MENU_HEADER, 0},
-	{"Clicker", VALUE_MENU, 0},
+	{"Clicker", ACTION_MENU, toggle_piezo},
 	{"Language", SUB_MENU_HEADER, 0},
 	{"Legal", SUB_MENU_HEADER, 0},
 	{"Reset All Settings", SUB_MENU_HEADER, 0},
@@ -150,14 +151,16 @@ static void menu_do_draw()
 	draw_menu();
 }
 
-static void menu_do_keystroke(GR_EVENT * event)
+static int menu_do_keystroke(GR_EVENT * event)
 {
 	static int rcount = 0;
 	static int lcount = 0;
+	int ret = -1;
 
 	switch (event->keystroke.ch) {
 	case '\r':		/* action key */
 	case '\n':
+		ret = 0;
 		switch (menu[current_menu_item].type) {
 		case SUB_MENU_HEADER:
 			if (menu[current_menu_item].ptr != 0) {
@@ -192,6 +195,7 @@ static void menu_do_keystroke(GR_EVENT * event)
 
 			pz_draw_header(menu[current_menu_item].text);
 			draw_menu();
+			ret = 0;
 		} else {
 			GrClose();
 			exit(1);
@@ -214,6 +218,7 @@ static void menu_do_keystroke(GR_EVENT * event)
 			}
 			current_menu_item--;
 			draw_menu();
+			ret = 0;
 		}
 		break;
 
@@ -227,11 +232,13 @@ static void menu_do_keystroke(GR_EVENT * event)
 			current_menu_item++;
 			if (current_menu_item - MAX_MENU_ITEMS == top_menu_item) {
 				top_menu_item++;
-			}
+			} 
 			draw_menu();
+			ret = 0;
 		}
 		break;
 	}
+	return ret;
 }
 
 static void menu_event_handler(GR_EVENT *event)
@@ -244,7 +251,8 @@ static void menu_event_handler(GR_EVENT *event)
 		break;
 
 	case GR_EVENT_TYPE_KEY_DOWN:
-		menu_do_keystroke(event);
+		if (menu_do_keystroke(event) == 0)
+			beep();
 		break;
 	}
 }
