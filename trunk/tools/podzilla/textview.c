@@ -264,6 +264,7 @@ int is_ascii_file(char *filename)
 
 void create_textview_window()
 {
+	GR_SIZE width, height, base;	
 	tv_gc = pz_get_gc(1);
 	GrSetGCUseBackground(tv_gc, GR_FALSE);
 	GrSetGCForeground(tv_gc, BLACK);
@@ -275,8 +276,10 @@ void create_textview_window()
 	GrSelectEvents(tv_wid, GR_EVENT_MASK_EXPOSURE| GR_EVENT_MASK_KEY_UP|
 			GR_EVENT_MASK_KEY_DOWN);
 
-	if(screen_info.cols < 160) /* mini folks */
-		lines_per_screen = 6;
+	GrGetGCTextSize(tv_gc, "M", -1, GR_TFASCII, &width, &height, &base);
+
+	lines_per_screen = (int)(screen_info.rows - (HEADER_TOPLINE + 1)) /
+		(height + 1);
 
 	GrMapWindow(tv_wid);
 	GrGetWindowInfo(tv_wid, &tv_winfo);
@@ -321,13 +324,13 @@ void new_textview_window(char *filename)
 		}
 		if(fread(buf, 1, file_len, fp)!=file_len)
 			pz_error("unknown read error, continuing");
+		buf[file_len] = '\0';
 	}
 	if(buf=='\0') {
 		destroy_textview_window(NULL);
 		new_message_window("Empty File");
 		return;
 	}
-	buf[strlen(buf)] = '\0';
 
 	buildLineData(buf);
 	free(buf);
