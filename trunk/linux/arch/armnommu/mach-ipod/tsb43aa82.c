@@ -995,7 +995,7 @@ static __devinit void ipod_1394_hw_init(void)
 		/* Port E Bit 2 output high */
 		outl(inl(0xcf004048) | (1<<2), 0xcf004048);
 		udelay(0x1);
-		/* Port E Bit 2 output high */
+		/* Port E Bit 4 output high */
 		outl(inl(0xcf004048) | (1<<4), 0xcf004048);
 
 		udelay(0x14);
@@ -1009,7 +1009,7 @@ static __devinit void ipod_1394_hw_init(void)
 		/* reset device i2c */
 		ipod_i2c_init();
 
-		/* some i2c magic */
+		/* some i2c magic - this is the PCF address */
 		ipod_i2c_send(0x8, 0x39, 0);
 		ipod_i2c_send(0x8, 0x3a, 0);
 		ipod_i2c_send(0x8, 0x3b, 0);
@@ -1041,7 +1041,7 @@ static int __devinit ipod_1394_init(void)
 {
 	struct ti_ipod *ipod;
 
-	printk("ipod_1394: $Id: tsb43aa82.c,v 1.4 2004/03/02 23:18:38 leachbj Exp $\n");
+	printk("ipod_1394: $Id: tsb43aa82.c,v 1.5 2004/05/17 18:22:13 leachbj Exp $\n");
 
 	ipod_host = hpsb_alloc_host(&ipod_1394_driver, sizeof(struct ti_ipod));
 	if (!ipod_host) {
