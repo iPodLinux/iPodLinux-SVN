@@ -408,3 +408,4 @@ void new_matrix_window( void )
 	matrix_clear_screen();
 	running=1;
 }
+
