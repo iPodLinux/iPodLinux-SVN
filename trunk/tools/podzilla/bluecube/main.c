@@ -295,7 +295,7 @@ void new_bluecube_window(void)
 	tetris_gc = GrNewGC();
 	GrSetGCUseBackground(tetris_gc, GR_FALSE);
 	tetris_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), tetris_do_draw, tetris_do_keystroke);
-	GrSelectEvents(tetris_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN|GR_EVENT_MASK_TIMER);
+	GrSelectEvents(tetris_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_KEY_DOWN|GR_EVENT_MASK_TIMER);
 	GrMapWindow(tetris_wid);
 
 	bDone = 0;

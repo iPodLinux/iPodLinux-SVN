@@ -160,7 +160,7 @@ void new_calc_window() {
 
 	calc_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), calc_do_draw, calc_do_keystroke);
 
-	GrSelectEvents(calc_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN);
+	GrSelectEvents(calc_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_KEY_DOWN);
 
 	GrMapWindow(calc_wid);
 }

@@ -328,7 +328,7 @@ new_calendar_window(void)
 			  screen_info.rows - (HEADER_TOPLINE + 1),
 			  calendar_do_draw, calendar_do_keystroke);
 
-	GrSelectEvents(calendar_wid, GR_EVENT_MASK_EXPOSURE | GR_EVENT_MASK_KEY_DOWN);
+	GrSelectEvents(calendar_wid, GR_EVENT_MASK_EXPOSURE | GR_EVENT_MASK_KEY_UP | GR_EVENT_MASK_KEY_DOWN);
 
 	GrMapWindow(calendar_wid);
 }

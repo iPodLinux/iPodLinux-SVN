@@ -83,7 +83,7 @@ struct menulist *new_ml()
 			ret->screen_info.rows - (HEADER_TOPLINE + 1),
 			itunes_do_draw, itunes_do_keystroke);
 
-	GrSelectEvents(ret->wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN);
+	GrSelectEvents(ret->wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN|GR_EVENT_MASK_KEY_UP);
 
 	GrGetGCTextSize(ret->gc, "M", -1, GR_TFASCII, &ret->gr_width,
 			&ret->gr_height, &ret->gr_base);

@@ -274,7 +274,7 @@ void new_textview_window(char * filename)
 
 	tv_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), textview_do_draw, textview_do_keystroke);
 
-	GrSelectEvents(tv_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN);
+	GrSelectEvents(tv_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_KEY_DOWN);
 
 	GrMapWindow(tv_wid);
 	GrGetWindowInfo( tv_wid, &tv_winfo);

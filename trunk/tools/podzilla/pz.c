@@ -313,8 +313,7 @@ main(int argc, char **argv)
 			    GR_ROOT_WINDOW_ID,
 			    0, 0, screen_info.cols, screen_info.rows, WHITE);
 
-	GrSelectEvents(root_wid, GR_EVENT_MASK_EXPOSURE |
-		       GR_EVENT_MASK_CLOSE_REQ | GR_EVENT_MASK_KEY_DOWN);
+	GrSelectEvents(root_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_CLOSE_REQ |GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_KEY_DOWN);
 
 	GrMapWindow(root_wid);
 

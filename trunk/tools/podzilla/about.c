@@ -207,7 +207,7 @@ void about_window() {
 	about_switch_window();
 	about_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1) - 15, about_start_draw, about_parse_keystroke);
 
-	GrSelectEvents(about_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN);
+	GrSelectEvents(about_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_KEY_DOWN);
 
 	GrMapWindow(about_wid);
 }
