@@ -414,9 +414,24 @@ ipod_serial_init(void)
 	}
 }
 
+static ipod_dma_handler_t ipod_dma_handler;
+
+void ipod_set_process_dma(ipod_dma_handler_t new_handler)
+{
+	ipod_dma_handler = new_handler;
+}
+
+void ipod_handle_dma(void)
+{
+	if (ipod_dma_handler != 0) {
+		ipod_dma_handler();
+	}
+}
+
 EXPORT_SYMBOL(ipod_get_hw_version);
 EXPORT_SYMBOL(ipod_get_sysinfo);
 EXPORT_SYMBOL(ipod_i2c_send_bytes);
 EXPORT_SYMBOL(ipod_i2c_send);
 EXPORT_SYMBOL(ipod_serial_init);
+EXPORT_SYMBOL(ipod_set_process_dma);
 
