@@ -384,7 +384,7 @@ static void pong_do_draw() {
 int sane() {
 	char setting[] = "easy";
 	double xl=0,xu=160,yl=5,yu=98,d=10,vmax=500;
-	float timestep=.5;
+	float timestep=.3;
 	static double xp1=12, xp2=147;
 	static int turn=0;
 	vplayer1.x=0;
@@ -464,11 +464,11 @@ int sane() {
 		}
 	}
 	else {
-		if(pball.x < xl) {
+		if(pball.x <= xl) {
 			userpoint++;
 			turn=2;
 		}
-		else if(pball.x > xu) {
+		else if(pball.x >= xu) {
 			comppoint++;
 			turn=1;
 		}
@@ -518,8 +518,12 @@ static int pong_do_keystroke(GR_EVENT * event) {
 	}
 	if(pplayer2.y<10)
 		pplayer2.y=10;
-	else if(pplayer2.y>98)
-		pplayer2.y=98;
+	else if(pplayer2.y>88)
+		pplayer2.y=88;
+	if(pplayer1.y<10)
+		pplayer1.y=10;
+	else if(pplayer1.y>88)
+		pplayer1.y=88;
 	if(!gameover)
 		draw_pong();
 	return ret;
@@ -539,6 +543,6 @@ void new_pong_window()
 	GrSelectEvents(pong_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN|GR_EVENT_MASK_TIMER);
 
 	GrMapWindow(pong_wid);
-	timer_id = GrCreateTimer(pong_wid, 125); /*Create nano-x timer*/
+	timer_id = GrCreateTimer(pong_wid, 75); /*Create nano-x timer*/
 }
 
