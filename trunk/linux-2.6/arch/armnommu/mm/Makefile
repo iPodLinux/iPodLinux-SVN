@@ -5,6 +5,8 @@
 obj-y				:= extable.o fault.o \
 				   fault-common.o init.o ioremap.o mm.o
 
+obj-$(CONFIG_ARCH_IPOD)		+= consistent.o
+
 obj-$(CONFIG_MODULES)		+= proc-syms.o
 
 obj-$(CONFIG_ALIGNMENT_TRAP)	+= alignment.o
@@ -45,6 +47,7 @@ obj-$(CONFIG_CPU_ARM1020)	+= proc-arm1020.o
 obj-$(CONFIG_CPU_ARM1020E)	+= proc-arm1020e.o
 obj-$(CONFIG_CPU_ARM1022)	+= proc-arm1022.o
 obj-$(CONFIG_CPU_ARM1026)	+= proc-arm1026.o
+obj-$(CONFIG_CPU_PP5002)	+= proc-pp5002.o
 
 # Spell out some dependencies that aren't automatically figured out
 ifneq ($(abrt-y),)
