@@ -11,6 +11,7 @@
 #include <linux/errno.h>
 #include <linux/sched.h>
 #include <linux/timer.h>
+#include <linux/ide.h>
 #include <asm/io.h>
 #include <asm/hardware.h>
 #include <asm/system.h>
@@ -430,10 +431,36 @@ void ipod_handle_dma(void)
 	}
 }
 
+/**
+ * For the moment we have nothing.  Need to work out out to set
+ * the settings on the iPod.
+ */
+void ipod_ide_tune(ide_drive_t *drive, u8 pio)
+{
+#if 0
+	ide_pio_data_t ide_pio_data;
+
+	pio = ide_get_best_pio_mode(drive, pio, 5, &ide_pio_data);
+#endif
+}
+
+/**
+ * This function is used to configure the IDE autotune function
+ * for the IDE controllers.  This appears to be necessary to
+ * set the correct PIO mode (which should be 4).
+ */
+void ipod_ide_set_tune(ide_hwif_t *hwif)
+{
+	hwif->tuneproc = ipod_ide_tune;
+	hwif->drives[0].autotune = 1;
+}
+
 EXPORT_SYMBOL(ipod_get_hw_version);
 EXPORT_SYMBOL(ipod_get_sysinfo);
 EXPORT_SYMBOL(ipod_i2c_send_bytes);
 EXPORT_SYMBOL(ipod_i2c_send);
 EXPORT_SYMBOL(ipod_serial_init);
 EXPORT_SYMBOL(ipod_set_process_dma);
+EXPORT_SYMBOL(ipod_ide_tune);
+EXPORT_SYMBOL(ipod_ide_set_tune);
 
