@@ -50,6 +50,7 @@ OBJS=\
 	btree.o \
 	itunes_db.o \
 	itunesmenu.o \
+	calc.o \
 	bluecube/box.o \
 	bluecube/main.o \
 	bluecube/pieces.o \
