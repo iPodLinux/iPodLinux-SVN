@@ -29,20 +29,22 @@ static GR_SCREEN_INFO screen_info;
 
 struct pz_window {
 	GR_WINDOW_ID wid;
-	GR_FNCALLBACKEVENT event_handler;
+	void (*draw)(void);
+	int (*keystroke)(GR_EVENT * event);
 };
 
 static struct pz_window windows[10];
 static int n_opened = 0;
+/* int BACKLIGHT_TIMER = 10; // in seconds */
 
 static unsigned long int last_wheel_event = 0;
-static unsigned long int last_action_event = 0;
-static unsigned long int last_outer_event = 0;
+static unsigned long int last_button_event = 0;
+static unsigned long int last_keypress_event = 0;
 static unsigned long int wheel_evt_count = 0;
-#define WHEEL_DEBOUNCE  200
-#define ACTION_DEBOUNCE 400
-#define OUTER_DEBOUNCE  400
+
 #define WHEEL_EVT_MOD   3
+
+char key_pressed = '\0';
 
 /*
 +----+
@@ -67,108 +69,120 @@ static GR_POINT batt_outline[] = {
 
 #define BATT_POLY_POINTS 9
 
+void reboot_ipod(void)
+{
+	GrClose();
+	execl("/bin/reboot", "reboot", NULL);
+	exit(1);
+}
+
+void quit_podzilla(void)
+{
+	GrClose();
+	exit(1);
+}                
+
+void set_wheeldebounce(void)
+{
+	new_slider_widget(WHEEL_DEBOUNCE, "Set Wheel Debounce", 100, 500);
+}
+                                                                                
+void set_buttondebounce(void)
+{
+	new_slider_widget(ACTION_DEBOUNCE, "Set Action Debounce", 100, 500);
+}
+
 static void event_handler(GR_EVENT *event)
 {
 	int i;
 	unsigned long int curtime;
 	struct timeval cur_st;
 	GR_WINDOW_ID wid = GR_ROOT_WINDOW_ID;
-	
+
 	gettimeofday( &cur_st, NULL);
 	curtime = (cur_st.tv_sec % 1000) * 1000 + cur_st.tv_usec / 1000;
-	
+
 	switch (event->type) {
+	case GR_EVENT_TYPE_TIMEOUT:
+		/* Test to see if backlight timer has expired, if so, turn it off. */
+		if (ipod_get_setting(BACKLIGHT_TIMER) > 0) {
+			if ((curtime - last_keypress_event) > ((ipod_get_setting(BACKLIGHT_TIMER) + 1) * 1000)) {
+				ipod_set_setting(BACKLIGHT, 0);
+			}
+		}
+		break;
+
 	case GR_EVENT_TYPE_EXPOSURE:
 		wid = ((GR_EVENT_EXPOSURE *)event)->wid;
+		for (i = 0; i < n_opened; i++) {
+			if (windows[i].wid == wid && wid != GR_ROOT_WINDOW_ID) {
+				windows[i].draw();
+			}
+		}
 		break;
 
 	case GR_EVENT_TYPE_KEY_DOWN:
 		wid = ((GR_EVENT_KEYSTROKE *)event)->wid;
-		
-		switch(event->keystroke.ch)
-		{
-			case 'm':
-			case 'q':
-			case 'w':
-			case 'f':
-				// handle the wraparound case
-				if (curtime < last_outer_event)
-					if (curtime + 1000000 > last_outer_event + OUTER_DEBOUNCE )
-					{
-						last_outer_event = curtime;
-						break;
-					}
-						
-				if (curtime > last_outer_event+ OUTER_DEBOUNCE)
-				{
-					last_outer_event = curtime;
-					break;
-				}
-						
+	
+		/* If backlight timer isn't off and backlight isn't on turn it on. */
+	
+		last_keypress_event = curtime;
+
+		if (ipod_get_setting(BACKLIGHT_TIMER) > 0) {
+			ipod_set_setting(BACKLIGHT, 1);	
+		}
+
+		switch (event->keystroke.ch) {
+		case 'm':
+		case 'q':
+		case 'w':
+		case 'f':
+		case '\r':
+#ifdef IPOD
+			if (curtime - last_button_event > ipod_get_setting(ACTION_DEBOUNCE)) {
+				last_button_event = curtime;
+				break;
+			}
+
+			wid = root_wid;
+#endif
+			break;
+
+		case 'l':
+		case 'r':
+#ifdef IPOD
+			wheel_evt_count ++;
+			if (wheel_evt_count % WHEEL_EVT_MOD != 0) {
 				wid = GR_ROOT_WINDOW_ID;
 				break;
-				
-			case 'r':
-			case 'l':
-				wheel_evt_count ++;
-				if (wheel_evt_count % WHEEL_EVT_MOD != 0)
-				{
-					wid = GR_ROOT_WINDOW_ID;
-					break;
-				}
-				printf("%ld : %ld\n",curtime,last_wheel_event);
-				
-				// handle the wraparound case
-				if (curtime < last_wheel_event)
-					if (curtime + 1000000 > last_wheel_event + WHEEL_DEBOUNCE)
-					{
+			}
 
-						last_wheel_event = curtime;
-						break;
-					}
-						
-						if (curtime > last_wheel_event + WHEEL_DEBOUNCE)
-						{
+			if (curtime - last_wheel_event > ipod_get_setting(WHEEL_DEBOUNCE)) {
+				last_wheel_event = curtime;
+				break;
+			}
 
-							last_wheel_event = curtime;
-							break;
-						}
-
-						wid = GR_ROOT_WINDOW_ID;
-				break;	
-				
-			case '\n':
-			case '\r':	
-				// handle the wraparound case
-				if (curtime < last_action_event)
-					if (curtime + 1000000> last_action_event + ACTION_DEBOUNCE )
-					{
-						last_action_event = curtime;
-						break;
-					}
-						
-					if (curtime > last_action_event + ACTION_DEBOUNCE)
-					{
-						last_action_event = curtime;
-						break;
-					}
-						
-					wid = GR_ROOT_WINDOW_ID;
-			break;	
-			
+			wid = root_wid;
+#endif
+			break;
 		}
-		break;
-	default:
-		printf("AN UNKNOWN EVENT OCCURED!!\n");
-	}
-	
-	
-	if (wid != GR_ROOT_WINDOW_ID) {
+
+		key_pressed = event->keystroke.ch;
 		for (i = 0; i < n_opened; i++) {
-			if (windows[i].wid == wid) {
-				windows[i].event_handler(event);
+			if (windows[i].wid == wid && wid != GR_ROOT_WINDOW_ID) {
+				if(windows[i].keystroke(event) == 1)
+					beep();
 			}
 		}
+		break;
+
+	case GR_EVENT_TYPE_KEY_UP:
+		wid = ((GR_EVENT_KEYSTROKE *)event)->wid;
+		event->keystroke.ch = key_pressed;
+		break;
+
+	default:
+		printf("AN UNKNOWN EVENT OCCURED!!\n");
 	}
 }
 
@@ -190,14 +204,13 @@ void pz_draw_header(char *header)
 			&base);
 
 	GrText(root_wid, root_gc, (screen_info.cols - width) / 2, HEADER_BASELINE,
-	       header, -1, GR_TFASCII);
+		header, -1, GR_TFASCII);
 	GrLine(root_wid, root_gc, 0, HEADER_TOPLINE, screen_info.cols, HEADER_TOPLINE);
 
 	draw_batt_status();
 }
 
-GR_WINDOW_ID
-pz_new_window(int x, int y, int w, int h, GR_FNCALLBACKEVENT event_handler)
+GR_WINDOW_ID pz_new_window(int x, int y, int w, int h, void(*do_draw), int(*do_keystroke)(GR_EVENT * event))
 {
 	GR_WINDOW_ID new_wid = GrNewWindowEx(GR_WM_PROPS_APPFRAME |
 			    GR_WM_PROPS_CAPTION |
@@ -209,7 +222,8 @@ pz_new_window(int x, int y, int w, int h, GR_FNCALLBACKEVENT event_handler)
 	/* FIXME: assumes always ok */
 
 	windows[n_opened].wid = new_wid;
-	windows[n_opened].event_handler = event_handler;
+	windows[n_opened].draw = do_draw;
+	windows[n_opened].keystroke = do_keystroke;
 	n_opened++;
 
 	return new_wid;
@@ -229,6 +243,7 @@ pz_close_window(GR_WINDOW_ID wid)
 int
 main(int argc, char **argv)
 {
+
 	if (GrOpen() < 0) {
 		fprintf(stderr, "GrOpen failed");
 		exit(1);
@@ -251,9 +266,16 @@ main(int argc, char **argv)
 
 	GrMapWindow(root_wid);
 
+	ipod_load_settings();
+
 	new_menu_window();
 
-	GrMainLoop(event_handler);
+	while (1) {
+		GR_EVENT event;
+
+		GrGetNextEventTimeout(&event, 1000);
+		event_handler(&event);
+	}
 
 	return 0;
 }

@@ -26,10 +26,15 @@
 extern void new_contrast_window(void);
 extern void new_browser_window(void);
 extern void toggle_backlight(void);
+extern void set_wheeldebounce(void);
+extern void set_buttondebounce(void);
 
 static GR_WINDOW_ID menu_wid;
 static GR_GC_ID menu_gc;
 static GR_SCREEN_INFO screen_info;
+
+extern void quit_podzilla(void);
+extern void reboot_ipod(void);
 
 #define MAX_MENU_ITEMS 5
 
@@ -44,9 +49,9 @@ struct menu_item {
 #define SUB_MENU_HEADER	1
 #define ACTION_MENU	2
 #define VALUE_MENU	3
+#define SUB_MENU_PREV   4
 
 typedef void (*menu_action_t) (void);
-
 
 static struct menu_item browse_menu[] = {
 	{"Artists", DISPLAY_MENU, 0},
@@ -66,20 +71,30 @@ static struct menu_item extras_menu[] = {
 	{0, 0, 0}
 };
 
+static struct menu_item reset_menu[] = {
+	{"Cancel", SUB_MENU_PREV, 0},
+	{"Absolutely", ACTION_MENU, ipod_reset_settings},
+	{0, 0, 0}
+};
+
 static struct menu_item settings_menu[] = {
 	{"About", SUB_MENU_HEADER, 0},
 	{"Shuffle", VALUE_MENU, 0},
 	{"Repeat", VALUE_MENU, 0},
-	{"Sound Check", VALUE_MENU, 0},
 	{"EQ -Off", VALUE_MENU, 0},
-	{"Backlight Timer", SUB_MENU_HEADER, 0},
-	{"Contrast", ACTION_MENU, new_contrast_window},
+	{"Backlight", ACTION_MENU, toggle_backlight},
+	{"Backlight Timer", ACTION_MENU, set_backlight_timer},
+	{"Contrast", ACTION_MENU, set_contrast},
+	{"Wheel Debounce", ACTION_MENU, set_wheeldebounce},
+	{"Button Debounce", ACTION_MENU, set_buttondebounce},
 	{"Alarms", SUB_MENU_HEADER, 0},
 	{"Contacts", SUB_MENU_HEADER, 0},
 	{"Clicker", ACTION_MENU, toggle_piezo},
 	{"Language", SUB_MENU_HEADER, 0},
 	{"Legal", SUB_MENU_HEADER, 0},
-	{"Reset All Settings", SUB_MENU_HEADER, 0},
+	{"Reset All Settings", SUB_MENU_HEADER, reset_menu},
+	{"Save Settings", ACTION_MENU, ipod_save_settings},
+	{"Load Settings", ACTION_MENU, ipod_load_settings},
 	{0, 0, 0}
 };
 
@@ -88,8 +103,9 @@ static struct menu_item main_menu[] = {
 	{"Browse", SUB_MENU_HEADER, browse_menu},
 	{"Extras", SUB_MENU_HEADER, extras_menu},
 	{"Settings", SUB_MENU_HEADER, settings_menu},
-	{"Backlight", ACTION_MENU, toggle_backlight},
 	{"File Browser", ACTION_MENU, new_browser_window},
+        {"Quit Podzilla", ACTION_MENU, quit_podzilla},
+        {"Reboot iPod", ACTION_MENU, reboot_ipod},
 	{0, 0, 0}
 };
 
@@ -103,7 +119,6 @@ static int menu_item_stack[5];
 static int top_menu_item_stack[5];
 static int menu_stack_pos = 0;
 
-
 static void draw_menu()
 {
 	int i;
@@ -114,7 +129,7 @@ static void draw_menu()
 	height += 5;
 
 	i = 0;
-	while (m->text != 0) {
+	while (i <= 5) {
 		if (i + top_menu_item == current_menu_item) {
 			GrSetGCForeground(menu_gc, WHITE);
 			GrFillRect(menu_wid, menu_gc, 0,
@@ -130,11 +145,13 @@ static void draw_menu()
 				   1 + i * height,
 				   screen_info.cols, height);
 			GrSetGCForeground(menu_gc, WHITE);
+		}	
+
+		if (m->text != 0) {
+			GrText(menu_wid, menu_gc, 8, 1 + (i + 1) * height - 4, m->text, -1, GR_TFASCII);
+			m++;
 		}
 
-		GrText(menu_wid, menu_gc, 8, 1 + (i + 1) * height - 4, m->text, -1, GR_TFASCII);
-
-		m++;
 		i++;
 
 		if (i == MAX_MENU_ITEMS)
@@ -155,12 +172,12 @@ static int menu_do_keystroke(GR_EVENT * event)
 {
 	static int rcount = 0;
 	static int lcount = 0;
-	int ret = -1;
+	int ret = 0;
 
 	switch (event->keystroke.ch) {
 	case '\r':		/* action key */
 	case '\n':
-		ret = 0;
+		ret = 1;
 		switch (menu[current_menu_item].type) {
 		case SUB_MENU_HEADER:
 			if (menu[current_menu_item].ptr != 0) {
@@ -184,10 +201,15 @@ static int menu_do_keystroke(GR_EVENT * event)
 			}
 			break;
 
+		case SUB_MENU_PREV:
+			event->keystroke.ch = 'm';
+			menu_do_keystroke(event);
+			break;
 		}
 		break;
 
 	case 'm':		/* menu key */
+		ret = 1;
 		if (menu_stack_pos > 0) {
 			menu = menu_stack[--menu_stack_pos];
 			current_menu_item = menu_item_stack[menu_stack_pos];
@@ -195,66 +217,53 @@ static int menu_do_keystroke(GR_EVENT * event)
 
 			pz_draw_header(menu[current_menu_item].text);
 			draw_menu();
-			ret = 0;
-		} else {
-			GrClose();
-			exit(1);
+			ret = 1;
 		}
 		break;
-
-	case 'q':
-		GrClose();
-		exit(1);
-
 	case 'l':
+#ifdef IPOD
 		lcount++;
 		if (lcount < 1) {
 			break;
 		}
 		lcount = 0;
+#endif
 		if (current_menu_item) {
 			if (current_menu_item == top_menu_item) {
 				top_menu_item--;
 			}
 			current_menu_item--;
 			draw_menu();
-			ret = 0;
+			ret = 1;
 		}
 		break;
 
+#ifndef IPOD
+	case 'q':
+		GrClose();
+		exit(0);
+		break;
+#endif
+
 	case 'r':
+#ifdef IPOD
 		rcount++;
 		if (rcount < 1) {
 			break;
 		}
 		rcount = 0;
+#endif
 		if (menu[current_menu_item + 1].text != 0) {
 			current_menu_item++;
 			if (current_menu_item - MAX_MENU_ITEMS == top_menu_item) {
 				top_menu_item++;
 			} 
 			draw_menu();
-			ret = 0;
+			ret = 1;
 		}
 		break;
 	}
 	return ret;
-}
-
-static void menu_event_handler(GR_EVENT *event)
-{
-	int i;
-
-	switch (event->type) {
-	case GR_EVENT_TYPE_EXPOSURE:
-		menu_do_draw();
-		break;
-
-	case GR_EVENT_TYPE_KEY_DOWN:
-		if (menu_do_keystroke(event) == 0)
-			beep();
-		break;
-	}
 }
 
 void new_menu_window()
@@ -265,7 +274,7 @@ void new_menu_window()
 	GrSetGCUseBackground(menu_gc, GR_TRUE);
 	GrSetGCForeground(menu_gc, WHITE);
 
-	menu_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), menu_event_handler);
+	menu_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), menu_do_draw, menu_do_keystroke);
 
 	GrSelectEvents(menu_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN);
 

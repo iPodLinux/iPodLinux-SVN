@@ -26,6 +26,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #include "ipod.h"
 
@@ -37,6 +39,14 @@
 
 #define FB_DEV_NAME		"/dev/fb0"
 #define FB_DEVFS_NAME		"/dev/fb/0"
+
+#ifdef IPOD
+#define IPOD_SETTINGS_FILE	"/etc/podzilla.conf"
+#else
+#define IPOD_SETTINGS_FILE	"podzilla.conf"
+#endif
+
+static int settings_buffer[100];
 
 static int ipod_ioctl(int request, int *arg)
 {
@@ -53,6 +63,7 @@ static int ipod_ioctl(int request, int *arg)
 		return -1;
 	}
 	close(fd);
+
 	return 0;
 #else
 	return -1;
@@ -66,6 +77,7 @@ int ipod_get_contrast(void)
 	if (ipod_ioctl(FBIOGET_CONTRAST, &contrast) < 0) {
 		return -1;
 	}
+
 	return contrast;
 }
 
@@ -74,6 +86,7 @@ int ipod_set_contrast(int contrast)
 	if (ipod_ioctl(FBIOSET_CONTRAST, (int *) contrast) < 0) {
 		return -1;
 	}
+
 	return 0;
 }
 
@@ -84,6 +97,7 @@ int ipod_get_backlight(void)
 	if (ipod_ioctl(FBIOGET_BACKLIGHT, &backlight) < 0) {
 		return -1;
 	}
+
 	return backlight;
 }
 
@@ -92,7 +106,97 @@ int ipod_set_backlight(int backlight)
 	if (ipod_ioctl(FBIOSET_BACKLIGHT, (int *) backlight) < 0) {
 		return -1;
 	}
+
 	return 0;
+}
+
+int ipod_set_setting(int setting, int value)
+{
+	if (value <= 0) {
+		value = 0;
+	}
+
+	settings_buffer[setting] = value + 1;
+	switch (setting) {
+	case CONTRAST:
+		ipod_set_contrast(value);
+		break;	
+	case BACKLIGHT:
+		ipod_set_backlight(value);
+		break;
+	}
+	
+	return 0;
+}
+
+int ipod_get_setting(int setting)
+{
+
+	int value;
+
+	value = settings_buffer[setting] - 1;	
+	if (value <= 0) {
+		value = 0;
+	}
+	return value;
+}
+
+int ipod_load_settings(void)
+{
+        FILE *fp;
+	int x;
+
+	if (fp = fopen(IPOD_SETTINGS_FILE, "r")) {
+	        if (fread(settings_buffer, sizeof(int), 100, fp) != 100) {
+			printf("Failed to read Podzilla settings from %s.\n", IPOD_SETTINGS_FILE);
+		}
+		else {
+			/* loop may seem pointless, but it's not, or is it? */
+			for(x = 0; x <= 100 ; x++) {
+				ipod_set_setting(x, ipod_get_setting(x));
+			}
+		}
+
+		fclose(fp);
+	}
+	else {
+		printf("Failed to open %s to read settings, using defaults.\n", IPOD_SETTINGS_FILE);
+
+		for (x = 1 ; x <= 100 ; x++) {
+			ipod_set_setting(x, 0);
+		}
+
+		ipod_set_setting(CONTRAST, ipod_get_contrast());
+		ipod_set_setting(CLICKER, 1);
+		ipod_set_setting(WHEEL_DEBOUNCE, 200);
+		ipod_set_setting(ACTION_DEBOUNCE, 400);
+		ipod_set_setting(BACKLIGHT_TIMER, 0);
+	}
+}
+
+int ipod_save_settings(void)
+{
+	FILE *fp;
+        int x;
+
+	if (fp = fopen(IPOD_SETTINGS_FILE, "w")) {
+		if (fwrite(settings_buffer, sizeof(int), 100, fp) != 100) {
+			printf("Failed to write Podzilla settings to %s.\n", IPOD_SETTINGS_FILE);
+		}
+
+		fclose(fp);
+	}
+	else {
+		printf("Failed to open %s to save settings.\n", IPOD_SETTINGS_FILE);
+	}
+}
+
+void ipod_reset_settings(void)
+{
+	unlink(IPOD_SETTINGS_FILE);
+
+	ipod_load_settings();
+	ipod_save_settings();
 }
 
 /*
@@ -107,8 +211,8 @@ int ipod_set_blank_mode(int blank)
 		return -1;
 	}
 
-	return 0;
 #endif
+	return 0;
 }
 
 void ipod_beep(void)
@@ -118,13 +222,15 @@ void ipod_beep(void)
 	static char buf;
 
 	if (fd == -1 && (fd = open("/dev/ttyS1", O_WRONLY)) == -1
-			&& (fd = open("/dev/tts/1", O_WRONLY)) == -1) 
+			&& (fd = open("/dev/tts/1", O_WRONLY)) == -1) {
 		return;
+	}
     
 	write(fd, &buf, 1);
 #else
-	if (isatty(1))
+	if (isatty(1)) {
 		printf("\a");
+	}
 #endif
 }
 

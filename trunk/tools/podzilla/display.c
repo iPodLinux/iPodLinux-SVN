@@ -19,99 +19,18 @@
 #include "pz.h"
 #include "ipod.h"
 
-static GR_WINDOW_ID disp_wid;
-static GR_GC_ID disp_gc;
-static GR_SCREEN_INFO screen_info;
-static int contrast;
-
-static void contrast_do_draw(void)
+void set_backlight_timer(void)
 {
-	GrSetGCForeground(disp_gc, WHITE);
-	GrRect(disp_wid, disp_gc, 10, 40, MAX_CONTRAST, 10);
-	GrFillRect(disp_wid, disp_gc, 10, 40, contrast, 10);
-	GrSetGCForeground(disp_gc, BLACK);
-	GrFillRect(disp_wid, disp_gc, 11 + contrast, 41,
-		   MAX_CONTRAST - contrast - 2, 8);
-	GrSetGCForeground(disp_gc, WHITE);
+	new_slider_widget(BACKLIGHT_TIMER, "Backlight Timer", 0, 180);
 }
 
-static int contrast_do_keystroke(GR_EVENT * event)
+void set_contrast(void)
 {
-	int ret = -1;
-	switch (event->keystroke.ch) {
-	case '\r':
-	case '\n':
-	case 'm':
-		pz_close_window(disp_wid);
-		ret = 0;
-		break;
-
-	case 'l':
-		if (contrast) {
-			contrast--;
-			ipod_set_contrast(contrast);
-			contrast_do_draw();
-		}
-		break;
-
-	case 'r':
-		if (contrast < MAX_CONTRAST - 1) {
-			contrast++;
-			ipod_set_contrast(contrast);
-			contrast_do_draw();
-		}
-		break;
-	}
-	return ret;
-}
-
-static void contrast_event_handler(GR_EVENT *event)
-{
-	int i;
-
-	switch (event->type) {
-	case GR_EVENT_TYPE_EXPOSURE:
-		contrast_do_draw();
-		break;
-
-	case GR_EVENT_TYPE_KEY_DOWN:
-		if (contrast_do_keystroke(event) == 0)
-			beep();
-		break;
-	}
-}
-
-void new_contrast_window(void)
-{
-	contrast = ipod_get_contrast();
-	if (contrast < 0) {
-		contrast = 50;
-	}
-
-	GrGetScreenInfo(&screen_info);
-
-	disp_gc = GrNewGC();
-	GrSetGCUseBackground(disp_gc, GR_TRUE);
-	GrSetGCForeground(disp_gc, WHITE);
-
-	disp_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), contrast_event_handler);
-
-	GrSelectEvents(disp_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN);
-
-	pz_draw_header("Contrast");
-
-	GrMapWindow(disp_wid);
+	new_slider_widget(CONTRAST, "Set Contrast", 0, 128);
 }
 
 void toggle_backlight(void)
 {
-	int backlight;
-
-	printf("backlight toggle\n");
-	backlight = ipod_get_backlight();
-	if (backlight >= 0) {
-		backlight = 1 - backlight;
-		ipod_set_backlight(backlight);
-	}
+        ipod_set_setting(BACKLIGHT, !ipod_get_setting(BACKLIGHT));
 }
 

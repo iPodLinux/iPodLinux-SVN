@@ -177,23 +177,16 @@ static void drawtext(void)
 	GrRect (tv_wid , tv_gc , tv_winfo.width - 6, block_start_pix + 1, 2, block_height - 2);
 }
 
-static void textview_do_draw(void)
+static void textview_do_draw(GR_EVENT * event)
 {
 	pz_draw_header(g_filename);
 	drawtext();
 }
 
-static void textview_event_handler(GR_EVENT *event)
-{
+static int textview_do_keystroke(GR_EVENT * event){
 	int i;
-
-	switch (event->type) {
-	case GR_EVENT_TYPE_EXPOSURE:
-		textview_do_draw();
-		break;
-		
-	case GR_EVENT_TYPE_KEY_DOWN:
-		switch (event->keystroke.ch) {
+	int ret = 0;
+	switch (event->keystroke.ch) {
 		case 'm':
 		case 'q':
 			pz_close_window(tv_wid);
@@ -206,6 +199,7 @@ static void textview_event_handler(GR_EVENT *event)
 			if (currentLine + LINESPERSCREEN < totalLines)
 				currentLine ++;
 			drawtext();
+			ret = 1;
 			break;
 
 		case 'l':
@@ -213,9 +207,10 @@ static void textview_event_handler(GR_EVENT *event)
 			if (currentLine > 0)
 				currentLine --;
 			drawtext();
+			ret = 1;
 			break;
-		}
 	}
+	return ret;
 }
 
 bool is_text_type(char * extension)
@@ -233,7 +228,7 @@ void new_textview_window(char * filename)
 	GrSetGCUseBackground(tv_gc, GR_TRUE);
 	GrSetGCForeground(tv_gc, WHITE);
 	
-	tv_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), textview_event_handler);
+	tv_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), textview_do_draw, textview_do_keystroke);
 	
 	GrSelectEvents(tv_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN);
 

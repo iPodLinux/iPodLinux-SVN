@@ -1,15 +1,13 @@
 
 #include "ipod.h"
 
-static int piezo = 0;
-
 void toggle_piezo(void)
 {
-	piezo = !piezo;
+	ipod_set_setting(CLICKER, !ipod_get_setting(CLICKER));
 }
 
 void beep(void)
 {
-	if (piezo) 
+	if (ipod_get_setting(CLICKER)) 
 		ipod_beep();
 }

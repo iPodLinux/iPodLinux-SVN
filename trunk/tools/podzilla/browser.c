@@ -77,35 +77,37 @@ static void browser_mscandir(char *dira)
 	browser_nbEntries = 0;
 
 	while ((subdir = readdir(dir))) {
-		if (browser_nbEntries >= MAX_ENTRIES) {
-			new_message_window("Too many files.");
-			break;
+		if (strncmp(subdir->d_name, ".", strlen(subdir->d_name)) != 0) {
+			if (browser_nbEntries >= MAX_ENTRIES) {
+				new_message_window("Too many files.");
+				break;
+			}
+
+			size = strlen(subdir->d_name);
+			browser_entries[browser_nbEntries].full_name = malloc(sizeof(char) * size + 1);
+			strcpy(browser_entries[browser_nbEntries].full_name, subdir->d_name);
+
+			if (size > 30) {
+				size = 30;
+			}
+
+			memcpy(browser_entries[browser_nbEntries].name, subdir->d_name, size);
+			browser_entries[browser_nbEntries].name[size] = 0;
+			browser_entries[browser_nbEntries].name_size = size;
+
+			browser_entries[browser_nbEntries].type = FILE_TYPE_OTHER;
+			stat(subdir->d_name, &stat_result);
+			if (S_ISDIR(stat_result.st_mode)) {
+				browser_entries[browser_nbEntries].type =
+				    FILE_TYPE_DIRECTORY;
+			} else if (stat_result.st_mode & S_IXUSR) {
+				browser_entries[browser_nbEntries].type =
+				    FILE_TYPE_PROGRAM;
+			} else {
+			}
+
+			browser_nbEntries++;
 		}
-
-		size = strlen(subdir->d_name);
-		browser_entries[browser_nbEntries].full_name = malloc(sizeof(char) * size + 1);
-		strcpy(browser_entries[browser_nbEntries].full_name, subdir->d_name);
-
-		if (size > 30) {
-			size = 30;
-		}
-
-		memcpy(browser_entries[browser_nbEntries].name, subdir->d_name, size);
-		browser_entries[browser_nbEntries].name[size] = 0;
-		browser_entries[browser_nbEntries].name_size = size;
-
-		browser_entries[browser_nbEntries].type = FILE_TYPE_OTHER;
-		stat(subdir->d_name, &stat_result);
-		if (S_ISDIR(stat_result.st_mode)) {
-			browser_entries[browser_nbEntries].type =
-			    FILE_TYPE_DIRECTORY;
-		} else if (stat_result.st_mode & S_IXUSR) {
-			browser_entries[browser_nbEntries].type =
-			    FILE_TYPE_PROGRAM;
-		} else {
-		}
-
-		browser_nbEntries++;
 	}
 	closedir(dir);
 
@@ -144,8 +146,15 @@ static void browser_draw_browser()
 		}
 
 		y += height;
-		GrText(browser_wid, browser_gc, 8, y,
-		       browser_entries[i].name, -1, GR_TFASCII);
+
+		if (strncmp(browser_entries[i].name, "..", 2) == 0) {
+			GrText(browser_wid, browser_gc, 8, y,
+				"<", -1, GR_TFASCII);
+		}
+		else {
+			GrText(browser_wid, browser_gc, 8, y,
+				browser_entries[i].name, -1, GR_TFASCII);
+		}
 
 		GrSetGCForeground(browser_gc, GRAY);
 		switch (browser_entries[i].type) {
@@ -154,14 +163,18 @@ static void browser_draw_browser()
 			       GR_TFASCII);
 			break;
 		case FILE_TYPE_DIRECTORY:
-			GrText(browser_wid, browser_gc, 1, y, ">", -1,
-			       GR_TFASCII);
+			if (strncmp(browser_entries[i].name, "..", 2) == 0) {
+				GrText(browser_wid, browser_gc, 1, y, "<", -1,
+					GR_TFASCII);
+			}
+			else {
+				GrText(browser_wid, browser_gc, 1, y, ">", -1,
+					GR_TFASCII);
+			}
 			break;
 		case FILE_TYPE_OTHER:
 			break;
 		}
-
-
 	}
 
 	/* clear bottom portion of display */
@@ -185,16 +198,19 @@ static void handle_type_other(char *filename)
 	char *ext;
 
 	ext = strrchr(filename, '.');
-	if (ext == 0) return;
-
-	if (is_image_type(ext)) {
-		new_image_window(filename);
-	} else if (is_text_type(ext)) {
+	if (ext == 0) {
 		new_textview_window(filename);
-	} else if (is_mp3_type(ext)) {
+	}
+	else if (is_image_type(ext)) {
+		new_image_window(filename);
+	}
+	else if (is_text_type(ext)) {
+		new_textview_window(filename);
+	}
+	else if (is_mp3_type(ext)) {
 		new_mp3_window(filename);
-	} else {
-
+	}
+	else  {
 		new_message_window(filename);
 	}
 }
@@ -206,7 +222,7 @@ static void browser_selection_activated(unsigned short userChoice)
 		chdir(browser_entries[userChoice].full_name);
 		browser_mscandir("./");
 		break;
-	case FILE_TYPE_PROGRAM:
+	case FILE_TYPE_PROGRAM:		
 	case FILE_TYPE_OTHER:
 		handle_type_other(browser_entries[userChoice].full_name);
 		break;
@@ -215,20 +231,20 @@ static void browser_selection_activated(unsigned short userChoice)
 
 static int browser_do_keystroke(GR_EVENT * event)
 {
-	int ret = -1;
+	int ret = 0;
 	switch (event->keystroke.ch) {
 	case '\r':
 	case '\n':
 		browser_selection_activated(browser_currentSelection);
 		browser_draw_browser();
-		ret = 0;
+		ret = 1;		
 		break;
 
 	case 'm':
 	case 'q':
 		browser_exit();
 		pz_close_window(browser_wid);
-		ret = 0;
+		ret = 1;
 		break;
 
 	case 'r':
@@ -240,7 +256,7 @@ static int browser_do_keystroke(GR_EVENT * event)
 			} else
 				browser_top++;
 			browser_draw_browser();
-			ret = 0;
+			ret = 1;
 		}
 
 		break;
@@ -254,30 +270,12 @@ static int browser_do_keystroke(GR_EVENT * event)
 			} else {
 				browser_top--;
 			}
-
 			browser_draw_browser();
-			ret = 0;
+			ret = 1;
 		}
 		break;
 	}
 	return ret;
-
-}
-
-static void browser_event_handler(GR_EVENT *event)
-{
-	int i;
-
-	switch (event->type) {
-	case GR_EVENT_TYPE_EXPOSURE:
-		browser_do_draw(event);
-		break;
-
-	case GR_EVENT_TYPE_KEY_DOWN:
-		if (browser_do_keystroke(event) == 0)
-			beep();
-		break;
-	}
 }
 
 void new_browser_window(void)
@@ -292,7 +290,7 @@ void new_browser_window(void)
 
 	browser_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols,
                                     screen_info.rows - (HEADER_TOPLINE + 1),
-                                    browser_event_handler);
+                                    browser_do_draw, browser_do_keystroke);
 
 	GrSelectEvents(browser_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN);
 
