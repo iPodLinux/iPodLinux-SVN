@@ -10,6 +10,12 @@
  * This file is subject to the terms and conditions of the GNU General Public
  * License.  See the file COPYING in the main directory of this archive
  * for more details.
+ * CHANGES
+ * 20030312
+ *    - Added support for the EPSON S1D13706 framebuffer driver for
+ *      our COBRA5272 board (the s1d13706fb* stuff).
+ *      ATTENTION! This is _very_ experimental, currently!
+ *    (hede)
  */
 
 #include <linux/config.h>
@@ -56,6 +62,8 @@ extern int atafb_init(void);
 extern int atafb_setup(char*);
 extern int m68328fb_init(void);
 extern void m68328fb_setup(char*);
+extern int mc68x328fb_init(void);
+extern void mc68x328fb_setup(char*);
 extern int macfb_init(void);
 extern int macfb_setup(char*);
 extern int cyberfb_init(void);
@@ -133,8 +141,14 @@ extern void maxinefb_init(void);
 extern int tx3912fb_init(void);
 extern int radeonfb_init(void);
 extern int radeonfb_setup(char*);
+extern int intelfb_init(void);
+extern int intelfb_setup(char*);
 extern int e1355fb_init(void);
 extern int e1355fb_setup(char*);
+extern int mq200fb_init(void);
+extern int mq200fb_setup(char*);
+extern int e1356fb_init(void);
+extern int e1356fb_setup(char*);
 extern int au1100fb_init(void);
 extern int au1100fb_setup(char*);
 extern int pvr2fb_init(void);
@@ -143,6 +157,16 @@ extern int sstfb_init(void);
 extern int sstfb_setup(char*);
 extern int ipodfb_init(void);
 extern int ipodfb_setup(char*);
+extern int s3c44b0xfb_init(void);
+extern int s3c44b0xfb_setup(char*);
+#if defined(CONFIG_FB_COBRA5272) && defined(CONFIG_FB_S1D13706)
+/* 
+ * Again: This is _really_ experimental!
+ * Feedback really welcome!
+ */
+extern int s1d13706fb_init(void);
+extern int s1d13706fb_setup(char*);
+#endif
 
 static struct {
 	const char *name;
@@ -211,6 +235,9 @@ static struct {
 #ifdef CONFIG_FB_RADEON
 	{ "radeon", radeonfb_init, radeonfb_setup },
 #endif
+#ifdef CONFIG_FB_INTEL
+	{ "intelfb", intelfb_init, intelfb_setup },
+#endif
 #ifdef CONFIG_FB_CONTROL
 	{ "controlfb", control_init, control_setup },
 #endif
@@ -251,6 +278,9 @@ static struct {
 	 */
 #ifdef CONFIG_FB_M68328
 	{ "68328fb", m68328fb_init,m68328fb_setup },
+#endif
+#ifdef CONFIG_FB_MC68X328
+	{ "mc68x328fb", mc68x328fb_init, mc68x328fb_setup },
 #endif
 #ifdef CONFIG_FB_OF
 	{ "offb", offb_init, NULL },
@@ -314,6 +344,9 @@ static struct {
 #ifdef CONFIG_FB_E1355
 	{ "e1355fb", e1355fb_init, e1355fb_setup },
 #endif
+#ifdef CONFIG_FB_E1356
+        { "e1356fb", e1356fb_init, e1356fb_setup },
+#endif
 #ifdef CONFIG_FB_PVR2
 	{ "pvr2", pvr2fb_init, pvr2fb_setup },
 #endif
@@ -329,7 +362,12 @@ static struct {
 #ifdef CONFIG_FB_AU1100
 	{ "au1100fb", au1100fb_init, au1100fb_setup },
 #endif 
-
+#ifdef CONFIG_FB_S3C44B0X
+	{ "s3c44b0xfb", s3c44b0xfb_init, s3c44b0xfb_setup },
+#endif 
+#if defined(CONFIG_FB_COBRA5272) && defined(CONFIG_FB_S1D13706)
+	{ "s1d13706fb", s1d13706fb_init, s1d13706fb_setup },
+#endif
 
 	/*
 	 * Generic drivers that don't use resource management (yet)
@@ -353,6 +391,18 @@ static struct {
 	 * other display devices are present
 	 */
 	{ "vfb", vfb_init, vfb_setup },
+#endif
+
+#ifdef CONFIG_FB_VIRUAL_SMALL
+	/*
+	 * Vfb must be last to avoid that it becomes your primary display if
+	 * other display devices are present
+	 */
+	{ "vfb_small", vfb_small_init, vfb_small_setup },
+#endif
+
+#ifdef CONFIG_FB_MQ200
+	{ "mq200fb", mq200fb_init, mq200fb_setup },
 #endif
 };
 
@@ -665,6 +715,8 @@ fb_mmap(struct file *file, struct vm_area_struct * vma)
 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
 #elif defined(__sh__)
 	pgprot_val(vma->vm_page_prot) &= ~_PAGE_CACHABLE;
+#elif defined(__hppa__)
+	pgprot_val(vma->vm_page_prot) |= _PAGE_NO_CACHE; 
 #elif defined(__ia64__)
 	vma->vm_page_prot = pgprot_writecombine(vma->vm_page_prot);
 #elif defined(__hppa__)

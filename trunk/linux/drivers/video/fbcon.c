@@ -98,7 +98,17 @@
 #include <asm/io.h>
 #endif
 #define INCLUDE_LINUX_LOGO_DATA
+/* 
+ * The #include <asm/linux_logo.h> didn't seem to work for us.
+ * so I use #include <linux/linux_logo.h> if compiling for
+ * our board
+ * (20030314 - hede) 
+ */
+#if defined(CONFIG_FB_COBRA5272) || defined (CONFIG_DRAGEN2)
+#include <linux/linux_logo.h>
+#else
 #include <asm/linux_logo.h>
+#endif
 
 #include <video/fbcon.h>
 #include <video/fbcon-mac.h>	/* for 6x11 font on mac */
@@ -266,23 +276,22 @@ static void cursor_timer_handler(unsigned long dev_addr)
 int PROC_CONSOLE(const struct fb_info *info)
 {
         int fgc;
-        
-        if (info->display_fg != NULL)
-                fgc = info->display_fg->vc_num;
-        else
-                return -1;
-                
-        if (!current->tty)
-                return fgc;
 
-        if (current->tty->driver.type != TTY_DRIVER_TYPE_CONSOLE)
-                /* XXX Should report error here? */
-                return fgc;
+	if (info->display_fg == NULL)
+		return -1;
 
-        if (MINOR(current->tty->device) < 1)
-                return fgc;
+        if (!current->tty ||
+	    current->tty->driver.type != TTY_DRIVER_TYPE_CONSOLE ||
+	    MINOR(current->tty->device) < 1)
+		fgc = info->display_fg->vc_num;
+	else
+		fgc = MINOR(current->tty->device)-1;
 
-        return MINOR(current->tty->device) - 1;
+	/* Does this virtual console belong to the specified fbdev? */
+	if (fb_display[fgc].fb_info != info)
+		return -1;
+
+	return fgc;
 }
 
 
@@ -922,8 +931,9 @@ static void fbcon_cursor(struct vc_data *conp, int mode)
 	return;
 
     cursor_on = 0;
-    if (cursor_drawn)
-        p->dispsw->revc(p, p->cursor_x, real_y(p, p->cursor_y));
+    if (cursor_drawn && p->cursor_x < conp->vc_cols &&
+	p->cursor_y < conp->vc_rows)
+	p->dispsw->revc(p, p->cursor_x, real_y(p, p->cursor_y));
 
     p->cursor_x = conp->vc_x;
     p->cursor_y = y;

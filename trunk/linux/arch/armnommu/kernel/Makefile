@@ -25,6 +25,10 @@ HEAD_OBJ  = head-arm-ipod.o
 AFLAGS_head-arm-ipod.o = -DTEXTADDR=$(TEXTADDR)
 endif
 
+ifeq ($(CONFIG_ARCH_C5471), y)
+HEAD_OBJ  = head-arm-c5471.o
+endif
+
 AFLAGS_head-armv.o := -DTEXTADDR=$(TEXTADDR)
 AFLAGS_head-armo.o := -DTEXTADDR=$(TEXTADDR)
 
