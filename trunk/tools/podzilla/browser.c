@@ -51,6 +51,8 @@ char *browser_selected_filename = NULL;
 int browser_top = 0;
 Directory browser_entries[MAX_ENTRIES];
 
+void new_script_window(char *filename);
+
 static void browser_exit()
 {
 	int i;
@@ -193,6 +195,11 @@ static void browser_do_draw(GR_EVENT *event)
 	browser_draw_browser();
 }
 
+static int is_script_type(char *extension)
+{
+	return strcmp(extension, ".sh") == 0;
+}
+
 static void handle_type_other(char *filename)
 {
 	char *ext;
@@ -212,6 +219,9 @@ static void handle_type_other(char *filename)
 	}
 	else if (is_raw_audio_type(ext)) {
 		new_playback_window(filename);
+	}
+	else if (is_script_type(ext)) {
+		new_script_window(filename);
 	}
 	else  {
 		new_message_window(filename);
@@ -301,3 +311,32 @@ void new_browser_window(void)
 
 	GrMapWindow(browser_wid);
 }
+
+void new_script_window(char *filename)
+{
+	pid_t pid;
+
+	GrClose();
+
+	pid = vfork();
+	if (pid == 0) {
+		execl("/bin/sh", "sh", filename);
+		fprintf(stderr, "exec failed!\n");
+		exit(1);
+	}
+	else {
+		if (pid > 0) {
+			int status;
+
+			waitpid(pid, &status, 0);
+		}
+		else {
+			fprintf(stderr, "vfork failed %d\n", pid);
+		}
+	}
+
+	execl("/sbin/podzilla", "podzilla");
+	fprintf(stderr, "Cannot restart podzilla!\n");
+	exit(1);
+}
+
