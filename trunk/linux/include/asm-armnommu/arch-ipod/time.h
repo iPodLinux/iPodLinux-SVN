@@ -37,11 +37,11 @@ extern __inline__ void setup_timer(void)
 	timer_irq.handler = ipod_timer_interrupt;
 
 	/* clear timer1 */
-	outl(0x0, 0xcf001100);
-	inl(0xcf001104);
+	outl(0x0, IPOD_TIMER0);
+	inl(IPOD_TIMER0_ACK);
 
 	/* enable timer, period, trigger value 0x2710 -> 100Hz */
-	outl(0xc0002710, 0xcf001100);
+	outl(0xc0000000 | USECS_PER_INT, IPOD_TIMER0);
 
 	setup_arm_irq(TIMER1_IRQ, &timer_irq);
 	enable_irq(TIMER1_IRQ);
