@@ -10,8 +10,9 @@ older mm kernels (but should work with minor tweaks on about any quite recent
 You might not want to load this module with eth1394 loaded - they might easily
 clash - I haven't tested that.
 
-This driver is NOT SMP-safe, it will lock up a multiprocessor machine! If you 
-can fix this, please mail us to the ipodlinux-devel list.
+This driver is NOT SMP-safe, it will lock up a multiprocessor machine! Neither
+is it compatible with a preemptible kernel (CONFIG_PREEMPT)! If you can fix 
+this, please mail us to the ipodlinux-devel list.
 
 Compiling:
 ----------
