@@ -100,6 +100,7 @@ OBJS=\
 	poddraw.o \
 	playlist.o \
 	cube.o \
+	matrix.o \
 	Steroids/asteroid.o \
 	Steroids/main.o \
 	Steroids/object.o \

@@ -47,6 +47,7 @@ extern void new_tictactoe_window(void);
 extern void new_calc_window(void);
 extern void new_poddraw_window(void);
 extern void new_cube_window(void);
+extern void new_matrix_window(void);
 extern void about_window(void);
 
 static GR_WINDOW_ID menu_wid;
@@ -89,6 +90,7 @@ typedef void (*menu_action_t) (void);
 static struct menu_item fun_menu[] = {
 	{"BlueCube", ACTION_MENU, new_bluecube_window, NOSETTING, 0},
 	{"Cube", ACTION_MENU, new_cube_window, NOSETTING, 0},
+	{"Matrix", ACTION_MENU, new_matrix_window, NOSETTING, 0},
 	{"Nimesweeper", ACTION_MENU, new_mines_window, NOSETTING, 0},
 	{"Othello", ACTION_MENU, new_oth_window, NOSETTING, 0},
 	{"PodDraw", ACTION_MENU, new_poddraw_window, NOSETTING, 0},
