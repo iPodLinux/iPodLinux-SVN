@@ -299,14 +299,36 @@ static void browser_delete_file()
 	menu_delete_item(browser_menu_overlay, browser_menu_overlay->sel);
 }
 
-static void browser_action(unsigned short userChoice)
+static void browser_delete_confirm()
 {
+	int len;
+	char *message;
+	char *warning = "Warning: this will delete everything under ";
+	struct stat stat_result;
 	static item_st delete_confirm_menu[] = {
 		{"Whoops. No thanks.", NULL, SUB_MENU_PREV},
 		{"Yes, Delete it.", browser_delete_file, ACTION_MENU},
 		{0}
 	};
-	
+
+	browser_menu = menu_init(browser_wid, browser_gc,
+			"Are You Sure?", 0, 1, screen_info.cols,
+			screen_info.rows - (HEADER_TOPLINE + 1),
+			browser_menu, delete_confirm_menu);
+	browser_menu_overlay = browser_menu;
+
+	stat(current_file, &stat_result);
+	if(S_ISDIR(stat_result.st_mode)) {
+		len = strlen(current_file) + strlen(warning) + 1;
+		message = (char *)malloc(len * sizeof(char));
+		snprintf(message, len, "%s%s", warning, current_file);
+		new_message_window(message);
+		free(message);
+	}
+}
+
+static void browser_action(unsigned short userChoice)
+{
 	current_file = browser_entries[userChoice].full_name;
 	if(strncmp(current_file, ".", strlen(current_file)) == 0 ||
 			strncmp(current_file, "..", strlen(current_file)) == 0)
@@ -328,8 +350,8 @@ static void browser_action(unsigned short userChoice)
 					SUB_MENU_PREV);
 		break;
 	}
-	menu_add_item(browser_menu, "Delete",  delete_confirm_menu, 0,
-			SUB_MENU_HEADER);
+	menu_add_item(browser_menu, "Delete",  browser_delete_confirm, 0,
+			ACTION_MENU | ARROW_MENU);
 }
 
 static int browser_do_keystroke(GR_EVENT * event)
