@@ -47,7 +47,7 @@
 #if defined(IPOD_1G) || defined(IPOD_2G)
 #define HOLD_SWITCH_IS_ON(c) ((c) & 0x20)
 #else
-#define HOLD_SWITCH_IS_ON(c) (((c) && 0x20) == 0)
+#define HOLD_SWITCH_IS_ON(c) (((c) & 0x20) == 0)
 #endif
 
 static void keyboard_interrupt(int irq, void *dev_id, struct pt_regs *regs)
