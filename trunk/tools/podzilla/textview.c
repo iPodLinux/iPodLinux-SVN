@@ -24,11 +24,13 @@
 	- removed flicker, when trying to scroll beyond the last(first) line of text
 */
 
-#include "pz.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+
+#include "pz.h"
+
 #define LINESPERSCREEN 7
 
 static GR_GC_ID tv_gc;
