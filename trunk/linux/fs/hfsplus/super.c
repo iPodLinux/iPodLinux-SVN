@@ -238,6 +238,7 @@ int hfsplus_remount(struct super_block *sb, int *flags, char *data)
 	if ((*flags & MS_RDONLY) == (sb->s_flags & MS_RDONLY))
 		return 0;
 	if (!(*flags & MS_RDONLY)) {
+#if 0
 		struct hfsplus_vh *vhdr = HFSPLUS_SB(sb).s_vhdr;
 
                 if (!(vhdr->attributes & cpu_to_be32(HFSPLUS_VOL_UNMNT))) {
@@ -250,6 +251,7 @@ int hfsplus_remount(struct super_block *sb, int *flags, char *data)
 			sb->s_flags |= MS_RDONLY;
 			*flags |= MS_RDONLY;
 		}
+#endif
 	}
 	return 0;
 }
@@ -342,6 +344,7 @@ static int hfsplus_fill_super(struct super_block *sb, void *data, int silent)
 	/* Set up operations so we can load metadata */
 	sb->s_op = &hfsplus_sops;
 
+#if 0
 	if (!(vhdr->attributes & cpu_to_be32(HFSPLUS_VOL_UNMNT))) {
 		if (!silent)
 			printk("HFS+-fs warning: Filesystem was not cleanly unmounted, "
@@ -352,6 +355,7 @@ static int hfsplus_fill_super(struct super_block *sb, void *data, int silent)
 			printk("HFS+-fs: Filesystem is marked locked, mounting read-only.\n");
 		sb->s_flags |= MS_RDONLY;
 	}
+#endif
 
 	/* Load metadata objects (B*Trees) */
 	HFSPLUS_SB(sb).ext_tree = hfsplus_open_btree(sb, HFSPLUS_EXT_CNID);
