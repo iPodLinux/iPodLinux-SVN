@@ -29,28 +29,47 @@
 /* the ID returned by the controller */
 #define HD66753_ID	0x5307
 
-#define IPOD_LCD_BASE	0xc0001000
-#define IPOD_RTC	0xcf001110
+#define IPOD_PP5002_LCD_BASE	0xc0001000
+#define IPOD_PP5002_RTC		0xcf001110
 
-#define IPOD_LCD_WIDTH	160
-#define IPOD_LCD_HEIGHT	128
+#define IPOD_PP5020_LCD_BASE	0x70003000
+#define IPOD_PP5020_RTC		0x60005010
 
-/* allow for 2bpp */
-static char ipod_scr[IPOD_LCD_HEIGHT * (IPOD_LCD_WIDTH/4)];
+#define LCD_DATA 0x10
+#define LCD_CMD  0x08
+
+#define IPOD_STD_LCD_WIDTH	160
+#define IPOD_STD_LCD_HEIGHT	128
+
+#define IPOD_MINI_LCD_WIDTH 138
+#define IPOD_MINI_LCD_HEIGHT 110
+
+static int ipod_hw_ver;
+
+
+static unsigned long lcd_rtc;
+static unsigned long lcd_base;
+
+static unsigned long lcd_width;
+static unsigned long lcd_height;
+
+/* allow for 2bpp */ /* Sized to max we could possibly need */
+static char ipod_scr[IPOD_STD_LCD_HEIGHT * (IPOD_STD_LCD_WIDTH/4)];
 
 
 /* get current usec counter */
-static int
-timer_get_current(void)
+static int timer_get_current(void)
 {
-	return inl(IPOD_RTC);
+	return inl(lcd_rtc);
 }
 
 /* check if number of useconds has past */
-static int
-timer_check(int clock_start, int usecs)
+static int timer_check(int clock_start, int usecs)
 {
-	if ( (inl(IPOD_RTC) - clock_start) >= usecs ) {
+	unsigned long clock;
+	clock = inl(lcd_rtc);
+	
+	if ( (clock - clock_start) >= usecs ) {
 		return 1;
 	} else {
 		return 0;
@@ -58,27 +77,30 @@ timer_check(int clock_start, int usecs)
 }
 
 /* wait for LCD with timeout */
-static void
-lcd_wait_write(void)
+static void lcd_wait_write(void)
 {
-	if ( (inl(IPOD_LCD_BASE) & 0x1) != 0 ) {
+	if ( (inl(lcd_base) & 0x8000) != 0 ) {
 		int start = timer_get_current();
-
+			
 		do {
-			if ( (inl(IPOD_LCD_BASE) & (unsigned int)0x8000) == 0 ) break;
+			if ( (inl(lcd_base) & (unsigned int)0x8000) == 0 ) 
+				break;
 		} while ( timer_check(start, 1000) == 0 );
 	}
 }
 
 
 /* send LCD data */
-static void
-lcd_send_data(int data_lo, int data_hi)
+static void lcd_send_data(int data_lo, int data_hi)
 {
 	lcd_wait_write();
-	outl(data_lo, 0xc0001010);
+	
+	outl(data_lo, lcd_base + LCD_DATA);
+		
 	lcd_wait_write();
-	outl(data_hi, 0xc0001010);
+	
+	outl(data_hi, lcd_base + LCD_DATA);
+
 }
 
 /* send LCD command */
@@ -86,14 +108,17 @@ static void
 lcd_prepare_cmd(int cmd)
 {
 	lcd_wait_write();
-	outl(0x0, 0xc0001008);
+
+	outl(0x0, lcd_base + LCD_CMD);
+
 	lcd_wait_write();
-	outl(cmd, 0xc0001008);
+	
+	outl(cmd, lcd_base + LCD_CMD);
+	
 }
 
 /* send LCD command and data */
-static void
-lcd_cmd_and_data(int cmd, int data_lo, int data_hi)
+static void lcd_cmd_and_data(int cmd, int data_lo, int data_hi)
 {
 	lcd_prepare_cmd(cmd);
 
@@ -107,11 +132,14 @@ get_contrast(void)
 
 	/* data_lo has the scan line */
 	lcd_wait_write();
-	data_lo = inl(0xc0001008);
+	
+	data_lo = inl(lcd_base + LCD_CMD);
+	
 	/* data_hi has the contrast */
 	lcd_wait_write();
-	data_hi = inl(0xc0001008);
 
+	data_hi = inl(lcd_base + LCD_CMD);
+	
 	return data_hi & 0xff;
 }
 
@@ -124,17 +152,32 @@ set_contrast(int contrast)
 static int
 get_backlight(void)
 {
-	return inl(IPOD_LCD_BASE) & 0x2 ? 1 : 0;
+	if (ipod_hw_ver >= 0x04)
+	{
+		return 0; /* TODO: Once 4g backlight code is discovered, removeme */
+	}
+	else
+	{
+		return inl(lcd_base) & 0x2 ? 1 : 0;
+	}
 }
 
 static void
 set_backlight(int on)
 {
-	int lcd_state = inl(IPOD_LCD_BASE);
+	int lcd_state;
+	
+	/* Removeme when we discover how to do 4g code */
+	if (ipod_hw_ver >= 0x4)
+	{
+		return;
+	}
+	
+	lcd_state = inl(IPOD_PP5002_LCD_BASE);
 
 	if (on) {
 		lcd_state = lcd_state | 0x2;
-		outl(lcd_state, IPOD_LCD_BASE);
+		outl(lcd_state, IPOD_PP5002_LCD_BASE);
 
 		/* display control (1 00 0 1) */
 		/* GSH=01 -> 2/3 level grayscale control */
@@ -145,7 +188,7 @@ set_backlight(int on)
 	}
 	else {
 		lcd_state = lcd_state & ~0x2;
-		outl(lcd_state, IPOD_LCD_BASE);
+		outl(lcd_state, IPOD_PP5002_LCD_BASE);
 
 		/* display control (10 0 1) */
 		/* GSL=10 -> 2/4 level grayscale control */
@@ -163,10 +206,11 @@ read_controller_id(void)
 	/* read the Start Osciallation register -> it gives us a id */
 	lcd_prepare_cmd(0x0);
 
+	lcd_wait_write();	
+	data_lo = inl(lcd_base + LCD_DATA);
+	
 	lcd_wait_write();
-	data_lo = inl(0xc0001010);
-	lcd_wait_write();
-	data_hi = inl(0xc0001010);
+	data_hi = inl(lcd_base + LCD_DATA);
 
 	return ((data_hi & 0xff) << 8) | (data_lo & 0xff);
 }
@@ -292,7 +336,7 @@ void ipod_fb_bmove(struct display *p, int sy, int sx, int dy, int dx,
 		     int height, int width)
 {
 	fbcon_cfb2.bmove(p, sy, sx, dy, dx, height, width);
-	ipod_update_display(p, 0, 0, IPOD_LCD_WIDTH/8, IPOD_LCD_HEIGHT/fontheight(p));
+	ipod_update_display(p, 0, 0, lcd_width/8, lcd_height/fontheight(p));
 }
 
 void ipod_fb_clear(struct vc_data *conp, struct display *p, int sy, int sx,
@@ -378,12 +422,12 @@ static int ipod_encode_fix(struct fb_fix_screeninfo *fix, struct ipodfb_par *par
 	strcpy(fix->id, "iPod");
 	/* required for mmap() */
 	fix->smem_start = ipod_scr;
-	fix->smem_len = IPOD_LCD_HEIGHT * (IPOD_LCD_WIDTH/4);
+	fix->smem_len = lcd_height * (lcd_width/4);
 
 	fix->type= FB_TYPE_PACKED_PIXELS;
 
 	fix->visual = FB_VISUAL_PSEUDOCOLOR;	/* fixed visual */
-	fix->line_length = IPOD_LCD_WIDTH >> 2;	/* cfb2 default */
+	fix->line_length = lcd_width >> 2;	/* cfb2 default */
 
 	fix->xpanstep = 0;	/* no hardware panning */
 	fix->ypanstep = 0;	/* no hardware panning */
@@ -406,8 +450,8 @@ static int ipod_decode_var(struct fb_var_screeninfo *var, struct ipodfb_par *par
 	 *  bitfields, horizontal timing, vertical timing.
 	 */
 
-	if ( var->xres > IPOD_LCD_WIDTH ||
-		var->yres > IPOD_LCD_HEIGHT ||
+	if ( var->xres > lcd_width ||
+		var->yres > lcd_height ||
 		var->xres_virtual != var->xres ||
 		var->yres_virtual != var->yres ||
 		var->xoffset != 0 ||
@@ -430,8 +474,8 @@ static int ipod_encode_var(struct fb_var_screeninfo *var, struct ipodfb_par *par
 	 *  values read out of the hardware.
 	 */
 
-	var->xres = IPOD_LCD_WIDTH;
-	var->yres = IPOD_LCD_HEIGHT;
+	var->xres = lcd_width;
+	var->yres = lcd_height;
 	var->xres_virtual = var->xres;
 	var->yres_virtual = var->yres;
 	var->xoffset = 0;
@@ -690,6 +734,40 @@ static struct fb_ops ipodfb_ops = {
 
 int __init ipodfb_init(void)
 {
+	
+	ipod_hw_ver = ipod_get_hw_version() >> 16;
+	switch (ipod_hw_ver)
+	{
+	case 6: 
+		/* photo */
+		return -EINVAL;
+			
+	case 4: /* mini */
+		lcd_width = IPOD_MINI_LCD_WIDTH;
+		lcd_height = IPOD_MINI_LCD_HEIGHT;	
+		lcd_base = IPOD_PP5020_LCD_BASE;
+		lcd_rtc = IPOD_PP5020_RTC;
+		break;
+		
+	case 5: /* 4g */
+		
+		lcd_width = IPOD_STD_LCD_WIDTH;
+		lcd_height = IPOD_STD_LCD_HEIGHT;
+		lcd_base = IPOD_PP5020_LCD_BASE;
+		lcd_rtc = IPOD_PP5020_RTC;
+		break;
+	case 3: /* 3g */
+	case 2: /* 2g */
+	case 1: /* 1g */
+		lcd_width = IPOD_STD_LCD_WIDTH;
+		lcd_height = IPOD_STD_LCD_HEIGHT;
+		lcd_base = IPOD_PP5002_LCD_BASE;
+		lcd_rtc = IPOD_PP5002_RTC;
+		break;
+	}
+	
+
+
 	fb_info.gen.fbhw = &ipod_switch;
 
 	fb_info.gen.fbhw->detect();
@@ -715,6 +793,7 @@ int __init ipodfb_init(void)
 		return -EINVAL;
 	}
 
+	
 	init_lcd();
 
 	printk(KERN_INFO "fb%d: %s frame buffer device\n", GET_FB_IDX(fb_info.gen.info.node), fb_info.gen.info.modename);
