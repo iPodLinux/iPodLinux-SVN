@@ -5,9 +5,7 @@
 #ifndef __ASM_ARCH_MEMORY_H
 #define __ASM_ARCH_MEMORY_H
 
-extern unsigned long _end_kernel;
-#define PHYS_OFFSET	((unsigned long) &_end_kernel)
-//#define PHYS_OFFSET	(DRAM_BASE)
+#define PHYS_OFFSET	(DRAM_BASE)
 
 #define PAGE_OFFSET	PHYS_OFFSET
 
