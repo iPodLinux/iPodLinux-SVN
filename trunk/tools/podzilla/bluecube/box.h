@@ -53,27 +53,17 @@ typedef struct
 
 void InitBox(void);                         /* Clear box */
 void DrawBox(void);                         /* Draw box */
-void SetBrick(int x, int y, int style);     /* Activate a brick */
-int  IsBrickSet(int x, int y);              /* Check if a brick is set */
 
 void NewCluster(void);                      /* Create new cluster */
-void SetClusterPiece(void);                 /* Set piece for cluster */
-void DrawCluster(int);                     /* Draw cluster */
+void DrawCluster(int);                      /* Draw cluster */
 void DrawNextPiece(int posX, int posY);     /* Draw next piece ;) */
-void PutCluster(int x, int y);              /* Put cluster into the box */
-int  ClusterCollisionTest(int x, int y);    /* Does the cluster collide somewhere? */
+
 int  MoveCluster(int bDown);                /* Move cluster down */
 void MoveClusterLeft(void);                 /* Move cluster left */
 void MoveClusterRight(void);                /* Move cluster right */
 void TurnClusterRight(void);                /* Rotate cluster */
 
-int  FullLine(int y);                       /* Is a certain line full? */
-int  CheckFullLine(void);                   /* Remove full lines */
-
-
 void BoxDrawInit(void);
-void BoxDrawUpdate(void);
-void BoxDrawMove(void);
 
 /* Make the stuff available in every file including this header */
 extern CCluster cluster;

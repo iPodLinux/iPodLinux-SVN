@@ -29,51 +29,44 @@
 #include "../pz.h"
 
 #define HIGHSCORE ".bluecube"
-void tetris_do_draw(void);
-int tetris_do_keystroke(GR_EVENT *);
-int new_high_score;
-static void NewGame(void);
-static void Game_Loop(void);
-static void DrawScene(void);
-void youlose(void);
-GR_TIMER_ID timer_id;
 
-void PutRect(int , int , int , int , int color);
-void DrawValues(void);
-void writescore(void);
-int softwheelleft=0;
-int softwheelright=0;
-int readscore;
+static void tetris_do_draw(void);
+static int tetris_do_keystroke(GR_EVENT *);
+static void tetris_init(void);
+static GR_TIMER_ID timer_id;
 
-int lines, score;       /* Line counter and score */
-int nextPiece;          /* Next cluster  */
-int level;              /* Current level */
+static void tetris_new_game(void);
+static void tetris_game_loop(void);
+static void tetris_draw_scene(void);
+static void tetris_write_score(void);
 
-int wheeldeb,buttondeb;
+static int softwheelleft=0;
+static int softwheelright=0;
+static int readscore;
+static int new_high_score;
 
-int zustand;     /* Current state */
-int bDone;     /* Want to Exit? */
-int byoulose;   /* youlose Animation? */
-int x,y;         /* Current explosion coordinates */
+int tetris_lines, tetris_score; /* Line counter and score */
+int tetris_next_piece;          /* Next cluster  */
+int tetris_level;               /* Current level */
 
-/*=========================================================================
-// Name: main()
+static int zustand;   /* Current state */
+static int bDone;     /* Want to Exit? */
+static int byoulose;  /* youlose Animation? */
+
+/*========================================================================
+// Name: new_bluecube_window()
 // Desc: Entrypoint
-//=======================================================================*/
+//======================================================================*/
 void new_bluecube_window()
 {	
-
-	/* To handle signals */
-
 	bDone=0;		/*Reset game values*/
 	byoulose=0;
 
 	srand(time(NULL));  /* Init randomizer */
-
 	
-	InitWindow();   /* Let's init the graphics*/
+	tetris_init();   /* Let's init the graphics*/
 	
-	NewGame();
+	tetris_new_game();
 	
 	timer_id =	GrCreateTimer(tetris_wid, 150);	/*Create nano-x timer*/
 
@@ -83,35 +76,34 @@ void new_bluecube_window()
 		tetris_do_keystroke(&event);
 		if (bDone==1)  {GrDestroyTimer(timer_id);
 		break;}
-		}
-
+	}
 }
 
 
 
 
-/*=========================================================================
-// Name: NewGame()
+/*========================================================================
+// Name: tetris_new_game()
 // Desc: Starts a new game
-//=======================================================================*/
-static void NewGame()
-{   FILE *readfile;
+//======================================================================*/
+static void tetris_new_game()
+{
+	FILE *readfile;
 	readscore=0;
 	
-	if ((readfile = fopen(HIGHSCORE,"r"))) 
-		{
+	if ((readfile = fopen(HIGHSCORE,"r"))) {
 		fread(&readscore,sizeof(readscore),1,readfile);
 		fclose(readfile);
-		}
+	}
 	
 	InitBox(); /* Clear Box */
 	BoxDrawInit(); /* Init boxdraw values */
 	new_high_score=0;
 	
-	lines = 0; /* Reset lines counter */
-	score = 0; /* Reset score */
-	level = 0; /* Reset level */
-	nextPiece = rand()%7; /* Create random nextPiece */
+	tetris_lines = 0; /* Reset lines counter */
+	tetris_score = 0; /* Reset score */
+	tetris_level = 0; /* Reset level */
+	tetris_next_piece = rand()%7; /* Create random nextPiece */
 	NewCluster();
 
 	byoulose = 0;
@@ -120,234 +112,196 @@ static void NewGame()
 }
 
 
-/*=========================================================================
-// Name: Game_Loop()
+/*========================================================================
+// Name: tetris_game_loop()
 // Desc: The main loop for the game
-//=======================================================================*/
-static void Game_Loop()
+//======================================================================*/
+static void tetris_game_loop()
 {
-	
-		if (!byoulose)
-		{
-			
-			if (cluster.dropCount == 0)
-			{   DrawCluster(2);
+	if (!byoulose) {
+		if (cluster.dropCount == 0) {
+				DrawCluster(2);
 				if (MoveCluster(0)) /* If cluster "collides"... */
-			
 					NewCluster();   /* then create a new one ;) */
-			}
-
-			/* Increase Level */
-			if (((level == 0) && (lines >=  10)) ||
-				((level == 1) && (lines >=  20)) ||
-				((level == 2) && (lines >=  40)) ||
-				((level == 3) && (lines >=  80)) ||
-				((level == 4) && (lines >= 100)) ||
-				((level == 5) && (lines >= 120)) ||
-				((level == 6) && (lines >= 140)) ||
-				((level == 7) && (lines >= 160)) ||
-				((level == 8) && (lines >= 180)) ||
-				((level == 9) && (lines >= 200)))
-			{
-				level++;
-			}
-		}
-		else
-		{
-			youlose();
 		}
 
+		/* Increase Level */
+		if (((tetris_level == 0) && (tetris_lines >=  10)) ||
+			((tetris_level == 1) && (tetris_lines >=  20)) ||
+			((tetris_level == 2) && (tetris_lines >=  40)) ||
+			((tetris_level == 3) && (tetris_lines >=  80)) ||
+			((tetris_level == 4) && (tetris_lines >= 100)) ||
+			((tetris_level == 5) && (tetris_lines >= 120)) ||
+			((tetris_level == 6) && (tetris_lines >= 140)) ||
+			((tetris_level == 7) && (tetris_lines >= 160)) ||
+			((tetris_level == 8) && (tetris_lines >= 180)) ||
+			((tetris_level == 9) && (tetris_lines >= 200))) {
+				tetris_level++;
+		}
+	} else {
+		tetris_lose();
+	}
 
-	
-	DrawScene();
+	tetris_draw_scene();
 }
 
-/*=========================================================================
-// Name: DrawScene()
+/*========================================================================
+// Name: tetris_draw_scene()
 // Desc: Draws the whole scene!
-//=======================================================================*/
-static void DrawScene()
+//======================================================================*/
+static void tetris_draw_scene()
 {
-
-		if (!byoulose)
-	{
-		
-	
+	if (!byoulose) {
 		/* Draw border of the box */
-		PutRect(boxdraw.box_x-5, boxdraw.box_y-5,
-				boxdraw.box_width + 2*5, boxdraw.box_height + 2*5, 1);
-		PutRect(boxdraw.box_x, boxdraw.box_y,
-				boxdraw.box_width, boxdraw.box_height, 1);
-	
-	
-	
+		tetris_put_rect(boxdraw.box_x-2, boxdraw.box_y-2,
+				boxdraw.box_width + 2*2, boxdraw.box_height + 2*2, 1);
+		//tetris_put_rect(boxdraw.box_x-1, boxdraw.box_y-1,
+		//		boxdraw.box_width+2, boxdraw.box_height+2, 1);
+				
 		DrawCluster(3); /* Draw cluster */
-		
 	}
 
 	DrawBox();       /* Draw box bricks */
 	
-		if (byoulose)
-	{   
-		youlose();
-		
+	if (byoulose) {   
+		tetris_lose();
 	}
-
 }
 
-
-
-/*=========================================================================
-// Name: youloseAnimation()
-// Desc: youlose Animation!
-//=======================================================================*/
-void youlose(void)
+/*========================================================================
+// Name: tetris_lose()
+// Desc: Losing Screen
+//======================================================================*/
+void tetris_lose(void)
 {  
-	
 	char fileScore[50];
 	char chYourScore[50];
 	char chYourScore2[50];
 	byoulose=1;
 	bDone=1;
 	
-		GrSetGCForeground(tetris_gc, WHITE);
-		GrFillRect(tetris_wid, tetris_gc, 0, 0, 168, 128);
-		GrSetGCForeground(tetris_gc, BLACK);
-		GrText(tetris_wid, tetris_gc, 40, 15, "- Game Over -",  -1, GR_TFASCII);
-		sprintf(chYourScore, "Your Score: %d", score); 
-		GrText(tetris_wid, tetris_gc, 35, 27, chYourScore,  -1, GR_TFASCII);
+	GrSetGCForeground(tetris_gc, WHITE);
+	GrFillRect(tetris_wid, tetris_gc, 0, 0, screen_info.cols,
+	           screen_info.rows-21);
+	GrSetGCForeground(tetris_gc, BLACK);
+	GrText(tetris_wid, tetris_gc, (screen_info.cols/4), 15, "- Game Over -",
+	       -1, GR_TFASCII);
+	sprintf(chYourScore, "Your Score: %d", tetris_score); 
+	GrText(tetris_wid, tetris_gc, (screen_info.cols/4)-5, 27, chYourScore,
+	-1, GR_TFASCII);
 	
-	
-
 	/*do highscore stuff*/
+	sprintf(fileScore, "Best score : %i", readscore);
+	GrText(tetris_wid, tetris_gc, (screen_info.cols/4)-5, 39, fileScore,
+	       -1, GR_TFASCII);
 	
-	sprintf(fileScore, "Best score : %i",readscore);
-	GrText(tetris_wid, tetris_gc, 35, 39, fileScore,  -1, GR_TFASCII);
-	
-	
-	
-	if (score > readscore)
-		{
+	if (tetris_score > readscore) {
 		GrSetGCForeground(tetris_gc, BLACK);
-		GrText(tetris_wid, tetris_gc, 5, 61, "Wow! You made a new record!!",  -1, GR_TFASCII);
-		sprintf(chYourScore2, "New best score: %i",score);
+		GrText(tetris_wid, tetris_gc, 5, 61, "Wow, a new record!!",
+		       -1, GR_TFASCII);
+		sprintf(chYourScore2, "New best score: %i", tetris_score);
 		GrText(tetris_wid, tetris_gc, 25, 78, chYourScore2,  -1, GR_TFASCII);
 		new_high_score=1;
-		}
+	}
 		
-/* GrFlush; // - statement with no effect */
-	
-	
+	GrFlush();	
 }
 
-void InitWindow()
+static void tetris_init()
 {
 	tetris_gc = pz_get_gc(1);
 	GrSetGCUseBackground(tetris_gc, GR_TRUE);
 	GrSetGCBackground(tetris_gc, WHITE);
 
-	tetris_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), tetris_do_draw, tetris_do_keystroke);
+	tetris_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols,
+	                           screen_info.rows - (HEADER_TOPLINE + 1),
+	                           tetris_do_draw, tetris_do_keystroke);
 
-	GrSelectEvents(tetris_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN|GR_EVENT_MASK_TIMER);
+	GrSelectEvents(tetris_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN|
+	               GR_EVENT_MASK_TIMER);
 
 	GrMapWindow(tetris_wid);
 	
 	GrSetGCForeground(tetris_gc, BLACK);
-	GrText(tetris_wid, tetris_gc, 1, 20, "Score",  -1, GR_TFASCII);  /*  Show SCORE */
+	GrText(tetris_wid, tetris_gc, 1, 20, "Score",  -1, GR_TFASCII);
 	GrText(tetris_wid, tetris_gc, 1, 32, "0",  -1, GR_TFASCII);
-	GrText(tetris_wid, tetris_gc, 1, 45, "Lines",  -1, GR_TFASCII); /*  Show number of killed LINES */
+	GrText(tetris_wid, tetris_gc, 1, 45, "Lines",  -1, GR_TFASCII);
 	GrText(tetris_wid, tetris_gc, 1, 57, "0",  -1, GR_TFASCII);
-	GrText(tetris_wid, tetris_gc, 1, 72, "Level",  -1, GR_TFASCII);  /*  Show current LEVEL */
+	GrText(tetris_wid, tetris_gc, 1, 72, "Level",  -1, GR_TFASCII);
 	GrText(tetris_wid, tetris_gc, 1, 84, "1",  -1, GR_TFASCII);
-	GrText(tetris_wid, tetris_gc, 125, 24, "Next",  -1, GR_TFASCII);
+	GrText(tetris_wid, tetris_gc, screen_info.cols-35, 24, "Next",  -1,
+	       GR_TFASCII);
 	
 	tetris_do_draw();
 }
 
 
-int tetris_do_keystroke(GR_EVENT * event) /* Events */
-	{   
-	
-	
-	if (!byoulose) /* Is the game active? */
-			{
-				switch (event->type) {
-	case GR_EVENT_TYPE_TIMER:
-	{
-	cluster.dropCount--;  /* Decrease time until the next fall */;
-	break;
-	}
-	case GR_EVENT_TYPE_KEY_DOWN:
-				switch (event->keystroke.ch)
-				{
+static int tetris_do_keystroke(GR_EVENT * event)
+{   
+	if (!byoulose) { /* Is the game active? */
+		switch (event->type) {
+			case GR_EVENT_TYPE_TIMER:
+				cluster.dropCount--;  /* Decrease time until the next fall */;
+				break;
+			case GR_EVENT_TYPE_KEY_DOWN:
+				switch (event->keystroke.ch) {
 					case '\r':
 						DrawCluster(2);
 						TurnClusterRight();
-						
-						
 						break;
 					case 'd':
 						MoveCluster(1); /* "drop" cluster...      */
 						DrawCluster(2); /* erase old position     */
 						NewCluster();   /* ... and create new one */
 						break;
-						
 					case 'f':	
 					case 'w':
-					
 						DrawCluster(2);
 						if (MoveCluster(0))
 							NewCluster();
 						break;
-						
-					
 					case 'l':
 						softwheelleft++;
-						if (softwheelleft>3)
-						{
-						softwheelleft=0;
-						DrawCluster(2);
-						MoveClusterLeft();
+						if (softwheelleft>3) {
+							softwheelleft=0;
+							DrawCluster(2);
+							MoveClusterLeft();
 						}
 						break;
 					case 'r':
 						softwheelright++;
-						if (softwheelright>3)
-						{
-						softwheelright=0;
-						DrawCluster(2);
-						MoveClusterRight();
+						if (softwheelright>3) {
+							softwheelright=0;
+							DrawCluster(2);
+							MoveClusterRight();
 						}
 						break;
-					
 					case 'm':
 						pz_close_window(tetris_wid);
 						bDone=1;
 						break;
-
-					default: break;
-					}
+					default:
+						break;
 				}
-			}
-		else 
-			{
-			if (new_high_score==1) writescore();
-			pz_close_window(tetris_wid);
-			}
-
-			Game_Loop();
-			return 1;
+				break;
+			default:
+				break;
 		}
+	} else {
+		if (new_high_score==1) 
+			tetris_write_score();
+		pz_close_window(tetris_wid);
+	}
 
-
-
-
+	tetris_game_loop();
+	return 1;
+}
 
 /*=========================================================================
-// Name: PutRect()
+// Name: tetris_put_rect()
 // Desc: Draws a filled rectangle onto the screen
 //=======================================================================*/
-void PutRect(int x, int y, int w, int h, int color)
+void tetris_put_rect(int x, int y, int w, int h, int color)
 {
 	if (color==0) GrSetGCForeground(tetris_gc, WHITE);
 	if (color==1) GrSetGCForeground(tetris_gc, BLACK);
@@ -370,37 +324,29 @@ void tetris_do_draw()
 }
 
 
-void DrawValues(void)    /*clear and draw score, lines and level values*/
+void tetris_draw_values(void) /*clear and draw score, lines and level values*/
 {
-		char chScore[30],
-			 chLines[30],
-			 chLevel[30];
-			 
+	char chScore[30], chLines[30], chLevel[30];
+
+	tetris_put_rect(screen_info.cols-30,40,20,30,2); /* clear "old" next preview... */
+	DrawNextPiece(screen_info.cols-30, 40); /*... and draw the new one*/
 		
-		PutRect(130,40,20,30,2); /* clear "old" nextcluster preview... */
-		DrawNextPiece(130, 40); /*... and draw the new one*/
-		
-		GrSetGCForeground(tetris_gc, BLACK);
-		sprintf(chScore, "%d", score);
-		sprintf(chLines, "%d", lines);
-		sprintf(chLevel, "%d", level);
-		GrText(tetris_wid, tetris_gc, 1, 32, chScore,  -1, GR_TFASCII);
-		GrText(tetris_wid, tetris_gc, 1, 57, chLines,  -1, GR_TFASCII);
-		GrText(tetris_wid, tetris_gc, 1, 84, chLevel,  -1, GR_TFASCII);
-		
-		
-		
-		
+	GrSetGCForeground(tetris_gc, BLACK);
+	sprintf(chScore, "%d", tetris_score);
+	sprintf(chLines, "%d", tetris_lines);
+	sprintf(chLevel, "%d", tetris_level);
+	GrText(tetris_wid, tetris_gc, 1, 32, chScore,  -1, GR_TFASCII);
+	GrText(tetris_wid, tetris_gc, 1, 57, chLines,  -1, GR_TFASCII);
+	GrText(tetris_wid, tetris_gc, 1, 84, chLevel,  -1, GR_TFASCII);
 }
 
 
-void writescore()
+void tetris_write_score()
 {
-FILE *writefile;
+	FILE *writefile;
 
-if ((writefile = fopen(HIGHSCORE,"w"))) 
-		{
-		fwrite(&score,sizeof(score),1,writefile);
+	if ((writefile = fopen(HIGHSCORE,"w"))) {
+		fwrite(&tetris_score,sizeof(tetris_score),1,writefile);
 		fclose(writefile);
-		}
+	}
 }
