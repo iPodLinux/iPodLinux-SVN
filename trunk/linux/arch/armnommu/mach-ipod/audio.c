@@ -37,21 +37,16 @@
 /* length of shared buffer in half-words (starting at DMA_BASE) */
 #define BUF_LEN		(46*1024)
 
-/* volumes in dB */
-#define MAX_VOLUME      6
-#define MIN_VOLUME      -73
-
-#define LRHPBOTH        0x100
-#define ZERO_DB         0x79
-
-#define LINEIN_ZERO_DB	0x17
-
 static int ipodaudio_isopen;
 static int ipodaudio_power_state;
 static unsigned ipod_hw_ver;
-static devfs_handle_t devfs_handle;
-static int ipod_sample_rate;
+static devfs_handle_t dsp_devfs_handle, mixer_devfs_handle;
+static int ipod_sample_rate = 44100;
 static int ipodaudio_stereo;
+static int ipod_mic_boost = 100;
+static int ipod_line_level = 0x17;	// 0dB
+static int ipod_pcm_level = 0x65;	// -6dB
+static int ipod_active_rec = SOUND_MASK_MIC;
 
 static void
 set_clock_enb(unsigned short clks, int on)
@@ -77,7 +72,7 @@ d2a_set_active(int active)
 }
 
 static int
-ipodaudio_set_sample_rate(int rate)
+d2a_set_sample_rate(int rate)
 {
 	int sampling_control;
 
@@ -159,7 +154,7 @@ d2a_set_power(int new_state)
 		/* set BCLKINV=0(Dont invert BCLK) MS=1(Enable Master) LRSWAP=0 LRP=0 IWL=10(24 bit) FORMAT=10(I2S format) */
 		ipod_i2c_send(0x1a, 0xe, 0x4a);
 
-		ipodaudio_set_sample_rate(ipod_sample_rate);
+		d2a_set_sample_rate(ipod_sample_rate);
 
 		/* activate the d2a */
 		d2a_set_active(0x1);
@@ -167,11 +162,17 @@ d2a_set_power(int new_state)
 	else {
 		/* power off or standby the audio chip */
 
+		/* de-activate d2a */
+		d2a_set_active(0x0);
+
+		/* line in mute left & right*/
+		ipod_i2c_send(0x1a, 0x0 | 0x1, 0x80);
+
 		/* set DACMU=1 DEEMPH=0 */
 		ipod_i2c_send(0x1a, 0xa, 0x8);
 
-		/* set DACSEL=0 */
-		ipod_i2c_send(0x1a, 0x8, 0x0);
+		/* set DACSEL=0, MUTEMIC=1 */
+		ipod_i2c_send(0x1a, 0x8, 0x2);
 
 		/* set POWEROFF=0 OUTPD=0 DACPD=1 */
 		ipod_i2c_send(0x1a, 0xc, 0x6f);
@@ -195,22 +196,48 @@ d2a_set_power(int new_state)
 	ipodaudio_power_state = new_state;
 }
 
-static void d2a_set_vol(int vol)
+static void
+d2a_activate_linein(void)
 {
-	unsigned int v;
+	d2a_set_active(0x0);
 
-	if ( vol > MAX_VOLUME ) {
-		vol = MAX_VOLUME;
+	if (ipod_line_level == 0) {
+		ipod_i2c_send(0x1a, 0x0 | 0x1, 0x80);
+	} else {
+		ipod_i2c_send(0x1a, 0x0 | 0x1, ipod_line_level);
+	}
+	ipod_i2c_send(0x1a, 0x4 | 0x1, 0x0);   /* headphone mute left & right */
+	ipod_i2c_send(0x1a, 0x8, 0xa);   /* BY PASS, mute mic, INSEL=line in */
+
+	ipod_i2c_send(0x1a, 0xa, 0x9); /* disable ADC high pass filter, mute dac */
+
+	/* power on (PWR_OFF=0) */
+	ipod_i2c_send(0x1a, 0xc, 0x7a);  /* MICPD */
+
+	d2a_set_active(0x1);
+}
+
+static void
+d2a_activate_mic(void)
+{
+	d2a_set_active(0x0);
+
+	ipod_i2c_send(0x1a, 0x0 | 0x1, 0x80);  /* line in mute left & right */
+	ipod_i2c_send(0x1a, 0x4 | 0x1, 0x0);   /* headphone mute left & right */
+
+	if (ipod_mic_boost) {
+		ipod_i2c_send(0x1a, 0x8, 0x5);   /* INSEL=mic, MIC_BOOST */
+	}
+	else {
+		ipod_i2c_send(0x1a, 0x8, 0x4);   /* INSEL=mic */
 	}
 
-	if ( vol < MIN_VOLUME ) {
-		vol = MIN_VOLUME;
-	}
+	ipod_i2c_send(0x1a, 0xa, 0x9); /* disable ADC high pass filter, mute dac */
 
-	v = (vol + ZERO_DB) | LRHPBOTH;
+	/* power on (PWR_OFF=0) */
+	ipod_i2c_send(0x1a, 0xc, 0x79);  /* CLKOUTPD OSCPD OUTPD DACPD LINEINPD */
 
-	/* set volume */
-	ipod_i2c_send(0x1a, 0x4 | (v >> 8), v);
+	d2a_set_active(0x1);
 }
 
 static void ipodaudio_process_pb_dma(void)
@@ -294,7 +321,7 @@ static int ipodaudio_open(struct inode *inode, struct file *filep)
 		d2a_set_power(D2A_POWER_ON);
 
 		/* set the volument to -6dB */
-		d2a_set_vol(-20);
+		ipod_i2c_send(0x1a, 0x4 | 0x1, ipod_pcm_level);
 
 		if (ipod_hw_ver == 0x3) {
 			outl(inl(0xcf000004) & ~0xf, 0xcf000004);
@@ -306,7 +333,6 @@ static int ipodaudio_open(struct inode *inode, struct file *filep)
 	}
 
 	if (filep->f_mode & FMODE_READ) {
-
 		/* 3g recording */
 		if (ipod_hw_ver != 0x3) {
 			return -ENODEV;
@@ -321,35 +347,19 @@ static int ipodaudio_open(struct inode *inode, struct file *filep)
 
 		ipod_i2c_send(0x1a, 0x1e, 0x0);  /* reset */
 
+		/* set BCLKINV=0(Dont invert BCLK) MS=1(Enable Master) LRSWAP=0 LRP=0 IWL=10(24 bit) FORMAT=00(MSB-First,right justified) */
 		ipod_i2c_send(0x1a, 0xe, 0x48);  /* MS IWL=24bit FORMAT=MSB */
-		ipod_i2c_send(0x1a, 0x10, 0x63); /* CLKI_DIV2 SR=1000 BOSR USB */
 
-#define MICROPHONE
-#ifdef MICROPHONE
-		/* mic settings */
-		ipod_i2c_send(0x1a, 0x0, 0x80);  /* LIN_MUTE */
-		ipod_i2c_send(0x1a, 0x2, 0x80);  /* RIN_MUTE */
-		ipod_i2c_send(0x1a, 0x4, 0x0);   /* headphone mute (left) */
-		ipod_i2c_send(0x1a, 0x6, 0x0);   /* headphone mute (right) */
-		ipod_i2c_send(0x1a, 0x8, 0x5);   /* INSEL=mic, MIC_BOOST */
-		ipod_i2c_send(0x1a, 0xa, 0x9);   /* DAC_MU, ADC_HPD */
+		if (ipod_active_rec == SOUND_MASK_LINE) {
+			d2a_activate_linein();
+		}
+		else if (ipod_active_rec == SOUND_MASK_MIC) {
+			d2a_activate_mic();
+		}
 
-		/* power on (PWR_OFF=0) */
-		ipod_i2c_send(0x1a, 0xc, 0x79);  /* CLKOUTPD OSCPD OUTPD DACPD LINEINPD */
-#else
-		/* line in settings */
-#define LINEIN_ZERO_DB	0x17
-		ipod_i2c_send(0x1a, 0x0, LINEIN_ZERO_DB);  /* linein volume */
-		ipod_i2c_send(0x1a, 0x2, LINEIN_ZERO_DB);  /* linein volume */
-		ipod_i2c_send(0x1a, 0x4, 0x0);   /* headphone mute (left) */
-		ipod_i2c_send(0x1a, 0x6, 0x0);   /* headphone mute (right) */
-		ipod_i2c_send(0x1a, 0x8, 0xa);   /* BY PASS, mute mic, INSEL=line in */
+		d2a_set_sample_rate(ipod_sample_rate);
 
-		/* power on (PWR_OFF=0) */
-		ipod_i2c_send(0x1a, 0xc, 0x7a);  /* MICPD */
-#endif
-
-		ipod_i2c_send(0x1a, 0x12, 0x1);  /* ACTIVE */
+		ipodaudio_power_state = D2A_POWER_ON;
 	}
 
 	return 0;
@@ -578,7 +588,7 @@ static int ipodaudio_ioctl(struct inode *inode, struct file *filp, unsigned int 
 		if ( rc == 0 ) {
 			get_user(val, (int *) arg);
 
-			val = ipodaudio_set_sample_rate(val);
+			val = d2a_set_sample_rate(val);
 
 			put_user(val, (int *) arg);
 		}
@@ -647,7 +657,7 @@ static int ipodaudio_ioctl(struct inode *inode, struct file *filp, unsigned int 
 	return rc;
 }
 
-static struct file_operations ipodaudio_fops = {
+static struct file_operations ipod_dsp_fops = {
 	owner: THIS_MODULE,
 	llseek:	no_llseek,
 	open: ipodaudio_open,
@@ -657,17 +667,203 @@ static struct file_operations ipodaudio_fops = {
 	ioctl: ipodaudio_ioctl,
 };
 
+static int ipod_mixer_open(struct inode *inode, struct file *filep)
+{
+	/* only controls recording at the moment */
+	if (ipod_hw_ver != 0x3) {
+		return -ENODEV;
+	}
+
+	return 0;
+}
+
+static int ipod_mixer_close(struct inode *inode, struct file *filep)
+{
+	return 0;
+}
+
+static int ipod_mixer_ioctl(struct inode *inode, struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	if (_SIOC_DIR(cmd) == _SIOC_READ) {
+		mixer_info info;
+		int val;
+
+		switch (_IOC_NR(cmd)) {
+		/* the devices which can be used as recording devices */
+		case SOUND_MIXER_READ_RECMASK:
+			return put_user(SOUND_MASK_LINE | SOUND_MASK_MIC, (int *)arg);
+
+		/* bit mask for each of the stereo channels */
+		case SOUND_MIXER_READ_STEREODEVS:
+			return put_user(SOUND_MASK_PCM | SOUND_MASK_LINE, (int *)arg);
+
+		/* bit mask for each of the supported channels */
+		case SOUND_MIXER_READ_DEVMASK:
+			return put_user(SOUND_MASK_PCM | SOUND_MASK_LINE | SOUND_MASK_MIC, (int *)arg);
+
+		/* bit mask which describes general capabilities of the mixer */
+		case SOUND_MIXER_READ_CAPS:
+			/* only one mixer channel can be selected as a
+			   recording source at any one time */
+			return put_user(SOUND_CAP_EXCL_INPUT, (int *)arg);
+
+		case SOUND_MIXER_INFO:
+			strncpy(info.id, "WM8731", sizeof(info.id));
+			strncpy(info.name, "Wolfson WM8731", sizeof(info.name));
+			if (copy_to_user((void *) arg, &info, sizeof(info)))
+				return -EFAULT;
+			return 0;
+
+		/* bit mask for each of the currently active recording sources */
+		case SOUND_MIXER_READ_RECSRC:
+			return put_user(ipod_active_rec, (int *)arg);
+
+		case SOUND_MIXER_PCM:		/* codec output level */
+			val = (ipod_pcm_level - 0x2f) * 100 / 80;
+			val = val << 8 | val;
+			return put_user(val, (int *)arg);
+
+		case SOUND_MIXER_LINE:	/* line-in jack */
+			val = ipod_line_level * 100 / 31;
+			val = val << 8 | val;
+			return put_user(val, (int *)arg);
+
+		case SOUND_MIXER_MIC:		/* microphone */
+			/* 0 or +20dB (mic boost) plus mute */
+			return put_user(ipod_mic_boost, (int *)arg);
+		}
+	}
+	else if (_SIOC_DIR(cmd) == _SIOC_WRITE) {
+		int val, left, right;
+
+		if (get_user(val, (int *)arg)) {
+			return -EFAULT;
+		}
+
+		switch (_IOC_NR(cmd)) {
+		/* select the active recording sources 0 == mic */
+		case SOUND_MIXER_WRITE_RECSRC:
+			if (val == SOUND_MASK_LINE) {
+				d2a_activate_linein();
+			}
+			else if (val == SOUND_MASK_MIC) {
+				d2a_activate_mic();
+			}
+
+			return put_user(val, (int *)arg);
+
+		case SOUND_MIXER_PCM:		/* codec output level */
+			/* +6 to -73dB 1dB steps (plus mute == 80levels) 7bits */
+			/* 1111001 == 0dB */
+			/* 0110000 == -73dB */
+			/* 0101111 == mute (0x2f) */
+			left = val & 0xff;
+			right = (val >> 8) & 0xff;
+
+			if (left > 100) left = 100;
+			if (right > 100) right = 100;
+
+			if (left == right) {
+				ipod_pcm_level = (left * 80 / 100) + 0x2f;
+				ipod_i2c_send(0x1a, 0x4 | 0x1, ipod_pcm_level);
+			}
+			else {
+				ipod_pcm_level = (left * 80 / 100) + 0x2f;
+				ipod_i2c_send(0x1a, 0x4, ipod_pcm_level);
+
+				right = (right * 80 / 100) + 0x2f;
+				ipod_i2c_send(0x1a, 0x6, right);
+			}
+
+			return put_user(val, (int *)arg);
+
+		case SOUND_MIXER_LINE:	/* line-in jack */
+			/* +12 to -34.5dB 1.5dB steps (plus mute == 32levels) 5bits + mute */
+			/* 10111 == 0dB */
+			left = val & 0xff;
+			right = (val >> 8) & 0xff;
+
+			if (left > 100) left = 100;
+			if (right > 100) right = 100;
+
+			if (left == right) {
+				ipod_line_level = left * 31 / 100;
+				if (ipod_line_level == 0) {
+					ipod_i2c_send(0x1a, 0x0 | 0x1, 0x80);
+				} else {
+					ipod_i2c_send(0x1a, 0x0 | 0x1, ipod_line_level);
+				}
+			}
+			else {
+				ipod_line_level = left * 31 / 100;
+				if (ipod_line_level == 0) {
+					ipod_i2c_send(0x1a, 0x0, 0x80);
+				} else {
+					ipod_i2c_send(0x1a, 0x0, ipod_line_level);
+				}
+				right = right * 31 / 100;
+				if (right == 0) {
+					ipod_i2c_send(0x1a, 0x2, 0x80);
+				} else {
+					ipod_i2c_send(0x1a, 0x2, right);
+				}
+			}
+
+			return put_user(val, (int *)arg);
+
+		case SOUND_MIXER_MIC:		/* microphone */
+			/* 0 or +20dB (mic boost) plus mute */
+			if (val == 100) {
+				/* enable mic boost */
+				if (ipod_active_rec == SOUND_MASK_MIC) {
+					ipod_i2c_send(0x1a, 0x8, 0x5);   /* INSEL=mic, MIC_BOOST */
+				}
+			}
+			else {
+				/* disable mic boost */
+				val = 0;
+				if (ipod_active_rec == SOUND_MASK_MIC) {
+					ipod_i2c_send(0x1a, 0x8, 0x4);   /* INSEL=mic */
+				}
+			}
+			ipod_mic_boost = val;
+
+			return put_user(val, (int *)arg);
+		}
+	}
+
+	return -EINVAL;
+}
+
+
+static struct file_operations ipod_mixer_fops = {
+	owner: THIS_MODULE,
+	llseek:	no_llseek,
+	open: ipod_mixer_open,
+	release: ipod_mixer_close,
+	ioctl: ipod_mixer_ioctl,
+};
+
 static int __init ipodaudio_init(void)
 {
 	printk("ipodaudio: (c) Copyright 2003,2004 Bernard Leach <leachbj@bouncycastle.org>\n");
 
-	devfs_handle = devfs_register(NULL, "dsp", DEVFS_FL_DEFAULT,
+	dsp_devfs_handle = devfs_register(NULL, "dsp", DEVFS_FL_DEFAULT,
 			SOUND_MAJOR, SND_DEV_DSP,
 			S_IFCHR | S_IWUSR | S_IRUSR,
-			&ipodaudio_fops, NULL);
-	if (devfs_handle < 0) {
-		printk(KERN_WARNING "SOUND: failed to register major %d\n",
-			SOUND_MAJOR);
+			&ipod_dsp_fops, NULL);
+	if (dsp_devfs_handle < 0) {
+		printk(KERN_WARNING "SOUND: failed to register major %d, minor %d\n",
+			SOUND_MAJOR, SND_DEV_DSP);
+		return 0;
+	}
+	mixer_devfs_handle = devfs_register(NULL, "mixer", DEVFS_FL_DEFAULT,
+			SOUND_MAJOR, SND_DEV_CTL,
+			S_IFCHR | S_IWUSR | S_IRUSR,
+			&ipod_mixer_fops, NULL);
+	if (mixer_devfs_handle < 0) {
+		printk(KERN_WARNING "SOUND: failed to register major %d, minor %d\n",
+			SOUND_MAJOR, SND_DEV_DSP);
 		return 0;
 	}
 
@@ -715,8 +911,11 @@ static void __exit ipodaudio_exit(void)
 {
 	ipod_set_process_dma(0);
 
+	devfs_unregister_chrdev(SOUND_MAJOR, "mixer");
+	devfs_unregister(mixer_devfs_handle);
+
 	devfs_unregister_chrdev(SOUND_MAJOR, "dsp");
-	devfs_unregister(devfs_handle);
+	devfs_unregister(dsp_devfs_handle);
 }
 
 module_init(ipodaudio_init);
