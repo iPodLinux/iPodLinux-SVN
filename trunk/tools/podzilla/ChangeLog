@@ -1,5 +1,9 @@
+Courtney Cavin - Mon Dec 6 2004
+	added about page
+	-Wall fixes
+
 Courtney Cavin - Tue Nov 23 2004
-	inverted color - the right way around	
+	inverted color - the right way around
 
 leachbj - Sat Nov  6 2004
 	implemented integrated mp3 playback
@@ -20,7 +24,7 @@ Jens Taprogge - Fri July 27 2004
 	lots of improvements around the new iTunesDB browser. Including
 	playlist support (just the normal ones so far). Depends on libitunesdb
 	V0.5 (http://shamrock.dyndns.org/~ln/ipod/libitunesdb_0.5.tar.gz ).
-	
+
 Jens Taprogge - Fri July 16 2004
 	added a new iTunesDB browser written from scratch. It provides
 	browsing by Track, Artist or Album so far. The implementation is based
@@ -59,7 +63,7 @@ leachbj - Mon Jun 28 2004
 
 matz-josh - Sun July 27 2004
 	fixed crash on dos/windows textfiles containing empty lines
-	the handle on the scrollbar is now at least 2 Pixels high 
+	the handle on the scrollbar is now at least 2 Pixels high
 	  it has been sometimes invisible (hight 0) in large files
 	added support for rewind and forward keys:
 	  rewind scrolls up and forward scrolls down one screen.
@@ -70,7 +74,7 @@ leachbj - Thu June 17 2004
 	Cleaned up some menu names
 	Sliders now display heading correctly
 	Added BlueCube (tetris clone) port from Matthis
-	
+
 leachbj - Sun June 06 2004
 	In browser, execute .sh files as shell scripts
 	Removed un-implemented menus to avoid confusion
