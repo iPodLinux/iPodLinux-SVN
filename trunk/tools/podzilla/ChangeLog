@@ -1,3 +1,6 @@
+Courtney Cavin - Wed Mar 9 2005
+	fix for menu xoring on the ipod photo using a revision check
+
 Alastair S - Wed Mar 9 2005
 	hw_version now delimits ipod revision as read from /proc/cpuinfo
 	generation checks on recording/playback
