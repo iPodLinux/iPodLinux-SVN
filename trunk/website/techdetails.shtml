@@ -28,7 +28,9 @@
 
 <p><a href="http://www.toshiba.com/taissdd/products/features/MK1003GAL-Over.shtml">TOSHIBA MK5002MAL</a>.  The 10GB HDD version.
 
-<p><a href="http://www.wolfsonmicro.com/product.asp?pid=25">WM8721</a>.  The Wolfson DAC (this is where the sound comes out :).
+<p><a href="http://www.wolfsonmicro.com/products/WM8721/">WM8721</a>.  The Wolfson DAC for 1st and 2nd generation iPods (this is where the sound comes out :).
+
+<p><a href="http://www.wolfsonmicro.com/products/WM8731/">WM8731</a>.  The Wolfson DAC for the 3rd generation iPods (this is where the sound comes out :).
 
 <p>The LCD controller is actually a Hitachi chip (now owned by Renesas Technology Europe), the <a href="http://www.eu.renesas.com/products/lcd_controller/datasheets/greyscalestn_eu.html">HD66753</a>.  Thanks readers!
 
