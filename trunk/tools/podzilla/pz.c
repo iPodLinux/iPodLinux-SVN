@@ -37,7 +37,6 @@ static struct pz_window windows[10];
 static int n_opened = 0;
 /* int BACKLIGHT_TIMER = 10; // in seconds */
 
-static unsigned long int last_wheel_event = 0;
 static unsigned long int last_button_event = 0;
 static unsigned long int last_keypress_event = 0;
 static unsigned long int wheel_evt_count = 0;
@@ -84,12 +83,12 @@ void quit_podzilla(void)
 
 void set_wheeldebounce(void)
 {
-	new_slider_widget(WHEEL_DEBOUNCE, "Set Wheel Debounce", 100, 500);
+	new_slider_widget(WHEEL_DEBOUNCE, "Wheel Sensitivity", 1, 20);
 }
                                                                                 
 void set_buttondebounce(void)
 {
-	new_slider_widget(ACTION_DEBOUNCE, "Set Action Debounce", 100, 500);
+	new_slider_widget(ACTION_DEBOUNCE, "Action Debounce", 100, 500);
 }
 
 static void event_handler(GR_EVENT *event)
@@ -132,40 +131,30 @@ static void event_handler(GR_EVENT *event)
 			ipod_set_setting(BACKLIGHT, 1);	
 		}
 
+#ifdef IPOD
 		switch (event->keystroke.ch) {
 		case 'm':
 		case 'q':
 		case 'w':
 		case 'f':
 		case '\r':
-#ifdef IPOD
 			if (curtime - last_button_event > ipod_get_setting(ACTION_DEBOUNCE)) {
 				last_button_event = curtime;
-				break;
 			}
-
-			wid = root_wid;
-#endif
+			else {
+				wid = GR_ROOT_WINDOW_ID;
+			}
 			break;
 
 		case 'l':
 		case 'r':
-#ifdef IPOD
-			wheel_evt_count ++;
-			if (wheel_evt_count % WHEEL_EVT_MOD != 0) {
+			wheel_evt_count++;
+			if (wheel_evt_count % ipod_get_setting(WHEEL_DEBOUNCE) != 0) {
 				wid = GR_ROOT_WINDOW_ID;
-				break;
 			}
-
-			if (curtime - last_wheel_event > ipod_get_setting(WHEEL_DEBOUNCE)) {
-				last_wheel_event = curtime;
-				break;
-			}
-
-			wid = root_wid;
-#endif
 			break;
 		}
+#endif
 
 		key_pressed = event->keystroke.ch;
 		for (i = 0; i < n_opened; i++) {
@@ -179,6 +168,10 @@ static void event_handler(GR_EVENT *event)
 	case GR_EVENT_TYPE_KEY_UP:
 		wid = ((GR_EVENT_KEYSTROKE *)event)->wid;
 		event->keystroke.ch = key_pressed;
+		break;
+
+	case GR_EVENT_TYPE_TIMER:
+		windows[n_opened-1].keystroke(event);
 		break;
 
 	default:
