@@ -32,6 +32,7 @@ static GR_WINDOW_ID tv_wid;
 static GR_WINDOW_INFO tv_winfo;
 static char *g_title;
 
+static int last_y_top;
 static unsigned int totalLines = 0;
 static int lines_per_screen = 7;
 static unsigned int currentLine = 0;
@@ -163,7 +164,6 @@ static void drawtext(void)
 	int height = (tv_winfo.height - 2) * (per < 3 ? 3 : per) / 100;
 	int y_top = ((((tv_winfo.height - 3) - height) * 100) * currentLine /
 			((totalLines - lines_per_screen) )) / 100 + 2;
-	static int last_y_top;
 
 	GrSetGCForeground(tv_gc, WHITE);
 	GrFillRect(tv_wid, tv_gc, 0, 0, tv_winfo.width - 8, tv_winfo.height);
@@ -182,6 +182,7 @@ static void drawtext(void)
 static void textview_do_draw()
 {
 	pz_draw_header(g_title);
+	last_y_top = -1;
 	drawtext();
 }
 
