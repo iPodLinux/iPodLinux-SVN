@@ -372,7 +372,6 @@ struct input_types input_types[] = {
 { "--twiddler-joy",	"-twidjoy",	B2400, CS8,			SERIO_TWIDJOY,	0x00,	0,	twiddler_init },
 #endif
 { "--ipod-remote",	"-ipod",	B9600, CS8,			SERIO_IPOD_REM,	0x00,	0,	NULL },
-{ "--ipod3-remote",	"-ipod3",	B19200, CS8,			SERIO_IPOD_REM,	0x00,	0,	NULL },
 { "--dump",		"-dump",	B2400, CS8, 			0,		0x00,	0,	dump_init },
 { "", "", 0, 0 }
 
@@ -386,6 +385,8 @@ int main(int argc, char **argv)
 	long id, extra;
         int fd;
 	char c;
+	int i;
+	char *ptr;
 
         if (argc < 2 || argc > 3 || !strcmp("--help", argv[1])) {
                 puts("");
@@ -414,7 +415,6 @@ int main(int argc, char **argv)
 		puts("  --twiddler-joy  -twidjoy  Handykey Twiddler used as a joystick");
 #endif
 		puts("  --ipod-remote   -ipod  iPod remote control");
-		puts("  --ipod3-remote  -ipod3 iPod (third gen) remote control");
 		puts("");
                 return 1;
         }
@@ -424,6 +424,22 @@ int main(int argc, char **argv)
 			!strncasecmp(argv[1], input_types[type].name2, 16))
                         break;
         }
+
+	if (!strncasecmp(input_types[type].name2, "-ipod", 5)) {
+		if ((ptr = fopen("/proc/cpuinfo", "r")) != NULL) {
+			char gen[512];
+
+			while (fgets(gen, sizeof(gen), ptr)!=NULL)
+				if (strncmp(gen, "Revision", 8)==0)
+					break;
+			fclose(ptr);
+			for (i=0; !isspace(gen[i]); i++);
+			for (; isspace(gen[i]); i++);
+			ptr = gen+i+2;
+			if (strtol(ptr, NULL, 10) > 30000)
+				input_types[type].speed = B19200;
+		}
+	}
 
 	if (!input_types[type].speed) {
 		fprintf(stderr, "inputattach: invalid mode\n");
