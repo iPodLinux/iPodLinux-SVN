@@ -31,6 +31,8 @@ typedef struct _image {
 #define TBL ((char **)0x40000000)
 #define MASK 0x1
 
+static int ipod_ver = 0;
+
 /* black magic */
 static void 
 init_keyboard(void)
@@ -43,6 +45,24 @@ init_keyboard(void)
     outb(inb(0xcf000024) | 0x1, 0xcf000024);
 
     outb(0xff, 0xcf000050);
+
+    switch (inl(0x2084)) {
+    case 0x30000:
+    case 0x30001:
+        ipod_ver = 3;
+        break;
+    case 0x20000:
+    case 0x20001:
+        ipod_ver = 2;
+        break;
+    case 0x10000:
+    case 0x10001:
+    case 0x10002:
+        ipod_ver = 1;
+        break;
+    default:
+        ipod_ver = 0;
+    }   
 }
 
 static int 
@@ -50,7 +70,7 @@ key_pressed(void)
 {
     unsigned char state;
     state = inb(0xcf000030);
-    if ((state & 0x20) == 0) return 0; /* hold on */
+    if ((ipod_ver == 3) && ((state & 0x20) == 0)) return 0; /* hold on */
     if ((state & 0x08) == 0) return 1;
     if ((state & 0x10) == 0) return 2;
     if ((state & 0x04) == 0) return 3;
@@ -89,8 +109,7 @@ loader(void)
     int imageno;
     image_t *tblp = boot_table;
     void *entry;
-    
-    reset_lcd();
+
     display_image(&tux_hdr, 0x0);
 
     init_keyboard();
