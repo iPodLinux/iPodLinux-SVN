@@ -57,7 +57,8 @@ int steroids_asteroid_collideShip (Steroids_Asteroid *asteroid,
  *
  *  Returns true if an asteroid was hit by any of the shots.
  *
- *  Side effect: The shot that hit is deactivated and the asteroid is split.
+ *  Side effect: The shot that hit is deactivated, the asteroid is split
+ *               and a score is added to the player.
  *
  */
 int steroids_asteroid_collideShot (Steroids_Asteroid *asteroid,

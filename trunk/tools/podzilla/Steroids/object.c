@@ -5,11 +5,12 @@
 void steroids_object_draw (Steroids_Object *o,
 			    int clipMode)
 {
+    GrSetGCForeground (steroids_globals.game_gc, o->colour);
     switch (o->type)
     {
     case STEROIDS_OBJECT_TYPE_POINT:
-	GrPoint (steroids_globals.wid,
-		 steroids_globals.gc,
+	GrPoint (steroids_globals.game_wid,
+		 steroids_globals.game_gc,
 		 o->geometry.point.x,
 		 o->geometry.point.y);
 	break;

@@ -12,10 +12,20 @@
 #define STEROIDS_SHIP_MAINTHRUST 0.3
 #define STEROIDS_SHIP_RETROTHRUST -0.1
 
+#define STEROIDS_SHIP_STATE_LIVE   0
+#define STEROIDS_SHIP_STATE_THRUST 1
+#define STEROIDS_SHIP_STATE_RETRO  2
+#define STEROIDS_SHIP_STATE_DIE    3
+
+#define STEROIDS_SHIP_DIE_TIME    15
+
+#define STEROIDS_SHIP_WIDTH  4
+#define STEROIDS_SHIP_HEIGHT 9
+
+
 typedef struct SteroidsShip
 {
-    int             thrust; // 1 means main thrusters on, 0 otherwise 
-    int             retro; // 1 means retro thrusters on, 0 otherwise 
+    int state;
     Steroids_Object shape;
     Steroids_Object engine;
     float heading;
@@ -24,35 +34,8 @@ typedef struct SteroidsShip
     Steroids_Polygon *originalShape;
     Steroids_Polygon *originalEngine;
 
+    int dieTime; // Counter for number of frames for the dying sequence
 } Steroids_Ship;
 
-void steroids_ship_init (Steroids_Ship *ship);
-
-void steroids_ship_draw (Steroids_Ship *ship);
-
-/** Animates ship according to velocity and accelleration.
- * 
- */
-void steroids_ship_animate (Steroids_Ship *ship);
-
-
-
-/** Rotates the given ship around it's cog.
- *
- */
-void steroids_ship_rotate (float angle, Steroids_Ship *ship); 
-
-
-/** Turns ship thruster engine on.
- *
- * Note: Since I can't get the KEY_UP events from Microwindows, this now
- *       toggles thruster/retro.
- */
-void steroids_ship_thrustOn (Steroids_Ship *ship); 
-
-/** Turns ship retro thrusters on.
- *
- */
-void steroids_ship_thrustOff (Steroids_Ship *ship); 
 
 #endif

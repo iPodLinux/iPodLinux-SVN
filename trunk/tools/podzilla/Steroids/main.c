@@ -30,11 +30,13 @@
 #include "grafix.h"
 
 #include "ship.h"
+#include "ship_protos.h"
 #include "asteroid.h"
 #include "shot.h"
+#include "shot_protos.h"
+
 
 static void steroids_NewGame(void);
-//static void steroids_MainMenu_Loop(void);
 static void steroids_Game_Loop(void);
 static void steroids_DrawScene(void);
 void steroids_StartGameOverAnimation(void);
@@ -51,7 +53,20 @@ Steroids_Shot     steroids_shotUFO;
 
 static void steroids_do_draw()
 {
-	pz_draw_header("Steroids");
+    pz_draw_header("Steroids");
+//    steroids_ship_drawReserve(root_wid, root_gc);
+}
+
+static void steroids_drawTopLeft()
+{
+/*
+    steroids_ship_drawReserve(steroids_globals.topLeft_wid,
+			      steroids_globals.topLeft_gc);
+*/
+}
+static int handle_topLeft_event (GR_EVENT *event)
+{
+    return 0;
 }
 
 static int steroids_handle_event (GR_EVENT *event)
@@ -70,8 +85,8 @@ static int steroids_handle_event (GR_EVENT *event)
 	    {
 	    case '\r': // Wheel button
 		// Fire:
-		steroids_shot_newShip (steroids_shotShip,
-				       &steroids_ship);
+		steroids_ship_fire (steroids_shotShip,
+				    &steroids_ship);
 		break;
 
 	    case 'd': // Play/pause button
@@ -140,12 +155,26 @@ static int steroids_handle_event (GR_EVENT *event)
 
 
     case STEROIDS_GAME_STATE_GAMEOVER:
-	steroids_globals.gameState = STEROIDS_GAME_STATE_EXIT;
+	switch (event->type)
+	{
+	case GR_EVENT_TYPE_KEY_DOWN:
+	    switch (event->keystroke.ch)
+	    {
+	    case '\r': // Wheel button
+		steroids_NewGame();
+		break;
+
+	    case 'm': // Menu button
+		steroids_globals.gameState = STEROIDS_GAME_STATE_EXIT;
+		break;
+	    }
+	}
 	break;
 
 
     case STEROIDS_GAME_STATE_EXIT:
-	pz_close_window(steroids_globals.wid);
+	pz_close_window(steroids_globals.topLeft_wid);
+	pz_close_window(steroids_globals.game_wid);
 	GrDestroyTimer(steroids_globals.timer_id);
 	break;
     }
@@ -158,35 +187,47 @@ static int steroids_handle_event (GR_EVENT *event)
 
 void new_steroids_window(void)
 {
-	/* Init randomizer */
-	srand(time(NULL));
+    /* Init randomizer */
+    srand(time(NULL));
 
-	GrGetScreenInfo(&steroids_globals.screen_info);
+    GrGetScreenInfo(&steroids_globals.screen_info);
 
-	steroids_globals.width = steroids_globals.screen_info.cols;
-	steroids_globals.height = steroids_globals.screen_info.rows
-	                          - (HEADER_TOPLINE + 1);
+    steroids_globals.width = steroids_globals.screen_info.cols;
+    steroids_globals.height = steroids_globals.screen_info.rows
+	                      - (HEADER_TOPLINE + 1);
 
-	steroids_globals.gc = GrNewGC();
-	GrSetGCUseBackground(steroids_globals.gc, GR_TRUE);
+    steroids_globals.game_gc = GrNewGC();
+    GrSetGCUseBackground(steroids_globals.game_gc, GR_FALSE);
 
-	steroids_globals.wid = pz_new_window(0,
-				     HEADER_TOPLINE + 1,
-				     steroids_globals.width,
-				     steroids_globals.height,
-				     steroids_do_draw,
-				     steroids_handle_event);
-	GrSelectEvents(steroids_globals.wid,
-		         GR_EVENT_MASK_EXPOSURE
-		       | GR_EVENT_MASK_KEY_DOWN
-		       | GR_EVENT_MASK_KEY_UP
-		       | GR_EVENT_MASK_TIMER);
-	GrMapWindow(steroids_globals.wid);
+    steroids_globals.topLeft_gc = GrNewGC();
+    steroids_globals.topLeft_wid = pz_new_window(0,
+					 0,
+					 STEROIDS_GAME_SHIPS * (STEROIDS_SHIP_WIDTH + 2)
+					 + 10,
+					 HEADER_TOPLINE,
+					 steroids_drawTopLeft,
+					 handle_topLeft_event);
+    GrSelectEvents(steroids_globals.game_wid, 0);
+    GrMapWindow (steroids_globals.topLeft_wid);
 
-	/* intialise game state */
-	steroids_NewGame();
+    steroids_globals.game_wid = pz_new_window(0,
+					 HEADER_TOPLINE + 1,
+					 steroids_globals.width,
+					 steroids_globals.height,
+					 steroids_do_draw,
+					 steroids_handle_event);
+    GrSelectEvents(steroids_globals.game_wid,
+		     GR_EVENT_MASK_EXPOSURE
+		   | GR_EVENT_MASK_KEY_DOWN
+		   | GR_EVENT_MASK_KEY_UP
+		   | GR_EVENT_MASK_TIMER);
+    GrMapWindow(steroids_globals.game_wid);
 
-	steroids_globals.timer_id = GrCreateTimer(steroids_globals.wid, 150);
+
+    /* intialise game state */
+    steroids_NewGame();
+
+    steroids_globals.timer_id = GrCreateTimer(steroids_globals.game_wid, 150);
 }
 
 
@@ -223,6 +264,10 @@ static void steroids_NewGame()
 
     steroids_globals.score = 0; /* Reset score */
     steroids_globals.level = 0; /* Reset level */
+    steroids_globals.ships = STEROIDS_GAME_SHIPS; /* Reset ship counter */
+
+    steroids_ship_drawReserve(steroids_globals.topLeft_wid,
+			      steroids_globals.topLeft_gc);
 
     steroids_globals.gameState = STEROIDS_GAME_STATE_PLAY; /* Set playstate */
 }
@@ -253,9 +298,20 @@ static void steroids_Game_Loop()
 //    					  &steroids_ship);
 	if (collide)
 	{
-	    // TODO: Explode ship
-	    // TODO: Subtract "lives"
-	    // TODO: Check for game over
+	    if (steroids_ship_collided (&steroids_ship))
+	    {
+		steroids_globals.ships--;
+		if (steroids_globals.ships < 0)
+		{
+		    steroids_globals.gameState = STEROIDS_GAME_STATE_GAMEOVER;
+		}
+		else
+		{
+		    steroids_ship_eraseReserve (steroids_globals.ships + 1,
+						steroids_globals.topLeft_wid,
+						steroids_globals.topLeft_gc);
+		}
+	    }
 	}
 
 	// Check asteroid collisions:
@@ -271,7 +327,7 @@ static void steroids_Game_Loop()
 	    }
 	    if (i == STEROIDS_ASTEROID_NUM)
 	    {
-		// TODO: Increase level.
+		steroids_globals.level++;
 		steroids_asteroid_initall (steroids_asteroid);
 	    }
 	}
@@ -300,18 +356,39 @@ static void steroids_DrawScene()
     case STEROIDS_GAME_STATE_PLAY:
 	// Clear playfield:
 	//
-	steroids_ClearRect (0,
-			    0,
-			    steroids_globals.width,
-			    steroids_globals.height);
+	GrClearWindow (steroids_globals.game_wid, GR_FALSE);
+
+	GrSetGCForeground(steroids_globals.game_gc, BLACK);
+	/*
+	for (i = 0; i < STEROIDS_ASTEROID_NUM; i++)
+	{
+	    if (steroids_asteroid[i].active)
+	    {
+		sprintf (chScore,
+			 "(%0.2f, %0.2f)",
+			 steroids_asteroid[i].shape.velocity.x,
+			 steroids_asteroid[i].shape.velocity.y);
+	    }
+	    else
+	    {
+		sprintf (chScore, "Inactive");
+	    }
+	    GrText(steroids_globals.game_wid,
+		   steroids_globals.game_gc,
+		   1, i * 11 + 11,
+		   chScore,
+		   -1,
+		   GR_TFASCII);
+	}
+	*/
 /*
 	chScore[0] = '\0';
 	for (i = 0; i < STEROIDS_SHOT_NUM; i++)
 	{
 	    sprintf (chScore, "%s%d", chScore, steroids_shotShip[i].active);
 	}
-	GrText(steroids_globals.wid,
-	       steroids_globals.gc,
+	GrText(steroids_globals.game_wid,
+	       steroids_globals.game_gc,
 	       1, 103,
 	       chScore,
 	       -1,
@@ -321,8 +398,8 @@ static void steroids_DrawScene()
 	sprintf (chScore, "%.2f, %.2f",
 		 steroids_asteroid[0].shape.pos.x,
 		 steroids_asteroid[0].shape.pos.y);
-	GrText(steroids_globals.wid,
-	       steroids_globals.gc,
+	GrText(steroids_globals.game_wid,
+	       steroids_globals.game_gc,
 	       1, 90,
 	       chScore,
 	       -1,
@@ -330,8 +407,8 @@ static void steroids_DrawScene()
 	sprintf (chScore, "%d, %d",
 		 steroids_ship.shape.geometry.polygon.cog.x,
 		 steroids_ship.shape.geometry.polygon.cog.y);
-	GrText(steroids_globals.wid,
-	       steroids_globals.gc,
+	GrText(steroids_globals.game_wid,
+	       steroids_globals.game_gc,
 	       1, 103,
 	       chScore,
 	       -1,
@@ -344,22 +421,22 @@ static void steroids_DrawScene()
 
 
     case STEROIDS_GAME_STATE_GAMEOVER:
-	GrSetGCForeground(steroids_globals.gc, WHITE);
-	GrFillRect(steroids_globals.wid, steroids_globals.gc, 0, 0, 168, 128);
-	GrSetGCForeground(steroids_globals.gc, BLACK);
-	GrText(steroids_globals.wid, steroids_globals.gc,
+	GrSetGCForeground(steroids_globals.game_gc, WHITE);
+	GrFillRect(steroids_globals.game_wid, steroids_globals.game_gc, 0, 0, 168, 128);
+	GrSetGCForeground(steroids_globals.game_gc, BLACK);
+	GrText(steroids_globals.game_wid, steroids_globals.game_gc,
 	       45, 35,
 	       "- Game Over -",
 	       -1, GR_TFASCII);
 	sprintf(chScore, "Your Score: %d", steroids_globals.score);
-	GrText(steroids_globals.wid, steroids_globals.gc,
+	GrText(steroids_globals.game_wid, steroids_globals.game_gc,
 	       35, 65,
 	       chScore,
 	       -1,
 	       GR_TFASCII);
 
-	sprintf(chLevel, "Your Level: %d", steroids_globals.level);
-	GrText(steroids_globals.wid, steroids_globals.gc,
+	sprintf(chLevel, "Your Level: %d", steroids_globals.level + 1);
+	GrText(steroids_globals.game_wid, steroids_globals.game_gc,
 	       35, 95,
 	       chLevel,
 	       -1,
@@ -391,16 +468,16 @@ static void steroids_GameOverAnimation()
 //=======================================================================*/
 void steroids_PutRect(int x, int y, int w, int h, int r, int g, int b)
 {
-    // GrSetGCForeground(steroids_globals.gc, MWRGB(r, g, b));
-    GrSetGCForeground(steroids_globals.gc, BLACK);
-    GrRect(steroids_globals.wid, steroids_globals.gc, x, y, w, h);
+    // GrSetGCForeground(steroids_globals.game_gc, MWRGB(r, g, b));
+    GrSetGCForeground(steroids_globals.game_gc, BLACK);
+    GrRect(steroids_globals.game_wid, steroids_globals.game_gc, x, y, w, h);
 }
 
 void steroids_ClearRect(int x, int y, int w, int h)
 {
-    GrSetGCForeground(steroids_globals.gc, WHITE);
-    GrFillRect(steroids_globals.wid, steroids_globals.gc, x, y, w, h);
-    GrSetGCForeground(steroids_globals.gc, BLACK);
+    GrSetGCForeground(steroids_globals.game_gc, WHITE);
+    GrFillRect(steroids_globals.game_wid, steroids_globals.game_gc, x, y, w, h);
+    GrSetGCForeground(steroids_globals.game_gc, BLACK);
 }
 
 

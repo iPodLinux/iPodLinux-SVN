@@ -1,3 +1,5 @@
+#define MWINCLUDECOLORS
+#include <nano-X.h>
 #include <stdlib.h>
 
 #include "globals.h"
@@ -32,6 +34,7 @@ void steroids_shot_newShip (Steroids_Shot *shot,
 	shot[i].active = 1;
 	shot[i].cycles = 0;
 	shot[i].shape.type = STEROIDS_OBJECT_TYPE_POINT;
+	shot[i].shape.colour = BLACK;
 
 	steroids_vector_fromPolar (ship->heading,
 				   STEROIDS_SHOT_FORCE,

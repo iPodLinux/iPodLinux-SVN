@@ -5,31 +5,39 @@
 
 #include "globals.h"
 #include "ship.h"
+#include "ship_protos.h"
+#include "shot.h"
 #include "polygon.h"
 
 int initialized = 0;
 
+#define shipNPoints 5
+static GR_POINT shipPoint[] = {{ 0, -5},
+			       {-2,  4},
+			       { 0,  2},
+			       { 2,  4},
+			       { 0, -5}};
+
+
 Steroids_Vector  startPos = {20, 20};
 Steroids_Polygon modelShip;
 
+
 void initializeModels()
 {
+    int i;
+
     if (!initialized)
     {
 	modelShip.cog.x = 0;
 	modelShip.cog.y = 0;
-	modelShip.colour = WHITE;
-        modelShip.nPoints = 5;
-	modelShip.masterPoint[0].x = 0;
-	modelShip.masterPoint[0].y = -5;
-	modelShip.masterPoint[1].x = -2;
-	modelShip.masterPoint[1].y = 4;
-	modelShip.masterPoint[2].x = 0;
-	modelShip.masterPoint[2].y = 2;
-	modelShip.masterPoint[3].x = 2;
-	modelShip.masterPoint[3].y = 4;
-	modelShip.masterPoint[4].x = 0;
-	modelShip.masterPoint[4].y = -5;
+        modelShip.nPoints = shipNPoints;
+
+	for (i = 0; i < shipNPoints; i++)
+	{
+	    modelShip.masterPoint[i].x = shipPoint[i].x;
+	    modelShip.masterPoint[i].y = shipPoint[i].y;
+	}
 	initialized = 1;
     }
 }
@@ -45,11 +53,11 @@ void steroids_ship_init (Steroids_Ship *ship)
     ship->heading = 0;
     ship->cannon = 0;
 
-    ship->thrust = 0;
-    ship->retro = 0;
+    ship->state = STEROIDS_SHIP_STATE_LIVE;
 
     // Initialize ship shape object:
     ship->shape.type = STEROIDS_OBJECT_TYPE_POLYGON;
+    ship->shape.colour = BLACK;
     steroids_polygon_copy (ship->originalShape, &ship->shape.geometry.polygon);
     ship->shape.velocity.x = 0;
     ship->shape.velocity.y = 0;
@@ -67,7 +75,18 @@ void steroids_ship_init (Steroids_Ship *ship)
 
 void steroids_ship_draw (Steroids_Ship *ship)
 {
-    steroids_object_draw (&ship->shape, 0);
+    switch (ship->state)
+    {
+    case STEROIDS_SHIP_STATE_LIVE:
+    case STEROIDS_SHIP_STATE_RETRO:
+    case STEROIDS_SHIP_STATE_THRUST:
+	steroids_object_draw (&ship->shape, 0);
+	break;
+
+    case STEROIDS_SHIP_STATE_DIE:
+	steroids_object_draw (&ship->shape, 0);
+	break;
+    }
 }
 
 
@@ -77,15 +96,39 @@ void steroids_ship_draw (Steroids_Ship *ship)
  */
 void steroids_ship_animate (Steroids_Ship *ship)
 {
-    if (ship->retro
-	&& abs (ship->shape.velocity.x) < STEROIDS_SHIP_MIN_VELOCITY
-	&& abs (ship->shape.velocity.y) < STEROIDS_SHIP_MIN_VELOCITY)
+    switch (ship->state)
     {
-	ship->retro = 0;
-	ship->shape.velocity.x = 0;
-	ship->shape.velocity.y = 0;
-	ship->shape.accelleration.x = 0;
-	ship->shape.accelleration.y = 0;
+    case STEROIDS_SHIP_STATE_RETRO:
+	// Check if we stopped:
+	if (   abs (ship->shape.velocity.x) < STEROIDS_SHIP_MIN_VELOCITY
+	    && abs (ship->shape.velocity.y) < STEROIDS_SHIP_MIN_VELOCITY)
+	{
+	    // Disable retro thrusters:
+	    ship->state = STEROIDS_SHIP_STATE_LIVE;
+	    ship->shape.velocity.x = 0;
+	    ship->shape.velocity.y = 0;
+	    ship->shape.accelleration.x = 0;
+	    ship->shape.accelleration.y = 0;
+	}
+	break;
+
+    case STEROIDS_SHIP_STATE_DIE:
+	ship->dieTime--;
+	if (ship->dieTime == 0)
+	{
+	    // Re-spawn:
+	    ship->state = STEROIDS_SHIP_STATE_LIVE;
+	    ship->shape.colour = BLACK;
+	}
+	else
+	{
+	    // Animate pieces:
+	    if (ship->dieTime % 2 == 0)
+	    {
+		ship->shape.colour = (ship->shape.colour == BLACK) ? LTGRAY : BLACK;
+	    }
+	}
+	break;
     }
 
     steroids_object_animate (&ship->shape);
@@ -95,10 +138,8 @@ void steroids_ship_animate (Steroids_Ship *ship)
 
 
 
-/** Rotates the given ship around it's cog.
- *
- */
-void steroids_ship_rotate (float angle, Steroids_Ship *ship)
+
+void rotate (float angle, Steroids_Ship *ship)
 {
     Steroids_Vector v;
 
@@ -112,11 +153,26 @@ void steroids_ship_rotate (float angle, Steroids_Ship *ship)
     ship->shape.geometry.polygon.cog.x = ship->originalShape->cog.x;
     ship->shape.geometry.polygon.cog.y = ship->originalShape->cog.y;
     steroids_object_translate (v, &ship->shape);
-
-    if (ship->thrust)
+}
+/** Rotates the given ship around it's cog.
+ *
+ */
+void steroids_ship_rotate (float angle, Steroids_Ship *ship)
+{
+    switch (ship->state)
     {
-	ship->thrust = 0;
+    case STEROIDS_SHIP_STATE_LIVE:
+    case STEROIDS_SHIP_STATE_RETRO:
+	rotate (angle, ship);
+	break;
+
+    case STEROIDS_SHIP_STATE_THRUST:
+	rotate (angle, ship);
+
+	// Update thrust direction vector:
+	ship->state = STEROIDS_SHIP_STATE_LIVE;
 	steroids_ship_thrustOn (ship);
+	break;
     }
 }
 
@@ -128,28 +184,34 @@ void steroids_ship_thrustOn (Steroids_Ship *ship)
 {
     float           vLen;
     Steroids_Vector v;
-    if (ship->thrust)
+
+    switch (ship->state)
     {
+    case STEROIDS_SHIP_STATE_THRUST:
+	// Enable retro thusters:
 	vLen = STEROIDS_SHIP_RETROTHRUST
 	       / sqrt (  ship->shape.velocity.x * ship->shape.velocity.x
 		       + ship->shape.velocity.y * ship->shape.velocity.y);
 
 	v.x = ship->shape.velocity.x * vLen;
 	v.y = ship->shape.velocity.y * vLen;
-	ship->thrust = 0;
-	ship->retro = 1;
-    }
-    else
-    {
+	ship->state = STEROIDS_SHIP_STATE_RETRO;
+	break;
+
+    case STEROIDS_SHIP_STATE_LIVE:
+    case STEROIDS_SHIP_STATE_RETRO:
+	// Enable thrusters:
 	steroids_vector_fromPolar (ship->heading, STEROIDS_SHIP_MAINTHRUST, &v);
-	ship->thrust = 1;
-	ship->retro = 0;
+	ship->state = STEROIDS_SHIP_STATE_THRUST;
+	break;
     }
     ship->shape.accelleration.x = v.x;
     ship->shape.accelleration.y = v.y;
 }
 
-/** Turns ship retro thrusters on.
+/** Turns ship retro thrusters off.
+ *
+ *  Not used, thrust on is now toggle.
  *
  */
 void steroids_ship_thrustOff (Steroids_Ship *ship)
@@ -160,4 +222,101 @@ void steroids_ship_thrustOff (Steroids_Ship *ship)
     ship->shape.accelleration.x = v.x;
     ship->shape.accelleration.y = v.y;
 */
+}
+
+
+/** Fires cannon.
+ *
+ */
+void steroids_ship_fire (Steroids_Shot *shots,
+			 Steroids_Ship *ship)
+{
+    switch (ship->state)
+    {
+    case STEROIDS_SHIP_STATE_LIVE:
+    case STEROIDS_SHIP_STATE_RETRO:
+    case STEROIDS_SHIP_STATE_THRUST:
+	steroids_shot_newShip (shots,
+			       ship);
+	break;
+    }
+}
+
+
+
+
+/** Tell the ship that it has collided.
+ *
+ * Returns true if the state was changed to DIE, false if the ship was
+ * already dying.
+ *
+ */
+int steroids_ship_collided (Steroids_Ship *ship)
+{
+    int stateChanged = 0;
+
+    switch (ship->state)
+    {
+    case STEROIDS_SHIP_STATE_LIVE:
+    case STEROIDS_SHIP_STATE_THRUST:
+    case STEROIDS_SHIP_STATE_RETRO:
+	ship->state = STEROIDS_SHIP_STATE_DIE;
+	ship->dieTime = STEROIDS_SHIP_DIE_TIME;
+
+	// Kill all engines:
+	ship->shape.accelleration.x = 0;
+	ship->shape.accelleration.y = 0;
+
+	stateChanged = 1;
+	break;
+    }
+    return stateChanged;
+}
+
+
+
+
+void steroids_ship_drawWin (int x, int y, GR_WINDOW_ID wid, GR_GC_ID gc)
+{
+    static GR_POINT point[shipNPoints];
+    int i;
+    for (i = 0; i < shipNPoints; i++)
+    {
+	point[i].x = shipPoint[i].x + x;
+	point[i].y = shipPoint[i].y + y;
+    }
+    GrSetGCForeground (gc, BLACK);
+    GrPoly (wid, gc, shipNPoints, point);
+}
+
+void steroids_ship_drawReserve (GR_WINDOW_ID wid, GR_GC_ID gc)
+{
+    int i;
+    int x = 7;
+    int y = 10;
+    for (i = 0; i < STEROIDS_GAME_SHIPS; i++)
+    {
+	steroids_ship_drawWin (x, y,
+			       wid,
+			       gc);
+	x += STEROIDS_SHIP_WIDTH + 2;
+    }
+}
+
+void steroids_ship_eraseReserve (int ships, GR_WINDOW_ID wid, GR_GC_ID gc)
+{
+    int x = 7;
+    int y = 10;
+
+    x += ((ships - 1) * (STEROIDS_SHIP_WIDTH + 2))
+	- (STEROIDS_SHIP_WIDTH / 2.0) + 0.5;
+    y -= (STEROIDS_SHIP_HEIGHT / 2.0) + 0.5;
+
+    GrSetGCForeground(gc, WHITE);
+    GrFillRect(wid,
+	       gc,
+	       x,
+	       y,
+	       STEROIDS_SHIP_WIDTH + 1,
+	       STEROIDS_SHIP_HEIGHT + 1);
 }
