@@ -5,7 +5,7 @@
 *   Jukebox    |    |   (  <_> )  \___|    < | \_\ (  <_> > <  <
 *   Firmware   |____|_  /\____/ \___  >__|_ \|___  /\____/__/\_ \
 *                     \/            \/     \/    \/            \/
-* $Id: cube.c,v 1.3 2005/03/06 23:05:39 coobert Exp $
+* $Id: cube.c,v 1.4 2005/03/11 01:07:18 coobert Exp $
 *
 * Copyright (C) 2002 Damien Teney
 * modified to use int instead of float math by Andreas Zwirtes
@@ -513,6 +513,7 @@ static int cube_handle_event(GR_EVENT * event)
 					break;
 				case 'm':
 					GrDestroyTimer( cube_timer );
+					GrDestroyGC( cube_gc );
 					pz_close_window( cube_wid );
 					ret |= KEY_CLICK;
 					break;
