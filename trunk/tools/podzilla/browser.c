@@ -68,6 +68,7 @@ extern void new_playback_window(char *filename);
 #endif /* __linux__ */
 extern int is_text_type(char * extension);
 extern int is_ascii_file(char *filename);
+extern void new_stringview_window(char *buf, char *title);
 void new_exec_window(char *filename);
 
 static void browser_exit()
@@ -262,6 +263,47 @@ static void browser_vip_open_file()
 	new_exec_window(execline);
 	free(execline);
 }
+
+static void browser_pipe_exec()
+{
+	int len;
+	char *buf = '\0';
+	char *execline;
+	char st_buf[512];
+	FILE *fp;
+	
+	len = strlen(current_dir) + strlen(current_file) + 2;
+	execline = (char *)malloc(len * sizeof(char));
+	snprintf(execline, len, "%s/%s", current_dir, current_file);
+
+	if((fp = popen(execline, "r")) == NULL) {
+		pz_perror(execline);
+		return;
+	}
+	len = 0;
+	while(fgets(st_buf, 512, fp) != NULL) {
+		buf = (char *)realloc(buf, ((buf == '\0' ? 0 : strlen(buf)) +
+				512) * sizeof(char));
+		if(buf == NULL) {
+			pz_error("malloc failed");
+			return;
+		}
+		if(len == 0) {
+			strncpy(buf, st_buf, 512);
+			len = 1;
+		}
+		else 
+			strncat(buf, st_buf, 512);
+	}
+	pclose(fp);
+	if(buf=='\0')
+		new_message_window("No Output");
+	else
+		new_stringview_window(buf, "Pipe Output");
+	free(execline);
+	free(buf);
+}
+
 static void browser_rmdir(char *dirname)
 {
 	DIR *dir = opendir(dirname);
@@ -352,6 +394,9 @@ static void browser_action(unsigned short userChoice)
 	case FILE_TYPE_DIRECTORY:
 		break;
 	case FILE_TYPE_PROGRAM:
+		menu_add_item(browser_menu, "Pipe output to textviewer",
+				browser_pipe_exec, 0, ACTION_MENU |
+				SUB_MENU_PREV);
 	case FILE_TYPE_OTHER:
 		if(access("/bin/viP", X_OK) == 0)
 			menu_add_item(browser_menu, "Open with viP",
