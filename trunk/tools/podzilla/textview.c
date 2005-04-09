@@ -325,6 +325,7 @@ void new_textview_window(char *filename)
 			if((buf = realloc(buf, ((buf=='\0'?0:strlen(buf)) +
 						512) * sizeof(char)))==NULL) {
 				destroy_textview_window("realloc failed");
+				fclose(fp);
 				return;
 			}
 			if(file_len==0) {
@@ -337,6 +338,7 @@ void new_textview_window(char *filename)
 	else {
 		if((buf = calloc(file_len+1, 1))==NULL) {
 			destroy_textview_window("calloc failed");
+			fclose(fp);
 			return;
 		}
 		if(fread(buf, 1, file_len, fp)!=file_len)
@@ -345,9 +347,11 @@ void new_textview_window(char *filename)
 	if(buf=='\0') {
 		destroy_textview_window(NULL);
 		new_message_window("Empty File");
+		fclose(fp);
 		return;
 	}
 
+	fclose(fp);
 	buildLineData(buf);
 	free(buf);
 }
