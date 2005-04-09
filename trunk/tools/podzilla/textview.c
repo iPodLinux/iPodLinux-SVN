@@ -271,6 +271,8 @@ int is_ascii_file(char *filename)
 	file_len = ftell(fp);
 	rewind(fp);
 	fread(buf, file_len<20?file_len:20, 1, fp);
+	fclose(fp);
+	
 	for(ptr=buf;ptr-buf<(file_len<20?file_len:20);ptr++)
 		if(*ptr<7||*ptr>127)
 			return 0;
