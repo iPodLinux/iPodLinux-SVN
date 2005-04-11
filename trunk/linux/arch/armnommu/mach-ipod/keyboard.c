@@ -2,6 +2,8 @@
  * keyboard.c - keyboard driver for iPod
  *
  * Copyright (c) 2003-2005 Bernard Leach (leachbj@bouncycastle.org)
+ * 
+ * 2005-04-08 4g/photo patched by Niccolo' Contessa <sonictooth@gmail.com>
  */
 
 #include <linux/module.h>
@@ -384,6 +386,8 @@ static void key_i2c_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	static int countl = 0;
 	int wheel_value = 0;
 
+	udelay(250);
+
 	reg = 0x7000c104;
 
 	if ((inl(0x7000c104) & 0x4000000) != 0) {
@@ -398,11 +402,13 @@ static void key_i2c_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 
 			/* NB: highest wheel = 0x5F, clockwise increases */
 			new_wheel_value = ((status << 9) >> 25) & 0xff;
-
+			
 			if ((status & 0x100) != 0) {
 				new_button_mask |= 0x1;	/* Action */
-				handle_scancode(ACTION_SC, 1);
-				countl = countr = 0;
+				if (!(button_mask & 0x1)) {
+					handle_scancode(ACTION_SC, 1);
+					countl = countr = 0;
+				}
 			}
 			else if (button_mask & 0x1) {
 				handle_scancode(ACTION_SC, 0);
@@ -410,8 +416,10 @@ static void key_i2c_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 
 			if ((status & 0x1000) != 0) {
 				new_button_mask |= 0x10;	/* Menu */
-				handle_scancode(UP_SC, 1);
-				countl = countr = 0;
+				if (!(button_mask & 0x10)) {
+					handle_scancode(UP_SC, 1);
+					countl = countr = 0;
+				}
 			}
 			else if (button_mask & 0x10) {
 				handle_scancode(UP_SC, 0);
@@ -419,8 +427,10 @@ static void key_i2c_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 
 			if ((status & 0x800) != 0) {
 				new_button_mask |= 0x8;	/* Play/Pause */
-				handle_scancode(DOWN_SC, 1);
-				countl = countr = 0;
+				if (!(button_mask & 0x8)) {
+					handle_scancode(DOWN_SC, 1);
+					countl = countr = 0;
+				}
 			}
 			else if (button_mask & 0x8) {
 				handle_scancode(DOWN_SC, 0);
@@ -428,8 +438,10 @@ static void key_i2c_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 
 			if ((status & 0x200) != 0) {
 				new_button_mask |= 0x2;	/* Next */
-				handle_scancode(RIGHT_SC, 1);
-				countl = countr = 0;
+				if (!(button_mask & 0x2)) {
+					handle_scancode(RIGHT_SC, 1);
+					countl = countr = 0;
+				}
 			}
 			else if (button_mask & 0x2) {
 				handle_scancode(RIGHT_SC, 0);
@@ -437,8 +449,10 @@ static void key_i2c_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 
 			if ((status & 0x400) != 0) {
 				new_button_mask |= 0x4;	/* Prev */
-				handle_scancode(LEFT_SC, 1);
-				countl = countr = 0;
+				if (!(button_mask & 0x4)) {
+					handle_scancode(LEFT_SC, 1);
+					countl = countr = 0;
+				}
 			}
 			else if (button_mask & 0x4) {
 				handle_scancode(LEFT_SC, 0);
