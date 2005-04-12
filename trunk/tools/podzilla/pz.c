@@ -324,7 +324,7 @@ GR_GC_ID pz_get_gc(int copy)
 	return (copy ? GrCopyGC(root_gc) : root_gc);
 }
 
-GR_WINDOW_ID pz_new_window(int x, int y, int w, int h, void(*do_draw), int(*do_keystroke)(GR_EVENT * event))
+GR_WINDOW_ID pz_new_window(int x, int y, int w, int h, void(*do_draw)(void), int(*do_keystroke)(GR_EVENT * event))
 {
 	GR_WINDOW_ID new_wid = GrNewWindowEx(GR_WM_PROPS_APPFRAME |
 			    GR_WM_PROPS_CAPTION |
