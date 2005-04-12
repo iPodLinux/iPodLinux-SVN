@@ -36,7 +36,7 @@
 #include "mlist.h"
 #include "piezo.h"
 
-static GR_WINDOW_ID browser_key_timer;
+static GR_TIMER_ID browser_key_timer;
 static GR_WINDOW_ID browser_wid;
 static GR_GC_ID browser_gc;
 static menu_st *browser_menu, *browser_menu_overlay;

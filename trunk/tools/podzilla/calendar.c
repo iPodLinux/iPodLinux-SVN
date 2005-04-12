@@ -152,7 +152,7 @@ static void cal_print_bmps(void)
 }*/
 
 static int
-calendar_do_keystroke(GR_EVENT * event)
+calendar_do_keystroke()
 {
 	int ret = 0;
 	last_mday = shown.mday;
