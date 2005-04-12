@@ -96,6 +96,7 @@ OBJS=\
 	itunes_db.o \
 	itunesmenu.o \
 	tictactoe.o \
+	tunnel.o \
 	calc.o \
 	poddraw.o \
 	playlist.o \
