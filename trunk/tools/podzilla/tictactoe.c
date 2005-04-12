@@ -29,28 +29,28 @@
 void new_tictactoe_window (void);
 static void reset_board();
 static void draw_header();
-void drawXO(int pos, int shade, char theChar);
-void output(int stat);
+static void drawXO(int pos, int shade, char theChar);
+static void output(int stat);
 
 // event handling
 static int handle_event(GR_EVENT *event);
 
 // Brains. Yum.
-void playerMadeMove(int pos);
-int board_to_int(char *board);
-int test_won();
-int minimax(int pl, int depth);
-void find_move();
+static void playerMadeMove(int pos);
+static int board_to_int(char *board);
+static int test_won();
+static int minimax(int pl, int depth);
+static void find_move();
 
 static GR_WINDOW_ID tictactoe_wid;
 static GR_GC_ID tictactoe_gc;
 static GR_WINDOW_INFO wi;
 
-int gameRunning = 0;
-int currSquare;
-int difficulty = 6;
-char board[9];
-int vals[19683]; // This should be reduced.
+static int gameRunning = 0;
+static int currSquare;
+static int difficulty = 6;
+static char board[9];
+static int vals[19683]; // This should be reduced.
 enum { XWINS=1, OWINS=-1, TIE=2, NONE=0 };
 
 void new_tictactoe_window(void)
@@ -141,7 +141,7 @@ void drawXO(int pos, int shade, char theChar)
 
 
 
-void output(int stat)
+static void output(int stat)
 {
 	gameRunning = 0;
 	if (stat == XWINS)
@@ -209,7 +209,7 @@ static int handle_event(GR_EVENT *event)
 }
 
 
-void playerMadeMove(int pos)
+static void playerMadeMove(int pos)
 {
 	int won;
 	
@@ -227,7 +227,7 @@ void playerMadeMove(int pos)
 }
 
 
-int board_to_int(char *board)
+static int board_to_int(char *board)
 {
 	int i, out =0, exp=1;
 	
@@ -247,7 +247,7 @@ int board_to_int(char *board)
 }
 
 
-int test_won()
+static int test_won()
 {
 	int i, flag=0;
 	char *b = board;
@@ -283,7 +283,7 @@ int test_won()
 }
 
 
-int minimax(int pl, int depth)
+static int minimax(int pl, int depth)
 {
 	int best, val;
 	int i, index;
@@ -327,7 +327,7 @@ int minimax(int pl, int depth)
 }
 
 
-void find_move()
+static void find_move()
 {
 	int best, val, besti[9], i, bestcount = 0;
 	time_t t1;
