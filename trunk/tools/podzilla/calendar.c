@@ -152,7 +152,7 @@ static void cal_print_bmps(void)
 }*/
 
 static int
-calendar_do_keystroke()
+calendar_do_keystroke(GR_EVENT * event)
 {
 	int ret = 0;
 	last_mday = shown.mday;
@@ -294,7 +294,7 @@ cal_draw_rect(const int xoff, const int row) {
 }
 
 static void
-calendar_do_draw(GR_EVENT * event)
+calendar_do_draw()
 {
 	calendar_draw(1, 0);
 }

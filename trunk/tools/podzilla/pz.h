@@ -37,7 +37,7 @@ extern long hw_version;
 
 void pz_draw_header(char *header);
 GR_GC_ID pz_get_gc(int copy);
-GR_WINDOW_ID pz_new_window(int x, int y, int w, int h, void(*do_draw), int(*keystroke)(GR_EVENT * event));
+GR_WINDOW_ID pz_new_window(int x, int y, int w, int h, void(*do_draw)(void), int(*keystroke)(GR_EVENT * event));
 void pz_close_window(GR_WINDOW_ID wid);
 void pz_event_handler(GR_EVENT *event);
 
