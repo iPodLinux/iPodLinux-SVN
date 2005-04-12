@@ -90,7 +90,7 @@ static void msg_build_msg(char *msg_message)
 }
 
 
-static void msg_do_draw(GR_EVENT * event)
+static void msg_do_draw()
 {
 	GR_WINDOW_INFO winfo;
 	int i;
