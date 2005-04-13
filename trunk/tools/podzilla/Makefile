@@ -15,7 +15,12 @@
 # 		ipod/src	- build for ipod
 # 		ipod-x11/src	- build for x11
 # 	../ipp		- Intel Performance Primitives
-#
+#	../helix-aacdec	- Helix AAC decoder library
+# 		ipod		- jpeg library built for ipod
+# 		ipod-x11	- jpeg library built for host (optional, x86 only)
+#	../mp4ff	- MP4 file format library
+# 		ipod		- jpeg library built for ipod
+# 		ipod-x11	- jpeg library built for host (optional, x86 only)
 
 ifneq ($(IPOD),)
 
@@ -26,12 +31,17 @@ LDFLAGS= -elf2flt
 MICROWINDOWS= ../microwindows/ipod/src
 LIBITUNESDB= ../libitunesdb/ipod/src
 IPP= ../ipp
+AACDEC= ../helix-aacdec/ipod
+MP4FF=../mp4ff/ipod
 LDFLAGS+= -L ../libjpeg/ipod
 
-CFLAGS+= -I$(IPP)/include
+CFLAGS+= -I$(IPP)/include -I$(AACDEC)/pub -I$(MP4FF)
+CFLAGS+= -DUSE_HELIXAACDEC
 LDFLAGS+=\
 	$(IPP)/lib/ippAC_SA11LNX_r.a \
-	$(IPP)/lib/ippSP_SA11LNX_r.a
+	$(IPP)/lib/ippSP_SA11LNX_r.a \
+	$(AACDEC)/libaacdec.a \
+	$(MP4FF)/libmp4ff.a
 
 else
 ifneq ($(MINI),)
@@ -47,10 +57,18 @@ else
  endif
 endif
 CC=gcc
-CFLAGS=
+CFLAGS= -I$(IPP)/include 
 LDFLAGS= -L/usr/X11R6/lib -lX11
 LIBITUNESDB= ../libitunesdb/ipod-x11/src
-	
+ifneq ($(shell "arch"),ppc)
+  # if not ppc or x86, change ppc with output from 'arch'
+  AACDEC= ../helix-aacdec/ipod-x11
+  MP4FF=../mp4ff/ipod-x11
+  CFLAGS+= -DUSE_HELIXAACDEC -I$(AACDEC)/pub -I$(MP4FF)
+  LDFLAGS+= $(AACDEC)/libaacdec.a \
+            $(MP4FF)/libmp4ff.a
+endif
+
 # for libjpeg on x11
 #LDFLAGS+= -L../libjpeg/ipod-x11
 
@@ -85,6 +103,7 @@ OBJS=\
 	piezo.o \
 	textview.o \
 	mp3.o \
+	aac.o \
 	message.o \
 	slider.o \
 	audio.o \
