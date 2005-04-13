@@ -37,7 +37,7 @@ extern __inline__ void setup_timer(void)
 
 	if ((ipod_get_hw_version() >> 16) > 0x3) {
 		/* store in kernel's function pointer */
-		gettimeoffset = pp5002_gettimeoffset;
+		gettimeoffset = pp5020_gettimeoffset;
 
 		/* clear timer1 */
 		outl(0x0, PP5020_TIMER1);
@@ -51,7 +51,7 @@ extern __inline__ void setup_timer(void)
 	}
 	else {
 		/* store in kernel's function pointer */
-		gettimeoffset = pp5020_gettimeoffset;
+		gettimeoffset = pp5002_gettimeoffset;
 
 		/* clear timer1 */
 		outl(0x0, PP5002_TIMER1);
