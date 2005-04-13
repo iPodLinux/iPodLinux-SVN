@@ -55,9 +55,11 @@ static struct tracknode *cursong = NULL;
 int playlistpos = 0, playlistlength = 0;
 
 extern void new_mp3_window(char *filename, char *album, char *artist, char *title, int len);
+extern void new_aac_window(char *filename, char *album, char *artist, char *title, int len);
 extern void stop_song();
 
 extern int is_mp3_type(char *extension);
+extern int is_aac_type(char *extension);
 
 extern void new_message_window(char *message);
 
@@ -83,13 +85,20 @@ play_track(struct tracknode *tracknode)
 
 	/* only decode mp3 files */
 	fileext = strrchr(mpath, '.');
-	if (fileext && is_mp3_type(fileext))
+	if (fileext)
 	{
 		printf("playing %d of %d (%s)\n", playlistpos, playlistlength, mpath);
+		if (is_mp3_type(fileext)) {
 #ifdef IPOD
-		new_mp3_window(mpath, track->album, track->artist, track->title,
-			   track->length);
+			new_mp3_window(mpath, track->album, track->artist,
+				track->title, track->length);
 #endif
+		} else if (is_aac_type(fileext)) {
+#ifdef USE_HELIXAACDEC
+			new_aac_window(mpath, track->album, track->artist,
+				track->title, track->length);
+#endif
+		}
 	}
 	else
 	{
@@ -134,13 +143,6 @@ start_play_queue()
 	/*
 	 * shuffle albums not yet supported 
 	 */
-#ifndef IPOD
-	/* this is for testing and just iterates through the play queue */
-	while (cursong != NULL)
-	{
-		play_next_track();
-	}
-#endif
 }
 
 void

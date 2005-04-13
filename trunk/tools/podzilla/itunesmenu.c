@@ -234,7 +234,7 @@ static char *get_text_plist(struct menulist *ml)
 static void play_song(struct menulist *ml, struct track *track)
 {
 	static int queuesong = 0;
-	if (!hw_version || hw_version >= 40000) { // no playback > 3G
+	if (hw_version >= 40000) { // no playback > 3G
 		pz_error("Audio playback is unsupported on this hardware.");
 		return;
 	}
