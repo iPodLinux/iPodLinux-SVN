@@ -53,6 +53,7 @@ extern void new_calc_window(void);
 extern void new_poddraw_window(void);
 extern void new_cube_window(void);
 extern void new_matrix_window(void);
+extern void new_ipobble_window(void);
 extern void about_window(void);
 
 extern item_st lights_menu[];
@@ -72,6 +73,7 @@ static item_st tuxchess_menu[] = {
 
 static item_st games_menu[] = {
 	{"BlueCube", new_bluecube_window, ACTION_MENU},
+	{"iPobble", new_ipobble_window, ACTION_MENU},
 	{"Lights", lights_menu, SUB_MENU_HEADER},
 	{"Minesweeper", new_mines_window, ACTION_MENU},
 	{"Othello", new_oth_window, ACTION_MENU},
