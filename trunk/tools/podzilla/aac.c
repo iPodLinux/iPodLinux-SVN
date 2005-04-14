@@ -469,13 +469,13 @@ int decode_raw_aac(int numSamples)
 			continue;
 		}
 
-		count++;
-		
-		if (count == timestep && rect_wait-- <= 0) {
+		if (rect_wait-- <= 0 && count == timestep) {
 				draw_time();
 				count = 0;
 		}
 
+		count++;
+		
 		stop = 0;
 
 		if (scrub < 0) {
