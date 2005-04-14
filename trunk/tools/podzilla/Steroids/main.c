@@ -66,6 +66,8 @@ static int handle_topLeft_event (GR_EVENT *event)
 
 static int steroids_handle_event (GR_EVENT *event)
 {
+    int ret = 0;
+
     switch (steroids_globals.gameState)
     {
     case STEROIDS_GAME_STATE_PLAY:
@@ -84,7 +86,7 @@ static int steroids_handle_event (GR_EVENT *event)
 				    &steroids_ship);
 		break;
 
-	    case 'd': // Play/pause button
+	    case 'h': // Play/pause button
 		steroids_globals.gameState = STEROIDS_GAME_STATE_PAUSE;
 		break;
 
@@ -111,9 +113,14 @@ static int steroids_handle_event (GR_EVENT *event)
 		break;
 
 	    default:
+		ret |= KEY_UNUSED;
 		break;
 	    } // keystroke
 	    break;   // key down
+
+	default:
+	    ret |= EVENT_UNUSED;
+	    break;
 	} // event type
 	break; // GAME_STATE_PLAY
 
@@ -125,14 +132,27 @@ static int steroids_handle_event (GR_EVENT *event)
 	case GR_EVENT_TYPE_KEY_DOWN:
 	    switch (event->keystroke.ch)
 	    {
-	    case 'd': // Play/pause button
-		steroids_globals.gameState = STEROIDS_GAME_STATE_PLAY;
-		break;
-
 	    case 'm': // Menu button
 		steroids_globals.gameState = STEROIDS_GAME_STATE_EXIT;
 		break;
+
+	    default:
+		ret |= KEY_UNUSED;
+		break;
 	    }
+	    break;
+
+	case GR_EVENT_TYPE_KEY_UP:
+	    switch (event->keystroke.ch)
+	    {
+	    case 'h': // Play/pause button
+		steroids_globals.gameState = STEROIDS_GAME_STATE_PLAY;
+		break;
+	    }
+	    break;
+
+	default:
+	    ret |= EVENT_UNUSED;
 	    break;
 	}
 	break;
@@ -152,7 +172,16 @@ static int steroids_handle_event (GR_EVENT *event)
 	    case 'm': // Menu button
 		steroids_globals.gameState = STEROIDS_GAME_STATE_EXIT;
 		break;
+
+	    default:
+		ret |= KEY_UNUSED;
+		break;
 	    }
+	    break;
+
+	default:
+	    ret |= EVENT_UNUSED;
+	    break;
 	}
 	break;
 
