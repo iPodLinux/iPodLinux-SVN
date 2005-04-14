@@ -24,6 +24,11 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <itunesdb.h>
+#ifdef __linux__
+#include <linux/limits.h>
+#else
+#include <limits.h>
+#endif
 
 #include "ipod.h"
 #include "itunes_db.h"
@@ -50,13 +55,12 @@ static struct tracknode *songhead = NULL;
 static struct tracknode *cursong = NULL;
 
 /*
- * global so other parts know the position, mainly mp3.c for its display
+ * global so other parts know the position, mainly [aac|mp3].c
  */
 int playlistpos = 0, playlistlength = 0;
 
 extern void new_mp3_window(char *filename, char *album, char *artist, char *title, int len);
 extern void new_aac_window(char *filename, char *album, char *artist, char *title, int len);
-extern void stop_song();
 
 extern int is_mp3_type(char *extension);
 extern int is_aac_type(char *extension);
@@ -67,7 +71,7 @@ static void
 play_track(struct tracknode *tracknode)
 {
 	struct itdb_track *track = NULL;
-	char mpath[128];
+	char mpath[PATH_MAX];
 	char *fileext;
 
 	if (tracknode == NULL) {
@@ -81,7 +85,7 @@ play_track(struct tracknode *tracknode)
 		return;
 	}
 
-	snprintf(mpath, 127, "/%s", track->path);
+	snprintf(mpath, PATH_MAX-1, "/%s", track->path);
 
 	/* only decode mp3 files */
 	fileext = strrchr(mpath, '.');
