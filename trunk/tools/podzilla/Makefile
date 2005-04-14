@@ -121,6 +121,7 @@ OBJS=\
 	playlist.o \
 	cube.o \
 	matrix.o \
+	lights.o \
 	mlist.o \
 	minesweeper.o \
 	Steroids/asteroid.o \
