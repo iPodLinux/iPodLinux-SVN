@@ -125,6 +125,7 @@ OBJS=\
 	mlist.o \
 	minesweeper.o \
 	ipobble.o \
+	vectorfont.o \
 	Steroids/asteroid.o \
 	Steroids/main.o \
 	Steroids/object.o \
