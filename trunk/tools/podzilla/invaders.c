@@ -488,10 +488,12 @@ static void update_score()
 static int invaders_handle_event(GR_EVENT *event)
 {
 	int ret = 0;
-	if(game_status ){
+	static int paused;
+	if(game_status) {
 		switch(event->type) {
 		case ( GR_EVENT_TYPE_TIMER ):
-			invaders_Game_Loop();
+			if (!paused)
+				invaders_Game_Loop();
 			break;
 		case( GR_EVENT_TYPE_KEY_DOWN ):
 			switch(event->keystroke.ch) {
@@ -551,10 +553,22 @@ static int invaders_handle_event(GR_EVENT *event)
 				GrDestroyTimer (invaders_timer_id);
 				GrDestroyGC(invaders_gc);
 				break;
+			case 'h':
+				paused = 1;
+				break;
 			default:
 				me_still = 0; /* for what key? */
 				ret |= KEY_UNUSED; /* right? */
 				break;
+			}
+			break;
+		case( GR_EVENT_TYPE_KEY_UP ):
+			switch(event->keystroke.ch) {
+			case 'h': /* push button */
+				paused = 0;
+				break;
+			default:
+				ret |= KEY_UNUSED;
 			}
 			break;
 		default:
