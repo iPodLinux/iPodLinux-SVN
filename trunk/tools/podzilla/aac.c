@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2004 Alastair Stuart
+ * Copyright (C) 2005 Alastair Stuart
  * 
  * based on mp3.c
  *
@@ -76,8 +76,8 @@ extern void play_next_track();
 
 int is_aac_type(char *extension)
 {
-	return strcmp(extension, ".m4a") == 0
-		|| strcmp(extension, ".m4b") == 0;
+	return strcasecmp(extension, ".m4a") == 0
+		|| strcasecmp(extension, ".m4b") == 0;
 }
 
 #ifdef USE_HELIXAACDEC
@@ -311,7 +311,11 @@ uint32_t seek_callback(void *user_data, uint64_t position)
 	return fseek((FILE*)user_data, position, SEEK_SET);
 }
 
-static int sample_rates[] = {    96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050,     16000, 12000, 11025, 8000,  7350,  0,     0,     0};
+static int sample_rates[] = 
+{
+	96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 
+	16000, 12000, 11025, 8000,  7350,  0,     0,     0
+};
 
 static int audiobuf_len;
 static unsigned char *audiobuf;
@@ -359,11 +363,20 @@ int mp4_to_raw_aac(FILE *infile)
 	
 	mp4ff_get_decoder_config(mp4file, track, &aacbuf, &aacbuf_len);
 	
-/* decoder config layout: *
+/* decoder config layout:
+ *
  * [.....|....|....|.|.|.]
- *    1     2    3  4 5 6 * 1: AudioObjectType         (5 bits)
- *     - profile: 0 = main, 1 = LC, 2 = SSR, 3 = reserved  * 2: samplingFrequencyIndex  (4 bits)
- *		- see sample_rates[] *    if (samplingFrequencyIndex == 0xf) *       samplingFrequency    (24 bits) * 3: channelConfiguration    (4 bits) * 4: FrameLengthFlag         (1 bit) 1024 or 960 * 5: DependsOnCoreCoder      (1 bit) - always 0 * 6: ExtensionFlag           (1 bit) - always 0
+ *    1     2    3  4 5 6
+ * 1: AudioObjectType         (5 bits)
+ *     - profile: 0 = main, 1 = LC, 2 = SSR, 3 = reserved 
+ * 2: samplingFrequencyIndex  (4 bits)
+ *		- see sample_rates[]
+ *    if (samplingFrequencyIndex == 0xf)
+ *       samplingFrequency    (24 bits)
+ * 3: channelConfiguration    (4 bits)
+ * 4: FrameLengthFlag         (1 bit) 1024 or 960
+ * 5: DependsOnCoreCoder      (1 bit) - always 0
+ * 6: ExtensionFlag           (1 bit) - always 0
  */
  
 	if (aacbuf_len == 2) {
