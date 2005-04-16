@@ -31,6 +31,7 @@ long hw_version;
 
 static GR_WINDOW_ID root_wid;
 static GR_GC_ID root_gc;
+static GR_TIMER_ID backlight_tid;
 
 struct pz_window {
 	GR_WINDOW_ID wid;
@@ -49,8 +50,6 @@ static unsigned long int wheel_evt_count = 0;
 static unsigned long int last_keypress_event = 0;
 
 #define WHEEL_EVT_MOD   3
-
-static char key_pressed = '\0';
 
 static int hold_is_on = 0;
 
@@ -197,6 +196,11 @@ void pz_event_handler(GR_EVENT *event)
 		switch (event->keystroke.ch) {
 #ifdef IPOD
 		case 'm':
+#if 1
+			if (!backlight_tid)
+                               backlight_tid = GrCreateTimer(root_wid, 500);
+			window = NULL;
+#endif
 		case 'q':
 		case 'w':
 		case 'f':
@@ -227,8 +231,6 @@ void pz_event_handler(GR_EVENT *event)
 			break;
 		}
 
-		key_pressed = event->keystroke.ch;
-
 		if (window != NULL) {
 			ret = window->keystroke(event);
 			if(KEY_CLICK & ret)
@@ -239,15 +241,30 @@ void pz_event_handler(GR_EVENT *event)
 		break;
 
 	case GR_EVENT_TYPE_KEY_UP:
-		if (event->keystroke.ch == 'h') {
+		window = pz_find_window(((GR_EVENT_KEYSTROKE *)event)->wid);
+
+		switch (event->keystroke.ch) {
+		case 'h':
 			if (hold_is_on) {
 				hold_is_on = 0;
 				draw_hold_status();
 			}
-		}
-		window = pz_find_window(((GR_EVENT_KEYSTROKE *)event)->wid);
+			break;
+#if 1
+		case 'm':
+			if (backlight_tid) {
+				GrDestroyTimer(backlight_tid);
+				backlight_tid = 0;
 
-		event->keystroke.ch = key_pressed;
+				event->type = GR_EVENT_TYPE_KEY_DOWN;
+				window->keystroke(event);
+				event->type = GR_EVENT_TYPE_KEY_UP;
+			}
+			break;
+#endif
+		default:
+			break;
+		}
 		if (window != NULL) {
 			ret = window->keystroke(event);
 			if(KEY_UNUSED & ret || EVENT_UNUSED & ret)
@@ -258,7 +275,12 @@ void pz_event_handler(GR_EVENT *event)
 	case GR_EVENT_TYPE_TIMER:
 		window = pz_find_window(((GR_EVENT_TIMER *)event)->wid);
 
-		if (window != NULL) 
+		if (((GR_EVENT_TIMER *)event)->tid == backlight_tid) {
+			GrDestroyTimer(backlight_tid);
+			backlight_tid = 0;
+			ipod_set_backlight(!ipod_get_backlight());
+		}
+		else if (window != NULL)
 			window->keystroke(event);
 		break;
 	case GR_EVENT_TYPE_TIMEOUT:
@@ -377,13 +399,14 @@ main(int argc, char **argv)
 
 	GrSelectEvents(root_wid, GR_EVENT_MASK_EXPOSURE |
 			GR_EVENT_MASK_CLOSE_REQ | GR_EVENT_MASK_KEY_UP |
-			GR_EVENT_MASK_KEY_DOWN);
+			GR_EVENT_MASK_KEY_DOWN | GR_EVENT_MASK_TIMER);
 	GrSelectEvents(GR_ROOT_WINDOW_ID, GR_EVENT_MASK_SCREENSAVER);
 
 	GrMapWindow(root_wid);
 
 	ipod_load_settings();
 	hw_version = ipod_get_hw_version();
+	backlight_tid = 0;
 
 	new_menu_window();
 
