@@ -1,8 +1,11 @@
+Courtney Cavin - Sat Apr 16 2005
+	delayed menu keypress now toggles backlight
+
 Courtney Cavin - Fri Apr 15 2005
 	added Filippo Forlani's "invaders" clone and added hold
 	added BleuLlama's "polyfont" - a vector polyline font
 	added Filippo Forlani's "iPobble"
-	enabled hold pusing in Steroids; allowed for default key handlers
+	enabled hold pausing in Steroids; allowed for default key handlers
 	added BleuLlama's "Lights"
 
 Alastair S - Wed Apr 13 2005
