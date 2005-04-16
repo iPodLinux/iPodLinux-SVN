@@ -110,9 +110,10 @@ static void buildLineData(char *starttextptr)
 			if(width > tv_winfo.width - 16) {
 				char *optr;
 				
-				/* backtrack to the last word */
+				/* backtrack to last whitespace or hyphen */
 				for(optr=curtextptr; optr>sol; optr--) {
-					if(isspace(*optr)||*optr=='\t') {
+					if(isspace(*optr) || *optr=='\t' ||
+							*optr=='-') {
 						curtextptr=optr;
 						curtextptr++;
 						break;
@@ -149,7 +150,7 @@ static void draw_scrollbar(const int height, const int y_top)
 	GrFillRect(tv_wid, tv_gc, tv_winfo.width - (8 - 1), 1 + 1, 
 			(8 - 2), y_top - (1 + 1));
 	GrFillRect(tv_wid, tv_gc, tv_winfo.width - (8 - 1), y_bottom, (8 - 2), 
-			(tv_winfo.height - 3) - y_bottom);
+			(tv_winfo.height - 1) - y_bottom);
 	GrSetGCForeground(tv_gc, GRAY);
 	/* draw the bar */
 	GrFillRect(tv_wid, tv_gc, tv_winfo.width - (8 - 1), y_top, (8 - 2), height);
@@ -168,15 +169,13 @@ static void drawtext(void)
 	GrSetGCForeground(tv_gc, WHITE);
 	GrFillRect(tv_wid, tv_gc, 0, 0, tv_winfo.width - 8, tv_winfo.height);
 	GrSetGCForeground(tv_gc, BLACK);
-	
+
 	/* Draw the text */
 	printPage(currentLine, 0,0,0,0);
-	
-	if (totalLines > lines_per_screen && y_top != last_y_top) {
+
+	if (totalLines > lines_per_screen && y_top != last_y_top)
 		draw_scrollbar(height, y_top);
-		printf("tl: %d\n", totalLines);
-	}
-	
+
 	last_y_top = y_top;
 }
 
