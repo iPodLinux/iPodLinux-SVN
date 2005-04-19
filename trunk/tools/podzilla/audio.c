@@ -19,10 +19,6 @@
 #ifdef __linux__
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/ioctl.h>
-#include <linux/soundcard.h>
-#include <fcntl.h>
-#include <unistd.h>
 #ifdef PZ_USE_THREADS
 #include <pthread.h>
 #endif
@@ -31,25 +27,29 @@
 #include <stdio.h>
 #include <time.h>
 #include <byteswap.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "pz.h"
 #include "ipod.h"
+#include "oss.h"
 
 extern void new_browser_window(char *);
 
 static GR_TIMER_ID timer_id;
-static GR_WINDOW_ID dsp_wid;
-static GR_GC_ID dsp_gc;
+static GR_WINDOW_ID pcm_wid;
+static GR_GC_ID pcm_gc;
 #ifdef PZ_USE_THREADS
-static pthread_t dsp_thread;
+static pthread_t pcm_thread;
 #endif
 static int mode;
 static volatile int playing = 0, recording = 0, paused = 0;
 static char pcm_file[128];
 static long currenttime = 0;
-static int mixer_fd = -1;
-static int pcm_vol = -1;
 static int recording_src;
+static dsp_st dspz;
 
 
 #define RECORD        0
@@ -66,7 +66,7 @@ static volatile int killed;
 #define DSP_REC_SIZE	4*1024*2
 #define DSP_PLAY_SIZE	4*1024*2
 
-static unsigned short dsp_buf[16*1024];
+static unsigned short pcm_buf[16*1024];
 
 unsigned int read_32_le(int file_fd)
 {
@@ -152,25 +152,7 @@ int get_user_sample_rate()
 	return 41000;
 }
 
-static void set_dsp_fmt(int fd)
-{
-	int fmt = AFMT_S16_LE;
-	ioctl(fd, SNDCTL_DSP_SETFMT, &fmt);
-}
-
-static void set_dsp_rate(int fd, int rate)
-{
-	/* sample rate */
-	ioctl(fd, SNDCTL_DSP_SPEED, &rate);
-}
-
-static void set_dsp_channels(int fd, int channels)
-{
-	/* set mono or stereo */
-	ioctl(fd, SNDCTL_DSP_CHANNELS, &channels);
-}
-
-static void dsp_do_draw()
+static void pcm_do_draw()
 {
 	if (mode == RECORD) {
 		pz_draw_header("Record");
@@ -179,25 +161,25 @@ static void dsp_do_draw()
 		pz_draw_header("Playback");
 	}
 
-	GrSetGCForeground(dsp_gc, WHITE);
-	GrFillRect(dsp_wid, dsp_gc, 0, 0, screen_info.cols, screen_info.rows);
-	GrSetGCForeground(dsp_gc, BLACK);
+	GrSetGCForeground(pcm_gc, WHITE);
+	GrFillRect(pcm_wid, pcm_gc, 0, 0, screen_info.cols, screen_info.rows);
+	GrSetGCForeground(pcm_gc, BLACK);
 
 	if (playing || recording) {
-		GrText(dsp_wid, dsp_gc, 8, 20, "Press action to stop", -1, GR_TFASCII);
+		GrText(pcm_wid, pcm_gc, 8, 20, "Press action to stop", -1, GR_TFASCII);
 		if (paused) {
-			GrText(dsp_wid, dsp_gc, 8, 35, "Press Play/Pause to resume", -1, GR_TFASCII);
+			GrText(pcm_wid, pcm_gc, 8, 35, "Press Play/Pause to resume", -1, GR_TFASCII);
 		}
 		else {
-			GrText(dsp_wid, dsp_gc, 8, 35, "Press Play/Pause to pause", -1, GR_TFASCII);
+			GrText(pcm_wid, pcm_gc, 8, 35, "Press Play/Pause to pause", -1, GR_TFASCII);
 		}
 	}
 	else {
 		if (mode == RECORD) {
-			GrText(dsp_wid, dsp_gc, 8, 20, "Press action to record", -1, GR_TFASCII);
+			GrText(pcm_wid, pcm_gc, 8, 20, "Press action to record", -1, GR_TFASCII);
 		}
 		else {
-			GrText(dsp_wid, dsp_gc, 8, 20, "Press action to playback", -1, GR_TFASCII);
+			GrText(pcm_wid, pcm_gc, 8, 20, "Press action to playback", -1, GR_TFASCII);
 		}
 	}
 }
@@ -211,52 +193,44 @@ static void draw_time()
 	tm = gmtime(&currenttime);
 	sprintf(onscreentimer, "Time: %02d:%02d:%02d", tm->tm_hour, tm->tm_min, tm->tm_sec);
 
-	GrText(dsp_wid, dsp_gc, 40, 80, onscreentimer, -1, GR_TFASCII);
+	GrText(pcm_wid, pcm_gc, 40, 80, onscreentimer, -1, GR_TFASCII);
 }
 
-static void * dsp_record(void *filename)
+static void * pcm_record(void *filename)
 {
-	int dsp_fd, file_fd;
+	int ret;
+	int file_fd;
 	int samplerate;
 	int channels = 1;
 	int start_pos;
 	int filelength;
 	int localpaused = 0;
 
-	file_fd = open((char *)filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR);
+	file_fd = open((char *)filename, O_WRONLY|O_CREAT|O_TRUNC,
+			S_IRUSR|S_IWUSR);
 	if (file_fd < 0) {
-		char buf[256];
-		sprintf(buf, "Cant open %s", (char *)filename);
-		new_message_window(buf);
+		pz_perror((char *)filename);
 		goto no_file;
 	}
 
-	dsp_fd = open("/dev/dsp", O_RDONLY);
-	if (dsp_fd < 0) {
-		new_message_window("Cant open /dev/dsp");
+	samplerate = get_user_sample_rate();
+	if (recording_src == DSP_LINEIN) {
+		channels = 2;
+	}
+
+	ret = dsp_open(&dspz, recording_src);
+	if (ret < 0) {
+		pz_perror("/dev/dsp");
 		goto no_audio;
 	}
 
-	samplerate = get_user_sample_rate();
-	if (recording_src == SOUND_MASK_LINE) {
-		channels = 2;
-	}
-	set_dsp_channels(dsp_fd, channels);
-	set_dsp_rate(dsp_fd, samplerate);
-	set_dsp_fmt(dsp_fd);
-
-	mixer_fd = open("/dev/mixer", O_RDWR);
-	if (mixer_fd >= 0) {
-		ioctl(mixer_fd, SOUND_MIXER_WRITE_RECSRC, &recording_src);
-		close(mixer_fd);
-		mixer_fd = -1;
-	}
+	dsp_setup(&dspz, channels, samplerate);
 
 	killed = 0;
 	recording = 1;
 	paused = 0;
 
-	dsp_do_draw(0);
+	pcm_do_draw(0);
 
 	write_wav_header(file_fd, samplerate, channels);
 
@@ -265,12 +239,12 @@ static void * dsp_record(void *filename)
 	write(file_fd, "data", 4);
 	write_32_le(file_fd, 0);	// dummy length value
 
-	timer_id = GrCreateTimer(dsp_wid, 1000);
+	timer_id = GrCreateTimer(pcm_wid, 1000);
 	draw_time();
 
 	while (!killed) {
 		ssize_t n, rem;
-		unsigned short *p = dsp_buf;
+		unsigned short *p = pcm_buf;
 #ifndef PZ_USE_THREADS
 		GR_EVENT event;
 #endif
@@ -279,14 +253,14 @@ static void * dsp_record(void *filename)
 			localpaused = 1;
 			GrDestroyTimer(timer_id);
 		}
-		if (!paused && localpaused)
-		{
+		if (!paused && localpaused) {
 			localpaused = 0;
-			timer_id = GrCreateTimer(dsp_wid, 1000);
+			timer_id = GrCreateTimer(pcm_wid, 1000);
 		}
 
 		if (!paused) {
-			rem = n = read(dsp_fd, (void *)p, DSP_REC_SIZE * (samplerate > 8000 ? 2 : 1));
+			rem = n = dsp_read(&dspz, (void *)p, DSP_REC_SIZE *
+					(samplerate > 8000 ? 2 : 1));
 			if (n > 0) {
 				while (rem) {
 					n = write(file_fd, (void *)p, rem);
@@ -315,7 +289,7 @@ repeat:
 		GrDestroyTimer(timer_id);
 	}
 
-	close(dsp_fd);
+	dsp_close(&dspz);
 
 	/* get file length by position which is 1 more than last */
 	filelength = (int)lseek(file_fd, 1, SEEK_CUR) - 1;
@@ -333,14 +307,15 @@ no_audio:
 
 no_file:
 	recording = 0;
-	dsp_do_draw(0);
+	pcm_do_draw(0);
 
 	return NULL;
 }
 
-static void * dsp_playback(void *filename)
+static void * pcm_playback(void *filename)
 {
-	int dsp_fd, file_fd;
+	int ret;
+	int file_fd;
 	ssize_t count = 0;
 	int samplerate;
 	int channels;
@@ -348,22 +323,8 @@ static void * dsp_playback(void *filename)
 
 	file_fd = open((char *)filename, O_RDONLY);
 	if (file_fd < 0) {
-		char buf[256];
-		sprintf(buf, "Cant open %s\n", (char *)filename);
-		new_message_window(buf);
+		pz_perror((char *)filename);
 		goto no_file;
-	}
-
-	dsp_fd = open("/dev/dsp", O_WRONLY);
-	if (dsp_fd < 0) {
-		new_message_window("Cant open /dev/dsp");
-		goto no_audio;
-	}
-
-	mixer_fd = open("/dev/mixer", O_RDWR);
-	if (mixer_fd >= 0) {
-		ioctl(mixer_fd, SOUND_MIXER_READ_PCM, &pcm_vol);
-		pcm_vol = pcm_vol & 0xff;
 	}
 
 	/* assume a basic WAV header, jump to number channels */
@@ -371,25 +332,28 @@ static void * dsp_playback(void *filename)
 	channels = read_16_le(file_fd);
 	samplerate = read_32_le(file_fd);
 
-	set_dsp_channels(dsp_fd, channels);
-	set_dsp_rate(dsp_fd, samplerate);
-	set_dsp_fmt(dsp_fd);
+	ret = dsp_open(&dspz, DSP_LINEOUT);
+	if (ret < 0) {
+		pz_perror("/dev/dsp");
+		goto no_audio;
+	}
+
+	dsp_setup(&dspz, channels, samplerate);
 
 	killed = 0;
 	playing = 1;
 	paused = 0;
 
-	dsp_do_draw(0);
+	pcm_do_draw(0);
 
 	/* assume a basic WAV header, skip to start of PCM data */
 	lseek(file_fd, 44, SEEK_SET);
 
-	timer_id = GrCreateTimer(dsp_wid, 1000);
+	timer_id = GrCreateTimer(pcm_wid, 1000);
 	draw_time();
 
 	do {
-		ssize_t n, rem;
-		unsigned short *p = dsp_buf;
+		unsigned short *p = pcm_buf;
 #ifndef PZ_USE_THREADS
 		GR_EVENT event;
 #endif
@@ -398,23 +362,15 @@ static void * dsp_playback(void *filename)
 			localpaused = 1;
 			GrDestroyTimer(timer_id);
 		}
-		if (!paused && localpaused)
-		{
+		if (!paused && localpaused) {
 			localpaused = 0;
-			timer_id = GrCreateTimer(dsp_wid, 1000);
+			timer_id = GrCreateTimer(pcm_wid, 1000);
 		}
 
 		if (!paused) {
-			count = rem = n = read(file_fd, (void *)p, DSP_PLAY_SIZE * (samplerate > 8000 ? 2 : 1));
-			if (n > 0) {
-				while (rem) {
-					n = write(dsp_fd, (void *)p, rem);
-					if (n > 0) {
-						rem -= n;
-						p += (n/2);
-					}
-				}
-			}
+			count = read(file_fd, (void *)p,
+				DSP_PLAY_SIZE * (samplerate > 8000 ? 2 : 1));
+			dsp_write(&dspz, (void *)p, count);
 		}
 
 #ifndef PZ_USE_THREADS
@@ -430,19 +386,14 @@ repeat:
 #endif
 	} while (!killed && count > 0);
 
-	if (mixer_fd >= 0) {
-		close(mixer_fd);
-		mixer_fd = -1;
-	}
-
-	close(dsp_fd);
+	dsp_close(&dspz);
 
 	if (!localpaused) {
 		GrDestroyTimer(timer_id);
 	}
 
 	if (!killed) {
-		pz_close_window(dsp_wid);
+		pz_close_window(pcm_wid);
 	}
 
 no_audio:
@@ -457,45 +408,47 @@ no_file:
 static void start_recording()
 {
 #ifdef PZ_USE_THREADS
-	if (pthread_create(&dsp_thread, NULL, dsp_record, pcm_file) != 0) {
+	if (pthread_create(&pcm_thread, NULL, pcm_record, pcm_file) != 0) {
 		new_message_window("could not create thread");
 	}
 #else
-	dsp_record(pcm_file);
+	pcm_record(pcm_file);
 #endif
 }
 
 static void start_playback()
 {
 #ifdef PZ_USE_THREADS
-	if (pthread_create(&dsp_thread, NULL, dsp_playback, pcm_file) != 0) {
+	if (pthread_create(&pcm_thread, NULL, pcm_playback, pcm_file) != 0) {
 		new_message_window("could not create thread");
 	}
 #else
-	dsp_playback(pcm_file);
+	pcm_playback(pcm_file);
 #endif
 }
 
-static void stop_dsp()
+static void stop_pcm()
 {
 	killed = 1;
 #ifdef PZ_USE_THREADS
-	pthread_join(dsp_thread, NULL);
+	pthread_join(pcm_thread, NULL);
 #endif
 }
 
-static void pause_dsp()
+static void pause_pcm()
 {
 	paused = 1;
 }
 
-static void resume_dsp()
+static void resume_pcm()
 {
 	paused = 0;
 }
 
-static int dsp_do_keystroke(GR_EVENT * event)
+static int pcm_do_keystroke(GR_EVENT * event)
 {
+	int ret = 0;
+
 	switch (event->type) {
 	case GR_EVENT_TYPE_TIMER:
 		currenttime = currenttime + 1;
@@ -506,8 +459,8 @@ static int dsp_do_keystroke(GR_EVENT * event)
 		case '\r':
 		case '\n':
 			if (playing || recording) {
-				stop_dsp();
-				pz_close_window(dsp_wid);
+				stop_pcm();
+				pz_close_window(pcm_wid);
 			}
 			else {
 				if (mode == PLAYBACK) {
@@ -517,55 +470,76 @@ static int dsp_do_keystroke(GR_EVENT * event)
 					start_recording();
 				}
 			}
+			ret |= KEY_CLICK;
 			break;
 	
 		case 'm':
 			if (playing || recording) {
-				stop_dsp();
+				stop_pcm();
 			}
-			pz_close_window(dsp_wid);
+			pz_close_window(pcm_wid);
 			break;
 	
 		case '1':
 		case 'd':
 			if (playing || recording) {
 				if (paused) {
-					/* timer_id = GrCreateTimer(dsp_wid, 1000); draw_time(); */
-					resume_dsp();
+					/* timer_id = GrCreateTimer(pcm_wid, 1000); draw_time(); */
+					resume_pcm();
 				}
 				else {
-					pause_dsp();
+					pause_pcm();
 					/*GrDestroyTimer(timer_id); draw_time();*/
 				}
 			}
-			dsp_do_draw(0);
+			pcm_do_draw(0);
 			draw_time();
+			ret |= KEY_CLICK;
 			break;
 		case '3':
 		case 'l':
-			if (playing && mixer_fd >= 0 && pcm_vol > 0) {
-				int vol;
-				pcm_vol--;
-				vol = pcm_vol << 8 | pcm_vol;
-				ioctl(mixer_fd, SOUND_MIXER_WRITE_PCM, &vol);
+			if (playing) {
+				dsp_vol_down(&dspz);
+				ret |= KEY_CLICK;
 			}
 			break;
 		case '2':
 		case 'r':
-			if (playing && mixer_fd >= 0 && pcm_vol < 100) {
-				int vol;
-				pcm_vol++;
-				vol = pcm_vol << 8 | pcm_vol;
-				ioctl(mixer_fd, SOUND_MIXER_WRITE_PCM, &vol);
+			if (playing) {
+				dsp_vol_up(&dspz);
+				ret |= KEY_CLICK;
 			}
 			break;
 		}
 		break;
 	}
 
-	return 1;
+	return ret;
 }
 	
+void new_audio_window(char *filename)
+{
+	strncpy(pcm_file, filename, sizeof(pcm_file) - 1);
+
+	playing = 0;
+	recording = 0;
+	paused = 0;
+	currenttime = 0;
+
+	pcm_gc = pz_get_gc(1);
+	GrSetGCUseBackground(pcm_gc, GR_TRUE);
+	GrSetGCForeground(pcm_gc, BLACK);
+	GrSetGCBackground(pcm_gc, WHITE);
+
+	pcm_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols,
+			screen_info.rows - (HEADER_TOPLINE + 1),
+			pcm_do_draw, pcm_do_keystroke);
+
+	GrSelectEvents(pcm_wid, GR_EVENT_MASK_EXPOSURE | GR_EVENT_MASK_KEY_UP |
+			GR_EVENT_MASK_KEY_DOWN | GR_EVENT_MASK_TIMER);
+
+	GrMapWindow(pcm_wid);
+}
 
 void new_record_window()
 {
@@ -584,68 +558,36 @@ void new_record_window()
 	/* MMDDYYYY HHMMSS */
 	sprintf(myfilename, "%s/%02d%02d%04d %02d%02d%02d.wav",
 			RECORDINGS,
-			tm->tm_mon+1, tm->tm_mday, tm->tm_year + 1900, tm->tm_hour,
-			tm->tm_min, tm->tm_sec);
+			tm->tm_mon+1, tm->tm_mday, tm->tm_year + 1900,
+			tm->tm_hour, tm->tm_min, tm->tm_sec);
 	
-	strncpy(pcm_file, myfilename, sizeof(pcm_file) - 1);
 	mode = RECORD;
-
-	playing = 0;
-	recording = 0;
-	paused = 0;
-	currenttime = 0;
-
-	dsp_gc = pz_get_gc(1);
-	GrSetGCUseBackground(dsp_gc, GR_TRUE);
-	GrSetGCForeground(dsp_gc, BLACK);
-	GrSetGCBackground(dsp_gc, WHITE);
-
-	dsp_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), dsp_do_draw, dsp_do_keystroke);
-
-	GrSelectEvents(dsp_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_KEY_DOWN|GR_EVENT_MASK_TIMER);
-
-	GrMapWindow(dsp_wid);
+	new_audio_window(myfilename);
 }
 
 void new_record_mic_window()
 {
-	recording_src = SOUND_MASK_MIC;
+	recording_src = DSP_MIC;
 	new_record_window();
 }
 
 void new_record_line_in_window()
 {
-	recording_src = SOUND_MASK_LINE;
+	recording_src = DSP_LINEIN;
 	new_record_window();
 }
 
 void new_playback_window(char *filename)
 {
-	if (!hw_version || hw_version >= 40000) { // no playback > 3G
+	if (hw_version >= 40000) { // no playback > 3G
 		pz_error("Audio playback is unsupported on this hardware.");
 		return;
 	}
 	
 	mode = PLAYBACK;
-	strncpy(pcm_file, filename, sizeof(pcm_file) - 1);
+	new_audio_window(filename);
 
-	playing = 0;
-	recording = 0;
-	paused = 0;
-	currenttime = 0;
-
-	dsp_gc = pz_get_gc(1);
-	GrSetGCUseBackground(dsp_gc, GR_TRUE);
-	GrSetGCForeground(dsp_gc, BLACK);
-	GrSetGCBackground(dsp_gc, WHITE);
-
-	dsp_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), dsp_do_draw, dsp_do_keystroke);
-
-	GrSelectEvents(dsp_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_KEY_DOWN|GR_EVENT_MASK_TIMER);
-
-	GrMapWindow(dsp_wid);
-
-	dsp_do_draw(0);
+	pcm_do_draw(0);
 
 	start_playback();
 }

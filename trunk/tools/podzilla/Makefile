@@ -127,6 +127,7 @@ OBJS=\
 	ipobble.o \
 	invaders.o \
 	vectorfont.o \
+	oss.o \
 	Steroids/asteroid.o \
 	Steroids/main.o \
 	Steroids/object.o \

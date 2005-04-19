@@ -28,9 +28,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
-#ifdef __linux__
-#include <linux/soundcard.h>
-#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -42,6 +39,7 @@
 #endif
 
 #include "pz.h"
+#include "oss.h"
 
 /* draw_time calls to wait before redrawing when adjusting volume */
 #define RECT_CYCLES 2
@@ -58,8 +56,7 @@ static char current_title[128];
 static char current_pos[20];
 static char next_song[128];
 static int next_song_queued;
-static int dsp_fd, mixer_fd;
-static int dsp_vol;
+static int vol_delta;
 static int decoding_finished;
 static int window_open = 0;	/* is the mp3 window open? */
 static int mp3_pause;
@@ -68,6 +65,7 @@ static int rect_x2;
 static int rect_y1;
 static int rect_y2;
 static int rect_wait;
+static dsp_st dspz;
 
 /*variables from playlist.c*/
 extern int playlistpos;
@@ -117,8 +115,11 @@ static void draw_time()
 
 static void draw_volume()
 {
-	int vol = dsp_vol & 0xff;
-	int bar_length= (vol * (rect_x2-rect_x1-4)) / 100;
+	int vol;
+	int bar_length;
+
+	vol = dsp_get_volume(&dspz);
+	bar_length = (vol * (rect_x2-rect_x1-4)) / 100;
 
 	GrSetGCForeground(mp3_gc, WHITE);
 	GrFillRect(mp3_wid, mp3_gc, rect_x1, rect_y1-12, rect_x2-rect_x1+1, 10);
@@ -153,9 +154,7 @@ static void mp3_do_draw()
 
 static void mp3_refresh_state()
 {
-#ifdef __linux__
-	ioctl(mixer_fd, SOUND_MIXER_WRITE_PCM, &dsp_vol);
-#endif
+	dsp_vol_change(&dspz, vol_delta);
 	rect_wait = RECT_CYCLES;
 	draw_volume();
 }
@@ -191,23 +190,11 @@ static int mp3_do_keystroke(GR_EVENT * event)
 			break;
 		case '3':
 		case 'l':
-			if (mixer_fd >= 0) {
-				int vol = dsp_vol & 0xff;
-				if (vol > 0) {
-					vol--;
-					vol = dsp_vol = vol << 8 | vol;
-				}
-			}
+			vol_delta--;
 			break;
 		case '2':
 		case 'r':
-			if (mixer_fd >= 0) {
-				int vol = dsp_vol & 0xff;
-				if (vol < 100) {
-					vol++;
-					vol = dsp_vol = vol << 8 | vol;
-				}
-			}
+			vol_delta++;
 			break;
 		}
 		break;
@@ -218,23 +205,12 @@ static int mp3_do_keystroke(GR_EVENT * event)
 static int audiobufpos, audiobuf_len;
 static char *audiobuf;
 
-#ifdef IPOD
-static void setup_dsp(int sample_rate, int n_channels)
-{
-	int val;
-
-	val = AFMT_S16_LE;
-	ioctl(dsp_fd, SNDCTL_DSP_SETFMT, &val);
-	ioctl(dsp_fd, SNDCTL_DSP_SPEED, &sample_rate);
-	ioctl(dsp_fd, SNDCTL_DSP_CHANNELS, &n_channels);
-}
-#endif
-
 static void mp3_event_handler()
 {
 	GR_EVENT event;
 	int evtcap = 200;
-	int old_vol = dsp_vol;
+
+	vol_delta = 0;
 	while (GrPeekEvent(&event) && evtcap--)
 	{
 		
@@ -246,8 +222,7 @@ static void mp3_event_handler()
 		}
 	}
 	
-	if (old_vol != dsp_vol)
-	{
+	if (vol_delta != 0) {
 		mp3_refresh_state();		
 	}
 }
@@ -269,7 +244,9 @@ static void init_dsp(int channels, MP3DecoderState *ds)
 	int fs[3] = { 44100, 48000, 32000 };
 	IppMP3FrameHeader h = ds->FrameHdr;
 
-	setup_dsp(fs[h.samplingFreq], channels);
+#ifdef IPOD
+	dsp_setup(&dspz, channels, fs[h.samplingFreq]);
+#endif
 }
 
 static int abread(void * ptr, size_t size, size_t nmemb)
@@ -343,7 +320,7 @@ static void RenderSound(Ipp16s *pcm, MP3DecoderState *ds)
 			pcm[i+1] = pcm[i];
 	}
 
-	write(dsp_fd, pcm, sizeof(Ipp16s) * len);
+	dsp_write(&dspz, pcm, sizeof(Ipp16s) * len);
 }
 
 static MP3BitStream bs;
@@ -412,19 +389,14 @@ static void decode_mp3()
 static void start_mp3_playback(char *filename)
 {
 	FILE *file;
+	int ret;
 
-	dsp_fd = open("/dev/dsp", O_WRONLY);
-	if (dsp_fd < 0) {
-		pz_close_window(mp3_wid);
+	ret = dsp_open(&dspz, DSP_LINEOUT);
+	if (ret < 0) {
 		pz_perror("/dev/dsp");
+		pz_close_window(mp3_wid);
 		return;
 	}
-	mixer_fd = open("/dev/mixer", O_RDWR);
-#ifdef __linux__
-	if (mixer_fd >= 0) {
-		ioctl(mixer_fd, SOUND_MIXER_READ_PCM, &dsp_vol);
-	}
-#endif
 
 	do {
 		pz_draw_header("Buffering...");
@@ -435,8 +407,7 @@ static void start_mp3_playback(char *filename)
 		if (file == 0) {
 			pz_close_window(mp3_wid);
 			pz_perror(filename);
-			close(mixer_fd);
-			close(dsp_fd);
+			dsp_close(&dspz);
 			return;
 		}
 
@@ -446,8 +417,7 @@ static void start_mp3_playback(char *filename)
 		audiobuf = malloc(audiobuf_len);
 		if (audiobuf == 0) {
 			pz_close_window(mp3_wid);
-			close(mixer_fd);
-			close(dsp_fd);
+			dsp_close(&dspz);
 			fclose(file);
 
 			new_message_window("malloc failed");
@@ -468,8 +438,7 @@ static void start_mp3_playback(char *filename)
 	}
 	while (next_song_queued);
 
-	close(mixer_fd);
-	close(dsp_fd);
+	dsp_close(&dspz);
 	pz_close_window(mp3_wid);
 }
 

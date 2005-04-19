@@ -1,3 +1,6 @@
+Courtney Cavin - Tue Apr 19 2005
+	refactored dsp management into oss.[ch]
+
 Courtney Cavin - Sat Apr 16 2005
 	delayed menu keypress now toggles backlight
 
