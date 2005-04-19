@@ -25,9 +25,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
-#ifdef __linux__
-#include <linux/soundcard.h>
-#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -39,6 +36,7 @@
 #endif /* USE_HELIXAACDEC */
 
 #include "pz.h"
+#include "oss.h"
 
 /* draw_time calls to wait before redrawing when adjusting volume */
 #define RECT_CYCLES 2
@@ -57,8 +55,7 @@ static char next_song[128];
 static long next_song_time;
 static int next_song_queued;
 static int window_open = 0;	/* is the mp3 window open? */
-static int dsp_fd, mixer_fd;
-static int dsp_vol;
+static int vol_delta;
 static int get_out;
 static int aac_pause;
 static int rect_x1;
@@ -66,6 +63,7 @@ static int rect_x2;
 static int rect_y1;
 static int rect_y2;
 static int rect_wait;
+static dsp_st dspz;
 
 /*variables from playlist.c*/
 extern int playlistpos;
@@ -119,8 +117,11 @@ static void draw_time()
 
 static void draw_volume()
 {
-	int vol = dsp_vol & 0xff;
-	int bar_length= (vol * (rect_x2-rect_x1-4)) / 100;
+	int vol;
+	int bar_length;
+
+	vol = dsp_get_volume(&dspz);
+	bar_length = (vol * (rect_x2-rect_x1-4)) / 100;
 
 	GrSetGCForeground(aac_gc, WHITE);
 	GrFillRect(aac_wid, aac_gc, rect_x1, rect_y1-12, rect_x2-rect_x1+1, 10);
@@ -155,7 +156,7 @@ static void aac_do_draw()
 
 static void aac_refresh_state()
 {
-	ioctl(mixer_fd, SOUND_MIXER_WRITE_PCM, &dsp_vol);
+	dsp_vol_change(&dspz, vol_delta);
 	rect_wait = RECT_CYCLES;
 	draw_volume();
 }
@@ -207,23 +208,11 @@ static int aac_do_keystroke(GR_EVENT * event)
 			break;
 		case '3':
 		case 'l':
-			if (mixer_fd >= 0) {
-				int vol = dsp_vol & 0xff;
-				if (vol > 0) {
-					vol--;
-					vol = dsp_vol = vol << 8 | vol;
-				}
-			}
+			vol_delta--;
 			break;
 		case '2':
 		case 'r':
-			if (mixer_fd >= 0) {
-				int vol = dsp_vol & 0xff;
-				if (vol < 100) {
-					vol++;
-					vol = dsp_vol = vol << 8 | vol;
-				}
-			}
+			vol_delta++;
 			break;
 		}
 		break;
@@ -250,21 +239,12 @@ static int aac_do_keystroke(GR_EVENT * event)
 	return 1;
 }
 
-static void setup_dsp(int sample_rate, int n_channels)
-{
-	int val;
-
-	val = AFMT_S16_LE;
-	ioctl(dsp_fd, SNDCTL_DSP_SETFMT, &val);
-	ioctl(dsp_fd, SNDCTL_DSP_SPEED, &sample_rate);
-	ioctl(dsp_fd, SNDCTL_DSP_CHANNELS, &n_channels);
-}
-
 static void aac_event_handler()
 {
 	GR_EVENT event;
 	int evtcap = 200;
-	int old_vol = dsp_vol;
+
+	vol_delta = 0;
 	while (GrPeekEvent(&event) && evtcap--)
 	{
 		
@@ -276,8 +256,7 @@ static void aac_event_handler()
 		}
 	}
 	
-	if (old_vol != dsp_vol)
-	{
+	if (vol_delta != 0) {
 		aac_refresh_state();		
 	}
 }
@@ -380,13 +359,13 @@ int mp4_to_raw_aac(FILE *infile)
  */
  
 	if (aacbuf_len == 2) {
-		/*
+#if 0
 		printf("decoder config: %d\n", aacbuf_len);
 		printf("  AudioObjectType: 0x%x\n", aacbuf[0] >> 4);
 		printf("  samplingFrequencyIndex: 0x%d\n",
 			 ((aacbuf[0] << 1) & 0xe) | ((aacbuf[1] >> 7) & 0x1));
 		printf("  channelConfiguration: 0x%x\n", (aacbuf[1] << 1) >> 4);
-		*/
+#endif
 		aacFrameInfo.profile = aacbuf[0] >> 4;
 		sampRateIndex = ((aacbuf[0] << 1) & 0xe) | ((aacbuf[1] >> 7) & 0x1);
 		if (sampRateIndex < 0xf) {
@@ -541,7 +520,8 @@ int decode_raw_aac(int numSamples)
 		AACGetLastFrameInfo(hAACDecoder, &aacFrameInfo);
 
 		if (!dsp_initialised) {
-			setup_dsp(aacFrameInfo.sampRateOut, aacFrameInfo.nChans);
+			dsp_setup(&dspz, aacFrameInfo.nChans,
+					aacFrameInfo.sampRateOut);
 			dsp_initialised = 1;
 		}
 
@@ -550,7 +530,7 @@ int decode_raw_aac(int numSamples)
 			for (i = 0; i < hOB; i += AAC_MAX_NCHANS)
 				outBuf[i+1] = outBuf[i];
 		}
-		write(dsp_fd, outBuf, (aacFrameInfo.bitsPerSample >> 3) *
+		dsp_write(&dspz, outBuf, (aacFrameInfo.bitsPerSample >> 3) *
 		      aacFrameInfo.outputSamps);
 	}
 
@@ -571,17 +551,13 @@ int decode_raw_aac(int numSamples)
 static void start_aac_playback(char *filename)
 {
 	FILE *file;
-	int raw_samples, dec;
+	int raw_samples, dec, ret;
 
-	dsp_fd = open("/dev/dsp", O_WRONLY);
-	if (dsp_fd < 0) {
-		pz_close_window(aac_wid);
+	ret = dsp_open(&dspz, DSP_LINEOUT);
+	if (ret < 0) {
 		pz_perror("/dev/dsp");
+		pz_close_window(aac_wid);
 		return;
-	}
-	mixer_fd = open("/dev/mixer", O_RDWR);
-	if (mixer_fd >= 0) {
-		ioctl(mixer_fd, SOUND_MIXER_READ_PCM, &dsp_vol);
 	}
 
 	get_out = 0;
@@ -595,8 +571,7 @@ static void start_aac_playback(char *filename)
 		if (file == 0) {
 			pz_close_window(aac_wid);
 			pz_perror(filename);
-			close(mixer_fd);
-			close(dsp_fd);
+			dsp_close(&dspz);
 			return;
 		}
 	
@@ -607,8 +582,7 @@ static void start_aac_playback(char *filename)
 	
 		if (raw_samples < 0) {
 			pz_close_window(aac_wid);
-			close(mixer_fd);
-			close(dsp_fd);
+			dsp_close(&dspz);
 			pz_error("error demuxing stream");
 			if (audiobuf)
 				free(audiobuf);
@@ -622,8 +596,7 @@ static void start_aac_playback(char *filename)
 		dec = decode_raw_aac(raw_samples);
 		
 		if (dec < 0) {
-			close(mixer_fd);
-			close(dsp_fd);
+			dsp_close(&dspz);
 			pz_close_window(aac_wid);
 			pz_error("error decoding stream: %d", dec);
 			return;
@@ -641,8 +614,7 @@ static void start_aac_playback(char *filename)
 	}
 	while (next_song_queued);
 		
-	close(mixer_fd);
-	close(dsp_fd);
+	dsp_close(&dspz);
 	pz_close_window(aac_wid);
 }
 #endif /* USE_HELIXAACDEC */
