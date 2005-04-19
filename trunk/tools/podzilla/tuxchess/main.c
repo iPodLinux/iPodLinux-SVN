@@ -373,15 +373,6 @@ void computer_play(void)
 	}
 }
 
-/* When pressing play - backlight on/off */
-void do_play(void)
-{
-	static int back = 1;
-
-	ipod_set_backlight(back);
-	back = !back;
-}
-
 /* When pressing menu - quits*/
 void do_menu(void)
 {
@@ -413,8 +404,6 @@ void do_menu(void)
 	else {
 		printf("Cant write %s\n", LASTGAME);
 	}
-
-	ipod_set_setting(BACKLIGHT, ipod_get_backlight());
 
 	if (end == 2) {
 		pz_close_window(end_wid);
@@ -769,6 +758,7 @@ static void tuxchess_do_draw()
 /* Event handler in Podzilla compiling style */
 static int tuxchess_handle_event(GR_EVENT *event)
 {
+	int ret = 0;
 	switch (event->type)
 	{
 	case GR_EVENT_TYPE_KEY_DOWN:
@@ -776,21 +766,21 @@ static int tuxchess_handle_event(GR_EVENT *event)
 		{
 		case'm':
 			do_menu();
+			ret |= KEY_CLICK;
 			break;
 
 		case'w':
-			if (end == 0)
+			if (end == 0) {
 				do_rev();
-			break;
-
-		case'd':
-			if (end == 0)
-				do_play();
+				ret |= KEY_CLICK;
+			}
 			break;
 
 		case'f':
-			if (end == 0)
+			if (end == 0) {
 				do_fwd();
+				ret |= KEY_CLICK;
+			}
 			break;
 
 		case'\r':
@@ -803,25 +793,34 @@ static int tuxchess_handle_event(GR_EVENT *event)
 			else {
 				new_game();
 			}
+			ret |= KEY_CLICK;
 			break;
 
 		case'l':
-			if (end == 0)
-			{
+			if (end == 0) {
 				do_left();
+				ret |= KEY_CLICK;
 			}
 			break;
 
 		case'r':
-			if (end == 0)
-			{
+			if (end == 0) {
 				do_right();
+				ret |= KEY_CLICK;
 			}
 			break;
+
+		default:
+			ret |= KEY_UNUSED;
+			break;
 		}
+		break;
+	default:
+		ret |= EVENT_UNUSED;
+		break;
 	}
 
-	return 1;
+	return ret;
 }
 
 /* End of the game */
@@ -849,7 +848,8 @@ void draw_end(char col)
 		end_wid = pz_new_window (0, offset, screen_info.cols,
 			screen_info.rows - offset,
 			tuxchess_do_draw, tuxchess_handle_event);
-		GrSelectEvents(end_wid, GR_EVENT_MASK_KEY_DOWN);
+		GrSelectEvents(end_wid, GR_EVENT_MASK_KEY_DOWN |
+				GR_EVENT_MASK_KEY_UP);
 
 		GrMapWindow(end_wid);
 
@@ -900,8 +900,10 @@ void open_tuxchess_window (void)
 			tuxchess_do_draw,
 			tuxchess_handle_event); 
 
-		GrSelectEvents(tuxchess_wid, GR_EVENT_MASK_KEY_DOWN);
-		GrSelectEvents(message_wid, GR_EVENT_MASK_KEY_DOWN);
+		GrSelectEvents(tuxchess_wid, GR_EVENT_MASK_KEY_DOWN |
+				GR_EVENT_MASK_KEY_UP);
+		GrSelectEvents(message_wid, GR_EVENT_MASK_KEY_DOWN |
+				GR_EVENT_MASK_KEY_UP);
 	} 
 	else {
 		/* Open the window for the board: */
@@ -918,8 +920,10 @@ void open_tuxchess_window (void)
 			tuxchess_do_draw,
 			tuxchess_handle_event); 
 
-		GrSelectEvents(tuxchess_wid, GR_EVENT_MASK_KEY_DOWN);
-		GrSelectEvents(historic_wid, GR_EVENT_MASK_KEY_DOWN);
+		GrSelectEvents(tuxchess_wid, GR_EVENT_MASK_KEY_DOWN |
+				GR_EVENT_MASK_KEY_UP);
+		GrSelectEvents(historic_wid, GR_EVENT_MASK_KEY_DOWN |
+				GR_EVENT_MASK_KEY_UP);
 	}
 
 	/* Display the windows : */
