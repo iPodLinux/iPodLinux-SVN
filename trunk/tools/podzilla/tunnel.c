@@ -34,6 +34,12 @@ static GR_GC_ID tunnel_gc;
 static GR_WINDOW_INFO wi;
 static GR_WINDOW_ID temp_pixmap;
 
+#ifdef IPOD
+#define SAVEFILE "/home/.tunnel"
+#else
+#define SAVEFILE ".tunnel"
+#endif
+
 // Timer stuff
 static GR_TIMER_ID timer_id;
 
@@ -277,26 +283,26 @@ static int handle_event(GR_EVENT *event)
 	return 0;
 }
 
-// Reads high score from file in /home/.tunnel
+// Reads high score from file in SAVEFILE
 static void readHighScore()
 {
 	FILE *input;
-	if ((input = fopen("/home/.tunnel", "r")) == NULL)
+	if ((input = fopen(SAVEFILE, "r")) == NULL)
 	{
-		fprintf(stderr, "Cannot open %s\n", "input");
+		perror(SAVEFILE);
 		return;
 	}
 	fscanf(input, "%ld", &highScore); 
 	fclose(input);
 }
 
-// Writes high score to file in /home/.tunnel
+// Writes high score to file in SAVEFILE
 static void writeHighScore()
 {
 	FILE *output;
-	if ((output = fopen("/home/.tunnel", "w")) == NULL)
+	if ((output = fopen(SAVEFILE, "w")) == NULL)
 	{
-		fprintf(stderr, "Cannot open %s\n", "output");
+		perror(SAVEFILE);
 		return;
 	}
 	fprintf(output, "%ld", highScore);
