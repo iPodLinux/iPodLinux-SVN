@@ -42,12 +42,6 @@
 #define FB_DEV_NAME		"/dev/fb0"
 #define FB_DEVFS_NAME		"/dev/fb/0"
 
-#ifdef IPOD
-#define IPOD_SETTINGS_FILE	"/etc/podzilla.conf"
-#else
-#define IPOD_SETTINGS_FILE	"podzilla.conf"
-#endif
-
 #define inl(a) (*(volatile unsigned long *) (a))
 #define outl(a,b) (*(volatile unsigned long *) (b) = (a))
 
@@ -221,6 +215,14 @@ void ipod_reset_settings(void)
 
 	ipod_load_settings();
 	ipod_save_settings();
+}
+
+void ipod_touch_settings(void)
+{
+	FILE *fp;
+	if(( fp = fopen(IPOD_SETTINGS_FILE, "a+")) != 0 ){
+	    fclose(fp);
+	}
 }
 
 /*

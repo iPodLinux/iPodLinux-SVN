@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include "pz.h"
 #include "browser.h"
@@ -84,6 +86,7 @@ extern void beep(void);
 
 void reboot_ipod(void)
 {
+	ipod_touch_settings();
 	GrClose();
 	execl("/bin/reboot", "reboot", NULL);
 	exit(0);
@@ -91,6 +94,7 @@ void reboot_ipod(void)
 
 void quit_podzilla(void)
 {
+	ipod_touch_settings();
 	GrClose();
 	exit(0);
 }
@@ -376,6 +380,23 @@ pz_close_window(GR_WINDOW_ID wid)
 	n_opened--;
 }
 
+void pz_set_time_from_file(void)
+{
+#ifdef IPOD
+	struct timeval tv_s;
+	struct stat statbuf;
+
+	/* find the last modified time of the settings file */
+	stat( IPOD_SETTINGS_FILE, &statbuf );
+
+	/* convert timespec to timeval */
+	tv_s.tv_sec  = statbuf.st_mtime;
+	tv_s.tv_usec = 0;
+
+	settimeofday( &tv_s, NULL );
+#endif
+}
+
 int
 main(int argc, char **argv)
 {
@@ -404,8 +425,13 @@ main(int argc, char **argv)
 
 	GrMapWindow(root_wid);
 
-	ipod_load_settings();
 	hw_version = ipod_get_hw_version();
+	
+	if( hw_version && hw_version < 30000 ) { /* 1g/2g only */
+		pz_set_time_from_file();
+	}
+	
+	ipod_load_settings();
 	backlight_tid = 0;
 
 	new_menu_window();
