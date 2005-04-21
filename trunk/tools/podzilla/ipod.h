@@ -21,6 +21,12 @@
 
 /* Global Settings */
 
+#ifdef IPOD
+#define IPOD_SETTINGS_FILE	"/etc/podzilla.conf"
+#else
+#define IPOD_SETTINGS_FILE	"podzilla.conf"
+#endif
+
 /* DISPLAY SETINGS 0 - 9 */
 
 #define CONTRAST 0
@@ -62,6 +68,7 @@ void ipod_reset_settings(void);
 
 int ipod_set_setting(int setting, int value);
 int ipod_get_setting(int setting);
+void ipod_touch_settings(void);
 
 int ipod_set_blank_mode(int blank);
 
