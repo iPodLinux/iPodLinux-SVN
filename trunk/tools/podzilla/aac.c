@@ -344,8 +344,8 @@ int mp4_to_raw_aac(FILE *infile)
 	
 /* decoder config layout:
  *
- * [.....|....|....|.|.|.]
- *    1     2    3  4 5 6
+ * [.....|...  .|....|.|.|.]
+ *    1     2      3  4 5 6
  * 1: AudioObjectType         (5 bits)
  *     - profile: 0 = main, 1 = LC, 2 = SSR, 3 = reserved 
  * 2: samplingFrequencyIndex  (4 bits)
@@ -360,17 +360,18 @@ int mp4_to_raw_aac(FILE *infile)
  
 	if (aacbuf_len == 2) {
 #if 0
+		printf("aacbuf: 0x%x 0x%x\n", aacbuf[0], aacbuf[1]);
 		printf("decoder config: %d\n", aacbuf_len);
 		printf("  AudioObjectType: 0x%x\n", aacbuf[0] >> 4);
 		printf("  samplingFrequencyIndex: 0x%d\n",
 			 ((aacbuf[0] << 1) & 0xe) | ((aacbuf[1] >> 7) & 0x1));
-		printf("  channelConfiguration: 0x%x\n", (aacbuf[1] << 1) >> 4);
+		printf("  channelConfiguration: 0x%x\n", ((aacbuf[1]) >> 3) & 0xf);
 #endif
 		aacFrameInfo.profile = aacbuf[0] >> 4;
 		sampRateIndex = ((aacbuf[0] << 1) & 0xe) | ((aacbuf[1] >> 7) & 0x1);
 		if (sampRateIndex < 0xf) {
 			aacFrameInfo.sampRateCore = sample_rates[sampRateIndex];
-			aacFrameInfo.nChans = (aacbuf[1] << 1) >> 4;
+			aacFrameInfo.nChans = ((aacbuf[1]) >> 3) & 0xf;
 		} else {
 			aacFrameInfo.sampRateCore = 44100; /* default */
 			aacFrameInfo.nChans = 2; /* default */
