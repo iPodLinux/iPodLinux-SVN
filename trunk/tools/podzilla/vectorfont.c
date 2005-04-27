@@ -43,7 +43,7 @@ VECTOR_POINT V_points[] = {
 	/* (27) */
 	{ 1, 0 }, { 3, 0 }, { 1, 8 }, { 3, 8 }, { 3, 7 }, { 1, 7 },
 	/* (33) */
-	{ 5, 8 },
+	{ 5, 8 }, { 2, 4 }
 };
 
 /* possible upgrade for this...
@@ -125,6 +125,15 @@ VECTOR_POLY_STRUCT V_punctuation[] =
 	/* ' */ {{ 0, 1, 3, 0 }, { 1, 1, 1, 0,  0, 0, 0, 0}},
 	/* - */ {{ 6, 8 }, { 1, 0, 0, 0,  0, 0, 0, 0}},
 	/* & */ {{ 33, 3, 1, 5, 11, 15, 31}, { 1, 1, 1, 1,  1, 1, 0, 0 }}
+};
+
+/* specials */
+VECTOR_POLY_STRUCT V_specials[] =
+{
+	/* ^ */ {{ 14, 12, 16, 14 }, { 1, 1, 1, 0,  0, 0, 0, 0 }},
+	/* < */ {{ 5, 34, 13, 3 }, { 1, 1, 1, 0,  0, 0, 0, 0 }},
+	/* v */ {{ 0, 2, 4, 0 }, { 1, 1, 1, 0,  0, 0, 0, 0 }},
+	/* > */ {{ 3, 34, 11, 3 }, { 1, 1, 1, 0,  0, 0, 0, 0 }},
 };
 
 
@@ -209,6 +218,12 @@ void vector_render_char( GR_WINDOW_ID wid, GR_GC_ID gc,
 		index = c-'a';
 	}
 
+
+	/* check for special characters */
+	if( ((unsigned char)c >= 250 ) ) {
+		index = (unsigned char)c - 250;
+		vfs = V_specials;
+	}
 
 	if( !vfs ) return;
 
