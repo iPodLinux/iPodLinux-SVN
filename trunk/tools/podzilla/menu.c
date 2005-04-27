@@ -58,6 +58,7 @@ extern void new_invaders_window(void);
 extern void about_window(void);
 
 extern item_st lights_menu[];
+extern item_st clocks_menu[];
 
 extern void quit_podzilla(void);
 extern void reboot_ipod(void);
@@ -137,12 +138,13 @@ static item_st reset_menu[] = {
 
 static item_st settings_menu[] = {
 	{"About", about_window, ACTION_MENU},
+	{"Time & Date", clocks_menu, SUB_MENU_HEADER},
 	{"Repeat", repeat_options, OPTION_MENU, REPEAT, 3},
 	{"Shuffle", shuffle_options, OPTION_MENU, SHUFFLE, 2},
-	{"Backlight Timer", backlight_options, OPTION_MENU, BACKLIGHT_TIMER, 8},
 	{"Contrast", set_contrast, ACTION_MENU},
 	{"Wheel Sensitivity", set_wheeldebounce, ACTION_MENU},
 	{"Button Debounce", set_buttondebounce, ACTION_MENU},
+	{"Backlight Timer", backlight_options, OPTION_MENU, BACKLIGHT_TIMER, 8},
 	{"Clicker", NULL, BOOLEAN_MENU, CLICKER},
 	{"Reset All Settings", reset_menu, SUB_MENU_HEADER},
 	{"Save Settings", ipod_save_settings, ACTION_MENU},
