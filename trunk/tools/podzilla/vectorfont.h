@@ -43,6 +43,12 @@ typedef struct vector_poly_struct {
 #define VFONT_CLOSED ((char)1)
 #define VFONT_LOOP   ((char)2)
 
+/* special characters */
+#define VECTORFONT_SPECIAL_UP		(250)
+#define VECTORFONT_SPECIAL_LEFT		(251)
+#define VECTORFONT_SPECIAL_DOWN		(252)
+#define VECTORFONT_SPECIAL_RIGHT	(253)
+
 
 /* vector_render_polystruct
  *
@@ -65,7 +71,19 @@ void vector_render_char( GR_WINDOW_ID wid, GR_GC_ID gc,
 			char c, int scale, int x, int y );
 
 
+/* vector_string_pixel_width
+ *
+ *  return the width of the string in pixels 
+ */
 int vector_string_pixel_width( char * string, int kern, int scale );
+
+
+/* vector_pixel_height
+ *
+ *  return the height of the string in pixels
+ */
+#define vector_pixel_height( scale ) \
+	( (scale) * 8 )
 
 
 /* vector_render_string
