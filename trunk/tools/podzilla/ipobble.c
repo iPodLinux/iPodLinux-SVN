@@ -746,8 +746,6 @@ static int ipobble_handle_event(GR_EVENT *event)
 		GrText(ipobble_wid, ipobble_gc, screen_info.cols / 2 - 36,
 				screen_info.rows / 2 - 24, "GAME OVER", -1,
 				GR_TFASCII);
-		GrText(ipobble_wid,ipobble_gc, 0, screen_info.rows - 35,
-				"(c)2005 Filippo Forlani", -1, GR_TFASCII);				
 		gameover_waitcounter = 30;
 	}
 	onetime = 1;
