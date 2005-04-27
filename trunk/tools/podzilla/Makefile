@@ -128,6 +128,7 @@ OBJS=\
 	invaders.o \
 	vectorfont.o \
 	oss.o \
+	clocks.o \
 	Steroids/asteroid.o \
 	Steroids/main.o \
 	Steroids/object.o \
