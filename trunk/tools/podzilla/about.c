@@ -28,8 +28,9 @@
 #define NUM_GENS 7
 
 static GR_WINDOW_ID about_wid;
+static GR_WINDOW_ID about_pix;
 static GR_WINDOW_ID about_bottom_wid;
-static GR_GC_ID about_gc_black;
+static GR_GC_ID about_gc;
 
 char kern[BUFSIZR], fstype[4];
 int page=0, reltop=20, j;
@@ -76,11 +77,11 @@ static void about_switch_window() {
 
 	GrSelectEvents(about_bottom_wid, GR_EVENT_MASK_EXPOSURE);
 	GrMapWindow(about_bottom_wid);
-	GrGetGCTextSize(about_gc_black, "Press Action for Credits/Info", -1,
+	GrGetGCTextSize(about_gc, "Press Action for Credits/Info", -1,
 			GR_TFASCII, &width, &height, &base);
-	GrSetGCForeground(about_gc_black, BLACK);
-	GrLine(about_bottom_wid, about_gc_black, 0, 0, screen_info.cols, 0);
-	GrText(about_bottom_wid, about_gc_black, (screen_info.cols-width)/2,
+	GrSetGCForeground(about_gc, BLACK);
+	GrLine(about_bottom_wid, about_gc, 0, 0, screen_info.cols, 0);
+	GrText(about_bottom_wid, about_gc, (screen_info.cols-width)/2,
 			12, "Press Action for Credits/Info", -1, GR_TFASCII);
 }
 
@@ -92,22 +93,22 @@ static void draw_about() {
 			"Courtney Cavin", "matz-josh", "Matthis Rouch",
 		       	"ansi", "Jens Taprogge", "Fredrik Bergholtz",
 			"Jeffrey Nelson", "Scott Lawrence",
-			"Cameron Nishiyama", "Prashant V", "Alastair S", "\0"};
+			"Cameron Nishiyama", "Prashant V", "Alastair Stuart",
+			"David Carne", "Nik Rolls", "Filippo Forlani", "\0"};
 	char gens[NUM_GENS]={'F', '1', '2', '3', 'M', '4', 'P'};
 
-	GrSetGCForeground(about_gc_black, WHITE);
-	GrFillRect(about_wid, about_gc_black, 6, 0, screen_info.cols,
+	GrSetGCForeground(about_gc, WHITE);
+	GrFillRect(about_pix, about_gc, 6, 0, screen_info.cols,
 			screen_info.rows);
-	GrSetGCForeground(about_gc_black, BLACK);
-	GrFillRect(about_wid, about_gc_black, 2, 0, 4, screen_info.rows);
+	GrSetGCForeground(about_gc, BLACK);
+	GrFillRect(about_pix, about_gc, 2, 0, 4, screen_info.rows);
 
 	j=0;
 
 	if(!page) {
-		GrText(about_wid, about_gc_black, 8, 15, PZ_VER, -1,
-				GR_TFASCII);
+		GrText(about_pix, about_gc, 8, 15, PZ_VER, -1, GR_TFASCII);
 
-		j=GrTextEx(about_wid, about_gc_black, kern, 8, 35,
+		j=GrTextEx(about_pix, about_gc, kern, 8, 35,
 				screen_info.cols-16, screen_info.rows-55, 15);
 		
 		i = (int)(hw_version/10000);
@@ -116,21 +117,24 @@ static void draw_about() {
 		gen = gens[i];
 		
 		sprintf(ipodgen, "%s iPod.  Gen. %c", fstype, gen);
-		GrText(about_wid, about_gc_black, 8, 40+(15*j++), ipodgen, -1,
+		GrText(about_pix, about_gc, 8, 40+(15*j++), ipodgen, -1,
 				GR_TFASCII);
 		sprintf(ipodrev, "Rev. %ld", hw_version);
-		GrText(about_wid, about_gc_black, 8, 40+(15*j++), ipodrev, -1,
+		GrText(about_pix, about_gc, 8, 40+(15*j++), ipodrev, -1,
 				GR_TFASCII);
 	}
 	else {
-		GrText(about_wid, about_gc_black, 8, reltop+(15*j++),
+		GrText(about_pix, about_gc, 8, reltop+(15*j++),
 		 	"Brought to you by:", -1, GR_TFASCII);
 		for(i=0; cnames[i]!="\0"; i++)
-			GrText(about_wid, about_gc_black, 17, reltop+(15*j++),
+			GrText(about_pix, about_gc, 17, reltop+(15*j++),
 					cnames[i], -1, GR_TFASCII);
-		GrText(about_wid, about_gc_black, 8, reltop+(15*++j),
+		GrText(about_pix, about_gc, 8, reltop+(15*++j),
 				"http://www.ipodlinux.org", -1, GR_TFASCII);
 	}
+	GrCopyArea(about_wid, about_gc, 0, 0, screen_info.cols,
+			screen_info.rows - (HEADER_TOPLINE + 1), about_pix,
+			0, 0, 0);
 }
 
 static void about_start_draw() {
@@ -171,7 +175,7 @@ static void about_start_draw() {
 }
 
 static int about_parse_keystroke(GR_EVENT * event) {
-	int ret=1;
+	int ret = 0;
 
 	switch(event->type) {
 	case GR_EVENT_TYPE_KEY_DOWN:
@@ -180,12 +184,15 @@ static int about_parse_keystroke(GR_EVENT * event) {
 		case '\n':
 			page=!page;
 			draw_about();
+			ret |= KEY_CLICK;
 			break;
 		case 'l':
 			if(page) {
 				reltop+=3;
 				if(reltop>20)
 					reltop=20;
+				else
+					ret |= KEY_CLICK;
 				draw_about();
 			}
 			break;
@@ -194,29 +201,38 @@ static int about_parse_keystroke(GR_EVENT * event) {
 				reltop-=3;
 				if(reltop<-1*((j+1)*15-screen_info.cols)-60)
 					reltop=-1*((j+1)*15-screen_info.cols)-60;
+				else
+					ret |= KEY_CLICK;
 				draw_about();
 			}
 			break;
 		case 'm':
+			ret |= KEY_CLICK;
 			GrUnmapWindow(about_bottom_wid);
 			GrDestroyWindow(about_bottom_wid);
+			GrDestroyWindow(about_pix);
 			pz_close_window(about_wid);
-			GrDestroyGC(about_gc_black);
+			GrDestroyGC(about_gc);
 			break;
 		default:
-			ret=0;
+			ret |= KEY_UNUSED;
 		}
+		break;
+	default:
+		ret |= EVENT_UNUSED;
 		break;
 	}
 	return ret;
 }
 
 void about_window() {
-	about_gc_black = pz_get_gc(1);
-	GrSetGCUseBackground(about_gc_black, GR_TRUE);
-	GrSetGCBackground(about_gc_black, WHITE);
-	GrSetGCForeground(about_gc_black, BLACK);
+	about_gc = pz_get_gc(1);
+	GrSetGCUseBackground(about_gc, GR_TRUE);
+	GrSetGCBackground(about_gc, WHITE);
+	GrSetGCForeground(about_gc, BLACK);
 
+	about_pix = GrNewPixmap(screen_info.cols,
+			screen_info.rows - (HEADER_TOPLINE + 1), 0);
 	about_switch_window();
 	about_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols,
 			screen_info.rows - (HEADER_TOPLINE + 1) - 15,
