@@ -36,6 +36,7 @@ extern void new_record_line_in_window(void);
 extern void new_playback_browse_window(void);
 #endif /* __linux__ */
 extern void new_calendar_window(void);
+extern void new_clock_window(void);
 extern void new_oth_window(void);
 extern void new_steroids_window(void);
 extern void new_bluecube_window(void);
@@ -125,6 +126,7 @@ static item_st extras_menu[] = {
 	{"Recordings", recording_menu, SUB_MENU_HEADER},
 	{"Calendar", new_calendar_window, ACTION_MENU},
 	{"Calculator", new_calc_window, ACTION_MENU},
+	{"Clock", new_clock_window, ACTION_MENU},
 	{"Games", games_menu, SUB_MENU_HEADER},
 	{"Stuff", stuff_menu, SUB_MENU_HEADER},
 	{0}

@@ -87,7 +87,8 @@ static int 		Clocks_height = 0;	/* visible screen height */
 #define CLOCKS_STYLE_VECTOR	(2)	/* display the vectorfont clock */
 #define CLOCKS_STYLE_BCD	(3)	/* BCD digital clock */
 #define CLOCKS_STYLE_BINARY	(4)	/* Binary digital clock */
-#define CLOCKS_STYLE_MAX	(4)
+#define CLOCKS_STYLE_DIGITAL	(5)	/* stnadard 7-segment digital clock */
+#define CLOCKS_STYLE_MAX	(5)
 
 static int Clocks_style;	/* what kind of clock ? */
 static int Clocks_bak = 0; 			/* backup */
@@ -500,6 +501,114 @@ static void Clocks_draw_binary_clock( struct tm * dispTime )
 }
 
 
+/* 7-segment display 
+ *      a
+ *    f   b
+ *      g
+ *    e   c
+ *      d
+ *
+ */
+
+static int ls7447[10] = {
+	/* #   - a b c  d e f g */
+	/* 0   0 1 1 1  1 1 1 0 */	0x7e,
+	/* 1   0 0 1 1  0 0 0 0 */	0x30,
+ 	/* 2   0 1 1 0  1 1 0 1 */	0x6d,
+ 	/* 3   0 1 1 1  1 0 0 1 */	0x79,
+	/* 4   0 0 1 1  0 0 1 1 */	0x33,
+ 	/* 5   0 1 0 1  1 0 1 1 */	0x5b,
+ 	/* 6   0 1 0 1  1 1 1 1 */	0x5f,
+ 	/* 7   0 1 1 1  0 0 0 0 */	0x70,
+ 	/* 8   0 1 1 1  1 1 1 1 */	0x7f,
+ 	/* 9   0 1 1 1  1 0 1 1 */	0x7b
+};
+
+/* draw a 7-segment display digit */
+static void Clocks_draw_7segment( int x, int y, int w, int h, char value,
+				GR_COLOR dark, GR_COLOR bright )
+{
+	int mask = 0x00;
+	int h2 = h>>1;
+
+	if( value >= '0' && value <= '9' )  mask = ls7447[ value-'0' ];
+
+        GrSetGCForeground( Clocks_gc, (mask & 0x40)?bright:dark ); /* A */
+	GrLine( Clocks_bufwid, Clocks_gc, x+3, y  , x+w-3, y);
+	GrLine( Clocks_bufwid, Clocks_gc, x+4, y+1, x+w-4, y+1);
+	GrLine( Clocks_bufwid, Clocks_gc, x+5, y+2, x+w-5, y+2);
+
+        GrSetGCForeground( Clocks_gc, (mask & 0x20)?bright:dark ); /* B */
+	GrLine( Clocks_bufwid, Clocks_gc, x+w-1, y+2, x+w-1, y+h2-2);
+	GrLine( Clocks_bufwid, Clocks_gc, x+w-2, y+3, x+w-2, y+h2-3);
+	GrLine( Clocks_bufwid, Clocks_gc, x+w-3, y+4, x+w-3, y+h2-4);
+
+        GrSetGCForeground( Clocks_gc, (mask & 0x10)?bright:dark ); /* C */
+	GrLine( Clocks_bufwid, Clocks_gc, x+w-1, y+h2+2, x+w-1, y+h2+h2-2);
+	GrLine( Clocks_bufwid, Clocks_gc, x+w-2, y+h2+3, x+w-2, y+h2+h2-3);
+	GrLine( Clocks_bufwid, Clocks_gc, x+w-3, y+h2+4, x+w-3, y+h2+h2-4);
+
+        GrSetGCForeground( Clocks_gc, (mask & 0x08)?bright:dark ); /* D */
+	GrLine( Clocks_bufwid, Clocks_gc, x+3, y+h,   x+w-3, y+h);
+	GrLine( Clocks_bufwid, Clocks_gc, x+4, y+h-1, x+w-4, y+h-1);
+	GrLine( Clocks_bufwid, Clocks_gc, x+5, y+h-2, x+w-5, y+h-2);
+
+        GrSetGCForeground( Clocks_gc, (mask & 0x04)?bright:dark ); /* E */
+	GrLine( Clocks_bufwid, Clocks_gc, x,   y+h2+2, x,   y+h2+h2-2);
+	GrLine( Clocks_bufwid, Clocks_gc, x+1, y+h2+3, x+1, y+h2+h2-3);
+	GrLine( Clocks_bufwid, Clocks_gc, x+2, y+h2+4, x+2, y+h2+h2-4);
+
+        GrSetGCForeground( Clocks_gc, (mask & 0x02)?bright:dark ); /* F */
+	GrLine( Clocks_bufwid, Clocks_gc, x,   y+2, x,   y+h2-2);
+	GrLine( Clocks_bufwid, Clocks_gc, x+1, y+3, x+1, y+h2-3);
+	GrLine( Clocks_bufwid, Clocks_gc, x+2, y+4, x+2, y+h2-4);
+
+        GrSetGCForeground( Clocks_gc, (mask & 0x01)?bright:dark ); /* G */
+	GrLine( Clocks_bufwid, Clocks_gc, x+4, y+h2-1, x+w-4, y+h2-1);
+	GrLine( Clocks_bufwid, Clocks_gc, x+2, y+h2,   x+w-2, y+h2);
+	GrLine( Clocks_bufwid, Clocks_gc, x+4, y+h2+1, x+w-4, y+h2+1);
+}
+
+/* draw a Digital clock using the above 7-segment numbers */
+static void Clocks_draw_digital_clock( struct tm * dispTime )
+{
+	GR_COLOR dark  = (Clocks_screen_info.bpp == 16)? GRAY : GRAY;
+	GR_COLOR light = (Clocks_screen_info.bpp == 16)? RED : WHITE;
+	char buf[8];
+	int w2 = Clocks_screen_info.cols/2;
+	int w3 = Clocks_screen_info.cols/3;
+	int w5 = Clocks_screen_info.cols/5;
+	int w6 = Clocks_screen_info.cols/6;
+	int wA = Clocks_screen_info.cols/10;
+	int wC = Clocks_screen_info.cols/12;
+
+	int h2 = Clocks_height>>1;
+	int h2p = h2 - w6;
+
+	int h = dispTime->tm_hour;
+	if( h == 0 ) h=12;
+	else if( h>12 ) h-=12;
+
+	snprintf( buf, 8, "%2d", dispTime->tm_hour );
+	Clocks_draw_7segment( (w5*1)-wA-8, h2p, w5-3, w3,
+				buf[0], dark, light );
+	Clocks_draw_7segment( (w5*2)-wA-4, h2p, w5-3, w3, 
+				buf[1], dark, light );
+
+	snprintf( buf, 8, "%02d", dispTime->tm_min );
+	Clocks_draw_7segment( (w5*3)-wA+8, h2p, w5-3, w3, 
+				buf[0], dark, light );
+	Clocks_draw_7segment( (w5*4)-wA+12, h2p, w5-3, w3, 
+				buf[1], dark, light );
+
+        GrSetGCForeground( Clocks_gc, dark );
+	if( dispTime->tm_sec&0x01 )
+	    GrSetGCForeground( Clocks_gc, light );
+	GrFillEllipse( Clocks_bufwid, Clocks_gc, w2, h2-wC, 3, 3 );
+	GrFillEllipse( Clocks_bufwid, Clocks_gc, w2, h2+wC, 3, 3 );
+}
+
+
 /* the main clock draw valve - decides who actually gets called */
 static void Clocks_draw( void )
 {
@@ -536,6 +645,10 @@ static void Clocks_draw( void )
 
 	    case( CLOCKS_STYLE_BINARY ):	/* binary clock */
 		    Clocks_draw_binary_clock( current_time );
+		    break;
+
+	    case( CLOCKS_STYLE_DIGITAL ):	/* digital clock */
+		    Clocks_draw_digital_clock( current_time );
 		    break;
 
 	    /* __3__ Insert hooks to draw more faces here. */
@@ -820,7 +933,7 @@ static void new_Clocks_window_common(void)
 
 
 /* display the clock */
-void new_Clocks_window(void)
+void new_clock_window(void)
 {
 	Clocks_style = Clocks_bak;
 	Clocks_set = 0;
@@ -857,7 +970,7 @@ void new_Set_DateTime_window( void )
 
 /* example menu entry point */
 item_st clocks_menu[] = {
-	{ "Clock", new_Clocks_window, ACTION_MENU },
+	{ "Clock", new_clock_window, ACTION_MENU },
 	{ "Set Time", new_Set_Time_window, ACTION_MENU },
 	{ "Set Time & Date", new_Set_DateTime_window, ACTION_MENU },
 	/*{ "Set Alarm", NULL, SUB_MENU_PREV },		*/
