@@ -579,10 +579,18 @@ static int invaders_handle_event(GR_EVENT *event)
 	
 	/* END OF GAME */
 	if(onetime == 0){
+		char game_over[] = "GAME OVER";
+		int x = screen_info.cols / 2;
+		int y = ((screen_info.rows - 21) / 4) * 3;
+		int xp = x - (vector_string_pixel_width(game_over, 1, 2) / 2);
+		int yp = y - 8;
+		GrSetGCForeground(invaders_gc, WHITE);
+		GrFillRect(invaders_wid, invaders_gc, xp - 2, yp - 2,
+				(x - xp + 2) * 2, (y - yp + 2) * 2);
 		GrSetGCForeground(invaders_gc, BLACK);
-		GrText(invaders_wid,invaders_gc, screen_info.cols / 2 - 36,
-				screen_info.rows / 2, "GAME OVER", -1,
-				GR_TFASCII);
+		vector_render_string(invaders_wid, invaders_gc,
+				game_over, 1, 2,
+				xp, yp);
 		gameover_waitcounter = 30;
 	}
 	onetime = 1;
