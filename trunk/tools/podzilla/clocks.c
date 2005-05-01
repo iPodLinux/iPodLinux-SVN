@@ -6,12 +6,13 @@
  *   Various clock display faces:
  *	Traditional Analog clock
  *	Nelson Ball-like Art Deco Analog clock (google for it)
+ *	Oversized analog clock (looks nice fullscreen)
  *	Vectorfont Clock (digital)
  *	Binary - Desktop BCD clock
  *	Binary - Binary Watch clock
  *	Digital Bedside clock
  *
- *   $Id: $
+ *   $Id: clocks.c,v 1.3 2005/05/01 21:05:55 yorgle Exp $
  *
  */
 
@@ -35,6 +36,7 @@
 
 /*
  * 2005-05-01 - Cleaned up Digital clock look (for monochrome ipods)
+ *		Oversized clock added
  *
  * 2005-04-27 - Analog clock visual enhancements
  *		Binary clock bugfix (0..23 doesn't fit in 4 bits)
@@ -89,11 +91,12 @@ static int 		Clocks_height = 0;	/* visible screen height */
 
 #define CLOCKS_STYLE_ANALOG	(0)	/* display a traditional analog */
 #define CLOCKS_STYLE_DECO	(1)	/* display a nelson ball clock */
-#define CLOCKS_STYLE_VECTOR	(2)	/* display the vectorfont clock */
-#define CLOCKS_STYLE_BCD	(3)	/* BCD digital clock */
-#define CLOCKS_STYLE_BINARY	(4)	/* Binary digital clock */
-#define CLOCKS_STYLE_DIGITAL	(5)	/* stnadard 7-segment digital clock */
-#define CLOCKS_STYLE_MAX	(5)
+#define CLOCKS_STYLE_OVERSIZED	(2)	/* oversized analog clock */
+#define CLOCKS_STYLE_VECTOR	(3)	/* display the vectorfont clock */
+#define CLOCKS_STYLE_BCD	(4)	/* BCD digital clock */
+#define CLOCKS_STYLE_BINARY	(5)	/* Binary digital clock */
+#define CLOCKS_STYLE_DIGITAL	(6)	/* stnadard 7-segment digital clock */
+#define CLOCKS_STYLE_MAX	(6)
 
 static int Clocks_style;	/* what kind of clock ? */
 static int Clocks_bak = 0; 			/* backup */
@@ -159,6 +162,7 @@ static void Clocks_draw_analog_clocks( struct tm *dispTime )
 	int cx, cy;		/* center of clock */
 	int ls, lm, lh;
 	int x = 0;
+	int cd = 5;		/* diameter of center circle */
 
 	cx = Clocks_screen_info.cols>>1;
 	cy = Clocks_height>>1;
@@ -189,7 +193,7 @@ static void Clocks_draw_analog_clocks( struct tm *dispTime )
 				cy-5,		/* otherwise */
 				4, (x%3)?0:1, 0 );
 		}
-	} else {
+	} else if( Clocks_style == CLOCKS_STYLE_ANALOG ) {
 		/* give the illusion of anti-alisedness for the outer ring */
 		GrSetGCForeground( Clocks_gc, LTGRAY );
 		GrFillEllipse( Clocks_bufwid, Clocks_gc, cx, cy, cy-1, cy-1 );
@@ -224,13 +228,20 @@ static void Clocks_draw_analog_clocks( struct tm *dispTime )
 					cx, (cy-cy)+8, cx, (cy-cy)+16 );
 		GrLine( Clocks_bufwid, Clocks_gc, 
 					cx, (cy+cy)-16, cx, (cy+cy)-8 );
+	} else if ( Clocks_style == CLOCKS_STYLE_OVERSIZED) {
+		GrLine( Clocks_bufwid, Clocks_gc, 0, cy, Clocks_screen_info.cols, cy);
+		GrLine( Clocks_bufwid, Clocks_gc, cx, 0, cx, Clocks_height);
 	}
 
 
 	/* draw the hands */
+	if ( Clocks_style == CLOCKS_STYLE_OVERSIZED) {
+	    lh = cy*3/4;			/* hours */
+	    lm = Clocks_screen_info.cols<<1;	/* minutes */
+	    ls = Clocks_screen_info.cols<<1;	/* seconds */
+	}
 
 	/* -- minutes -- */
-
 	if( Clocks_screen_info.bpp == 16 )
 	    GrSetGCForeground( Clocks_gc, GR_RGB( 0, 45, 0 ) );
 	else
@@ -259,7 +270,8 @@ static void Clocks_draw_analog_clocks( struct tm *dispTime )
 	Analog_angular_line( cx, cy, 
 				(dispTime->tm_hour*60)+dispTime->tm_min, 12*60,
 				lh, 
-				(Clocks_style == CLOCKS_STYLE_DECO)?4:2,
+				(Clocks_style == CLOCKS_STYLE_DECO)?4:
+				  (Clocks_style == CLOCKS_STYLE_ANALOG)?2:0,
 				(Clocks_sel == CLOCKS_SEL_HOURS)?1:0, 1 );
 
 	if( Clocks_screen_info.bpp == 16 )
@@ -269,7 +281,8 @@ static void Clocks_draw_analog_clocks( struct tm *dispTime )
 	Analog_angular_line( cx, cy, 
 				(dispTime->tm_hour*60)+dispTime->tm_min, 12*60,
 				lh, 
-				(Clocks_style == CLOCKS_STYLE_DECO)?4:2,
+				(Clocks_style == CLOCKS_STYLE_DECO)?4:
+				  (Clocks_style == CLOCKS_STYLE_ANALOG)?2:0,
 				(Clocks_sel == CLOCKS_SEL_HOURS)?1:0, 0 );
 	/* note in the above, the *60+mins is so that the hour hand slowly
 	    progresses from hour to hour appropriately, as time passes through
@@ -285,10 +298,13 @@ static void Clocks_draw_analog_clocks( struct tm *dispTime )
 				(Clocks_sel == CLOCKS_SEL_SECONDS)?1:0, 0 );
 
 	/* pretty-up the center */
+	if ( Clocks_style == CLOCKS_STYLE_OVERSIZED) {
+	    cd = 3;
+	}
 	GrSetGCForeground( Clocks_gc, GRAY );
-	GrFillEllipse( Clocks_bufwid, Clocks_gc, cx, cy, 5, 5 );
+	GrFillEllipse( Clocks_bufwid, Clocks_gc, cx, cy, cd, cd );
 	GrSetGCForeground( Clocks_gc, BLACK );
-	GrFillEllipse( Clocks_bufwid, Clocks_gc, cx, cy, 4, 4 );
+	GrFillEllipse( Clocks_bufwid, Clocks_gc, cx, cy, cd-1, cd-1 );
 }
 
 
@@ -651,6 +667,7 @@ static void Clocks_draw( void )
 	{
 	    case( CLOCKS_STYLE_ANALOG ):	/* traditional analog clock */
 	    case( CLOCKS_STYLE_DECO ):		/* art-deco analog clock */
+	    case( CLOCKS_STYLE_OVERSIZED ):	/* oversized analog clock */
 		    Clocks_draw_analog_clocks( current_time );
 		    break;
 
