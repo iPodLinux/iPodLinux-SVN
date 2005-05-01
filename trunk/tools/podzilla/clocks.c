@@ -2,13 +2,16 @@
  * Various clocks 
  * Copyright (C) 2005 Scott Lawrence
  *
+ *   Time setting routines
+ *   Various clock display faces:
  *	Traditional Analog clock
  *	Nelson Ball-like Art Deco Analog clock (google for it)
  *	Vectorfont Clock (digital)
  *	Binary - Desktop BCD clock
  *	Binary - Binary Watch clock
+ *	Digital Bedside clock
  *
- *      Also time setting routines
+ *   $Id: $
  *
  */
 
@@ -31,6 +34,8 @@
 
 
 /*
+ * 2005-05-01 - Cleaned up Digital clock look (for monochrome ipods)
+ *
  * 2005-04-27 - Analog clock visual enhancements
  *		Binary clock bugfix (0..23 doesn't fit in 4 bits)
  *
@@ -565,7 +570,7 @@ static void Clocks_draw_7segment( int x, int y, int w, int h, char value,
 
         GrSetGCForeground( Clocks_gc, (mask & 0x01)?bright:dark ); /* G */
 	GrLine( Clocks_bufwid, Clocks_gc, x+4, y+h2-1, x+w-4, y+h2-1);
-	GrLine( Clocks_bufwid, Clocks_gc, x+2, y+h2,   x+w-2, y+h2);
+	GrLine( Clocks_bufwid, Clocks_gc, x+3, y+h2,   x+w-3, y+h2);
 	GrLine( Clocks_bufwid, Clocks_gc, x+4, y+h2+1, x+w-4, y+h2+1);
 }
 
@@ -589,7 +594,9 @@ static void Clocks_draw_digital_clock( struct tm * dispTime )
 	if( h == 0 ) h=12;
 	else if( h>12 ) h-=12;
 
-	snprintf( buf, 8, "%2d", dispTime->tm_hour );
+	if( Clocks_screen_info.bpp != 16 ) dark = BLACK;
+
+	snprintf( buf, 8, "%2d", h );
 	Clocks_draw_7segment( (w5*1)-wA-8, h2p, w5-3, w3,
 				buf[0], dark, light );
 	Clocks_draw_7segment( (w5*2)-wA-4, h2p, w5-3, w3, 
@@ -601,10 +608,22 @@ static void Clocks_draw_digital_clock( struct tm * dispTime )
 	Clocks_draw_7segment( (w5*4)-wA+12, h2p, w5-3, w3, 
 				buf[1], dark, light );
 
-        GrSetGCForeground( Clocks_gc, dark );
-	if( dispTime->tm_sec&0x01 )
-	    GrSetGCForeground( Clocks_gc, light );
+	GrSetGCForeground( Clocks_gc, light );
+	if(    (dispTime->tm_sec&0x01)
+#ifdef CLOCK_ALTERNATE_BLINKING
+	    && (dispTime->tm_sec<30) 
+#endif
+	    )
+	    GrSetGCForeground( Clocks_gc, dark );
 	GrFillEllipse( Clocks_bufwid, Clocks_gc, w2, h2-wC, 3, 3 );
+
+	GrSetGCForeground( Clocks_gc, light );
+	if(    (dispTime->tm_sec&0x01)
+#ifdef CLOCK_ALTERNATE_BLINKING
+	    && (dispTime->tm_sec>=30)
+#endif
+	    )
+	    GrSetGCForeground( Clocks_gc, dark );
 	GrFillEllipse( Clocks_bufwid, Clocks_gc, w2, h2+wC, 3, 3 );
 }
 
