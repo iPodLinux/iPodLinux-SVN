@@ -98,7 +98,11 @@ NANOWM                   = N
 # define MWPF_TRUECOLOR332  /* pixel is packed 8 bits 3/3/2 truecolor*/
 #
 ####################################################################
-SCREEN_PIXTYPE           = MWPF_PALETTE
+ifeq ($(IPOD), PHOTO)
+  SCREEN_PIXTYPE           = MWPF_TRUECOLOR565
+else
+  SCREEN_PIXTYPE           = MWPF_PALETTE
+endif
 
 ####################################################################
 #
@@ -260,14 +264,19 @@ X11                      = Y
 
 ifeq ($(X11), Y)
 # startup screen width, height, (depth for palette mode only)
-ifeq ($(IPOD), MINI)
-SCREEN_WIDTH             = 138
-SCREEN_HEIGHT            = 110
+ifeq ($(IPOD), PHOTO)
+  SCREEN_WIDTH               = 220
+  SCREEN_HEIGHT              = 176
 else
-SCREEN_WIDTH             = 160
-SCREEN_HEIGHT            = 128
+  ifeq ($(IPOD), MINI)
+    SCREEN_WIDTH             = 138
+    SCREEN_HEIGHT            = 110
+  else
+    SCREEN_WIDTH             = 160
+    SCREEN_HEIGHT            = 128
+  endif
+  SCREEN_DEPTH             = 2
 endif
-SCREEN_DEPTH             = 2
 
 # You may want to turn this on for XFree86 4.x or if your backing store
 # isn't functioning properly
