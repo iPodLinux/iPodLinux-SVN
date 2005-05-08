@@ -12,7 +12,7 @@
  *	Binary - Binary Watch clock
  *	Digital Bedside clock
  *
- *   $Id: clocks.c,v 1.3 2005/05/01 21:05:55 yorgle Exp $
+ *   $Id: clocks.c,v 1.4 2005/05/01 21:49:14 yorgle Exp $
  *
  */
 
@@ -35,6 +35,8 @@
 
 
 /*
+ * 2005-05-08 - Added TIME_TICKER, TIME_1224 settings
+ *
  * 2005-05-01 - Cleaned up Digital clock look (for monochrome ipods)
  *		Oversized clock added
  *
@@ -69,6 +71,7 @@
 #include <sys/time.h>
 
 #include "pz.h"
+#include "ipod.h"
 #include "mlist.h"
 #include "vectorfont.h"
 
@@ -308,6 +311,25 @@ static void Clocks_draw_analog_clocks( struct tm *dispTime )
 }
 
 
+/* convert 24 hour time to 12 hour time */
+static int Clocks_c12( int hours )
+{
+	if( hours == 0 )
+		hours = 12;
+	else if( hours > 12 )
+		hours -= 12;
+	return( hours );
+}
+
+/* adjust for 12/24 hour time */
+static int Clocks_convert_to_12( int hours )
+{
+	if( ipod_get_setting( TIME_1224 ))
+		return( hours );
+	return( Clocks_c12( hours ));
+}
+
+
 /* draw the clock using my vector font... */
 static void Clocks_draw_vector_clock( struct tm *dispTime )
 {
@@ -335,7 +357,9 @@ static void Clocks_draw_vector_clock( struct tm *dispTime )
         /* draw some text */
         GrSetGCForeground( Clocks_gc, BLACK);
 
-        sprintf( buf, "%02d:%02d:%02d", dispTime->tm_hour, dispTime->tm_min,
+        sprintf( buf, "%02d:%02d:%02d",
+			Clocks_convert_to_12( dispTime->tm_hour ),
+			dispTime->tm_min,
                         dispTime->tm_sec );
         vector_render_string_center( Clocks_bufwid, Clocks_gc,
                     buf, 1, scale_time, w/2, h/3 );
@@ -509,10 +533,7 @@ static void Clocks_draw_binary_clock( struct tm * dispTime )
 	int h32 = h3>>2;
 	int xv = Clocks_screen_info.cols/6;
 	int r = (xv-2)>>1;
-	int h = dispTime->tm_hour;
-
-	if( h == 0 ) h=12;
-	else if( h > 12 ) h-=12;
+	int h = Clocks_c12( dispTime->tm_hour );
 
 	Clocks_draw_4bit_horiz( h32+r+h3*0, h );
 	Clocks_draw_6bit_horiz( h32+r+h3*1, dispTime->tm_min );
@@ -606,9 +627,7 @@ static void Clocks_draw_digital_clock( struct tm * dispTime )
 	int h2 = Clocks_height>>1;
 	int h2p = h2 - w6;
 
-	int h = dispTime->tm_hour;
-	if( h == 0 ) h=12;
-	else if( h>12 ) h-=12;
+	int h = Clocks_convert_to_12( dispTime->tm_hour );
 
 	if( Clocks_screen_info.bpp != 16 ) dark = BLACK;
 
@@ -647,6 +666,7 @@ static void Clocks_draw_digital_clock( struct tm * dispTime )
 /* the main clock draw valve - decides who actually gets called */
 static void Clocks_draw( void )
 {
+	static time_t lastt = 0;
 	time_t t;
 	struct tm * current_time;
 
@@ -654,6 +674,10 @@ static void Clocks_draw( void )
 	if ( t == (time_t) - 1 ) return; /* error */
         current_time = localtime( &t );
 
+	if( t != lastt )
+	    if( ipod_get_setting( TIME_TICKER ))
+		ipod_beep();
+	lastt = t;
 
         /* start clear (WHITE) */
 	if( Clocks_style >= CLOCKS_STYLE_BCD )
@@ -1002,14 +1026,3 @@ void new_Set_DateTime_window( void )
 
 	new_Clocks_window_common();
 }
-
-
-/* example menu entry point */
-item_st clocks_menu[] = {
-	{ "Clock", new_clock_window, ACTION_MENU },
-	{ "Set Time", new_Set_Time_window, ACTION_MENU },
-	{ "Set Time & Date", new_Set_DateTime_window, ACTION_MENU },
-	/*{ "Set Alarm", NULL, SUB_MENU_PREV },		*/
-	/*{ "Set Sleep Timer", NULL, SUB_MENU_PREV },	*/
-	{ 0 }
-};
