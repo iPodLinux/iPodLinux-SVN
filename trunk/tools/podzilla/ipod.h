@@ -52,6 +52,11 @@
 #define ACTION_DEBOUNCE 32
 #define KEY_DEBOUNCE 33
 
+#define TIME_ZONE	(35)
+#define TIME_IN_TITLE	(36)
+#define TIME_TICKER	(37)
+#define TIME_1224	(38)
+
 #define MIN_CONTRAST	0
 #define MAX_CONTRAST	128
 

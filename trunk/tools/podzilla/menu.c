@@ -37,6 +37,8 @@ extern void new_playback_browse_window(void);
 #endif /* __linux__ */
 extern void new_calendar_window(void);
 extern void new_clock_window(void);
+extern void new_Set_Time_window(void);
+extern void new_Set_DateTime_window(void);
 extern void new_oth_window(void);
 extern void new_steroids_window(void);
 extern void new_bluecube_window(void);
@@ -59,7 +61,6 @@ extern void new_invaders_window(void);
 extern void about_window(void);
 
 extern item_st lights_menu[];
-extern item_st clocks_menu[];
 
 extern void quit_podzilla(void);
 extern void reboot_ipod(void);
@@ -138,9 +139,28 @@ static item_st reset_menu[] = {
 	{0}
 };
 
+static char * timezone_options[] = { "N/A" };
+static char * time1224_options[] = { "12-hour", "24-hour" };
+static char * OffOn_options[] = { "Off", "On" };
+
+static item_st clocks_menu[] = {
+        { "Clock", new_clock_window, ACTION_MENU },
+        { "Set Time", new_Set_Time_window, ACTION_MENU },
+        { "Set Time & Date", new_Set_DateTime_window, ACTION_MENU },
+/* -- future expansion --
+	{ "Set Alarm", NULL, SUB_MENU_PREV },
+	{ "Set Sleep Timer", NULL, SUB_MENU_PREV },
+	{ "Set Time Zone", timezone_options, OPTION_MENU, TIME_ZONE, 1 },
+	{ "Time In Title", OffOn_options, OPTION_MENU, TIME_IN_TITLE, 1 },
+*/
+	{ "Time", time1224_options, OPTION_MENU, TIME_1224, 2 },
+	{ "Time Tick Noise", OffOn_options, OPTION_MENU, TIME_TICKER, 2 },
+        { 0 }
+};
+
 static item_st settings_menu[] = {
 	{"About", about_window, ACTION_MENU},
-	{"Time & Date", clocks_menu, SUB_MENU_HEADER},
+	{"Date & Time", clocks_menu, SUB_MENU_HEADER},
 	{"Repeat", repeat_options, OPTION_MENU, REPEAT, 3},
 	{"Shuffle", shuffle_options, OPTION_MENU, SHUFFLE, 2},
 	{"Contrast", set_contrast, ACTION_MENU},
