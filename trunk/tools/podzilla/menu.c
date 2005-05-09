@@ -42,6 +42,7 @@ extern void new_Set_DateTime_window(void);
 extern void new_oth_window(void);
 extern void new_steroids_window(void);
 extern void new_bluecube_window(void);
+extern void new_mandel_window(void);
 extern void new_itunes_track(void);
 extern void new_itunes_artist(void);
 extern void new_itunes_album(void);
@@ -92,6 +93,7 @@ static item_st games_menu[] = {
 
 static item_st stuff_menu[] = {
 	{"Cube", new_cube_window, ACTION_MENU},
+	{"MandelPod", new_mandel_window, ACTION_MENU},
 	{"Matrix", new_matrix_window, ACTION_MENU},
 	{"PodDraw", new_poddraw_window, ACTION_MENU},
 	{0}
