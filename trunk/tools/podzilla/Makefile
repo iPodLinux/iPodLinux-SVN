@@ -120,6 +120,7 @@ OBJS=\
 	poddraw.o \
 	playlist.o \
 	cube.o \
+	mandelpod.o \
 	matrix.o \
 	lights.o \
 	mlist.o \
