@@ -68,14 +68,11 @@ static void draw_oth()
 	lastxlocal=last_current_oth_item * ogs + oxoff
 	            - (ogs*8)*(int)(last_current_oth_item/8);
 	lastylocal=oyoff+ogs*(int)(last_current_oth_item/8);
-	GrRect(oth_wid, oth_gc, xlocal,ylocal, ogs, ogs);
+	GrRect(oth_wid, oth_gc, xlocal+1,ylocal+1, ogs-1,ogs-1);
 
 	GrSetGCForeground(oth_gc, WHITE);
 	if(current_oth_item != last_current_oth_item) {
-		GrLine(oth_wid, oth_gc, lastxlocal+1, lastylocal+(ogs-1),
-		       lastxlocal+(ogs-1), lastylocal+(ogs-1));
-		GrLine(oth_wid, oth_gc, lastxlocal+(ogs-1), lastylocal+(ogs-1),
-		       lastxlocal+(ogs-1), lastylocal+1);
+		GrRect(oth_wid, oth_gc, lastxlocal+1,lastylocal+1, ogs-1,ogs-1);
 		if(status[last_current_oth_item] != 3)
 			oth_set_piece(last_current_oth_item, status[last_current_oth_item]);
 	}
