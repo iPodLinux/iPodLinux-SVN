@@ -663,11 +663,13 @@ static void update_score()
 static int ipobble_handle_event(GR_EVENT *event)
 {
 	int ret = 0;
+	static int paused = 0;
 	
 	if(game_status) {
 		switch(event->type) {
 		case ( GR_EVENT_TYPE_TIMER ):
-			ipobble_Game_Loop();
+			if (!paused)
+				ipobble_Game_Loop();
 			break;
 		/* if in game there is 1 status: waiting for direction */
 		case( GR_EVENT_TYPE_KEY_DOWN ):
@@ -722,6 +724,10 @@ static int ipobble_handle_event(GR_EVENT *event)
 				GrDestroyTimer (ipobble_timer_id);
 				GrDestroyGC(ipobble_gc);
 				break;
+
+			case 'h':
+				paused = 1;
+				break;
 				
 			default:
 				ret |= KEY_UNUSED;
@@ -729,6 +735,11 @@ static int ipobble_handle_event(GR_EVENT *event)
 				
 			}
 			
+			break;
+
+		case( GR_EVENT_TYPE_KEY_UP ):
+			if (event->keystroke.ch == 'h')
+				paused = 0;	
 			break;
 
 		default:
