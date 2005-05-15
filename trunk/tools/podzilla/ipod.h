@@ -57,6 +57,8 @@
 #define TIME_TICKER	(37)
 #define TIME_1224	(38)
 
+#define BROWSER_PATH	(39)
+
 #define MIN_CONTRAST	0
 #define MAX_CONTRAST	128
 
