@@ -33,6 +33,7 @@
 #include <string.h>
 
 #include "pz.h"
+#include "ipod.h"
 #include "mlist.h"
 #include "piezo.h"
 
@@ -156,11 +157,41 @@ static void browser_exec_file(char *filename)
 	free(path);
 }
 
+static char short_current_dir[80];
+static char * browser_shorten_path()
+{
+	int rlen = strlen( current_dir );
+	int pos;
+	int max = 20;
+
+	/* this following block is untested... */
+	if( screen_info.cols > 160 ) /* photo */
+		max = 35;
+	else if( screen_info.cols < 160 ) /* mini */
+		max = 17;
+
+	if( rlen > 20 ) /* 20 is the cutoff point */
+	{
+		strcpy( short_current_dir, "--" );
+		for( pos=2; pos<(20+2) ; pos++ )
+		{
+			short_current_dir[pos] = current_dir[rlen-20+pos];
+		}
+		short_current_dir[pos] = '\0';
+	} else {
+		strcpy( short_current_dir, current_dir );
+	}
+	return( short_current_dir );
+}
+
 static void browser_do_draw()
 {
 	/* window is focused */
 	if(browser_wid == GrGetFocus()) {
-		pz_draw_header(browser_menu->title);
+		if( ipod_get_setting( BROWSER_PATH ))
+			pz_draw_header(browser_shorten_path());
+		else
+			pz_draw_header(browser_menu->title);
 		menu_draw(browser_menu);
 		GrSetGCForeground(browser_gc, WHITE);
 		GrLine(browser_wid, browser_gc, 0, 0, screen_info.cols, 0);

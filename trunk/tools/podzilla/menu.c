@@ -141,7 +141,7 @@ static item_st reset_menu[] = {
 	{0}
 };
 
-static char * timezone_options[] = { "N/A" };
+/*static char * timezone_options[] = { "N/A" };*/
 static char * time1224_options[] = { "12-hour", "24-hour" };
 static char * OffOn_options[] = { "Off", "On" };
 
@@ -170,6 +170,7 @@ static item_st settings_menu[] = {
 	{"Button Debounce", set_buttondebounce, ACTION_MENU},
 	{"Backlight Timer", backlight_options, OPTION_MENU, BACKLIGHT_TIMER, 8},
 	{"Clicker", NULL, BOOLEAN_MENU, CLICKER},
+	{"Browser Path Display", OffOn_options, OPTION_MENU, BROWSER_PATH, 2 },
 	{"Reset All Settings", reset_menu, SUB_MENU_HEADER},
 	{"Save Settings", ipod_save_settings, ACTION_MENU},
 	{"Load Settings", ipod_load_settings, ACTION_MENU},
