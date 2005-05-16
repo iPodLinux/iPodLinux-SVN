@@ -130,6 +130,10 @@ OBJS=\
 	vectorfont.o \
 	oss.o \
 	clocks.o \
+	vortex/levels.o \
+	vortex/vortex.o \
+	vortex/globals.o \
+	vortex/gameobjs.o \
 	Steroids/asteroid.o \
 	Steroids/main.o \
 	Steroids/object.o \
