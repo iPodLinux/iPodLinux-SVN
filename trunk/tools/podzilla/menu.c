@@ -59,6 +59,7 @@ extern void new_cube_window(void);
 extern void new_matrix_window(void);
 extern void new_ipobble_window(void);
 extern void new_invaders_window(void);
+extern void new_vortex_window(void);
 extern void about_window(void);
 
 extern item_st lights_menu[];
@@ -88,6 +89,7 @@ static item_st games_menu[] = {
 	{"Tic-Tac-Toe", new_tictactoe_window, ACTION_MENU},
 	{"Tunnel", new_tunnel_window, ACTION_MENU},
 	{"TuxChess", tuxchess_menu, SUB_MENU_HEADER},
+	{"Vortex Demo", new_vortex_window, ACTION_MENU},
 	{0}
 };
 
