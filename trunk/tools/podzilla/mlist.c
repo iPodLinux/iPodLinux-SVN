@@ -228,6 +228,7 @@ void menu_draw_item(menu_st *menulist, int item)
 /* simply erases and redoes the text on the pixmap */
 void menu_retext_pixmap(menu_st *menulist, int pixmap, item_st *item)
 {
+	int op;
 	if(pixmap < 0 || pixmap > menulist->screen_items - 1) {
 		Dprintf("menu_retext_pixmap::No Such Pixmap\n");
 		return;
@@ -249,9 +250,15 @@ void menu_retext_pixmap(menu_st *menulist, int pixmap, item_st *item)
 
 	menu_clear_pixmap(menulist, pixmap);
 
+	if (UTF8 & menulist->op)
+		op = GR_TFUTF8;
+	else if (UC16 & menulist->op)
+		op = GR_TFUC16;
+	else if (ASCII & menulist->op)
+		op = GR_TFASCII;
 	GrText(menulist->pixmaps[menulist->pixmap_pos[pixmap]],
-			menulist->menu_gc, 8, 1, item->text, -1, GR_TFASCII|
-			GR_TFTOP);
+			menulist->menu_gc, 8, 1, item->text,
+			strlen(item->text), op | GR_TFTOP);
 
 	
 	if(BOOLEAN_MENU & item->op) {
@@ -435,7 +442,7 @@ menu_st *menu_handle_item(menu_st *menulist, int num)
 		menulist = menu_init(menulist->menu_wid, menulist->menu_gc,
 				item->text, menulist->x, menulist->y,
 				menulist->w, menulist->h, menulist,
-				(item_st *)item->action);
+				(item_st *)item->action, menulist->op);
 	}
 	else if(ACTION_MENU & item->op) {
 		/* execute the function */
@@ -586,7 +593,7 @@ void menu_move_item(menu_st *menulist, int sel, int shift)
 
 /* menu initialization, make sure to do a menu_destroy when you are finished */
 menu_st *menu_init(GR_WINDOW_ID menu_wid, GR_GC_ID menu_gc, char *title, int x,
-		int y, int w, int h, menu_st *parent, item_st *items)
+		int y, int w, int h, menu_st *parent, item_st *items, int op)
 {
 	menu_st *menulist;
 	int i;
@@ -609,6 +616,7 @@ menu_st *menu_init(GR_WINDOW_ID menu_wid, GR_GC_ID menu_gc, char *title, int x,
 	}
 	
 	menulist->title = title;
+	menulist->op = op;
 	menulist->sel = 0;
 	menulist->init = 0;
 	menulist->timer = 0;

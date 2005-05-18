@@ -283,7 +283,7 @@ void new_menu_window()
 
 	menuz = menu_init(menu_wid, menu_gc, "podzilla", 0, 1,
 			screen_info.cols, screen_info.rows -
-			(HEADER_TOPLINE + 1), NULL, main_menu);
+			(HEADER_TOPLINE + 1), NULL, main_menu, ASCII);
 
 	GrMapWindow(menu_wid);
 }
