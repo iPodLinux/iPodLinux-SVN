@@ -1,3 +1,7 @@
+Courtney Cavin - Wed May 18 2005
+	added preliminary utf8 support
+	added loadable font support
+
 Scott Lawrence - Thu Apr 27 2005
 	added clocks and time setting
 	added 4 arrows to polyfont
