@@ -2,6 +2,8 @@
 #define _MLIST_H_
 
 #define NOSETTING	0
+
+/* Menu item options */
 #define STUB_MENU	0
 #define LONG_ITEM	1
 #define SUB_MENU_HEADER	2
@@ -12,6 +14,11 @@
 #define SETTING_ITEM	64
 #define ARROW_MENU	128
 #define EXECUTE_MENU	256
+
+/* Menu options */
+#define UTF8		1		
+#define ASCII		2
+#define UC16		4
 
 typedef struct _item_st {
 	char *text;	/* Menu item text to display */
@@ -46,6 +53,7 @@ typedef struct _menu_st {
 	GR_SIZE width, height, base;	/* height contains the height
 					 * of the items */
 	GR_TIMER_ID timer;	/* scroll timer */
+	int op;			/* menu options */
 	int timer_step;
 } menu_st;
 
@@ -72,7 +80,7 @@ void menu_delete_item(menu_st *menulist, int num);
 void menu_sort_menu(menu_st *menulist);
 
 menu_st *menu_init(GR_WINDOW_ID menu_wid, GR_GC_ID menu_gc, char *title, int x,
-		int y, int w, int h, menu_st *parent, item_st *items);
+		int y, int w, int h, menu_st *parent, item_st *items, int op);
 menu_st *menu_destroy(menu_st *menulist);
 
 /* destroy all humans. err.. menus */

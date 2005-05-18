@@ -96,7 +96,7 @@ static void browser_mscandir(char *dira)
 		menu_destroy(browser_menu);
 	browser_menu = menu_init(browser_wid, browser_gc, "File Browser",
 			0, 1, screen_info.cols, screen_info.rows -
-			(HEADER_TOPLINE + 1), NULL, NULL);
+			(HEADER_TOPLINE + 1), NULL, NULL, ASCII);
 
 	/* not very good for fragmentation... */
 	for (i = 0; i < browser_nbEntries; i++) {
@@ -401,7 +401,7 @@ static void browser_delete_confirm()
 	browser_menu = menu_init(browser_wid, browser_gc,
 			"Are You Sure?", 0, 1, screen_info.cols,
 			screen_info.rows - (HEADER_TOPLINE + 1),
-			browser_menu, delete_confirm_menu);
+			browser_menu, delete_confirm_menu, ASCII);
 	browser_menu_overlay = browser_menu;
 
 	stat(current_file, &stat_result);
@@ -424,7 +424,7 @@ static void browser_action(unsigned short userChoice)
 	browser_menu = menu_init(browser_wid, browser_gc,
 			browser_entries[userChoice].name,
 			0, 1, screen_info.cols, screen_info.rows -
-			(HEADER_TOPLINE + 1), browser_menu, NULL);
+			(HEADER_TOPLINE + 1), browser_menu, NULL, ASCII);
 
 	switch (browser_entries[userChoice].type) {
 	case FILE_TYPE_DIRECTORY:

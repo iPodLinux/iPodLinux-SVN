@@ -102,7 +102,7 @@ struct menulist *new_ml()
 	GrMapWindow(ret->wid);
 	ret->itunes_menu = menu_init(ret->wid, ret->gc, "Music",
 			0, 1, screen_info.cols, screen_info.rows -
-			(HEADER_TOPLINE + 1), NULL, NULL);
+			(HEADER_TOPLINE + 1), NULL, NULL, UTF8);
 	ret->init = 0;
 	ret->prevml = NULL;
 	return ret;
