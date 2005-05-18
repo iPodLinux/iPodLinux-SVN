@@ -59,6 +59,7 @@ extern void new_cube_window(void);
 extern void new_matrix_window(void);
 extern void new_ipobble_window(void);
 extern void new_invaders_window(void);
+extern void new_font_window(void);
 extern void new_vortex_window(void);
 extern void about_window(void);
 
@@ -172,6 +173,7 @@ static item_st settings_menu[] = {
 	{"Button Debounce", set_buttondebounce, ACTION_MENU},
 	{"Backlight Timer", backlight_options, OPTION_MENU, BACKLIGHT_TIMER, 8},
 	{"Clicker", NULL, BOOLEAN_MENU, CLICKER},
+	{"Font", new_font_window, ACTION_MENU},
 	{"Browser Path Display", OffOn_options, OPTION_MENU, BROWSER_PATH, 2 },
 	{"Reset All Settings", reset_menu, SUB_MENU_HEADER},
 	{"Save Settings", ipod_save_settings, ACTION_MENU},

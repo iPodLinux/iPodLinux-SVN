@@ -130,6 +130,7 @@ OBJS=\
 	vectorfont.o \
 	oss.o \
 	clocks.o \
+	fonts.o \
 	vortex/levels.o \
 	vortex/vortex.o \
 	vortex/globals.o \
