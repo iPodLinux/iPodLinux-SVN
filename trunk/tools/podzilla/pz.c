@@ -82,6 +82,7 @@ static GR_POINT hold_outline[] = {
 
 
 extern void new_menu_window();
+extern void load_font();
 extern void beep(void);
 
 void reboot_ipod(void)
@@ -410,6 +411,7 @@ main(int argc, char **argv)
 	GrSetGCUseBackground(root_gc, GR_FALSE);
 	GrSetGCForeground(root_gc, BLACK);
 	GrGetScreenInfo(&screen_info);
+	load_font();
 
 	root_wid = GrNewWindowEx(GR_WM_PROPS_APPFRAME |
 			    GR_WM_PROPS_CAPTION |
