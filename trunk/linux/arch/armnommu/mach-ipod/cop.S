@@ -10,7 +10,8 @@
 	.global cop_idle
 
 cop_fiq:
-	stmdb   sp!, {r0, lr}
+	mrs	r8, spsr
+	stmdb   sp!, {r0-r8, lr}
 	mov	r0, #PP_CPU_TYPE
 	ldr	r0, [r0]
 	cmp	r0, #0
@@ -30,7 +31,8 @@ cop_fiq:
 	nop
 
 1:
-	ldmia   sp!, {r0, lr}
+	ldmia   sp!, {r0-r8, lr}
+	msr	spsr, r8
 	subs	pc, lr, #4
 
 
