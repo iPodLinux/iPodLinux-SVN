@@ -315,9 +315,16 @@ int mp4_to_raw_aac(FILE *infile)
 	fseek(infile, 0, SEEK_END);
 	audiobuf_len = ftell(infile);
 	audiobuf = malloc(audiobuf_len); /* more than we need */
+	if (audiobuf == NULL) {
+		return -1;
+	}
 	fseek(infile, 0, SEEK_SET);
 	
 	mp4cb = malloc(sizeof(mp4ff_callback_t));
+	if (mp4cb == NULL) {
+		free(audiobuf);
+		return -1;
+	}
 	mp4cb->read = read_callback;
 	mp4cb->seek = seek_callback;
 	mp4cb->user_data = infile;
