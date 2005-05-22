@@ -579,11 +579,6 @@ void new_record_line_in_window()
 
 void new_playback_window(char *filename)
 {
-	if (hw_version >= 40000) { // no playback > 3G
-		pz_error("Audio playback is unsupported on this hardware.");
-		return;
-	}
-	
 	mode = PLAYBACK;
 	new_audio_window(filename);
 
