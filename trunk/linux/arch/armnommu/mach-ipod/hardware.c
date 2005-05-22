@@ -128,8 +128,6 @@ ipod_init_cache(void)
 void
 ipod_set_cpu_speed(void)
 {
-	int hw_ver;
-
 	if ((ipod_get_hw_version() >> 16) <= 0x3) {
 		outl(0x02, 0xcf005008);
 
@@ -172,7 +170,6 @@ ipod_set_cpu_speed(void)
 
 #define POLL_TIMEOUT (HZ)
 
-static int ipod_get_hw_ver;
 static unsigned ipod_i2c_base;
 
 static int
@@ -197,19 +194,37 @@ ipod_i2c_init(void)
 	static int i2c_init = 0;
 
 	if (i2c_init == 0) {
+		int ipod_hw_ver;
+
 		i2c_init = 1;
 
-		ipod_get_hw_ver = ipod_get_hw_version() >> 16;
+		ipod_hw_ver = ipod_get_hw_version() >> 16;
 
 		/* reset I2C */
-		if (ipod_get_hw_ver > 0x3) {
+		if (ipod_hw_ver > 0x3) {
 			ipod_i2c_base = 0x7000c000;
 
-			outl(inl(0x60005030) | (1<<12), 0x60005030);
-			outl(inl(0x60005030) & ~(1<<12), 0x60005030);
-		}
-		else {
+			if (ipod_hw_ver == 0x4) {
+				/* GPIO port C disable port 0x10 */
+				outl(inl(0x6000d008) & ~0x10, 0x6000d008);
+
+				/* GPIO port C disable port 0x20 */
+				outl(inl(0x6000d008) & ~0x20, 0x6000d008);
+			}
+
+			outl(inl(0x6000600c) | 0x1000, 0x6000600c);	/* enable 12 */
+
+			outl(inl(0x60006004) | 0x1000, 0x60006004);	/* start reset 12 */
+			outl(inl(0x60006004) & ~0x1000, 0x60006004);	/* end reset 12 */
+
+			outl(0x0, 0x600060a4);
+			outl(0x80 | (0 << 8), 0x600060a4);
+
+				i2c_readbyte(0x8, 0);
+		} else {
 			ipod_i2c_base = 0xc0008000;
+
+			outl(inl(0xcf005000) | 0x2, 0xcf005000);
 
 			outl(inl(0xcf005030) | (1<<8), 0xcf005030);
 			outl(inl(0xcf005030) & ~(1<<8), 0xcf005030);
@@ -294,6 +309,17 @@ ipod_i2c_send_byte(unsigned int addr, int data0)
 	data[0] = data0;
 
 	return ipod_i2c_send_bytes(addr, 1, data);
+}
+
+int
+i2c_readbyte(unsigned int dev_addr, int addr)
+{
+	int data;
+
+	ipod_i2c_send_byte(dev_addr, addr);
+	ipod_i2c_read_byte(dev_addr, &data);
+
+	return data;
 }
 
 void
