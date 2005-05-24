@@ -135,7 +135,7 @@ int populate_fontlist() {
 		}
 	}
 	fclose(fd);
-	return 0;
+	return num_fonts;
 }
 
 static void destroy_font(int local)
@@ -304,8 +304,9 @@ static int font_event_handler(GR_EVENT *e)
 void new_font_window()
 {
 	if (num_fonts == 0) {
-		if (populate_fontlist() < 0) {
-			pz_error("Unable to load fontlist" FONTDIR FONTCONF);
+		if (populate_fontlist() <= 0) {
+			pz_error("Unable to load fontlist " FONTDIR FONTCONF);
+			return;
 		}
 	}
 	foc = -1;
