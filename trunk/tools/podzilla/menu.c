@@ -146,7 +146,6 @@ static item_st reset_menu[] = {
 
 /*static char * timezone_options[] = { "N/A" };*/
 static char * time1224_options[] = { "12-hour", "24-hour" };
-static char * OffOn_options[] = { "Off", "On" };
 
 static item_st clocks_menu[] = {
         { "Clock", new_clock_window, ACTION_MENU },
@@ -156,10 +155,10 @@ static item_st clocks_menu[] = {
 	{ "Set Alarm", NULL, SUB_MENU_PREV },
 	{ "Set Sleep Timer", NULL, SUB_MENU_PREV },
 	{ "Set Time Zone", timezone_options, OPTION_MENU, TIME_ZONE, 1 },
-	{ "Time In Title", OffOn_options, OPTION_MENU, TIME_IN_TITLE, 1 },
+	{ "Time In Title", NULL, BOOLEAN_MENU, TIME_IN_TITLE },
 */
 	{ "Time", time1224_options, OPTION_MENU, TIME_1224, 2 },
-	{ "Time Tick Noise", OffOn_options, OPTION_MENU, TIME_TICKER, 2 },
+	{ "Time Tick Noise", NULL, BOOLEAN_MENU, TIME_TICKER },
         { 0 }
 };
 
@@ -174,7 +173,7 @@ static item_st settings_menu[] = {
 	{"Backlight Timer", backlight_options, OPTION_MENU, BACKLIGHT_TIMER, 8},
 	{"Clicker", NULL, BOOLEAN_MENU, CLICKER},
 	{"Font", new_font_window, ACTION_MENU},
-	{"Browser Path Display", OffOn_options, OPTION_MENU, BROWSER_PATH, 2 },
+	{"Browser Path Display", NULL, BOOLEAN_MENU, BROWSER_PATH},
 	{"Reset All Settings", reset_menu, SUB_MENU_HEADER},
 	{"Save Settings", ipod_save_settings, ACTION_MENU},
 	{"Load Settings", ipod_load_settings, ACTION_MENU},
