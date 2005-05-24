@@ -153,7 +153,7 @@ static void destroy_font(int local)
 static void set_font(char *file, int size, GR_GC_ID gc, int local)
 {
 	GR_FONT_ID lfont;
-	lfont = GrCreateFont(file, size, NULL);
+	lfont = GrCreateFont((GR_CHAR *)file, size, NULL);
 	if (lfont == 0) {
 		pz_error("Unable to load font");
 		return;
@@ -238,25 +238,32 @@ static int font_event_handler(GR_EVENT *e)
 	case GR_EVENT_TYPE_KEY_DOWN:
 		switch (e->keystroke.ch) {
 		case 'w':
-			cur_font = (cur_font - 1) < 0 ? num_fonts - 1 :
-				(cur_font - 1);
-			change_font(cur_font);
-			draw_font();
+			if( num_fonts > 0 ) {
+			    cur_font = (cur_font - 1) < 0 ? num_fonts - 1 :
+				    (cur_font - 1);
+			    change_font(cur_font);
+			    draw_font();
+			}
 			ret |= KEY_CLICK;
 			break;
 		case 'f':
-			cur_font = (cur_font + 1) > (num_fonts - 1) ?
-				0 : (cur_font + 1);
-			change_font(cur_font);
-			draw_font();
+			if( num_fonts > 0 ) {
+			    cur_font = (cur_font + 1) > (num_fonts - 1) ?
+				    0 : (cur_font + 1);
+			    change_font(cur_font);
+			    draw_font();
+			}
 			ret |= KEY_CLICK;
 			break;
 		case '\r':
 		case '\n':
-			set_font(fl[cur_font].file, fl[cur_font].size,
+			if( num_fonts > 0 ) {
+				set_font(fl[cur_font].file, fl[cur_font].size,
 					pz_get_gc(0), 0);
-			new_message_window("Selected font, press Menu to "
+				new_message_window(
+					"Selected font, press Menu to "
 					"restart podzilla");
+			}
 			ret |= KEY_CLICK;
 			break;
 		case 'm':
