@@ -12,7 +12,7 @@
  *	Binary - Binary Watch clock
  *	Digital Bedside clock
  *
- *   $Id: clocks.c,v 1.4 2005/05/01 21:49:14 yorgle Exp $
+ *   $Id: clocks.c,v 1.5 2005/05/08 20:12:46 yorgle Exp $
  *
  */
 
@@ -35,6 +35,8 @@
 
 
 /*
+ * 2005-05-24 - Sproingy seconds hand for analog clocks
+ *
  * 2005-05-08 - Added TIME_TICKER, TIME_1224 settings
  *
  * 2005-05-01 - Cleaned up Digital clock look (for monochrome ipods)
@@ -78,6 +80,7 @@
 static GR_TIMER_ID 	Clocks_timer = 0;	/* our timer. 1000ms */
 static GR_GC_ID		Clocks_gc = 0;		/* graphics context */
 static GR_WINDOW_ID	Clocks_bufwid = 0;	/* second buffer */
+static GR_WINDOW_ID	Clocks_bakwid = 0;	/* third backup buffer */
 static GR_WINDOW_ID	Clocks_wid = 0;		/* screen window */
 static GR_SCREEN_INFO	Clocks_screen_info;	/* screen info */
 static int 		Clocks_height = 0;	/* visible screen height */
@@ -127,17 +130,42 @@ static int monthlens[] = {
 	31, 31, 30, 31, 30, 31 
 };
 
+/* copy the buffer into place */
+static void Clocks_blit() 
+{
+        GrCopyArea( Clocks_wid, Clocks_gc, 0, 0,
+                    Clocks_screen_info.cols, 
+                    Clocks_height,
+                    Clocks_bufwid, 0, 0, MWROP_SRCCOPY);
+}
+
+static void Clocks_buf2bak()
+{
+        GrCopyArea( Clocks_bakwid, Clocks_gc, 0, 0,
+                    Clocks_screen_info.cols,
+                    Clocks_height,
+                    Clocks_bufwid, 0, 0, MWROP_SRCCOPY);
+}
+
+static void Clocks_bak2buf()
+{
+        GrCopyArea( Clocks_bufwid, Clocks_gc, 0, 0,
+                    Clocks_screen_info.cols,
+                    Clocks_height,
+                    Clocks_bakwid, 0, 0, MWROP_SRCCOPY);
+}
+
 
 
 /* draw an angular line for the analog clock, with a ball at the end */
-static void Analog_angular_line( int cx, int cy, 
-			int val, int max, int length, int circdiam,
+
+static void Analog_angular_line_angle( int cx, int cy, 
+			double angle,
+			int length, int circdiam,
 			int selected, int thick  )
 {
 	int px, py;
-	double angle;
 
-	angle = (3.14159265 * ((( (val%max) * 360 ) / max) - 90)) / 180;
 	px = cx + ( length * cos( angle ));
 	py = cy + ( length * sin( angle ));
 	if( thick ) {
@@ -158,6 +186,61 @@ static void Analog_angular_line( int cx, int cy,
 	}
 }
 
+static void Analog_angular_line( int cx, int cy,
+			int val, int max, 
+			int length, int circdiam,
+			int selected, int thick  )
+{
+	double angle;
+
+	angle = (3.14159265 * ((( (val%max) * 360 ) / max) - 90)) / 180;
+
+	Analog_angular_line_angle( cx, cy,
+				angle, length, 
+				circdiam, selected, thick );
+}
+
+static void Analog_angular_line_offset( int cx, int cy, 
+			int val, int max, double da,
+			int length, int circdiam,
+			int selected, int thick  )
+{
+	double angle;
+
+	angle = (3.14159265 * ((( (val%max) * 360.0 ) / max) - 90.0 + da))
+					/ 180.0;
+
+	Analog_angular_line_angle( cx, cy,
+				angle, length, 
+				circdiam, selected, thick );
+}
+
+
+/* some helpers for drawing the second hand.  these aid in sproingy display */
+static void Clocks_secondhand( int cx, int cy, int pos, int max,
+                                double da, int sz )
+{
+        if( Clocks_screen_info.bpp == 16 )
+            GrSetGCForeground( Clocks_gc, GR_RGB( 96, 96, 0 ) );
+        else
+            GrSetGCForeground( Clocks_gc, GRAY );
+        Analog_angular_line_offset( cx, cy, pos, max, da,
+				sz, 2,
+                                (Clocks_sel == CLOCKS_SEL_SECONDS)?1:0, 0 );
+}
+
+static void Clocks_center( int cx, int cy, int cd )
+{
+        /* pretty-up the center */
+        if ( Clocks_style == CLOCKS_STYLE_OVERSIZED) {
+            cd = 3;
+        }
+        GrSetGCForeground( Clocks_gc, GRAY );
+        GrFillEllipse( Clocks_bufwid, Clocks_gc, cx, cy, cd, cd );
+        GrSetGCForeground( Clocks_gc, BLACK );
+        GrFillEllipse( Clocks_bufwid, Clocks_gc, cx, cy, cd-1, cd-1 );
+}
+
 
 /* draw the analog or deco clock */
 static void Clocks_draw_analog_clocks( struct tm *dispTime )
@@ -166,6 +249,17 @@ static void Clocks_draw_analog_clocks( struct tm *dispTime )
 	int ls, lm, lh;
 	int x = 0;
 	int cd = 5;		/* diameter of center circle */
+
+        /* for the seconds hand sproingyness */
+        /* each timer tick, it draws the second hand at the timer position
+            plus each of these offsets (angles) in turn.  It simulates the
+            second hand mechanically settling into the correct location */
+        double sproingypos[3][5] = {
+		{ -2, 2, -1, 1, 0 },		/* analog clock 0 sproing */
+		{ -2, 2, -1, 1, 0 },		/* analog clock 1 sproing */
+		{ -0.5, 0.5, -0.5, 0.5, 0 }	/* analog clock 2 sproing */
+	};
+        int sproingy;
 
 	cx = Clocks_screen_info.cols>>1;
 	cy = Clocks_height>>1;
@@ -293,21 +387,22 @@ static void Clocks_draw_analog_clocks( struct tm *dispTime )
 	    instead of almost on 4, where it should be. */
 
 	/* -- seconds -- */
-	if( Clocks_screen_info.bpp == 16 )
-	    GrSetGCForeground( Clocks_gc, GR_RGB( 96, 96, 0 ) );
-	else
-	    GrSetGCForeground( Clocks_gc, GRAY );
-	Analog_angular_line( cx, cy, dispTime->tm_sec, 60, ls, 2,
-				(Clocks_sel == CLOCKS_SEL_SECONDS)?1:0, 0 );
+	/* do a little sproingyness */
+        Clocks_buf2bak(); /* store aside the backing screen */
+	for( sproingy = 0 ; //( Clocks_style == CLOCKS_STYLE_OVERSIZED )?4:0 ;
+	      sproingy<5 ;
+	      sproingy++ )
+        {
+            Clocks_bak2buf(); /* restore the backing screen */
+            Clocks_secondhand( cx, cy, dispTime->tm_sec, 60,
+                                sproingypos[Clocks_style][sproingy], ls );
+            Clocks_center( cx, cy, cd ); /* draw */
+            Clocks_blit(); /* blit */
+        }
 
-	/* pretty-up the center */
-	if ( Clocks_style == CLOCKS_STYLE_OVERSIZED) {
-	    cd = 3;
-	}
-	GrSetGCForeground( Clocks_gc, GRAY );
-	GrFillEllipse( Clocks_bufwid, Clocks_gc, cx, cy, cd, cd );
-	GrSetGCForeground( Clocks_gc, BLACK );
-	GrFillEllipse( Clocks_bufwid, Clocks_gc, cx, cy, cd-1, cd-1 );
+        // instead of the above seconds code, this will just draw it solid
+        // Clocks_secondhand( cx, cy, dispTime->tm_sec, 60, 0, ls );
+        // Clocks_center( cx, cy, cd );
 }
 
 
@@ -715,10 +810,7 @@ static void Clocks_draw( void )
 	}
 
         /* copy the buffer into place */
-        GrCopyArea( Clocks_wid, Clocks_gc, 0, 0,
-                    Clocks_screen_info.cols,
-		    Clocks_height,
-                    Clocks_bufwid, 0, 0, MWROP_SRCCOPY);
+	Clocks_blit();
 }
 
 /* our draw event routine */
@@ -852,6 +944,7 @@ void Clocks_exit( void )
 	GrDestroyGC( Clocks_gc );
 	pz_close_window( Clocks_wid );
 	GrDestroyWindow( Clocks_bufwid );
+	GrDestroyWindow( Clocks_bakwid );
 }
 
 
@@ -980,6 +1073,7 @@ static void new_Clocks_window_common(void)
 		    Clocks_do_draw, Clocks_handle_event );
 
 	Clocks_bufwid = GrNewPixmap( screen_info.cols, screen_info.rows, NULL );
+	Clocks_bakwid = GrNewPixmap( screen_info.cols, screen_info.rows, NULL );
 
         GrSelectEvents( Clocks_wid, GR_EVENT_MASK_TIMER
 					| GR_EVENT_MASK_EXPOSURE
