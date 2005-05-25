@@ -144,8 +144,70 @@ static item_st reset_menu[] = {
 	{0}
 };
 
-/*static char * timezone_options[] = { "N/A" };*/
 static char * time1224_options[] = { "12-hour", "24-hour" };
+
+/* timezone information gleaned from:
+	http://en.wikipedia.org/wiki/Timezone 
+*/
+static char * timezone_options[] = {
+	"UTC -12:00", 
+	"Midway Atoll -11:00",
+	"HST Hawaii -10:00",
+	"Polynesia -9:30",
+	"AKST Alaska -9:00",
+
+	"PST US Pacific -8:00",
+	"MST US Moutain -7:00",
+	"CST US Central -6:00",
+	"EST US Eastern -5:00",
+	"AST Atlantic -4:00",
+
+	"NST Newfoundland -3:30",
+	"Brazil -3:00",
+	"Mid-Atlantic -2:00",
+	"Portugal -1:00",
+	"United Kingdon 0:00",
+
+	"France +1:00",
+	"Greece +2:00",
+	"Kenya +3:00", 
+	"Iran +3:30",
+	"UAE +4:00",
+
+	"Afghanistan +4:30",
+    	"Uzbekistan +5:00",
+	"IST India +5:30",
+	"Nepal +5:45",
+	"Sri Lanka +6:00",
+
+	"Myanmar +6:30",
+	"Thailand +7:00",
+	"AWST W. Australia +8:00",
+	"W. Australia +8:45",
+	"JST/KST Japan +9:00",
+
+	"ACST C. Australia +9:30",
+	"AEST E. Australia +10:00",
+	"New South Wales +10:30",
+	"Micronesia +11:00",
+	"Norfolk +11:30",
+
+	"Fiji +12:00",
+	"Chatham Islands +12:45",
+	"Tonga +13:00",
+	"Kiribati +14:00"
+};
+
+int Timezone_offsets[] = { /* minutes associated with the above */
+	-720, -660, -600, -570, -540,
+	-480, -420, -360, -300, -240,
+	-210, -180, -120, -60,   0
+	  60,  120,  180,  210,  240,
+	 270,  300,  330,  345,  360,
+	 390,  420,  480,  525,  540,
+	 570,  600,  630,  660,  690,
+	 720,  765,  780,  840
+};
 
 static item_st clocks_menu[] = {
         { "Clock", new_clock_window, ACTION_MENU },
@@ -154,9 +216,11 @@ static item_st clocks_menu[] = {
 /* -- future expansion --
 	{ "Set Alarm", NULL, SUB_MENU_PREV },
 	{ "Set Sleep Timer", NULL, SUB_MENU_PREV },
-	{ "Set Time Zone", timezone_options, OPTION_MENU, TIME_ZONE, 1 },
 	{ "Time In Title", NULL, BOOLEAN_MENU, TIME_IN_TITLE },
 */
+	{ "TZ", timezone_options, OPTION_MENU, TIME_ZONE, 39 },
+	{ "DST", NULL, BOOLEAN_MENU, TIME_DST },
+
 	{ "Time", time1224_options, OPTION_MENU, TIME_1224, 2 },
 	{ "Time Tick Noise", NULL, BOOLEAN_MENU, TIME_TICKER },
         { 0 }
