@@ -150,12 +150,6 @@ static char * time1224_options[] = { "12-hour", "24-hour" };
 	http://en.wikipedia.org/wiki/Timezone 
 */
 static char * timezone_options[] = {
-	"UTC -12:00", 
-	"Midway Atoll -11:00",
-	"HST Hawaii -10:00",
-	"Polynesia -9:30",
-	"AKST Alaska -9:00",
-
 	"PST US Pacific -8:00",
 	"MST US Moutain -7:00",
 	"CST US Central -6:00",
@@ -166,7 +160,7 @@ static char * timezone_options[] = {
 	"Brazil -3:00",
 	"Mid-Atlantic -2:00",
 	"Portugal -1:00",
-	"United Kingdon 0:00",
+	"United Kingdom 0:00",
 
 	"France +1:00",
 	"Greece +2:00",
@@ -195,18 +189,25 @@ static char * timezone_options[] = {
 	"Fiji +12:00",
 	"Chatham Islands +12:45",
 	"Tonga +13:00",
-	"Kiribati +14:00"
+	"Kiribati +14:00",
+
+	"UTC -12:00", 
+	"Midway Atoll -11:00",
+	"HST Hawaii -10:00",
+	"Polynesia -9:30",
+	"AKST Alaska -9:00"
+
 };
 
 int Timezone_offsets[] = { /* minutes associated with the above */
-	-720, -660, -600, -570, -540,
 	-480, -420, -360, -300, -240,
-	-210, -180, -120, -60,   0
+	-210, -180, -120, -60,   0,
 	  60,  120,  180,  210,  240,
 	 270,  300,  330,  345,  360,
 	 390,  420,  480,  525,  540,
 	 570,  600,  630,  660,  690,
-	 720,  765,  780,  840
+	 720,  765,  780,  840,
+	-720, -660, -600, -570, -540
 };
 
 static item_st clocks_menu[] = {
