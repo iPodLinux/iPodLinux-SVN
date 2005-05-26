@@ -12,7 +12,7 @@
  *	Binary - Binary Watch clock
  *	Digital Bedside clock
  *
- *   $Id: clocks.c,v 1.6 2005/05/25 05:16:13 yorgle Exp $
+ *   $Id: clocks.c,v 1.7 2005/05/26 04:27:00 yorgle Exp $
  *
  */
 
@@ -35,9 +35,16 @@
 
 
 /*
- * $Id: $
+ * $Id: clocks.c,v 1.7 2005/05/26 04:27:00 yorgle Exp $
  *
- * $Log: $
+ * $Log: clocks.c,v $
+ * Revision 1.7  2005/05/26 04:27:00  yorgle
+ * Timezone arrays moved into clocks.c from menu.c
+ * DST arrays added
+ * World clock complete and hooked in.  (ipodlinux.org/WorldClock for info)
+ * Added WORLD DST into the settings array
+ * Re-ordered the time-based settings items
+ *
  *
  * 2005-05-25 - switched to cvs log above...
  *
@@ -336,12 +343,21 @@ static void Clocks_draw_analog_clocks( struct tm *dispTime )
         /* each timer tick, it draws the second hand at the timer position
             plus each of these offsets (angles) in turn.  It simulates the
             second hand mechanically settling into the correct location */
-        double sproingypos[3][5] = {
-		{ -2, 2, -1, 1, 0 },		/* analog clock 0 sproing */
-		{ -2, 2, -1, 1, 0 },		/* analog clock 1 sproing */
-		{ -0.5, 0.5, -0.5, 0.5, 0 }	/* analog clock 2 sproing */
+        double sproingypos[2][3][5] = {
+	{
+		/* for mini and mono iPod */
+		{ -1.2, 1.2, -0.6, 0.6, 0 },	/* analog clock 0 sproing */
+		{ -1.2, 1.2, -0.6, 0.6, 0 },	/* analog clock 1 sproing */
+		{ -0.6, 0.6, -0.3, 0.3, 0 }	/* analog clock 2 sproing */
+	}, {
+		/* for iPod photo */    /* XXXXXXX Untested XXXXXXX */
+		{ -1, 1, -0.5, 0.5, 0 },	/* analog clock 0 sproing */
+		{ -1, 1, -0.5, 0.5, 0 },	/* analog clock 1 sproing */
+		{ -0.4, 0.4, -0.2, 0.2, 0 }	/* analog clock 2 sproing */
+	}
 	};
         int sproingy;
+	int sp = 0;
 
 	cx = Clocks_screen_info.cols>>1;
 	cy = Clocks_height>>1;
@@ -477,7 +493,8 @@ static void Clocks_draw_analog_clocks( struct tm *dispTime )
         {
             Clocks_bak2buf(); /* restore the backing screen */
             Clocks_secondhand( cx, cy, dispTime->tm_sec, 60,
-                                sproingypos[Clocks_style][sproingy], ls );
+                                sproingypos[sp][Clocks_style][sproingy],
+				ls );
             Clocks_center( cx, cy, cd ); /* draw */
             Clocks_blit(); /* blit */
         }
