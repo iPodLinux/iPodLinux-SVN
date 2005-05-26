@@ -24,7 +24,6 @@
 #include "ipod.h"
 #include "mlist.h"
 
-
 extern void new_contrast_window(void);
 extern void new_browser_window(void);
 extern void toggle_backlight(void);
@@ -37,6 +36,7 @@ extern void new_playback_browse_window(void);
 #endif /* __linux__ */
 extern void new_calendar_window(void);
 extern void new_clock_window(void);
+extern void new_world_clock_window(void);
 extern void new_Set_Time_window(void);
 extern void new_Set_DateTime_window(void);
 extern void new_oth_window(void);
@@ -128,11 +128,22 @@ static item_st recording_menu[] = {
 	{0}
 };
 
+extern char * clocks_timezones[]; /* for the timezones.  in clocks.c */
+extern char * clocks_dsts[];	  /* for dst display.  in clocks.c */
+
+static item_st world_clock_menu[] = {
+	{"Local Clock", new_clock_window, ACTION_MENU},
+	{"World Clock", new_world_clock_window, ACTION_MENU},
+	{"TZ", clocks_timezones, OPTION_MENU, TIME_WORLDTZ, 39},
+	{"DST", clocks_dsts, OPTION_MENU, TIME_WORLDDST, 3},
+	{0}
+};
+
 static item_st extras_menu[] = {
 	{"Recordings", recording_menu, SUB_MENU_HEADER},
 	{"Calendar", new_calendar_window, ACTION_MENU},
 	{"Calculator", new_calc_window, ACTION_MENU},
-	{"Clock", new_clock_window, ACTION_MENU},
+	{"Clock", world_clock_menu, SUB_MENU_HEADER},
 	{"Games", games_menu, SUB_MENU_HEADER},
 	{"Stuff", stuff_menu, SUB_MENU_HEADER},
 	{0}
@@ -146,70 +157,6 @@ static item_st reset_menu[] = {
 
 static char * time1224_options[] = { "12-hour", "24-hour" };
 
-/* timezone information gleaned from:
-	http://en.wikipedia.org/wiki/Timezone 
-*/
-static char * timezone_options[] = {
-	"United Kingdom 0:00",
-	"France +1:00",
-	"Greece +2:00",
-	"Kenya +3:00", 
-	"Iran +3:30",
-
-	"UAE +4:00",
-	"Afghanistan +4:30",
-    	"Uzbekistan +5:00",
-	"IST India +5:30",
-	"Nepal +5:45",
-
-	"Sri Lanka +6:00",
-	"Myanmar +6:30",
-	"Thailand +7:00",
-	"AWST W. Australia +8:00",
-	"W. Australia +8:45",
-
-	"JST/KST Japan +9:00",
-	"ACST C. Australia +9:30",
-	"AEST E. Australia +10:00",
-	"New South Wales +10:30",
-	"Micronesia +11:00",
-
-	"Norfolk +11:30",
-	"Fiji +12:00",
-	"Chatham Islands +12:45",
-	"Tonga +13:00",
-	"Kiribati +14:00",
-
-	"UTC -12:00", 
-	"Midway Atoll -11:00",
-	"HST Hawaii -10:00",
-	"Polynesia -9:30",
-	"AKST Alaska -9:00",
-
-	"PST US Pacific -8:00",
-	"MST US Moutain -7:00",
-	"CST US Central -6:00",
-	"EST US Eastern -5:00",
-	"AST Atlantic -4:00",
-
-	"NST Newfoundland -3:30",
-	"Brazil -3:00",
-	"Mid-Atlantic -2:00",
-	"Portugal -1:00",
-};
-
-int Timezone_offsets[] = { /* minutes associated with the above */
-	   0,
-	  60,  120,  180,  210,  240,
-	 270,  300,  330,  345,  360,
-	 390,  420,  480,  525,  540,
-	 570,  600,  630,  660,  690,
-	 720,  765,  780,  840,
-	-720, -660, -600, -570, -540,
-	-480, -420, -360, -300, -240,
-	-210, -180, -120, -60
-};
-
 static item_st clocks_menu[] = {
         { "Clock", new_clock_window, ACTION_MENU },
         { "Set Time", new_Set_Time_window, ACTION_MENU },
@@ -219,8 +166,8 @@ static item_st clocks_menu[] = {
 	{ "Set Sleep Timer", NULL, SUB_MENU_PREV },
 	{ "Time In Title", NULL, BOOLEAN_MENU, TIME_IN_TITLE },
 */
-	{ "TZ", timezone_options, OPTION_MENU, TIME_ZONE, 39 },
-	{ "DST", NULL, BOOLEAN_MENU, TIME_DST },
+	{ "TZ", clocks_timezones, OPTION_MENU, TIME_ZONE, 39 },
+	{ "DST", clocks_dsts, OPTION_MENU, TIME_DST, 3},
 
 	{ "Time", time1224_options, OPTION_MENU, TIME_1224, 2 },
 	{ "Time Tick Noise", NULL, BOOLEAN_MENU, TIME_TICKER },

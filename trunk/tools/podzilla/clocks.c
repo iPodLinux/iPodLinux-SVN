@@ -12,7 +12,7 @@
  *	Binary - Binary Watch clock
  *	Digital Bedside clock
  *
- *   $Id: clocks.c,v 1.5 2005/05/08 20:12:46 yorgle Exp $
+ *   $Id: clocks.c,v 1.6 2005/05/25 05:16:13 yorgle Exp $
  *
  */
 
@@ -35,6 +35,12 @@
 
 
 /*
+ * $Id: $
+ *
+ * $Log: $
+ *
+ * 2005-05-25 - switched to cvs log above...
+ *
  * 2005-05-24 - Sproingy seconds hand for analog clocks
  *
  * 2005-05-08 - Added TIME_TICKER, TIME_1224 settings
@@ -119,6 +125,82 @@ static int Clocks_bak = 0; 			/* backup */
 
 static int Clocks_sel = CLOCKS_SEL_DISPLAY;	/* how are we editing? */
 static int Clocks_set = 0;
+
+static int Clocks_offset = 0;		/* timezone offset for display */
+
+/* timezone information gleaned from:
+        http://en.wikipedia.org/wiki/Timezone
+*/
+char * clocks_timezones[] = {
+        "United Kingdom 0:00",
+        "France +1:00",
+        "Greece +2:00",
+        "Kenya +3:00",
+        "Iran +3:30",
+
+        "UAE +4:00",
+        "Afghanistan +4:30",
+        "Uzbekistan +5:00",
+        "IST India +5:30",
+        "Nepal +5:45",
+
+        "Sri Lanka +6:00",
+        "Myanmar +6:30",
+        "Thailand +7:00",
+        "AWST W. Australia +8:00",
+        "W. Australia +8:45",
+
+        "JST/KST Japan +9:00",
+        "ACST C. Australia +9:30",
+        "AEST E. Australia +10:00",
+        "New South Wales +10:30",
+        "Micronesia +11:00",
+
+        "Norfolk +11:30",
+        "Fiji +12:00",
+        "Chatham Islands +12:45",
+        "Tonga +13:00",
+        "Kiribati +14:00",
+
+        "UTC -12:00",
+        "Midway Atoll -11:00",
+        "HST Hawaii -10:00",
+        "Polynesia -9:30",
+        "AKST Alaska -9:00",
+
+        "PST US Pacific -8:00",
+        "MST US Moutain -7:00",
+        "CST US Central -6:00",
+        "EST US Eastern -5:00",
+        "AST Atlantic -4:00",
+
+        "NST Newfoundland -3:30",
+        "Brazil -3:00",
+        "Mid-Atlantic -2:00",
+        "Portugal -1:00",
+};
+
+static int clocks_tz_offsets[] = { /* minutes associated with the above */
+           0,
+          60,  120,  180,  210,  240,
+         270,  300,  330,  345,  360,
+         390,  420,  480,  525,  540,
+         570,  600,  630,  660,  690,
+         720,  765,  780,  840,
+        -720, -660, -600, -570, -540,
+        -480, -420, -360, -300, -240,
+        -210, -180, -120, -60
+};
+
+char * clocks_dsts[] = {
+	"0:00",
+	"0:30",
+	"1:00"
+};
+
+static int clocks_dst_offsets[] = {
+	0, 30, 60
+};
 
 static char *months[] = {
         "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -389,7 +471,7 @@ static void Clocks_draw_analog_clocks( struct tm *dispTime )
 	/* -- seconds -- */
 	/* do a little sproingyness */
         Clocks_buf2bak(); /* store aside the backing screen */
-	for( sproingy = 0 ; //( Clocks_style == CLOCKS_STYLE_OVERSIZED )?4:0 ;
+	for( sproingy = (Clocks_set)?4:0 ;
 	      sproingy<5 ;
 	      sproingy++ )
         {
@@ -767,12 +849,10 @@ static void Clocks_draw( void )
 
 	t = time( NULL );
 	if ( t == (time_t) - 1 ) return; /* error */
-        current_time = localtime( &t );
 
-	if( t != lastt )
-	    if( ipod_get_setting( TIME_TICKER ))
-		ipod_beep();
-	lastt = t;
+	t += Clocks_offset; 	/* factor in the offset for the world clock */
+
+        current_time = localtime( &t );
 
         /* start clear (WHITE) */
 	if( Clocks_style >= CLOCKS_STYLE_BCD )
@@ -807,6 +887,13 @@ static void Clocks_draw( void )
 		    break;
 
 	    /* __3__ Insert hooks to draw more faces here. */
+	}
+
+	if( lastt != t )
+	{
+	    lastt = t;
+	    if( ipod_get_setting( TIME_TICKER ))
+		ipod_beep();
 	}
 
         /* copy the buffer into place */
@@ -882,6 +969,7 @@ static void Clocks_dec_time( void )
 		tv_s.tv_usec = 0;
 		settimeofday( &tv_s, NULL );
 	}
+	Clocks_draw();
 }
 
 /* for time adjustment */
@@ -934,6 +1022,7 @@ static void Clocks_inc_time( void )
 		tv_s.tv_usec = 0;
 		settimeofday( &tv_s, NULL );
 	}
+	Clocks_draw();
 }
 
 
@@ -1092,6 +1181,34 @@ void new_clock_window(void)
 	Clocks_style = Clocks_bak;
 	Clocks_set = 0;
 	Clocks_sel = CLOCKS_SEL_DISPLAY;
+	Clocks_offset = 0;
+
+	new_Clocks_window_common();
+}
+
+
+/* display the world clock */
+void new_world_clock_window(void)
+{
+	int locl_z_offs = clocks_tz_offsets[ ipod_get_setting( TIME_ZONE )];
+	int targ_z_offs = clocks_tz_offsets[ ipod_get_setting( TIME_WORLDTZ )];
+
+	int locl_d_offs = clocks_dst_offsets[ ipod_get_setting( TIME_DST )];
+	int targ_d_offs = clocks_dst_offsets[ ipod_get_setting( TIME_WORLDDST )];
+
+	Clocks_style = Clocks_bak;
+	Clocks_set = 0;
+	Clocks_sel = CLOCKS_SEL_DISPLAY;
+
+	/*  the way this works is that we look at the difference between
+	    the target zone, and the local zone.  That difference is the
+	    number of minutes of delta we need to deal with.  
+	    Once we have that, we multiply it by 60, and use it when we 
+	    display the time.
+	    We do this for the timezone first, then the DST second.
+	*/
+	Clocks_offset = ( targ_z_offs - locl_z_offs )*60;
+	Clocks_offset += ( targ_d_offs - locl_d_offs )*60;
 
 	new_Clocks_window_common();
 }
