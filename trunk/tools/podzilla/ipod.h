@@ -53,13 +53,14 @@
 #define KEY_DEBOUNCE 33
 
 #define TIME_ZONE	(35)
-#define TIME_IN_TITLE	(36)
-#define TIME_TICKER	(37)
-#define TIME_1224	(38)
-#define TIME_DST	(39)
+#define TIME_DST	(36)
+#define TIME_IN_TITLE	(37)
+#define TIME_TICKER	(38)
+#define TIME_1224	(39)
 #define TIME_WORLDTZ	(40)
+#define TIME_WORLDDST	(41)
 
-#define BROWSER_PATH	(41)
+#define BROWSER_PATH	(42)
 
 #define MIN_CONTRAST	0
 #define MAX_CONTRAST	128
