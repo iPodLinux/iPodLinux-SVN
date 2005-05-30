@@ -7,12 +7,13 @@
  *	Traditional Analog clock
  *	Nelson Ball-like Art Deco Analog clock (google for it)
  *	Oversized analog clock (looks nice fullscreen)
+ *	Oversized analog watch (same, but with DOW, DOM )
  *	Vectorfont Clock (digital)
  *	Binary - Desktop BCD clock
  *	Binary - Binary Watch clock
  *	Digital Bedside clock
  *
- *   $Id: clocks.c,v 1.7 2005/05/26 04:27:00 yorgle Exp $
+ *   $Id: clocks.c,v 1.8 2005/05/26 05:30:30 yorgle Exp $
  *
  */
 
@@ -35,9 +36,13 @@
 
 
 /*
- * $Id: clocks.c,v 1.7 2005/05/26 04:27:00 yorgle Exp $
+ * $Id: clocks.c,v 1.8 2005/05/26 05:30:30 yorgle Exp $
  *
  * $Log: clocks.c,v $
+ * Revision 1.8  2005/05/26 05:30:30  yorgle
+ * Sproing tweaks.  Hopefully, sproingy hands should look a little better on 'photo
+ * The table may need to be tweaked.
+ *
  * Revision 1.7  2005/05/26 04:27:00  yorgle
  * Timezone arrays moved into clocks.c from menu.c
  * DST arrays added
@@ -111,11 +116,12 @@ static int 		Clocks_height = 0;	/* visible screen height */
 #define CLOCKS_STYLE_ANALOG	(0)	/* display a traditional analog */
 #define CLOCKS_STYLE_DECO	(1)	/* display a nelson ball clock */
 #define CLOCKS_STYLE_OVERSIZED	(2)	/* oversized analog clock */
-#define CLOCKS_STYLE_VECTOR	(3)	/* display the vectorfont clock */
-#define CLOCKS_STYLE_BCD	(4)	/* BCD digital clock */
-#define CLOCKS_STYLE_BINARY	(5)	/* Binary digital clock */
-#define CLOCKS_STYLE_DIGITAL	(6)	/* stnadard 7-segment digital clock */
-#define CLOCKS_STYLE_MAX	(6)
+#define CLOCKS_STYLE_WATCH	(3)	/* oversized analog watch */
+#define CLOCKS_STYLE_VECTOR	(4)	/* display the vectorfont clock */
+#define CLOCKS_STYLE_BCD	(5)	/* BCD digital clock */
+#define CLOCKS_STYLE_BINARY	(6)	/* Binary digital clock */
+#define CLOCKS_STYLE_DIGITAL	(7)	/* stnadard 7-segment digital clock */
+#define CLOCKS_STYLE_MAX	(7)
 
 static int Clocks_style;	/* what kind of clock ? */
 static int Clocks_bak = 0; 			/* backup */
@@ -207,11 +213,6 @@ char * clocks_dsts[] = {
 
 static int clocks_dst_offsets[] = {
 	0, 30, 60
-};
-
-static char *months[] = {
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 };
 
 static int monthlens[] = {
@@ -321,7 +322,8 @@ static void Clocks_secondhand( int cx, int cy, int pos, int max,
 static void Clocks_center( int cx, int cy, int cd )
 {
         /* pretty-up the center */
-        if ( Clocks_style == CLOCKS_STYLE_OVERSIZED) {
+        if ( Clocks_style == CLOCKS_STYLE_OVERSIZED
+	  || Clocks_style == CLOCKS_STYLE_WATCH ) {
             cd = 3;
         }
         GrSetGCForeground( Clocks_gc, GRAY );
@@ -334,6 +336,7 @@ static void Clocks_center( int cx, int cy, int cd )
 /* draw the analog or deco clock */
 static void Clocks_draw_analog_clocks( struct tm *dispTime )
 {
+	char buf[16];
 	int cx, cy;		/* center of clock */
 	int ls, lm, lh;
 	int x = 0;
@@ -423,14 +426,44 @@ static void Clocks_draw_analog_clocks( struct tm *dispTime )
 					cx, (cy-cy)+8, cx, (cy-cy)+16 );
 		GrLine( Clocks_bufwid, Clocks_gc, 
 					cx, (cy+cy)-16, cx, (cy+cy)-8 );
-	} else if ( Clocks_style == CLOCKS_STYLE_OVERSIZED) {
+	} else if ( Clocks_style == CLOCKS_STYLE_OVERSIZED 
+		 || Clocks_style == CLOCKS_STYLE_WATCH ) {
 		GrLine( Clocks_bufwid, Clocks_gc, 0, cy, Clocks_screen_info.cols, cy);
 		GrLine( Clocks_bufwid, Clocks_gc, cx, 0, cx, Clocks_height);
 	}
 
+	/* draw the DOW, DOM on the face, if we're watchface */
+	if( Clocks_style == CLOCKS_STYLE_WATCH ) {
+	    int wq = Clocks_screen_info.cols>>2;
+	    int wq3 = wq+wq+wq;
+	    int tw, tw2;
+
+	    strftime( buf, 16, "%a %d", dispTime );
+
+	    tw = vector_string_pixel_width( buf, 1, 1 );
+	    tw2 = tw>>1;
+
+	    /* draw the background-matching backing box */
+	    GrSetGCForeground( Clocks_gc, WHITE );
+	    GrFillRect( Clocks_bufwid, Clocks_gc, wq3-tw2-3, cy-7, tw+6, 15);
+
+	    /* draw a box the same color as the lines, like above */
+	    if( Clocks_screen_info.bpp == 16 )
+		GrSetGCForeground( Clocks_gc, GR_RGB( 128, 255, 128 ));
+	    else 
+		GrSetGCForeground( Clocks_gc, LTGRAY );
+	    GrRect( Clocks_bufwid, Clocks_gc, wq3-tw2-3, cy-7, tw+6, 15);
+
+	    /* and finally render the text */
+	    GrSetGCForeground( Clocks_gc, BLACK );
+	    vector_render_string_center( Clocks_bufwid, Clocks_gc, 
+			buf, 1, 1, wq3, cy );
+	}
+
 
 	/* draw the hands */
-	if ( Clocks_style == CLOCKS_STYLE_OVERSIZED) {
+	if ( Clocks_style == CLOCKS_STYLE_OVERSIZED
+	  || Clocks_style == CLOCKS_STYLE_WATCH ) {
 	    lh = cy*3/4;			/* hours */
 	    lm = Clocks_screen_info.cols<<1;	/* minutes */
 	    ls = Clocks_screen_info.cols<<1;	/* seconds */
@@ -600,10 +633,7 @@ static void Clocks_draw_vector_clock( struct tm *dispTime )
 	}
 
 	GrSetGCForeground( Clocks_gc, BLACK );
-
-        sprintf( buf, "%4d %3s %02d", dispTime->tm_year + 1900,
-                        months[ dispTime->tm_mon ],
-                        dispTime->tm_mday );
+	strftime( buf, 80, "%Y %b %d", dispTime );
 
         vector_render_string_center( Clocks_bufwid, Clocks_gc,
                     buf, 1, scale_date, w/2, (h*2)/3 );
@@ -884,6 +914,7 @@ static void Clocks_draw( void )
 	    case( CLOCKS_STYLE_ANALOG ):	/* traditional analog clock */
 	    case( CLOCKS_STYLE_DECO ):		/* art-deco analog clock */
 	    case( CLOCKS_STYLE_OVERSIZED ):	/* oversized analog clock */
+	    case( CLOCKS_STYLE_WATCH ):		/* oversized analog watch */
 		    Clocks_draw_analog_clocks( current_time );
 		    break;
 
