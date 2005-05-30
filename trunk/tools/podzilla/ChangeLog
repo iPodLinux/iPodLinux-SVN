@@ -1,3 +1,8 @@
+Scott Lawrence - Sun May 29 2005
+	Added yet another clock face (watch face)
+	Made clocks more locale friendly (strftime instead of static arrays)
+	(previously) Added World Clock support
+
 Courtney Cavin - Wed May 18 2005
 	added preliminary utf8 support
 	added loadable font support
