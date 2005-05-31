@@ -13,7 +13,7 @@
  *	Binary - Binary Watch clock
  *	Digital Bedside clock
  *
- *   $Id: clocks.c,v 1.8 2005/05/26 05:30:30 yorgle Exp $
+ *   $Id: clocks.c,v 1.9 2005/05/30 02:00:33 yorgle Exp $
  *
  */
 
@@ -36,9 +36,16 @@
 
 
 /*
- * $Id: clocks.c,v 1.8 2005/05/26 05:30:30 yorgle Exp $
+ * $Id: clocks.c,v 1.9 2005/05/30 02:00:33 yorgle Exp $
  *
  * $Log: clocks.c,v $
+ * Revision 1.9  2005/05/30 02:00:33  yorgle
+ * Clockzilla strikes again!
+ * Added another face (a "watch" face, based on the "OVERSIZED" face), which displays the day of week and day of month, much like many watches do.
+ * Converted over the vector text display to use strftime() instead of a char[][].
+ * removed the months[] array.
+ * This should work better for non-english based systems, I hope.
+ *
  * Revision 1.8  2005/05/26 05:30:30  yorgle
  * Sproing tweaks.  Hopefully, sproingy hands should look a little better on 'photo
  * The table may need to be tweaked.
@@ -411,7 +418,7 @@ static void Clocks_draw_analog_clocks( struct tm *dispTime )
 
 	/* draw some tickmark thingies */
 	if( Clocks_screen_info.bpp == 16 )
-	    GrSetGCForeground( Clocks_gc, GR_RGB( 128, 255, 128 ));
+	    GrSetGCForeground( Clocks_gc, GR_RGB( 0, 128, 0 ));
 	else 
 	    GrSetGCForeground( Clocks_gc, LTGRAY );
 	if( Clocks_style == CLOCKS_STYLE_ANALOG ) {
@@ -449,7 +456,7 @@ static void Clocks_draw_analog_clocks( struct tm *dispTime )
 
 	    /* draw a box the same color as the lines, like above */
 	    if( Clocks_screen_info.bpp == 16 )
-		GrSetGCForeground( Clocks_gc, GR_RGB( 128, 255, 128 ));
+		GrSetGCForeground( Clocks_gc, GR_RGB( 0, 128, 0 ));
 	    else 
 		GrSetGCForeground( Clocks_gc, LTGRAY );
 	    GrRect( Clocks_bufwid, Clocks_gc, wq3-tw2-3, cy-7, tw+6, 15);
@@ -838,8 +845,10 @@ static void Clocks_draw_7segment( int x, int y, int w, int h, char value,
 /* draw a Digital clock using the above 7-segment numbers */
 static void Clocks_draw_digital_clock( struct tm * dispTime )
 {
-	GR_COLOR dark  = (Clocks_screen_info.bpp == 16)? GRAY : GRAY;
-	GR_COLOR light = (Clocks_screen_info.bpp == 16)? RED : WHITE;
+	GR_COLOR dark  = (Clocks_screen_info.bpp == 16)?
+			GR_RGB( 60, 0, 0) : GRAY;
+	GR_COLOR light = (Clocks_screen_info.bpp == 16)?
+			GR_RGB( 255, 0, 0 ) : WHITE;
 	char buf[8];
 	int w2 = Clocks_screen_info.cols/2;
 	int w3 = Clocks_screen_info.cols/3;
