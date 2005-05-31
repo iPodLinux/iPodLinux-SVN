@@ -39,6 +39,16 @@ static GR_WINDOW_INFO wi;
 static	GR_EVENT break_event;
 static GR_TIMER_ID mandel_timer_id;
 static const GR_COLOR gray_palette[] = { GRAY, GRAY, LTGRAY,  WHITE, LTGRAY, LTGRAY, GRAY, BLACK };
+static const GR_COLOR color_palette[] = { 
+	GR_RGB( 255,   0,   0 ),
+	GR_RGB( 255, 128,   0 ),
+	GR_RGB( 255, 255,   0 ),
+	GR_RGB(   0, 255,   0 ),
+	GR_RGB(   0, 255, 255 ),
+	GR_RGB(   0,   0, 255 ),
+	GR_RGB( 255,   0, 255 ),
+	GR_RGB(   0,   0,   0 )
+};
 
 // function declarations
 void new_mandel_window();
@@ -207,6 +217,8 @@ static void draw_busy_status() {
 // calculate the current mandelbrot set
 static void calculate_mandel()
 {		
+	const GR_COLOR * the_palette = gray_palette;
+
 	const int sx = screen_width;
 	const int sy = screen_height;
 	const int iter = iterations-1;
@@ -223,6 +235,9 @@ static void calculate_mandel()
 	register int i=0,x=0,y=0;
 
 	const int depth = current_depth;
+
+	if( screen_info.bpp == 16 )
+		the_palette = color_palette;
 	
 	rendering=1;
 	show_cursor=0;
@@ -244,7 +259,7 @@ static void calculate_mandel()
 			}
 			tot+=i;
 		
-			GrSetGCForeground(mandel_gc, gray_palette[i%8]);
+			GrSetGCForeground(mandel_gc, the_palette[i%8]);
 			GrPoint(level[depth].mandel_buffer, mandel_gc,x,y);
 		}
 		
