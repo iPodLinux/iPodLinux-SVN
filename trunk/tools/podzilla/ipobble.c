@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2005 Filippo Forlani
  * 
- * iPod Bobble for iPod Linux ver. 0.0.1
+ * iPod Bobble for iPod Linux ver. 0.1.0
  *
  * Todo:
  * 
@@ -10,6 +10,7 @@
  * - 30 working collision
  * - 31 can play... no animation... bug? ver.0.0.1
  * - 10 April - ver.0.1.0 podzillabitmap, levels, acceleration wheel
+ * - 30 May - added colors and functionality for iPhoto (must test iMini)
  *
  * contact: filfor@tin.it (contact is appreciated)
  *
@@ -64,9 +65,13 @@ static GR_TIMER_ID ipobble_timer_id;
 #define BRD_MINX	(int)20 - 1
 #define BRD_MAXX	(int)((BCOLS * BALL_WIDTH + BRD_MINX + BALL_RADIUS) + 1)
 
+#define BRD_MAXY	(int)(BROWS+1)*B_LINE_HEIGHT-ME_RADIUS
+
 #define BALLS_N		8
+
 /* global variables */
 int ipobble_high_score;
+int ipodc=0;
 
 /* static variables; */
 static GR_BITMAP balls_bmp[BALLS_N][8] = { 
@@ -88,6 +93,17 @@ static GR_BITMAP podzilla_bmp[2][11]={
 		0x0F40, 0x1FA0, 0x3F80, 0x7FD0, 0xFBE0}
 };
 	
+GR_COLOR BallColors[] = {
+    GR_RGB(255,   0,   0),
+    GR_RGB(  0, 255,   0),
+    GR_RGB(  0,   0, 255),
+    GR_RGB(255,   0, 128),
+    GR_RGB(128, 255,   0),
+    GR_RGB(128, 128,  64),
+    GR_RGB(255, 255, 255),
+    GR_RGB( 64, 255,   0)
+};
+
 static int board[BCOLS * BROWS];
 static int cboard[BCOLS * BROWS];
 static int score, level;
@@ -133,7 +149,7 @@ static void ipobble_create_board(int level)
 	brd_ox = BRD_MINX + 1;
 	brd_oy = 1;
 	me_posx = 20 + BCOLS * BALL_WIDTH / 2;
-	me_posy = screen_info.rows - HEADER_TOPLINE - 2 - ME_RADIUS;
+	me_posy = BRD_MAXY;
 	current_angle = 0;
 	delta_angle = 2;
 	ball_firing = 0;
@@ -167,17 +183,23 @@ static void ipobble_create_board(int level)
 	counter = 0;
 }
 
-static void draw_ball(int col,int row,int ibmp)
+static void draw_ball(int col,int row,int ibmp,int icolor)
 {
- 
- GrBitmap(ipobble_wid, ipobble_gc, col, row, BALL_WIDTH - 1,
+    if(ipodc == 0 ){
+	GrBitmap(ipobble_wid, ipobble_gc, col, row, BALL_WIDTH - 1,
 		 BALL_WIDTH - 1, balls_bmp[ibmp]);
+    } else {
+        if (icolor!=-1)GrSetGCForeground(ipobble_gc, BallColors[icolor]);
+	GrBitmap(ipobble_wid, ipobble_gc, col, row, BALL_WIDTH - 1,
+		 BALL_WIDTH - 1, balls_bmp[ibmp]);
+    }
+    if(icolor!=-1)GrSetGCForeground(ipobble_gc, BLACK);
 }
 
-static void draw_ballij(int icol,int irow,int itype)
+static void draw_ballij(int icol,int irow,int itype, int icolor)
 {
 	draw_ball(brd_ox + icol * BALL_WIDTH + BALL_WIDTH * (irow % 2) / 2,
-					brd_oy + irow * B_LINE_HEIGHT, itype);
+				brd_oy + irow * B_LINE_HEIGHT, itype, icolor);
 }
 
 static void boards_ball_draw(int ibmp)
@@ -189,10 +211,11 @@ static void boards_ball_draw(int ibmp)
 		istep = BALL_WIDTH * (i % 2) / 2;
 		for(j = 0; j < BCOLS; j++){
 			if(board[i * BCOLS + j] >= 0)
-				draw_ball(brd_ox + j * BALL_WIDTH + istep,
-					ioff, board[i * BCOLS + j]); /* ibmp */
+				draw_ball(brd_ox + j * BALL_WIDTH + istep,ioff,
+				    board[i * BCOLS + j], board[i * BCOLS +j]);
 		}
 	}
+	GrSetGCForeground(ipobble_gc, WHITE);
 }
 
 static void me_draw(int angle)
@@ -221,8 +244,12 @@ static void draw_podzilla(int whichbmp)
 
 static void draw_first()
 {
-	GrLine(ipobble_wid,ipobble_gc, BRD_MINX, 0, BRD_MINX, 100);
-	GrLine(ipobble_wid,ipobble_gc, BRD_MAXX, 0, BRD_MAXX, 100);
+	GrLine(ipobble_wid,ipobble_gc, BRD_MINX, 0, 
+			BRD_MINX, BRD_MAXY+ME_RADIUS);
+	GrLine(ipobble_wid,ipobble_gc, BRD_MAXX, 0, 
+			BRD_MAXX, BRD_MAXY+ME_RADIUS);
+	GrLine(ipobble_wid,ipobble_gc, 0, BRD_MAXY+ME_RADIUS,
+			BRD_MAXX, BRD_MAXY+ME_RADIUS);
 	update_score();
 	
 }
@@ -236,8 +263,8 @@ static void do_fire()
 	ball_x = current_ball_x;
 	ball_y = current_ball_y;
 	GrSetGCForeground(ipobble_gc, WHITE);
-	draw_ball(new_ball_x, new_ball_y, new_ball_type);
-	draw_ball(current_ball_x, current_ball_y, current_ball_type);
+	draw_ball(new_ball_x, new_ball_y, new_ball_type,-1);
+	draw_ball(current_ball_x, current_ball_y, current_ball_type,-1);
 	ball_type = current_ball_type;
 	new_ball_x = 0;
 	new_ball_y = me_posy - 1;
@@ -246,8 +273,9 @@ static void do_fire()
 	if(counter % 30 == 0) level++;
 	new_ball_type = new_ball(level);
 	GrSetGCForeground(ipobble_gc, BLACK);
-	draw_ball(new_ball_x, new_ball_y, new_ball_type);
-	draw_ball(current_ball_x, current_ball_y, current_ball_type);
+	draw_ball(new_ball_x, new_ball_y, new_ball_type, new_ball_type);
+	draw_ball(current_ball_x, current_ball_y, current_ball_type,
+						 current_ball_type);
 }
 
 static int test_collision()
@@ -261,7 +289,7 @@ static int test_collision()
 	/* first check if ball is at top */
 	if(brd_oy > ball_y + BALL_RADIUS) {
 		GrSetGCForeground(ipobble_gc, WHITE);
-		draw_ball(ball_x, ball_y, ball_type);
+		draw_ball(ball_x, ball_y, ball_type, -1);
 		ni = (int)(((float)ball_y - (float)brd_oy) /
 				(float)B_LINE_HEIGHT + 0.5);
 		nj = (int)(((float)ball_x - (float)brd_ox -
@@ -271,7 +299,7 @@ static int test_collision()
 		ball_firing = 0;
 		GrSetGCForeground(ipobble_gc, BLACK);
 		score += (BROWS - ni) / 3 + 1;
-		draw_ballij(nj, ni, ball_type);
+		draw_ballij(nj, ni, ball_type, ball_type);
 		update_score();
 		return 1;
 	}
@@ -290,7 +318,7 @@ static int test_collision()
 						(BALL_WIDTH*BALL_WIDTH)) {
 					/* collision detected */
 					GrSetGCForeground(ipobble_gc, WHITE);
-					draw_ball(ball_x, ball_y, ball_type);
+					draw_ball(ball_x, ball_y, ball_type, -1);
 					do {
 						ni=(int)(((float)ball_y -
 							(float)brd_oy) /
@@ -324,7 +352,7 @@ static int test_collision()
 					
 					if(game_status==GAME_STATUS_PLAY){
 						score+=(BROWS-ni)/4+1;
-						draw_ballij(nj, ni, ball_type);
+						draw_ballij(nj, ni, ball_type, ball_type);
 						update_score();
 					}
 					Dprintf("i,j ni,nj %d,%d %d,%d %d\n",
@@ -470,7 +498,7 @@ static void test_connection(int nconn)
 				GrSetGCForeground(ipobble_gc, WHITE);
 				for(cball = 0; cball < balls_found; cball++){
 					draw_ballij(bc_col[cball],
-							bc_row[cball],btype);
+							bc_row[cball],btype, -1);
 					board[bc_row[cball] *
 						BCOLS + bc_col[cball]] = -1;
 					pscore += (BROWS - irow + 1);	
@@ -574,7 +602,7 @@ static void test_connection(int nconn)
 					board[irow * BCOLS + jcol] >= 0) {
 				Dprintf("\n %d,%d \n",irow,jcol);
 				draw_ballij(jcol, irow,
-						board[irow * BCOLS + jcol]);
+						board[irow * BCOLS + jcol], -1);
 				board[irow * BCOLS + jcol] = -1;
 				nhit++;
 				pscore += (BROWS - irow + 1) / 3 * nhit;
@@ -591,12 +619,13 @@ static void ipobble_DrawScene()
 	char s[24];
 	draw_podzilla(podzilla_bmp_var);
 	me_draw(current_angle);
-	draw_ball(new_ball_x, new_ball_y, new_ball_type);
-	draw_ball(current_ball_x, current_ball_y, current_ball_type);
+	draw_ball(new_ball_x, new_ball_y, new_ball_type, new_ball_type);
+	draw_ball(current_ball_x, current_ball_y, current_ball_type,
+						     current_ball_type);
 	if(ball_firing){
 		/* first 'white' the ball */
 		GrSetGCForeground(ipobble_gc, WHITE);
-		draw_ball(ball_x,ball_y,ball_type);
+		draw_ball(ball_x,ball_y,ball_type, -1);
 		/* now test if bumping */
 		if((ball_x + (float)BALL_WIDTH) >= (float)BRD_MAXX ||
 				(ball_x - 2) <= (float)BRD_MINX)
@@ -606,7 +635,7 @@ static void ipobble_DrawScene()
 		/* now test if attaching */
 			/* if yes set flag to test new 4s... */
 		GrSetGCForeground(ipobble_gc, BLACK);
-		draw_ball(ball_x,ball_y,ball_type);
+		draw_ball(ball_x,ball_y,ball_type, ball_type);
 		if(test_collision()==1){
 			boards_ball_draw(0);
 			test_connection(level_connection);
@@ -817,6 +846,9 @@ void new_ipobble_window()
 	GrSelectEvents(ipobble_wid, GR_EVENT_MASK_TIMER |
 			GR_EVENT_MASK_EXPOSURE | GR_EVENT_MASK_KEY_UP |
 			GR_EVENT_MASK_KEY_DOWN);
+	if( screen_info.bpp > 2) {
+	    ipodc=1;
+	}
 	
 	score = 0;
 	level = 0;
