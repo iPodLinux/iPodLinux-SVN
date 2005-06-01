@@ -10,18 +10,18 @@
 	.global cop_idle
 
 cop_fiq:
-	mrs	r8, spsr
-	stmdb   sp!, {r0-r8, lr}
-	mov	r0, #PP_CPU_TYPE
-	ldr	r0, [r0]
-	cmp	r0, #0
+	mov	r8, #PP_CPU_TYPE
+	ldr	r8, [r8]
+	cmp	r8, #0
 
-	ldreq	r0, =PP5002_PROC_ID
-	ldrne	r0, =PP5020_PROC_ID
-	ldr	r0, [r0]
-	and	r0, r0, #0xff
-	cmp	r0, #0x55
+	ldreq	r8, =PP5002_PROC_ID
+	ldrne	r8, =PP5020_PROC_ID
+	ldr	r8, [r8]
+	and	r8, r8, #0xff
+	cmp	r8, #0x55
 	beq	1f
+
+	stmdb   sp!, {r0-r7, lr}
 
 	mov	lr, pc
 	ldr	pc, L_ipod_handle_dma
@@ -30,9 +30,8 @@ cop_fiq:
 	nop
 	nop
 
+	ldmia   sp!, {r0-r7, lr}
 1:
-	ldmia   sp!, {r0-r8, lr}
-	msr	spsr, r8
 	subs	pc, lr, #4
 
 
