@@ -128,7 +128,19 @@ ipod_init_cache(void)
 void
 ipod_set_cpu_speed(void)
 {
-	if ((ipod_get_hw_version() >> 16) <= 0x3) {
+	if ((ipod_get_hw_version() >> 16) > 0x3) {
+		outl(inl(0x70000020) | (1<<30), 0x70000020);
+
+		/* Set run state to 24MHz */
+		outl((inl(0x60006020) & 0x0fffff0f) | 0x20000020, 0x60006020);
+
+		/* 75 MHz (24/8)*25 */
+		outl(0xaa021908, 0x60006034);
+		udelay(2000);
+
+		outl((inl(0x60006020) & 0x0fffff0f) | 0x20000070, 0x60006020);
+
+	} else {
 		outl(0x02, 0xcf005008);
 
 		outl(0x55, 0xcf00500c);
