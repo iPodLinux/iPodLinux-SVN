@@ -20,13 +20,17 @@
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
+#ifdef __linux
 #include <linux/soundcard.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <string.h>
 #include "avifile.h"
 #include "videovars.h"
 #include "../pz.h"
 
+#ifdef IPOD
 #define VIDEO_CONTROL_MODE_RUNNING 	0
 #define VIDEO_CONTROL_MODE_PAUSED	1
 #define VIDEO_CONTROL_MODE_SEARCH	(2 | VIDEO_CONTROL_MODE_PAUSED)
@@ -726,6 +730,8 @@ static int video_do_keystroke(GR_EVENT * event)
 	return ret;
 }
 
+#endif /* IPOD */
+
 int is_video_type(char *extension)
 {
 	return strcasecmp(extension, ".avi") == 0;
@@ -737,6 +743,9 @@ void video_do_draw()
 
 void new_video_window(char *filename)
 {
+#ifndef IPOD
+	pz_error("No video support on the desktop.");
+#else /* IPOD */
 	video_status = VIDEO_CONTROL_MODE_RUNNING;
 	video_curPosition = 0;
 	video_gc = pz_get_gc(1);
@@ -752,5 +761,6 @@ void new_video_window(char *filename)
 
 	video_status_message("Loading video...");
 	playVideo(filename);
+#endif
 }
 
