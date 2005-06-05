@@ -29,7 +29,7 @@
 #define D2A_POWER_ON    3
 
 /* length of shared buffer in half-words (starting at DMA_BASE) */
-#define BUF_LEN		(46*1024)
+#define BUF_LEN		(40*1024)
 
 static int ipodaudio_isopen;
 static int ipodaudio_power_state;
@@ -372,14 +372,6 @@ static int ipodaudio_open(struct inode *inode, struct file *filep)
 		if (ipod_hw_ver > 0x3) {
 			int i, free_fifo_slots;
 
-			if (ipod_hw_ver == 0x6) {
-				outl(inl(0x6000d480) | 0x40, 0x6000d480);
-				outl(inl(0x6000d080) | 0x4, 0x6000d080);
-			} else if (ipod_hw_ver == 0x7) {
-				outl(inl(0x6000d180) | 0x40, 0x6000d180);
-				outl(inl(0x6000d080) | 0x4, 0x6000d080);
-			}
-
 			/* flush fifo out */
 			for (i = 0; i < 16; i++) {
 				outl(0x0, 0x70002840);
@@ -466,14 +458,6 @@ static int ipodaudio_close(struct inode *inode, struct file *filep)
 			outl(inl(0x70002800) & ~0x2, 0x70002800);
 
 			outl(PP5020_I2S_MASK, 0x60004038);
-
-			if (ipod_hw_ver == 0x6) {
-				outl(inl(0x6000d480) & ~0x40, 0x6000d480);
-				outl(inl(0x6000d080) & ~0x4, 0x6000d080);
-			} else if (ipod_hw_ver == 0x7) {
-				outl(inl(0x6000d180) & ~0x40, 0x60001480);
-				outl(inl(0x6000d080) & ~0x4, 0x6000d080);
-			}
 		}
 		else {
 			outl((1 << PP5002_DMA_OUT_IRQ), 0xcf001038);
