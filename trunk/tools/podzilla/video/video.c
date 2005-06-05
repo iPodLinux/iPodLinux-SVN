@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
+#include <unistd.h>
 #ifdef __linux
 #include <linux/soundcard.h>
 #endif
@@ -29,6 +30,16 @@
 #include "avifile.h"
 #include "videovars.h"
 #include "../pz.h"
+#include "../oss.h"
+#include "../ipod.h"
+
+
+
+
+
+
+
+
 
 #ifdef IPOD
 #define VIDEO_CONTROL_MODE_RUNNING 	0
@@ -59,7 +70,7 @@ static struct filebuffer fileBuffers[VIDEO_FILEBUFFER_COUNT];
 static unsigned filesize;
 static FILE * curFile;
 
-static int dsp;
+static dsp_st dspz;
 
 static struct framet audioframes[100];
 static unsigned int * indexes;
@@ -68,8 +79,6 @@ static int audiowriteoff = 0;
 static unsigned int framestartoff = 0, frameendoff = 0;
 static AVIMAINHEADER mainHeader;
 
-static AVIFILE af;
-static AVISTREAMHEADER avsh;
 static BITMAPINFO bitmapInfo;
 static int video_curPosition = 0;
 
@@ -85,6 +94,39 @@ struct filebuffer {
 	unsigned startOff, globalOff, localOff, size, filesize;
 	FILE * file;
 } filebuffer_t;
+
+////////////////////////////////
+// PROTOS
+static void cop_wakeup();
+static void cop_initVideo();
+static void cop_setVideoParams(int, int, int);
+//static void cop_waitReady(int);
+static void cop_presentFrames(int, struct framet *, int);
+static void cop_setPlay(int);
+static int fbread(void *, unsigned, struct filebuffer *);
+static void fbseek(struct filebuffer *, int, int);
+static unsigned getFilesize(FILE *);
+static int fourccCmp(char[4], char[4]);
+static int openAviFile(char *);
+static int closeAviFile();
+static int readVideoInfo();
+//static void fillIndexes(FILE *);
+static int bufferFrames(struct filebuffer *, struct framet *, int);
+static int video_seek(unsigned int);
+static void audio_open();
+static void audio_close();
+//static void audio_adjustVolume(int);
+static int playVideo(char *);
+static void video_draw_pause();
+static void video_draw_play();
+static void video_draw_searchbar();
+static void video_draw_exit();
+static void video_refresh_control_state();
+static void video_check_messages();
+static void video_status_message();
+static int video_do_keystroke(GR_EVENT *);
+
+static void video_status_message(char *);
 
 //////////////////////////////////////////////////////////
 //  COP FUNCTIONS
@@ -121,12 +163,10 @@ static void cop_setVideoParams(int width, int height, int usecsPerFrame)
 	outl(usecsPerFrame, VAR_VIDEO_MICROSECPERFRAME);
 }
 
-static void cop_waitReady(int curbuffer)
+/*static void cop_waitReady(int curbuffer)
 {
-	while (inl(VAR_VIDEO_BUFFER_DONE + curbuffer * sizeof(unsigned int)) == 0) {
-		video_check_messages();
-	}
-}
+	while (inl(VAR_VIDEO_BUFFER_DONE + curbuffer * sizeof(unsigned int)) == 0); 
+}*/
 
 static void cop_presentFrames(int curbuffer, struct framet * frames, int count)
 {
@@ -235,6 +275,7 @@ static int closeAviFile()
 		if (fileBuffers[i].buffer!=NULL)
 			free(fileBuffers[i].buffer);
 	}
+	return 0;
 }
 
 static int readVideoInfo(FILE * f)
@@ -294,10 +335,11 @@ static int readVideoInfo(FILE * f)
 
 	framestartoff = ftell(f);
 	frameendoff = fileBuffers[0].filesize;
+	return 0;
 }
 
 
-static void fillIndexes(FILE * f)
+/*static void fillIndexes(FILE * f)
 {
 	unsigned start;
 
@@ -328,7 +370,7 @@ static void fillIndexes(FILE * f)
 	}
 
 	fseek(f, start, SEEK_SET);
-}
+}*/
 
 
 // WILL FAIL IF FILE JUST OPENED
@@ -336,13 +378,11 @@ static void fillIndexes(FILE * f)
 static int bufferFrames(struct filebuffer * fb, struct framet * frames, int count)
 {
 	int curframe = 0;
-	unsigned char * buf_tmp;
 	unsigned cur_off = 0;
 	int doneBuff = 0;
 	unsigned lastRead;
 	aviChunkHdr hdr;
 	unsigned char * frameptr;
-	char jjj[256];
 
 	fb->startOff = ftell(fb->file);
 	fb->globalOff = fb->startOff;
@@ -397,7 +437,7 @@ static int bufferFrames(struct filebuffer * fb, struct framet * frames, int coun
 	return curframe;
 }
 
-int video_seek(unsigned int fileOff)
+static int video_seek(unsigned int fileOff)
 {
 	char * curbuf;
 	unsigned int off = 0;
@@ -410,13 +450,13 @@ int video_seek(unsigned int fileOff)
 	fb->localOff = 0;
 	fb->size = fread(fb->buffer, 1, VIDEO_FILEBUFFER_SIZE, fb->file);
 	curbuf = fb->buffer;
-	while ((curbuf < (fb->buffer+fb->size)) && ((*(curbuf)!='0') || (*(curbuf+1)!='0') || (*(curbuf+2)!='d'))) {
+	while ((curbuf < (char *)(fb->buffer+fb->size)) && ((*(char *)(curbuf)!='0') || (*(char *)(curbuf+1)!='0') || (*(char *)(curbuf+2)!='d'))) {
 
 		curbuf++;
 		off++;
 	}
 
-	if (curbuf < (fb->buffer+fb->size)) {
+	if (curbuf < (char *)(fb->buffer+fb->size)) {
 		cop_initVideo();
 		curbuffer = 0;
 		fseek(fb->file, fileOff+off, SEEK_SET);
@@ -430,33 +470,32 @@ int video_seek(unsigned int fileOff)
 static void audio_open()
 {
 	if (video_useAudio) {
-		dsp_open(&dsp, 1); // DSP_LINEOUT);
-		dsp_setup(&dsp, 2, 44100);
+		dsp_open(&dspz, 1); // DSP_LINEOUT);
+		dsp_setup(&dspz, 2, 44100);
 	}
 }
 
 static void audio_close()
 {
 	if (video_useAudio) {
-		dsp_close(&dsp);
+		dsp_close(&dspz);
 	}
 }
 
-static void audio_adjustVolume(int diff)
+/*static void audio_adjustVolume(int diff)
 {
 	if (video_useAudio) {
-		dsp_vol_change(&dsp, diff);
+		dsp_vol_change(&dspz, diff);
 	}
-}
+}*/
 
 static int playVideo(char * filename)
 {
-	int totalframes = 0, curframes;
+	int curframes;
 	struct framet frames[VIDEO_FILEBUFFER_COUNT][NUM_FRAMES_BUFFER];
 	int i;
 	int buffersProcessed = 0;
-	FILE * f2;
-	char jjj[512];
+	
 	curbuffer = 0;
 	hw_vers = ipod_get_hw_version();
 	if (hw_vers < 40000) {
@@ -499,11 +538,11 @@ static int playVideo(char * filename)
 			}
 
 			if (video_status == VIDEO_CONTROL_MODE_EXITING) {
-				return;
+				return 1;
 			}
 			if ((video_useAudio)) {
 				while (audioreadoff != audiowriteoff) {
-					dsp_write(&dsp, audioframes[audioreadoff].buffer, audioframes[audioreadoff].x);
+					dsp_write(&dspz, audioframes[audioreadoff].buffer, audioframes[audioreadoff].x);
 					audioreadoff = (audioreadoff + 1) % 100;
 				}
 			}
@@ -526,11 +565,11 @@ static int playVideo(char * filename)
 			video_refresh_control_state();
 		}
 		if (video_status == VIDEO_CONTROL_MODE_EXITING) {
-			return;
+			return 1;
 		}
 		if ((video_useAudio)) {
 			if (audioreadoff != audiowriteoff) {
-				dsp_write(&dsp, audioframes[audioreadoff].buffer, audioframes[audioreadoff].x);
+				dsp_write(&dspz, audioframes[audioreadoff].buffer, audioframes[audioreadoff].x);
 				audioreadoff = (audioreadoff + 1) % 100;
 			}
 		}
@@ -544,7 +583,7 @@ static int playVideo(char * filename)
 	while (!inl(VAR_VIDEO_BUFFER_DONE + curbuffer * sizeof(unsigned int))) {
 		video_refresh_control_state();
 		if (video_status == VIDEO_CONTROL_MODE_EXITING) {
-			return;
+			return 1;
 		}
 	}
 
@@ -555,6 +594,7 @@ static int playVideo(char * filename)
 	pz_close_window(video_wid);
 	GrFreeImage(video_id);
 	GrDestroyGC(video_gc);
+	return 0;
 }
 
 static void video_draw_pause()
@@ -574,7 +614,6 @@ static void video_draw_play()
 static void video_draw_searchbar()
 {
 	int height = .1 * video_screenHeight;
-	int offY = video_screenHeight - 2 * height;
 	int offX;
 
         offX = (int)((double)((double)video_curPosition/mainHeader.dwTotalFrames) * (video_screenWidth-30)) + 16;
