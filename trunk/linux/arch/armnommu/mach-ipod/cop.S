@@ -65,6 +65,8 @@ pp5020:
 	nop
 	nop
 
+	bl	ipod_handle_video
+
 	b	cop_sleep
 
 	.global cop_fiq_stack
