@@ -58,6 +58,8 @@ static char *current_file;
 static int browser_nbEntries = 0;
 static Directory browser_entries[MAX_ENTRIES];
 
+extern int is_video_type(char *extension);
+extern void new_video_window(char *filename);
 extern void new_textview_window(char * filename);
 extern int is_image_type(char *extension);
 #ifdef __linux__
@@ -259,6 +261,9 @@ static void handle_type_other(char *filename)
 		new_playback_window(filename);
 	}
 #endif /* __linux __ */
+	else if (is_video_type(ext)) {
+		new_video_window(filename);
+	}
 	else if (is_script_type(ext)) {
 		browser_exec_file(filename);
 	}
