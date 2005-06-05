@@ -23,8 +23,6 @@ typedef struct {
 	char r, g, b, res;
 } RGBQUAD;
 
-static int timer[100];
-static int ontimer = 0;
 
 extern int timer_get_current();
 
