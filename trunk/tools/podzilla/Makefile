@@ -131,6 +131,7 @@ OBJS=\
 	oss.o \
 	clocks.o \
 	fonts.o \
+	video/video.o \
 	vortex/levels.o \
 	vortex/vortex.o \
 	vortex/globals.o \

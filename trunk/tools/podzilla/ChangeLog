@@ -1,3 +1,6 @@
+Adam Johnston - Sun Jun  5 2005
+	Added basic uncompressed video playback
+
 Scott Lawrence - Sun May 29 2005
 	Added yet another clock face (watch face)
 	Made clocks more locale friendly (strftime instead of static arrays)
