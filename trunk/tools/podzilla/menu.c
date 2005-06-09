@@ -54,6 +54,7 @@ extern void new_tunnel_window(void);
 extern void new_tuxchess_window(void);
 extern void last_tuxchess_window(void);
 extern void new_calc_window(void);
+extern void new_dialer_window(void);
 extern void new_poddraw_window(void);
 extern void new_cube_window(void);
 extern void new_matrix_window(void);
@@ -96,6 +97,7 @@ static item_st games_menu[] = {
 
 static item_st stuff_menu[] = {
 	{"Cube", new_cube_window, ACTION_MENU},
+	{"Dialer", new_dialer_window, ACTION_MENU},
 	{"MandelPod", new_mandel_window, ACTION_MENU},
 	{"Matrix", new_matrix_window, ACTION_MENU},
 	{"PodDraw", new_poddraw_window, ACTION_MENU},
