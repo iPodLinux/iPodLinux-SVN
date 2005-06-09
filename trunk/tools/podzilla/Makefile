@@ -132,6 +132,7 @@ OBJS=\
 	clocks.o \
 	fonts.o \
 	tzx.o \
+	dialer.o \
 	video/video.o \
 	vortex/levels.o \
 	vortex/vortex.o \
