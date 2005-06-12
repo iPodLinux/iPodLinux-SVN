@@ -382,9 +382,12 @@ static void key_i2c_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	unsigned reg, status;
 	static int button_mask = 0;
 	static int wheel_bits16_22 = -1;
-	static int countr = 0;
-	static int countl = 0;
+	static int wheel_events = 0;
+	int wheel_delta = 0;
+	int wheel_delta_abs = 0;
 	int wheel_value = 0;
+	int wheel_keycode = 0;
+	int wheel_keypresses = 0;
 
 	udelay(250);
 
@@ -407,7 +410,6 @@ static void key_i2c_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 				new_button_mask |= 0x1;	/* Action */
 				if (!(button_mask & 0x1)) {
 					handle_scancode(ACTION_SC, 1);
-					countl = countr = 0;
 				}
 			}
 			else if (button_mask & 0x1) {
@@ -418,7 +420,6 @@ static void key_i2c_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 				new_button_mask |= 0x10;	/* Menu */
 				if (!(button_mask & 0x10)) {
 					handle_scancode(UP_SC, 1);
-					countl = countr = 0;
 				}
 			}
 			else if (button_mask & 0x10) {
@@ -429,7 +430,6 @@ static void key_i2c_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 				new_button_mask |= 0x8;	/* Play/Pause */
 				if (!(button_mask & 0x8)) {
 					handle_scancode(DOWN_SC, 1);
-					countl = countr = 0;
 				}
 			}
 			else if (button_mask & 0x8) {
@@ -440,7 +440,6 @@ static void key_i2c_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 				new_button_mask |= 0x2;	/* Next */
 				if (!(button_mask & 0x2)) {
 					handle_scancode(RIGHT_SC, 1);
-					countl = countr = 0;
 				}
 			}
 			else if (button_mask & 0x2) {
@@ -451,7 +450,6 @@ static void key_i2c_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 				new_button_mask |= 0x4;	/* Prev */
 				if (!(button_mask & 0x4)) {
 					handle_scancode(LEFT_SC, 1);
-					countl = countr = 0;
 				}
 			}
 			else if (button_mask & 0x4) {
@@ -463,10 +461,10 @@ static void key_i2c_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 				new_button_mask |= 0x20;
 
 				if (wheel_bits16_22 != -1) {
-					int diff, tmp_diff;
+					wheel_delta = new_wheel_value - wheel_bits16_22;
+					wheel_delta_abs = wheel_delta < 0 ? -wheel_delta : wheel_delta;
 
-					tmp_diff = new_wheel_value - wheel_bits16_22;
-					if ((tmp_diff < 0 ? -tmp_diff : tmp_diff) > 30) {
+					if (wheel_delta_abs > 48) {
 						if (wheel_bits16_22 > new_wheel_value) { 
 							wheel_bits16_22 -= 96;
 						}
@@ -474,35 +472,24 @@ static void key_i2c_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 							wheel_bits16_22 += 96;
 						}
 					}
-					diff = new_wheel_value - wheel_bits16_22;
-					if (diff > 0) {
-						while (diff-- > 0) {
-							if (countr > 2) {
-								/* 'r' keypress */
-								handle_scancode(R_SC, 1);
-								handle_scancode(R_SC, 0);
-								countl = 0;
-							}
-	
-							if (countr < 3) {
-								countr++;
-							}
-						}
 
-						wheel_bits16_22 = new_wheel_value;
+					wheel_delta = new_wheel_value - wheel_bits16_22;
+
+					if (wheel_delta > 0 && wheel_delta < 4) {
+						wheel_keycode = R_SC;
+						wheel_keypresses = wheel_delta;
 					}
-					else if (diff < 0) {
-						while (diff++ < 0) {
-							if (countl > 2) {
-								/* 'l' keypress */
-								handle_scancode(L_SC, 1);
-								handle_scancode(L_SC, 0);
-								countr = 0;
-							}
+					else if (wheel_delta < 0 && wheel_delta > -4) {
+						wheel_keycode = L_SC;
+						wheel_keypresses = -wheel_delta;
+					}
 
-							if (countl < 3) {
-								countl++;
-							}
+					wheel_events += wheel_keypresses;
+
+					if (wheel_events > 2) {
+						while (wheel_keypresses--) {
+							handle_scancode(wheel_keycode, 1);
+							handle_scancode(wheel_keycode, 0);
 						}
 
 						wheel_bits16_22 = new_wheel_value;
@@ -515,7 +502,7 @@ static void key_i2c_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 			else if (button_mask & 0x20) {
 				/* scroll wheel up */
 				wheel_bits16_22 = -1;
-				countl = countr = 0;
+				wheel_events = 0;
 			}
 
 			button_mask = new_button_mask;
