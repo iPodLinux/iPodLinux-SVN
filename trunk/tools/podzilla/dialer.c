@@ -1,6 +1,12 @@
 /*
- *  Tone Dialer (DTMF)
- * Copyright (C) 2005 Scott Lawrence
+ *  DTMF Dialer (Rose Quartz Box)
+ *
+ *  This is really a combination of a Blue Box, Silver Box and Red Box, 
+ *  but just the Silver Box functionality is presented to the user via
+ *  the GUI.  I will call it a "Rose Quartz Box"... named for the color
+ *  of the SAAB I used to own.
+ *
+ * No Copyright (C) 2005 Scott Lawrence.
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,6 +22,58 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
+
+
+/*
+	This code can either be called the way the GUI calls it, via
+	the dialer_press_button()/dtmf_play() functions, or via passing
+	a string of the number to be dialed via this entry point:
+
+		void dialer_dial( char * number );
+
+	Call it like so:
+
+		dialer_dial( "(585) 555-1212" );
+
+	Every character not recognized will be substituted by a 
+	66ms*2 delay.  All dialable digits are 66ms on, 66ms off,
+	with a few exceptions, noted below...
+
+	Valid characters for this string are:
+
+		0 1 2 3 4 5 6 7 8 9 # *	
+			- standard DTMF number pad
+			- 66ms on, 66ms off
+
+		A B C D
+			- operators DTMF code (silver box)
+			- 500ms on, 500ms off
+
+		,	- standard 500ms delay
+
+		t	- tasi lock
+			- 500ms on, 500ms off
+
+		s	- 2600hz (blue box)
+			- 500ms on, 500ms off
+
+		n	- nickel drop (red box)
+			- 66ms on, 66ms off
+		d	- dime drop (red box)
+			- (66ms on, 66ms off) * 2 
+		q	- quarter drop (red box)
+			- (33ms on, 33ms off) * 5
+
+	For example, to drop a quarter, then dial 585-555-1212:
+		dialer_dial( "q,5855551212" );
+
+	Red Box functionality is untested, since there are no
+	payphones near me in which this phreak still works, as far
+	as I know.
+
+	This is based on the tones for USA Telephony systems.
+	Your country might be different.
+*/
 
 
 /* these correspond to the table below... */
@@ -36,26 +94,27 @@
 #define F_1700	(11)
 #define F_2200	(12)
 
+/* the structure for the following table... */
 typedef struct wftable {
-	int frequency;
-	int nsamples;
-	int samples[255];
+	int frequency;		/* frequency generated (unused element) */
+	int nsamples;		/* number of samples in the next array */
+	int samples[255];	/* array of 0..128 waveform samples */
+				/* these are to be played at 44.1khz */
 } wftable;
 
-/*
-    2: 	1633 -9
-	1336 -12
-	1209 +28
+/* most of these waveforms are set up with more than one cycle of the 
+    waveform.  This is intentional.  Since everything here is integer
+    based, there are rounding errors if we go with just one cycle per
+    stored waveform.  In most cases, the pitch ends up being sharp 
+    by just enough that Ma Bell's decoding circuits don't detect the
+    proper frequencies.  (Their tolerances are at around 1.5%, IIRC...
+    some of these waveforms had a 400 sample per second innacuracy.)
 
-    3: 	697 +43
-	770 -18
-	852 -9
+    They should be sine waves, starting in the middle of the range (128)
 
-    4:	697 -15
-	1850 -163
-
-    5:	941 -62
-	1477 -86
+    We have these precomputed since the uclinux-ipod is so rediculously
+    slow at performing sine/cosine, that it doesn't make sense to
+    generate this on the fly.  I tried it... it was unusable. heh.
 */
 
 static wftable waveforms[] = {
@@ -268,6 +327,13 @@ static wftable waveforms[] = {
         941     *       0       #       D
 */
 
+
+
+/*
+    The following gui code is pretty much completely ripped off from
+    the podzilla calculator.  
+*/
+
 #include <stdlib.h>
 #include "pz.h"
 #ifdef __linux__
@@ -361,12 +427,10 @@ void dtmf_play( dsp_st *dspz, char key )
 	int freq1 = F_0;
 	int freq2 = F_0;
 	int ontime = 66;
-	int nsamps = 4410;
+	int nsamps = 44100;
 	int ntimes = 1;
 	int c;
 	short * buf;
-
-	buf = (short *)malloc( sizeof( short ) * nsamps );
 
 
 	/* freq 1 */
@@ -406,12 +470,17 @@ void dtmf_play( dsp_st *dspz, char key )
 	}
 
 	/* adjust timings */
-	if( key == 'Q' ) ontime = 33;
-	if( key == ',' ) ontime = 500;	/* pause */
+	if( key == 'q' ) ontime = 33;
+	if( key == ',' ) ontime = 250;	/* pause */
+	if( key == 'A' || key == 'B' || key == 'C' || key == 'D' ) ontime = 500;
+	if( key == 's' || key == 't' ) ontime = 500;
 
 	/* adjust repeats */
-	if( key == 'Q' ) ntimes = 5;
-	if( key == 'D' ) ntimes = 2;
+	if( key == 'q' ) ntimes = 5;
+	if( key == 'd' ) ntimes = 2;
+
+	nsamps = ontime * 44100 / 1000;
+	buf = (short *)malloc( sizeof( short ) * nsamps );
 
 	for( c=0 ; c<ntimes ; c++ )
 	{
@@ -449,7 +518,7 @@ static void dialer_press_button(int pos) {
 static void dialer_do_draw() {
 	int i;
 	GR_SIZE width, height, base;
-	pz_draw_header("DTMF Dialer");
+	pz_draw_header("Rose Quartz Box");
 	digitdisplay[0]='\0';
 	numfull = 0;
 	littr = 0;
@@ -516,8 +585,10 @@ static int dialer_do_keystroke(GR_EVENT * event) {
 	return ret;
 }
 
+
 /* the entry point for the menu system */
-void new_dialer_window() {
+void new_dialer_window()
+{
 	int ret = 0;
 
 #ifdef __linux__
@@ -551,7 +622,8 @@ void new_dialer_window() {
 	GrMapWindow(dialer_wid);
 }
 
-/* an entry point for an address book */
+
+/* an entry point for an address book or the like */
 void dialer_dial( char * number )
 {
 	int x = 0;
@@ -579,6 +651,9 @@ void dialer_dial( char * number )
 #endif
 }
 
+
+
+/* ************************************************************ */
 
 /* here's the code that generated the tone waveforms:*/
 #ifdef SNOWING_IN_HELL
@@ -611,6 +686,7 @@ void gen_entry( int freq, int cycles )
 		freq, samples, dsamples, cd, 
 		(cd-rate)>0?"+":"", cd-rate ); 
 	return;
+*/
 
 	/* we need to fit within the [255] element range, and at the same
 	    time, we want things to be reasonably accurate.  We basically go
@@ -619,7 +695,6 @@ void gen_entry( int freq, int cycles )
 	    rows and columns) I basically went with frequencies within 
 	    tolerances that seem to work well on my personal telephone.
 	*/
-*/
 
 	printf( "\t{ %5d, %2d, { ", freq, samples );
 
