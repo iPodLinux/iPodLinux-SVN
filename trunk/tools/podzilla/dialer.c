@@ -1,10 +1,10 @@
 /*
  *  DTMF Dialer (Rose Quartz Box)
  *
- *  This is really a combination of a Blue Box, Silver Box and Red Box, 
- *  but just the Silver Box functionality is presented to the user via
- *  the GUI.  I will call it a "Rose Quartz Box"... named for the color
- *  of the SAAB I used to own.
+ *  This is really a combination of a few phreak boxes, however just 
+ *  the Silver Box functionality is presented to the user via the GUI.
+ *  I will call it a "Rose Quartz Box"... named for the color of a
+ *  SAAB I used to own.
  *
  * No Copyright (C) 2005 Scott Lawrence.
  * 
@@ -56,6 +56,8 @@
 
 		s	- 2600hz (blue box)
 			- 500ms on, 500ms off
+		S	- 2600hz wink (for Green Box)
+			- 90ms on, 60ms off
 
 		n	- nickel drop (red box)
 			- 66ms on, 66ms off
@@ -63,6 +65,10 @@
 			- (66ms on, 66ms off) * 2 
 		q	- quarter drop (red box)
 			- (33ms on, 33ms off) * 5
+
+		c	- Coin Collect (Green Box)
+		r	- Coin Return (Green Box)
+		b	- Ringback (Green Box)
 
 	For example, to drop a quarter, then dial 585-555-1212:
 		dialer_dial( "q,5855551212" );
@@ -79,26 +85,29 @@
 /* these correspond to the table below... */
 #define F_0	(0)
 
-#define F_697	(1)
-#define F_770	(2)
-#define F_852	(3)
-#define F_941	(4)
+#define F_697	(1)	/* silver */
+#define F_770	(2)	/* silver */
+#define F_852	(3)	/* silver */
+#define F_941	(4)	/* silver */
 
-#define F_1209	(5)
-#define F_1336	(6)
-#define F_1477	(7)
-#define F_1633	(8)
+#define F_1209	(5)	/* silver */
+#define F_1336	(6)	/* silver */
+#define F_1477	(7)	/* silver */
+#define F_1633	(8)	/* silver */
 
-#define F_2600	(9)
+#define F_2600	(9)	/* blue */
 #define F_1850	(10)
-#define F_1700	(11)
-#define F_2200	(12)
+#define F_1700	(11)	/* red, green */
+#define F_2200	(12)	/* red */
+
+#define F_700	(13)	/* green */
+#define F_1100	(14)	/* green */
 
 /* the structure for the following table... */
 typedef struct wftable {
 	int frequency;		/* frequency generated (unused element) */
 	int nsamples;		/* number of samples in the next array */
-	int samples[255];	/* array of 0..128 waveform samples */
+	int samples[282];	/* array of 0..128 waveform samples */
 				/* these are to be played at 44.1khz */
 } wftable;
 
@@ -308,16 +317,57 @@ static wftable waveforms[] = {
                         72,  92, 116, 141, 164, 185, 199, 207, 206, 199, 184, 
                        164, 140, 115,  91,  71,  56,  48,  48,  56,  71,  91, 
                        115, 140, 163, 184, 199, 206, 207, 199, 185, 165, 141, 
-                       116,  92,  72,  57,  49,  48,  56,  70,  90, 113 }}
+                       116,  92,  72,  57,  49,  48,  56,  70,  90, 113 }},
+
+        {   700, 63, { 128, 135, 143, 151, 159, 166, 173, 179, 185, 190, 195, 
+                       199, 202, 205, 206, 207, 207, 207, 205, 203, 200, 197, 
+                       192, 187, 182, 176, 169, 162, 155, 147, 139, 132, 124, 
+                       116, 108, 100,  93,  86,  79,  73,  68,  63,  58,  55, 
+                        52,  50,  48,  48,  48,  49,  50,  53,  56,  60,  65, 
+                        70,  76,  82,  89,  96, 104, 112, 120 }},
+        {  1100, 281, { 128, 140, 152, 164, 174, 184, 192, 199, 204, 206, 207, 
+                       207, 204, 199, 192, 184, 175, 164, 153, 141, 128, 116, 
+                       103,  92,  81,  71,  63,  57,  52,  49,  48,  48,  51, 
+                        56,  62,  70,  80,  90, 102, 114, 126, 139, 151, 163, 
+                       173, 183, 191, 198, 203, 206, 207, 207, 204, 199, 193, 
+                       185, 176, 165, 154, 142, 129, 117, 105,  93,  82,  72, 
+                        64,  57,  52,  49,  48,  48,  51,  55,  62,  69,  79, 
+                        89, 101, 113, 125, 138, 150, 162, 173, 182, 191, 198, 
+                       203, 206, 207, 207, 204, 200, 194, 186, 177, 166, 155, 
+                       143, 130, 118, 106,  94,  83,  73,  65,  58,  52,  49, 
+                        48,  48,  50,  55,  61,  69,  78,  88, 100, 112, 124, 
+                       136, 149, 161, 172, 181, 190, 197, 202, 206, 207, 207, 
+                       205, 200, 194, 187, 178, 167, 156, 144, 132, 119, 107, 
+                        95,  84,  74,  65,  58,  53,  49,  48,  48,  50,  54, 
+                        60,  68,  77,  87,  98, 110, 123, 135, 148, 159, 171, 
+                       181, 189, 196, 202, 206, 207, 207, 205, 201, 195, 188, 
+                       179, 168, 157, 145, 133, 120, 108,  96,  85,  75,  66, 
+                        59,  53,  50,  48,  48,  50,  54,  60,  67,  76,  86, 
+                        97, 109, 122, 134, 147, 158, 170, 180, 188, 196, 201, 
+                       205, 207, 207, 205, 201, 196, 188, 180, 169, 158, 146, 
+                       134, 121, 109,  97,  86,  76,  67,  59,  54,  50,  48, 
+                        48,  50,  53,  59,  66,  75,  85,  96, 108, 120, 133, 
+                       145, 157, 169, 179, 188, 195, 201, 205, 207, 207, 206, 
+                       202, 196, 189, 180, 170, 159, 147, 135, 123, 110,  98, 
+                        87,  77,  68,  60,  54,  50,  48,  48,  49,  53,  58, 
+                        66,  74,  84,  95, 107, 119 }}
 };
 
 
 /* Frequencies: (hz)	box color	function
-	2600 		Blue		trunk on/off	(obsolete)
-	1850				Tasi Lock
-	1700 + 2200	Red		(+66ms  )x1 = nickel
-					(+66 _66)x2 = dime
-					(+33 _33)x5 = quarter
+	2600 		Blue		trunk on/off		's'
+	1850				Tasi Lock		't'
+
+	1700 + 2200	Red		(+66ms  )x1 = nickel	'n'
+					(+66 _66)x2 = dime	'd'
+					(+33 _33)x5 = quarter	'q'
+
+	900 + 1500	Green		Operator Release (first before these:)
+					(or 2600hz 90ms wink + 60ms silence)
+	700 + 1100			Coin Collect 	'c'
+	1700 + 1100			Coin Return	'r'
+	700 + 1700			Ringback	'b'
+
 	(table)		Silver/White
 
                 1209    1336    1477    1633
@@ -432,6 +482,12 @@ void dtmf_play( dsp_st *dspz, char key )
 	int c;
 	short * buf;
 
+	switch( key ) {
+	case( 'c' ): case( 'r' ): case( 'b' ):
+		dtmf_play( dspz, 'S' );	/* trigger 2600hz wink */
+		break;
+	}
+	    
 
 	/* freq 1 */
 	switch( key ) {
@@ -443,12 +499,16 @@ void dtmf_play( dsp_st *dspz, char key )
 		freq1 = F_852; break;
 	case( '*' ): case( '0' ): case( '#' ): case( 'D' ): 
 		freq1 = F_941; break;
-	case( 's' ): 
+	case( 's' ): case( 'S' ): 
 		freq1 = F_2600; break;
 	case( 't' ): 
 		freq1 = F_1850; break;
 	case( 'n' ): case( 'd' ): case( 'q' ): 
 		freq1 = F_1700; break;
+	case( 'c' ): case( 'b' ):
+		freq1 = F_700; break;
+	case( 'r' ):
+		freq1 = F_1100; break;
 	}
 
 	/* freq 2 */
@@ -461,12 +521,16 @@ void dtmf_play( dsp_st *dspz, char key )
 		freq2 = F_1477; break;
 	case( 'A' ): case( 'B' ): case( 'C' ): case( 'D' ): 
 		freq2 = F_1633; break;
-	case( 's' ): 
+	case( 's' ): case( 'S' ): 
 		freq2 = F_0; break;
 	case( 't' ): 
 		freq2 = F_0; break;
 	case( 'n' ): case( 'd' ): case( 'q' ): 
 		freq2 = F_2200; break;
+	case( 'c' ): 
+		freq2 = F_1100; break;
+	case( 'r' ): case( 'b' ): 
+		freq2 = F_1700; break;
 	}
 
 	/* adjust timings */
@@ -474,6 +538,8 @@ void dtmf_play( dsp_st *dspz, char key )
 	if( key == ',' ) ontime = 250;	/* pause */
 	if( key == 'A' || key == 'B' || key == 'C' || key == 'D' ) ontime = 500;
 	if( key == 's' || key == 't' ) ontime = 500;
+	if( key == 'S' ) ontime = 90;
+	if( key == 'c' || key == 'r' || key == 'b' ) ontime = 1000;
 
 	/* adjust repeats */
 	if( key == 'q' ) ntimes = 5;
@@ -502,6 +568,10 @@ void dtmf_play( dsp_st *dspz, char key )
 
 		/* zero it out */
 		for( bp=0 ; bp < nsamps ; bp++ )  buf[bp] = 0;
+
+		if( key == 'S' ){
+		    nsamps = nsamps * 2 / 3; /* 60ms instead of 90 */
+		}
 
 #ifdef __linux__
 		dsp_write( dspz, buf, nsamps*sizeof(short));
