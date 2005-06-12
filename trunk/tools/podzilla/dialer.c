@@ -6,8 +6,6 @@
  *  I will call it a "Rose Quartz Box"... named for the color of a
  *  SAAB I used to own.
  *
- * No Copyright (C) 2005 Scott Lawrence.
- * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -59,23 +57,22 @@
 		S	- 2600hz wink (for Green Box)
 			- 90ms on, 60ms off
 
-		n	- nickel drop (red box)
-			- 66ms on, 66ms off
-		d	- dime drop (red box)
-			- (66ms on, 66ms off) * 2 
-		q	- quarter drop (red box)
-			- (33ms on, 33ms off) * 5
-
 		c	- Coin Collect (Green Box)
 		r	- Coin Return (Green Box)
 		b	- Ringback (Green Box)
+			- all three of these are:
+				90ms 2600hz tone, 60ms silence, 1000ms dualtone
 
-	For example, to drop a quarter, then dial 585-555-1212:
-		dialer_dial( "q,5855551212" );
+	For example, to connect to an outside extension (9), then
+	dial 585-555-1212:
+		dialer_dial( "9,5855551212" );
 
-	Red Box functionality is untested, since there are no
-	payphones near me in which this phreak still works, as far
-	as I know.
+	Red Box functionality is purposely broken.  'n' 'd' 'q'. 
+	if you want to use it, feel free to hack the source.  Don't
+	ask any developer for information about doing this.
+
+	Red Box tones don't work anymore on about 99% of all pay phones
+	anyway.  Don't even bother trying.
 
 	This is based on the tones for USA Telephony systems.
 	Your country might be different.
@@ -97,8 +94,8 @@
 
 #define F_2600	(9)	/* blue */
 #define F_1850	(10)
-#define F_1700	(11)	/* red, green */
-#define F_2200	(12)	/* red */
+#define F_1700	(11)	/* green */
+#define F_2200	(12)	/* green */
 
 #define F_700	(13)	/* green */
 #define F_1100	(14)	/* green */
@@ -358,10 +355,6 @@ static wftable waveforms[] = {
 	2600 		Blue		trunk on/off		's'
 	1850				Tasi Lock		't'
 
-	1700 + 2200	Red		(+66ms  )x1 = nickel	'n'
-					(+66 _66)x2 = dime	'd'
-					(+33 _33)x5 = quarter	'q'
-
 	900 + 1500	Green		Operator Release (first before these:)
 					(or 2600hz 90ms wink + 60ms silence)
 	700 + 1100			Coin Collect 	'c'
@@ -504,7 +497,7 @@ void dtmf_play( dsp_st *dspz, char key )
 	case( 't' ): 
 		freq1 = F_1850; break;
 	case( 'n' ): case( 'd' ): case( 'q' ): 
-		freq1 = F_1700; break;
+		freq1 = F_700; break;
 	case( 'c' ): case( 'b' ):
 		freq1 = F_700; break;
 	case( 'r' ):
@@ -526,7 +519,7 @@ void dtmf_play( dsp_st *dspz, char key )
 	case( 't' ): 
 		freq2 = F_0; break;
 	case( 'n' ): case( 'd' ): case( 'q' ): 
-		freq2 = F_2200; break;
+		freq2 = F_0; break;
 	case( 'c' ): 
 		freq2 = F_1100; break;
 	case( 'r' ): case( 'b' ): 
