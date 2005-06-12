@@ -116,7 +116,13 @@ static void itunes_do_draw()
 
 static int get_prev(struct menulist *ml)
 {
-	struct btree_head *p = btree_prev((struct btree_head *) ml->user);
+	struct btree_head *p;
+	
+	if (ml->user)
+		p = btree_prev((struct btree_head *) ml->user);
+	else
+		return 0;
+
 	if (p) {
 		ml->user = (void *) p;
 		return 1;
@@ -365,6 +371,9 @@ static int select_plist(struct menulist *ml)
 {
 	struct plist *plist = ml->user;
 
+	if (!plist)
+		return 0;
+	
 	currentml = new_ml();
 	currentml->prevml = ml;
 	currentml->get_next = get_next_array;
@@ -387,6 +396,9 @@ static void itunes_draw(struct menulist *ml)
 {
 	int counter=0;
 
+	if (!currentml->user)
+		return;
+	
 	if (!ml->init)
 	{
 		//add to courtc's menu from the original list.
