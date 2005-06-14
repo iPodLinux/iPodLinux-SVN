@@ -167,7 +167,7 @@ OBJS+= mikmod/ipodmikmod.o
 LDFLAGS+= -L../mikmod/ipod/lib
 CFLAGS+= -DMIKMOD -I../mikmod/ipod/include
 ifneq ($(IPOD),)
-LDFLAGS+= lmikmod -lmmio
+LDFLAGS+= -lmikmod -lmmio
 OBJS+= mikmod/mlist.o mikmod/marchive.o
 endif
 endif
