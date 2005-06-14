@@ -62,6 +62,12 @@ extern int is_video_type(char *extension);
 extern void new_video_window(char *filename);
 extern void new_textview_window(char * filename);
 extern int is_image_type(char *extension);
+#ifdef MIKMOD
+extern int is_mikmod_playlist_type(char *extension);
+extern int is_mikmod_song_type(char *extension);
+extern void new_mikmod_player(char *filename);
+extern void new_mikmod_player_song(char *filename);
+#endif
 #ifdef __linux__
 extern int is_mp3_type(char *extension);
 extern int is_aac_type(char *extension);
@@ -248,6 +254,14 @@ static void handle_type_other(char *filename)
 			new_message_window("No Default Action for this Filetype");
 		}
 	}
+#ifdef MIKMOD
+	else if (is_mikmod_playlist_type(ext)) {
+		new_mikmod_player(filename);
+	}
+	else if (is_mikmod_song_type(ext)) {
+		new_mikmod_player_song(filename);
+	}
+#endif
 	else if (is_image_type(ext)) {
 		new_image_window(filename);
 	}

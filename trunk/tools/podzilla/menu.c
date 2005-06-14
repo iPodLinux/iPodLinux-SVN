@@ -63,6 +63,9 @@ extern void new_invaders_window(void);
 extern void new_font_window(void);
 extern void new_vortex_window(void);
 extern void about_window(void);
+#ifdef MIKMOD
+extern void new_mikmod_window(void);
+#endif
 
 extern item_st lights_menu[];
 
@@ -210,6 +213,9 @@ static item_st itunes_menu[] = {
 
 static item_st main_menu[] = {
 	{"Music", itunes_menu, SUB_MENU_HEADER},
+#ifdef MIKMOD
+	{"MikMod", new_mikmod_window, ACTION_MENU},
+#endif
 	{"Extras", extras_menu, SUB_MENU_HEADER},
 	{"Settings", settings_menu, SUB_MENU_HEADER},
 	{"File Browser", new_browser_window, ACTION_MENU | ARROW_MENU},

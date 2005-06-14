@@ -21,6 +21,8 @@
 #	../mp4ff	- MP4 file format library
 # 		ipod		- jpeg library built for ipod
 # 		ipod-x11	- jpeg library built for host (optional, x86 only)
+#	../mikmod	- MikMod music module engine
+#		ipod		- mikmod built for ipod
 
 ifneq ($(IPOD),)
 
@@ -158,6 +160,18 @@ ifneq ($(IPOD),)
 OBJS+=\
 	mp3decoder.o
 endif
+
+# additions for MikMod builds...
+ifneq ($(MIKMOD),)
+OBJS+= mikmod/ipodmikmod.o
+LDFLAGS+= -L../mikmod/ipod/lib
+CFLAGS+= -DMIKMOD -I../mikmod/ipod/include
+ifneq ($(IPOD),)
+LDFLAGS+= lmikmod -lmmio
+OBJS+= mikmod/mlist.o mikmod/marchive.o
+endif
+endif
+
 
 all: podzilla
 
