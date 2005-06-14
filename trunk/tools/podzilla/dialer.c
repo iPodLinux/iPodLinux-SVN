@@ -690,6 +690,7 @@ void new_dialer_window()
 void dialer_dial( char * number )
 {
 	int x = 0;
+	int ret;
 	dsp_st dspz;
 
 	if( !number ) return;
@@ -701,6 +702,8 @@ void dialer_dial( char * number )
 		return;
 	}
 	ret = dsp_setup(&dspz, 1, 44100);
+#else
+	ret = ret;
 #endif
 
 	while ( number[x] != '\0' )
