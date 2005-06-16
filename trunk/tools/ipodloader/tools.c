@@ -18,6 +18,8 @@
 
 #define HW_REV_MINI		4
 #define HW_REV_4G		5
+#define HW_REV_PHOTO		6
+#define HW_REV_MINI_2		7
 
 
 static unsigned long ipod_rtc_reg;
@@ -44,7 +46,7 @@ get_ipod_rev()
 		ipod_rtc_reg = IPOD_PP5020_RTC;
 	}
 
-	if (rev == HW_REV_MINI) {
+	if (rev == HW_REV_MINI || rev  == HW_REV_MINI_2) {
 		lcd_width = IPOD_MINI_LCD_WIDTH;
 		lcd_height = IPOD_MINI_LCD_HEIGHT;
 	}
@@ -103,9 +105,15 @@ void
 lcd_send_data(int data_lo, int data_hi)
 {
 	lcd_wait_write();
-	outl(data_lo, lcd_base + LCD_DATA);
-	lcd_wait_write();
-	outl(data_hi, lcd_base + LCD_DATA);
+	if (ipod_ver == HW_REV_MINI_2) {
+		outl((inl(0x70003000) & ~0x1F00000) | 0x1700000, 0x70003000);
+		outl(data_hi | (data_lo << 8) | 0x760000, 0x70003008);
+	}
+	else {
+		outl(data_lo, lcd_base + LCD_DATA);
+		lcd_wait_write();
+		outl(data_hi, lcd_base + LCD_DATA);
+	}
 }
 
 /* send LCD command */
@@ -113,9 +121,15 @@ void
 lcd_prepare_cmd(int cmd)
 {
 	lcd_wait_write();
-	outl(0x0, lcd_base + LCD_CMD);
-	lcd_wait_write();
-	outl(cmd, lcd_base + LCD_CMD);
+	if (ipod_ver == HW_REV_MINI_2) {
+		outl((inl(0x70003000) & ~0x1F00000) | 0x1700000, 0x70003000);
+		outl(cmd | 0x740000, 0x70003008);
+	}
+	else {
+		outl(0x0, lcd_base + LCD_CMD);
+		lcd_wait_write();
+		outl(cmd, lcd_base + LCD_CMD);
+	}
 }
 
 /* send LCD command and data */
