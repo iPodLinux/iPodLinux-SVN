@@ -245,10 +245,15 @@ static void
 lcd_send_data(int data_lo, int data_hi)
 {
 	lcd_wait_write();
-
-	outl(data_lo, ipod_lcd_base + 0x10);
-	lcd_wait_write();
-	outl(data_hi, ipod_lcd_base + 0x10);
+	if (gen >= 70000) {
+		outl((inl(0x70003000) & ~0x1f00000) | 0x1700000, 0x70003000);
+		outl(data_hi | (data_lo << 8) | 0x760000, 0x70003008);
+	}
+	else {
+		outl(data_lo, ipod_lcd_base + 0x10);
+		lcd_wait_write();
+		outl(data_hi, ipod_lcd_base + 0x10);
+	}
 }
 
 /* send LCD command */
@@ -256,9 +261,15 @@ static void
 lcd_prepare_cmd(int cmd)
 {
 	lcd_wait_write();
-	outl(0x0, ipod_lcd_base + 0x8);
-	lcd_wait_write();
-	outl(cmd, ipod_lcd_base + 0x8);
+	if (gen >= 70000) {
+		outl((inl(0x70003000) & ~0x1f00000) | 0x1700000, 0x70003000);
+		outl(cmd | 0x740000, 0x70003008);
+	}
+	else {
+		outl(0x0, ipod_lcd_base + 0x10);
+		lcd_wait_write();
+		outl(cmd, ipod_lcd_base + 0x10);
+	}
 }
 
 /* send LCD command and data */

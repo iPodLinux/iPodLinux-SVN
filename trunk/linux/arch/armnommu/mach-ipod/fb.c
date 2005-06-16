@@ -99,13 +99,15 @@ static void lcd_wait_write(void)
 static void lcd_send_data(int data_lo, int data_hi)
 {
 	lcd_wait_write();
-	
-	outl(data_lo, lcd_base + LCD_DATA);
-		
-	lcd_wait_write();
-	
-	outl(data_hi, lcd_base + LCD_DATA);
-
+	if (ipod_hw_ver == 0x7) {
+		outl((inl(0x70003000) & ~0x1f00000) | 0x1700000, 0x70003000);
+		outl(data_hi | (data_lo << 8) | 0x760000, 0x70003008);
+	}
+	else {
+		outl(data_lo, lcd_base + LCD_DATA);
+		lcd_wait_write();
+		outl(data_hi, lcd_base + LCD_DATA);
+	}
 }
 
 /* send LCD command */
@@ -113,13 +115,15 @@ static void
 lcd_prepare_cmd(int cmd)
 {
 	lcd_wait_write();
-
-	outl(0x0, lcd_base + LCD_CMD);
-
-	lcd_wait_write();
-	
-	outl(cmd, lcd_base + LCD_CMD);
-	
+	if (ipod_hw_ver == 0x7) {
+		outl((inl(0x70003000) & ~0x1f00000) | 0x1700000, 0x70003000);
+		outl(cmd | 0x740000, 0x70003008);
+	}
+	else {
+		outl(0x0, lcd_base + LCD_CMD);
+		lcd_wait_write();
+		outl(cmd, lcd_base + LCD_CMD);
+	}
 }
 
 /* send LCD command and data */
@@ -155,6 +159,9 @@ get_contrast(void)
 
 		data_hi = inl(lcd_base + LCD_CMD);
 	}
+	else if (ipod_hw_ver == 0x7) {
+		// TODO
+	}
 	
 	return data_hi & 0xff;
 }
@@ -162,7 +169,7 @@ get_contrast(void)
 static void
 set_contrast(int contrast)
 {
-	if (ipod_hw_ver < 0x6) {
+	if (ipod_hw_ver < 0x6 || ipod_hw_ver == 0x7) {
 		lcd_cmd_and_data(0x4, 0x4, contrast);
 	}
 }
@@ -207,8 +214,8 @@ set_backlight(int on)
 				outl(inl(0x70000084) & ~0x2000000, 0x70000084);
 				outl(0x80000000, 0x7000a010);
 			}
-		} else if (ipod_hw_ver == 0x04) {
-			outl(((0x100 | (on ? 1 : 0)) << 3), 0x6000d804 + 0x20);
+		} else if (ipod_hw_ver == 0x04 || ipod_hw_ver == 0x7) {
+			outl(((0x100 | (on ? 1 : 0)) << 3), 0x6000d824);
 		}
 	}
 	else {
@@ -224,7 +231,7 @@ set_backlight(int on)
 		outl(lcd_state, IPOD_PP5002_LCD_BASE);
 	}
 
-	if (ipod_hw_ver < 0x6) {
+	if (ipod_hw_ver < 0x6 || ipod_hw_ver == 0x7) {
 		if (on) {
 			/* display control (1 00 0 1) */
 			/* GSH=01 -> 2/3 level grayscale control */
@@ -264,13 +271,13 @@ read_controller_id(void)
 static void
 init_lcd(void)
 {
-	if (ipod_hw_ver < 0x6 && read_controller_id() != HD66753_ID )  {
+	if ((ipod_hw_ver < 0x6 || ipod_hw_ver == 0x7)  && read_controller_id() != HD66753_ID )  {
 		printk(KERN_ERR "Unknown LCD controller ID: 0x%x id?\n", read_controller_id());
 	}
 
 	/* driver output control */
 	/* CMS=0, SGS=1 */
-	if (ipod_hw_ver == 0x4) {
+	if (ipod_hw_ver == 0x4 || ipod_hw_ver == 0x7) {
 		/* driver output control - 160x112 (ipod mini) */
 		lcd_cmd_and_data(0x1, 0x0, 0xd);
 	}
@@ -286,7 +293,7 @@ init_lcd(void)
 		lcd_cmd_and_data(0x5, 0x0, 0x10);
 	}
 
-	if (ipod_hw_ver > 0x4) {
+	if (ipod_hw_ver == 0x5 || ipod_hw_ver == 0x6) {
 		outl(inl(0x6000d004) | 0x4, 0x6000d004); /* port b bit 2 */
 		outl(inl(0x6000d004) | 0x8, 0x6000d004); /* port b bit 3 */
 		outl(inl(0x70000084) | 0x2000000, 0x70000084);
@@ -957,6 +964,7 @@ int __init ipodfb_init(void)
 		lcd_busy_mask = 0x8000;
 		break;
 
+	case 7: /* mini g2 */
 	case 4: /* mini */
 		lcd_width = IPOD_MINI_LCD_WIDTH;
 		lcd_height = IPOD_MINI_LCD_HEIGHT;	
