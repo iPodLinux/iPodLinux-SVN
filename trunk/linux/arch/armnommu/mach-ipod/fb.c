@@ -238,7 +238,13 @@ set_backlight(int on)
 			/* GSL=00 -> 1/4 level grayscale control */
 			/* REV=0 -> don't reverse */
 			/* D=1 -> display on */
-			lcd_cmd_and_data(0x7, 0x0, 0x11 /* | 0x2 */);
+			if (ipod_hw_ver < 3) {
+				/* REV=1 */
+				lcd_cmd_and_data(0x7, 0x0, 0x11 | 0x2);
+			}
+			else {
+				lcd_cmd_and_data(0x7, 0x0, 0x11 /* | 0x2 */);
+			}
 		}
 		else {
 			/* display control (10 0 1) */
