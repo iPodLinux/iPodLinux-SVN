@@ -266,9 +266,9 @@ lcd_prepare_cmd(int cmd)
 		outl(cmd | 0x740000, 0x70003008);
 	}
 	else {
-		outl(0x0, ipod_lcd_base + 0x10);
+		outl(0x0, ipod_lcd_base + 0x08);
 		lcd_wait_write();
-		outl(cmd, ipod_lcd_base + 0x10);
+		outl(cmd, ipod_lcd_base + 0x08);
 	}
 }
 
