@@ -208,14 +208,14 @@ static item_st itunes_menu[] = {
 	{"Artists", new_itunes_artist, ACTION_MENU | ARROW_MENU},
 	{"Albums", new_itunes_album, ACTION_MENU | ARROW_MENU},
 	{"Songs", new_itunes_track, ACTION_MENU | ARROW_MENU},
+#ifdef MIKMOD
+	{"MikMod", new_mikmod_window, ACTION_MENU},
+#endif
 	{0}
 };
 
 static item_st main_menu[] = {
 	{"Music", itunes_menu, SUB_MENU_HEADER},
-#ifdef MIKMOD
-	{"MikMod", new_mikmod_window, ACTION_MENU},
-#endif
 	{"Extras", extras_menu, SUB_MENU_HEADER},
 	{"Settings", settings_menu, SUB_MENU_HEADER},
 	{"File Browser", new_browser_window, ACTION_MENU | ARROW_MENU},
