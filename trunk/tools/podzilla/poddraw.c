@@ -89,34 +89,32 @@ static int poddraw_handle_event(GR_EVENT * event)
     case( GR_EVENT_TYPE_KEY_DOWN ):
 	switch( event->keystroke.ch )
 	{
-	    case '\r':
-	    case '\n': /* action */
+	    case IPOD_BUTTON_ACTION: /* action */
 		// toggle lr-ud
 		updown = (updown + 1) & 0x01;
 		break;
 
-	    case 'p': /* play/pause */
-	    case 'd': /*or this */
+	    case IPOD_BUTTON_PLAY: /* play/pause */
 		// clear screen
 		GrSetGCBackground( poddraw_gc, WHITE);
 		GrClearWindow( poddraw_wid, 0);
 		break;
 
-	    case 'f': /* >>| */
+	    case IPOD_BUTTON_FORWARD: /* >>| */
 		poddraw_color = (poddraw_color +1 ) & 0x03;
 		break;
 
-	    case 'w': /* |<< */
+	    case IPOD_BUTTON_REWIND: /* |<< */
 		poddraw_color = (poddraw_color -1 ) & 0x03;
 		break;
 
-	    case 'l': /* CCW spin */
+	    case IPOD_WHEEL_ANTICLOCKWISE: /* CCW spin */
 		poddraw_point();
 		if( updown ) poddraw_x = PDMAX( poddraw_x-2, 0 );
 		else         poddraw_y = PDMAX( poddraw_y-2, 0 );
 		break;
 
-	    case 'r': /* CW spin */
+	    case IPOD_WHEEL_CLOCKWISE: /* CW spin */
 		poddraw_point();
 		if( updown )
 		    poddraw_x = PDMIN( poddraw_x+2, screen_info.cols-2 );
@@ -125,10 +123,14 @@ static int poddraw_handle_event(GR_EVENT * event)
 				  (screen_info.rows - (HEADER_TOPLINE + 1))-2);
 		break;
 
-	    case 'm':
+	    case IPOD_BUTTON_MENU:
 		GrDestroyTimer( poddraw_timer );
 		pz_close_window( poddraw_wid );
 		ret = 1;
+		break;
+
+	    default:
+		ret |= EVENT_UNUSED;
 		break;
 	}
 	break;

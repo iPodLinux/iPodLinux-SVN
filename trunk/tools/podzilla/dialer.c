@@ -605,28 +605,27 @@ static int dialer_do_keystroke(GR_EVENT * event) {
 	switch(event->type) {
 	case GR_EVENT_TYPE_KEY_DOWN:
 		switch (event->keystroke.ch) {
-		case '\r':
-		case '\n':
+		case IPOD_BUTTON_ACTION:
 			dialer_press_button(current_dialer_button);
 			draw_dialer();
 			ret |= KEY_CLICK;
 			break;
 
-		case 'l':
+		case IPOD_WHEEL_ANTICLOCKWISE:
 			last_bouvet_item = current_dialer_button;
 			current_dialer_button--;
 			draw_dialer();
 			ret |= KEY_CLICK;
 			break;
 
-		case 'r':
+		case IPOD_WHEEL_CLOCKWISE:
 			last_bouvet_item = current_dialer_button;
 			current_dialer_button++;
 			draw_dialer();
 			ret |= KEY_CLICK;
 			break;
 
-		case 'm':
+		case IPOD_BUTTON_MENU:
 		case 'q':
 #ifdef __linux__
                         dsp_close(&dspz);
@@ -638,6 +637,7 @@ static int dialer_do_keystroke(GR_EVENT * event) {
 
 		default:
 			ret |= KEY_UNUSED;
+			break;
 		}
 		break;
 
