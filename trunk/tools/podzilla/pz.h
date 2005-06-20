@@ -57,4 +57,23 @@ void pz_perror(char *msg);
 
 void new_slider_widget(int setting, char *title, int slider_min, int slider_max);
 
+/* for the 'handle event' methods. */ 
+#define IPOD_BUTTON_ACTION		('\r')
+#define IPOD_BUTTON_MENU		('m')
+#define IPOD_BUTTON_REWIND		('w')
+#define IPOD_BUTTON_FORWARD		('f')
+#define IPOD_BUTTON_PLAY		('d')
+
+#define IPOD_SWITCH_HOLD		('h')
+
+#define IPOD_WHEEL_CLOCKWISE		('r')
+#define IPOD_WHEEL_ANTICLOCKWISE	('l')
+#define IPOD_WHEEL_COUNTERCLOCKWISE	('l')
+
+#define IPOD_REMOTE_PLAY		('1')
+#define IPOD_REMOTE_VOL_UP		('2')
+#define IPOD_REMOTE_VOL_DOWN		('3')
+#define IPOD_REMOTE_FORWARD		('4')
+#define IPOD_REMOTE_REWIND		('5')
+
 #endif
