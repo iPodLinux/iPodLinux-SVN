@@ -13,7 +13,7 @@
  *	Binary - Binary Watch clock
  *	Digital Bedside clock
  *
- *   $Id: clocks.c,v 1.9 2005/05/30 02:00:33 yorgle Exp $
+ *   $Id: clocks.c,v 1.10 2005/05/31 16:02:22 yorgle Exp $
  *
  */
 
@@ -36,9 +36,12 @@
 
 
 /*
- * $Id: clocks.c,v 1.9 2005/05/30 02:00:33 yorgle Exp $
+ * $Id: clocks.c,v 1.10 2005/05/31 16:02:22 yorgle Exp $
  *
  * $Log: clocks.c,v $
+ * Revision 1.10  2005/05/31 16:02:22  yorgle
+ * Cleaned up some colors.  Why didn't anyone tell me this looked like crap? ;)
+ *
  * Revision 1.9  2005/05/30 02:00:33  yorgle
  * Clockzilla strikes again!
  * Added another face (a "watch" face, based on the "OVERSIZED" face), which displays the day of week and day of month, much like many watches do.
@@ -1135,12 +1138,12 @@ static int Clocks_handle_event (GR_EVENT *event)
 	    case GR_EVENT_TYPE_KEY_DOWN:
 		switch (event->keystroke.ch)
 		{
-		case 'h': // hold press
+		case IPOD_SWITCH_HOLD: // hold press
 		    Clocks_hold_press();
 		    break;
 
 
-		case '\r': // Wheel button
+		case IPOD_BUTTON_ACTION: // Wheel button
 		    if( Clocks_set )
 		    {
 			    int max = CLOCKS_SEL_MAX;
@@ -1158,16 +1161,7 @@ static int Clocks_handle_event (GR_EVENT *event)
 		    Clocks_draw();
 		    break;
 
-		case 'd': // Play/pause button
-		    break;
-
-		case 'w': // Rewind button
-		    break;
-
-		case 'f': // Fast forward button
-		    break;
-
-		case 'l': // Wheel left
+		case IPOD_WHEEL_ANTICLOCKWISE: // Wheel left
 		    if( Clocks_set ) {
 			    Clocks_dec_time();
 			    Clocks_draw();
@@ -1177,7 +1171,7 @@ static int Clocks_handle_event (GR_EVENT *event)
 		    }
 		    break;
 
-		case 'r': // Wheel right
+		case IPOD_WHEEL_CLOCKWISE: // Wheel right
 		    if( Clocks_set ) {
 			    Clocks_inc_time();
 			    Clocks_draw();
@@ -1187,12 +1181,16 @@ static int Clocks_handle_event (GR_EVENT *event)
 		    }
 		    break;
 
+		case IPOD_BUTTON_MENU: // Menu button
 		case 'q': // (quit)
-		case 'm': // Menu button
 		    Clocks_exit();
 		    break;
 
+		case IPOD_BUTTON_PLAY: // Play/pause button
+		case IPOD_BUTTON_REWIND: // Rewind button
+		case IPOD_BUTTON_FORWARD: // Fast forward button
 		default:
+		    return EVENT_UNUSED;
 		    break;
 		} // keystroke
 		break;   // key down

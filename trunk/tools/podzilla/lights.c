@@ -417,7 +417,7 @@ static int lights_handle_event (GR_EVENT *event)
 	    case GR_EVENT_TYPE_KEY_UP:
 		switch (event->keystroke.ch)
 		{
-		case 'h': // hold released
+		case IPOD_SWITCH_HOLD: // hold released
 		    lights_release_hold();
 		    break;
 		}
@@ -426,21 +426,12 @@ static int lights_handle_event (GR_EVENT *event)
 	    case GR_EVENT_TYPE_KEY_DOWN:
 		switch (event->keystroke.ch)
 		{
-		case '\r': // Wheel button
+		case IPOD_BUTTON_ACTION: // Wheel button
 		    lights_press_button( lights_curr );
 		    lights_do_draw( );
 		    break;
 
-		case 'd': // Play/pause button
-		    break;
-
-		case 'w': // Rewind button
-		    break;
-
-		case 'f': // Fast forward button
-		    break;
-
-		case 'l': // Wheel left
+		case IPOD_WHEEL_ANTICLOCKWISE: // Wheel left
 		    lights_curr--;
 		    if( lights_curr < 0 )
 		    {
@@ -450,7 +441,7 @@ static int lights_handle_event (GR_EVENT *event)
 		    lights_do_draw( );
 		    break;
 
-		case 'r': // Wheel right
+		case IPOD_WHEEL_CLOCKWISE: // Wheel right
 		    lights_curr++;
 		    if( lights_curr >= lights_max )
 		    {
@@ -460,16 +451,20 @@ static int lights_handle_event (GR_EVENT *event)
 		    lights_do_draw( );
 		    break;
 
-		case 'h': // Hold engaged
+		case IPOD_SWITCH_HOLD: // Hold engaged
 		    lights_engage_hold();
 		    break;
 
-		case 'm': // Menu button
+		case IPOD_BUTTON_MENU: // Menu button
 		case 'q': // Quit
 		    lights_exit();
 		    break;
 
+		case IPOD_BUTTON_PLAY: // Play/pause button
+		case IPOD_BUTTON_REWIND: // Rewind button
+		case IPOD_BUTTON_FORWARD: // Fast forward button
 		default:
+		     return EVENT_UNUSED;
 		    break;
 		} // keystroke
 		break;   // key down
