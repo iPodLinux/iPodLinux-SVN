@@ -80,21 +80,6 @@ char *cprt2[] = {
     ""
 };
 
-/* i should move these into pz.h or somesuch */
-#define BUTTON_ACTION		('\r')
-#define BUTTON_PLAY		('d')
-#define BUTTON_REWIND		('w')
-#define BUTTON_FORWARD		('f')
-#define BUTTON_MENU		('m')
-#define WHEEL_CLOCKWISE		('r')
-#define WHEEL_ANTICLOCKWISE	('l')
-
-#define REMOTE_PLAY		('1')
-#define REMOTE_VOL_UP		('2')
-#define REMOTE_VOL_DOWN		('3')
-#define REMOTE_FORWARD		('4')
-#define REMOTE_REWIND		('5')
-
 
 /* File types ***********************************************************/ 
 
@@ -242,8 +227,8 @@ static void mikmod_handle_playback( void )
 	memset(filename,0,sizeof(filename));
 	memset(archive,0,sizeof(archive));
 	mikmod_quit=( ipod_get_setting( SHUFFLE )?
-		(PL_GetNext(&playlist,filename,archive))!=0 :
-		(PL_GetRandom(&playlist,filename,archive))!=0);
+		(PL_GetRandom(&playlist,filename,archive))!=0 :
+		(PL_GetNext(&playlist,filename,archive))!=0 );
 	if(filename[0]==0) {mikmod_quit=1;}
 	if( mikmod_quit ) {
 	    mikmod_state = MIKMOD_STATE_QUIT;
@@ -622,7 +607,7 @@ static int mikmod_handle_event( GR_EVENT * event )
 	case( GR_EVENT_TYPE_KEY_DOWN ): 
 	    switch( event->keystroke.ch )
 	    {
-		case( BUTTON_ACTION ): /* wheel button */
+		case( IPOD_BUTTON_ACTION ): /* wheel button */
 		    /* cycle spinner mode */
 		    if( spinner_mode == SPINNER_VOLUME )
 			spinner_mode = SPINNER_SCRUB;
@@ -632,15 +617,15 @@ static int mikmod_handle_event( GR_EVENT * event )
 			spinner_mode = SPINNER_VOLUME;
 		    break;
 
-		case( BUTTON_PLAY ): /* play/pause */
-		case( REMOTE_PLAY ): /* play/pause on the remote */
+		case( IPOD_BUTTON_PLAY ): /* play/pause */
+		case( IPOD_REMOTE_PLAY ): /* play/pause on the remote */
 #ifdef IPOD
 		    Player_TogglePause();
 #endif
 		    break;
 
-		case( BUTTON_REWIND ): /* rewind */
-		case( REMOTE_REWIND ): /* rewind on the remote */
+		case( IPOD_BUTTON_REWIND ): /* rewind */
+		case( IPOD_REMOTE_REWIND ): /* rewind on the remote */
 #ifdef IPOD
 		    PL_GetPrev(&playlist,filename,archive);
 		    PL_GetPrev(&playlist,filename,archive);
@@ -649,15 +634,15 @@ static int mikmod_handle_event( GR_EVENT * event )
 #endif
 		    break;
 
-		case( BUTTON_FORWARD ): /* forward */
-		case( REMOTE_FORWARD ): /* forward on the remote */
+		case( IPOD_BUTTON_FORWARD ): /* forward */
+		case( IPOD_REMOTE_FORWARD ): /* forward on the remote */
 #ifdef IPOD
 		    next=1;
 		    spinner_mode = SPINNER_OFF;
 #endif
 		    break;
 
-		case( WHEEL_CLOCKWISE ): /* wheel clockwise */
+		case( IPOD_WHEEL_CLOCKWISE ): /* wheel clockwise */
 		    if( spinner_mode == SPINNER_SCRUB ) {
 #ifdef IPOD
 			MP_NextPosition(mf);
@@ -668,7 +653,7 @@ static int mikmod_handle_event( GR_EVENT * event )
 		    break;
 
 
-		case( WHEEL_ANTICLOCKWISE ): /* wheel anticlockwise */
+		case( IPOD_WHEEL_ANTICLOCKWISE ): /* wheel anticlockwise */
 		    if( spinner_mode == SPINNER_SCRUB ) {
 #ifdef IPOD
 			/* this following doesn't always work... */
@@ -681,16 +666,16 @@ static int mikmod_handle_event( GR_EVENT * event )
 		    break;
 
 
-		case( REMOTE_VOL_UP ):	/* volume up on the remote */
+		case( IPOD_REMOTE_VOL_UP ):	/* volume up on the remote */
 		    mikmod_volume_up();
 		    break;
 
-		case( REMOTE_VOL_DOWN ):/* volume down on the remote */
+		case( IPOD_REMOTE_VOL_DOWN ):/* volume down on the remote */
 		    mikmod_volume_down();
 		    break;
 
 
-		case( BUTTON_MENU ): /* menu button */
+		case( IPOD_BUTTON_MENU ): /* menu button */
 		    mikmod_state = MIKMOD_STATE_QUIT;
 		    return( 1 );
 
