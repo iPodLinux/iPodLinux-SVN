@@ -69,6 +69,13 @@ static int ipod_ioctl(int request, int *arg)
 #endif
 }
 
+int ipod_constrain( int min, int max, int val )
+{
+	if( val > max ) val = max;
+	if( val < min ) val = min;
+	return( val );
+}
+
 int ipod_get_contrast(void)
 {
 	int contrast;
@@ -82,6 +89,7 @@ int ipod_get_contrast(void)
 
 int ipod_set_contrast(int contrast)
 {
+	contrast = ipod_constrain( 0, 128, contrast ); /* just in case */
 	if (ipod_ioctl(FBIOSET_CONTRAST, (int *) contrast) < 0) {
 		return -1;
 	}
