@@ -62,6 +62,7 @@ extern void new_ipobble_window(void);
 extern void new_invaders_window(void);
 extern void new_font_window(void);
 extern void new_vortex_window(void);
+extern void new_wumpus_window(void);
 extern void about_window(void);
 #ifdef MIKMOD
 extern void new_mikmod_window(void);
@@ -84,6 +85,7 @@ static item_st tuxchess_menu[] = {
 
 static item_st games_menu[] = {
 	{"BlueCube", new_bluecube_window, ACTION_MENU},
+	{"Hunt The Wumpus", new_wumpus_window, ACTION_MENU},
 	{"Invaders", new_invaders_window, ACTION_MENU},
 	{"iPobble", new_ipobble_window, ACTION_MENU},
 	{"Lights", lights_menu, SUB_MENU_HEADER},
