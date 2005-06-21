@@ -277,7 +277,7 @@ read_controller_id(void)
 static void
 init_lcd(void)
 {
-	if ((ipod_hw_ver < 0x6 || ipod_hw_ver == 0x7)  && read_controller_id() != HD66753_ID )  {
+	if (ipod_hw_ver < 0x6 && read_controller_id() != HD66753_ID )  {
 		printk(KERN_ERR "Unknown LCD controller ID: 0x%x id?\n", read_controller_id());
 	}
 
@@ -295,7 +295,7 @@ init_lcd(void)
 	/* ID=1 -> auto decrement address counter */
 	/* AM=00 -> data is continuously written in parallel */
 	/* LG=00 -> no logical operation */
-	if (ipod_hw_ver < 0x6) {
+	if (ipod_hw_ver < 0x6 || ipod_hw_ver == 0x7) {
 		lcd_cmd_and_data(0x5, 0x0, 0x10);
 	}
 
