@@ -114,6 +114,7 @@ VECTOR_POLY_STRUCT V_fontAlpha[] =
 /* punctuation */
 VECTOR_POLY_STRUCT V_punctuation[] =
 {
+	/* ! */ {{ 9, 1, 2, 9,  26, 29, 30, 26}, { 1, 1, 1, 0, 1, 1, 1, 0 }},
 	/* : */ {{ 4, 22, 23, 4,  9, 24, 25, 9}, { 1, 1, 1, 0, 1, 1, 1, 0 }},
 	/* / */ {{ 14, 2 }, { 1, 0, 0, 0,  0, 0, 0, 0}},
 	/* \ */ {{ 0, 16 }, { 1, 0, 0, 0,  0, 0, 0, 0}},
@@ -185,9 +186,9 @@ void vector_render_char( GR_WINDOW_ID wid, GR_GC_ID gc,
 	    case( '\'' ):
 	    case( '`' ):
 		index++;
-	    case( ']' ):
+	    case( ']' ):  case( ')' ):  case( '}' ):
 		index++;
-	    case( '[' ):
+	    case( '[' ):  case( '(' ):  case( '{' ):
 		index++;
 	    case( ',' ):
 		index++;
@@ -200,6 +201,8 @@ void vector_render_char( GR_WINDOW_ID wid, GR_GC_ID gc,
 	    case( '/' ):
 		index++;
 	    case( ':' ):
+		index++;
+	    case( '!' ):
 		vfs = V_punctuation;
 	    default:
 		break;
