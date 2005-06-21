@@ -76,6 +76,7 @@ static void video_setup_display(unsigned hw_ver)
 		lcd_height = IPOD_STD_LCD_HEIGHT;
 		ipod_rtc = IPOD_PP5020_RTC;
 		break;
+	case 7:
 	case 4:
 		lcd_width = IPOD_MINI_LCD_WIDTH;
 		lcd_height = IPOD_MINI_LCD_HEIGHT;
@@ -130,17 +131,29 @@ static void video_lcd_wait_write(void)
 static void video_lcd_send_data(int data_lo, int data_hi)
 {
 	video_lcd_wait_write();
-	outl(data_lo, lcd_base + LCD_DATA);
-	video_lcd_wait_write();
-	outl(data_hi, lcd_base + LCD_DATA);
+	if (ipod_hw_ver == 0x7) {
+		outl((inl(0x70003000) & ~0x1f00000) | 0x1700000, 0x70003000);
+		outl(data_hi | (data_lo << 8) | 0x760000, 0x70003008);
+	}
+	else {
+		outl(data_lo, lcd_base + LCD_DATA);
+		video_lcd_wait_write();
+		outl(data_hi, lcd_base + LCD_DATA);
+	}
 }
 
 static void video_lcd_prepare_cmd(int cmd)
 {
 	video_lcd_wait_write();
-	outl(0x0, lcd_base + LCD_CMD);
-	video_lcd_wait_write();
-	outl(cmd, lcd_base + LCD_CMD);
+	if (ipod_hw_ver == 0x7) {
+		outl((inl(0x70003000) & ~0x1f00000) | 0x1700000, 0x70003000);
+		outl(cmd | 0x740000, 0x70003008);
+	}
+	else {
+		outl(0x0, lcd_base + LCD_CMD);
+		video_lcd_wait_write();
+		outl(cmd, lcd_base + LCD_CMD);
+	}
 }
 
 static void video_lcd_cmd_data(int cmd, int data)
