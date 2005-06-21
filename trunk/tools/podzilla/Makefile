@@ -135,6 +135,7 @@ OBJS=\
 	fonts.o \
 	tzx.o \
 	dialer.o \
+	wumpus.o \
 	video/video.o \
 	vortex/levels.o \
 	vortex/vortex.o \
