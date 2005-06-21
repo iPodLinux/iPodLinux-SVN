@@ -86,10 +86,9 @@ static void lcd_wait_write(void)
 {
 	if ((inl(lcd_base) & lcd_busy_mask) != 0) {
 		int start = timer_get_current();
-			
+
 		do {
-			if ((inl(lcd_base) & lcd_busy_mask) == 0) 
-				break;
+			if ((inl(lcd_base) & lcd_busy_mask) == 0) break;
 		} while (timer_check(start, 1000) == 0);
 	}
 }
@@ -162,15 +161,18 @@ get_contrast(void)
 	else if (ipod_hw_ver == 0x7) {
 		// TODO
 	}
-	
+
 	return data_hi & 0xff;
 }
 
 static void
 set_contrast(int contrast)
 {
-	if (ipod_hw_ver < 0x6 || ipod_hw_ver == 0x7) {
+	if (ipod_hw_ver < 0x6) {
 		lcd_cmd_and_data(0x4, 0x4, contrast);
+	}
+	else if (ipod_hw_ver == 0x7) {
+		// TODO
 	}
 }
 
@@ -243,7 +245,7 @@ set_backlight(int on)
 				lcd_cmd_and_data(0x7, 0x0, 0x11 | 0x2);
 			}
 			else {
-				lcd_cmd_and_data(0x7, 0x0, 0x11 /* | 0x2 */);
+				lcd_cmd_and_data(0x7, 0x0, 0x11);
 			}
 		}
 		else {
@@ -251,7 +253,7 @@ set_backlight(int on)
 			/* GSL=10 -> 2/4 level grayscale control */
 			/* REV=0 -> don't reverse */
 			/* D=1 -> display on */
-			lcd_cmd_and_data(0x7, 0x0, 0x9 /* | 0x2 */);
+			lcd_cmd_and_data(0x7, 0x0, 0x9);
 		}
 	}
 }
