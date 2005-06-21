@@ -35,6 +35,9 @@
 #define SYSINFO_TAG	(unsigned char *)0x40017f18
 #define SYSINFO_PTR	(struct sysinfo_t **)0x40017f1c
 
+#define SYSINFO_TAG_PP5022	(unsigned char *)0x4001ff18
+#define SYSINFO_PTR_PP5022	(struct sysinfo_t **)0x4001ff1c
+
 #ifndef __ASSEMBLY__
 struct sysinfo_t {
 	unsigned IsyS;  /* == "IsyS" */

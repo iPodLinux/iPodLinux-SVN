@@ -55,12 +55,24 @@ struct sysinfo_t *ipod_get_sysinfo(void)
 	return 0x0;
 }
 
+static int is_pp5022(void) {
+	return (inl(0x70000000) << 8) >> 24 == '2';
+}
+
 void ipod_set_sys_info(void)
 {
 	if (!ipod_sys_info_set) {
-		if ( *(unsigned *)SYSINFO_TAG == *(unsigned *)"IsyS" 
-				&& (*SYSINFO_PTR)->IsyS ==  *(unsigned *)"IsyS" ) {
-			memcpy(&ipod_sys_info, *SYSINFO_PTR, sizeof(struct sysinfo_t));
+		unsigned sysinfo_tag = SYSINFO_TAG;
+		struct sysinfo_t ** sysinfo_ptr = SYSINFO_PTR;
+
+		if (is_pp5022()) {
+			sysinfo_tag = SYSINFO_TAG_PP5022;
+			sysinfo_ptr = SYSINFO_PTR_PP5022;
+		}
+
+		if (*(unsigned *)sysinfo_tag == *(unsigned *)"IsyS" 
+				&& (*(struct sysinfo_t **)sysinfo_ptr)->IsyS ==  *(unsigned *)"IsyS" ) {
+			memcpy(&ipod_sys_info, *sysinfo_ptr, sizeof(struct sysinfo_t));
 			ipod_sys_info_set = 1;
 			system_rev = ipod_sys_info.boardHwSwInterfaceRev;
 		}
@@ -139,7 +151,6 @@ ipod_set_cpu_speed(void)
 		udelay(2000);
 
 		outl((inl(0x60006020) & 0x0fffff0f) | 0x20000070, 0x60006020);
-
 	} else {
 		outl(0x02, 0xcf005008);
 
