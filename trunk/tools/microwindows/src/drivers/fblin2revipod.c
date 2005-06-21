@@ -23,6 +23,9 @@ static void lcd_update_display(PSD psd, int sx, int sy, int mx, int my);
 
 static unsigned char notmask[4] = { 0xfc, 0xf3, 0xcf, 0x3f };
 
+#define LCD_DATA 0x10
+#define LCD_CMD  0x08
+
 /* global stuff for ipod gen stuff */
 #define BUFSIZR 512
 
@@ -205,9 +208,6 @@ SUBDRIVER fblinear2 = {
 	linear2_blit
 };
 
-#define IPOD_LCD_WIDTH	160
-#define IPOD_LCD_HEIGHT	128
-
 /* get current usec counter */
 static int
 timer_get_current(void)
@@ -230,13 +230,11 @@ timer_check(int clock_start, int usecs)
 static void
 lcd_wait_write(void)
 {
-	if ( (inl(ipod_lcd_base) & 0x1) != 0 ) {
-		int start = timer_get_current();
+	int start = timer_get_current();
 
-		do {
-			if ( (inl(ipod_lcd_base) & (unsigned int)0x8000) == 0 ) break;
-		} while ( timer_check(start, 1000) == 0 );
-	}
+	do {
+		if ((inl(ipod_lcd_base) & 0x8000) == 0) break;
+	} while (timer_check(start, 1000) == 0);
 }
 
 
@@ -250,9 +248,9 @@ lcd_send_data(int data_lo, int data_hi)
 		outl(data_hi | (data_lo << 8) | 0x760000, 0x70003008);
 	}
 	else {
-		outl(data_lo, ipod_lcd_base + 0x10);
+		outl(data_lo, ipod_lcd_base + LCD_DATA);
 		lcd_wait_write();
-		outl(data_hi, ipod_lcd_base + 0x10);
+		outl(data_hi, ipod_lcd_base + LCD_DATA);
 	}
 }
 
@@ -266,9 +264,9 @@ lcd_prepare_cmd(int cmd)
 		outl(cmd | 0x740000, 0x70003008);
 	}
 	else {
-		outl(0x0, ipod_lcd_base + 0x08);
+		outl(0x0, ipod_lcd_base + LCD_CMD);
 		lcd_wait_write();
-		outl(cmd, ipod_lcd_base + 0x08);
+		outl(cmd, ipod_lcd_base + LCD_CMD);
 	}
 }
 
