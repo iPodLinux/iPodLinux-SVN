@@ -27,7 +27,11 @@
  */
 
 /* 
- * $Log: $
+ * $Log: wumpus.c,v $
+ * Revision 1.1  2005/06/21 04:00:27  yorgle
+ * "Hunt The Wumpus" game.  find the arrow, find the wumpus, shoot it, win.
+ * Fall in a pit, or get eaten by the wumpus, die.
+ *
  */
 
 #include <stdio.h>
@@ -437,7 +441,7 @@ static void wumpus_redraw( void )
 	    ||	wumpus_at( WUMPUS_EAST ) == WUMPUS_MAP_DRAGON 
 	    ||	wumpus_at( WUMPUS_WEST ) == WUMPUS_MAP_DRAGON )
 	{
-		vector_render_string(  wumpus_bufwid, wumpus_gc, "[D]",
+		vector_render_string(  wumpus_bufwid, wumpus_gc, "[W]",
 					1, 2, w2-16, 4 );
 	}
 
