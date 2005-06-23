@@ -71,15 +71,6 @@ char *cprt1MINI[] = {
     ""
 };
 
-char *cprt2[] = {
-  /* ************************** */
-    "",
-    "iPod Port and Interface by",
-    "      Scott Lawrence",
-    "  http://umlautllama.com",
-    ""
-};
-
 
 /* File types ***********************************************************/ 
 
@@ -196,6 +187,7 @@ static GR_GC_ID		mikmod_gc = 0;
 static GR_WINDOW_ID	mikmod_bufwid = 0;
 static GR_WINDOW_ID	mikmod_wid = 0;
 static GR_SCREEN_INFO	mikmod_screen_info;
+static int 		mikmod_height = 0;
 
 static char mikmod_playlist_filename[128];
 
@@ -241,7 +233,13 @@ static void mikmod_handle_playback( void )
 	    } else {
 		mf->extspd  = 1;	/* extended speed enable */
 		mf->panflag = 0;	/* panning enable */
-		mf->loop    = 0;	/* autoloop enable */
+
+		if( ipod_get_setting( REPEAT ) == 1)
+		{
+		    mf->loop    = 1;	/* autoloop enable */
+		} else {
+		    mf->loop    = 0;	/* autoloop disable */
+		}
 
 		Player_Start(mf);
 
@@ -286,11 +284,12 @@ void mikmod_display_info_screen( int loading )
 	int bx, xpos, x2;
 	char * theText;
 
-#define LOAD_Y (60)
+	int LOAD_Y = mikmod_height - 35;
 #define LOAD_TEXT "loading..."
+#define UNSUP_TEXT "UNSUPPORTED";
 
 	if( loading ) theText = LOAD_TEXT;
-	else theText = "UNSUPPORTED";
+	else theText = UNSUP_TEXT;
 
 	xpos = (screen_info.cols>>1) 
 		- (vector_string_pixel_width( theText, 1, 2 )>>1);
@@ -298,13 +297,13 @@ void mikmod_display_info_screen( int loading )
 	/* display somethign other than a blank screen... */
 	GrSetGCForeground( mikmod_gc, LTGRAY );
 	vector_render_string(  mikmod_bufwid, mikmod_gc,
-			theText, 1, 2, xpos+1, LOAD_Y+1 );
+			theText, 1, 2, xpos+1, LOAD_Y+8 );
 	vector_render_string(  mikmod_bufwid, mikmod_gc,
-			theText, 1, 2, xpos, LOAD_Y+1 );
+			theText, 1, 2, xpos, LOAD_Y+8 );
 
 	GrSetGCForeground( mikmod_gc, BLACK );
 	vector_render_string(  mikmod_bufwid, mikmod_gc,
-			theText, 1, 2, xpos, LOAD_Y );
+			theText, 1, 2, xpos, LOAD_Y+7 );
 
 	/* top line... */
 	GrLine( mikmod_bufwid, mikmod_gc,
@@ -313,9 +312,11 @@ void mikmod_display_info_screen( int loading )
 	bx = vector_pixel_height( 2 );
 
 	/* bottom line... */
+/*
 	GrLine( mikmod_bufwid, mikmod_gc,
 		0, LOAD_Y + 4 + bx,
 		screen_info.cols, LOAD_Y + 4 + bx );
+*/
 
 	/* more informational text */
 	GrSetGCForeground( mikmod_gc, LTGRAY );
@@ -328,11 +329,8 @@ void mikmod_display_info_screen( int loading )
 	    for( x2=0 ; cprt1[x2][0] != '\0' ; x2++ )
 		vector_render_string(  mikmod_bufwid, mikmod_gc,
 				cprt1[x2], 1, 1,
-				3 + ((screen_info.cols > 160)?35:0),
-				1+(x2*11) );
-	    for( x2=0 ; cprt2[x2][0] != '\0' ; x2++ )
-		vector_render_string(  mikmod_bufwid, mikmod_gc,
-			    cprt2[x2], 1, 1, 3, LOAD_Y + 7 + bx + (x2*11) );
+				2 + ((screen_info.cols > 160)?35:0),
+				8+(x2*11) );
 	}
 }
 
@@ -351,8 +349,10 @@ static SP sp = {1, 1, 1, 1, 1};
 #endif
 
 
+int mikmod_voices_playing();
 
-static void mikmod_do_draw( void )
+
+static void mikmod_redraw( void )
 {
     static int entries = 0;
 #ifdef IPOD
@@ -365,6 +365,11 @@ static void mikmod_do_draw( void )
     char buf[128];
     char arc[255];
 #endif
+    /* glue the sliders to the bottom of the screen */
+    int VOL_Y = mikmod_height - 35; /* volume */
+    int PAT_Y = mikmod_height - 20; /* pattern in song */
+    int POS_Y = mikmod_height - 8; /* position in pattern */
+
 
 
     entries++;
@@ -372,15 +377,12 @@ static void mikmod_do_draw( void )
     // draw stuff.
     GrSetGCForeground( mikmod_gc, WHITE );
     GrFillRect( mikmod_bufwid, mikmod_gc, 0, 0, 
-		screen_info.cols, screen_info.rows );
+		screen_info.cols, mikmod_height );
 
 #ifdef IPOD
     if( mikmod_state == MIKMOD_STATE_PLAYING )
     {
-
 	GrSetGCForeground( mikmod_gc, BLACK );
-	vector_render_string( mikmod_bufwid, mikmod_gc,
-			      mikmod_playlist_filename, 1, 1, 0, 0 );
 
 	buf[0] = arc[0] = '\0';
 
@@ -395,11 +397,15 @@ static void mikmod_do_draw( void )
 	    fnf = &buf[x2+1];
 	}
 
+	/* filename */
 	vector_render_string( mikmod_bufwid, mikmod_gc,
-			  fnf, 1, 1, 0, 12 );
-	vector_render_string( mikmod_bufwid, mikmod_gc,
-			  mf->songname, 1, 1, 0, 24 );
+			  fnf, 1, 1, 0, 2 );
 
+	/* song title */
+	vector_render_string( mikmod_bufwid, mikmod_gc,
+			  mf->songname, 1, 1, 0, 18 );
+
+	/* song position */
         if(    ( last_patpos != mf->patpos )
             || ( last_sngpos != mf->sngpos ) )
         {
@@ -421,14 +427,36 @@ static void mikmod_do_draw( void )
 	    sp.sngspd = mf->sngspd;
 	    sp.bpm    = mf->bpm;
 
-	    sprintf( posbuf, "%3d %d/%d  %3d:%d  %d/%d ",
-		    sp.patno,
+	    sprintf( posbuf, " %02d/%02d %02d %3d:%d  %d/%d",
 		    sp.sngpos, sp.numpos-1,
+		    sp.patno,
 		    sp.patpos, sp.numrow-1,
 		    sp.bpm, sp.sngspd );
         }
 	vector_render_string( mikmod_bufwid, mikmod_gc,
 		      posbuf, 1, 1, 0, 36 );
+
+	/* voices used: */ /* put in the top right */
+	sprintf( buf, "%3d/%d", mikmod_voices_playing(), md_numchn );
+	vector_render_string_right( mikmod_bufwid, mikmod_gc,
+		      buf, 1, 1, screen_info.cols, 2 );
+/*
+
+This uses the following code added to virtch.c:
+
++133:
+int mikmod_voices_playing( void )
+{
+    int t, count = 0;
+
+    if( !vinf || vc_softchn == 0) return( 0 );
+    for(t=0; t<vc_softchn; t++) {
+        if( vinf[t].active == 1 ) count++;
+    }
+    return( count );
+}
+
+*/
 
 /*  don't really need to have the spinner mode spelled out...
 	if( spinner_mode == SPINNER_SCRUB )
@@ -442,10 +470,7 @@ static void mikmod_do_draw( void )
 		      "Spinner: -", 1, 1, 0, 48 );
 */
 
-	/* draw some sliders */
-
-#define VOL_Y (80)
-
+	/* draw the volume slider */
 	if( spinner_mode == SPINNER_VOLUME )
 	{
 	    GrSetGCForeground( mikmod_gc, LTGRAY );
@@ -474,7 +499,6 @@ static void mikmod_do_draw( void )
 
 
 	/* pattern position */
-#define PAT_Y (109)
 	xpos = ( sp.sngpos * (screen_info.cols-12)) / (sp.numpos);
 	width = (screen_info.cols-18)/(sp.numpos-1);
 	if( width < 1 ) width = 1;
@@ -507,8 +531,8 @@ static void mikmod_do_draw( void )
 	GrLine( mikmod_bufwid, mikmod_gc, 6+xpos+width, PAT_Y-4,
 					  6+xpos+width, PAT_Y+4);
 
+
 	/* current position in the pattern */
-#define POS_Y (121)
 	xpos = ( ((mf->patpos == 65535)?0:mf->patpos) *
 			(screen_info.cols-12)) / (mf->numrow);
 	width = (screen_info.cols-18)/(mf->numrow-1);
@@ -559,13 +583,21 @@ static void mikmod_do_draw( void )
     mikmod_display_info_screen( 0 );
 #endif
 
+    /* blit it into place */
     GrCopyArea( mikmod_wid,
                    mikmod_gc,
                    0, 0,
-                   screen_info.cols, screen_info.rows,
+                   screen_info.cols, mikmod_height,
                    mikmod_bufwid,
                    0, 0,
                    MWROP_SRCCOPY);
+}
+
+
+static void mikmod_do_draw( void )
+{
+    pz_draw_header( "MikMod" );
+    mikmod_redraw();
 }
 
 
@@ -714,7 +746,7 @@ static void mikmod_playLoop( void )
 	if( pollit && !mikmod_quit )
 	{
 	    if( !mikmod_quit )
-		mikmod_do_draw( );
+		mikmod_redraw( );
 
 #ifdef __linux__
 	    if( mikmod_mixer_fd >= 0 ) {
@@ -752,10 +784,12 @@ void new_mikmod_player(char * mik_file)
 
     GrGetScreenInfo( &mikmod_screen_info );
     mikmod_gc = GrNewGC();
-    mikmod_bufwid = GrNewPixmap( screen_info.cols, screen_info.rows, NULL );
-    mikmod_wid = pz_new_window(      0, 0,
+    mikmod_height = screen_info.rows - (HEADER_TOPLINE + 1);
+
+    mikmod_bufwid = GrNewPixmap( screen_info.cols, mikmod_height, NULL );
+    mikmod_wid = pz_new_window(      0, HEADER_TOPLINE + 1,
                                      screen_info.cols,
-                                     screen_info.rows,
+                                     mikmod_height,
                                      mikmod_do_draw,
                                      mikmod_handle_event );
 
