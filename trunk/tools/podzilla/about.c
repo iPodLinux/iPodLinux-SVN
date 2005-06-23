@@ -96,7 +96,8 @@ static void draw_about() {
 			"Cameron Nishiyama", "Prashant V", "Alastair Stuart",
 			"David Carne", "Nik Rolls", "Filippo Forlani", 
 			"Martin Kaltenbrunner", "Adam Johnston",
-		        "Matthew Westcott", "\0"};
+		        "Matthew Westcott", "Nils Schneider", "Damien Marchal",
+			"\0"};
 	char gens[NUM_GENS]={'F', '1', '2', '3', 'M', '4', 'P'};
 
 	GrSetGCForeground(about_gc, WHITE);
