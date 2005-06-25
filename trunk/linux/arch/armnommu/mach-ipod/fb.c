@@ -61,6 +61,7 @@ static unsigned long lcd_height;
 /* allow for 16bpp for photo res */ /* Sized to max we could possibly need */
 static char ipod_scr[IPOD_PHOTO_LCD_HEIGHT * IPOD_PHOTO_LCD_WIDTH * 2];
 
+static unsigned int lcd_contrast = 0x6a;	/* required for mini2 */
 
 /* get current usec counter */
 static int timer_get_current(void)
@@ -145,9 +146,9 @@ static void lcd_cmd_and_data(int cmd, int data_lo, int data_hi)
 static unsigned
 get_contrast(void)
 {
-	unsigned data_lo, data_hi = 0;
-
 	if (ipod_hw_ver < 0x6) {
+		unsigned data_lo, data_hi = 0;
+
 		/* data_lo has the scan line */
 		lcd_wait_write();
 
@@ -157,22 +158,22 @@ get_contrast(void)
 		lcd_wait_write();
 
 		data_hi = inl(lcd_base + LCD_CMD);
+
+		return data_hi & 0xff;
 	}
 	else if (ipod_hw_ver == 0x7) {
-		// TODO
+		return lcd_contrast;
 	}
 
-	return data_hi & 0xff;
+	return 0;
 }
 
 static void
 set_contrast(int contrast)
 {
-	if (ipod_hw_ver < 0x6) {
+	if (ipod_hw_ver < 0x6 || ipod_hw_ver == 0x7) {
 		lcd_cmd_and_data(0x4, 0x4, contrast);
-	}
-	else if (ipod_hw_ver == 0x7) {
-		// TODO
+		lcd_contrast = contrast;
 	}
 }
 
