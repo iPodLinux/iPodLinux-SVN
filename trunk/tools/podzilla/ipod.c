@@ -253,11 +253,13 @@ void ipod_beep(void)
 {
 #ifdef IPOD
 	if (hw_version >= 40000) {
-		int i;
+		int i, j;
 		outl(inl(0x70000010) & ~0xc, 0x70000010);
 		outl(inl(0x6000600c) | 0x20000, 0x6000600c);    /* enable device */
-		for (i = 0; i < 0x888; i++ ) {
-			outl(0x80000000 | 0x800000 | i, 0x7000a000); /* set pitch */
+		for (j = 0; j < 10; j++) {
+			for (i = 0; i < 0x888; i++ ) {
+				outl(0x80000000 | 0x800000 | i, 0x7000a000); /* set pitch */
+			}
 		}
 		outl(0x0, 0x7000a000);    /* piezo off */
 	} else {
