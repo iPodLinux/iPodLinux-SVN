@@ -34,6 +34,7 @@ long hw_version;
 static GR_WINDOW_ID root_wid;
 static GR_GC_ID root_gc;
 static GR_TIMER_ID backlight_tid;
+static GR_TIMER_ID startupcontrast_tid;
 
 struct pz_window {
 	GR_WINDOW_ID wid;
@@ -48,6 +49,7 @@ static int n_opened = 0;
 #ifdef IPOD
 static unsigned long int last_button_event = 0;
 static unsigned long int wheel_evt_count = 0;
+static int startup_contrast = -1;
 #endif
 static unsigned long int last_keypress_event = 0;
 
@@ -204,6 +206,9 @@ void pz_event_handler(GR_EVENT *event)
 #if 1
 			if (!backlight_tid)
                                backlight_tid = GrCreateTimer(root_wid, 500);
+			if (!startupcontrast_tid)
+			       startupcontrast_tid = GrCreateTimer(
+							    root_wid, 5000);
 			window = NULL;
 #endif
 		case 'q':
@@ -257,12 +262,18 @@ void pz_event_handler(GR_EVENT *event)
 			break;
 #if 1
 		case 'm':
-			if (backlight_tid) {
-				GrDestroyTimer(backlight_tid);
-				backlight_tid = 0;
+			if (backlight_tid || startupcontrast_tid) {
+				if( backlight_tid ) {
+					GrDestroyTimer(backlight_tid);
+					backlight_tid = 0;
+				}
+				if( startupcontrast_tid ) {
+					GrDestroyTimer(startupcontrast_tid);
+					startupcontrast_tid = 0;
+				}
 
 				event->type = GR_EVENT_TYPE_KEY_DOWN;
-				window->keystroke(event);
+				if( window ) window->keystroke(event);
 				event->type = GR_EVENT_TYPE_KEY_UP;
 			}
 			break;
@@ -285,9 +296,17 @@ void pz_event_handler(GR_EVENT *event)
 			backlight_tid = 0;
 			ipod_set_backlight(!ipod_get_backlight());
 		}
+#ifdef IPOD
+		else if (((GR_EVENT_TIMER *)event)->tid == startupcontrast_tid) 		{
+			GrDestroyTimer(startupcontrast_tid);
+			startupcontrast_tid = 0;
+			ipod_set_contrast(startup_contrast);
+		}
+#endif
 		else if (window != NULL)
 			window->keystroke(event);
 		break;
+
 	case GR_EVENT_TYPE_TIMEOUT:
 		break;
 
@@ -398,9 +417,13 @@ void pz_set_time_from_file(void)
 #endif
 }
 
+
 int
 main(int argc, char **argv)
 {
+#ifdef IPOD
+	startup_contrast = ipod_get_contrast();
+#endif
 
 	if (GrOpen() < 0) {
 		fprintf(stderr, "GrOpen failed");
@@ -435,6 +458,7 @@ main(int argc, char **argv)
 	
 	ipod_load_settings();
 	backlight_tid = 0;
+	startupcontrast_tid = 0;
 
 	new_menu_window();
 
