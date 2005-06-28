@@ -71,6 +71,26 @@ d2a_set_sample_rate(int rate)
 		}
 		rate = 8000;
 	}
+	else if (rate <= 12000 && ipod_hw_ver >= 0x5) {
+		/* set CLKIDIV2=1 SR=1000 BOSR=0 USB/NORM=1 (USB) */
+		sampling_control = 0x61;
+		rate = 12000;
+	}
+	else if (rate <= 16000 && ipod_hw_ver >= 0x5) {
+		/* set CLKIDIV2=1 SR=1010 BOSR=1 USB/NORM=1 (USB) */
+		sampling_control = 0x55;
+		rate = 16000;
+	}
+	else if (rate <= 22050 && ipod_hw_ver >= 0x5) {
+		/* set CLKIDIV2=1 SR=1101 BOSR=1 USB/NORM=1 (USB) */
+		sampling_control = 0x77;
+		rate = 22050;
+	}
+	else if (rate <= 24000 && ipod_hw_ver >= 0x5) {
+		/* set CLKIDIV2=1 SR=1110 BOSR=0 USB/NORM=1 (USB) */
+		sampling_control = 0x79;
+		rate = 24000;
+	}
 	else if (rate <= 32000) {
 		/* set CLKIDIV2=1 SR=0110 BOSR=0 USB/NORM=1 (USB) */
 		sampling_control = 0x59;
@@ -98,6 +118,11 @@ d2a_set_sample_rate(int rate)
 		rate = 96000;
 	}
 
+	if (ipod_hw_ver == 0x7) {
+		/* CLKIDIV=0 for the mini2 */
+		sampling_control &= ~0x40;
+	}
+
 	d2a_set_active(0x0);
 	ipod_i2c_send(0x1a, 0x10, sampling_control);
 	d2a_set_active(0x1);
@@ -117,12 +142,12 @@ d2a_set_power(int new_state)
 	if ( new_state == D2A_POWER_ON ) {
 		if (ipod_hw_ver > 0x4) {
 			ipod_i2c_send(0x1a, 0x1f, 0xff);	/*Reset*/
-			ipod_i2c_send(0x1a, 0x1e, 0xff);
+			ipod_i2c_send(0x1a, 0x1e, 0x0);
 			ipod_i2c_send(0x1a, 0x32, 0xfc);	/*Pwr Mgmt(1)*/
 			ipod_i2c_send(0x1a, 0x34 | 0x1, 0xf8);	/*Pwr Mgmt(2)*/
 
-			/* set BCLKINV=0(Dont invert BCLK) MS=1(Enable Master) LRSWAP=0 LRP=0 IWL=10(24 bit) FORMAT=10(I2S format) */
-			ipod_i2c_send(0x1a, 0xe, 0x4a);
+			/* set BCLKINV=0(Dont invert BCLK) MS=1(Enable Master) LRSWAP=0 LRP=0 IWL=00(16 bit) FORMAT=10(I2S format) */
+			ipod_i2c_send(0x1a, 0xe, 0x42);
 
 			d2a_set_sample_rate(ipod_sample_rate);
 
@@ -143,6 +168,12 @@ d2a_set_power(int new_state)
 
 			ipod_i2c_send(0x1a, 0x4c, 0x0);		/* Mono out Mix */
 			ipod_i2c_send(0x1a, 0x4e, 0x0);
+
+			if (ipod_hw_ver == 0x7) {
+				ipod_i2c_send(0x1a, 0xC, 0x67);
+				ipod_i2c_send(0x1a, 8, 0x10);
+				ipod_i2c_send(0x1a, 0x12, 1);
+			}
 		}
 		else {
 			/* set power register to POWER_OFF=0 on OUTPD=0, DACPD=0 */
@@ -356,9 +387,17 @@ static int ipodaudio_open(struct inode *inode, struct file *filep)
 		outl(inl(0x70002800) | 0x80000000, 0x70002800);
 		outl(inl(0x70002800) & ~0x80000000, 0x70002800);
 
-		outl(inl(0x70002800) | 0x30, 0x70002800);
+		/* Fifo.Format = 32 bit LSB mode */
+		outl(inl((0x70002800) & ~70) | 0x30, 0x70002800);
+		/* TX.EN = RX.EN = disable */
 		outl(inl(0x70002800) & ~0x30000000, 0x70002800);
+		/* Clear TX and RX FIFOs */
 		outl(inl(0x7000280c) | 0x1100, 0x7000280c);
+
+		/* Data Bit interface Mode == 16 bit */
+		outl(inl(0x70002800) & ~0x300, 0x70002800);
+		/* Data Bit Interface Format == I2S */
+		outl(inl(0x70002800) & ~0xc00, 0x70002800);
 	}
 
 	if (filep->f_mode & FMODE_WRITE) {
@@ -1009,8 +1048,6 @@ static int __init ipodaudio_init(void)
 		/* i2s_init */
 		outl(inl(0x70000020) & ~0x300, 0x70000020);
 		outl(inl(0x70000010) & ~0x3000000, 0x70000010);
-		outl(inl(0x70000010), 0x70000010);
-		outl(inl(0x70000020) & ~0x100, 0x70000020);
 
 		/* device enable */
 		outl(inl(0x6000600c) | 0x800, 0x6000600c);
@@ -1028,10 +1065,6 @@ static int __init ipodaudio_init(void)
 		outl(inl(0x70002800) & ~0x30000000, 0x70002800);
 		outl(inl(0x7000280c) | 0x1100, 0x7000280c);
 
-		if (ipod_hw_ver == 0x6) {
-			outl(inl(0x70000010) & ~0x3000000, 0x70000010);
-			outl(inl(0x70000010), 0x70000010);
-		}
 		/* i2s_init end */
 	}
 	else if (ipod_hw_ver == 0x3) {
