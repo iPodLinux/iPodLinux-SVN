@@ -142,15 +142,18 @@ static void draw_scrollbar(const int height, const int y_top)
 	int y_bottom = y_top + height;
 
 	/* draw the containing box */
+	GrSetGCForeground(tv_gc, appearance_get_color( CS_SCRLBDR ));
 	GrRect(tv_wid, tv_gc, tv_winfo.width - 8, 1, 8, tv_winfo.height - 1);
-	GrSetGCForeground(tv_gc, WHITE);
+
 	/* erase the scrollbar */
+	GrSetGCForeground(tv_gc, appearance_get_color( CS_SCRLCTNR ));
 	GrFillRect(tv_wid, tv_gc, tv_winfo.width - (8 - 1), 1 + 1, 
 			(8 - 2), y_top - (1 + 1));
 	GrFillRect(tv_wid, tv_gc, tv_winfo.width - (8 - 1), y_bottom, (8 - 2), 
 			(tv_winfo.height - 1) - y_bottom);
-	GrSetGCForeground(tv_gc, GRAY);
+
 	/* draw the bar */
+	GrSetGCForeground(tv_gc, appearance_get_color( CS_SCRLKNOB ));
 	GrFillRect(tv_wid, tv_gc, tv_winfo.width - (8 - 1), y_top, (8 - 2), height);
 	GrSetGCForeground(tv_gc, BLACK);
 }
