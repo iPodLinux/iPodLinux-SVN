@@ -44,12 +44,12 @@ static void slider_do_draw(void)
 	int filler;
 	
 	filler = ((int)((slider.value * (SXIN-(SBORDER*2))) / slider.max));
-	GrSetGCForeground(slider_gc, BLACK);
+	GrSetGCForeground(slider_gc, appearance_get_color(CS_SLDRBDR) );
 	GrRect(slider_wid, slider_gc, SXOFF, SYOFF, SXIN, SHEIGHT);
-	GrSetGCForeground(slider_gc, WHITE);
+	GrSetGCForeground(slider_gc, appearance_get_color(CS_SLDRCTNR) );
 	GrFillRect(slider_wid, slider_gc, SXOFF+SBORDER+filler, SYOFF+SBORDER,
 	           (SXIN-(SBORDER*2))-filler, SHEIGHT-(SBORDER*2));
-	GrSetGCForeground(slider_gc, GRAY);
+	GrSetGCForeground(slider_gc, appearance_get_color(CS_SLDRFILL) );
 	GrFillRect(slider_wid, slider_gc, SXOFF+SBORDER, SYOFF+SBORDER,
 	           filler, SHEIGHT-(SBORDER*2));
 }

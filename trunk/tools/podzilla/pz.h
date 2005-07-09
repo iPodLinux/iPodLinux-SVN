@@ -21,6 +21,7 @@
 
 #define MWINCLUDECOLORS
 #include "nano-X.h"
+#include "appearance.h"
 
 #define HEADER_BASELINE 15
 #define HEADER_TOPLINE 20

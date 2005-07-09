@@ -190,6 +190,7 @@ static item_st settings_menu[] = {
 	{"Wheel Sensitivity", set_wheeldebounce, ACTION_MENU},
 	{"Button Debounce", set_buttondebounce, ACTION_MENU},
 	{"Backlight Timer", backlight_options, OPTION_MENU, BACKLIGHT_TIMER, 8},
+	{"Color Scheme", colorscheme_names, OPTION_MENU, COLORSCHEME, CS_NSCHEMES },
 	{"Clicker", NULL, BOOLEAN_MENU, CLICKER},
 	{"Font", new_font_window, ACTION_MENU},
 	{"Browser Path Display", NULL, BOOLEAN_MENU, BROWSER_PATH},
