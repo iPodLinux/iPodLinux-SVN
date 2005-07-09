@@ -355,7 +355,9 @@ calendar_draw(int redraw, int last)
 			GrSetGCForeground(calendar_gc, WHITE);
 			cal_draw_number(ws + 3, ycalpos + (row-1) * WeekSpace + 3, j);
 		} else if (istoday) {
-			GrSetGCForeground(calendar_gc, GRAY);
+			GrSetGCForeground(calendar_gc,
+				(screen_info.bpp == 16)?  
+				GR_RGB( 135, 206, 250 ) : LTGRAY);
 			cal_draw_rect(ws, row);
 			GrSetGCForeground(calendar_gc, BLACK);
 			cal_draw_number(ws + 3, ycalpos + (row-1) * WeekSpace + 3, j);
