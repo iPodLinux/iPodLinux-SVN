@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "../pz.h"
 #include "grafix.h"
 
 #include "globals.h"
@@ -318,6 +319,13 @@ void steroids_ship_drawReserve (GR_WINDOW_ID wid, GR_GC_ID gc)
     int i;
     int x = 7;
     int y = 10;
+
+    GrSetGCForeground (gc, appearance_get_color( CS_BG ));
+    GrFillRect( wid, gc, 0, 0, 
+		 STEROIDS_GAME_SHIPS * (STEROIDS_SHIP_WIDTH + 2) + 10,
+		 HEADER_TOPLINE );
+
+    GrSetGCForeground (gc, appearance_get_color( CS_FG ));
     for (i = 0; i < STEROIDS_GAME_SHIPS; i++)
     {
 	steroids_ship_drawWin (x, y,
@@ -336,7 +344,7 @@ void steroids_ship_eraseReserve (int ships, GR_WINDOW_ID wid, GR_GC_ID gc)
 	- (STEROIDS_SHIP_WIDTH / 2.0) + 0.5;
     y -= (STEROIDS_SHIP_HEIGHT / 2.0) + 0.5;
 
-    GrSetGCForeground(gc, WHITE);
+    GrSetGCForeground(gc, appearance_get_color( CS_BG ));
     GrFillRect(wid,
 	       gc,
 	       x,
