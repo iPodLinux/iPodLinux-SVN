@@ -98,6 +98,7 @@ LDFLAGS+=\
 OBJS=\
 	pz.o \
 	display.o \
+	appearance.o \
 	image.o \
 	browser.o \
 	ipod.o \

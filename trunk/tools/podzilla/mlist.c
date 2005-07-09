@@ -85,22 +85,26 @@ void menu_draw_timer(menu_st *menulist)
 	GrSetGCUseBackground(menulist->menu_gc, GR_FALSE);
 	/* cycle through colors */
 	if(menulist->timer_step == 0 || menulist->timer_step > 6) {
-		GrSetGCForeground(menulist->menu_gc, WHITE);
+		GrSetGCForeground(menulist->menu_gc,
+				appearance_get_color(CS_ARROW0));
 		if(menulist->timer_step == 12)
 			menulist->timer_step = 1;
 		else
 			menulist->timer_step++;
 	}
 	else if(menulist->timer_step == 1 || menulist->timer_step == 6) {
-		GrSetGCForeground(menulist->menu_gc, LTGRAY);
+		GrSetGCForeground(menulist->menu_gc,
+				appearance_get_color(CS_ARROW1));
 		menulist->timer_step++;
 	}
 	else if(menulist->timer_step == 2 || menulist->timer_step == 5) {
-		GrSetGCForeground(menulist->menu_gc, GRAY);
+		GrSetGCForeground(menulist->menu_gc,
+				appearance_get_color(CS_ARROW2));
 		menulist->timer_step++;
 	}
 	else if(menulist->timer_step == 3 || menulist->timer_step == 4) {
-		GrSetGCForeground(menulist->menu_gc, BLACK);
+		GrSetGCForeground(menulist->menu_gc,
+				appearance_get_color(CS_ARROW3));
 		menulist->timer_step++;
 	}
 	/* executable instead */
@@ -157,18 +161,26 @@ void menu_draw_scrollbar(menu_st *menulist)
 		return;
 
 	/* draw the containing box */
+	GrSetGCForeground(menulist->menu_gc,
+				appearance_get_color( CS_SCRLBDR ));
 	GrRect(menulist->menu_wid, menulist->menu_gc, menulist->w - 8,
 			menulist->y, 8, menulist->h - 1);
-	GrSetGCForeground(menulist->menu_gc, WHITE);
+
 	/* erase the scrollbar */
+	GrSetGCForeground(menulist->menu_gc,
+				appearance_get_color( CS_SCRLCTNR ));
 	GrFillRect(menulist->menu_wid, menulist->menu_gc, menulist->w - (8 - 1),
 			menulist->y + 1, (8 - 2), y_top - (menulist->y + 1));
 	GrFillRect(menulist->menu_wid, menulist->menu_gc, menulist->w - (8 - 1),
-			y_bottom, (8 - 2), (menulist->h - 3) - y_bottom);
-	GrSetGCForeground(menulist->menu_gc, GRAY);
+			y_bottom, (8 - 2), (menulist->h - 1) - y_bottom);
+
 	/* draw the bar */
+	GrSetGCForeground(menulist->menu_gc,
+				appearance_get_color( CS_SCRLKNOB ));
 	GrFillRect(menulist->menu_wid, menulist->menu_gc, menulist->w -
 			(8 - 1), y_top, (8 - 2), height);
+
+	/* restore the fg */
 	GrSetGCForeground(menulist->menu_gc, BLACK);
 }
 

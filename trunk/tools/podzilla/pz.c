@@ -125,20 +125,33 @@ static void draw_batt_status()
 		{screen_info.cols-22, 15},
 		{screen_info.cols-22, 6}
 	};
+
+	GrSetGCForeground(root_gc, appearance_get_color(CS_BATTCTNR) );
+	GrFillPoly(root_wid, root_gc, BATT_POLY_POINTS, batt_outline);
+
+	GrSetGCForeground(root_gc, appearance_get_color(CS_BATTBDR) );
 	GrPoly(root_wid, root_gc, BATT_POLY_POINTS, batt_outline);
+
+	// if low, use CS_BATTLOW instead of CS_BATTFILL
+	GrSetGCForeground(root_gc, appearance_get_color(CS_BATTFILL) );
 	GrFillRect(root_wid, root_gc, screen_info.cols-20, 8, 15, 6);
 }
 
 static void draw_hold_status()
 {
 	if (hold_is_on) {
-		GrSetGCForeground(root_gc, BLACK);
-		GrPoly(root_wid, root_gc, HOLD_POLY_POINTS, hold_outline);
+		GrSetGCForeground(root_gc, appearance_get_color(CS_HOLDFILL));
 		GrFillRect(root_wid, root_gc, 8, 9, 7, 5);
+
+		GrSetGCForeground(root_gc, appearance_get_color(CS_HOLDBDR));
+		GrPoly(root_wid, root_gc, HOLD_POLY_POINTS, hold_outline);
 	}
 	else {
-		GrSetGCForeground(root_gc, WHITE);
+		GrSetGCForeground(root_gc, appearance_get_color(CS_TITLEBG));
+		GrFillPoly(root_wid, root_gc, HOLD_POLY_POINTS, hold_outline);
 		GrPoly(root_wid, root_gc, HOLD_POLY_POINTS, hold_outline);
+
+		/* erase out the handle bit */
 		GrFillRect(root_wid, root_gc, 8, 9, 7, 5);
 	}
 }
@@ -333,9 +346,12 @@ void pz_draw_header(char *header)
 	GR_SIZE width, height, base, elwidth;
 	int len;
 	
-	GrSetGCForeground(root_gc, BLACK);
-	GrSetGCBackground(root_gc, WHITE);
-	GrClearWindow(root_wid, 0);
+	//GrClearWindow(root_wid, 0);
+	GrSetGCForeground(root_gc, appearance_get_color(CS_TITLEBG) );
+	GrFillRect( root_wid, root_gc, 0, 0, screen_info.cols, HEADER_TOPLINE);
+
+	GrSetGCForeground(root_gc, appearance_get_color(CS_TITLEFG) );
+	GrSetGCBackground(root_gc, appearance_get_color(CS_TITLEBG) );
 
 	GrGetGCTextSize(root_gc, header, -1, GR_TFASCII, &width, &height,
 			&base);
@@ -358,6 +374,7 @@ void pz_draw_header(char *header)
 			HEADER_BASELINE, header, -1, GR_TFASCII);
 	}
 
+	GrSetGCForeground(root_gc, appearance_get_color(CS_TITLELINE) );
 	GrLine(root_wid, root_gc, 0, HEADER_TOPLINE, screen_info.cols,
 			HEADER_TOPLINE);
 
@@ -457,6 +474,7 @@ main(int argc, char **argv)
 	}
 	
 	ipod_load_settings();
+	appearance_init();
 	backlight_tid = 0;
 	startupcontrast_tid = 0;
 
