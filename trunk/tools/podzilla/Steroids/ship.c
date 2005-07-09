@@ -320,12 +320,12 @@ void steroids_ship_drawReserve (GR_WINDOW_ID wid, GR_GC_ID gc)
     int x = 7;
     int y = 10;
 
-    GrSetGCForeground (gc, appearance_get_color( CS_BG ));
+    GrSetGCForeground (gc, appearance_get_color( CS_TITLEBG ));
     GrFillRect( wid, gc, 0, 0, 
 		 STEROIDS_GAME_SHIPS * (STEROIDS_SHIP_WIDTH + 2) + 10,
 		 HEADER_TOPLINE );
 
-    GrSetGCForeground (gc, appearance_get_color( CS_FG ));
+    GrSetGCForeground (gc, appearance_get_color( CS_TITLEFG ));
     for (i = 0; i < STEROIDS_GAME_SHIPS; i++)
     {
 	steroids_ship_drawWin (x, y,
@@ -344,7 +344,7 @@ void steroids_ship_eraseReserve (int ships, GR_WINDOW_ID wid, GR_GC_ID gc)
 	- (STEROIDS_SHIP_WIDTH / 2.0) + 0.5;
     y -= (STEROIDS_SHIP_HEIGHT / 2.0) + 0.5;
 
-    GrSetGCForeground(gc, appearance_get_color( CS_BG ));
+    GrSetGCForeground(gc, appearance_get_color( CS_TITLEBG ));
     GrFillRect(wid,
 	       gc,
 	       x,
