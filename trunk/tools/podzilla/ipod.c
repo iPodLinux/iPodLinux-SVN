@@ -142,6 +142,9 @@ int ipod_set_setting(int setting, int value)
 	case BACKLIGHT_TIMER:
 		ipod_set_backlight_timer(value);
 		break;
+	case COLORSCHEME:
+		appearance_set_color_scheme(value);
+		break;
 	}
 	
 	return 0;
@@ -192,6 +195,7 @@ int ipod_load_settings(void)
 		ipod_set_setting(ACTION_DEBOUNCE, 400);
 		ipod_set_setting(BACKLIGHT_TIMER, 0);
 		ipod_set_setting(DSPFREQUENCY, 0);
+		ipod_set_setting(COLORSCHEME, 0);
 	}
 
 	return 0;
