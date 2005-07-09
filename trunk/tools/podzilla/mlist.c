@@ -172,7 +172,8 @@ void menu_draw_scrollbar(menu_st *menulist)
 	GrFillRect(menulist->menu_wid, menulist->menu_gc, menulist->w - (8 - 1),
 			menulist->y + 1, (8 - 2), y_top - (menulist->y + 1));
 	GrFillRect(menulist->menu_wid, menulist->menu_gc, menulist->w - (8 - 1),
-			y_bottom, (8 - 2), (menulist->h - 1) - y_bottom);
+			y_bottom, (8 - 2), (menulist->h - 
+			    ((screen_info.bpp == 16)?1:3)) - y_bottom);
 
 	/* draw the bar */
 	GrSetGCForeground(menulist->menu_gc,
