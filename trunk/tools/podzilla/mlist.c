@@ -192,10 +192,10 @@ void menu_clear_pixmap(menu_st *menulist, int pos)
 		Dprintf("menu_clear_pixmap::No Such Pixmap\n");
 		return;
 	}
-	GrSetGCForeground(menulist->menu_gc, WHITE);
+	GrSetGCForeground(menulist->menu_gc, appearance_get_color( CS_BG ));
 	GrFillRect(menulist->pixmaps[menulist->pixmap_pos[pos]],
 			menulist->menu_gc, 0, 0, 440, menulist->height);
-	GrSetGCForeground(menulist->menu_gc, BLACK);
+	GrSetGCForeground(menulist->menu_gc, appearance_get_color( CS_FG ));
 }
 
 /* draws the pixmap on the screen; should probably be menu_draw_pixmap() */
@@ -214,7 +214,9 @@ void menu_draw_item(menu_st *menulist, int item)
 					hw_version < 70000))
 		/* make sure that the xor works properly for devices with
 		 * fbrev turned off (host, photo) */
-			GrSetGCForeground(menulist->menu_gc, WHITE);
+			GrSetGCForeground(menulist->menu_gc, WHITE );
+			/* just xor the menu option for now */
+			/* eventually, draw the correct colors... */
 		GrFillRect(menulist->pixmaps[menulist->pixmap_pos[item]],
 				menulist->menu_gc, 0, 0, menulist->w,
 				menulist->height);
@@ -269,6 +271,8 @@ void menu_retext_pixmap(menu_st *menulist, int pixmap, item_st *item)
 		op = GR_TFUC16;
 	else if (ASCII & menulist->op)
 		op = GR_TFASCII;
+	/* this makes the text draw without outlines */
+	GrSetGCUseBackground(menulist->menu_gc, GR_FALSE);
 	GrText(menulist->pixmaps[menulist->pixmap_pos[pixmap]],
 			menulist->menu_gc, 8, 1, item->text,
 			strlen(item->text), op | GR_TFTOP);
@@ -344,7 +348,7 @@ void menu_draw(menu_st *menulist)
 		menu_draw_item(menulist, i);
 
 	/* erase the bottom unused part of the allocated screen */
-	GrSetGCForeground(menulist->menu_gc, WHITE);
+	GrSetGCForeground(menulist->menu_gc, appearance_get_color( CS_BG ));
 	GrFillRect(menulist->menu_wid, menulist->menu_gc, menulist->x,
 			menulist->height * menulist->screen_items, menulist->w,
 			menulist->h - (menulist->height *

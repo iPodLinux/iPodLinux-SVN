@@ -20,6 +20,9 @@
 
 /* 
  * $Log: appearance.h,v $
+ * Revision 1.2  2005/07/10 01:36:28  yorgle
+ * Added color scheming to message and pz_error
+ *
  * Revision 1.1  2005/07/09 20:49:16  yorgle
  * Added in appearance.[ch].  Currently it only supports color schemes
  * Color scheme selection in menu.c
@@ -73,8 +76,8 @@
 
 
 /* counts of number of schemes... */
-#define CS_NSCHEMES	(3)	/* total number of color schemes */
-#define CS_MONO_LAST	(0)	/* last index of mono schemes */
+#define CS_NSCHEMES	(5)	/* total number of color schemes */
+#define CS_MONO_LAST	(1)	/* last index of mono schemes */
 
 /* the array of names for the menu system */
 extern char * colorscheme_names[];
