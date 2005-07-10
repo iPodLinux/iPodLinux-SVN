@@ -19,7 +19,12 @@
  */
 
 /* 
- * $Log: wumpus.c,v $
+ * $Log: appearance.c,v $
+ * Revision 1.1  2005/07/09 20:49:16  yorgle
+ * Added in appearance.[ch].  Currently it only supports color schemes
+ * Color scheme selection in menu.c
+ * color-scheme support in mlist.c, slider.c, pz.c (menu scrollbar, pz header, sclider)
+ *
  *
  */
 
@@ -40,30 +45,33 @@ static GR_COLOR colorscheme_mono[] = {
 	BLACK,				/* title line */
 	BLACK, WHITE, GRAY,		/* scrollbar */
 	BLACK, WHITE, GRAY,		/* slider */
-	BLACK, WHITE, DKGRAY, BLACK,	/* battery */
+	BLACK, WHITE, DKGRAY, BLACK, GRAY,	/* battery */
 	BLACK, BLACK,			/* lock */
-
+	BLACK, GRAY, WHITE, WHITE,	/* message window */
 };
 
 static GR_COLOR colorscheme_color[] = {
+	/* menu colors */
 	GR_RGB( 245, 222, 179 ),	/* sandy brown */
 	GR_RGB(   0,   0,   0 ),	/* black */
 
 	GR_RGB(  70, 130, 180 ),	/* steel blue */
 	GR_RGB(   0,   0, 139 ),	/* dark blue */
 	GR_RGB( 255, 255, 255 ),	/* white */
+
 	WHITE, 				/* animated arrow */
 	    GR_RGB( 175, 238, 238 ),
 	    GR_RGB( 135, 206, 235 ),
 	    GR_RGB(   0,   0, 139 ),	
 
+	/* title */
 	GR_RGB( 212, 246, 246 ),	/* light blue */
 	GR_RGB(   0,   0, 128 ),	/* navy */
 	GR_RGB(   0, 128, 128 ),	/* teal */
 
 	BLACK, 				/* scrollbar */
-	    GR_RGB( 212, 246, 246 ),       /* lt blue */
-	    GR_RGB( 255,   0,   0 ),	   /* red */
+	    GR_RGB( 200, 232, 253 ),	   /* lt blue */
+	    GR_RGB(   0, 128, 128 ),	   /* teal */
 	BLACK, 				/* slider */
 	    GR_RGB( 200, 232, 253 ),	   /* lt blue */
 	    GR_RGB(   0, 128, 128 ),	   /* teal */
@@ -71,8 +79,12 @@ static GR_COLOR colorscheme_color[] = {
 	    GR_RGB( 255, 255, 255 ),	   /* white */
 	    GR_RGB(   0, 255,   0 ),	   /* bright green */
 	    GR_RGB( 255, 165,   0 ),	   /* orange */
+	    GR_RGB(   0,   0, 255 ),       /* blue */
 	GR_RGB( 139,  0,   0 ),		/* lock */
 	    GR_RGB( 255,   0,   0 ),
+	BLACK, GREEN,			/* messages */
+	    GR_RGB( 200, 232, 253 ),	   /* lt blue */
+	    GR_RGB( 255, 255,   0 ),	   /* yellow */
 };
 
 static GR_COLOR colorscheme_color_strange[] = {
@@ -87,8 +99,11 @@ static GR_COLOR colorscheme_color_strange[] = {
 	GR_RGB( 190, 180, 210 ),
 	WHITE, GREEN, BLUE,		/* scrollbar */
 	WHITE, BLACK, RED,		/* slider */
-	WHITE, BLACK, GREEN, YELLOW,	/* battery */
+	WHITE, BLACK, GREEN, YELLOW, RED,	/* battery */
 	WHITE, BLUE,			/* lock */
+	BLACK, GREEN,			/* messages */
+	    GR_RGB( 200, 232, 253 ),	   /* lt blue */
+	    GR_RGB( 255, 255,   0 ),	   /* yellow */
 };
 
 
@@ -100,6 +115,9 @@ static GR_COLOR * schemes[] = {
 	colorscheme_color_strange
 };
 
+/* these are separate, since they are also used in the menu system. 
+ *  these need to be in sync with the above schemes[] table. 
+ */
 char * colorscheme_names[] = {
 	"Mono",
 	"Color",
@@ -107,11 +125,11 @@ char * colorscheme_names[] = {
 };
 
 
-GR_COLOR * colorscheme_current = NULL;
+GR_COLOR * colorscheme_current = colorscheme_mono;  /* current color scheme */
+static int colorscheme_current_idx = 0;		    /* current index */
 
-static int colorscheme_current_idx = 0;
 
-
+/* this sets a new scheme.  It constrains the input value to something valid */
 void appearance_set_color_scheme( int index )
 {
 	if( index < 0 ) index = 0;
@@ -120,11 +138,13 @@ void appearance_set_color_scheme( int index )
 	colorscheme_current = schemes[ colorscheme_current_idx ];
 }
 
+/* this gets the current color scheme value */
 int appearance_get_color_scheme( void )
 {
     	return( colorscheme_current_idx );
 }
 
+/* this gets a color from the current color scheme */
 GR_COLOR appearance_get_color( int index )
 {
 	if( index < 0 ) index = 0;
@@ -133,6 +153,7 @@ GR_COLOR appearance_get_color( int index )
 	return( colorscheme_current[index] );
 }
 
+/* this sets up the tables and such.  Eventually this might load in files */
 void appearance_init( void )
 {
 	int reqscheme = ipod_get_setting( COLORSCHEME );

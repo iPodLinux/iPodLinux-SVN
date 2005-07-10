@@ -31,6 +31,7 @@ static GR_WINDOW_ID msg_wid;
 static GR_GC_ID msg_gc;
 static char **msglines;
 static int linenum;
+static int this_is_error;
 
 static void msg_build_msg(char *msg_message)
 {
@@ -97,7 +98,15 @@ static void msg_do_draw()
 
 	GrGetWindowInfo(msg_wid, &winfo);
 
+	/* fill the background */
+	GrSetGCForeground(msg_gc, appearance_get_color( 
+				(this_is_error)?CS_ERRORBG:CS_MESSAGEBG ));
+	GrFillRect( msg_wid, msg_gc, 0, 0, winfo.width, winfo.height );
+
+	GrSetGCForeground(msg_gc, appearance_get_color( CS_MESSAGELINE ));
 	GrRect(msg_wid, msg_gc, 1, 1, winfo.width - 2, winfo.height - 2);
+
+	GrSetGCForeground(msg_gc, appearance_get_color( CS_MESSAGEFG ));
 	for(i=linenum; i; i--)
 		GrText(msg_wid, msg_gc, 5, (((winfo.height-10) /
 				linenum) * i), msglines[i-1], -1,
@@ -120,15 +129,16 @@ static int msg_do_keystroke(GR_EVENT * event)
 
 	return ret;
 }
+	
 
-void new_message_window(char *message)
+void new_message_common_window(char *message)
 {
 	GR_SIZE width, height, base;
 	int i, maxwidth;
 
 	msg_gc = pz_get_gc(1);
 	GrSetGCUseBackground(msg_gc, GR_FALSE);
-	GrSetGCForeground(msg_gc, BLACK);
+	GrSetGCForeground(msg_gc, appearance_get_color( CS_MESSAGEFG ));
 
 	msg_build_msg(message);
 	maxwidth = 0;
@@ -153,6 +163,12 @@ void new_message_window(char *message)
 	msg_timer = GrCreateTimer(msg_wid, 6000);
 }
 
+void new_message_window(char *message)
+{
+	this_is_error = 0;
+	new_message_common_window(message);
+}
+
 void pz_error(char *fmt, ...)
 {
 	va_list ap;
@@ -161,7 +177,8 @@ void pz_error(char *fmt, ...)
 	va_start(ap, fmt);
 	vsnprintf(msg, 1023, fmt, ap);
 	va_end(ap);
-	new_message_window(msg);
+	this_is_error = 1;
+	new_message_common_window(msg);
 	fprintf(stderr, "%s\n", msg);
 }
 
@@ -170,6 +187,7 @@ void pz_perror(char *msg)
 	char fullmsg[1024];
 
 	snprintf(fullmsg, 1023, "%s: %s", msg, strerror(errno));
-	new_message_window(fullmsg);
+	this_is_error = 1;
+	new_message_common_window(fullmsg);
 	fprintf(stderr, "%s\n", fullmsg);
 }
