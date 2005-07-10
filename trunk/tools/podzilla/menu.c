@@ -194,6 +194,7 @@ static item_st settings_menu[] = {
 	{"Clicker", NULL, BOOLEAN_MENU, CLICKER},
 	{"Font", new_font_window, ACTION_MENU},
 	{"Browser Path Display", NULL, BOOLEAN_MENU, BROWSER_PATH},
+	{"Show Hidden Files", NULL, BOOLEAN_MENU, BROWSER_HIDDEN},
 	{"Reset All Settings", reset_menu, SUB_MENU_HEADER},
 	{"Save Settings", ipod_save_settings, ACTION_MENU},
 	{"Load Settings", ipod_load_settings, ACTION_MENU},

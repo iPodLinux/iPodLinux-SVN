@@ -51,6 +51,7 @@ typedef struct {
 	char name[64];
 	char *full_name;
 	unsigned short type;
+	unsigned int op;
 } Directory;
 
 static char current_dir[128];
@@ -84,6 +85,21 @@ extern int is_ascii_file(char *filename);
 extern void new_stringview_window(char *buf, char *title);
 void new_exec_window(char *filename);
 
+static int dir_cmp(const void *x, const void *y) 
+{
+	Directory *a = (Directory *)x;
+	Directory *b = (Directory *)y;
+
+	if (a->type == FILE_TYPE_DIRECTORY &&
+		b->type != FILE_TYPE_DIRECTORY)
+		return -1;
+	if (a->type != FILE_TYPE_DIRECTORY &&
+		b->type == FILE_TYPE_DIRECTORY)
+		return 1;
+	
+	return strcasecmp(a->name, b->name);
+} 
+
 static void browser_exit()
 {
 	int i;
@@ -102,8 +118,9 @@ static void browser_mscandir(char *dira)
 	struct stat stat_result;
 	struct dirent *subdir;
 
-	if(browser_menu != NULL)
+	if(browser_menu != NULL) {
 		menu_destroy(browser_menu);
+	}
 	browser_menu = menu_init(browser_wid, browser_gc, "File Browser",
 			0, 1, screen_info.cols, screen_info.rows -
 			(HEADER_TOPLINE + 1), NULL, NULL, ASCII);
@@ -115,8 +132,25 @@ static void browser_mscandir(char *dira)
 	browser_nbEntries = 0;
 
 	while ((subdir = readdir(dir))) {
-		if(strncmp(subdir->d_name, ".", strlen(subdir->d_name)) == 0)
+		if(strncmp(subdir->d_name, ".", strlen(subdir->d_name)) == 0) {
 			continue;
+		}
+		if(strncmp(subdir->d_name, "..", strlen(subdir->d_name)) == 0) {
+			strcpy(browser_entries[browser_nbEntries].name,
+				".. [Parent Directory]");
+			browser_entries[browser_nbEntries].full_name =
+				strdup(browser_entries[browser_nbEntries].name);
+			browser_entries[browser_nbEntries].type =
+				FILE_TYPE_DIRECTORY;
+			browser_entries[browser_nbEntries].op = STUB_MENU;
+			browser_nbEntries++;
+			continue;
+		}
+		if(!ipod_get_setting(BROWSER_HIDDEN)) {
+			if (subdir->d_name[0] == '.') {
+				continue;
+			}
+		}
 		if(browser_nbEntries >= MAX_ENTRIES) {
 			pz_error("Directory contains too many files.");
 			break;
@@ -147,12 +181,16 @@ static void browser_mscandir(char *dira)
 				FILE_TYPE_OTHER;
 			op = STUB_MENU;
 		}
-		menu_add_item(browser_menu,
-			browser_entries[browser_nbEntries].name, NULL, 0, op);
+		browser_entries[browser_nbEntries].op = op;
 
 		browser_nbEntries++;
 	}
 	closedir(dir);
+
+	qsort(browser_entries, browser_nbEntries, sizeof(Directory), dir_cmp);
+	for (i = 0; i < browser_nbEntries; i++)
+		menu_add_item(browser_menu, browser_entries[i].name,
+				NULL, 0, browser_entries[i].op);
 }
 
 static void browser_exec_file(char *filename)
@@ -299,6 +337,11 @@ static void handle_type_other(char *filename)
 
 static void browser_selection_activated(unsigned short userChoice)
 {
+	if (userChoice == 0) {
+		chdir("..");
+		getcwd(current_dir, sizeof(current_dir));
+		browser_mscandir("./");
+	}
 	switch (browser_entries[userChoice].type) {
 	case FILE_TYPE_DIRECTORY:
 		chdir(browser_entries[userChoice].full_name);
