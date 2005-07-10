@@ -115,8 +115,7 @@ void new_mandel_window(void)
 				screen_info.cols, screen_info.rows - (HEADER_TOPLINE+1),
 				draw_header, handle_event);
 	// create the status window
-	status_wid = pz_new_window (4, 4, 12, 12, draw_idle_status, handle_event);
-	
+	status_wid = pz_new_window (22, 4, 12, 12, draw_idle_status, handle_event);
 	 // get screen info
 	GrGetWindowInfo(mandel_wid, &wi);
 	
@@ -182,28 +181,30 @@ static void create_status() {
 	int ypie[] = { -6, -3, 0,  3, 6,  3,  0, -3 }; 
 
 	// we need 16 frames
-	GrSetGCForeground(mandel_gc, WHITE);
+	GrSetGCForeground (mandel_gc, appearance_get_color( CS_TITLEBG ));
+
 	for (i=0;i<16;i++) {
 		status_image[i] = GrNewPixmap(12, 12,  NULL);
 		GrFillRect(status_image[i],mandel_gc,0,0,12,12);	
 	}
 	
-	// the white part
+	// the background
 	for (i=1;i<8;i++) {
-		GrSetGCForeground(mandel_gc, GRAY);
+		GrSetGCForeground(mandel_gc, appearance_get_color(CS_TITLEFG));
 		GrFillEllipse(status_image[i],mandel_gc,6,6,6,6);
-		GrSetGCForeground(mandel_gc, WHITE);
+		GrSetGCForeground(mandel_gc, appearance_get_color(CS_TITLEBG));
 		GrArc(status_image[i],mandel_gc,6,6,6,6,0,-6,xpie[i],ypie[i],MWPIE);
 	}
-	// the dark part
-	GrSetGCForeground(mandel_gc, GRAY);
+	// the foreground part
+	GrSetGCForeground(mandel_gc, appearance_get_color(CS_TITLEFG));
 	GrFillEllipse(status_image[8],mandel_gc,6,6,6,6);
 	for (i=9;i<16;i++) GrArc(status_image[i],mandel_gc,6,6,6,6,0,-6,xpie[i-8],ypie[i-8],MWPIE);
 }
 
 // delete the status window contents
 static void draw_idle_status() {
-	GrClearWindow(status_wid, GR_TRUE);
+	GrSetGCForeground (mandel_gc, appearance_get_color( CS_TITLEBG ));
+	GrFillRect( status_wid, mandel_gc, 0, 0, 12, 12 );
 	status_counter=0;
 }
 
