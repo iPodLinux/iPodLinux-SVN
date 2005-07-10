@@ -64,6 +64,8 @@
 
 #define COLORSCHEME	(43)
 
+#define BROWSER_HIDDEN	(44)
+
 #define MIN_CONTRAST	0
 #define MAX_CONTRAST	128
 
