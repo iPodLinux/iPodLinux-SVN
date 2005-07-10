@@ -95,10 +95,8 @@ static void buildLineData(char *starttextptr)
 		while (1) {
 			GR_SIZE width, height, base;
 
-			if((*curtextptr == '\r') || (*curtextptr == '\n')) {
-				curtextptr++;
+			if((*curtextptr == '\r') || (*curtextptr == '\n'))
 				break;
-			}
 			else if(*curtextptr == '\0')
 				break;
 
@@ -122,12 +120,17 @@ static void buildLineData(char *starttextptr)
 			curtextptr++;
 		}
 
-		if((localAr[currentLine] = malloc((curtextptr - sol) *
+		if((localAr[currentLine] = malloc((curtextptr - sol + 1) *
 						sizeof(char)))==NULL) {
 			destroy_textview_window("malloc failed");
 			return;
 		}
-		snprintf(localAr[currentLine], curtextptr - sol, "%s", sol);
+		snprintf(localAr[currentLine], curtextptr - sol + 1, "%s", sol);
+
+		if(*curtextptr == '\r')
+			curtextptr++;
+		if(*curtextptr == '\n')
+			curtextptr++;
 		
 		currentLine++;
 	}
