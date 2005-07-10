@@ -95,10 +95,10 @@ static GR_BITMAP podzilla_bmp[2][11]={
 	
 GR_COLOR BallColors[] = {
     GR_RGB(255,   0,   0),
-    GR_RGB(  0, 255,   0),
+    GR_RGB(  0, 128,   0),
     GR_RGB(  0,   0, 255),
     GR_RGB(255,   0, 128),
-    GR_RGB(128, 255,   0),
+    GR_RGB(128, 128,   0),
     GR_RGB(128, 128,  64),
     GR_RGB(255, 255, 255),
     GR_RGB( 64, 255,   0)
@@ -837,6 +837,7 @@ void new_ipobble_window()
 
 	GrSetGCUseBackground(ipobble_gc, GR_TRUE);
 	GrSetGCForeground(ipobble_gc, BLACK);
+	GrSetGCBackground(ipobble_gc, WHITE);
 
 	ipobble_wid = pz_new_window(0, HEADER_TOPLINE + 1,
 			screen_info.cols,
