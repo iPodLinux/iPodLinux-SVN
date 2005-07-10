@@ -19,7 +19,12 @@
  */
 
 /* 
- * $Log: wumpus.c,v $
+ * $Log: appearance.h,v $
+ * Revision 1.1  2005/07/09 20:49:16  yorgle
+ * Added in appearance.[ch].  Currently it only supports color schemes
+ * Color scheme selection in menu.c
+ * color-scheme support in mlist.c, slider.c, pz.c (menu scrollbar, pz header, sclider)
+ *
  *
  */
 
@@ -53,22 +58,35 @@
 #define CS_BATTCTNR	(19)	/* battery icon container */
 #define CS_BATTFILL	(20)	/* battery icon filled (normal) */
 #define CS_BATTLOW	(21)	/* battery icon filled (low) */
+#define CS_BATTCHRG	(22)	/* battery is charging */
 
-#define CS_HOLDBDR	(22)	/* hold icon border */
-#define CS_HOLDFILL	(23)	/* hold icon fill */
+#define CS_HOLDBDR	(23)	/* hold icon border */
+#define CS_HOLDFILL	(24)	/* hold icon fill */
 
-#define CS_MAX		(23)
+/* error/warning messages */
+#define CS_MESSAGEFG	(25)	/* pz_message forground text */
+#define CS_MESSAGELINE	(26)	/* highlight line */
+#define CS_MESSAGEBG	(27)	/* pz_message background */
+#define CS_ERRORBG	(28)	/* pz_error background */
+
+#define CS_MAX		(28)	/* total number of colors per scheme */
 
 
 /* counts of number of schemes... */
 #define CS_NSCHEMES	(3)	/* total number of color schemes */
 #define CS_MONO_LAST	(0)	/* last index of mono schemes */
 
+/* the array of names for the menu system */
 extern char * colorscheme_names[];
 
+/* initialize the color scheme system */
+void appearance_init();
+
+/* get and set the current scheme number (index into the above) */
 void appearance_set_color_scheme( int index );
 int appearance_get_color_scheme( void );
 
+/* gets a color from the currently selected scheme.
+   use the above #defines to select which color to retrieve */
 GR_COLOR appearance_get_color( int index );
 
-void appearance_init();
