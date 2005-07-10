@@ -1,3 +1,8 @@
+Scott Lawrence - Sun Jul 10 2005
+	Added some more (crappy) color schemes, and a monochrome-inverted scheme
+	Full menu color scheming done (although it's a little glitchy)
+	(previously) Added 5+ second MENU contrast restore feature
+
 Courtney Cavin - Sun Jul 10 2005
 	added browser directory sorting, case-insensitive alpha, dirs first
 	added 'Show Hidden Files' setting
