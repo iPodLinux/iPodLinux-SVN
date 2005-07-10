@@ -1,3 +1,9 @@
+Scott Lawrence - Sat Jul 9 2005
+	Added appearance-based color scheming support
+	Added color scheme to settings, message, fixes for games, etc
+	(previously) Added Mandelpod
+	(previously) Integrated mikmod support
+
 Matthew Westcott - Sun Jun 5 2005
 	Added TZX (speecy cart) playback
 
