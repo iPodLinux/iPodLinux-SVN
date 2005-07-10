@@ -20,6 +20,12 @@
 
 /* 
  * $Log: appearance.c,v $
+ * Revision 1.3  2005/07/10 22:58:49  yorgle
+ * Added in more color schemes: Monocrhome-inverted, Amigados 1, amigados 2
+ * Added a hook to menu.c to limit the choices on monochrome ipods
+ * Added patches to mlist to draw menu items in color
+ * - needs a full screen redraw when color schemes change, or a forced-restart or somesuch.
+ *
  * Revision 1.2  2005/07/10 01:36:28  yorgle
  * Added color scheming to message and pz_error
  *
@@ -130,13 +136,13 @@ static GR_COLOR colorscheme_amiga1[] = {
 #define A2_GRAY  GR_RGB( 170, 170, 170 )
 #define A2_WHITE GR_RGB( 255, 255, 255 )
 #define A2_BLACK GR_RGB(   0,   0,   0 )
-#define A2_BLUE  GR_RGB( 102, 136, 187 )
+#define A2_BLUE  GR_RGB( 131, 172, 214 )
 
 static GR_COLOR colorscheme_amiga2[] = {
 	A2_GRAY, A2_BLACK,		/* menu items */
 	A2_BLACK, A2_GRAY, A2_BLUE,	/* selected items */
 	A2_BLACK, A2_WHITE, A2_WHITE, A2_BLUE, 	/* anim */
-	A2_BLACK, A2_WHITE, A2_BLUE,	/* title */
+	A2_BLUE, A2_BLACK, A2_BLACK,	/* title */
 	A2_BLUE, A2_BLACK, A2_WHITE,	/* scrollbar */
 	A2_BLUE, A2_BLACK, A2_WHITE,	/* slider */
 	A2_WHITE, A2_BLACK, A2_BLUE, A2_BLUE, A2_BLUE,	/* battery */
