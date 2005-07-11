@@ -115,8 +115,8 @@ void set_buttondebounce(void)
 static void draw_batt_status()
 {
 	GR_POINT batt_outline[] = {
-		{screen_info.cols-22, 6},
-		{screen_info.cols-4, 6},
+		{screen_info.cols-22, 5},
+		{screen_info.cols-4, 5},
 		{screen_info.cols-4, 8},
 		{screen_info.cols-3, 8},
 		{screen_info.cols-3, 12},
@@ -133,8 +133,9 @@ static void draw_batt_status()
 	GrPoly(root_wid, root_gc, BATT_POLY_POINTS, batt_outline);
 
 	// if low, use CS_BATTLOW instead of CS_BATTFILL
+	// if charging, use CS_BATTCHRG
 	GrSetGCForeground(root_gc, appearance_get_color(CS_BATTFILL) );
-	GrFillRect(root_wid, root_gc, screen_info.cols-20, 8, 15, 6);
+	GrFillRect(root_wid, root_gc, screen_info.cols-20, 7, 15, 7);
 }
 
 static void draw_hold_status()
