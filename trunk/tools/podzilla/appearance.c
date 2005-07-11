@@ -20,6 +20,9 @@
 
 /* 
  * $Log: appearance.c,v $
+ * Revision 1.4  2005/07/10 23:18:28  yorgle
+ * Tweaked the Amiga2 color scheme to be more readable (black-on-blue for title)
+ *
  * Revision 1.3  2005/07/10 22:58:49  yorgle
  * Added in more color schemes: Monocrhome-inverted, Amigados 1, amigados 2
  * Added a hook to menu.c to limit the choices on monochrome ipods
@@ -78,6 +81,25 @@ static GR_COLOR colorscheme_monoinv[] = {
 	WHITE, DKGRAY, BLACK, BLACK
 };
 
+/* the above monochrome, but with classic gameboy pea-green hues */
+#define GB_WHITE	GR_RGB( 168, 168, 125)
+#define GB_GRAY		GR_RGB( 125, 125,  82)
+#define GB_DKGRAY	GR_RGB(  82,  82,  38)
+#define GB_BLACK	GR_RGB(   0,   0,   0)
+
+static GR_COLOR colorscheme_gameboy[] = {
+	GB_WHITE, GB_BLACK,
+	GB_BLACK, GB_DKGRAY, GB_WHITE,
+	GB_WHITE, GB_GRAY, GB_DKGRAY, GB_BLACK,
+	GB_WHITE, GB_BLACK, GB_BLACK,
+	
+	GB_BLACK, GB_WHITE, GB_DKGRAY,
+	GB_BLACK, GB_WHITE, GB_DKGRAY,
+	GB_BLACK, GB_WHITE, GB_DKGRAY, GB_BLACK, GB_GRAY,
+	GB_BLACK, GB_BLACK,
+	GB_BLACK, GB_GRAY, GB_WHITE, GB_WHITE,
+};
+
 /* a basic blueish scheme.  it looks ok, but nothing to write home about */
 static GR_COLOR colorscheme_cyans[] = {
 	/* menu colors */
@@ -127,8 +149,8 @@ static GR_COLOR colorscheme_amiga1[] = {
 	A1_ORANGE, A1_BLACK, A1_ORANGE, A1_BLACK,	/* anim */
 	A1_WHITE, A1_BLACK, A1_ORANGE,	/* titlebar */
 	A1_BLUE, A1_BLACK, A1_ORANGE,	/* scrollbar */
-	A1_BLUE, A1_BLACK, A1_ORANGE,	/* slider */
-	A1_WHITE, A1_BLACK, A1_WHITE, A1_ORANGE, A1_BLUE, 	/* battery */
+	A1_WHITE, A1_BLACK, A1_ORANGE,	/* slider */
+	A1_BLACK, A1_WHITE, A1_BLUE, A1_ORANGE, A1_BLUE, 	/* battery */
 	A1_ORANGE, A1_ORANGE,		/* hold */
 	A1_BLACK, A1_BLUE, A1_WHITE, A1_ORANGE,	/* error/warning */
 };
@@ -144,7 +166,7 @@ static GR_COLOR colorscheme_amiga2[] = {
 	A2_BLACK, A2_WHITE, A2_WHITE, A2_BLUE, 	/* anim */
 	A2_BLUE, A2_BLACK, A2_BLACK,	/* title */
 	A2_BLUE, A2_BLACK, A2_WHITE,	/* scrollbar */
-	A2_BLUE, A2_BLACK, A2_WHITE,	/* slider */
+	A2_WHITE, A2_BLACK, A2_BLUE,	/* slider */
 	A2_WHITE, A2_BLACK, A2_BLUE, A2_BLUE, A2_BLUE,	/* battery */
 	A2_WHITE, A2_BLUE,		/* hold */
 	A2_BLACK, A2_BLUE, A2_WHITE, A2_BLUE,	/* error */
@@ -155,6 +177,7 @@ int colorscheme_max = CS_NSCHEMES;
 static GR_COLOR * schemes[] = {
 	colorscheme_mono,
 	colorscheme_monoinv,
+	colorscheme_gameboy,
 	colorscheme_cyans,
 	colorscheme_amiga1,
 	colorscheme_amiga2
@@ -166,6 +189,7 @@ static GR_COLOR * schemes[] = {
 char * colorscheme_names[] = {
 	"Mono",
 	"Mono Inv",
+	"Gameboy",
 	"Cyan",
 	"Amiga 1.x",
 	"Amiga 2.x"
