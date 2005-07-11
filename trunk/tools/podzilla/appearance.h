@@ -20,6 +20,12 @@
 
 /* 
  * $Log: appearance.h,v $
+ * Revision 1.3  2005/07/10 22:58:49  yorgle
+ * Added in more color schemes: Monocrhome-inverted, Amigados 1, amigados 2
+ * Added a hook to menu.c to limit the choices on monochrome ipods
+ * Added patches to mlist to draw menu items in color
+ * - needs a full screen redraw when color schemes change, or a forced-restart or somesuch.
+ *
  * Revision 1.2  2005/07/10 01:36:28  yorgle
  * Added color scheming to message and pz_error
  *
@@ -76,7 +82,7 @@
 
 
 /* counts of number of schemes... */
-#define CS_NSCHEMES	(5)	/* total number of color schemes */
+#define CS_NSCHEMES	(6)	/* total number of color schemes */
 #define CS_MONO_LAST	(1)	/* last index of mono schemes */
 
 /* the array of names for the menu system */
