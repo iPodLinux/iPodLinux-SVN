@@ -353,6 +353,10 @@ void menu_draw(menu_st *menulist)
 			menulist->height * menulist->screen_items, menulist->w,
 			menulist->h - (menulist->height *
 			menulist->screen_items));
+	/* fix the top line which is yet untouched */
+	GrLine(menulist->menu_wid, menulist->menu_gc,
+			0, menulist->y-1, menulist->w, menulist->y-1);
+
 	GrSetGCForeground(menulist->menu_gc, BLACK);
 
 	/* draw scrollbar if needed */
