@@ -42,6 +42,10 @@ static struct slider_widget slider;
 static void slider_do_draw(void)
 {
 	int filler;
+
+	GrSetGCForeground(slider_gc, appearance_get_color(CS_BG) );
+	GrFillRect(slider_wid, slider_gc, 0, 0, 
+		    screen_info.cols, screen_info.rows);
 	
 	filler = ((int)((slider.value * (SXIN-(SBORDER*2))) / slider.max));
 	GrSetGCForeground(slider_gc, appearance_get_color(CS_SLDRBDR) );
