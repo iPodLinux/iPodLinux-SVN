@@ -55,6 +55,7 @@ typedef struct _menu_st {
 	GR_TIMER_ID timer;	/* scroll timer */
 	int op;			/* menu options */
 	int timer_step;
+	int scheme_no;		/* which scheme the pixmaps were drawn with */
 } menu_st;
 
 /* does the drawing, safe(and recommended) to use {in, as} an exposure event */

@@ -326,6 +326,22 @@ void menu_retext_pixmap(menu_st *menulist, int pixmap, item_st *item)
 void menu_draw(menu_st *menulist)
 {
 	int i;
+
+	/* appearance changed, force a redraw */
+	if( menulist->scheme_no != appearance_get_color_scheme() ) {
+		/* wipe all of the pixmaps if colors changed */
+		for( i=0 ; i<menulist->screen_items ; i++ ) {
+			    menu_clear_pixmap( menulist, i );
+		}
+
+		/* force the rest of the redraw */
+		menulist->scheme_no = appearance_get_color_scheme();
+		/* NOTE: if "color scheme" is anywhere other than on the first
+		   screen's worth of menu items, this doesn't work correctly,
+		   but that's not an issue right now */
+		menulist->init = 0;
+	}
+
 	/* first draw; init onscreen text items */
 	if(menulist->init == 0) {
 		for(i = (menulist->num_items > menulist->screen_items) ?
@@ -642,6 +658,7 @@ menu_st *menu_init(GR_WINDOW_ID menu_wid, GR_GC_ID menu_gc, char *title, int x,
 	menulist->init = 0;
 	menulist->timer = 0;
 	menulist->top_item = 0;
+	menulist->scheme_no = -1; 
 	menulist->scrollbar = 0;
 	menulist->timer_step = 0;
 	menulist->parent = parent;
@@ -695,6 +712,7 @@ menu_st *menu_destroy(menu_st *menulist)
 	return parent;
 }
 
+/* I AM BENDER.  PLEASE INSERT GIRDER */
 /* destroy all humans. err.. menus */
 void menu_destroy_all(menu_st *menulist)
 {
