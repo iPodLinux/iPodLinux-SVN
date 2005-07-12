@@ -20,6 +20,11 @@
 
 /* 
  * $Log: appearance.c,v $
+ * Revision 1.6  2005/07/12 03:51:38  yorgle
+ * Added the m:robe color scheme by Stuart Clark (Decpher)
+ * Slight tweak to the Amiga 1.x scheme
+ * Always sets the number of color schemes in the menu, rather than just for mono
+ *
  * Revision 1.5  2005/07/11 00:18:10  yorgle
  * Added the "gameboy" pea-green color scheme (although it's not very accurate)
  * Tweak in amiga 1.x color scheme to make the battery meter look better
@@ -50,6 +55,10 @@
 #include "mlist.h"	/* for the menu twiddling */
 
 
+/******************************************************************************
+** color scheme stuff
+*/
+
 /* same as the old style */
 static GR_COLOR colorscheme_mono[] = {
 	GR_RGB( 255, 255, 255 ),	/* bg */
@@ -62,6 +71,7 @@ static GR_COLOR colorscheme_mono[] = {
 	WHITE, GRAY, DKGRAY, BLACK,	/* arrow animation */
 	GR_RGB( 255, 255, 255 ),	/* title bg */
 	GR_RGB(   0,   0,   0 ),	/* title fg */
+	GRAY,				/* title accent */
 	BLACK,				/* title line */
 
 	BLACK, WHITE, GRAY,		/* scrollbar */
@@ -76,7 +86,7 @@ static GR_COLOR colorscheme_monoinv[] = {
 	BLACK, WHITE,
 	WHITE, GRAY, BLACK,
 	BLACK, DKGRAY, GRAY, WHITE,
-	BLACK, WHITE, WHITE,
+	BLACK, WHITE, GRAY, WHITE,
 
 	WHITE, BLACK, GRAY,
 	WHITE, BLACK, GRAY,
@@ -95,7 +105,7 @@ static GR_COLOR colorscheme_gameboy[] = {
 	GB_WHITE, GB_BLACK,
 	GB_BLACK, GB_DKGRAY, GB_WHITE,
 	GB_WHITE, GB_GRAY, GB_DKGRAY, GB_BLACK,
-	GB_WHITE, GB_BLACK, GB_BLACK,
+	GB_WHITE, GB_BLACK, GB_GRAY, GB_BLACK,
 	
 	GB_BLACK, GB_WHITE, GB_DKGRAY,
 	GB_BLACK, GB_WHITE, GB_DKGRAY,
@@ -121,6 +131,7 @@ static GR_COLOR colorscheme_cyans[] = {
 
 	/* title */
 	GR_RGB( 212, 246, 246 ),	/* light blue */
+	GR_RGB(   0,   0, 128 ),	/* navy */
 	GR_RGB(   0,   0, 128 ),	/* navy */
 	GR_RGB(   0, 128, 128 ),	/* teal */
 
@@ -151,7 +162,7 @@ static GR_COLOR colorscheme_amiga1[] = {
 	A1_BLUE, A1_WHITE,		/* menu bg/fg */
 	A1_WHITE, A1_BLUE, A1_ORANGE,	/* selected items */
 	A1_ORANGE, A1_BLACK, A1_ORANGE, A1_BLACK,	/* anim */
-	A1_WHITE, A1_BLACK, A1_ORANGE,	/* titlebar */
+	A1_WHITE, A1_BLACK, A1_BLUE, A1_ORANGE,	/* titlebar */
 	A1_WHITE, A1_BLACK, A1_ORANGE,	/* scrollbar */
 	A1_WHITE, A1_BLACK, A1_ORANGE,	/* slider */
 	A1_BLACK, A1_WHITE, A1_BLUE, A1_ORANGE, A1_BLUE, 	/* battery */
@@ -168,7 +179,7 @@ static GR_COLOR colorscheme_amiga2[] = {
 	A2_GRAY, A2_BLACK,		/* menu items */
 	A2_BLACK, A2_GRAY, A2_BLUE,	/* selected items */
 	A2_BLACK, A2_WHITE, A2_WHITE, A2_BLUE, 	/* anim */
-	A2_BLUE, A2_BLACK, A2_BLACK,	/* title */
+	A2_BLUE, A2_BLACK, A2_BLACK, A2_BLACK,	/* title */
 	A2_BLUE, A2_BLACK, A2_WHITE,	/* scrollbar */
 	A2_WHITE, A2_BLACK, A2_BLUE,	/* slider */
 	A2_WHITE, A2_BLACK, A2_BLUE, A2_BLUE, A2_BLUE,	/* battery */
@@ -180,15 +191,15 @@ static GR_COLOR colorscheme_amiga2[] = {
 /* m:robe scheme by Stuart Clark (Decipher) */
 #define MR_RED  GR_RGB( 255, 0, 0 )
 static GR_COLOR colorscheme_mrobe[] = {
-	BLACK, MR_RED,                                  /* menu items */
-	MR_RED, MR_RED, BLACK,                          /* selected items */
-	BLACK, BLACK, BLACK, BLACK,                     /* anim */
-	BLACK, MR_RED, MR_RED,                          /* title */
-	MR_RED, BLACK, MR_RED,                          /* scrollbar */
-	MR_RED, BLACK, MR_RED,                          /* slider */
-	MR_RED, BLACK, MR_RED, MR_RED, MR_RED,  /* battery */
-	MR_RED, MR_RED,                                 /* hold */
-	MR_RED, MR_RED, BLACK, BLACK                    /* error */
+	BLACK, MR_RED,				/* menu items */
+	MR_RED, MR_RED, BLACK,			/* selected items */
+	BLACK, BLACK, BLACK, BLACK,		/* anim */
+	BLACK, MR_RED, MR_RED, MR_RED,		/* title */
+	MR_RED, BLACK, MR_RED,			/* scrollbar */
+	MR_RED, BLACK, MR_RED,			/* slider */
+	MR_RED, BLACK, MR_RED, MR_RED, MR_RED,	/* battery */
+	MR_RED, MR_RED,				/* hold */
+	MR_RED, MR_RED, BLACK, BLACK		/* error */
 };
 
 
@@ -246,6 +257,35 @@ GR_COLOR appearance_get_color( int index )
 }
 
 
+/******************************************************************************
+** Decoration stuff
+*/
+
+char * appearance_decorations[] = { "Plain",
+		"Amiga 1.1", "Amiga 1.3",
+		"m:robe" };
+
+static int decoration_current_idx = 0;
+
+void appearance_set_decorations( int index )
+{
+	if( index < 0 ) index = 0;
+	if( index >= NDECORATIONS ) index = 0;
+	decoration_current_idx = index;
+}
+
+int appearance_get_decorations( void )
+{
+	return( decoration_current_idx );
+}
+
+/* rendering code is over in pz.c for now. */
+
+
+/******************************************************************************
+** General stuff
+*/
+
 /* for tweaking the number of schemes - limiting for monochrome ipods */
 extern void menu_adjust_nschemes( int val );
 
@@ -260,6 +300,7 @@ void appearance_init( void )
 
 	if( reqscheme > colorscheme_max ) reqscheme = 0;
 	appearance_set_color_scheme( reqscheme );
+	appearance_set_decorations( ipod_get_setting( DECORATIONS ));
 
 	/* and now some magic twiddling to tweak the menus... */
 	menu_adjust_nschemes( colorscheme_max+1 );
