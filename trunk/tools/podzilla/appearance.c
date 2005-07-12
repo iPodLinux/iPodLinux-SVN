@@ -20,6 +20,10 @@
 
 /* 
  * $Log: appearance.c,v $
+ * Revision 1.5  2005/07/11 00:18:10  yorgle
+ * Added the "gameboy" pea-green color scheme (although it's not very accurate)
+ * Tweak in amiga 1.x color scheme to make the battery meter look better
+ *
  * Revision 1.4  2005/07/10 23:18:28  yorgle
  * Tweaked the Amiga2 color scheme to be more readable (black-on-blue for title)
  *
@@ -148,7 +152,7 @@ static GR_COLOR colorscheme_amiga1[] = {
 	A1_WHITE, A1_BLUE, A1_ORANGE,	/* selected items */
 	A1_ORANGE, A1_BLACK, A1_ORANGE, A1_BLACK,	/* anim */
 	A1_WHITE, A1_BLACK, A1_ORANGE,	/* titlebar */
-	A1_BLUE, A1_BLACK, A1_ORANGE,	/* scrollbar */
+	A1_WHITE, A1_BLACK, A1_ORANGE,	/* scrollbar */
 	A1_WHITE, A1_BLACK, A1_ORANGE,	/* slider */
 	A1_BLACK, A1_WHITE, A1_BLUE, A1_ORANGE, A1_BLUE, 	/* battery */
 	A1_ORANGE, A1_ORANGE,		/* hold */
@@ -172,6 +176,22 @@ static GR_COLOR colorscheme_amiga2[] = {
 	A2_BLACK, A2_BLUE, A2_WHITE, A2_BLUE,	/* error */
 };
 
+
+/* m:robe scheme by Stuart Clark (Decipher) */
+#define MR_RED  GR_RGB( 255, 0, 0 )
+static GR_COLOR colorscheme_mrobe[] = {
+	BLACK, MR_RED,                                  /* menu items */
+	MR_RED, MR_RED, BLACK,                          /* selected items */
+	BLACK, BLACK, BLACK, BLACK,                     /* anim */
+	BLACK, MR_RED, MR_RED,                          /* title */
+	MR_RED, BLACK, MR_RED,                          /* scrollbar */
+	MR_RED, BLACK, MR_RED,                          /* slider */
+	MR_RED, BLACK, MR_RED, MR_RED, MR_RED,  /* battery */
+	MR_RED, MR_RED,                                 /* hold */
+	MR_RED, MR_RED, BLACK, BLACK                    /* error */
+};
+
+
 int colorscheme_max = CS_NSCHEMES;
 
 static GR_COLOR * schemes[] = {
@@ -180,7 +200,8 @@ static GR_COLOR * schemes[] = {
 	colorscheme_gameboy,
 	colorscheme_cyans,
 	colorscheme_amiga1,
-	colorscheme_amiga2
+	colorscheme_amiga2,
+	colorscheme_mrobe
 };
 
 /* these are separate, since they are also used in the menu system. 
@@ -192,13 +213,13 @@ char * colorscheme_names[] = {
 	"Gameboy",
 	"Cyan",
 	"Amiga 1.x",
-	"Amiga 2.x"
+	"Amiga 2.x",
+	"m:robe"
 };
 
 
 GR_COLOR * colorscheme_current = colorscheme_mono;  /* current color scheme */
 static int colorscheme_current_idx = 0;		    /* current index */
-
 
 /* this sets a new scheme.  It constrains the input value to something valid */
 void appearance_set_color_scheme( int index )
@@ -237,11 +258,9 @@ void appearance_init( void )
 	   	colorscheme_max = CS_MONO_LAST;
 	}
 
-	if( reqscheme > colorscheme_max ) reqscheme = colorscheme_max;
+	if( reqscheme > colorscheme_max ) reqscheme = 0;
 	appearance_set_color_scheme( reqscheme );
 
 	/* and now some magic twiddling to tweak the menus... */
-	if( screen_info.bpp < 16 ) {
-		menu_adjust_nschemes( colorscheme_max+1 );
-	}
+	menu_adjust_nschemes( colorscheme_max+1 );
 }
