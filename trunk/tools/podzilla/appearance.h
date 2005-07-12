@@ -20,6 +20,11 @@
 
 /* 
  * $Log: appearance.h,v $
+ * Revision 1.5  2005/07/12 03:51:39  yorgle
+ * Added the m:robe color scheme by Stuart Clark (Decpher)
+ * Slight tweak to the Amiga 1.x scheme
+ * Always sets the number of color schemes in the menu, rather than just for mono
+ *
  * Revision 1.4  2005/07/11 00:18:10  yorgle
  * Added the "gameboy" pea-green color scheme (although it's not very accurate)
  * Tweak in amiga 1.x color scheme to make the battery meter look better
@@ -55,38 +60,39 @@
 
 #define CS_TITLEBG	(9)	/* titlebar background */
 #define CS_TITLEFG	(10)	/* titlebar foreground */
-#define CS_TITLELINE	(11)	/* titlebar separator line */
+#define CS_TITLEACC	(11)	/* titlebar accent */
+#define CS_TITLELINE	(12)	/* titlebar separator line */
 
 /* UI Widgets */
-#define CS_SCRLBDR	(12)	/* scrollbar border */
-#define CS_SCRLCTNR	(13)	/* scrollbar container */
-#define CS_SCRLKNOB	(14)	/* scrollbar knob */
+#define CS_SCRLBDR	(13)	/* scrollbar border */
+#define CS_SCRLCTNR	(14)	/* scrollbar container */
+#define CS_SCRLKNOB	(15)	/* scrollbar knob */
 
-#define CS_SLDRBDR	(15)	/* slider border */
-#define CS_SLDRCTNR	(16)	/* slider container */
-#define CS_SLDRFILL	(17)	/* slider filled */
+#define CS_SLDRBDR	(16)	/* slider border */
+#define CS_SLDRCTNR	(17)	/* slider container */
+#define CS_SLDRFILL	(18)	/* slider filled */
 
 /* podzilla customized widgets */
-#define CS_BATTBDR	(18)	/* battery icon border */
-#define CS_BATTCTNR	(19)	/* battery icon container */
-#define CS_BATTFILL	(20)	/* battery icon filled (normal) */
-#define CS_BATTLOW	(21)	/* battery icon filled (low) */
-#define CS_BATTCHRG	(22)	/* battery is charging */
+#define CS_BATTBDR	(19)	/* battery icon border */
+#define CS_BATTCTNR	(20)	/* battery icon container */
+#define CS_BATTFILL	(21)	/* battery icon filled (normal) */
+#define CS_BATTLOW	(22)	/* battery icon filled (low) */
+#define CS_BATTCHRG	(23)	/* battery is charging */
 
-#define CS_HOLDBDR	(23)	/* hold icon border */
-#define CS_HOLDFILL	(24)	/* hold icon fill */
+#define CS_HOLDBDR	(24)	/* hold icon border */
+#define CS_HOLDFILL	(25)	/* hold icon fill */
 
 /* error/warning messages */
-#define CS_MESSAGEFG	(25)	/* pz_message forground text */
-#define CS_MESSAGELINE	(26)	/* highlight line */
-#define CS_MESSAGEBG	(27)	/* pz_message background */
-#define CS_ERRORBG	(28)	/* pz_error background */
+#define CS_MESSAGEFG	(26)	/* pz_message forground text */
+#define CS_MESSAGELINE	(27)	/* highlight line */
+#define CS_MESSAGEBG	(28)	/* pz_message background */
+#define CS_ERRORBG	(29)	/* pz_error background */
 
-#define CS_MAX		(28)	/* total number of colors per scheme */
+#define CS_MAX		(29)	/* total number of colors per scheme */
 
 
 /* counts of number of schemes... */
-#define CS_NSCHEMES	(7)	/* total number of color schemes */
+#define CS_NSCHEMES	(6)	/* total number of color schemes */
 #define CS_MONO_LAST	(1)	/* last index of mono schemes */
 
 /* the array of names for the menu system */
@@ -102,4 +108,19 @@ int appearance_get_color_scheme( void );
 /* gets a color from the currently selected scheme.
    use the above #defines to select which color to retrieve */
 GR_COLOR appearance_get_color( int index );
+
+
+/* Decorations stuff */
+#define NDECORATIONS	(4)	/* total number of decorations */
+extern char * appearance_decorations[];
+
+void appearance_set_decorations( int index );
+int appearance_get_decorations( void );
+
+
+/* make sure these are in sync with the code in appearance.c */
+#define DEC_PLAIN	(0)
+#define DEC_AMIGA11	(1)
+#define DEC_AMIGA13	(2)
+#define DEC_MROBE	(3)
 

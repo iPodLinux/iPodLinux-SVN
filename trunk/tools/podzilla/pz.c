@@ -68,17 +68,17 @@ static int hold_is_on = 0;
 +-----+
 */
 static GR_POINT hold_outline[] = {
-	{8, 9},
-	{9, 9},
-	{9, 6},
-	{10, 5},
-	{13, 5},
-	{14, 6},
-	{14, 9},
-	{15, 9},
-	{15, 14},
-	{8, 14},
-	{8, 9},
+	{6, 9},
+	{7, 9},
+	{7, 6},
+	{8, 5},
+	{11, 5},
+	{12, 6},
+	{12, 9},
+	{13, 9},
+	{13, 14},
+	{6, 14},
+	{6, 9},
 };
 #define HOLD_POLY_POINTS 11
 
@@ -142,7 +142,7 @@ static void draw_hold_status()
 {
 	if (hold_is_on) {
 		GrSetGCForeground(root_gc, appearance_get_color(CS_HOLDFILL));
-		GrFillRect(root_wid, root_gc, 8, 9, 7, 5);
+		GrFillRect(root_wid, root_gc, 6, 9, 7, 5);
 
 		GrSetGCForeground(root_gc, appearance_get_color(CS_HOLDBDR));
 		GrPoly(root_wid, root_gc, HOLD_POLY_POINTS, hold_outline);
@@ -345,15 +345,46 @@ void pz_event_handler(GR_EVENT *event)
 void pz_draw_header(char *header)
 {
 	GR_SIZE width, height, base, elwidth;
-	int len;
+	int decorations;
+	int len, i;
 	
 	//GrClearWindow(root_wid, 0);
 	GrSetGCForeground(root_gc, appearance_get_color(CS_TITLEBG) );
 	GrFillRect( root_wid, root_gc, 0, 0, screen_info.cols, HEADER_TOPLINE);
 
-	GrSetGCForeground(root_gc, appearance_get_color(CS_TITLEFG) );
 	GrSetGCBackground(root_gc, appearance_get_color(CS_TITLEBG) );
 
+	GrSetGCForeground(root_gc, appearance_get_color(CS_TITLEACC) );
+
+	decorations = appearance_get_decorations();
+	/* draw amiga dragbars */
+	if( decorations == DEC_AMIGA13 || decorations == DEC_AMIGA11 ) {
+		/* drag bars */
+		if( decorations == DEC_AMIGA13 ) {
+			GrFillRect( root_wid, root_gc, 27, 4,
+			    screen_info.cols - 58, 4 );
+			GrFillRect( root_wid, root_gc, 27, HEADER_TOPLINE-4-4, 
+			    screen_info.cols - 58, 4 );
+		} else {
+			for( i=2 ; i<(HEADER_TOPLINE) ; i+=2 ){
+				GrLine( root_wid, root_gc, 22, i,
+					screen_info.cols - 27, i );
+			}
+		}
+
+		/* vertical widget separators */
+		GrFillRect( root_wid, root_gc, 21, 0, 2, HEADER_TOPLINE );
+		GrFillRect( root_wid, root_gc, screen_info.cols-27,
+						0, 2, HEADER_TOPLINE );
+	}
+	if( decorations == DEC_MROBE ) {
+		for( i=21; i<screen_info.cols-27; i+=12 ) {
+		    GrFillEllipse( root_wid, root_gc, i, HEADER_TOPLINE>>1,
+				2, 2);
+		}
+	}
+
+	GrSetGCForeground(root_gc, appearance_get_color(CS_TITLEFG) );
 	GrGetGCTextSize(root_gc, header, -1, GR_TFASCII, &width, &height,
 			&base);
 	if (width > screen_info.cols - 46) {
@@ -371,6 +402,15 @@ void pz_draw_header(char *header)
 				HEADER_BASELINE, "...", -1, GR_TFASCII);
 	}
 	else {
+		if( decorations != DEC_PLAIN ) {
+			GrSetGCForeground(root_gc, 
+				appearance_get_color(CS_TITLEBG) );
+			GrFillRect( root_wid, root_gc, 
+				((screen_info.cols - width)>>1) - 4, 0,
+				width + 8, HEADER_TOPLINE );
+		}
+
+		GrSetGCForeground(root_gc, appearance_get_color(CS_TITLEFG) );
 		GrText(root_wid, root_gc, (screen_info.cols - width) / 2,
 			HEADER_BASELINE, header, -1, GR_TFASCII);
 	}

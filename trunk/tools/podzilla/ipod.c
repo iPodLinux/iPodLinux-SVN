@@ -145,6 +145,9 @@ int ipod_set_setting(int setting, int value)
 	case COLORSCHEME:
 		appearance_set_color_scheme(value);
 		break;
+	case DECORATIONS:
+		appearance_set_decorations(value);
+		break;
 	}
 	
 	return 0;

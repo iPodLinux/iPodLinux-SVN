@@ -181,12 +181,9 @@ static item_st clocks_menu[] = {
         { 0 }
 };
 
-
-static char * appearance_decorations[] = { "Plain", "Amiga 1.x" };
-
 static item_st appearance_menu[] = {
 	{"Color Scheme", colorscheme_names, OPTION_MENU, COLORSCHEME, CS_NSCHEMES },
-	{"Decorations", appearance_decorations, OPTION_MENU, DECORATIONS, 2},
+	{"Decorations", appearance_decorations, OPTION_MENU, DECORATIONS, NDECORATIONS },
 	{"Font", new_font_window, ACTION_MENU},
 	{ 0 }
 };
