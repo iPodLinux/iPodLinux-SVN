@@ -62,9 +62,11 @@
 
 #define BROWSER_PATH	(42)
 
-#define COLORSCHEME	(43)
+#define COLORSCHEME	(43)	/* appearance */
 
 #define BROWSER_HIDDEN	(44)
+
+#define DECORATIONS	(45)	/* appearance */
 
 #define MIN_CONTRAST	0
 #define MAX_CONTRAST	128

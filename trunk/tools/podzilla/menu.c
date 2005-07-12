@@ -181,6 +181,22 @@ static item_st clocks_menu[] = {
         { 0 }
 };
 
+
+static char * appearance_decorations[] = { "Plain", "Amiga 1.x" };
+
+static item_st appearance_menu[] = {
+	{"Color Scheme", colorscheme_names, OPTION_MENU, COLORSCHEME, CS_NSCHEMES },
+	{"Decorations", appearance_decorations, OPTION_MENU, DECORATIONS, 2},
+	{"Font", new_font_window, ACTION_MENU},
+	{ 0 }
+};
+
+void menu_adjust_nschemes( int val )
+{
+	// '0' is the index above for "Color Scheme"
+	appearance_menu[0].item_count = val;
+}
+
 static item_st settings_menu[] = {
 	{"About", about_window, ACTION_MENU},
 	{"Date & Time", clocks_menu, SUB_MENU_HEADER},
@@ -191,8 +207,7 @@ static item_st settings_menu[] = {
 	{"Button Debounce", set_buttondebounce, ACTION_MENU},
 	{"Backlight Timer", backlight_options, OPTION_MENU, BACKLIGHT_TIMER, 8},
 	{"Clicker", NULL, BOOLEAN_MENU, CLICKER},
-	{"Color Scheme", colorscheme_names, OPTION_MENU, COLORSCHEME, CS_NSCHEMES },
-	{"Font", new_font_window, ACTION_MENU},
+	{"Appearance", appearance_menu, SUB_MENU_HEADER},
 	{"Browser Path Display", NULL, BOOLEAN_MENU, BROWSER_PATH},
 	{"Show Hidden Files", NULL, BOOLEAN_MENU, BROWSER_HIDDEN},
 	{"Reset All Settings", reset_menu, SUB_MENU_HEADER},
@@ -200,12 +215,6 @@ static item_st settings_menu[] = {
 	{"Load Settings", ipod_load_settings, ACTION_MENU},
 	{0}
 };
-
-void menu_adjust_nschemes( int val )
-{
-	// '9' is the index above for "Color Scheme"
-	settings_menu[9].item_count = val;
-}
 
 static item_st reboot_menu[] = {
 	{"Cancel", NULL, SUB_MENU_PREV},
