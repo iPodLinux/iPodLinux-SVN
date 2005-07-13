@@ -105,12 +105,14 @@ struct menulist *new_ml()
 			(HEADER_TOPLINE + 1), NULL, NULL, UTF8);
 	ret->init = 0;
 	ret->prevml = NULL;
+
 	return ret;
 }
 
 static void itunes_do_draw()
 {
-	pz_draw_header(currentml->itunes_menu->title);
+
+	//pz_draw_header(currentml->itunes_menu->title);
 	itunes_draw(currentml);
 }
 
@@ -421,6 +423,7 @@ static void itunes_draw(struct menulist *ml)
 			}
 
 		ml->init=1;
+
 	}
 
 	menu_draw(currentml->itunes_menu);
