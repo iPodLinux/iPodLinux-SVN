@@ -20,8 +20,13 @@
 
 /* 
  * $Log: appearance.c,v $
+ * Revision 1.7  2005/07/12 05:27:02  yorgle
+ * Decorations added:  Plain (default), Amiga 1.1, Amiga 1.3, m:robe
+ * Moved the lock/hold widget to the left by a touch to center it better
+ * Added another color to the color scheme system: CS_TITLEACC  title accent color
+ *
  * Revision 1.6  2005/07/12 03:51:38  yorgle
- * Added the m:robe color scheme by Stuart Clark (Decpher)
+ * Added the m:robe color scheme by Stuart Clark (Decipher)
  * Slight tweak to the Amiga 1.x scheme
  * Always sets the number of color schemes in the menu, rather than just for mono
  *
@@ -90,7 +95,7 @@ static GR_COLOR colorscheme_monoinv[] = {
 
 	WHITE, BLACK, GRAY,
 	WHITE, BLACK, GRAY,
-	WHITE, BLACK, GRAY, WHITE, DKGRAY,
+	WHITE, BLACK, WHITE, WHITE, WHITE,
 	WHITE, WHITE,
 	WHITE, DKGRAY, BLACK, BLACK
 };
@@ -183,7 +188,7 @@ static GR_COLOR colorscheme_amiga2[] = {
 	A2_BLUE, A2_BLACK, A2_WHITE,	/* scrollbar */
 	A2_WHITE, A2_BLACK, A2_BLUE,	/* slider */
 	A2_WHITE, A2_BLACK, A2_BLUE, A2_BLUE, A2_BLUE,	/* battery */
-	A2_WHITE, A2_BLUE,		/* hold */
+	A2_WHITE, A2_WHITE,		/* hold */
 	A2_BLACK, A2_BLUE, A2_WHITE, A2_BLUE,	/* error */
 };
 
