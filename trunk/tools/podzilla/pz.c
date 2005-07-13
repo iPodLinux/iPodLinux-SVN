@@ -72,18 +72,22 @@ static int hold_is_on = 0;
 |     |
 +-----+
 */
+
+#define HOLD_X (9)	/* horizontal position of the padlock icon */
+			/* (this is a #define now, so it's easy to move if
+			   we put in song playing status later) */
 static GR_POINT hold_outline[] = {
-	{6, 9},
-	{7, 9},
-	{7, 6},
-	{8, 5},
-	{11, 5},
-	{12, 6},
-	{12, 9},
-	{13, 9},
-	{13, 14},
-	{6, 14},
-	{6, 9},
+	{HOLD_X+0, 9},
+	{HOLD_X+1, 9},
+	{HOLD_X+1, 6},
+	{HOLD_X+2, 5},
+	{HOLD_X+5, 5},
+	{HOLD_X+6, 6},
+	{HOLD_X+6, 9},
+	{HOLD_X+7, 9},
+	{HOLD_X+7, 14},
+	{HOLD_X+0, 14},
+	{HOLD_X+0, 9},
 };
 #define HOLD_POLY_POINTS 11
 
@@ -250,19 +254,22 @@ static void draw_batt_status( int which )
 static void draw_hold_status()
 {
 	if (hold_is_on) {
+		/* draw the body of the padlock */
 		GrSetGCForeground(root_gc, appearance_get_color(CS_HOLDFILL));
-		GrFillRect(root_wid, root_gc, 6, 9, 7, 5);
+		GrFillRect(root_wid, root_gc, HOLD_X+1, 9, 7, 5);
 
+		/* draw the outline of the padlock */
 		GrSetGCForeground(root_gc, appearance_get_color(CS_HOLDBDR));
 		GrPoly(root_wid, root_gc, HOLD_POLY_POINTS, hold_outline);
 	}
 	else {
+		/* erase the padlock */
 		GrSetGCForeground(root_gc, appearance_get_color(CS_TITLEBG));
 		GrFillPoly(root_wid, root_gc, HOLD_POLY_POINTS, hold_outline);
 		GrPoly(root_wid, root_gc, HOLD_POLY_POINTS, hold_outline);
 
-		/* erase out the handle bit */
-		GrFillRect(root_wid, root_gc, 8, 9, 7, 5);
+		/* erase out the body bit */
+		GrFillRect(root_wid, root_gc, HOLD_X+1, 9, 7, 5);
 	}
 }
 
@@ -466,10 +473,13 @@ void pz_event_handler(GR_EVENT *event)
 
 
 
+#define DEC_WIDG_SZ 	(27)	/* size of the top widgets */
+
 void pz_draw_header(char *header)
 {
 	GR_SIZE width, height, base, elwidth;
 	int decorations;
+	int centered_text = 1;
 	int len, i;
 	
 	//GrClearWindow(root_wid, 0);
@@ -477,40 +487,61 @@ void pz_draw_header(char *header)
 	GrFillRect( root_wid, root_gc, 0, 0, screen_info.cols, HEADER_TOPLINE);
 
 	GrSetGCBackground(root_gc, appearance_get_color(CS_TITLEBG) );
-
 	GrSetGCForeground(root_gc, appearance_get_color(CS_TITLEACC) );
+
+	GrGetGCTextSize(root_gc, header, -1, GR_TFASCII, &width, &height,
+			&base);
 
 	decorations = appearance_get_decorations();
 	/* draw amiga dragbars */
 	if( decorations == DEC_AMIGA13 || decorations == DEC_AMIGA11 ) {
 		/* drag bars */
 		if( decorations == DEC_AMIGA13 ) {
-			GrFillRect( root_wid, root_gc, 27, 4,
-			    screen_info.cols - 58, 4 );
-			GrFillRect( root_wid, root_gc, 27, HEADER_TOPLINE-4-4, 
-			    screen_info.cols - 58, 4 );
+			GrFillRect( root_wid, root_gc,
+				DEC_WIDG_SZ+6, 4,
+				screen_info.cols - (DEC_WIDG_SZ*2)-12, 4 );
+			GrFillRect( root_wid, root_gc,
+				DEC_WIDG_SZ+6, HEADER_TOPLINE-4-4, 
+				screen_info.cols - (DEC_WIDG_SZ*2)-12, 4 );
 		} else {
 			for( i=2 ; i<(HEADER_TOPLINE) ; i+=2 ){
-				GrLine( root_wid, root_gc, 22, i,
-					screen_info.cols - 27, i );
+				GrLine( root_wid, root_gc, DEC_WIDG_SZ+2, i,
+					screen_info.cols - DEC_WIDG_SZ-3, i );
 			}
 		}
 
 		/* vertical widget separators */
-		GrFillRect( root_wid, root_gc, 21, 0, 2, HEADER_TOPLINE );
-		GrFillRect( root_wid, root_gc, screen_info.cols-27,
+		GrFillRect( root_wid, root_gc, DEC_WIDG_SZ,
 						0, 2, HEADER_TOPLINE );
+		GrFillRect( root_wid, root_gc, screen_info.cols-DEC_WIDG_SZ-2,
+						0, 2, HEADER_TOPLINE );
+		centered_text = 0;
 	}
 	if( decorations == DEC_MROBE ) {
-		for( i=21; i<screen_info.cols-27; i+=12 ) {
+		/* to make this symmetrical, we draw the left half, left to 
+		    right, then we draw the right half, right to left.
+		    This should make it such that it will fill properly,
+		    and fill with only complete dots. no more slivers.
+		- this isn't an OCD thing, it's a 'making it look good' thing.
+		*/
+		/* draw left side */
+		for( 	i = DEC_WIDG_SZ+2 ;
+			i < ((screen_info.cols - width)>>1)-5 ;
+			i+=11 ) {
+		    GrFillEllipse( root_wid, root_gc, i, HEADER_TOPLINE>>1,
+				2, 2);
+		}
+
+		/* draw right side */
+		for( 	i = screen_info.cols-DEC_WIDG_SZ-4 ;
+			i > ((screen_info.cols + width)>>1)+5 ;
+			i-=11 ) {
 		    GrFillEllipse( root_wid, root_gc, i, HEADER_TOPLINE>>1,
 				2, 2);
 		}
 	}
 
 	GrSetGCForeground(root_gc, appearance_get_color(CS_TITLEFG) );
-	GrGetGCTextSize(root_gc, header, -1, GR_TFASCII, &width, &height,
-			&base);
 	if (width > screen_info.cols - 46) {
 		GrGetGCTextSize(root_gc, "...", -1, GR_TFASCII, &elwidth,
 				&height, &base);
@@ -530,12 +561,15 @@ void pz_draw_header(char *header)
 			GrSetGCForeground(root_gc, 
 				appearance_get_color(CS_TITLEBG) );
 			GrFillRect( root_wid, root_gc, 
-				((screen_info.cols - width)>>1) - 4, 0,
-				width + 8, HEADER_TOPLINE );
+			(centered_text) ? ((screen_info.cols - width)>>1) - 4
+					: DEC_WIDG_SZ+2,
+				0, width + 8, HEADER_TOPLINE );
 		}
 
 		GrSetGCForeground(root_gc, appearance_get_color(CS_TITLEFG) );
-		GrText(root_wid, root_gc, (screen_info.cols - width) / 2,
+		GrText(root_wid, root_gc,
+			(centered_text) ? (screen_info.cols - width) / 2
+					: DEC_WIDG_SZ+6,
 			HEADER_BASELINE, header, -1, GR_TFASCII);
 	}
 
