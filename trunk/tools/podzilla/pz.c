@@ -35,7 +35,9 @@ static GR_WINDOW_ID root_wid;
 static GR_GC_ID root_gc;
 static GR_TIMER_ID backlight_tid;
 static GR_TIMER_ID startupcontrast_tid;
+#ifdef IPOD
 static GR_TIMER_ID battery_tid;
+#endif
 
 
 struct pz_window {
@@ -115,11 +117,16 @@ void set_buttondebounce(void)
 	new_slider_widget(ACTION_DEBOUNCE, "Action Debounce", 100, 500);
 }
 
-static void draw_batt_status()
+
+
+#define BATT_UPDATE_FULL (-1)
+/* which can be -1 to update all things, 0/1 to update just the blinky bits */
+static void draw_batt_status( int which )
 {
-	int battery_is_charging = 0;
-	int battery_fill = ipod_get_battery_level();
-	int battery_fill_16;
+	static int battery_is_charging = 0;
+	static int battery_fill = 512;
+	static int battery_fill_16 = 0;
+	static int last_level = 0;
 
 	GR_POINT batt_outline[] = {
 		{screen_info.cols-22, 5},
@@ -169,29 +176,64 @@ static void draw_batt_status()
 		{screen_info.cols-9, 3},
 	};
 
-	/* scale it down to be 1..15 */
-	battery_fill_16 = (battery_fill>>5)-1;
-	if( battery_fill_16 < 1 ) battery_fill_16=1;
+	if( which == BATT_UPDATE_FULL ) {
+		/* set battery level to be 1..15 */
+		battery_fill = ipod_get_battery_level();
+		battery_fill_16 = (battery_fill>>5)-1;
+		if( battery_fill_16 < 1 ) battery_fill_16=1;
+		if( battery_fill_16 > 15 ) battery_fill_16=15;
+
+		/* set battery charging indicator */
+		battery_is_charging = 0; // ipod_get_battery_charging();
+	}
+
+	/* eliminiate unnecessary redraw/flicker */
+	/* this could be eliminated by doublebuffering... */
+	if( !battery_is_charging
+	    && (which >= 0)
+	    && (last_level == battery_fill_16)
+	    && (battery_fill > BATTERY_LEVEL_LOW))
+		return;
+	last_level = battery_fill_16;
 
 	/* draw it */
-	GrSetGCForeground(root_gc, appearance_get_color(CS_BATTCTNR) );
-	GrFillPoly(root_wid, root_gc, BATT_POLY_POINTS, batt_outline);
 
+	/* fill the battery outline */
+	GrSetGCForeground(root_gc, appearance_get_color(CS_BATTCTNR) );
+	if( which == BATT_UPDATE_FULL ) /* try to eliminate some blink */
+		GrFillPoly(root_wid, root_gc, BATT_POLY_POINTS, batt_outline);
+	else
+		GrFillRect(root_wid, root_gc, screen_info.cols-21, 6, 17, 9 );
+
+	/* draw the outline */
 	GrSetGCForeground(root_gc, appearance_get_color(CS_BATTBDR) );
 	GrPoly(root_wid, root_gc, BATT_POLY_POINTS, batt_outline);
 
-	// if low, use CS_BATTLOW instead of CS_BATTFILL
-	// if charging, use CS_BATTCHRG
 	if( !battery_is_charging ) {
-	    if( battery_fill > BATTERY_LEVEL_LOW )
-		GrSetGCForeground(root_gc, appearance_get_color(CS_BATTFILL));
-	    else
+	    /* draw fullness level */
+	    GrSetGCForeground(root_gc, appearance_get_color(CS_BATTFILL));
+
+	    /* change color to low color if appropriate */
+	    if( battery_fill <= BATTERY_LEVEL_LOW )
 		GrSetGCForeground(root_gc, appearance_get_color(CS_BATTLOW));
 
-	    GrFillRect(root_wid, root_gc, screen_info.cols-20, 7, 
+	    /* draw amount of battery fullness */
+	    if(    (battery_fill > BATTERY_LEVEL_LOW)
+		|| (which < 1 ) ) {
+		    GrFillRect(root_wid, root_gc, screen_info.cols-20, 7, 
 			battery_fill_16, 7);
+	    }
 	} else {
-	    // draw charging bolt
+	    /* draw charging bolt, if applicable */
+	    if( which < 1 ) {
+		    /* erase charging bolt overlap */
+		    GrSetGCForeground(root_gc, appearance_get_color(CS_TITLEBG));
+		    GrFillRect(root_wid, root_gc, screen_info.cols-16,2, 9,3);
+		    GrFillRect(root_wid, root_gc, screen_info.cols-18,16, 6,3);
+		    return;
+	    }
+
+	    /* draw charging bolt */
 	    GrSetGCForeground(root_gc, appearance_get_color(CS_BATTCHRG) );
 	    GrFillPoly(root_wid, root_gc, 11, charging_bolt);
 	    /* and a few cleanups... */
@@ -261,6 +303,9 @@ static inline struct pz_window *pz_find_window(GR_WINDOW_ID wid)
 void pz_event_handler(GR_EVENT *event)
 {
 	int ret = 0;
+#ifdef IPOD
+	static int battery_count = 0;
+#endif
 	unsigned long int curtime;
 	struct timeval cur_st;
 	struct pz_window *window;
@@ -385,7 +430,13 @@ void pz_event_handler(GR_EVENT *event)
 		} 
 		else if (((GR_EVENT_TIMER *)event)->tid == battery_tid)
 		{
-			draw_batt_status();
+			battery_count++;
+			if( battery_count > 59 ) {
+				battery_count = 0;
+				draw_batt_status( BATT_UPDATE_FULL );
+			} else {
+				draw_batt_status( battery_count & 1 );
+			}
 		}
 #endif
 		else if (window != NULL)
@@ -492,7 +543,7 @@ void pz_draw_header(char *header)
 	GrLine(root_wid, root_gc, 0, HEADER_TOPLINE, screen_info.cols,
 			HEADER_TOPLINE);
 
-	draw_batt_status();
+	draw_batt_status( BATT_UPDATE_FULL );
 	draw_hold_status();
 }
 
@@ -506,7 +557,7 @@ GR_WINDOW_ID pz_new_window(int x, int y, int w, int h, void(*do_draw)(void), int
 	GR_WINDOW_ID new_wid = GrNewWindowEx(GR_WM_PROPS_APPFRAME |
 			    GR_WM_PROPS_CAPTION |
 			    GR_WM_PROPS_CLOSEBOX,
-			    "Podzilla",
+			    "podzilla",
 			    root_wid,
 			    x, y, w, h, WHITE);
 
@@ -570,7 +621,7 @@ main(int argc, char **argv)
 	root_wid = GrNewWindowEx(GR_WM_PROPS_APPFRAME |
 			    GR_WM_PROPS_CAPTION |
 			    GR_WM_PROPS_CLOSEBOX,
-			    "Podzilla",
+			    "podzilla",
 			    GR_ROOT_WINDOW_ID,
 			    0, 0, screen_info.cols, screen_info.rows, WHITE);
 
@@ -592,8 +643,8 @@ main(int argc, char **argv)
 	backlight_tid = 0;
 	startupcontrast_tid = 0;
 #ifdef IPOD
-	battery_tid = GrCreateTimer(root_wid, 60000);
-#endif	
+	battery_tid = GrCreateTimer(root_wid, 1000);
+#endif
 	new_menu_window();
 
 	while (1) {
