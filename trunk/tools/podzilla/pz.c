@@ -119,10 +119,7 @@ static void draw_batt_status()
 {
 	int battery_is_charging = 0;
 	int battery_fill = ipod_get_battery_level();
-
-	/* scale it down to be 1..15 */
-	int battery_fill_16 = (battery_fill>>5)-1;
-	if( battery_fill_16 < 1 ) battery_fill_16=1;
+	int battery_fill_16;
 
 	GR_POINT batt_outline[] = {
 		{screen_info.cols-22, 5},
@@ -172,6 +169,11 @@ static void draw_batt_status()
 		{screen_info.cols-9, 3},
 	};
 
+	/* scale it down to be 1..15 */
+	battery_fill_16 = (battery_fill>>5)-1;
+	if( battery_fill_16 < 1 ) battery_fill_16=1;
+
+	/* draw it */
 	GrSetGCForeground(root_gc, appearance_get_color(CS_BATTCTNR) );
 	GrFillPoly(root_wid, root_gc, BATT_POLY_POINTS, batt_outline);
 
