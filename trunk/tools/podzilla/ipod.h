@@ -90,6 +90,8 @@ int ipod_set_blank_mode(int blank);
 
 void ipod_beep(void);
 
+int ipod_get_battery_level(void);
+
 long ipod_get_hw_version(void);
 
 #endif
