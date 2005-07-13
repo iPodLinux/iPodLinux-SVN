@@ -42,6 +42,9 @@
 #define FB_DEV_NAME		"/dev/fb0"
 #define FB_DEVFS_NAME		"/dev/fb/0"
 
+#define inb(a) (*(volatile unsigned char *) (a))
+#define outb(a,b) (*(volatile unsigned char *) (b) = (a))
+
 #define inl(a) (*(volatile unsigned long *) (a))
 #define outl(a,b) (*(volatile unsigned long *) (b) = (a))
 
@@ -286,6 +289,179 @@ void ipod_beep(void)
 	}
 #endif
 }
+
+
+
+
+#ifdef IPOD
+
+/////////////////////////////////////////////////////
+//   I2C Functions for getting battery status
+/////////////////////////////////////////////////////
+
+
+
+#define IPOD_I2C_CTRL	(ipod_i2c_base+0x00)
+#define IPOD_I2C_ADDR	(ipod_i2c_base+0x04)
+#define IPOD_I2C_DATA0	(ipod_i2c_base+0x0c)
+#define IPOD_I2C_DATA1	(ipod_i2c_base+0x10)
+#define IPOD_I2C_DATA2	(ipod_i2c_base+0x14)
+#define IPOD_I2C_DATA3	(ipod_i2c_base+0x18)
+#define IPOD_I2C_STATUS	(ipod_i2c_base+0x1c)
+
+/* IPOD_I2C_CTRL bit definitions */
+#define IPOD_I2C_SEND	0x80
+
+/* IPOD_I2C_STATUS bit definitions */
+#define IPOD_I2C_BUSY	(1<<6)
+
+//#define EINVAL 1
+//#define ETIMEDOUT 2
+static unsigned ipod_i2c_base;
+static unsigned ipod_rtc;
+
+static int
+ipod_i2c_wait_not_busy(void)
+{
+	unsigned long timeout;
+
+	timeout = inl(ipod_rtc) + 10000;
+	while (inl(ipod_rtc) < timeout) { 
+		if (!(inb(IPOD_I2C_STATUS) & IPOD_I2C_BUSY)) {
+			return 0;
+		}
+	}
+
+	return -ETIMEDOUT;
+}
+
+int
+ipod_i2c_read_byte(unsigned int addr, unsigned int *data)
+{
+	if (ipod_i2c_wait_not_busy() < 0) {
+		return -ETIMEDOUT;
+	}
+
+	// clear top 15 bits, left shift 1, or in 0x1 for a read
+	outb(((addr << 17) >> 16) | 0x1, IPOD_I2C_ADDR);
+
+	outb(inb(IPOD_I2C_CTRL) | 0x20, IPOD_I2C_CTRL);
+
+	outb(inb(IPOD_I2C_CTRL) | IPOD_I2C_SEND, IPOD_I2C_CTRL);
+
+	if (ipod_i2c_wait_not_busy() < 0) {
+		return -ETIMEDOUT;
+	}
+
+	if (data) {
+		*data = inb(IPOD_I2C_DATA0);
+	}
+
+	return 0;
+}
+
+int
+ipod_i2c_send_bytes(unsigned int addr, unsigned int len, unsigned char *data)
+{
+	int data_addr;
+	int i;
+
+	if (len < 1 || len > 4) {
+		return -EINVAL;
+	}
+
+	if (ipod_i2c_wait_not_busy() < 0) {
+		return -ETIMEDOUT;
+	}
+
+	// clear top 15 bits, left shift 1
+	outb((addr << 17) >> 16, IPOD_I2C_ADDR);
+
+	outb(inb(IPOD_I2C_CTRL) & ~0x20, IPOD_I2C_CTRL);
+
+	data_addr = IPOD_I2C_DATA0;
+	for ( i = 0; i < len; i++ ) {
+		outb(*data++, data_addr);
+
+		data_addr += 4;
+	}
+
+	outb((inb(IPOD_I2C_CTRL) & ~0x26) | ((len-1) << 1), IPOD_I2C_CTRL);
+
+	outb(inb(IPOD_I2C_CTRL) | IPOD_I2C_SEND, IPOD_I2C_CTRL);
+
+	return 0x0;
+}
+
+int
+ipod_i2c_send(unsigned int addr, int data0, int data1)
+{
+	unsigned char data[2];
+											
+	data[0] = data0;
+	data[1] = data1;
+
+	return ipod_i2c_send_bytes(addr, 2, data);
+}
+
+int
+ipod_i2c_send_byte(unsigned int addr, int data0)
+{
+	unsigned char data[1];
+
+	data[0] = data0;
+
+	return ipod_i2c_send_bytes(addr, 1, data);
+}
+
+int
+i2c_readbyte(unsigned int dev_addr, int addr)
+{
+	int data;
+
+	ipod_i2c_send_byte(dev_addr, addr);
+	ipod_i2c_read_byte(dev_addr, &data);
+
+	return data;
+}
+///////////END I2C FUNCTIONS////////////////////
+#endif
+#define BATTERY_MAX 512 
+int ipod_get_battery_level(void)
+{
+
+#ifdef IPOD
+	int r0, r4;
+	if (hw_version < 30000)
+		return BATTERY_MAX;
+
+	if (hw_version>=40000) //only on >=4g ipods!
+	{
+		ipod_i2c_base = 0x7000c000;
+		ipod_rtc = 0x60005010;	
+
+	//	return (((double)r4 / 512.00)*100); // return percentage full
+	} else if ((hw_version >= 30000) && (hw_version < 40000))
+	{	
+		ipod_i2c_base = 0xc0008000;	
+		ipod_rtc = 0xcf001110;	
+	
+	} 
+	
+	ipod_i2c_send(0x8, 0x33, 0x80);
+	ipod_i2c_send(0x8, 0x2f, 7);
+	while ((i2c_readbyte(0x8, 0x2f) & 1));
+	while (!(i2c_readbyte(0x8, 0x31) & 0x80));
+	r4 = i2c_readbyte(0x8, 0x30);
+	r0 = (i2c_readbyte(0x8, 0x31) & 0x3);
+	r4 = r0 | (r4 << 2);
+	return r4;
+#else
+	return BATTERY_MAX;
+#endif
+}
+
+
 
 long ipod_get_hw_version(void)
 {

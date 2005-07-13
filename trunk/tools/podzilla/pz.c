@@ -35,6 +35,8 @@ static GR_WINDOW_ID root_wid;
 static GR_GC_ID root_gc;
 static GR_TIMER_ID backlight_tid;
 static GR_TIMER_ID startupcontrast_tid;
+static GR_TIMER_ID battery_tid;
+
 
 struct pz_window {
 	GR_WINDOW_ID wid;
@@ -58,7 +60,8 @@ static unsigned long int last_keypress_event = 0;
 static int hold_is_on = 0;
 
 #define BATT_POLY_POINTS 9
-
+#define BATTERY_LEVEL_LOW 50 
+#define BATTERY_LEVEL_FULL 512
 /*
   +-+
 +-+ +-+
@@ -125,17 +128,25 @@ static void draw_batt_status()
 		{screen_info.cols-22, 15},
 		{screen_info.cols-22, 6}
 	};
+	int batt_level = ipod_get_battery_level();
+	int batt_fill_width = (int)(15.0 * ((double)batt_level / BATTERY_LEVEL_FULL));
 
-	GrSetGCForeground(root_gc, appearance_get_color(CS_BATTCTNR) );
-	GrFillPoly(root_wid, root_gc, BATT_POLY_POINTS, batt_outline);
+	//GrSetGCForeground(root_gc, appearance_get_color(CS_BATTCTNR) );
+	//GrFillPoly(root_wid, root_gc, BATT_POLY_POINTS, batt_outline);
 
 	GrSetGCForeground(root_gc, appearance_get_color(CS_BATTBDR) );
 	GrPoly(root_wid, root_gc, BATT_POLY_POINTS, batt_outline);
 
 	// if low, use CS_BATTLOW instead of CS_BATTFILL
 	// if charging, use CS_BATTCHRG
-	GrSetGCForeground(root_gc, appearance_get_color(CS_BATTFILL) );
-	GrFillRect(root_wid, root_gc, screen_info.cols-20, 7, 15, 7);
+	if (batt_level < BATTERY_LEVEL_LOW)
+	{
+		GrSetGCForeground(root_gc, appearance_get_color(CS_BATTLOW));
+	} else {
+		GrSetGCForeground(root_gc, appearance_get_color(CS_BATTFILL));
+	}
+
+	GrFillRect(root_wid, root_gc, screen_info.cols-20, 7, batt_fill_width, 7);
 }
 
 static void draw_hold_status()
@@ -315,6 +326,10 @@ void pz_event_handler(GR_EVENT *event)
 			GrDestroyTimer(startupcontrast_tid);
 			startupcontrast_tid = 0;
 			ipod_set_contrast(startup_contrast);
+		} 
+		else if (((GR_EVENT_TIMER *)event)->tid == battery_tid)
+		{
+			draw_batt_status();
 		}
 #endif
 		else if (window != NULL)
@@ -341,6 +356,8 @@ void pz_event_handler(GR_EVENT *event)
 			printf("AN UNKNOWN EVENT OCCURED!!\n");
 	}
 }
+
+
 
 void pz_draw_header(char *header)
 {
@@ -518,7 +535,9 @@ main(int argc, char **argv)
 	appearance_init();
 	backlight_tid = 0;
 	startupcontrast_tid = 0;
-
+#ifdef IPOD
+	battery_tid = GrCreateTimer(root_wid, 60000);
+#endif	
 	new_menu_window();
 
 	while (1) {
