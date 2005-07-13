@@ -117,6 +117,13 @@ void set_buttondebounce(void)
 
 static void draw_batt_status()
 {
+	int battery_is_charging = 0;
+	int battery_fill = ipod_get_battery_level();
+
+	/* scale it down to be 1..15 */
+	int battery_fill_16 = (battery_fill>>5)-1;
+	if( battery_fill_16 < 1 ) battery_fill_16=1;
+
 	GR_POINT batt_outline[] = {
 		{screen_info.cols-22, 5},
 		{screen_info.cols-4, 5},
@@ -128,25 +135,72 @@ static void draw_batt_status()
 		{screen_info.cols-22, 15},
 		{screen_info.cols-22, 6}
 	};
-	int batt_level = ipod_get_battery_level();
-	int batt_fill_width = (int)(15.0 * ((double)batt_level / BATTERY_LEVEL_FULL));
 
-	//GrSetGCForeground(root_gc, appearance_get_color(CS_BATTCTNR) );
-	//GrFillPoly(root_wid, root_gc, BATT_POLY_POINTS, batt_outline);
+	GR_POINT charging_bolt_outline[] = { /* 12 */
+		{screen_info.cols-8, 2},
+		{screen_info.cols-15, 2},
+		{screen_info.cols-17, 9},
+		{screen_info.cols-12, 9},
+
+		{screen_info.cols-13, 12},
+		{screen_info.cols-14, 12},
+		{screen_info.cols-17, 9},
+		{screen_info.cols-18, 18},
+
+		{screen_info.cols-15, 14},
+		{screen_info.cols-13, 16},
+		{screen_info.cols-7, 7},
+		{screen_info.cols-11, 7},
+
+		{screen_info.cols-8, 2},
+	};
+
+	GR_POINT charging_bolt[] = {
+		{screen_info.cols-8, 3},
+		{screen_info.cols-14, 3},
+		{screen_info.cols-16, 8},
+		{screen_info.cols-11, 8},
+
+		{screen_info.cols-13, 13},
+		{screen_info.cols-16, 10},
+		{screen_info.cols-17, 18},
+		{screen_info.cols-14, 13},
+
+		{screen_info.cols-12, 16},
+		{screen_info.cols-7, 8},
+		{screen_info.cols-11, 8},
+		{screen_info.cols-9, 3},
+	};
+
+	GrSetGCForeground(root_gc, appearance_get_color(CS_BATTCTNR) );
+	GrFillPoly(root_wid, root_gc, BATT_POLY_POINTS, batt_outline);
 
 	GrSetGCForeground(root_gc, appearance_get_color(CS_BATTBDR) );
 	GrPoly(root_wid, root_gc, BATT_POLY_POINTS, batt_outline);
 
 	// if low, use CS_BATTLOW instead of CS_BATTFILL
 	// if charging, use CS_BATTCHRG
-	if (batt_level < BATTERY_LEVEL_LOW)
-	{
-		GrSetGCForeground(root_gc, appearance_get_color(CS_BATTLOW));
-	} else {
+	if( !battery_is_charging ) {
+	    if( battery_fill > BATTERY_LEVEL_LOW )
 		GrSetGCForeground(root_gc, appearance_get_color(CS_BATTFILL));
-	}
+	    else
+		GrSetGCForeground(root_gc, appearance_get_color(CS_BATTLOW));
 
-	GrFillRect(root_wid, root_gc, screen_info.cols-20, 7, batt_fill_width, 7);
+	    GrFillRect(root_wid, root_gc, screen_info.cols-20, 7, 
+			battery_fill_16, 7);
+	} else {
+	    // draw charging bolt
+	    GrSetGCForeground(root_gc, appearance_get_color(CS_BATTCHRG) );
+	    GrFillPoly(root_wid, root_gc, 11, charging_bolt);
+	    /* and a few cleanups... */
+	    GrLine(root_wid, root_gc, screen_info.cols-17, 8,
+				      screen_info.cols-8, 8);
+	    GrLine(root_wid, root_gc, screen_info.cols-18, 16,
+				      screen_info.cols-18, 17 );
+
+	    GrSetGCForeground(root_gc, appearance_get_color(CS_BATTCTNR) );
+	    GrPoly(root_wid, root_gc, 13, charging_bolt_outline);
+	}
 }
 
 static void draw_hold_status()
