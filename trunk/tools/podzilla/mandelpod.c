@@ -443,9 +443,19 @@ static void mandel_quit() {
 static int handle_event(GR_EVENT *event)
 {
 	 int ret = 0;
+    static int last_active_renderer = -1;
+
     switch (event->type)
     {
 		case GR_EVENT_TYPE_TIMER:
+			if( active_renderer != last_active_renderer ) {
+				if( active_renderer ) 
+					pz_draw_header("working...");
+				else
+					draw_header();
+				last_active_renderer = active_renderer;
+			}
+
 #ifdef MANDELPOD_STATUS
 			if (active_renderer) draw_busy_status();
 			else draw_idle_status();
