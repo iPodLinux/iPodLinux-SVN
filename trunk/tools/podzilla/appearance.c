@@ -20,6 +20,9 @@
 
 /* 
  * $Log: appearance.c,v $
+ * Revision 1.8  2005/07/13 03:27:20  yorgle
+ * Various color scheme tweaks
+ *
  * Revision 1.7  2005/07/12 05:27:02  yorgle
  * Decorations added:  Plain (default), Amiga 1.1, Amiga 1.3, m:robe
  * Moved the lock/hold widget to the left by a touch to center it better
@@ -81,7 +84,7 @@ static GR_COLOR colorscheme_mono[] = {
 
 	BLACK, WHITE, GRAY,		/* scrollbar */
 	BLACK, WHITE, GRAY,		/* slider */
-	BLACK, WHITE, DKGRAY, BLACK, GRAY,	/* battery */
+	BLACK, WHITE, DKGRAY, BLACK, DKGRAY,	/* battery */
 	BLACK, BLACK,			/* lock */
 	BLACK, GRAY, WHITE, WHITE,	/* message window */
 };
