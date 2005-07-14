@@ -430,17 +430,19 @@ i2c_readbyte(unsigned int dev_addr, int addr)
 int ipod_get_battery_level(void)
 {
 
+
+
 #ifdef IPOD
 	int r0, r4;
 	if (hw_version < 30000)
+	{	
 		return BATTERY_MAX;
-
+	}
 	if (hw_version>=40000) //only on >=4g ipods!
 	{
 		ipod_i2c_base = 0x7000c000;
 		ipod_rtc = 0x60005010;	
 
-	//	return (((double)r4 / 512.00)*100); // return percentage full
 	} else if ((hw_version >= 30000) && (hw_version < 40000))
 	{	
 		ipod_i2c_base = 0xc0008000;	
@@ -461,7 +463,33 @@ int ipod_get_battery_level(void)
 #endif
 }
 
+int ipod_is_charging(void)
+{
 
+#ifdef IPOD
+	int charge;
+	if (hw_version < 30000)
+	{	
+		return 0;
+	}
+	if (hw_version>=40000) //only on >=4g ipods!
+	{
+		ipod_i2c_base = 0x7000c000;
+		ipod_rtc = 0x60005010;	
+
+	} else if ((hw_version >= 30000) && (hw_version < 40000))
+	{	
+		ipod_i2c_base = 0xc0008000;	
+		ipod_rtc = 0xcf001110;	
+	
+	} 
+	
+	charge = (i2c_readbyte(0x8, 0x1) & (1<<5)) >> 5;
+	return charge;
+#else
+	return 0;
+#endif
+}
 
 long ipod_get_hw_version(void)
 {

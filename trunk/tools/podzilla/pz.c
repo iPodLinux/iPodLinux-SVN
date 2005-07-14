@@ -54,8 +54,13 @@ static int n_opened = 0;
 static unsigned long int last_button_event = 0;
 static unsigned long int wheel_evt_count = 0;
 static int startup_contrast = -1;
+
 #endif
 static unsigned long int last_keypress_event = 0;
+
+static int battery_is_charging = 0;
+
+
 
 #define WHEEL_EVT_MOD   3
 
@@ -127,11 +132,10 @@ void set_buttondebounce(void)
 /* which can be -1 to update all things, 0/1 to update just the blinky bits */
 static void draw_batt_status( int which )
 {
-	static int battery_is_charging = 0;
 	static int battery_fill = 512;
 	static int battery_fill_16 = 0;
 	static int last_level = 0;
-
+	static int old_battery_is_charging = 0;	
 	GR_POINT batt_outline[] = {
 		{screen_info.cols-22, 5},
 		{screen_info.cols-4, 5},
@@ -183,12 +187,14 @@ static void draw_batt_status( int which )
 	if( which == BATT_UPDATE_FULL ) {
 		/* set battery level to be 1..15 */
 		battery_fill = ipod_get_battery_level();
+		battery_is_charging =  ipod_is_charging();	
+		
 		battery_fill_16 = (battery_fill>>5)-1;
 		if( battery_fill_16 < 1 ) battery_fill_16=1;
 		if( battery_fill_16 > 15 ) battery_fill_16=15;
-
+		
 		/* set battery charging indicator */
-		battery_is_charging = 0; // ipod_get_battery_charging();
+//		battery_is_charging = 0; // ipod_get_battery_charging();
 	}
 
 	/* eliminiate unnecessary redraw/flicker */
@@ -214,6 +220,13 @@ static void draw_batt_status( int which )
 	GrPoly(root_wid, root_gc, BATT_POLY_POINTS, batt_outline);
 
 	if( !battery_is_charging ) {
+
+	    if (old_battery_is_charging!=battery_is_charging)
+	    {
+		    GrSetGCForeground(root_gc, appearance_get_color(CS_TITLEBG));
+		    GrFillRect(root_wid, root_gc, screen_info.cols-16,2, 9,3);
+		    GrFillRect(root_wid, root_gc, screen_info.cols-18,16, 6,3);
+	    }
 	    /* draw fullness level */
 	    GrSetGCForeground(root_gc, appearance_get_color(CS_BATTFILL));
 
@@ -231,6 +244,7 @@ static void draw_batt_status( int which )
 	    /* draw charging bolt, if applicable */
 	    if( which < 1 ) {
 		    /* erase charging bolt overlap */
+
 		    GrSetGCForeground(root_gc, appearance_get_color(CS_TITLEBG));
 		    GrFillRect(root_wid, root_gc, screen_info.cols-16,2, 9,3);
 		    GrFillRect(root_wid, root_gc, screen_info.cols-18,16, 6,3);
@@ -249,6 +263,7 @@ static void draw_batt_status( int which )
 	    GrSetGCForeground(root_gc, appearance_get_color(CS_BATTCTNR) );
 	    GrPoly(root_wid, root_gc, 13, charging_bolt_outline);
 	}
+	old_battery_is_charging = battery_is_charging;
 }
 
 static void draw_hold_status()
@@ -441,6 +456,12 @@ void pz_event_handler(GR_EVENT *event)
 			if( battery_count > 59 ) {
 				battery_count = 0;
 				draw_batt_status( BATT_UPDATE_FULL );
+			} else if (!(battery_count%10)) {
+				if (ipod_is_charging()!=battery_is_charging)
+				{
+					battery_count = 0;
+					draw_batt_status(BATT_UPDATE_FULL);
+				}		
 			} else {
 				draw_batt_status( battery_count & 1 );
 			}
