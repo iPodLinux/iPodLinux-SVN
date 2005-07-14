@@ -496,12 +496,11 @@ void ipod_turn_off(void)
 	} else {
 		FILE * f;
 		char c[20];	
-		f = fopen("/proc/sleep", "r");
-		fread(c, 1, 20, f);
-		fclose(f);	
-		f = fopen("/proc/sleep", "r");
-		fread(c, 1, 20, f);
-		fclose(f);   // 2 writes for some reason - first time it fails??
+		while (1) {
+			f = fopen("/proc/sleep", "r");
+			fread(c, 1, 20, f);
+			fclose(f);   // 2 writes for some reason - first time it fails??
+		}	
 	} 
 #endif
 }
