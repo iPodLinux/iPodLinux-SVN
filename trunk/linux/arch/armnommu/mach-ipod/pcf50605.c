@@ -15,6 +15,7 @@
 #include <linux/init.h>
 #include <linux/delay.h>
 
+#include <linux/proc_fs.h>
 #include <linux/devfs_fs_kernel.h>
 
 #include <asm/uaccess.h>
@@ -33,6 +34,8 @@ static int pcf_rtc_readbyte(int addr)
 
 	return data;
 }
+
+
 
 #ifndef BCD_TO_BIN
 #define BCD_TO_BIN(val) ((val)=((val)&15) + ((val)>>4)*10)
@@ -94,8 +97,17 @@ static struct file_operations pcf_rtc_fops = {
 	ioctl: pcf_rtc_ioctl,
 };
 
+static int ipod_standby_mode(struct file *file, const char * buffer, unsigned long count, void * data)
+{
+	printk(KERN_ERR "Running standby!");
+	ipod_i2c_init();
+	ipod_i2c_send(0x8, 0x8, 0x1 | (1 << 5) | (1 << 6));
+	return 0;
+}
+
 static int __init pcf50605_init(void)
 {
+	struct proc_dir_entry *standby_proc;
 	if ((ipod_get_hw_version() >> 16) < 0x3) {
 		return 0;
 	}
@@ -112,11 +124,16 @@ static int __init pcf50605_init(void)
                 return 0;
         }
 
+	standby_proc = create_proc_entry("sleep", S_IRUGO | S_IWUSR, NULL);
+	standby_proc->write_proc = ipod_standby_mode;
+	standby_proc->read_proc = ipod_standby_mode;
+
 	return 0;
 }
 
 static void __exit pcf50605_exit(void)
 {
+	remove_proc_entry("sleep", NULL);
 	devfs_unregister_chrdev(MISC_MAJOR, "rtc");
 	devfs_unregister(rtc_devfs_handle);
 }
