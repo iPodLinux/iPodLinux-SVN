@@ -64,6 +64,7 @@ extern void new_font_window(void);
 extern void new_vortex_window(void);
 extern void new_wumpus_window(void);
 extern void about_window(void);
+extern void shutdown_ipod(void);
 #ifdef MIKMOD
 extern void new_mikmod_window(void);
 #endif
@@ -219,6 +220,12 @@ static item_st reboot_menu[] = {
 	{0}
 };
 
+static item_st turnoff_menu[] = {
+	{"Cancel", NULL, SUB_MENU_PREV},
+	{"Absolutely", shutdown_ipod, ACTION_MENU},
+	{0}
+};
+
 static item_st itunes_menu[] = {
 	{"Playlists", new_itunes_plist, ACTION_MENU | ARROW_MENU},
 	{"Artists", new_itunes_artist, ACTION_MENU | ARROW_MENU},
@@ -237,6 +244,7 @@ static item_st main_menu[] = {
 	{"File Browser", new_browser_window, ACTION_MENU | ARROW_MENU},
 	{"Quit Podzilla", quit_podzilla, ACTION_MENU},
 	{"Reboot iPod", reboot_menu, SUB_MENU_HEADER},
+	{"Turn off iPod", turnoff_menu, SUB_MENU_HEADER},	
 	{0}
 };
 

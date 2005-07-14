@@ -92,7 +92,7 @@ void ipod_beep(void);
 
 int ipod_get_battery_level(void);
 int ipod_is_charging(void);
-
+void ipod_turn_off(void);
 
 long ipod_get_hw_version(void);
 

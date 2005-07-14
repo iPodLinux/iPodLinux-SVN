@@ -466,6 +466,7 @@ int ipod_get_battery_level(void)
 int ipod_is_charging(void)
 {
 
+
 #ifdef IPOD
 	int charge;
 	if (hw_version < 30000)
@@ -490,6 +491,38 @@ int ipod_is_charging(void)
 	return 0;
 #endif
 }
+
+
+
+
+void ipod_turn_off(void)
+{
+
+#ifdef IPOD
+	
+	if (hw_version < 30000)
+	{	
+		return;
+	} else {
+		FILE * f;
+		char c[20];	
+		f = fopen("/proc/sleep", "r");
+		fread(c, 1, 20, f);
+		fclose(f);	
+		f = fopen("/proc/sleep", "r");
+		fread(c, 1, 20, f);
+		fclose(f);   // 2 writes for some reason - first time it fails??
+	} 
+	
+	
+		
+	return;
+#else
+	return;
+#endif
+
+}
+
 
 long ipod_get_hw_version(void)
 {

@@ -111,9 +111,28 @@ void reboot_ipod(void)
 
 void quit_podzilla(void)
 {
+
 	ipod_touch_settings();
 	GrClose();
 	exit(0);
+}
+
+
+void shutdown_ipod(void)
+{
+#ifdef IPOD	
+	if (hw_version < 30000)
+	{
+		pz_error("This feature is unsupported on this hardware.");
+		return;
+	}	
+	ipod_touch_settings();
+	GrClose();
+	ipod_turn_off();
+	exit(0);
+#else
+	return;
+#endif
 }
 
 void set_wheeldebounce(void)
