@@ -186,6 +186,7 @@ static item_st appearance_menu[] = {
 	{"Color Scheme", colorscheme_names, OPTION_MENU, COLORSCHEME, CS_NSCHEMES },
 	{"Decorations", appearance_decorations, OPTION_MENU, DECORATIONS, NDECORATIONS },
 	{"Battery Digits", NULL, BOOLEAN_MENU, BATTERY_DIGITS },
+	{"Display Load Average", NULL, BOOLEAN_MENU, DISPLAY_LOAD },
 	{"Font", new_font_window, ACTION_MENU},
 	{ 0 }
 };
@@ -238,14 +239,22 @@ static item_st itunes_menu[] = {
 	{0}
 };
 
+static item_st power_menu[] = {
+	{"Quit Podzilla", quit_podzilla, ACTION_MENU},
+	{"Reboot iPod", reboot_menu, SUB_MENU_HEADER},
+#ifdef NEVER /* just to show where this should go */
+	{"Sleep iPod", sleep, ACTION_MENU};
+#endif
+	{"Turn off iPod", turnoff_menu, SUB_MENU_HEADER},	
+	{0}
+};
+
 static item_st main_menu[] = {
 	{"Music", itunes_menu, SUB_MENU_HEADER},
 	{"Extras", extras_menu, SUB_MENU_HEADER},
 	{"Settings", settings_menu, SUB_MENU_HEADER},
 	{"File Browser", new_browser_window, ACTION_MENU | ARROW_MENU},
-	{"Quit Podzilla", quit_podzilla, ACTION_MENU},
-	{"Reboot iPod", reboot_menu, SUB_MENU_HEADER},
-	{"Turn off iPod", turnoff_menu, SUB_MENU_HEADER},	
+	{"Power", power_menu, SUB_MENU_HEADER},
 	{0}
 };
 
