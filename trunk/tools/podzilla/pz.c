@@ -36,9 +36,7 @@ static GR_WINDOW_ID root_wid;
 static GR_GC_ID root_gc;
 static GR_TIMER_ID backlight_tid;
 static GR_TIMER_ID startupcontrast_tid;
-#ifdef IPOD
 static GR_TIMER_ID battery_tid;
-#endif
 
 #define DEC_WIDG_SZ 	(27)	/* size of the top widgets */
 
@@ -314,9 +312,75 @@ static void draw_batt_status( int which )
 	old_battery_is_charging = battery_is_charging;
 }
 
+static double get_load_average( void )
+{
+#ifdef __linux__
+	FILE * file;
+	float f;
+#else
+	double avgs[3];
+#endif
+	double ret = 0.00;
+
+#ifdef __linux__
+	file = fopen( "/proc/loadavg", "r" );
+	if( file ) {
+		fscanf( file, "%f", &f );
+		ret = f;
+		fclose( file );
+	} else {
+		ret = 0.50;
+	}
+#else
+	if( getloadavg( avgs, 3 ) < 0 ) return( 0.50 );
+	ret = avgs[0];
+#endif
+	return( ret );
+}
+
+static void draw_load_average( void )
+{
+	double avg;
+	int level = 0;
+
+	if( !ipod_get_setting( DISPLAY_LOAD )) return;
+	if( hold_is_on ) return;
+
+	/* clear the background */
+	GrSetGCForeground(root_gc, appearance_get_color(CS_TITLEBG) );
+	GrFillRect( root_wid, root_gc, 0, 0, DEC_WIDG_SZ, HEADER_TOPLINE );
+
+	/* get the load average */
+	avg = get_load_average();
+
+	/* adjust the display level */
+	level = (HEADER_TOPLINE-3) - (HEADER_TOPLINE-3)*avg;
+	if( level< 0 ) level = 0;
+	if( level>(HEADER_TOPLINE-2) ) level = HEADER_TOPLINE-2;
+
+	GrSetGCForeground(root_gc, appearance_get_color(CS_LOADBG) );
+	GrFillRect( root_wid, root_gc, 2, 2,
+			DEC_WIDG_SZ-4, level-1 );
+
+	GrSetGCForeground(root_gc, appearance_get_color(CS_LOADFG) );
+	GrFillRect( root_wid, root_gc, 2, level+1,
+			DEC_WIDG_SZ-4, HEADER_TOPLINE-4-level+1 );
+}
+
+
 static void draw_hold_status()
 {
+	int decorations = appearance_get_decorations();
+
 	if (hold_is_on) {
+		if( decorations == DEC_AMIGA13 || decorations == DEC_AMIGA11 ){
+			/* erase any decoration-specific imagery */
+			GrSetGCForeground(root_gc, appearance_get_color(CS_TITLEBG));
+			GrFillRect( root_wid, root_gc, 0, 0,
+					DEC_WIDG_SZ, HEADER_TOPLINE );
+		    
+		}
+
 		/* draw the body of the padlock */
 		GrSetGCForeground(root_gc, appearance_get_color(CS_HOLDFILL));
 		GrFillRect(root_wid, root_gc, HOLD_X+1, 9, 7, 5);
@@ -333,6 +397,27 @@ static void draw_hold_status()
 
 		/* erase out the body bit */
 		GrFillRect(root_wid, root_gc, HOLD_X+1, 9, 7, 5);
+
+		if( ipod_get_setting( DISPLAY_LOAD )) {
+			draw_load_average();
+			return;
+		}
+
+		if( decorations == DEC_AMIGA13 || decorations == DEC_AMIGA11 ){
+		    /* draw the vertical bar on the left */
+		    GrSetGCForeground(root_gc, 
+				appearance_get_color(CS_TITLEACC) );
+		    GrFillRect( root_wid, root_gc, 3, 0, 2, HEADER_TOPLINE );
+
+		    /* draw the close box */
+		    GrFillRect( root_wid, root_gc, 8+0, 2, 16, 16 );
+		    GrSetGCForeground(root_gc, 
+				appearance_get_color(CS_TITLEBG) );
+		    GrFillRect( root_wid, root_gc, 8+2, 4, 12, 12 );
+		    GrSetGCForeground(root_gc, 
+				appearance_get_color(CS_TITLEFG) );
+		    GrFillRect( root_wid, root_gc, 8+6, 8, 4, 4 );
+		}
 	}
 }
 
@@ -373,9 +458,7 @@ static inline struct pz_window *pz_find_window(GR_WINDOW_ID wid)
 void pz_event_handler(GR_EVENT *event)
 {
 	int ret = 0;
-#ifdef IPOD
 	static int battery_count = 0;
-#endif
 	unsigned long int curtime;
 	struct timeval cur_st;
 	struct pz_window *window;
@@ -498,6 +581,7 @@ void pz_event_handler(GR_EVENT *event)
 			startupcontrast_tid = 0;
 			ipod_set_contrast(startup_contrast);
 		} 
+#endif
 		else if (((GR_EVENT_TIMER *)event)->tid == battery_tid)
 		{
 			battery_count++;
@@ -513,8 +597,11 @@ void pz_event_handler(GR_EVENT *event)
 			} else {
 				draw_batt_status( battery_count & 1 );
 			}
+
+			if( (battery_count & 0xf) == 0 ) {
+				draw_load_average();
+			}
 		}
-#endif
 		else if (window != NULL)
 			window->keystroke(event);
 		break;
@@ -744,9 +831,7 @@ main(int argc, char **argv)
 	appearance_init();
 	backlight_tid = 0;
 	startupcontrast_tid = 0;
-#ifdef IPOD
 	battery_tid = GrCreateTimer(root_wid, 1000);
-#endif
 	new_menu_window();
 
 	while (1) {

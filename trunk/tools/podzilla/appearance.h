@@ -20,6 +20,11 @@
 
 /* 
  * $Log: appearance.h,v $
+ * Revision 1.6  2005/07/12 05:27:02  yorgle
+ * Decorations added:  Plain (default), Amiga 1.1, Amiga 1.3, m:robe
+ * Moved the lock/hold widget to the left by a touch to center it better
+ * Added another color to the color scheme system: CS_TITLEACC  title accent color
+ *
  * Revision 1.5  2005/07/12 03:51:39  yorgle
  * Added the m:robe color scheme by Stuart Clark (Decpher)
  * Slight tweak to the Amiga 1.x scheme
@@ -88,7 +93,11 @@
 #define CS_MESSAGEBG	(28)	/* pz_message background */
 #define CS_ERRORBG	(29)	/* pz_error background */
 
-#define CS_MAX		(29)	/* total number of colors per scheme */
+/* load average display */
+#define CS_LOADBG	(30)	/* load average container */
+#define CS_LOADFG	(31)	/* load average meter */
+
+#define CS_MAX		(31)	/* total number of colors per scheme */
 
 
 /* counts of number of schemes... */

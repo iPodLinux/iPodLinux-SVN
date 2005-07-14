@@ -20,6 +20,11 @@
 
 /* 
  * $Log: appearance.c,v $
+ * Revision 1.9  2005/07/14 14:38:51  yorgle
+ * charge color icon
+ * it was hard to see light gray
+ * changed it to dark gray
+ *
  * Revision 1.8  2005/07/13 03:27:20  yorgle
  * Various color scheme tweaks
  *
@@ -87,6 +92,7 @@ static GR_COLOR colorscheme_mono[] = {
 	BLACK, WHITE, DKGRAY, BLACK, DKGRAY,	/* battery */
 	BLACK, BLACK,			/* lock */
 	BLACK, GRAY, WHITE, WHITE,	/* message window */
+	GRAY, BLACK,			/* load average bg, fg */
 };
 
 /* inverted of the above */
@@ -100,7 +106,8 @@ static GR_COLOR colorscheme_monoinv[] = {
 	WHITE, BLACK, GRAY,
 	WHITE, BLACK, WHITE, WHITE, WHITE,
 	WHITE, WHITE,
-	WHITE, DKGRAY, BLACK, BLACK
+	WHITE, DKGRAY, BLACK, BLACK,
+	DKGRAY, WHITE,
 };
 
 /* the above monochrome, but with classic gameboy pea-green hues */
@@ -120,6 +127,7 @@ static GR_COLOR colorscheme_gameboy[] = {
 	GB_BLACK, GB_WHITE, GB_DKGRAY, GB_BLACK, GB_GRAY,
 	GB_BLACK, GB_BLACK,
 	GB_BLACK, GB_GRAY, GB_WHITE, GB_WHITE,
+	GB_GRAY, GB_BLACK,
 };
 
 /* a basic blueish scheme.  it looks ok, but nothing to write home about */
@@ -159,6 +167,8 @@ static GR_COLOR colorscheme_cyans[] = {
 	BLACK, GREEN,			/* messages */
 	    GR_RGB( 200, 232, 253 ),	   /* lt blue */
 	    GR_RGB( 255, 255,   0 ),	   /* yellow */
+	GR_RGB(   0,   0, 128 ),	/* load average */
+	    WHITE
 };
 
 #define A1_BLUE	  GR_RGB(   0,  85, 170 )
@@ -176,6 +186,7 @@ static GR_COLOR colorscheme_amiga1[] = {
 	A1_BLACK, A1_WHITE, A1_BLUE, A1_ORANGE, A1_BLUE, 	/* battery */
 	A1_ORANGE, A1_ORANGE,		/* hold */
 	A1_BLACK, A1_BLUE, A1_WHITE, A1_ORANGE,	/* error/warning */
+	A1_BLACK, A1_ORANGE,		/* load average */
 };
 
 #define A2_GRAY  GR_RGB( 170, 170, 170 )
@@ -193,6 +204,7 @@ static GR_COLOR colorscheme_amiga2[] = {
 	A2_WHITE, A2_BLACK, A2_BLUE, A2_BLUE, A2_BLUE,	/* battery */
 	A2_WHITE, A2_WHITE,		/* hold */
 	A2_BLACK, A2_BLUE, A2_WHITE, A2_BLUE,	/* error */
+	A2_GRAY, A2_WHITE,		/* load */
 };
 
 
@@ -207,7 +219,8 @@ static GR_COLOR colorscheme_mrobe[] = {
 	MR_RED, BLACK, MR_RED,			/* slider */
 	MR_RED, BLACK, MR_RED, MR_RED, MR_RED,	/* battery */
 	MR_RED, MR_RED,				/* hold */
-	MR_RED, MR_RED, BLACK, BLACK		/* error */
+	MR_RED, MR_RED, BLACK, BLACK,		/* error */
+	BLACK, MR_RED,				/* load */
 };
 
 
