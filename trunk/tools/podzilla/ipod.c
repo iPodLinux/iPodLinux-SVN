@@ -158,7 +158,6 @@ int ipod_set_setting(int setting, int value)
 
 int ipod_get_setting(int setting)
 {
-
 	int value;
 
 	value = settings_buffer[setting] - 1;	
@@ -426,12 +425,10 @@ i2c_readbyte(unsigned int dev_addr, int addr)
 }
 ///////////END I2C FUNCTIONS////////////////////
 #endif
-#define BATTERY_MAX 512 
+
+
 int ipod_get_battery_level(void)
 {
-
-
-
 #ifdef IPOD
 	int r0, r4;
 	if (hw_version < 30000)
@@ -465,8 +462,6 @@ int ipod_get_battery_level(void)
 
 int ipod_is_charging(void)
 {
-
-
 #ifdef IPOD
 	int charge;
 	if (hw_version < 30000)
@@ -492,14 +487,9 @@ int ipod_is_charging(void)
 #endif
 }
 
-
-
-
 void ipod_turn_off(void)
 {
-
 #ifdef IPOD
-	
 	if (hw_version < 30000)
 	{	
 		return;
@@ -513,14 +503,7 @@ void ipod_turn_off(void)
 		fread(c, 1, 20, f);
 		fclose(f);   // 2 writes for some reason - first time it fails??
 	} 
-	
-	
-		
-	return;
-#else
-	return;
 #endif
-
 }
 
 

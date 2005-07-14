@@ -185,6 +185,7 @@ static item_st clocks_menu[] = {
 static item_st appearance_menu[] = {
 	{"Color Scheme", colorscheme_names, OPTION_MENU, COLORSCHEME, CS_NSCHEMES },
 	{"Decorations", appearance_decorations, OPTION_MENU, DECORATIONS, NDECORATIONS },
+	{"Battery Digits", NULL, BOOLEAN_MENU, BATTERY_DIGITS },
 	{"Font", new_font_window, ACTION_MENU},
 	{ 0 }
 };
