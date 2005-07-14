@@ -1,3 +1,9 @@
+Adam Johnston - Thu Jul 14 2005
+	Added standy mode support for 3g and newer ipods
+
+Adam Johnston - Wed Jul 13 2005
+	Added charging status support for 3g and newer ipods
+
 Scott Lawrence - Tue Jul 12 2005
 	Battery level displays and animates if low.
 	Charging indicator added, although not used yet
