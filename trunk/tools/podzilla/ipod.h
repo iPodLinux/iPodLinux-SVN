@@ -68,6 +68,7 @@
 
 #define DECORATIONS	(45)	/* appearance */
 #define BATTERY_DIGITS	(46)	/* appearance */
+#define DISPLAY_LOAD	(47)	/* appearance */
 
 #define MIN_CONTRAST	0
 #define MAX_CONTRAST	128
