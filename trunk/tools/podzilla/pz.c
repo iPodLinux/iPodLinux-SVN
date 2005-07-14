@@ -189,6 +189,8 @@ static void draw_batt_status( int which )
 		battery_fill = ipod_get_battery_level();
 		battery_is_charging =  ipod_is_charging();	
 		
+		if (battery_fill > 0x200) // if read failed
+			return;	
 		battery_fill_16 = (battery_fill>>5)-1;
 		if( battery_fill_16 < 1 ) battery_fill_16=1;
 		if( battery_fill_16 > 15 ) battery_fill_16=15;
