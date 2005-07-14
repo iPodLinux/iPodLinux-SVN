@@ -354,7 +354,8 @@ static void draw_load_average( void )
 	avg = get_load_average();
 
 	/* adjust the display level */
-	level = (HEADER_TOPLINE-3) - (HEADER_TOPLINE-3)*avg;
+	if( avg > 1.0 ) avg = 1.0;
+	level = (HEADER_TOPLINE-3) - (HEADER_TOPLINE-4)*avg;
 	if( level< 0 ) level = 0;
 	if( level>(HEADER_TOPLINE-2) ) level = HEADER_TOPLINE-2;
 
