@@ -32,7 +32,9 @@
 
 // microwindows objects
 static GR_WINDOW_ID mandel_wid;
+#ifdef MANDELPOD_STATUS
 static GR_WINDOW_ID status_wid;
+#endif
 static GR_WINDOW_ID status_image[16];
 static GR_GC_ID mandel_gc;
 static GR_WINDOW_INFO wi;
@@ -56,8 +58,10 @@ static int handle_event(GR_EVENT *event);
 static void mandel_quit();
 
 static void draw_mandel();
+#ifdef MANDELPOD_STATUS
 static void draw_idle_status();
 static void draw_busy_status();
+#endif
 static void draw_header();
 static void draw_cursor();
 static void create_status();
@@ -114,8 +118,10 @@ void new_mandel_window(void)
 	mandel_wid = pz_new_window (0, 21,
 				screen_info.cols, screen_info.rows - (HEADER_TOPLINE+1),
 				draw_header, handle_event);
+#ifdef MANDELPOD_STATUS
 	// create the status window
 	status_wid = pz_new_window (22, 4, 12, 12, draw_idle_status, handle_event);
+#endif
 	 // get screen info
 	GrGetWindowInfo(mandel_wid, &wi);
 	
@@ -124,7 +130,9 @@ void new_mandel_window(void)
 		
 	// display the window
 	GrMapWindow (mandel_wid);
+#ifdef MANDELPOD_STATUS
 	GrMapWindow (status_wid);
+#endif
 
     // create the timer for the busy status animation
     mandel_timer_id = GrCreateTimer (mandel_wid, 250);
@@ -202,6 +210,7 @@ static void create_status() {
 }
 
 // delete the status window contents
+#ifdef MANDELPOD_STATUS
 static void draw_idle_status() {
 	GrSetGCForeground (mandel_gc, appearance_get_color( CS_TITLEBG ));
 	GrFillRect( status_wid, mandel_gc, 0, 0, 12, 12 );
@@ -213,6 +222,7 @@ static void draw_busy_status() {
 	GrCopyArea(status_wid, mandel_gc, 0, 0,  12, 12,status_image[status_counter%16], 0, 0, MWROP_SRCCOPY);
 	status_counter++;
 }
+#endif
 
 
 // calculate the current mandelbrot set
@@ -280,7 +290,9 @@ static void calculate_mandel()
 // pause
 static void pause_drawing() {
 
+#ifdef MANDELPOD_STATUS
 	draw_idle_status();
+#endif
 	while (paused) {
 		check_event();
 		usleep(100);
@@ -412,9 +424,13 @@ static void mandel_quit() {
 	paused=0;
 	
 	pz_close_window (mandel_wid);
+#ifdef MANDELPOD_STATUS
 	pz_close_window (status_wid);
+#endif
 	GrDestroyWindow(mandel_wid);
+#ifdef MANDELPOD_STATUS
 	GrDestroyWindow(status_wid);
+#endif
 	for (i=0;i<max_depth+1;i++) 
 		GrDestroyWindow(level[i].mandel_buffer);
 	for (i=0;i<16;i++) 
@@ -430,8 +446,10 @@ static int handle_event(GR_EVENT *event)
     switch (event->type)
     {
 		case GR_EVENT_TYPE_TIMER:
+#ifdef MANDELPOD_STATUS
 			if (active_renderer) draw_busy_status();
 			else draw_idle_status();
+#endif
 			break;
 
 		case GR_EVENT_TYPE_KEY_DOWN:
