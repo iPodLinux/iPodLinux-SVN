@@ -26,6 +26,7 @@
 #include "pz.h"
 #include "browser.h"
 #include "ipod.h"
+#include "vectorfont.h"
 
 /* globals */
 GR_SCREEN_INFO screen_info;
@@ -39,6 +40,7 @@ static GR_TIMER_ID startupcontrast_tid;
 static GR_TIMER_ID battery_tid;
 #endif
 
+#define DEC_WIDG_SZ 	(27)	/* size of the top widgets */
 
 struct pz_window {
 	GR_WINDOW_ID wid;
@@ -151,10 +153,12 @@ void set_buttondebounce(void)
 /* which can be -1 to update all things, 0/1 to update just the blinky bits */
 static void draw_batt_status( int which )
 {
+	char buf[32];
 	static int battery_fill = 512;
 	static int battery_fill_16 = 0;
 	static int last_level = 0;
 	static int old_battery_is_charging = 0;	
+
 	GR_POINT batt_outline[] = {
 		{screen_info.cols-22, 5},
 		{screen_info.cols-4, 5},
@@ -203,19 +207,41 @@ static void draw_batt_status( int which )
 		{screen_info.cols-9, 3},
 	};
 
-	if( which == BATT_UPDATE_FULL ) {
-		/* set battery level to be 1..15 */
+	/* we may need to only draw the digits to the screen */
+	if( ipod_get_setting( BATTERY_DIGITS )) {
 		battery_fill = ipod_get_battery_level();
-		battery_is_charging =  ipod_is_charging();	
+		battery_is_charging = ipod_is_charging();	
+
+		snprintf( buf, 32, "%3d", battery_fill );
+		if( battery_is_charging ) strcat( buf, "C" );
 		
-		if (battery_fill > 0x200) // if read failed
-			return;	
+		GrSetGCForeground(root_gc, appearance_get_color(CS_TITLEBG) );
+		GrFillRect(root_wid, root_gc,
+					screen_info.cols-DEC_WIDG_SZ, 0,
+					DEC_WIDG_SZ, HEADER_TOPLINE );
+
+		GrSetGCForeground(root_gc, appearance_get_color(CS_TITLEFG) );
+
+		vector_render_string_center( root_wid, root_gc, buf, 1, 1,
+					screen_info.cols-(DEC_WIDG_SZ/2)-1,
+					HEADER_TOPLINE/2 );
+		return;
+	}
+
+	if( which == BATT_UPDATE_FULL ) {
+		/* get the level from the hardware */
+		battery_fill = ipod_get_battery_level();
+
+		/* if read failed, return */
+		if (battery_fill > 0x200) return;
+
+		/* adjust battery level to be 1..15 */
 		battery_fill_16 = (battery_fill>>5)-1;
 		if( battery_fill_16 < 1 ) battery_fill_16=1;
 		if( battery_fill_16 > 15 ) battery_fill_16=15;
 		
 		/* set battery charging indicator */
-//		battery_is_charging = 0; // ipod_get_battery_charging();
+		battery_is_charging = ipod_is_charging();	
 	}
 
 	/* eliminiate unnecessary redraw/flicker */
@@ -242,6 +268,7 @@ static void draw_batt_status( int which )
 
 	if( !battery_is_charging ) {
 
+	    /* erase the outer bits if necessary */
 	    if (old_battery_is_charging!=battery_is_charging)
 	    {
 		    GrSetGCForeground(root_gc, appearance_get_color(CS_TITLEBG));
@@ -474,7 +501,7 @@ void pz_event_handler(GR_EVENT *event)
 		else if (((GR_EVENT_TIMER *)event)->tid == battery_tid)
 		{
 			battery_count++;
-			if( battery_count > 59 ) {
+			if( battery_count > 30 ) {
 				battery_count = 0;
 				draw_batt_status( BATT_UPDATE_FULL );
 			} else if (!(battery_count%10)) {
@@ -515,7 +542,6 @@ void pz_event_handler(GR_EVENT *event)
 
 
 
-#define DEC_WIDG_SZ 	(27)	/* size of the top widgets */
 
 void pz_draw_header(char *header)
 {

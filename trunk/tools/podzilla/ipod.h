@@ -67,6 +67,7 @@
 #define BROWSER_HIDDEN	(44)
 
 #define DECORATIONS	(45)	/* appearance */
+#define BATTERY_DIGITS	(46)	/* appearance */
 
 #define MIN_CONTRAST	0
 #define MAX_CONTRAST	128
@@ -90,6 +91,7 @@ int ipod_set_blank_mode(int blank);
 
 void ipod_beep(void);
 
+#define BATTERY_MAX (512)
 int ipod_get_battery_level(void);
 int ipod_is_charging(void);
 void ipod_turn_off(void);
