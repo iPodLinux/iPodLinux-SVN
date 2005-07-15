@@ -105,7 +105,9 @@ static double xMin,yMin,xMax,yMax;
 static char rendering = 0;
 static char show_cursor = 0;
 static char paused = 0;
+#ifdef MANDELPOD_STATUS
 static int status_counter = 0;
+#endif
 static char active_renderer = 0;
 
 // creates a new MandelPod window
