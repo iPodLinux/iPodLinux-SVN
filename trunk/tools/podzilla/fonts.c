@@ -198,18 +198,44 @@ static void save_font()
 	fclose(fp);
 }
 
+static void font_clear_window()
+{
+	GrClearWindow(font_wid, GR_FALSE);
+	GrSetGCForeground( font_gc, appearance_get_color(CS_BG) );
+	GrFillRect( font_wid, font_gc, 0, 0, screen_info.cols, screen_info.rows );
+	GrSetGCBackground( font_gc, appearance_get_color(CS_BG) );
+	GrSetGCForeground( font_gc, appearance_get_color(CS_FG) );
+}
+
 static void draw_font()
 {
+	char buf[128];
 	GR_SIZE width, height, base;
-	GrGetGCTextSize(font_gc, fl[cur_font].name, -1, GR_TFASCII,
+
+	font_clear_window();
+
+	/* display font name and size */
+	snprintf( buf, 128, "%s (%d)", fl[cur_font].name, fl[cur_font].size);
+	GrGetGCTextSize(font_gc, buf, -1, GR_TFASCII,
 			&width, &height, &base);
-	GrClearWindow(font_wid, GR_FALSE);
-	GrText(font_wid, font_gc, (screen_info.cols - width) >> 1, 50,
-			fl[cur_font].name, -1, GR_TFASCII);
+	GrText(font_wid, font_gc, (screen_info.cols - width) >> 1, 40,
+			buf, -1, GR_TFASCII);
+
+	/* display a sampler */
 	GrGetGCTextSize(font_gc, "AaBbCcDdEe", -1, GR_TFASCII,
 			&width, &height, &base);
-	GrText(font_wid, font_gc, (screen_info.cols - width) >> 1, 75,
+	GrText(font_wid, font_gc, (screen_info.cols - width) >> 1, 65,
 			"AaBbCcDdEe", -1, GR_TFASCII);
+	GrGetGCTextSize(font_gc, "1234567890", -1, GR_TFASCII,
+			&width, &height, &base);
+	GrText(font_wid, font_gc, (screen_info.cols - width) >> 1, 65+height,
+			"1234567890", -1, GR_TFASCII);
+
+	/* display instructions */
+	GrGetGCTextSize(font_gc, "Spin wheel to change", -1, GR_TFASCII,
+			&width, &height, &base);
+	GrText(font_wid, font_gc, (screen_info.cols-width) >> 1, 10,
+			"Spin wheel to change", -1, GR_TFASCII);
 }
 
 static void change_font(int num)
@@ -217,7 +243,7 @@ static void change_font(int num)
 	GR_SIZE width, height, base;
 	char *load = "Loading...";
 	
-	GrClearWindow(font_wid, GR_FALSE);
+	font_clear_window();
 	GrGetGCTextSize(font_gc, load, -1, GR_TFASCII, &width, &height, &base);
 	GrText(font_wid, font_gc, (screen_info.cols - width) >> 1,
 			(screen_info.rows - HEADER_TOPLINE) >> 1, load,
@@ -237,7 +263,7 @@ static int font_event_handler(GR_EVENT *e)
 	switch (e->type) {
 	case GR_EVENT_TYPE_KEY_DOWN:
 		switch (e->keystroke.ch) {
-		case 'w':
+		case IPOD_WHEEL_COUNTERCLOCKWISE:
 			if( num_fonts > 0 ) {
 			    cur_font = (cur_font - 1) < 0 ? num_fonts - 1 :
 				    (cur_font - 1);
@@ -246,7 +272,7 @@ static int font_event_handler(GR_EVENT *e)
 			}
 			ret |= KEY_CLICK;
 			break;
-		case 'f':
+		case IPOD_WHEEL_CLOCKWISE:
 			if( num_fonts > 0 ) {
 			    cur_font = (cur_font + 1) > (num_fonts - 1) ?
 				    0 : (cur_font + 1);
@@ -255,7 +281,7 @@ static int font_event_handler(GR_EVENT *e)
 			}
 			ret |= KEY_CLICK;
 			break;
-		case '\r':
+		case IPOD_BUTTON_ACTION: 
 		case '\n':
 			if( num_fonts > 0 ) {
 				set_font(fl[cur_font].file, fl[cur_font].size,
@@ -266,7 +292,7 @@ static int font_event_handler(GR_EVENT *e)
 			}
 			ret |= KEY_CLICK;
 			break;
-		case 'm':
+		case IPOD_BUTTON_MENU:
 			destroy_font(1);
 			GrDestroyGC(font_gc);
 			pz_close_window(font_wid);
