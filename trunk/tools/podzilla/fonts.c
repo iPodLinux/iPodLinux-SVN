@@ -24,14 +24,13 @@
 #include <unistd.h>
 
 #include "pz.h"
+#include "mlist.h"
 
 #define FONTCONF "font.lst"
 #ifdef IPOD
-#define PZEXEC "/bin/podzilla"
 #define FONTSAVE "/etc/font.conf"
 #define FONTDIR "/usr/share/fonts/"
 #else
-#define PZEXEC "./podzilla"
 #define FONTSAVE "font.conf"
 #define FONTDIR "fonts/"
 #endif
@@ -53,6 +52,7 @@ fontlist_st fl[64]; /* max 64 fonts */
 static int num_fonts = 0;
 static int cur_font = 0;
 static int foc;
+static menu_st *main_menu;
 
 int parseline(char *parseline, char *file, char *name, char *size)
 {
@@ -286,9 +286,7 @@ static int font_event_handler(GR_EVENT *e)
 			if( num_fonts > 0 ) {
 				set_font(fl[cur_font].file, fl[cur_font].size,
 					pz_get_gc(0), 0);
-				new_message_window(
-					"Selected font, press Menu to "
-					"restart podzilla");
+				new_message_window("Selected font.");
 			}
 			ret |= KEY_CLICK;
 			break;
@@ -299,21 +297,6 @@ static int font_event_handler(GR_EVENT *e)
 			if (foc == -1)
 				break;
 			save_font();
-			GrClose();
-			switch (vfork()) {
-			case -1:
-				perror("vfork");
-				break;
-			case 0:
-				execl(PZEXEC, NULL);
-				fprintf(stderr, "execl failed");
-				_exit(1);
-				break;
-			default:
-				wait(NULL);
-				break;
-			}
-			exit(0);
 			break;
 		default:
 			ret |= KEY_UNUSED;
@@ -327,8 +310,16 @@ static int font_event_handler(GR_EVENT *e)
 	return ret;
 }
 
-void new_font_window()
+GR_FONT_ID get_current_font()
 {
+	GR_GC_INFO gc_info;
+	GrGetGCInfo(pz_get_gc(0), &gc_info);
+	return gc_info.font;
+}
+
+void new_font_window(menu_st *menu)
+{
+	main_menu = menu;
 	if (num_fonts == 0) {
 		if (populate_fontlist() <= 0) {
 			pz_error("Unable to load fontlist " FONTDIR FONTCONF);
@@ -336,7 +327,7 @@ void new_font_window()
 		}
 	}
 	foc = -1;
-	font_gc = pz_get_gc(1); /* Grab the root GC */
+	font_gc = pz_get_gc(1); /* Grab a root GC copy */
 	GrSetGCUseBackground(font_gc, GR_FALSE); /* Don't Draw Background */
 	GrSetGCForeground(font_gc, BLACK); /* Foreground; Black */
 

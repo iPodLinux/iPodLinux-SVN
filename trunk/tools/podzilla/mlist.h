@@ -44,15 +44,15 @@ typedef struct _menu_st {
 	int x, y, w, h;		/* geometry */
 	int scrollbar;		/* if there are enough items to have
 				 * a scrollbar */
-	int pixmap_pos[12];	/* position of the pixmaps on the screen */
-	GR_WINDOW_ID pixmaps[12];	/* pixmaps for the items,
-					 * 12 should be plenty */
+	int *pixmap_pos;	/* position of the pixmaps on the screen */
+	GR_WINDOW_ID *pixmaps;	/* pixmaps for the items */
 	GR_GC_ID menu_gc;
 	GR_WINDOW_ID menu_wid;
 
 	GR_SIZE width, height, base;	/* height contains the height
 					 * of the items */
 	GR_TIMER_ID timer;	/* scroll timer */
+	GR_FONT_ID font;	/* font the pixmaps were drawn with */
 	int op;			/* menu options */
 	int timer_step;
 	int scheme_no;		/* which scheme the pixmaps were drawn with */
@@ -73,6 +73,8 @@ void menu_handle_timer(menu_st *menulist, int force);
 
 menu_st *menu_handle_item(menu_st *menulist, int num);
 
+void menu_update_menu(menu_st *menulist);
+
 void menu_add_item(menu_st *menulist, char *text, void *action, int count,
 		unsigned int op);
 void menu_delete_item(menu_st *menulist, int num);
@@ -80,8 +82,8 @@ void menu_delete_item(menu_st *menulist, int num);
 /* sorts items alphabetically and indexes them */
 void menu_sort_menu(menu_st *menulist);
 
-menu_st *menu_init(GR_WINDOW_ID menu_wid, GR_GC_ID menu_gc, char *title, int x,
-		int y, int w, int h, menu_st *parent, item_st *items, int op);
+menu_st *menu_init(GR_WINDOW_ID menu_wid, char *title, int x, int y, int w,
+		int h, menu_st *parent, item_st *items, int op);
 menu_st *menu_destroy(menu_st *menulist);
 
 /* destroy all humans. err.. menus */
