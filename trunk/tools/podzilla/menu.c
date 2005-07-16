@@ -60,7 +60,7 @@ extern void new_cube_window(void);
 extern void new_matrix_window(void);
 extern void new_ipobble_window(void);
 extern void new_invaders_window(void);
-extern void new_font_window(void);
+extern void new_font_window(menu_st *);
 extern void new_vortex_window(void);
 extern void new_wumpus_window(void);
 extern void about_window(void);
@@ -73,6 +73,7 @@ extern item_st lights_menu[];
 extern void quit_podzilla(void);
 extern void poweroff_ipod(void);
 extern void reboot_ipod(void);
+static void change_font(void);
 
 static GR_WINDOW_ID menu_wid;
 static GR_GC_ID menu_gc;
@@ -187,9 +188,14 @@ static item_st appearance_menu[] = {
 	{"Decorations", appearance_decorations, OPTION_MENU, DECORATIONS, NDECORATIONS },
 	{"Battery Digits", NULL, BOOLEAN_MENU, BATTERY_DIGITS },
 	{"Display Load Average", NULL, BOOLEAN_MENU, DISPLAY_LOAD },
-	{"Font", new_font_window, ACTION_MENU},
+	{"Font", change_font, ACTION_MENU},
 	{ 0 }
 };
+
+static void change_font()
+{
+	new_font_window(menuz);
+}
 
 void menu_adjust_nschemes( int val )
 {
@@ -329,16 +335,16 @@ void new_menu_window()
 	GrSetGCForeground(menu_gc, BLACK);
 	GrSetGCBackground(menu_gc, WHITE);
 
-	menu_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols,
-			screen_info.rows - (HEADER_TOPLINE + 1), menu_do_draw,
+	menu_wid = pz_new_window(0, HEADER_TOPLINE + 2, screen_info.cols,
+			screen_info.rows - (HEADER_TOPLINE + 2), menu_do_draw,
 			menu_do_keystroke);
 
 	GrSelectEvents(menu_wid, GR_EVENT_MASK_EXPOSURE| GR_EVENT_MASK_KEY_UP|
 			GR_EVENT_MASK_KEY_DOWN | GR_EVENT_MASK_TIMER);
 
-	menuz = menu_init(menu_wid, menu_gc, "podzilla", 0, 1,
-			screen_info.cols, screen_info.rows -
-			(HEADER_TOPLINE + 1), NULL, main_menu, ASCII);
+	menuz = menu_init(menu_wid, "podzilla", 0, 0, screen_info.cols,
+			screen_info.rows - (HEADER_TOPLINE + 1), NULL,
+			main_menu, ASCII);
 
 	GrMapWindow(menu_wid);
 }

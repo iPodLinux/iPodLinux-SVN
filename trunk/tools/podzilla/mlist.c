@@ -42,6 +42,8 @@
 #define Dprintf(...)
 #endif
 
+extern GR_FONT_ID get_current_font(void);
+
 void menu_draw_timer(menu_st *menulist)
 {
 	char *c = strdup(">");
@@ -198,6 +200,21 @@ void menu_clear_pixmap(menu_st *menulist, int pos)
 	GrSetGCForeground(menulist->menu_gc, appearance_get_color( CS_FG ));
 }
 
+static void create_pixmaps(menu_st *menulist, int num)
+{
+	int i;
+	
+	menulist->pixmaps = (GR_WINDOW_ID *)malloc(sizeof(GR_WINDOW_ID) * num);
+	menulist->pixmap_pos = (int *)malloc(sizeof(int) * num);
+
+	/* initialize pixmaps */
+	for (i = 0; i < num; i++) {
+		menulist->pixmaps[i] = GrNewPixmap(440, menulist->height, NULL);
+		menulist->pixmap_pos[i] = i;
+		menu_clear_pixmap(menulist, i);
+	}
+}
+
 /* draws the pixmap on the screen; should probably be menu_draw_pixmap() */
 /* this would be much cleaner if raster ops worked properly; perhaps I just
  * misunderstand how they are supposed to be used */
@@ -322,24 +339,58 @@ void menu_retext_pixmap(menu_st *menulist, int pixmap, item_st *item)
 	menu_draw_item(menulist, pixmap);
 }
 
+void menu_update_menu(menu_st *menulist)
+{
+	int i;
+
+	/* wipe all of the pixmaps */
+	for (i = 0; i < menulist->screen_items; i++) {
+		menu_clear_pixmap(menulist, i);
+	}
+
+	if (get_current_font() != menulist->font) {
+		int items;
+		int h = menulist->height;
+		GrDestroyGC(menulist->menu_gc);
+		menulist->menu_gc = pz_get_gc(1);
+		GrGetGCTextSize(menulist->menu_gc, "abcdefghijhlmnopqrstuvwxyz"
+				"ABCDEFGHIJKLMNOPQRSTUVWXYZ", -1, GR_TFASCII,
+				&menulist->width, &menulist->height,
+				&menulist->base);
+		/* add a 2px padding to the text */
+		menulist->height += 4;
+		items = (int)menulist->h/menulist->height;
+		if (menulist->height != h) {
+			for (i = 0; i < menulist->screen_items; i++)
+				GrDestroyWindow(menulist->pixmaps[i]);
+			free(menulist->pixmaps);
+			free(menulist->pixmap_pos);
+			create_pixmaps(menulist, items);
+		}
+		menulist->screen_items = items;
+		menulist->font = get_current_font();
+		if (menulist->sel > menulist->top_item + menulist->screen_items)
+			menu_select_item(menulist, menulist->sel);
+
+	}
+	
+	/* force the rest of the redraw */
+	menulist->scheme_no = appearance_get_color_scheme();
+	/* NOTE: if "color scheme" is anywhere other than on the first
+	   screen's worth of menu items, this doesn't work correctly,
+	   but that's not an issue right now */
+	menulist->init = 0;
+}
+
 /* does the drawing, safe(and recommended) to use {in, as} an exposure event */
 void menu_draw(menu_st *menulist)
 {
 	int i;
 
 	/* appearance changed, force a redraw */
-	if( menulist->scheme_no != appearance_get_color_scheme() ) {
-		/* wipe all of the pixmaps if colors changed */
-		for( i=0 ; i<menulist->screen_items ; i++ ) {
-			    menu_clear_pixmap( menulist, i );
-		}
-
-		/* force the rest of the redraw */
-		menulist->scheme_no = appearance_get_color_scheme();
-		/* NOTE: if "color scheme" is anywhere other than on the first
-		   screen's worth of menu items, this doesn't work correctly,
-		   but that's not an issue right now */
-		menulist->init = 0;
+	if(menulist->scheme_no != appearance_get_color_scheme() ||
+			get_current_font() != menulist->font) {
+		menu_update_menu(menulist);
 	}
 
 	/* first draw; init onscreen text items */
@@ -348,7 +399,7 @@ void menu_draw(menu_st *menulist)
 				menulist->screen_items : menulist->num_items;
 				i; i--)
 			menu_retext_pixmap(menulist, i - 1,
-					&menulist->items[i - 1]);
+				&menulist->items[menulist->top_item + (i - 1)]);
 		menulist->init = 1;
 	}
 #if 0
@@ -369,9 +420,6 @@ void menu_draw(menu_st *menulist)
 			menulist->height * menulist->screen_items, menulist->w,
 			menulist->h - (menulist->height *
 			menulist->screen_items));
-	/* fix the top line which is yet untouched */
-	GrLine(menulist->menu_wid, menulist->menu_gc,
-			0, menulist->y-1, menulist->w, menulist->y-1);
 
 	GrSetGCForeground(menulist->menu_gc, BLACK);
 
@@ -476,10 +524,10 @@ menu_st *menu_handle_item(menu_st *menulist, int num)
 		/* Destroy timer */
 		menu_handle_timer(menulist, 1);
 		/* create another sub-menu  */
-		menulist = menu_init(menulist->menu_wid, menulist->menu_gc,
-				item->text, menulist->x, menulist->y,
-				menulist->w, menulist->h, menulist,
-				(item_st *)item->action, menulist->op);
+		menulist = menu_init(menulist->menu_wid, item->text,
+				menulist->x, menulist->y, menulist->w,
+				menulist->h, menulist, (item_st *)item->action,
+				menulist->op);
 	}
 	else if(ACTION_MENU & item->op) {
 		/* execute the function */
@@ -629,8 +677,8 @@ void menu_move_item(menu_st *menulist, int sel, int shift)
 #endif
 
 /* menu initialization, make sure to do a menu_destroy when you are finished */
-menu_st *menu_init(GR_WINDOW_ID menu_wid, GR_GC_ID menu_gc, char *title, int x,
-		int y, int w, int h, menu_st *parent, item_st *items, int op)
+menu_st *menu_init(GR_WINDOW_ID menu_wid, char *title, int x, int y, int w,
+		int h, menu_st *parent, item_st *items, int op)
 {
 	menu_st *menulist;
 	int i;
@@ -663,8 +711,10 @@ menu_st *menu_init(GR_WINDOW_ID menu_wid, GR_GC_ID menu_gc, char *title, int x,
 	menulist->timer_step = 0;
 	menulist->parent = parent;
 	menulist->lastsel = -1;
-	GrGetGCTextSize(menu_gc, "M", -1, GR_TFASCII, &menulist->width,
-			&menulist->height, &menulist->base);
+	menulist->menu_gc = pz_get_gc(1); 
+	GrGetGCTextSize(menulist->menu_gc, "abcdefghijhlmnopqrstuvwxyz"
+			"ABCDEFGHIJKLMNOPQRSTUVWXYZ", -1, GR_TFASCII,
+			&menulist->width, &menulist->height, &menulist->base);
 	/* add a 2px padding to the text */
 	menulist->height += 4;
 
@@ -676,15 +726,9 @@ menu_st *menu_init(GR_WINDOW_ID menu_wid, GR_GC_ID menu_gc, char *title, int x,
 	menulist->h = h;
 
 	menulist->menu_wid = menu_wid; 
-	/* copy the gc so we can change it */
-	menulist->menu_gc = GrCopyGC(menu_gc); 
+	menulist->font = get_current_font(); 
 
-	/* initialize pixmaps */
-	for(i = 0; i < menulist->screen_items; i++) {
-		menulist->pixmaps[i] = GrNewPixmap(440, menulist->height, NULL);
-		menulist->pixmap_pos[i] = i;
-		menu_clear_pixmap(menulist, i);
-	}
+	create_pixmaps(menulist, menulist->screen_items);
 #if 0
 	Dprintf("Init::%d items per screen at %dpx\n\tbecause %d/%d == %d\n",
 			menulist->screen_items, menulist->height, menulist->h,
@@ -707,6 +751,8 @@ menu_st *menu_destroy(menu_st *menulist)
 	GrDestroyGC(menulist->menu_gc);
 	for(i=0; i<menulist->screen_items; i++)
 		GrDestroyWindow(menulist->pixmaps[i]);
+	free(menulist->pixmaps);
+	free(menulist->pixmap_pos);
 	free(menulist);
 
 	return parent;
