@@ -64,7 +64,6 @@ extern void new_font_window(void);
 extern void new_vortex_window(void);
 extern void new_wumpus_window(void);
 extern void about_window(void);
-extern void shutdown_ipod(void);
 #ifdef MIKMOD
 extern void new_mikmod_window(void);
 #endif
@@ -72,6 +71,7 @@ extern void new_mikmod_window(void);
 extern item_st lights_menu[];
 
 extern void quit_podzilla(void);
+extern void poweroff_ipod(void);
 extern void reboot_ipod(void);
 
 static GR_WINDOW_ID menu_wid;
@@ -224,7 +224,7 @@ static item_st reboot_menu[] = {
 
 static item_st turnoff_menu[] = {
 	{"Cancel", NULL, SUB_MENU_PREV},
-	{"Absolutely", shutdown_ipod, ACTION_MENU},
+	{"Absolutely", poweroff_ipod, ACTION_MENU},
 	{0}
 };
 
