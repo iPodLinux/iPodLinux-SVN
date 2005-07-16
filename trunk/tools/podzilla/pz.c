@@ -101,6 +101,18 @@ extern void new_menu_window();
 extern void load_font();
 extern void beep(void);
 
+void poweroff_ipod(void)
+{
+	ipod_touch_settings();
+	GrClose();
+	printf("\nPowering down.\nPress action to power on.\n");
+	execl("/bin/poweroff", "poweroff", NULL);
+
+	printf("No poweroff binary available.  Rebooting.\n");
+	execl("/bin/reboot", "reboot", NULL);
+	exit(0);
+}
+
 void reboot_ipod(void)
 {
 	ipod_touch_settings();
@@ -111,28 +123,9 @@ void reboot_ipod(void)
 
 void quit_podzilla(void)
 {
-
 	ipod_touch_settings();
 	GrClose();
 	exit(0);
-}
-
-
-void shutdown_ipod(void)
-{
-#ifdef IPOD	
-	if (hw_version < 30000)
-	{
-		pz_error("This feature is unsupported on this hardware.");
-		return;
-	}	
-	ipod_touch_settings();
-	GrClose();
-	ipod_turn_off();
-	exit(0);
-#else
-	return;
-#endif
 }
 
 void set_wheeldebounce(void)
