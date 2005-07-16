@@ -635,6 +635,10 @@ void pz_draw_header(char *header)
 	GrSetGCForeground(root_gc, appearance_get_color(CS_TITLEBG) );
 	GrFillRect( root_wid, root_gc, 0, 0, screen_info.cols, HEADER_TOPLINE);
 
+	GrSetGCForeground(root_gc, appearance_get_color(CS_BG));
+	GrLine(root_wid, root_gc, 0, HEADER_TOPLINE + 1, screen_info.cols,
+			HEADER_TOPLINE + 1);
+
 	GrSetGCBackground(root_gc, appearance_get_color(CS_TITLEBG) );
 	GrSetGCForeground(root_gc, appearance_get_color(CS_TITLEACC) );
 
