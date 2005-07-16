@@ -121,8 +121,8 @@ static void browser_mscandir(char *dira)
 	if(browser_menu != NULL) {
 		menu_destroy(browser_menu);
 	}
-	browser_menu = menu_init(browser_wid, browser_gc, "File Browser",
-			0, 1, screen_info.cols, screen_info.rows -
+	browser_menu = menu_init(browser_wid, "File Browser", 0, 0,
+			screen_info.cols, screen_info.rows -
 			(HEADER_TOPLINE + 1), NULL, NULL, ASCII);
 
 	/* not very good for fragmentation... */
@@ -241,9 +241,6 @@ static void browser_do_draw()
 		else
 			pz_draw_header(browser_menu->title);
 		menu_draw(browser_menu);
-		GrSetGCForeground(browser_gc, WHITE);
-		GrLine(browser_wid, browser_gc, 0, 0, screen_info.cols, 0);
-		GrSetGCForeground(browser_gc, BLACK);
 	}
 }
 
@@ -465,10 +462,10 @@ static void browser_delete_confirm()
 		{0}
 	};
 
-	browser_menu = menu_init(browser_wid, browser_gc,
-			"Are You Sure?", 0, 1, screen_info.cols,
-			screen_info.rows - (HEADER_TOPLINE + 1),
-			browser_menu, delete_confirm_menu, ASCII);
+	browser_menu = menu_init(browser_wid, "Are You Sure?", 0, 0,
+			screen_info.cols, screen_info.rows -
+			(HEADER_TOPLINE + 1), browser_menu,
+			delete_confirm_menu, ASCII);
 	browser_menu_overlay = browser_menu;
 
 	stat(current_file, &stat_result);
@@ -488,9 +485,8 @@ static void browser_action(unsigned short userChoice)
 			strncmp(current_file, "..", strlen(current_file)) == 0)
 		return;
 
-	browser_menu = menu_init(browser_wid, browser_gc,
-			browser_entries[userChoice].name,
-			0, 1, screen_info.cols, screen_info.rows -
+	browser_menu = menu_init(browser_wid, browser_entries[userChoice].name,
+			0, 0, screen_info.cols, screen_info.rows -
 			(HEADER_TOPLINE + 1), browser_menu, NULL, ASCII);
 
 	switch (browser_entries[userChoice].type) {
@@ -610,8 +606,8 @@ void new_browser_window(char *initial_path)
 	GrSetGCBackground(browser_gc, WHITE);
 	GrSetGCForeground(browser_gc, BLACK);
 
-	browser_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols,
-                                    screen_info.rows - (HEADER_TOPLINE + 1),
+	browser_wid = pz_new_window(0, HEADER_TOPLINE + 2, screen_info.cols,
+                                    screen_info.rows - (HEADER_TOPLINE + 2),
                                     browser_do_draw, browser_do_keystroke);
 
 	GrSelectEvents(browser_wid, GR_EVENT_MASK_EXPOSURE |
