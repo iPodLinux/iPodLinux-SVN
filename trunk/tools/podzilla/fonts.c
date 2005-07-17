@@ -25,13 +25,13 @@
 
 #include "pz.h"
 #include "mlist.h"
+#include "ipod.h"
+#include "settings.h"
 
 #define FONTCONF "font.lst"
 #ifdef IPOD
-#define FONTSAVE "/etc/font.conf"
 #define FONTDIR "/usr/share/fonts/"
 #else
-#define FONTSAVE "font.conf"
 #define FONTDIR "fonts/"
 #endif
 
@@ -171,31 +171,24 @@ static void set_font(char *file, int size, GR_GC_ID gc, int local)
 
 void load_font()
 {
-	FILE *fp;
-	char file[128];
+	char *file;
 	char *size;
 
-	fp = fopen(FONTSAVE, "r");
-	if (fp == NULL)
+	file = (char *)get_string_setting(FONT_FILE);
+	if (file == NULL)
 		return;
-	fread(file, sizeof(char), 128, fp);
-	fclose(fp);
 	size = strrchr(file, ',');
 	*size++ = '\0';
 	set_font(file, atoi(size), pz_get_gc(0), 0);
+	free(file);
 }
 
 static void save_font()
 {
-	FILE *fp;
 	char fontline[128];
 
-	fp = fopen(FONTSAVE, "w+");
-	if (fp == NULL)
-		return;
 	snprintf(fontline, 127, "%s,%d", fl[foc].file, fl[foc].size);
-	fwrite(fontline, sizeof(char), strlen(fontline), fp);
-	fclose(fp);
+	set_string_setting(FONT_FILE, fontline);
 }
 
 static void font_clear_window()

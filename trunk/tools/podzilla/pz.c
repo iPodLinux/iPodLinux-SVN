@@ -800,7 +800,6 @@ main(int argc, char **argv)
 	GrSetGCUseBackground(root_gc, GR_FALSE);
 	GrSetGCForeground(root_gc, BLACK);
 	GrGetScreenInfo(&screen_info);
-	load_font();
 
 	root_wid = GrNewWindowEx(GR_WM_PROPS_APPFRAME |
 			    GR_WM_PROPS_CAPTION |
@@ -823,6 +822,7 @@ main(int argc, char **argv)
 	}
 	
 	ipod_load_settings();
+	load_font();
 	appearance_init();
 	backlight_tid = 0;
 	startupcontrast_tid = 0;
