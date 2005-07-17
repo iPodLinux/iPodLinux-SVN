@@ -61,14 +61,13 @@
 #define TIME_WORLDDST	(41)
 
 #define BROWSER_PATH	(42)
+#define BROWSER_HIDDEN	(43)
 
-#define COLORSCHEME	(43)	/* appearance */
-
-#define BROWSER_HIDDEN	(44)
-
+#define COLORSCHEME	(44)	/* appearance */
 #define DECORATIONS	(45)	/* appearance */
 #define BATTERY_DIGITS	(46)	/* appearance */
 #define DISPLAY_LOAD	(47)	/* appearance */
+#define FONT_FILE	(48)
 
 #define MIN_CONTRAST	0
 #define MAX_CONTRAST	128
@@ -84,8 +83,8 @@ int ipod_save_settings(void);
 
 void ipod_reset_settings(void);
 
-int ipod_set_setting(int setting, int value);
-int ipod_get_setting(int setting);
+int ipod_set_setting(short setting, int value);
+int ipod_get_setting(short setting);
 void ipod_touch_settings(void);
 
 int ipod_set_blank_mode(int blank);

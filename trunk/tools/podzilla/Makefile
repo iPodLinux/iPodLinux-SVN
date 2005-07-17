@@ -137,6 +137,7 @@ OBJS=\
 	tzx.o \
 	dialer.o \
 	wumpus.o \
+	settings.o \
 	video/video.o \
 	vortex/levels.o \
 	vortex/vortex.o \

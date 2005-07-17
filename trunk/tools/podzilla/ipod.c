@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "settings.h"
 #include "ipod.h"
 #include "pz.h"
 
@@ -47,8 +48,6 @@
 
 #define inl(a) (*(volatile unsigned long *) (a))
 #define outl(a,b) (*(volatile unsigned long *) (b) = (a))
-
-static int settings_buffer[100];
 
 static int ipod_ioctl(int request, int *arg)
 {
@@ -128,13 +127,13 @@ int ipod_set_backlight_timer(int timer)
 	return 0;
 }
 
-int ipod_set_setting(int setting, int value)
+int ipod_set_setting(short setting, int value)
 {
 	if (value <= 0) {
 		value = 0;
 	}
 
-	settings_buffer[setting] = value + 1;
+	set_int_setting(setting, value);
 	switch (setting) {
 	case CONTRAST:
 		ipod_set_contrast(value);
@@ -156,11 +155,11 @@ int ipod_set_setting(int setting, int value)
 	return 0;
 }
 
-int ipod_get_setting(int setting)
+int ipod_get_setting(short setting)
 {
 	int value;
 
-	value = settings_buffer[setting] - 1;	
+	value = get_int_setting(setting);	
 	if (value <= 0) {
 		value = 0;
 	}
@@ -169,32 +168,20 @@ int ipod_get_setting(int setting)
 
 int ipod_load_settings(void)
 {
-        FILE *fp;
-	int x;
+	int ret;
 
-	if ((fp = fopen(IPOD_SETTINGS_FILE, "r")) != 0) {
-	        if (fread(settings_buffer, sizeof(int), 100, fp) != 100) {
-			printf("Failed to read Podzilla settings from %s.\n", IPOD_SETTINGS_FILE);
+	if ((ret = load_settings(IPOD_SETTINGS_FILE)) < 0) {
+		if (ret == -2) {
+			pz_error("Corrupt settings file, blasting.");
+			unlink(IPOD_SETTINGS_FILE);
 		}
 		else {
-			/* loop may seem pointless, but it's not, or is it? */
-			for(x = 0; x < 100 ; x++) {
-				ipod_set_setting(x, ipod_get_setting(x));
-			}
+			printf("Failed to open %s to read settings,"
+					" using defaults.\n",
+					IPOD_SETTINGS_FILE);
 		}
 
-		fclose(fp);
-	}
-	else {
-		int contrast = ipod_get_contrast();
-
-		printf("Failed to open %s to read settings, using defaults.\n", IPOD_SETTINGS_FILE);
-
-		for (x = 0 ; x < 100 ; x++) {
-			ipod_set_setting(x, 0);
-		}
-
-		ipod_set_setting(CONTRAST, contrast);
+		ipod_set_setting(CONTRAST, ipod_get_contrast());
 		ipod_set_setting(CLICKER, 1);
 		ipod_set_setting(WHEEL_DEBOUNCE, 3);
 		ipod_set_setting(ACTION_DEBOUNCE, 400);
@@ -208,19 +195,8 @@ int ipod_load_settings(void)
 
 int ipod_save_settings(void)
 {
-	FILE *fp;
-
-	if ((fp = fopen(IPOD_SETTINGS_FILE, "w")) != 0) {
-		if (fwrite(settings_buffer, sizeof(int), 100, fp) != 100) {
-			printf("Failed to write Podzilla settings to %s.\n", IPOD_SETTINGS_FILE);
-			new_message_window("Write failed.");
-		}
-
-		fclose(fp);
-	}
-	else {
-		printf("Failed to open %s to save settings.\n", IPOD_SETTINGS_FILE);
-		new_message_window("Save failed.");
+	if (save_settings(IPOD_SETTINGS_FILE) < 0) {
+		pz_error("Save failed.");
 	}
 
 	return 0;
@@ -229,6 +205,7 @@ int ipod_save_settings(void)
 void ipod_reset_settings(void)
 {
 	unlink(IPOD_SETTINGS_FILE);
+	free_all_settings();
 
 	ipod_load_settings();
 	ipod_save_settings();
@@ -314,6 +291,7 @@ int ipod_read_apm(int *battery, int *charging)
 
 	if (battery) *battery = BATTERY_MAX;
 	if (charging) *charging = 0;
+	return 0;
 }
 
 int ipod_get_battery_level(void)
