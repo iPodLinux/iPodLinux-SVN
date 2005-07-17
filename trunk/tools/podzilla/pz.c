@@ -535,19 +535,16 @@ void pz_event_handler(GR_EVENT *event)
 			break;
 #if 1
 		case 'm':
-			if (backlight_tid || startupcontrast_tid) {
-				if( backlight_tid ) {
-					GrDestroyTimer(backlight_tid);
-					backlight_tid = 0;
-				}
-				if( startupcontrast_tid ) {
-					GrDestroyTimer(startupcontrast_tid);
-					startupcontrast_tid = 0;
-				}
-
+			if (backlight_tid) {
+				GrDestroyTimer(backlight_tid);
+				backlight_tid = 0;
 				event->type = GR_EVENT_TYPE_KEY_DOWN;
-				if( window ) window->keystroke(event);
+				if (window) window->keystroke(event);
 				event->type = GR_EVENT_TYPE_KEY_UP;
+			}
+			if (startupcontrast_tid) {
+				GrDestroyTimer(startupcontrast_tid);
+				startupcontrast_tid = 0;
 			}
 			break;
 #endif
