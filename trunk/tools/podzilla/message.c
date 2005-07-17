@@ -27,11 +27,11 @@
 #include "pz.h"
 
 static GR_TIMER_ID msg_timer;
-static GR_WINDOW_ID msg_wid;
+static GR_WINDOW_ID msg_wid = 0;
 static GR_GC_ID msg_gc;
 static char **msglines;
 static int linenum;
-static int this_is_error;
+static char this_is_error;
 
 static void msg_build_msg(char *msg_message)
 {
@@ -113,18 +113,26 @@ static void msg_do_draw()
 				GR_TFASCII);
 }
 
+static void msg_destroy_msg()
+{
+	int i;
+
+	pz_close_window(msg_wid);
+	GrDestroyGC(msg_gc);
+	GrDestroyTimer(msg_timer);
+	for(i = linenum; i; i--)
+		free(msglines[i-1]);
+	free(msglines);
+}
+
 static int msg_do_keystroke(GR_EVENT * event)
 {
-	int ret = 1, i;
+	int ret = 1;
 	switch (event->type) {
 	case GR_EVENT_TYPE_TIMER:
 	case GR_EVENT_TYPE_KEY_DOWN:
-		pz_close_window(msg_wid);
-		GrDestroyGC(msg_gc);
-		GrDestroyTimer(msg_timer);
-		for(i = linenum; i; i--)
-			free(msglines[i-1]);
-		free(msglines);
+		msg_destroy_msg();
+		msg_wid = 0;
 	}
 
 	return ret;
@@ -135,6 +143,10 @@ void new_message_common_window(char *message)
 {
 	GR_SIZE width, height, base;
 	int i, maxwidth;
+
+	if (msg_wid) {
+		msg_destroy_msg();
+	}
 
 	msg_gc = pz_get_gc(1);
 	GrSetGCUseBackground(msg_gc, GR_FALSE);
