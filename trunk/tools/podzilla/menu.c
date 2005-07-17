@@ -160,7 +160,7 @@ static item_st extras_menu[] = {
 
 static item_st reset_menu[] = {
 	{"Cancel", NULL, SUB_MENU_PREV},
-	{"Absolutely", ipod_reset_settings, ACTION_MENU},
+	{"Absolutely", ipod_reset_settings, ACTION_MENU | SUB_MENU_PREV},
 	{0}
 };
 
