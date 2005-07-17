@@ -367,9 +367,12 @@ static void draw_hold_status()
 	int decorations = appearance_get_decorations();
 
 	if (hold_is_on) {
-		if( decorations == DEC_AMIGA13 || decorations == DEC_AMIGA11 ){
+		if(    decorations == DEC_AMIGA13
+		    || decorations == DEC_AMIGA11
+		    || ipod_get_setting( DISPLAY_LOAD ) ){
 			/* erase any decoration-specific imagery */
-			GrSetGCForeground(root_gc, appearance_get_color(CS_TITLEBG));
+			GrSetGCForeground(root_gc,
+					appearance_get_color(CS_TITLEBG));
 			GrFillRect( root_wid, root_gc, 0, 0,
 					DEC_WIDG_SZ, HEADER_TOPLINE );
 		    
