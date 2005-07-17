@@ -155,7 +155,7 @@ void menu_draw_scrollbar(menu_st *menulist)
 	int per = menulist->screen_items * 100 / menulist->num_items;
 	int height = (menulist->h - 2) * (per < 3 ? 3 : per) / 100;
 	int y_top = ((((menulist->h - 3) - height) * 100) * menulist->sel /
-			(menulist->num_items - 1)) / 100 + 2;
+			(menulist->num_items - 1)) / 100 + menulist->y + 1;
 	int y_bottom = y_top + height;
 
 	/* only draw if appropriate */
