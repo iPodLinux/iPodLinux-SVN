@@ -16,9 +16,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
- *  $Id: $
+ *  $Id: globals.c,v 1.1 2005/05/16 02:53:00 yorgle Exp $
  *
- *  $Log: $
+ *  $Log: globals.c,v $
+ *  Revision 1.1  2005/05/16 02:53:00  yorgle
+ *  Initial checkin of Vortex.  It's just a demo right now, soon to be fleshed out.
+ *  Remove the "Vortex Demo" line(92) from menu.c to disable the hook.
+ *
  */
 
 #include <stdio.h>
@@ -37,8 +41,6 @@ void Vortex_resetGlobals( void )
 	Vortex_globals.timer_id = 0;
 	Vortex_globals.wid      = 0;
 	Vortex_globals.gc       = 0;
-	Vortex_globals.twid     = 0;
-	Vortex_globals.tgc      = 0;
 
 	/* helpers */
 	Vortex_globals.width  = 0;
