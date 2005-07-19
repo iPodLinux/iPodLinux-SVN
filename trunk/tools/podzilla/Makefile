@@ -139,6 +139,7 @@ OBJS=\
 	wumpus.o \
 	settings.o \
 	video/video.o \
+	vortex/console.o \
 	vortex/levels.o \
 	vortex/vortex.o \
 	vortex/globals.o \

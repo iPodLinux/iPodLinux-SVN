@@ -16,9 +16,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
- *  $Id: $
+ *  $Id: vortex.c,v 1.1 2005/05/16 02:53:00 yorgle Exp $
  *
- *  $Log: $
+ *  $Log: vortex.c,v $
+ *  Revision 1.1  2005/05/16 02:53:00  yorgle
+ *  Initial checkin of Vortex.  It's just a demo right now, soon to be fleshed out.
+ *  Remove the "Vortex Demo" line(92) from menu.c to disable the hook.
+ *
  */
 
 #include <stdio.h>
@@ -32,6 +36,13 @@
 #include "globals.h"
 #include "levels.h"
 #include "gameobjs.h"
+#include "console.h"
+
+
+int Vortex_rand( int max )
+{
+        return (int)((float)max * rand() / (RAND_MAX + 1.0));
+}
 
 
 void Vortex_ClearRect(int x, int y, int w, int h)
@@ -42,6 +53,7 @@ void Vortex_ClearRect(int x, int y, int w, int h)
 
 void Vortex_SetLevel( int l )
 {
+	char buf[100];
 	int p;
 
 	if( l > (16*3) ) l = 16*3;
@@ -80,12 +92,20 @@ void Vortex_SetLevel( int l )
 				- (Vortex_globals.maxy - Vortex_globals.miny)/2;
 	Vortex_globals.ycenter = //Vortex_globals.miny + 
 			    (Vortex_globals.maxy - Vortex_globals.miny); ///2;
+
+
+	/* log it */
+	sprintf( buf, ":%02d:", Vortex_globals.currentLevel );
+	Vortex_ConsoleMessage( buf, Vortex_rand(4)-2, Vortex_rand(4)-2, 
+				VORTEX_STYLE_NORMAL );
 }
 
 int Vortex_XAdjust( int v )
 {
-    return (int)((float)v/2.5)-15;
+	return( v );
 /*
+    return (int)((float)v/2.5)-15;
+
     float s = (Vortex_globals.ld->scale)/32.0;
 
     float r = (float)(v-Vortex_globals.xskew) / Vortex_globals.xscale;
@@ -97,11 +117,15 @@ int Vortex_XAdjust( int v )
 
 int Vortex_YAdjust( int v )
 {
+	return( v );
+
     /*
     printf(">> y2d %d\n", Vortex_globals.ld->y2d );
     printf("   y3d %d\n", Vortex_globals.ld->y3d );
     */
+/*
 	return (int)96-((float)v/2.5) -70; // - (Vortex_globals.ld->y2d/2);
+*/
     /*
 	float s = (Vortex_globals.ld->scale)/32.0;
 	float r = (float)(v-Vortex_globals.yskew) / Vortex_globals.yscale;
@@ -115,19 +139,22 @@ int xxxx = 0;
 #define SEGMENT_ARM   (1)
 #define SEGMENT_FRONT (2)
 
+/* x1, y1 - x2, y2  is the up front segment */
+/* xi, yi - xj, yj  is the back segment */
 void Vortex_DrawSegment( int _x1, int _y1, int _x2, int _y2, int which)
 {
-	int xc = Vortex_XAdjust( Vortex_globals.xcenter );
-	int yc = Vortex_YAdjust( Vortex_globals.ycenter );
+	//int xc = Vortex_globals.width; //Vortex_XAdjust( Vortex_globals.xcenter );
+	//int yc = Vortex_globals.height; //Vortex_YAdjust( Vortex_globals.ycenter );
 
-	int x1 = Vortex_XAdjust( _x1 );
-	int y1 = Vortex_YAdjust( _y1 );
-	int x2 = Vortex_XAdjust( _x2 );
-	int y2 = Vortex_YAdjust( _y2 );
+	int x1 = _x1>>1; //Vortex_XAdjust( _x1 );
+	int y1 = _y1>>1; //Vortex_YAdjust( _y1 );
+	int x2 = _x2>>1; //Vortex_XAdjust( _x2 );
+	int y2 = _y2>>1; //Vortex_YAdjust( _y2 );
 
-	int xi, yi, xj, yj;
+	//int xi, yi, xj, yj;
 
 
+/*
 	x1 = 80 - (xc/2) + x1;
 	y1 = 48 - (yc/2) + y1;
 	x2 = 80 - (xc/2) + x2;
@@ -149,6 +176,7 @@ void Vortex_DrawSegment( int _x1, int _y1, int _x2, int _y2, int which)
 	    GrLine( Vortex_globals.wid, Vortex_globals.gc, xi, yi, x1, y1 );
 	    GrLine( Vortex_globals.wid, Vortex_globals.gc, xj, yj, x2, y2 );
 	}
+*/
 
 	if( which == SEGMENT_FRONT ) {
 	    GrSetGCForeground(Vortex_globals.gc, VORTEX_COLOR_WEBFRONT);
@@ -167,11 +195,13 @@ void Vortex_DrawWeb( void )
 	/* draw the web */
 	for( p=0 ; p<15 ; p++ )
 	    for( q=0 ; q<3 ; q++ ) 
-		Vortex_DrawSegment( ld->x[p], ld->y[p], ld->x[p+1], ld->y[p+1], q );
+		Vortex_DrawSegment(	ld->x[p], ld->y[p], 
+					ld->x[p+1], ld->y[p+1], q );
 
 	if( ld->flags & LF_CLOSEDWEB )
 	    for( q=0 ; q<3 ; q++ ) 
-		Vortex_DrawSegment( ld->x[0], ld->y[0], ld->x[15], ld->y[15], q );
+		Vortex_DrawSegment( 	ld->x[0], ld->y[0], 
+					ld->x[15], ld->y[15], q );
 }
 
 
@@ -183,41 +213,45 @@ static void Vortex_NewGame( void )
 }
 
 
-int ssss = 1;
+static void Vortex_drawStats()
+{
+	char buf[16];
+
+	GrSetGCBackground( Vortex_globals.gc, VORTEX_COLOR_BG);
+	GrSetGCForeground(Vortex_globals.gc, VORTEX_COLOR_SCORE);
+
+	/* number of bases */
+	snprintf( buf, 16, "%02d", Vortex_globals.lives );
+
+	vector_render_string( Vortex_globals.wid, Vortex_globals.gc,
+			buf, 1, 1,   2, 5 );
+	vector_render_polystruct( Vortex_globals.wid, Vortex_globals.gc,
+			V_OBJECT_CLAW, V_gameobjs, V_points,
+			2, 15, 1 );
+
+
+	/* score */
+	Vortex_globals.score += 20;
+	snprintf( buf, 16, "%d", Vortex_globals.score );
+
+	vector_render_string_right( Vortex_globals.wid, Vortex_globals.gc,
+			    buf, 1, 1, Vortex_globals.width-3+1, 5+1 );
+}
+
 
 /* draw the playfield */
 static void Vortex_GameLoop( void )
 {
-	char buf[100];
 
 	/* clear the playfield */
 	Vortex_ClearRect( 0, 0, Vortex_globals.width, Vortex_globals.height );
 
-	Vortex_DrawWeb();
+	Vortex_drawStats();	/* score, number of ships */
+	Vortex_DrawWeb();	/* playfield */
 
-	sprintf( buf, ":%02d:", Vortex_globals.currentLevel );
-	GrSetGCForeground(Vortex_globals.gc, VORTEX_COLOR_SCORE);
-     //   GrText( Vortex_globals.wid, Vortex_globals.gc, 0, Vortex_globals.height-10, buf, -1, GR_TFASCII );
 
-	if( ssss < 20 )
-	{ 
-	    vector_render_string_center( 
-			    Vortex_globals.wid, Vortex_globals.gc,
-			    buf, 1, ssss++,
-			    Vortex_globals.width/2, 
-			    Vortex_globals.height/2 );
-
-    /*
-	    vector_render_string_center(
-			    Vortex_globals.wid, Vortex_globals.gc,
-			    "VORTEX", 2, (20-ssss)/2, 
-			    Vortex_globals.width/2 + sin(ssss)*10.0, 
-			    Vortex_globals.height/2 + cos(ssss)*10.0 );
-    */
-	} else 
-	    vector_render_string( 
-			    Vortex_globals.wid, Vortex_globals.gc,
-			    buf, 1, 1, 1, Vortex_globals.height-10 );
+	Vortex_ConsoleTick();
+	Vortex_Console_Render( Vortex_globals.wid, Vortex_globals.gc );
 
 	GrCopyArea( Vortex_globals.display_wid,
 		   Vortex_globals.gc,
@@ -229,77 +263,17 @@ static void Vortex_GameLoop( void )
 
 }
 
-static void vortex_drawTop()
-{
-	char buf[16];
-	GrSetGCBackground( Vortex_globals.tgc, WHITE);
-
-	GrClearWindow( Vortex_globals.twid, 0);
-
-    /*
-	GrSetGCForeground( Vortex_globals.tgc, LTGRAY);
-	vector_render_string_center( Vortex_globals.twid, Vortex_globals.tgc,
-			    "VORTEX", 2, 1, Vortex_globals.width/2+1, 9+1 );
-    */
-
-	GrSetGCForeground( Vortex_globals.tgc, BLACK);
-	vector_render_string_center( Vortex_globals.twid, Vortex_globals.tgc,
-			    "VORTEX", 2, 1, Vortex_globals.width/2, 9 );
-
-
-	/* number of bases */
-	snprintf( buf, 16, "%02d", Vortex_globals.lives );
-
-    /*
-	GrSetGCForeground( Vortex_globals.tgc, LTGRAY);
-	vector_render_string( Vortex_globals.twid, Vortex_globals.tgc,
-			buf, 1, 1,   2+1, 5+1 );
-	vector_render_polystruct( Vortex_globals.twid, Vortex_globals.tgc,
-			V_OBJECT_CLAW, V_gameobjs, V_points,
-			2, 15+1, 1+1 );
-    */
-			
-
-	GrSetGCForeground( Vortex_globals.tgc, BLACK);
-	vector_render_string( Vortex_globals.twid, Vortex_globals.tgc,
-			buf, 1, 1,   2, 5 );
-	vector_render_polystruct( Vortex_globals.twid, Vortex_globals.tgc,
-			V_OBJECT_CLAW, V_gameobjs, V_points,
-			2, 15, 1 );
-
-
-	/* score */
-	Vortex_globals.score += 20;
-	snprintf( buf, 16, "%d", Vortex_globals.score );
-
-    /*
-	GrSetGCForeground( Vortex_globals.tgc, LTGRAY);
-	vector_render_string_right( Vortex_globals.twid, Vortex_globals.tgc,
-			    buf, 1, 1, Vortex_globals.width-3, 5 );
-    */
-	GrSetGCForeground( Vortex_globals.tgc, BLACK);
-	vector_render_string_right( Vortex_globals.twid, Vortex_globals.tgc,
-			    buf, 1, 1, Vortex_globals.width-3+1, 5+1 );
-}
-
-
-static int vortex_handleTop (GR_EVENT *event)
-{
-	return 0;
-}
 
 
 
 static void vortex_do_draw()
 {
-	vortex_drawTop();
-	//pz_draw_header("Vortex");
+	pz_draw_header("Vortex");
 }
 
 /* event handler */
 static int vortex_handle_event (GR_EVENT *event)
 {
-	vortex_drawTop();
 	switch( Vortex_globals.gameState )
 	{
 	    case VORTEX_STATE_PLAY:
@@ -331,7 +305,6 @@ static int vortex_handle_event (GR_EVENT *event)
 			    if( Vortex_globals.currentLevel > 0 )
 			    {
 				Vortex_SetLevel( Vortex_globals.currentLevel-1 );
-				ssss=0;
 			    }
 			    break;
 
@@ -340,7 +313,6 @@ static int vortex_handle_event (GR_EVENT *event)
 			    if( Vortex_globals.currentLevel < (16*3)-1 )
 			    {
 				Vortex_SetLevel( Vortex_globals.currentLevel+1 );
-				ssss=0;
 			    }
 			    break;
 
@@ -359,11 +331,9 @@ static int vortex_handle_event (GR_EVENT *event)
 
 	    case VORTEX_STATE_EXIT:
 		GrDestroyTimer( Vortex_globals.timer_id );
-		GrDestroyGC( Vortex_globals.tgc );
 		GrDestroyGC( Vortex_globals.gc );
 		//pz_close_window( Vortex_globals.wid );
 		pz_close_window( Vortex_globals.display_wid );
-		pz_close_window( Vortex_globals.twid );
 		break;
 	} // game type
 
@@ -374,6 +344,7 @@ void new_vortex_window(void)
 {
 	/* Init randomizer */
 	srand(time(NULL));
+	//pz_draw_header( "Vortex" );
 
 	Vortex_resetGlobals();
 
@@ -384,13 +355,6 @@ void new_vortex_window(void)
 
 
     /* -- */
-	Vortex_globals.tgc = GrNewGC();
-	GrSetGCUseBackground(Vortex_globals.tgc, GR_FALSE);
-	Vortex_globals.twid = pz_new_window( 0, 0,
-				     Vortex_globals.width,
-				     HEADER_TOPLINE,
-				     vortex_drawTop, vortex_handleTop );
-
 	Vortex_globals.gc = GrNewGC();
 	GrSetGCUseBackground(Vortex_globals.gc, GR_FALSE);
 
@@ -411,7 +375,6 @@ void new_vortex_window(void)
 		       | GR_EVENT_MASK_KEY_UP
 		       | GR_EVENT_MASK_TIMER);
 
-	GrMapWindow( Vortex_globals.twid );
 	GrMapWindow( Vortex_globals.display_wid );
 
 
