@@ -17,14 +17,13 @@
  */
 
 #include <stdlib.h>
-
-#include "pz.h"
-
-#include "mlist.h"
-
 #ifdef IPOD
+#include <string.h>
 #include <unistd.h>
 #endif
+
+#include "pz.h"
+#include "mlist.h"
 
 #define outl(a, b) (*(volatile unsigned int *)(b) = (a))
 #define inl(a) (*(volatile unsigned int *)(a))
@@ -33,31 +32,23 @@
 // hoping to implement some sort of diskmode menu here
 
 
+#ifdef IPOD
 static int usb_check_connection()
 {
-#ifdef IPOD
 	if ((inl(0xc50001A4) & 0x800)==0)
 		return 0;
 	else
 		return 1;  // we're connected - yay!
-#else
-	return 0;
-#endif
 }
 
 
 static int usb_get_usb2d_ident_reg()
 {
-#ifdef IPOD
 	return inl(0xc5000000);
-#else
-	return 0;
-#endif
 }
 
 static int setup_usb(int arg0)
 {
-#ifdef IPOD
 	int r0, r1;
 	static int usb_inited = 0;
 
@@ -119,16 +110,12 @@ static int setup_usb(int arg0)
 	} else { 
 		return 0;
 	}
-#else
-	return 0;
-#endif
 }
 
 
 
 static int usb_test_core(int arg0)
 {
-#ifdef IPOD
 	int r0;
 	setup_usb(1);
 	r0 = usb_get_usb2d_ident_reg();
@@ -148,10 +135,8 @@ static int usb_test_core(int arg0)
 			// display id from r0
 		}	
 	}
-#else
-	return 0;
-#endif
 }
+#endif
 
 
 int usb_is_connected(void)
@@ -163,11 +148,8 @@ int usb_is_connected(void)
 		r0 = usb_test_core(0x22fA05);
 		return r0;
 	} 
-
-	return 0;
-#else
-	return 0;
 #endif
+	return 0;
 }
 
 
@@ -190,6 +172,7 @@ static void goto_diskmode()
 static GR_WINDOW_ID usb_wid;
 static GR_GC_ID usb_gc;
 static menu_st *usb_menu;
+static int usb_ww, usb_wh, usb_mh;
 
 static void usb_menu_quit()
 {
@@ -240,45 +223,63 @@ static int usb_menu_keystroke(GR_EVENT * event)
 
 static item_st usb_menu_items[] = {
 	{"Return to Podzilla", usb_menu_quit, ACTION_MENU},
-	{"Goto Diskmode", goto_diskmode, ACTION_MENU},
+	{"Reboot to Diskmode", goto_diskmode, ACTION_MENU},
 	{0}
 };
+
+static void usb_draw()
+{
+	char *str = "USB connected";
+	GR_SIZE w, h, b;
+	int y = (usb_wh - usb_mh) + 1;
+
+	GrSetGCForeground(usb_gc, appearance_get_color(CS_FG));
+	GrRect(usb_wid, usb_gc, 1, 1, usb_ww - 2, usb_wh - 2);
+	GrLine(usb_wid, usb_gc, 1, y, usb_ww - 2, y);
+
+	GrGetGCTextSize(usb_gc, str, -1, GR_TFASCII, &w, &h, &b);
+
+	GrText(usb_wid, usb_gc, (usb_ww - w) / 2, 3 + 2, str,
+			-1, GR_TFASCII | GR_TFTOP);
+}
 
 static void usb_do_draw()
 {
 	if (usb_wid == GrGetFocus()) {
-		pz_draw_header(usb_menu->title);
 		menu_draw(usb_menu);
+		usb_draw();
 	}
 }
 void usb_check_goto_diskmode()
 {
-	if (hw_version >= 40000)
-	{
-		usb_gc = pz_get_gc(1);
-		GrSetGCUseBackground(usb_gc, GR_TRUE);
-		GrSetGCForeground(usb_gc, BLACK);
-		GrSetGCBackground(usb_gc, WHITE);
-		usb_wid = pz_new_window(0, HEADER_TOPLINE + 2, screen_info.cols,
-			    	screen_info.rows - (HEADER_TOPLINE + 2), usb_do_draw,
-	       			usb_menu_keystroke);
-		GrSelectEvents(usb_wid, GR_EVENT_MASK_EXPOSURE | GR_EVENT_MASK_KEY_UP |
-			GR_EVENT_MASK_KEY_DOWN | GR_EVENT_MASK_TIMER);
-		usb_menu = menu_init(usb_wid, "Diskmode", 0, 0, screen_info.cols,
-			screen_info.rows - (HEADER_TOPLINE +1), NULL,
-			usb_menu_items, ASCII);
-		GrMapWindow(usb_wid);
+	GR_SIZE w, h, b;
+	int i, x, y, width;
 	
-	} 	
+	if (hw_version < 40000)
+		return;
+
+	usb_gc = pz_get_gc(1);
+	GrSetGCForeground(usb_gc, appearance_get_color(CS_FG));
+	
+	for (i = 0, width = 0; usb_menu_items[i].text != 0; i++) {
+		GrGetGCTextSize(usb_gc, usb_menu_items[i].text, -1,
+				GR_TFASCII, &w, &h, &b);
+		if (width < w)
+			width = w;
+	}
+	usb_ww = width + 8*2 + 6;
+	usb_mh = (h + 4)*i + 6;
+	usb_wh = usb_mh + 3 + h + 4;
+	x = (screen_info.cols - usb_ww)/2;
+	y = (screen_info.rows - usb_wh)/2;
+		
+	usb_wid = pz_new_window(x, y, usb_ww, usb_wh, usb_do_draw,
+			usb_menu_keystroke);
+	GrSelectEvents(usb_wid, GR_EVENT_MASK_EXPOSURE | GR_EVENT_MASK_KEY_UP |
+		GR_EVENT_MASK_KEY_DOWN | GR_EVENT_MASK_TIMER);
+	GrSetWindowBackgroundColor(usb_wid, appearance_get_color(CS_BG));
+	usb_menu = menu_init(usb_wid, "Diskmode", 3, usb_wh - usb_mh + 3,
+			usb_ww - 6, usb_mh - 6, NULL, usb_menu_items, ASCII);
+	GrMapWindow(usb_wid);
 }
-
-
-
-
-
-
-
-
-
-
 
