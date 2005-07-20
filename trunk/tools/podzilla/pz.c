@@ -59,8 +59,8 @@ static int startup_contrast = -1;
 static unsigned long int last_keypress_event = 0;
 
 static int battery_is_charging = 0;
-
-
+static int usb_connected = 0;
+static int old_usb_connected = 0;
 
 #define WHEEL_EVT_MOD   3
 
@@ -579,6 +579,15 @@ void pz_event_handler(GR_EVENT *event)
 		else if (((GR_EVENT_TIMER *)event)->tid == battery_tid)
 		{
 			battery_count++;
+			if ((usb_connected=usb_is_connected())) {
+				if (!old_usb_connected)
+				{
+					old_usb_connected = usb_connected;
+					usb_check_goto_diskmode();
+				} 
+
+			} 
+			old_usb_connected = usb_connected;	
 			if( battery_count > 30 ) {
 				battery_count = 0;
 				draw_batt_status( BATT_UPDATE_FULL );

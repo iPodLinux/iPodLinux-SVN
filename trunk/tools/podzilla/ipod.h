@@ -96,6 +96,10 @@ int ipod_get_battery_level(void);
 int ipod_is_charging(void);
 void ipod_turn_off(void);
 
+
+int usb_is_connected(void);
+void usb_check_goto_diskmode(void);
+
 long ipod_get_hw_version(void);
 
 #endif
