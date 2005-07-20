@@ -137,9 +137,9 @@ start_play_queue()
 	else if (shuffle == 1)
 	{
 		swap_tracknodes(songhead, cursong);
-		shuffle_songs(1);
 		cursong = get_tracknode(1);
 		playlistpos = 1;
+		shuffle_songs(1);
 	}
 
 	play_track(cursong);
