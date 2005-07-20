@@ -138,6 +138,7 @@ OBJS=\
 	dialer.o \
 	wumpus.o \
 	settings.o \
+	usb.o \
 	video/video.o \
 	vortex/console.o \
 	vortex/levels.o \
