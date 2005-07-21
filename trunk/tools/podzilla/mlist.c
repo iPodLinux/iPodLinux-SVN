@@ -519,6 +519,18 @@ static void menu_left_transition(menu_st *menulist)
 	GrCopyArea(m->transition, menulist->menu_gc, m->w, 0,
 			menulist->w, menulist->h, menulist->menu_wid,
 			menulist->x, menulist->y, 0);
+
+	if (m->scheme_no != appearance_get_color_scheme()) {
+		m->menu_wid = m->transition;
+		m->x =0;
+		m->y = 0;
+
+		menu_draw(m);
+
+		m->menu_wid = menulist->menu_wid;
+		m->x = menulist->x;
+		m->y = menulist->y;
+	}
 	
 	jump = m->w / TRANSITION_STEPS;
 	for (i = TRANSITION_STEPS; i; i--) {
