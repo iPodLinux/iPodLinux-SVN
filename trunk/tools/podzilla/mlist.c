@@ -522,7 +522,7 @@ static void menu_left_transition(menu_st *menulist)
 
 	if (m->scheme_no != appearance_get_color_scheme()) {
 		m->menu_wid = m->transition;
-		m->x =0;
+		m->x = 0;
 		m->y = 0;
 
 		menu_draw(m);
@@ -532,7 +532,8 @@ static void menu_left_transition(menu_st *menulist)
 		m->y = menulist->y;
 	}
 	
-	jump = m->w / TRANSITION_STEPS;
+	jump = (ipod_get_setting(SLIDE_TRANSIT)) ?
+		m->w / TRANSITION_STEPS : 0;
 	for (i = TRANSITION_STEPS; i; i--) {
 		GrCopyArea(menulist->menu_wid, menulist->menu_gc,
 				menulist->x, menulist->y, menulist->w,
@@ -558,7 +559,8 @@ static menu_st *menu_right_transition(menu_st *menulist, item_st *item)
 	m->x = menulist->x;
 	m->y = menulist->y;
 
-	jump = menulist->w / TRANSITION_STEPS;
+	jump = (ipod_get_setting(SLIDE_TRANSIT)) ?
+		menulist->w / TRANSITION_STEPS : 0;
 	for (i = 0; i < TRANSITION_STEPS; i++) {
 		GrCopyArea(menulist->menu_wid, menulist->menu_gc,
 				menulist->x, menulist->y, menulist->w,

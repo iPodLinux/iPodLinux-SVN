@@ -188,6 +188,7 @@ int ipod_load_settings(void)
 		ipod_set_setting(BACKLIGHT_TIMER, 0);
 		ipod_set_setting(DSPFREQUENCY, 0);
 		ipod_set_setting(COLORSCHEME, 0);
+		ipod_set_setting(SLIDE_TRANSIT, 1);
 	}
 
 	return 0;
