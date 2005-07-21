@@ -188,6 +188,7 @@ static item_st appearance_menu[] = {
 	{"Decorations", appearance_decorations, OPTION_MENU, DECORATIONS, NDECORATIONS },
 	{"Battery Digits", NULL, BOOLEAN_MENU, BATTERY_DIGITS },
 	{"Display Load Average", NULL, BOOLEAN_MENU, DISPLAY_LOAD },
+	{"Menu Transition", NULL, BOOLEAN_MENU, SLIDE_TRANSIT},
 	{"Font", change_font, ACTION_MENU},
 	{ 0 }
 };
