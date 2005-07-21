@@ -10,7 +10,7 @@
 	ACTN	toggle LR/UD
 	|<< 	color -
 	>>|	color +
-	MENU	exit
+	MENU	save and exit
  
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <string.h>
+#include <time.h>
 #include <sys/time.h>
 
 #include "pz.h"
@@ -101,7 +102,7 @@ static void poddraw_save( void )
 
 	t = time( NULL );
 	current_time = localtime( &t );
-	strftime( buf, 64, "%F_%H:%M.ppm", current_time );
+	strftime( buf, 64, "%Y-%m-%d_%H:%M.ppm", current_time );
 
 	fp = fopen( buf, "w" );
 	if( !fp ) return;
