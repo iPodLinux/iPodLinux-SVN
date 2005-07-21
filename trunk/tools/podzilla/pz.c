@@ -839,6 +839,10 @@ main(int argc, char **argv)
 	backlight_tid = 0;
 	startupcontrast_tid = 0;
 	battery_tid = GrCreateTimer(root_wid, 1000);
+	usb_connected = usb_is_connected();
+	old_usb_connected = usb_connected;	
+	
+	
 	new_menu_window();
 
 	while (1) {
