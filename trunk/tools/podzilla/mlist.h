@@ -49,6 +49,8 @@ typedef struct _menu_st {
 	GR_GC_ID menu_gc;
 	GR_WINDOW_ID menu_wid;
 
+	GR_WINDOW_ID transition;
+
 	GR_SIZE width, height, base;	/* height contains the height
 					 * of the items */
 	GR_TIMER_ID timer;	/* scroll timer */
