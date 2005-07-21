@@ -34,6 +34,8 @@
 #include "ipod.h"
 #include "mlist.h"
 
+#define TRANSITION_STEPS 16
+
 #define DEBUG
 
 #ifdef DEBUG
@@ -508,6 +510,52 @@ int menu_shift_selected(menu_st *menulist, int num)
 	return 1;
 }
 
+static void menu_left_transition(menu_st *menulist)
+{
+	menu_st *m;
+	int i, jump;
+
+	m = menulist->parent;
+	GrCopyArea(m->transition, menulist->menu_gc, m->w, 0,
+			menulist->w, menulist->h, menulist->menu_wid,
+			menulist->x, menulist->y, 0);
+	
+	jump = m->w / TRANSITION_STEPS;
+	for (i = TRANSITION_STEPS; i; i--) {
+		GrCopyArea(menulist->menu_wid, menulist->menu_gc,
+				menulist->x, menulist->y, menulist->w,
+				menulist->h, m->transition,
+				i * jump, 0, 0);
+	}
+}
+
+static menu_st *menu_right_transition(menu_st *menulist, item_st *item)
+{
+	menu_st *m;
+	int i, jump;
+
+	GrCopyArea(menulist->transition, menulist->menu_gc, 0, 0,
+			menulist->w, menulist->h, menulist->menu_wid,
+			menulist->x, menulist->y, 0);
+	m = menu_init(menulist->transition, item->text,
+			menulist->w, 0, menulist->w, menulist->h,
+			menulist, (item_st *)item->action, menulist->op);
+	menu_draw(m);
+
+	m->menu_wid = menulist->menu_wid;
+	m->x = menulist->x;
+	m->y = menulist->y;
+
+	jump = menulist->w / TRANSITION_STEPS;
+	for (i = 0; i < TRANSITION_STEPS; i++) {
+		GrCopyArea(menulist->menu_wid, menulist->menu_gc,
+				menulist->x, menulist->y, menulist->w,
+				menulist->h, menulist->transition,
+				(i + 1) * jump, 0, 0);
+	}
+	return m;
+}
+
 menu_st *menu_handle_item(menu_st *menulist, int num)
 {
 	item_st *item;
@@ -523,10 +571,7 @@ menu_st *menu_handle_item(menu_st *menulist, int num)
 		/* Destroy timer */
 		menu_handle_timer(menulist, 1);
 		/* create another sub-menu  */
-		menulist = menu_init(menulist->menu_wid, item->text,
-				menulist->x, menulist->y, menulist->w,
-				menulist->h, menulist, (item_st *)item->action,
-				menulist->op);
+		menulist = menu_right_transition(menulist, item);
 	}
 	else if(ACTION_MENU & item->op) {
 		/* execute the function */
@@ -728,6 +773,8 @@ menu_st *menu_init(GR_WINDOW_ID menu_wid, char *title, int x, int y, int w,
 	menulist->font = get_current_font(); 
 
 	create_pixmaps(menulist, menulist->screen_items);
+
+	menulist->transition = GrNewPixmap(menulist->w*2, menulist->h, NULL);
 #if 0
 	Dprintf("Init::%d items per screen at %dpx\n\tbecause %d/%d == %d\n",
 			menulist->screen_items, menulist->height, menulist->h,
@@ -742,6 +789,9 @@ menu_st *menu_destroy(menu_st *menulist)
 	int i;
 	menu_st *parent = menulist->parent;
 
+	if(parent != NULL)
+		menu_left_transition(menulist);
+
 	/* make sure its not a static menu we are trying to free */
 	if(menulist->alloc_items != 0)
 		free(menulist->items);
@@ -750,6 +800,7 @@ menu_st *menu_destroy(menu_st *menulist)
 	GrDestroyGC(menulist->menu_gc);
 	for(i=0; i<menulist->screen_items; i++)
 		GrDestroyWindow(menulist->pixmaps[i]);
+	GrDestroyWindow(menulist->transition);
 	free(menulist->pixmaps);
 	free(menulist->pixmap_pos);
 	free(menulist);
