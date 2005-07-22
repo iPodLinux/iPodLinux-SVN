@@ -283,6 +283,7 @@ d2a_activate_mic(void)
 	d2a_set_active(0x1);
 }
 
+
 static void ipodaudio_process_pb_dma(void)
 {
 	volatile int *r_off = (int *)DMA_READ_OFF;
