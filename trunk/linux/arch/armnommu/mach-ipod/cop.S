@@ -23,6 +23,7 @@ cop_fiq:
 
 	stmdb   sp!, {r0-r7, lr}
 
+
 	mov	lr, pc
 	ldr	pc, L_ipod_handle_dma
 
@@ -65,7 +66,19 @@ pp5020:
 	nop
 	nop
 
-	bl	ipod_handle_video
+
+	ldr	r1, =COP_STATE
+	mov	r0, #0x1
+	str	r0, [r1]
+	
+	mov	lr, pc
+	ldr	pc, L_ipod_handle_cop
+
+
+	ldr	r1, =COP_STATE
+	mov 	r0, #0x0
+	str 	r0, [r1]
+
 
 	b	cop_sleep
 
@@ -76,4 +89,4 @@ pp5020:
 	.lcomm cop_svc_stack, 1024
 
 L_ipod_handle_dma:.word ipod_handle_dma
-
+L_ipod_handle_cop:.word ipod_handle_cop
