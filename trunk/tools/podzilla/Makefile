@@ -140,6 +140,7 @@ OBJS=\
 	settings.o \
 	usb.o \
 	video/video.o \
+	video/videocop.o \
 	vortex/console.o \
 	vortex/levels.o \
 	vortex/vortex.o \

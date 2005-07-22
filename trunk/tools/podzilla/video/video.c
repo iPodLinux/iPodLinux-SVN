@@ -71,7 +71,7 @@ static unsigned filesize;
 static FILE * curFile;
 
 static dsp_st dspz;
-
+extern void ipod_handle_video(void);
 static struct framet audioframes[100];
 static unsigned int * indexes;
 static int audioreadoff = 0;
@@ -522,9 +522,11 @@ static int playVideo(char * filename)
 	}
 
 	i = 0;
+	
 
 	openAviFile(filename);
 	readVideoInfo(curFile);
+	outl((unsigned int)&ipod_handle_video, VAR_COP_HANDLER);
 	cop_wakeup();
 
 	audio_open();
