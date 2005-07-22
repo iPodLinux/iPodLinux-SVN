@@ -447,6 +447,18 @@ ipod_serial_init(void)
 /* put our ptr in on chip ram to avoid caching problems */
 static ipod_dma_handler_t * ipod_dma_handler = DMA_HANDLER;
 
+static ipod_cop_handler_t * ipod_cop_handler = COP_HANDLER;
+
+
+void ipod_handle_cop(void)
+{
+	if (*ipod_cop_handler != 0) {
+		(*ipod_cop_handler)();
+	}
+}
+
+
+
 void ipod_set_process_dma(ipod_dma_handler_t new_handler)
 {
 	*ipod_dma_handler = new_handler;

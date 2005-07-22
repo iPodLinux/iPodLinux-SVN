@@ -30,7 +30,12 @@
 #define DMA_ACTIVE	0x4000000c
 #define DMA_STEREO	0x40000010
 #define DMA_HANDLER	(ipod_dma_handler_t *)0x40000014
+
 #define DMA_BASE	0x40000018
+
+#define COP_HANDLER	(ipod_dma_handler_t *)0x4001501C
+#define COP_STATE	0x40015020
+
 
 #define SYSINFO_TAG	(unsigned char *)0x40017f18
 #define SYSINFO_PTR	(struct sysinfo_t **)0x40017f1c
@@ -105,6 +110,8 @@ extern int ipod_i2c_read_byte(unsigned int addr, unsigned int *data);
 extern void ipod_serial_init(void);
 
 typedef void (*ipod_dma_handler_t)(void);
+typedef void (*ipod_cop_handler_t)(void);
+
 
 extern void ipod_set_process_dma(ipod_dma_handler_t new_handler);
 
