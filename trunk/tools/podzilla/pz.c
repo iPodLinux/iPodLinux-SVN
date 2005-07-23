@@ -446,6 +446,7 @@ static inline struct pz_window *pz_find_window(GR_WINDOW_ID wid)
 {
 	int i;
 
+
 	for (i = 0; i < n_opened; i++)
 		if (windows[i].wid == wid && wid != GR_ROOT_WINDOW_ID)
 			return &windows[i];
@@ -587,7 +588,7 @@ void pz_event_handler(GR_EVENT *event)
 				} 
 
 			} 
-			old_usb_connected = usb_connected;	
+			old_usb_connected = usb_connected; 	
 			if( battery_count > 30 ) {
 				battery_count = 0;
 				draw_batt_status( BATT_UPDATE_FULL );
@@ -770,10 +771,32 @@ GR_WINDOW_ID pz_new_window(int x, int y, int w, int h, void(*do_draw)(void), int
 void
 pz_close_window(GR_WINDOW_ID wid)
 {
+	int i;
+	int window_to_remove = -1;	
 	// assert(windows[n_opened-1].wid == wid);
-
+	
 	GrUnmapWindow(wid);
 	GrDestroyWindow(wid);
+
+
+	/*  If we are closing a window which wasn't the last one opened
+	    we must shift the contents of the window array  */  
+	if (windows[n_opened-1].wid != wid)  
+	{
+		for (i = 0; i < n_opened; i++)
+			if (windows[i].wid == wid && wid != GR_ROOT_WINDOW_ID)
+				window_to_remove = i;
+	
+		if (window_to_remove != -1)
+		{
+			for (i = window_to_remove; i < n_opened-1; i++)
+			{
+				windows[i].wid = windows[i+1].wid;
+				windows[i].draw = windows[i+1].draw;
+				windows[i].keystroke = windows[i+1].keystroke;	
+			}
+		}	
+	}
 
 	n_opened--;
 }
