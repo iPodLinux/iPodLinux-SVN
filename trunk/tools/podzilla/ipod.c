@@ -185,11 +185,15 @@ int ipod_load_settings(void)
 		ipod_set_setting(CLICKER, 1);
 		ipod_set_setting(WHEEL_DEBOUNCE, 3);
 		ipod_set_setting(ACTION_DEBOUNCE, 400);
-		ipod_set_setting(BACKLIGHT_TIMER, 0);
 		ipod_set_setting(DSPFREQUENCY, 0);
 		ipod_set_setting(COLORSCHEME, 0);
 		ipod_set_setting(SLIDE_TRANSIT, 1);
 	}
+
+	ipod_set_contrast(ipod_get_setting(CONTRAST));
+	ipod_set_backlight_timer(ipod_get_setting(BACKLIGHT_TIMER));
+	appearance_set_color_scheme(ipod_get_setting(COLORSCHEME));
+	appearance_set_decorations(ipod_get_setting(DECORATIONS));
 
 	return 0;
 }
