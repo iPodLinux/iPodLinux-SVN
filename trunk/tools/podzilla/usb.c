@@ -29,8 +29,6 @@
 #define inl(a) (*(volatile unsigned int *)(a))
 
 
-// hoping to implement some sort of diskmode menu here
-
 
 #ifdef IPOD
 static int usb_check_connection()
