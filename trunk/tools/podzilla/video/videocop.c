@@ -48,10 +48,12 @@ static unsigned long lcd_busy_mask = 0x80000000;
 static unsigned long lcd_width = 220;
 static unsigned long lcd_height = 176;
 
-static void video_setup_display(unsigned hw_ver)
+static void video_setup_display(long hw_ver)
 {
-	switch (hw_ver)	{
-	case 6:
+	
+	switch (hw_ver)
+	{
+	case 6:	
 		lcd_base = 0x70008a0c;
 		lcd_busy_mask = 0x80000000;
 		lcd_width = 220;
@@ -64,25 +66,25 @@ static void video_setup_display(unsigned hw_ver)
 		lcd_width = IPOD_STD_LCD_WIDTH;
 		lcd_height = IPOD_STD_LCD_HEIGHT;
 		ipod_rtc = IPOD_PP5020_RTC;
-		break;
-	case 7:
+		break;	
+	case 7:	
 	case 4:
 		lcd_width = IPOD_MINI_LCD_WIDTH;
 		lcd_height = IPOD_MINI_LCD_HEIGHT;
 		lcd_base = IPOD_PP5020_LCD_BASE;
 		lcd_busy_mask = IPOD_STD_LCD_BUSY_MASK;
 		ipod_rtc = IPOD_PP5020_RTC;
-		break;
+		break;	
 	case 3:
 	case 2:
-	case 1:
+	case 1:	
 		lcd_width = IPOD_STD_LCD_WIDTH;
 		lcd_height = IPOD_STD_LCD_HEIGHT;
 		lcd_base = IPOD_PP5002_LCD_BASE;
 		ipod_rtc = IPOD_PP5002_RTC;
 		lcd_busy_mask = IPOD_STD_LCD_BUSY_MASK;
-		break;
-	}	
+		break;	
+	} 	
 }
 
 /* get current usec counter */
@@ -276,6 +278,8 @@ static void video_ipod_update_photo(unsigned short * x, int sx, int sy, int mx, 
 	}
 }
 
+extern int hw_version;
+
 void
 ipod_handle_video()
 {
@@ -293,11 +297,8 @@ ipod_handle_video()
 	outl(0, VAR_VIDEO_CURBUFFER_PLAYING);
 	outl(0, VAR_VIDEO_BUFFER_READY);
 	outl(0, VAR_VIDEO_MODE);
-
-	ipod_hw_ver = 0x6; //ipod_get_hw_version() >> 16;
-	//outl(inl(0x6006004) | 0x4, 0x60006004);
-	outl(0x80000000 | (0xff << 16), 0x7000a010);
-	outl(((0x100 | 1) << 3), 0x6000d824);
+	
+	ipod_hw_ver = hw_version/10000; 
 	video_setup_display(ipod_hw_ver);
 
 	while (1) {
