@@ -1,3 +1,9 @@
+Scott Lawrence - Sun Jul 24 2005
+	Dialog.c added (modal dialog with timeout)
+	Header stuff pulled out into header.c from pz.c
+	(prev) PodDraw: Colorized, added file saver
+	(prev) Mandelpod working display changed to pz_header text
+
 Courtney Cavin - Sat Jul 16 2005
 	integrated coob's new settings system
 	allowed font changing without restarting

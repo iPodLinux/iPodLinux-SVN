@@ -56,6 +56,28 @@ void new_message_window(char *message);
 void pz_error(char *fmt, ...);
 void pz_perror(char *msg);
 
+/* dialog.c */
+int dialog_create( char * title, char * text,
+                char * button0, char * button1, char * button2,
+                int timeout, int is_error );
+    /* use the following macros though... */
+    /* use timeout of 0 for no timeout */
+
+#define DIALOG_MESSAGE( title, text, button, timeout )\
+    dialog_create( (title), (text), (button), NULL, NULL, timeout, 0 )
+#define DIALOG_MESSAGE2( title, text, button, but1, timeout )\
+    dialog_create( (title), (text), (button), (but1), NULL, timeout, 0 )
+#define DIALOG_MESSAGE3( title, text, button, but1, but2, timeout )\
+    dialog_create( (title), (text), (button), (but1), (but2), timeout, 0 )
+
+#define DIALOG_ERROR( title, text, button, timeout )\
+    dialog_create( (title), (text), (button), NULL, NULL, timeout, 1 )
+#define DIALOG_ERROR2( title, text, button, but1, timeout )\
+    dialog_create( (title), (text), (button), (but1), NULL, timeout, 1 )
+#define DIALOG_ERROR3( title, text, button, but1, but2, timeout )\
+    dialog_create( (title), (text), (button), (but1), (but2), timeout, 1 )
+
+
 void new_slider_widget(int setting, char *title, int slider_min, int slider_max);
 
 /* for the 'handle event' methods. */ 
