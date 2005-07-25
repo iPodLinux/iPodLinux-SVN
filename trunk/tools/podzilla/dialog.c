@@ -325,12 +325,12 @@ int dialog_create( char * title, char * text,
 void new_dialog_window(void)
 {   
     int c;
-    c = DIALOG_MESSAGE3( "message:", "I like cheese", "Ok", "Good", "Sure", 0 );
+    c = DIALOG_MESSAGE_3( "message:", "I like cheese", "Ok", "Good", "Sure" );
     printf( ">> RETURNED %d\n", c );
 
-    c = DIALOG_ERROR2( "ERROR!", "You ran this test!", "No", "Bah", 0 );
+    c = DIALOG_ERROR_2( "ERROR!", "You ran this test!", "No", "Bah" );
     printf( ">> RETURNED %d\n", c );
 
-    c = DIALOG_MESSAGE( "Timeout Test", "2 seconds.", "Great!", 2 );
+    c = DIALOG_MESSAGE_T( "Timeout Test", "2 seconds.", "Great!", 2 );
     printf( ">> RETURNED %d\n", c );
 }

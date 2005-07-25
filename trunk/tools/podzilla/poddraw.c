@@ -92,10 +92,14 @@ static void poddraw_save( void )
 {
 	char buf[64];
 	int x;
+	int choice;
 	FILE * fp;
 
 	time_t t;
 	struct tm * current_time;
+
+	choice = DIALOG_MESSAGE_2( "Save?", "Save this image?", "Yes", "No" );
+	if( choice == 1 ) return;
 
 	if( !poddraw_buffer ) return;
 
@@ -121,6 +125,8 @@ static void poddraw_save( void )
 	}
 
 	fclose( fp );
+
+	choice = DIALOG_MESSAGE_T( "Save", "Saved.", "Ok", 3 );
 }
 
 
