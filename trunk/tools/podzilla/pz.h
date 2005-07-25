@@ -61,20 +61,37 @@ int dialog_create( char * title, char * text,
                 char * button0, char * button1, char * button2,
                 int timeout, int is_error );
     /* use the following macros though... */
-    /* use timeout of 0 for no timeout */
 
-#define DIALOG_MESSAGE( title, text, button, timeout )\
+/* no timeout, messages */
+#define DIALOG_MESSAGE( title, text, buttont )\
+    dialog_create( (title), (text), (button), NULL, NULL, 0, 0 )
+#define DIALOG_MESSAGE_2( title, text, button, but1 )\
+    dialog_create( (title), (text), (button), (but1), NULL, 0, 0 )
+#define DIALOG_MESSAGE_3( title, text, button, but1, but2 )\
+    dialog_create( (title), (text), (button), (but1), (but2), 0, 0 )
+
+/* no timeout, errors */
+#define DIALOG_ERROR( title, text, button )\
+    dialog_create( (title), (text), (button), NULL, NULL, 0, 1 )
+#define DIALOG_ERROR_2( title, text, button, but1 )\
+    dialog_create( (title), (text), (button), (but1), NULL, 0, 1 )
+#define DIALOG_ERROR_3( title, text, button, but1, but2 )\
+    dialog_create( (title), (text), (button), (but1), (but2), 0, 1 )
+
+/* with timeout, messages */
+#define DIALOG_MESSAGE_T( title, text, button, timeout )\
     dialog_create( (title), (text), (button), NULL, NULL, timeout, 0 )
-#define DIALOG_MESSAGE2( title, text, button, but1, timeout )\
+#define DIALOG_MESSAGE_T2( title, text, button, but1, timeout )\
     dialog_create( (title), (text), (button), (but1), NULL, timeout, 0 )
-#define DIALOG_MESSAGE3( title, text, button, but1, but2, timeout )\
+#define DIALOG_MESSAGE_T3( title, text, button, but1, but2, timeout )\
     dialog_create( (title), (text), (button), (but1), (but2), timeout, 0 )
 
-#define DIALOG_ERROR( title, text, button, timeout )\
+/* with timeout, errors */
+#define DIALOG_ERROR_T( title, text, button, timeout )\
     dialog_create( (title), (text), (button), NULL, NULL, timeout, 1 )
-#define DIALOG_ERROR2( title, text, button, but1, timeout )\
+#define DIALOG_ERROR_T2( title, text, button, but1, timeout )\
     dialog_create( (title), (text), (button), (but1), NULL, timeout, 1 )
-#define DIALOG_ERROR3( title, text, button, but1, but2, timeout )\
+#define DIALOG_ERROR_T3( title, text, button, but1, but2, timeout )\
     dialog_create( (title), (text), (button), (but1), (but2), timeout, 1 )
 
 
