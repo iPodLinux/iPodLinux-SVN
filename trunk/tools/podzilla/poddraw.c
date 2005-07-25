@@ -92,7 +92,6 @@ static void poddraw_save( void )
 {
 	char buf[64];
 	int x;
-	int c = 0;
 	FILE * fp;
 
 	time_t t;
@@ -102,7 +101,7 @@ static void poddraw_save( void )
 
 	t = time( NULL );
 	current_time = localtime( &t );
-	strftime( buf, 64, "%Y-%m-%d_%H:%M.ppm", current_time );
+	strftime( buf, 64, "%Y-%m-%d_%H%M.ppm", current_time );
 
 	fp = fopen( buf, "w" );
 	if( !fp ) return;
@@ -115,19 +114,11 @@ static void poddraw_save( void )
 	     x< (screen_info.cols * (screen_info.rows - HEADER_TOPLINE)) ;
 	     x++ )
 	{
-		if( c > 4 )
-		{
-			fprintf( fp, "\n" );
-			c = 0;
-		} else 
-			c++;
-
-		fprintf( fp, " %3d %3d %3d  ",
+		fprintf( fp, "%d %d %d\n",
 			(int)poddraw_buffer[x] & 0x000000ff,
 			(int)(poddraw_buffer[x]>>8) & 0x000000ff,
 			(int)(poddraw_buffer[x]>>16) & 0x000000ff );
 	}
-	fprintf( fp, "\n" );
 
 	fclose( fp );
 }
