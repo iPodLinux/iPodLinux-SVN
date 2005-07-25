@@ -99,6 +99,7 @@ OBJS=\
 	pz.o \
 	display.o \
 	header.o \
+	dialog.o \
 	appearance.o \
 	image.o \
 	browser.o \
