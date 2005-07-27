@@ -179,6 +179,8 @@ static void advance_and_check()
 	int i;
 	int y;
 	QUEUENODE *node;
+	GR_COLOR gr = GRAY;
+	GR_COLOR wh = WHITE;
 	
 	GrSetGCForeground(tunnel_gc, WHITE);
 	GrFillRect(temp_pixmap, tunnel_gc,
@@ -195,14 +197,36 @@ static void advance_and_check()
 		cycle_chasm_queue(tail->offset, &head, &middle, &tail);
 	
 	// Draw chasm
-    GrSetGCForeground(tunnel_gc, GRAY);
+	if( screen_info.bpp >= 16 ) {
+		gr = GR_RGB( 255, 128, 0 );
+		wh = GR_RGB( 128,  50, 0 );
+	}
 
 	node = head;
 	y = 0;
 	while (node != NULL)
 	{
-		GrFillRect(temp_pixmap, tunnel_gc, 0, y, node->offset, 2);
-		GrFillRect(temp_pixmap, tunnel_gc, node->offset + chasmWidth, y, wi.width, 2);
+		GrSetGCForeground(tunnel_gc, wh);
+		GrFillRect(temp_pixmap, tunnel_gc, 0, y, screen_info.cols, 2);
+
+		GrSetGCForeground(tunnel_gc, WHITE);
+		GrFillRect(temp_pixmap, tunnel_gc, 
+				node->offset, y, chasmWidth, 2);
+
+		GrSetGCForeground(tunnel_gc, BLACK);
+		GrFillRect(temp_pixmap, tunnel_gc, 
+				node->offset-5, y, 5, 2);
+		GrFillRect(temp_pixmap, tunnel_gc,
+				node->offset + chasmWidth, y,
+				5, 2);
+
+		GrSetGCForeground(tunnel_gc, gr);
+		GrFillRect(temp_pixmap, tunnel_gc, 
+				node->offset-8, y, 3, 2);
+		GrFillRect(temp_pixmap, tunnel_gc,
+				node->offset + chasmWidth+5, y,
+				3, 2);
+
 		node = node->next;
 		y+=2;
 	}
