@@ -167,117 +167,15 @@ static void goto_diskmode()
 }
 
 
-static GR_WINDOW_ID usb_wid;
-static GR_GC_ID usb_gc;
-static menu_st *usb_menu;
-static int usb_ww, usb_wh, usb_mh;
-
-static void usb_menu_quit()
-{
-	usb_menu = menu_destroy(usb_menu);
-	pz_close_window(usb_wid);
-	GrDestroyGC(usb_gc);
-}
-
-
-static int usb_menu_keystroke(GR_EVENT * event)
-{
-	int ret = 0;
-	switch (event->type) {
-	case GR_EVENT_TYPE_KEY_DOWN:
-		switch(event->keystroke.ch) {
-		case '\r':	
-		case '\n':
-			usb_menu = menu_handle_item(usb_menu, usb_menu->sel);
-			ret |= KEY_CLICK;
-			break;
-		case 'l':
-			if (menu_shift_selected(usb_menu, -1)) {
-				menu_draw(usb_menu);
-				ret |= KEY_CLICK;
-			}
-			break;
-		case 'r':
-			if (menu_shift_selected(usb_menu, 1)) {
-				menu_draw(usb_menu);
-				ret |= KEY_CLICK;
-			}
-			break;
-		case 'm':
-			usb_menu_quit();	
-			ret |= KEY_CLICK;
-			break;
-		default:
-			ret |= KEY_UNUSED;
-			break;
-		}
-	default:
-		ret |= EVENT_UNUSED;
-		break;
-	}
-	return ret;
-}
-
-
-static item_st usb_menu_items[] = {
-	{"Return to Podzilla", usb_menu_quit, ACTION_MENU},
-	{"Reboot to Diskmode", goto_diskmode, ACTION_MENU},
-	{0}
-};
-
-static void usb_draw()
-{
-	char *str = "USB connected";
-	GR_SIZE w, h, b;
-	int y = (usb_wh - usb_mh) + 1;
-
-	GrSetGCForeground(usb_gc, appearance_get_color(CS_FG));
-	GrRect(usb_wid, usb_gc, 1, 1, usb_ww - 2, usb_wh - 2);
-	GrLine(usb_wid, usb_gc, 1, y, usb_ww - 2, y);
-
-	GrGetGCTextSize(usb_gc, str, -1, GR_TFASCII, &w, &h, &b);
-
-	GrText(usb_wid, usb_gc, (usb_ww - w) / 2, 3 + 2, str,
-			-1, GR_TFASCII | GR_TFTOP);
-}
-
-static void usb_do_draw()
-{
-	if (usb_wid == GrGetFocus()) {
-		menu_draw(usb_menu);
-		usb_draw();
-	}
-}
 void usb_check_goto_diskmode()
 {
-	GR_SIZE w, h, b;
-	int i, x, y, width;
-	
 	if (hw_version < 40000)
 		return;
 
-	usb_gc = pz_get_gc(1);
-	GrSetGCForeground(usb_gc, appearance_get_color(CS_FG));
-	
-	for (i = 0, width = 0; usb_menu_items[i].text != 0; i++) {
-		GrGetGCTextSize(usb_gc, usb_menu_items[i].text, -1,
-				GR_TFASCII, &w, &h, &b);
-		if (width < w)
-			width = w;
-	}
-	usb_ww = width + 8*2 + 6;
-	usb_mh = (h + 4)*i + 6;
-	usb_wh = usb_mh + 3 + h + 4;
-	x = (screen_info.cols - usb_ww)/2;
-	y = (screen_info.rows - usb_wh)/2;
-		
-	usb_wid = pz_new_window(x, y, usb_ww, usb_wh, usb_do_draw,
-			usb_menu_keystroke);
-	GrSelectEvents(usb_wid, GR_EVENT_MASK_EXPOSURE | GR_EVENT_MASK_KEY_UP |
-		GR_EVENT_MASK_KEY_DOWN | GR_EVENT_MASK_TIMER);
-	GrSetWindowBackgroundColor(usb_wid, appearance_get_color(CS_BG));
-	usb_menu = menu_init(usb_wid, "Diskmode", 3, usb_wh - usb_mh + 3,
-			usb_ww - 6, usb_mh - 6, NULL, usb_menu_items, ASCII);
-	GrMapWindow(usb_wid);
+
+	if (DIALOG_MESSAGE_T2("USB Connect", 
+					"Go to diskmode?",
+					"No", "Yes", 10)==1)
+		goto_diskmode();	
 }
 
