@@ -59,7 +59,7 @@ static unsigned long int last_keypress_event = 0;
 int battery_is_charging = 0;
 int usb_connected = 0;
 int old_usb_connected = 0;
-
+static int usb_dialog_open = 0;
 #define WHEEL_EVT_MOD   3
 
 static int hold_is_on = 0;
@@ -274,7 +274,11 @@ void pz_event_handler(GR_EVENT *event)
 				if (!old_usb_connected)
 				{
 					old_usb_connected = usb_connected;
-					usb_check_goto_diskmode();
+					if (!usb_dialog_open) {
+						usb_dialog_open = 1;
+						usb_check_goto_diskmode();
+						usb_dialog_open = 0;	
+					} 	
 				} 
 
 			} 
