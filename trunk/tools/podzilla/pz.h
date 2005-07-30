@@ -116,4 +116,23 @@ void new_slider_widget(int setting, char *title, int slider_min, int slider_max)
 #define IPOD_REMOTE_FORWARD		('4')
 #define IPOD_REMOTE_REWIND		('5')
 
-#endif
+/* locale stuff */
+#ifdef LOCALE
+#include <libintl.h>
+#include <locale.h>
+#ifdef IPOD
+#ifndef __UCLIBC_HAS_LOCALE__
+#error You need to update your toolchain if you wish to have locale support. ("http://so2.sys-techs.net/ipod/toolchain/")
+#endif /* !__UCLIBC_HAS_LOCALE__ */
+#define LOCALEDIR "/usr/share/locale"
+#else /* !IPOD */
+#define LOCALEDIR "./locale"
+#endif /* IPOD */
+#define _(String) gettext(String)
+#else /* !LOCALE */
+#define _(String) String
+#define gettext(String) String
+#endif /* LOCALE */
+#define N_(String) String
+
+#endif /* !__PZ_H__ */

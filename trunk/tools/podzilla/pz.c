@@ -171,14 +171,12 @@ void pz_event_handler(GR_EVENT *event)
 		switch (event->keystroke.ch) {
 #ifdef IPOD
 		case 'm':
-#if 1
 			if (!backlight_tid)
                                backlight_tid = GrCreateTimer(root_wid, 500);
 			if (!startupcontrast_tid)
 			       startupcontrast_tid = GrCreateTimer(
 							    root_wid, 5000);
 			window = NULL;
-#endif
 		case 'q':
 		case 'w':
 		case 'f':
@@ -228,7 +226,6 @@ void pz_event_handler(GR_EVENT *event)
 				header_update_hold_status( hold_is_on );
 			}
 			break;
-#if 1
 		case 'm':
 			if (backlight_tid) {
 				GrDestroyTimer(backlight_tid);
@@ -242,7 +239,6 @@ void pz_event_handler(GR_EVENT *event)
 				startupcontrast_tid = 0;
 			}
 			break;
-#endif
 		default:
 			break;
 		}
@@ -398,6 +394,11 @@ main(int argc, char **argv)
 		exit(1);
 	}
 
+#ifdef LOCALE
+	setlocale(LC_ALL, "");
+	bindtextdomain("podzilla", LOCALEDIR);
+	textdomain("podzilla");
+#endif
 	root_gc = GrNewGC();
 	GrSetGCUseBackground(root_gc, GR_FALSE);
 	GrSetGCForeground(root_gc, BLACK);
