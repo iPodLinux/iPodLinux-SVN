@@ -180,6 +180,14 @@ OBJS+= mikmod/mlist.o mikmod/marchive.o
 endif
 endif
 
+# locale stuff
+ifneq ($(LOCALE),)
+CFLAGS+= -DLOCALE
+ifneq ($(IPOD),)
+LDFLAGS+= -lintl
+endif
+endif
+
 
 all: podzilla
 

@@ -262,6 +262,8 @@ void menu_draw_item(menu_st *menulist, int item)
 void menu_retext_pixmap(menu_st *menulist, int pixmap, item_st *item)
 {
 	int op;
+	char *text;
+
 	if(pixmap < 0 || pixmap > menulist->screen_items - 1) {
 		Dprintf("menu_retext_pixmap::No Such Pixmap\n");
 		return;
@@ -291,9 +293,10 @@ void menu_retext_pixmap(menu_st *menulist, int pixmap, item_st *item)
 		op = GR_TFASCII;
 	/* this makes the text draw without outlines */
 	GrSetGCUseBackground(menulist->menu_gc, GR_FALSE);
+	text = (TRANSLATE & menulist->op) ? gettext(item->text) : item->text;
 	GrText(menulist->pixmaps[menulist->pixmap_pos[pixmap]],
-			menulist->menu_gc, 8, 1, item->text,
-			strlen(item->text), op | GR_TFTOP);
+			menulist->menu_gc, 8, 1, text, strlen(text),
+			op | GR_TFTOP);
 
 	
 	if(BOOLEAN_MENU & item->op) {

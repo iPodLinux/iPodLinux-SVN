@@ -1,3 +1,6 @@
+Courtney Cavin - Sat Jul 30 2005
+	added initial i18n/l10n support
+
 Scott Lawrence - Sun Jul 24 2005
 	Dialog.c added (modal dialog with timeout)
 	Header stuff pulled out into header.c from pz.c

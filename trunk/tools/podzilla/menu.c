@@ -80,34 +80,34 @@ static GR_GC_ID menu_gc;
 static menu_st *menuz;
 
 static item_st tuxchess_menu[] = {
-	{"Last Game", last_tuxchess_window, ACTION_MENU},
-	{"New Game", new_tuxchess_window, ACTION_MENU},
+	{N_("Last Game"), last_tuxchess_window, ACTION_MENU},
+	{N_("New Game"), new_tuxchess_window, ACTION_MENU},
 	{0}
 };
 
 static item_st games_menu[] = {
-	{"BlueCube", new_bluecube_window, ACTION_MENU},
-	{"Hunt The Wumpus", new_wumpus_window, ACTION_MENU},
-	{"Invaders", new_invaders_window, ACTION_MENU},
-	{"iPobble", new_ipobble_window, ACTION_MENU},
-	{"Lights", lights_menu, SUB_MENU_HEADER},
-	{"Minesweeper", new_mines_window, ACTION_MENU},
-	{"Othello", new_oth_window, ACTION_MENU},
-	{"Pong", new_pong_window, ACTION_MENU},
-	{"Steroids", new_steroids_window, ACTION_MENU},
-	{"Tic-Tac-Toe", new_tictactoe_window, ACTION_MENU},
-	{"Tunnel", new_tunnel_window, ACTION_MENU},
-	{"TuxChess", tuxchess_menu, SUB_MENU_HEADER},
-	{"Vortex Demo", new_vortex_window, ACTION_MENU},
+	{N_("BlueCube"), new_bluecube_window, ACTION_MENU},
+	{N_("Hunt The Wumpus"), new_wumpus_window, ACTION_MENU},
+	{N_("Invaders"), new_invaders_window, ACTION_MENU},
+	{N_("iPobble"), new_ipobble_window, ACTION_MENU},
+	{N_("Lights"), lights_menu, SUB_MENU_HEADER},
+	{N_("Minesweeper"), new_mines_window, ACTION_MENU},
+	{N_("Othello"), new_oth_window, ACTION_MENU},
+	{N_("Pong"), new_pong_window, ACTION_MENU},
+	{N_("Steroids"), new_steroids_window, ACTION_MENU},
+	{N_("Tic-Tac-Toe"), new_tictactoe_window, ACTION_MENU},
+	{N_("Tunnel"), new_tunnel_window, ACTION_MENU},
+	{N_("TuxChess"), tuxchess_menu, SUB_MENU_HEADER},
+	{N_("Vortex Demo"), new_vortex_window, ACTION_MENU},
 	{0}
 };
 
 static item_st stuff_menu[] = {
-	{"Cube", new_cube_window, ACTION_MENU},
-	{"Dialer", new_dialer_window, ACTION_MENU},
-	{"MandelPod", new_mandel_window, ACTION_MENU},
-	{"Matrix", new_matrix_window, ACTION_MENU},
-	{"PodDraw", new_poddraw_window, ACTION_MENU},
+	{N_("Cube"), new_cube_window, ACTION_MENU},
+	{N_("Dialer"), new_dialer_window, ACTION_MENU},
+	{N_("MandelPod"), new_mandel_window, ACTION_MENU},
+	{N_("Matrix"), new_matrix_window, ACTION_MENU},
+	{N_("PodDraw"), new_poddraw_window, ACTION_MENU},
 	{0}
 };
 
@@ -129,11 +129,11 @@ static char *repeat_options[] = {
 
 static item_st recording_menu[] = {
 #ifdef __linux__
-	{"Mic Record", new_record_mic_window, ACTION_MENU},
-	{"Line In Record", new_record_line_in_window, ACTION_MENU},
-	{"Playback", new_playback_browse_window, ACTION_MENU},
+	{N_("Mic Record"), new_record_mic_window, ACTION_MENU},
+	{N_("Line In Record"), new_record_line_in_window, ACTION_MENU},
+	{N_("Playback"), new_playback_browse_window, ACTION_MENU},
 #endif /* __linux__ */
-	{"Sample Rate", sample_rates, OPTION_MENU, DSPFREQUENCY, 5},
+	{N_("Sample Rate"), sample_rates, OPTION_MENU, DSPFREQUENCY, 5},
 	{0}
 };
 
@@ -141,55 +141,54 @@ extern char * clocks_timezones[]; /* for the timezones.  in clocks.c */
 extern char * clocks_dsts[];	  /* for dst display.  in clocks.c */
 
 static item_st world_clock_menu[] = {
-	{"Local Clock", new_clock_window, ACTION_MENU},
-	{"World Clock", new_world_clock_window, ACTION_MENU},
-	{"TZ", clocks_timezones, OPTION_MENU, TIME_WORLDTZ, 39},
-	{"DST", clocks_dsts, OPTION_MENU, TIME_WORLDDST, 3},
+	{N_("Local Clock"), new_clock_window, ACTION_MENU},
+	{N_("World Clock"), new_world_clock_window, ACTION_MENU},
+	{N_("TZ"), clocks_timezones, OPTION_MENU, TIME_WORLDTZ, 39},
+	{N_("DST"), clocks_dsts, OPTION_MENU, TIME_WORLDDST, 3},
 	{0}
 };
 
 static item_st extras_menu[] = {
-	{"Recordings", recording_menu, SUB_MENU_HEADER},
-	{"Calendar", new_calendar_window, ACTION_MENU},
-	{"Calculator", new_calc_window, ACTION_MENU},
-	{"Clock", world_clock_menu, SUB_MENU_HEADER},
-	{"Games", games_menu, SUB_MENU_HEADER},
-	{"Stuff", stuff_menu, SUB_MENU_HEADER},
+	{N_("Recordings"), recording_menu, SUB_MENU_HEADER},
+	{N_("Calendar"), new_calendar_window, ACTION_MENU},
+	{N_("Calculator"), new_calc_window, ACTION_MENU},
+	{N_("Clock"), world_clock_menu, SUB_MENU_HEADER},
+	{N_("Games"), games_menu, SUB_MENU_HEADER},
+	{N_("Stuff"), stuff_menu, SUB_MENU_HEADER},
 	{0}
 };
 
 static item_st reset_menu[] = {
-	{"Cancel", NULL, SUB_MENU_PREV},
-	{"Absolutely", ipod_reset_settings, ACTION_MENU | SUB_MENU_PREV},
+	{N_("Cancel"), NULL, SUB_MENU_PREV},
+	{N_("Absolutely"), ipod_reset_settings, ACTION_MENU | SUB_MENU_PREV},
 	{0}
 };
 
 static char * time1224_options[] = { "12-hour", "24-hour" };
 
 static item_st clocks_menu[] = {
-        { "Clock", new_clock_window, ACTION_MENU },
-        { "Set Time", new_Set_Time_window, ACTION_MENU },
-        { "Set Time & Date", new_Set_DateTime_window, ACTION_MENU },
+        { N_("Clock"), new_clock_window, ACTION_MENU },
+        { N_("Set Time"), new_Set_Time_window, ACTION_MENU },
+        { N_("Set Time & Date"), new_Set_DateTime_window, ACTION_MENU },
 /* -- future expansion --
-	{ "Set Alarm", NULL, SUB_MENU_PREV },
-	{ "Set Sleep Timer", NULL, SUB_MENU_PREV },
-	{ "Time In Title", NULL, BOOLEAN_MENU, TIME_IN_TITLE },
+	{ N_("Set Alarm"), NULL, SUB_MENU_PREV },
+	{ N_("Set Sleep Timer"), NULL, SUB_MENU_PREV },
+	{ N_("Time In Title"), NULL, BOOLEAN_MENU, TIME_IN_TITLE },
 */
-	{ "TZ", clocks_timezones, OPTION_MENU, TIME_ZONE, 39 },
-	{ "DST", clocks_dsts, OPTION_MENU, TIME_DST, 3},
-
-	{ "Time", time1224_options, OPTION_MENU, TIME_1224, 2 },
-	{ "Time Tick Noise", NULL, BOOLEAN_MENU, TIME_TICKER },
+	{ N_("TZ"), clocks_timezones, OPTION_MENU, TIME_ZONE, 39 },
+	{ N_("DST"), clocks_dsts, OPTION_MENU, TIME_DST, 3},
+	{ N_("Time"), time1224_options, OPTION_MENU, TIME_1224, 2 },
+	{ N_("Time Tick Noise"), NULL, BOOLEAN_MENU, TIME_TICKER },
         { 0 }
 };
 
 static item_st appearance_menu[] = {
-	{"Color Scheme", colorscheme_names, OPTION_MENU, COLORSCHEME, CS_NSCHEMES },
-	{"Decorations", appearance_decorations, OPTION_MENU, DECORATIONS, NDECORATIONS },
-	{"Battery Digits", NULL, BOOLEAN_MENU, BATTERY_DIGITS },
-	{"Display Load Average", NULL, BOOLEAN_MENU, DISPLAY_LOAD },
-	{"Menu Transition", NULL, BOOLEAN_MENU, SLIDE_TRANSIT},
-	{"Font", change_font, ACTION_MENU},
+	{N_("Color Scheme"), colorscheme_names, OPTION_MENU, COLORSCHEME, CS_NSCHEMES },
+	{N_("Decorations"), appearance_decorations, OPTION_MENU, DECORATIONS, NDECORATIONS },
+	{N_("Battery Digits"), NULL, BOOLEAN_MENU, BATTERY_DIGITS },
+	{N_("Display Load Average"), NULL, BOOLEAN_MENU, DISPLAY_LOAD },
+	{N_("Menu Transition"), NULL, BOOLEAN_MENU, SLIDE_TRANSIT},
+	{N_("Font"), change_font, ACTION_MENU},
 	{ 0 }
 };
 
@@ -205,63 +204,63 @@ void menu_adjust_nschemes( int val )
 }
 
 static item_st settings_menu[] = {
-	{"About", about_window, ACTION_MENU},
-	{"Date & Time", clocks_menu, SUB_MENU_HEADER},
-	{"Repeat", repeat_options, OPTION_MENU, REPEAT, 3},
-	{"Shuffle", shuffle_options, OPTION_MENU, SHUFFLE, 2},
-	{"Contrast", set_contrast, ACTION_MENU},
-	{"Wheel Sensitivity", set_wheeldebounce, ACTION_MENU},
-	{"Button Debounce", set_buttondebounce, ACTION_MENU},
-	{"Backlight Timer", backlight_options, OPTION_MENU, BACKLIGHT_TIMER, 8},
-	{"Clicker", NULL, BOOLEAN_MENU, CLICKER},
-	{"Appearance", appearance_menu, SUB_MENU_HEADER},
-	{"Browser Path Display", NULL, BOOLEAN_MENU, BROWSER_PATH},
-	{"Show Hidden Files", NULL, BOOLEAN_MENU, BROWSER_HIDDEN},
-	{"Reset All Settings", reset_menu, SUB_MENU_HEADER},
-	{"Save Settings", ipod_save_settings, ACTION_MENU},
-	{"Load Settings", ipod_load_settings, ACTION_MENU},
+	{N_("About"), about_window, ACTION_MENU},
+	{N_("Date & Time"), clocks_menu, SUB_MENU_HEADER},
+	{N_("Repeat"), repeat_options, OPTION_MENU, REPEAT, 3},
+	{N_("Shuffle"), shuffle_options, OPTION_MENU, SHUFFLE, 2},
+	{N_("Contrast"), set_contrast, ACTION_MENU},
+	{N_("Wheel Sensitivity"), set_wheeldebounce, ACTION_MENU},
+	{N_("Button Debounce"), set_buttondebounce, ACTION_MENU},
+	{N_("Backlight Timer"), backlight_options, OPTION_MENU, BACKLIGHT_TIMER, 8},
+	{N_("Clicker"), NULL, BOOLEAN_MENU, CLICKER},
+	{N_("Appearance"), appearance_menu, SUB_MENU_HEADER},
+	{N_("Browser Path Display"), NULL, BOOLEAN_MENU, BROWSER_PATH},
+	{N_("Show Hidden Files"), NULL, BOOLEAN_MENU, BROWSER_HIDDEN},
+	{N_("Reset All Settings"), reset_menu, SUB_MENU_HEADER},
+	{N_("Save Settings"), ipod_save_settings, ACTION_MENU},
+	{N_("Load Settings"), ipod_load_settings, ACTION_MENU},
 	{0}
 };
 
 static item_st reboot_menu[] = {
-	{"Cancel", NULL, SUB_MENU_PREV},
-	{"Absolutely", reboot_ipod, ACTION_MENU},
+	{N_("Cancel"), NULL, SUB_MENU_PREV},
+	{N_("Absolutely"), reboot_ipod, ACTION_MENU},
 	{0}
 };
 
 static item_st turnoff_menu[] = {
-	{"Cancel", NULL, SUB_MENU_PREV},
-	{"Absolutely", poweroff_ipod, ACTION_MENU},
+	{N_("Cancel"), NULL, SUB_MENU_PREV},
+	{N_("Absolutely"), poweroff_ipod, ACTION_MENU},
 	{0}
 };
 
 static item_st itunes_menu[] = {
-	{"Playlists", new_itunes_plist, ACTION_MENU | ARROW_MENU},
-	{"Artists", new_itunes_artist, ACTION_MENU | ARROW_MENU},
-	{"Albums", new_itunes_album, ACTION_MENU | ARROW_MENU},
-	{"Songs", new_itunes_track, ACTION_MENU | ARROW_MENU},
+	{N_("Playlists"), new_itunes_plist, ACTION_MENU | ARROW_MENU},
+	{N_("Artists"), new_itunes_artist, ACTION_MENU | ARROW_MENU},
+	{N_("Albums"), new_itunes_album, ACTION_MENU | ARROW_MENU},
+	{N_("Songs"), new_itunes_track, ACTION_MENU | ARROW_MENU},
 #ifdef MIKMOD
-	{"MikMod", new_mikmod_window, ACTION_MENU},
+	{N_("MikMod"), new_mikmod_window, ACTION_MENU},
 #endif
 	{0}
 };
 
 static item_st power_menu[] = {
-	{"Quit Podzilla", quit_podzilla, ACTION_MENU},
-	{"Reboot iPod", reboot_menu, SUB_MENU_HEADER},
+	{N_("Quit Podzilla"), quit_podzilla, ACTION_MENU},
+	{N_("Reboot iPod"), reboot_menu, SUB_MENU_HEADER},
 #ifdef NEVER /* just to show where this should go */
-	{"Sleep iPod", sleep, ACTION_MENU};
+	{N_("Sleep iPod"), sleep, ACTION_MENU};
 #endif
-	{"Turn off iPod", turnoff_menu, SUB_MENU_HEADER},	
+	{N_("Turn off iPod"), turnoff_menu, SUB_MENU_HEADER},	
 	{0}
 };
 
 static item_st main_menu[] = {
-	{"Music", itunes_menu, SUB_MENU_HEADER},
-	{"Extras", extras_menu, SUB_MENU_HEADER},
-	{"Settings", settings_menu, SUB_MENU_HEADER},
-	{"File Browser", new_browser_window, ACTION_MENU | ARROW_MENU},
-	{"Power", power_menu, SUB_MENU_HEADER},
+	{N_("Music"), itunes_menu, SUB_MENU_HEADER},
+	{N_("Extras"), extras_menu, SUB_MENU_HEADER},
+	{N_("Settings"), settings_menu, SUB_MENU_HEADER},
+	{N_("File Browser"), new_browser_window, ACTION_MENU | ARROW_MENU},
+	{N_("Power"), power_menu, SUB_MENU_HEADER},
 	{0}
 };
 
@@ -345,7 +344,7 @@ void new_menu_window()
 
 	menuz = menu_init(menu_wid, "podzilla", 0, 0, screen_info.cols,
 			screen_info.rows - (HEADER_TOPLINE + 1), NULL,
-			main_menu, ASCII);
+			main_menu, ASCII | TRANSLATE);
 
 	GrMapWindow(menu_wid);
 }

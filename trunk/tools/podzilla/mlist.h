@@ -19,6 +19,7 @@
 #define UTF8		1		
 #define ASCII		2
 #define UC16		4
+#define TRANSLATE	8
 
 typedef struct _item_st {
 	char *text;	/* Menu item text to display */
