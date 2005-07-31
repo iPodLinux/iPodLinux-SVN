@@ -266,9 +266,9 @@ static int is_binary_type(char *filename)
 	fread(header, sizeof(char), 12, fp);
 	
 	fclose(fp);
-	if(strncmp(header, "bFLT", 4)==0)
+	if(strncmp((const char *)header, "bFLT", 4)==0)
 		return 1;
-	if(strncmp(header, "#!/bin/sh", 9)==0)
+	if(strncmp((const char *)header, "#!/bin/sh", 9)==0)
 		return 1;
 	return 0;
 }
