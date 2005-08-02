@@ -155,10 +155,10 @@ int get_user_sample_rate()
 static void pcm_do_draw()
 {
 	if (mode == RECORD) {
-		pz_draw_header("Record");
+		pz_draw_header(_("Record"));
 	}
 	else {
-		pz_draw_header("Playback");
+		pz_draw_header(_("Playback"));
 	}
 
 	GrSetGCForeground(pcm_gc, WHITE);
@@ -166,20 +166,20 @@ static void pcm_do_draw()
 	GrSetGCForeground(pcm_gc, BLACK);
 
 	if (playing || recording) {
-		GrText(pcm_wid, pcm_gc, 8, 20, "Press action to stop", -1, GR_TFASCII);
+		GrText(pcm_wid, pcm_gc, 8, 20, _("Press action to stop"), -1, GR_TFASCII);
 		if (paused) {
-			GrText(pcm_wid, pcm_gc, 8, 35, "Press Play/Pause to resume", -1, GR_TFASCII);
+			GrText(pcm_wid, pcm_gc, 8, 35, _("Press Play/Pause to resume"), -1, GR_TFASCII);
 		}
 		else {
-			GrText(pcm_wid, pcm_gc, 8, 35, "Press Play/Pause to pause", -1, GR_TFASCII);
+			GrText(pcm_wid, pcm_gc, 8, 35, _("Press Play/Pause to pause"), -1, GR_TFASCII);
 		}
 	}
 	else {
 		if (mode == RECORD) {
-			GrText(pcm_wid, pcm_gc, 8, 20, "Press action to record", -1, GR_TFASCII);
+			GrText(pcm_wid, pcm_gc, 8, 20, _("Press action to record"), -1, GR_TFASCII);
 		}
 		else {
-			GrText(pcm_wid, pcm_gc, 8, 20, "Press action to playback", -1, GR_TFASCII);
+			GrText(pcm_wid, pcm_gc, 8, 20, _("Press action to playback"), -1, GR_TFASCII);
 		}
 	}
 }
@@ -548,7 +548,7 @@ void new_record_window()
 	struct tm *tm;
 
 	if (!hw_version || hw_version < 30000 || hw_version >= 40000 ) { // 3G only
-		pz_error("Recording is unsupported on this hardware.");
+		pz_error(_("Recording is unsupported on this hardware."));
 		return;
 	}
 

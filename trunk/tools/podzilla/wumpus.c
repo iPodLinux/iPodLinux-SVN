@@ -28,6 +28,11 @@
 
 /* 
  * $Log: wumpus.c,v $
+ * Revision 1.3  2005/06/21 16:46:42  yorgle
+ * Cleaned up a lot of the code (re-organized it a bit)
+ * Made the colors better for Photo.
+ * Fixed a bug where getting eaten by the wumpus didn't kill you sometimes
+ *
  * Revision 1.2  2005/06/21 04:27:53  yorgle
  * Missed one "Dragon" that should have been "Wumpus".  oops.
  *
@@ -488,7 +493,7 @@ static void wumpus_redraw( void )
 /* the full draw function */
 static void wumpus_do_draw( void )
 {
-	pz_draw_header("Hunt The Wumpus");
+	pz_draw_header(_("Hunt The Wumpus"));
 	wumpus_redraw();
 }
 

@@ -173,9 +173,9 @@ void usb_check_goto_diskmode()
 		return;
 
 
-	if (DIALOG_MESSAGE_T2("USB Connect", 
-					"Go to diskmode?",
-					"No", "Yes", 10)==1)
+	if (DIALOG_MESSAGE_T2(_("USB Connect"), 
+					_("Go to diskmode?"),
+					_("No"), _("Yes"), 10)==1)
 		goto_diskmode();	
 }
 

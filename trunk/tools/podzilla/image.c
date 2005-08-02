@@ -165,17 +165,17 @@ void zoom(PZ_ZOOM_TYPE type, float factor)
 	if(new_level == zoom_fit_level)
 	{
 		play_btn_toggle = ZOOM_ACTUAL;
-		snprintf(message, 30, "Rescaling image... (Maxpect)");
+		snprintf(message, 30, _("Rescaling image... (Maxpect)"));
 	}
 	else if (new_level == 1.0)
 	{
 		play_btn_toggle = ZOOM_FIT;
-		snprintf(message, 30, "Rescaling image... (Actual)");
+		snprintf(message, 30, _("Rescaling image... (Actual)"));
 	}
 	else
 	{
 		play_btn_toggle = ZOOM_FIT;
-		snprintf(message, 30, "Rescaling image... (%d%%)",
+		snprintf(message, 30, _("Rescaling image... (%d%%)"),
 				(int)(new_level * 100));
 	}
 
@@ -288,13 +288,12 @@ void new_image_window(char *filename)
 	GrMapWindow(image_wid);
 	
 	GrClearWindow(image_wid, GR_FALSE);
-	image_status_message("Loading image...");	
+	image_status_message(_("Loading image..."));
 
 	if (!(image_id = GrLoadImageFromFile(filename, 0))) {
-		printf("Cannot open image %s\n", filename); 
 		pz_close_window(image_wid);		
 		GrDestroyGC(image_gc);
-		new_message_window("Unable to load image.");
+		pz_error(_("Unable to load image %s"), filename);
 		return;
 	}
 

@@ -5,7 +5,7 @@
 *   Jukebox    |    |   (  <_> )  \___|    < | \_\ (  <_> > <  <
 *   Firmware   |____|_  /\____/ \___  >__|_ \|___  /\____/__/\_ \
 *                     \/            \/     \/    \/            \/
-* $Id: cube.c,v 1.4 2005/03/11 01:07:18 coobert Exp $
+* $Id: cube.c,v 1.5 2005/03/13 18:56:11 coobert Exp $
 *
 * Copyright (C) 2002 Damien Teney
 * modified to use int instead of float math by Andreas Zwirtes
@@ -401,7 +401,7 @@ static void cube_clear_screen( void )
 
 static void cube_do_draw( void )
 {
-	pz_draw_header( "Cube" );
+	pz_draw_header(_("Cube"));
 }
 
 static void cube_loop( void )

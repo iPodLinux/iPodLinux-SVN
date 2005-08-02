@@ -129,16 +129,16 @@ static void tzx_do_draw()
 	GrSetGCForeground(tzx_gc, BLACK);
 
 	if (playing) {
-		GrText(tzx_wid, tzx_gc, 8, 20, "Press action to stop", -1, GR_TFASCII);
+		GrText(tzx_wid, tzx_gc, 8, 20, _("Press action to stop"), -1, GR_TFASCII);
 		if (paused) {
-			GrText(tzx_wid, tzx_gc, 8, 35, "Press Play/Pause to resume", -1, GR_TFASCII);
+			GrText(tzx_wid, tzx_gc, 8, 35, _("Press Play/Pause to resume"), -1, GR_TFASCII);
 		}
 		else {
-			GrText(tzx_wid, tzx_gc, 8, 35, "Press Play/Pause to pause", -1, GR_TFASCII);
+			GrText(tzx_wid, tzx_gc, 8, 35, _("Press Play/Pause to pause"), -1, GR_TFASCII);
 		}
 	}
 	else {
-		GrText(tzx_wid, tzx_gc, 8, 20, "Press action to playback", -1, GR_TFASCII);
+		GrText(tzx_wid, tzx_gc, 8, 20, _("Press action to playback"), -1, GR_TFASCII);
 	}
 }
 

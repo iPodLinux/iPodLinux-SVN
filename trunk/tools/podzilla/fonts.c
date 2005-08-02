@@ -155,7 +155,7 @@ static void set_font(char *file, int size, GR_GC_ID gc, int local)
 	GR_FONT_ID lfont;
 	lfont = GrCreateFont((GR_CHAR *)file, size, NULL);
 	if (lfont == 0) {
-		pz_error("Unable to load font");
+		pz_error(_("Unable to load font"));
 		return;
 	}
 	GrSetGCFont(gc, lfont);
@@ -203,6 +203,8 @@ static void font_clear_window()
 static void draw_font()
 {
 	char buf[128];
+	char *ptr;
+
 	GR_SIZE width, height, base;
 
 	font_clear_window();
@@ -224,17 +226,18 @@ static void draw_font()
 	GrText(font_wid, font_gc, (screen_info.cols - width) >> 1, 65+height,
 			"1234567890", -1, GR_TFASCII);
 
+	ptr = _("Spin wheel to change");
+
 	/* display instructions */
-	GrGetGCTextSize(font_gc, "Spin wheel to change", -1, GR_TFASCII,
-			&width, &height, &base);
+	GrGetGCTextSize(font_gc, ptr, -1, GR_TFASCII, &width, &height, &base);
 	GrText(font_wid, font_gc, (screen_info.cols-width) >> 1, 10,
-			"Spin wheel to change", -1, GR_TFASCII);
+			ptr, -1, GR_TFASCII);
 }
 
 static void change_font(int num)
 {
 	GR_SIZE width, height, base;
-	char *load = "Loading...";
+	char *load = _("Loading...");
 	
 	font_clear_window();
 	GrGetGCTextSize(font_gc, load, -1, GR_TFASCII, &width, &height, &base);
@@ -246,7 +249,7 @@ static void change_font(int num)
 
 static void font_exposure()
 {
-	pz_draw_header("Fonts");
+	pz_draw_header(_("Fonts"));
 	draw_font();
 }
 
@@ -279,7 +282,7 @@ static int font_event_handler(GR_EVENT *e)
 			if( num_fonts > 0 ) {
 				set_font(fl[cur_font].file, fl[cur_font].size,
 					pz_get_gc(0), 0);
-				new_message_window("Selected font.");
+				new_message_window(_("Selected font."));
 			}
 			ret |= KEY_CLICK;
 			break;
@@ -315,7 +318,8 @@ void new_font_window(menu_st *menu)
 	main_menu = menu;
 	if (num_fonts == 0) {
 		if (populate_fontlist() <= 0) {
-			pz_error("Unable to load fontlist " FONTDIR FONTCONF);
+			pz_error(_("Unable to load fontlist %s%s"),
+					FONTDIR, FONTCONF);
 			return;
 		}
 	}

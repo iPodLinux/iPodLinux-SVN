@@ -149,7 +149,7 @@ void new_mandel_window(void)
 // draw the title bar.
 static void draw_header()
 {
-	pz_draw_header ("MandelPod");
+	pz_draw_header (_("MandelPod"));
 }
 
 // reset the variables to their initial values

@@ -661,7 +661,7 @@ static void ipobble_Game_Loop()
 
 static void ipobble_do_draw()
 {
-	pz_draw_header("iPobble");
+	pz_draw_header(_("iPobble"));
 	ipobble_Game_Loop();
 }
 

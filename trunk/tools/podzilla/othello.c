@@ -109,7 +109,7 @@ static void oth_set_piece(int pos, int coloresq)
 static void oth_do_draw()
 {
 	int i;
-	pz_draw_header("Othello");
+	pz_draw_header(_("Othello"));
 	for (i=0;i<64;i++) {
 		status[i]=3;
 	}

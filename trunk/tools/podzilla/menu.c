@@ -112,7 +112,8 @@ static item_st stuff_menu[] = {
 };
 
 static char *backlight_options[] = {
-	"Off", "1 sec", "2 secs", "5 secs", "10 secs", "30 secs", "1 min", "On"
+	N_("Off"), N_("1 sec"), N_("2 secs"), N_("5 secs"), N_("10 secs"),
+	N_("30 secs"), N_("1 min"), N_("On")
 };
 
 static char *sample_rates[] = {
@@ -120,11 +121,11 @@ static char *sample_rates[] = {
 };
 
 static char *shuffle_options[] = {
-	"Off", "Songs"
+	N_("Off"), N_("Songs")
 };
 
 static char *repeat_options[] = {
-	"Off", "One", "All"
+	N_("Off"), N_("One"), N_("All")
 };
 
 static item_st recording_menu[] = {
@@ -164,7 +165,7 @@ static item_st reset_menu[] = {
 	{0}
 };
 
-static char * time1224_options[] = { "12-hour", "24-hour" };
+static char * time1224_options[] = { N_("12-hour"), N_("24-hour") };
 
 static item_st clocks_menu[] = {
         { N_("Clock"), new_clock_window, ACTION_MENU },
