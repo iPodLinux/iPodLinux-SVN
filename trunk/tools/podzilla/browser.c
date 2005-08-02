@@ -121,7 +121,7 @@ static void browser_mscandir(char *dira)
 	if(browser_menu != NULL) {
 		menu_destroy(browser_menu);
 	}
-	browser_menu = menu_init(browser_wid, "File Browser", 0, 0,
+	browser_menu = menu_init(browser_wid, _("File Browser"), 0, 0,
 			screen_info.cols, screen_info.rows -
 			(HEADER_TOPLINE + 1), NULL, NULL, ASCII);
 
@@ -137,7 +137,7 @@ static void browser_mscandir(char *dira)
 		}
 		if(strncmp(subdir->d_name, "..", strlen(subdir->d_name)) == 0) {
 			strcpy(browser_entries[browser_nbEntries].name,
-				".. [Parent Directory]");
+				_(".. [Parent Directory]"));
 			browser_entries[browser_nbEntries].full_name =
 				strdup(browser_entries[browser_nbEntries].name);
 			browser_entries[browser_nbEntries].type =
@@ -152,7 +152,7 @@ static void browser_mscandir(char *dira)
 			}
 		}
 		if(browser_nbEntries >= MAX_ENTRIES) {
-			pz_error("Directory contains too many files.");
+			pz_error(_("Directory contains too many files."));
 			break;
 		}
 		
@@ -259,7 +259,7 @@ static int is_binary_type(char *filename)
 	if(S_ISBLK(ftype.st_mode)||S_ISCHR(ftype.st_mode))
 		return 0;
 	if((fp = fopen(filename, "r"))==NULL) {
-		fprintf(stderr, "Can't open \"%s\"\n", filename);
+		perror(filename);
 		return 0;
 	}
 
@@ -286,7 +286,7 @@ static void handle_type_other(char *filename)
 			browser_exec_file(filename);
 		}
 		else {
-			new_message_window("No Default Action for this Filetype");
+			new_message_window(_("No Default Action for this Filetype"));
 		}
 	}
 #ifdef MIKMOD
@@ -302,8 +302,8 @@ static void handle_type_other(char *filename)
 	}
 #ifdef __linux__
 	else if (is_mp3_type(ext)) {
-		new_mp3_window(filename, "Unknown Album", "Unknown Artist",
-				"Unknown Title", 0);
+		new_mp3_window(filename, _("Unknown Album"),
+				_("Unknown Artist"), _("Unknown Title"), 0);
 	}
 	else if (is_aac_type(ext)) {
 		new_aac_window_get_meta(filename);
@@ -328,7 +328,7 @@ static void handle_type_other(char *filename)
 		browser_exec_file(filename);
 	}
 	else  {
-		new_message_window("No Default Action for this Filetype");
+		new_message_window(_("No Default Action for this Filetype"));
 	}
 }
 
@@ -385,7 +385,7 @@ static void browser_pipe_exec()
 		buf = (char *)realloc(buf, ((buf == '\0' ? 0 : strlen(buf)) +
 				512) * sizeof(char));
 		if(buf == NULL) {
-			pz_error("malloc failed");
+			pz_error(_("malloc failed"));
 			return;
 		}
 		if(len == 0) {
@@ -399,7 +399,7 @@ static void browser_pipe_exec()
 	if(buf=='\0')
 		new_message_window("No Output");
 	else
-		new_stringview_window(buf, "Pipe Output");
+		new_stringview_window(buf, _("Pipe Output"));
 	free(execline);
 	free(buf);
 }
@@ -452,17 +452,14 @@ static void browser_delete_file()
 
 static void browser_delete_confirm()
 {
-	int len;
-	char *message;
-	char *warning = "Warning: this will delete everything under ";
 	struct stat stat_result;
 	static item_st delete_confirm_menu[] = {
-		{"Whoops. No thanks.", NULL, SUB_MENU_PREV},
-		{"Yes, Delete it.", browser_delete_file, ACTION_MENU},
+		{N_("Whoops. No thanks."), NULL, SUB_MENU_PREV},
+		{N_("Yes, Delete it."), browser_delete_file, ACTION_MENU},
 		{0}
 	};
 
-	browser_menu = menu_init(browser_wid, "Are You Sure?", 0, 0,
+	browser_menu = menu_init(browser_wid, _("Are You Sure?"), 0, 0,
 			screen_info.cols, screen_info.rows -
 			(HEADER_TOPLINE + 1), browser_menu,
 			delete_confirm_menu, ASCII);
@@ -470,11 +467,8 @@ static void browser_delete_confirm()
 
 	stat(current_file, &stat_result);
 	if(S_ISDIR(stat_result.st_mode)) {
-		len = strlen(current_file) + strlen(warning) + 1;
-		message = (char *)malloc(len * sizeof(char));
-		snprintf(message, len, "%s%s", warning, current_file);
-		new_message_window(message);
-		free(message);
+		pz_error(_("Warning: this will delete everything under %s"),
+				current_file);
 	}
 }
 
@@ -493,17 +487,17 @@ static void browser_action(unsigned short userChoice)
 	case FILE_TYPE_DIRECTORY:
 		break;
 	case FILE_TYPE_PROGRAM:
-		menu_add_item(browser_menu, "Pipe output to textviewer",
+		menu_add_item(browser_menu, _("Pipe output to textviewer"),
 				browser_pipe_exec, 0, ACTION_MENU |
 				SUB_MENU_PREV);
 	case FILE_TYPE_OTHER:
 		if(access("/bin/viP", X_OK) == 0)
-			menu_add_item(browser_menu, "Open with viP",
+			menu_add_item(browser_menu, _("Open with viP"),
 					browser_vip_open_file, 0, ACTION_MENU |
 					SUB_MENU_PREV);
 		break;
 	}
-	menu_add_item(browser_menu, "Delete",  browser_delete_confirm, 0,
+	menu_add_item(browser_menu, _("Delete"),  browser_delete_confirm, 0,
 			ACTION_MENU | ARROW_MENU);
 }
 
@@ -671,7 +665,7 @@ void new_exec_window(char *filename)
 		}
 
 		execl("/bin/sh", "sh", "-c", filename);
-		fprintf(stderr, "Exec failed! (Check Permissions)\n");
+		fprintf(stderr, _("Exec failed! (Check Permissions)\n"));
 		exit(1);
 		break;
 	default: /* parent */

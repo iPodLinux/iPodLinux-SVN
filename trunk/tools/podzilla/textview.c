@@ -122,7 +122,7 @@ static void buildLineData(char *starttextptr)
 
 		if((localAr[currentLine] = malloc((curtextptr - sol + 1) *
 						sizeof(char)))==NULL) {
-			destroy_textview_window("malloc failed");
+			destroy_textview_window(_("malloc failed"));
 			return;
 		}
 		snprintf(localAr[currentLine], curtextptr - sol + 1, "%s", sol);
@@ -267,7 +267,7 @@ int is_ascii_file(char *filename)
 	if(S_ISBLK(ftype.st_mode)||S_ISCHR(ftype.st_mode))
 		return 0;
 	if((fp=fopen(filename, "r"))==NULL) {
-		fprintf(stderr, "Can't open \"%s\"\n", filename);
+		perror(filename);
 		return 0;
 	}
 	fseek(fp, 0, SEEK_END);
@@ -316,7 +316,7 @@ void new_textview_window(char *filename)
 	create_textview_window();
 	
 	if ((fp = fopen(filename,"r"))==NULL) {
-		destroy_textview_window("Error opening file");
+		destroy_textview_window(_("Error opening file"));
 		return;
 	}
 	fseek(fp, 0, SEEK_END);
@@ -327,7 +327,7 @@ void new_textview_window(char *filename)
 		while(fgets(tmp, 512, fp)!=NULL) {
 			if((buf = realloc(buf, ((buf=='\0'?0:strlen(buf)) +
 						512) * sizeof(char)))==NULL) {
-				destroy_textview_window("realloc failed");
+				destroy_textview_window(_("realloc failed"));
 				fclose(fp);
 				return;
 			}
@@ -340,16 +340,16 @@ void new_textview_window(char *filename)
 	}
 	else {
 		if((buf = calloc(file_len+1, 1))==NULL) {
-			destroy_textview_window("calloc failed");
+			destroy_textview_window(_("calloc failed"));
 			fclose(fp);
 			return;
 		}
 		if(fread(buf, 1, file_len, fp)!=file_len)
-			pz_error("unknown read error, continuing");
+			pz_error(_("unknown read error, continuing"));
 	}
 	if(buf=='\0') {
 		destroy_textview_window(NULL);
-		new_message_window("Empty File");
+		new_message_window(_("Empty File"));
 		fclose(fp);
 		return;
 	}
@@ -367,7 +367,7 @@ void new_stringview_window(char *buf, char *title)
 	create_textview_window();
 
 	if((exbuf = malloc(strlen(buf)+1))==NULL) {
-		destroy_textview_window("malloc failed");		
+		destroy_textview_window(_("malloc failed"));
 		return;
 	}
 	snprintf(exbuf, strlen(buf)+1, "%s0", buf);

@@ -441,7 +441,7 @@ static void mines_redraw(void)
 
 static void mines_do_draw(void)
 {
-	pz_draw_header("Minesweeper");
+	pz_draw_header(_("Minesweeper"));
 	mines_redraw();
 }
 
@@ -506,7 +506,8 @@ static void mines_game_over(void)
 {
 	GR_SIZE width, height, base;
 	GR_COLOR colour;
-	char winner_text[] = "Winner!", high_score_text[] = "New Record!";
+	char winner_text[] = "Winner!";
+	char high_score_text[] = "New Record!";
 	char buf[32];
 	struct timeval end;
 	
@@ -524,7 +525,8 @@ static void mines_game_over(void)
 			       (mines_info.width / 2) - (width / 2),
 			       (mines_info.height / 2) - height - (height / 2),
 			       winner_text, -1, GR_TFASCII|GR_TFTOP);
-			snprintf(buf, 31, "Cleared in %ld seconds.", mf->gametime);
+			snprintf(buf, 31, _("Cleared in %ld seconds."),
+					mf->gametime);
 			GrGetGCTextSize(mines_gc, buf, -1, GR_TFASCII|GR_TFTOP,
 			                &width, &height, &base);
 			GrText(mines_wid, mines_gc,

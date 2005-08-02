@@ -98,7 +98,7 @@ static void poddraw_save( void )
 	time_t t;
 	struct tm * current_time;
 
-	choice = DIALOG_MESSAGE_2( "Save?", "Save this image?", "Yes", "No" );
+	choice = DIALOG_MESSAGE_2( _("Save?"), _("Save this image?"), _("Yes"), _("No"));
 	if( choice == 1 ) return;
 
 	if( !poddraw_buffer ) return;
@@ -255,7 +255,7 @@ static int poddraw_handle_event(GR_EVENT * event)
 
 static void poddraw_do_draw( void )
 {
-	pz_draw_header( "PodDraw" );
+	pz_draw_header(_("PodDraw"));
 	poddraw_cycle_point();
 }
 

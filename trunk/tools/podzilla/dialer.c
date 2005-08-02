@@ -581,7 +581,7 @@ static void dialer_press_button(int pos) {
 static void dialer_do_draw() {
 	int i;
 	GR_SIZE width, height, base;
-	pz_draw_header("Rose Quartz Box");
+	pz_draw_header(_("Rose Quartz Box"));
 	digitdisplay[0]='\0';
 	numfull = 0;
 	littr = 0;

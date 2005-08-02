@@ -128,7 +128,7 @@ void calc_do_math(int pos) {
 static void calc_do_draw() {
 	int i;
 	GR_SIZE width, height, base;
-	pz_draw_header("Calculator");
+	pz_draw_header(_("Calculator"));
 	GrSetGCForeground(calc_gc, appearance_get_color(CS_FG));
 	for(i=0; i<=15; i++) {
 		GrGetGCTextSize(calc_gc, num[i], -1, GR_TFASCII,

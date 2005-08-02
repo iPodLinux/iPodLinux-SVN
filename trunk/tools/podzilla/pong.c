@@ -200,7 +200,7 @@ void draw_pong() {
 }
 
 static void pong_do_draw(void) {
-	pz_draw_header("Pong");
+	pz_draw_header(_("Pong"));
 	draw_pong();
 }
 

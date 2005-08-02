@@ -182,10 +182,10 @@ static int mp3_do_keystroke(GR_EVENT * event)
 		case 'd':
 			mp3_pause = !mp3_pause;
 			if (mp3_pause) {
-				pz_draw_header("MP3 Playback - ||");
+				pz_draw_header(_("MP3 Playback - ||"));
 			}
 			else {
-				pz_draw_header("MP3 Playback");
+				pz_draw_header(_("MP3 Playback"));
 			}
 			break;
 		case '3':
@@ -315,7 +315,7 @@ static void RenderSound(Ipp16s *pcm, MP3DecoderState *ds)
 	if (channels == 1) {
 		int i;
 
-		pz_draw_header("MP3 Playback - Mono!");
+		pz_draw_header(_("MP3 Playback - Mono!"));
 		for (i = 0; i < len; i += MAX_CHAN)
 			pcm[i+1] = pcm[i];
 	}
@@ -399,7 +399,7 @@ static void start_mp3_playback(char *filename)
 	}
 
 	do {
-		pz_draw_header("Buffering...");
+		pz_draw_header(_("Buffering..."));
 		total_time = remaining_time = next_song_time;
 		mp3_do_draw(0);
 
@@ -420,7 +420,7 @@ static void start_mp3_playback(char *filename)
 			dsp_close(&dspz);
 			fclose(file);
 
-			new_message_window("malloc failed");
+			new_message_window(_("malloc failed"));
 			return;
 		}
 
@@ -428,7 +428,7 @@ static void start_mp3_playback(char *filename)
 		fread(audiobuf, audiobuf_len, 1, file);
 		fclose(file);
 
-		pz_draw_header("MP3 Playback");
+		pz_draw_header(_("MP3 Playback"));
 
 		decode_mp3();
 
@@ -453,7 +453,7 @@ void new_mp3_window(char *filename, char *album, char *artist, char *title, int 
 	strncpy(current_title, title, sizeof(current_title)-1);
 	current_title[sizeof(current_title)-1] = 0;
 
-	sprintf(current_pos, "Song %d of %d", playlistpos, playlistlength);
+	sprintf(current_pos, _("Song %d of %d"), playlistpos, playlistlength);
 
 	next_song_time = len;
 	

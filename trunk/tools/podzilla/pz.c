@@ -101,12 +101,12 @@ void quit_podzilla(void)
 
 void set_wheeldebounce(void)
 {
-	new_slider_widget(WHEEL_DEBOUNCE, "Wheel Sensitivity", 1, 20);
+	new_slider_widget(WHEEL_DEBOUNCE, _("Wheel Sensitivity"), 1, 20);
 }
 
 void set_buttondebounce(void)
 {
-	new_slider_widget(ACTION_DEBOUNCE, "Action Debounce", 100, 500);
+	new_slider_widget(ACTION_DEBOUNCE, _("Action Debounce"), 100, 500);
 }
 
 
@@ -390,7 +390,7 @@ main(int argc, char **argv)
 #endif
 
 	if (GrOpen() < 0) {
-		fprintf(stderr, "GrOpen failed");
+		fprintf(stderr, _("GrOpen failed"));
 		exit(1);
 	}
 

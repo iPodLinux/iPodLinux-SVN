@@ -13,7 +13,7 @@
  *	Binary - Binary Watch clock
  *	Digital Bedside clock
  *
- *   $Id: clocks.c,v 1.10 2005/05/31 16:02:22 yorgle Exp $
+ *   $Id: clocks.c,v 1.11 2005/06/20 13:48:01 yorgle Exp $
  *
  */
 
@@ -36,9 +36,12 @@
 
 
 /*
- * $Id: clocks.c,v 1.10 2005/05/31 16:02:22 yorgle Exp $
+ * $Id: clocks.c,v 1.11 2005/06/20 13:48:01 yorgle Exp $
  *
  * $Log: clocks.c,v $
+ * Revision 1.11  2005/06/20 13:48:01  yorgle
+ * Cleaned up event stuff to use the new #defines
+ *
  * Revision 1.10  2005/05/31 16:02:22  yorgle
  * Cleaned up some colors.  Why didn't anyone tell me this looked like crap? ;)
  *
@@ -963,7 +966,7 @@ static void Clocks_draw( void )
 /* our draw event routine */
 static void Clocks_do_draw( void )
 {
-	pz_draw_header( "Clock" );
+	pz_draw_header(_("Clock"));
 	Clocks_draw();
 }
 

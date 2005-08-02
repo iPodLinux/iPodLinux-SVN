@@ -458,7 +458,7 @@ static void invaders_Game_Loop()
 
 static void invaders_do_draw()
 {
-	pz_draw_header("Invaders");
+	pz_draw_header(_("Invaders"));
 
 	invaders_Game_Loop();
 }

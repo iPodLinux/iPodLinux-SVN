@@ -172,13 +172,11 @@ int ipod_load_settings(void)
 
 	if ((ret = load_settings(IPOD_SETTINGS_FILE)) < 0) {
 		if (ret == -2) {
-			pz_error("Corrupt settings file, blasting.");
+			pz_error(_("Corrupt settings file, blasting."));
 			unlink(IPOD_SETTINGS_FILE);
 		}
 		else {
-			printf("Failed to open %s to read settings,"
-					" using defaults.\n",
-					IPOD_SETTINGS_FILE);
+			printf(_("Failed to open %s to read settings, using defaults.\n"), IPOD_SETTINGS_FILE);
 		}
 
 		ipod_set_setting(CONTRAST, ipod_get_contrast());
@@ -201,7 +199,7 @@ int ipod_load_settings(void)
 int ipod_save_settings(void)
 {
 	if (save_settings(IPOD_SETTINGS_FILE) < 0) {
-		pz_error("Save failed.");
+		pz_error(_("Save failed."));
 	}
 
 	return 0;

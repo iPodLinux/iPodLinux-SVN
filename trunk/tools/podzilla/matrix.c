@@ -291,7 +291,7 @@ static void matrix_loop(void)
 
 static void matrix_do_draw(void)
 {
-	pz_draw_header("Matrix");
+	pz_draw_header(_("Matrix"));
 }
 
 static void matrix_timer_adjust(const int ammount)

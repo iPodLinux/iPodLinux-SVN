@@ -21,12 +21,12 @@
 
 void set_backlight_timer(void)
 {
-	new_slider_widget(BACKLIGHT_TIMER, "Backlight Timer", 0, 180);
+	new_slider_widget(BACKLIGHT_TIMER, _("Backlight Timer"), 0, 180);
 }
 
 void set_contrast(void)
 {
-	new_slider_widget(CONTRAST, "Set Contrast", 0, 128);
+	new_slider_widget(CONTRAST, _("Set Contrast"), 0, 128);
 }
 
 void toggle_backlight(void)

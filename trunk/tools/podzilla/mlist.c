@@ -29,14 +29,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 
 #include "pz.h"
 #include "ipod.h"
 #include "mlist.h"
 
 #define TRANSITION_STEPS 16
-
-#define DEBUG
 
 #ifdef DEBUG
 #define Dprintf printf
@@ -49,6 +48,8 @@ extern GR_FONT_ID get_current_font(void);
 void menu_draw_timer(menu_st *menulist)
 {
 	char *c = strdup(">");
+	int colors[] = {CS_ARROW0, CS_ARROW1, CS_ARROW2, CS_ARROW3,
+			CS_ARROW3, CS_ARROW2, CS_ARROW1, CS_ARROW0};
 	if(menulist->items[menulist->sel].text_width >
 			menulist->w - (8 + (menulist->scrollbar ? 8 : 0))) {
 		int item, diff, move;
@@ -59,6 +60,8 @@ void menu_draw_timer(menu_st *menulist)
 		move = (!((menulist->timer_step / diff) % 2) ?
 			(menulist->timer_step % diff) :
 			(diff - (menulist->timer_step % diff)));
+		if (menulist->timer == INT_MAX - 1)
+			menulist->timer = 0;
 		/* xor the pixmap */
 		GrSetGCMode(menulist->menu_gc, GR_MODE_XOR);
 		if(hw_version == 0 || (hw_version >= 60000 &&
@@ -87,30 +90,15 @@ void menu_draw_timer(menu_st *menulist)
 		return;
 	}
 	GrSetGCUseBackground(menulist->menu_gc, GR_FALSE);
+
 	/* cycle through colors */
-	if(menulist->timer_step == 0 || menulist->timer_step > 6) {
-		GrSetGCForeground(menulist->menu_gc,
-				appearance_get_color(CS_ARROW0));
-		if(menulist->timer_step == 12)
-			menulist->timer_step = 1;
-		else
-			menulist->timer_step++;
-	}
-	else if(menulist->timer_step == 1 || menulist->timer_step == 6) {
-		GrSetGCForeground(menulist->menu_gc,
-				appearance_get_color(CS_ARROW1));
-		menulist->timer_step++;
-	}
-	else if(menulist->timer_step == 2 || menulist->timer_step == 5) {
-		GrSetGCForeground(menulist->menu_gc,
-				appearance_get_color(CS_ARROW2));
-		menulist->timer_step++;
-	}
-	else if(menulist->timer_step == 3 || menulist->timer_step == 4) {
-		GrSetGCForeground(menulist->menu_gc,
-				appearance_get_color(CS_ARROW3));
-		menulist->timer_step++;
-	}
+	if (menulist->timer_step < 0 || menulist->timer_step >= 12)
+		menulist->timer_step = 0;
+	GrSetGCForeground(menulist->menu_gc,
+		appearance_get_color(colors[menulist->timer_step < 8 ?
+			menulist->timer_step : 7]));
+	menulist->timer_step++;
+
 	/* executable instead */
 	if(EXECUTE_MENU & menulist->items[menulist->sel].op)
 		*c = 'x';
@@ -273,11 +261,13 @@ void menu_retext_pixmap(menu_st *menulist, int pixmap, item_st *item)
 		return;
 	}
 
+	text = (TRANSLATE & menulist->op) ? gettext(item->text) : item->text;
+
 	/* set the bit for a checked long item */
 	if(!(LONG_ITEM & item->op)) {
 		GR_SIZE width, height, base;
-		GrGetGCTextSize(menulist->menu_gc, item->text,
-			-1, GR_TFASCII,	&width,	&height, &base);
+		GrGetGCTextSize(menulist->menu_gc, text, -1, GR_TFASCII,
+				&width, &height, &base);
 		item->text_width = width;
 
 		item->op |= LONG_ITEM; 
@@ -293,7 +283,6 @@ void menu_retext_pixmap(menu_st *menulist, int pixmap, item_st *item)
 		op = GR_TFASCII;
 	/* this makes the text draw without outlines */
 	GrSetGCUseBackground(menulist->menu_gc, GR_FALSE);
-	text = (TRANSLATE & menulist->op) ? gettext(item->text) : item->text;
 	GrText(menulist->pixmaps[menulist->pixmap_pos[pixmap]],
 			menulist->menu_gc, 8, 1, text, strlen(text),
 			op | GR_TFTOP);
@@ -306,7 +295,7 @@ void menu_retext_pixmap(menu_st *menulist, int pixmap, item_st *item)
 		if(item->setting != 0)
 			item->sel_option = ipod_get_setting(item->setting);
 		/* draw boolean text */	
-		strcpy(option, (item->sel_option ? "On" : "Off"));
+		strcpy(option, (item->sel_option ? _("On") : _("Off")));
 		GrGetGCTextSize(menulist->menu_gc, option, -1, GR_TFASCII,
 				&width,	&height, &base);
 		GrText(menulist->pixmaps[menulist->pixmap_pos[pixmap]],
@@ -321,12 +310,12 @@ void menu_retext_pixmap(menu_st *menulist, int pixmap, item_st *item)
 			item->sel_option = ipod_get_setting(item->setting);
 		/* draw option text */
 		option = (char **)item->action;
-		GrGetGCTextSize(menulist->menu_gc, option[item->sel_option],
-				-1, GR_TFASCII,	&width,	&height, &base);
+		text = gettext(option[item->sel_option]);
+		GrGetGCTextSize(menulist->menu_gc, text, -1, GR_TFASCII,
+				&width,	&height, &base);
 		GrText(menulist->pixmaps[menulist->pixmap_pos[pixmap]],
 				menulist->menu_gc, (menulist->w - width) -
-				(8 + 2), 1, option[item->sel_option], -1,
-				GR_TFASCII | GR_TFTOP);
+				(8 + 2), 1, text, -1, GR_TFASCII | GR_TFTOP);
 	}
 	else if((SUB_MENU_HEADER & item->op || ARROW_MENU & item->op) &&
 			(item->text_width < (menulist->w - 8) - 8)) {

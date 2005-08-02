@@ -125,7 +125,7 @@ void new_tunnel_window(void)
 // Draws the header.
 static void draw_header()
 {
-    pz_draw_header ("Tunnel");
+    pz_draw_header (_("Tunnel"));
 }
 
 
