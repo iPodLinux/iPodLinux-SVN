@@ -18,8 +18,8 @@ default: make_fw loader.bin
 
 %.o: %.S %.c
 
-loader: startup.o loader.o tools.o tux.o
-	$(CC) $(LDFLAGS) -o $@ startup.o loader.o tools.o tux.o
+loader: startup.o loader.o tools.o tux.o happymac.o
+	$(CC) $(LDFLAGS) -o $@ startup.o loader.o tools.o tux.o happymac.o
 
 loader.bin: loader
 	$(OBJCOPY) -O binary loader loader.bin
@@ -42,6 +42,6 @@ src_dist:
 .PHONY: clean
 clean:
 	rm -f make_fw loader.bin loader startup.o loader.o make_fw.o \
-		tools.o tux.o
+		tools.o tux.o happymac.o
 
 # vim:ts=8:sts=8:sw=8:
