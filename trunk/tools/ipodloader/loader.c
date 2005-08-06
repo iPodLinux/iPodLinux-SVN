@@ -33,6 +33,7 @@ typedef struct _image {
 
 extern image_t boot_table[];
 extern img tux_hdr;
+extern img happymac_hdr;
 
 int ipod_ver = 0;
 
@@ -135,8 +136,23 @@ loader(void)
     init_keyboard();
 
     imageno = key_pressed();
-
     if (!tblp[imageno].type) imageno = 0;
+
+    /* for appleOS as default, 0=happymac_hdr, 1=tux_hdr
+       for linux as default,   0=tux_hdr, 1=happymac_hdr
+    */
+    switch( imageno ) {
+    case( 0 ):
+	    display_image(&happymac_hdr, 0x0);
+	    break;
+
+    case( 1 ):
+    default:
+	    display_image(&tux_hdr, 0x0);
+	    break;
+			
+    }
+
     tblp += imageno;
     entry = tblp->addr + tblp->entryOffset;
     if (imageno || ((int)tblp->addr & 0xffffff) != 0) {
