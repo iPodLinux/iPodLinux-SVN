@@ -23,13 +23,7 @@ cop_fiq:
 
 	stmdb   sp!, {r0-r7, lr}
 
-
-	mov	lr, pc
-	ldr	pc, L_ipod_handle_dma
-
-	nop
-	nop
-	nop
+	bl	ipod_handle_dma
 
 	ldmia   sp!, {r0-r7, lr}
 1:
@@ -37,6 +31,12 @@ cop_fiq:
 
 
 cop_idle:
+	mov	r0, #0x0
+	bl	ipod_set_process_dma
+
+	mov	r0, #0x0
+	bl	ipod_set_handle_cop
+
 	/* enable FIQ */
 	mrs     r0, cpsr
 	bic     r0, r0, #0x40
@@ -71,8 +71,7 @@ pp5020:
 	mov	r0, #0x1
 	str	r0, [r1]
 	
-	mov	lr, pc
-	ldr	pc, L_ipod_handle_cop
+	bl	ipod_handle_cop
 
 
 	ldr	r1, =COP_STATE
@@ -88,5 +87,3 @@ pp5020:
 	.lcomm cop_fiq_stack, 1024
 	.lcomm cop_svc_stack, 1024
 
-L_ipod_handle_dma:.word ipod_handle_dma
-L_ipod_handle_cop:.word ipod_handle_cop
