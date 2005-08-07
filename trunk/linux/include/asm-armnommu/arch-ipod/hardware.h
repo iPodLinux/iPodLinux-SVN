@@ -114,6 +114,7 @@ typedef void (*ipod_cop_handler_t)(void);
 
 
 extern void ipod_set_process_dma(ipod_dma_handler_t new_handler);
+extern void ipod_set_handle_cop(ipod_cop_handler_t new_handler);
 
 #endif
 

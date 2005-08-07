@@ -457,6 +457,10 @@ void ipod_handle_cop(void)
 	}
 }
 
+void ipod_set_handle_cop(ipod_cop_handler_t new_handler)
+{
+	*ipod_cop_handler = new_handler;
+}
 
 
 void ipod_set_process_dma(ipod_dma_handler_t new_handler)
@@ -479,4 +483,5 @@ EXPORT_SYMBOL(ipod_i2c_send);
 EXPORT_SYMBOL(ipod_i2c_send_byte);
 EXPORT_SYMBOL(ipod_serial_init);
 EXPORT_SYMBOL(ipod_set_process_dma);
+EXPORT_SYMBOL(ipod_set_handle_cop);
 
