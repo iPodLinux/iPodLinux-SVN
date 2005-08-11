@@ -141,6 +141,7 @@ OBJS=\
 	wumpus.o \
 	settings.o \
 	usb.o \
+	fw.o \
 	video/video.o \
 	video/videocop.o \
 	vortex/console.o \
