@@ -60,6 +60,9 @@ int battery_is_charging = 0;
 int usb_connected = 0;
 int old_usb_connected = 0;
 static int usb_dialog_open = 0;
+int fw_connected = 0;
+int old_fw_connected = 0;
+static int fw_dialog_open = 0;
 #define WHEEL_EVT_MOD   3
 
 static int hold_is_on = 0;
@@ -70,7 +73,6 @@ extern void beep(void);
 
 extern void header_update_hold_status( int curr );
 void header_timer_update( void );
-
 
 void poweroff_ipod(void)
 {
@@ -279,6 +281,22 @@ void pz_event_handler(GR_EVENT *event)
 
 			} 
 			old_usb_connected = usb_connected;	
+
+			
+			if ((fw_connected=fw_is_connected())) {
+				if (!old_fw_connected)
+				{
+					old_fw_connected = fw_connected;
+					if (!fw_dialog_open) {
+						fw_dialog_open = 1;
+						fw_check_goto_diskmode();
+						fw_dialog_open = 0;	
+					} 	
+				} 
+
+			} 
+			old_fw_connected = fw_connected;
+						
 			header_timer_update();
 		}
 		else if (window != NULL)
@@ -432,7 +450,8 @@ main(int argc, char **argv)
 	battery_tid = GrCreateTimer(root_wid, 1000);
 	usb_connected = usb_is_connected();
 	old_usb_connected = usb_connected;	
-	
+	fw_connected = fw_is_connected();
+	old_fw_connected = fw_connected;	
 	
 	new_menu_window();
 
