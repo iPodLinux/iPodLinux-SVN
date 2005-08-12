@@ -41,8 +41,6 @@ int hold_is_on = 0;
 #define DEC_WIDG_SZ 	(27)	/* size of the top widgets */
 
 #define BATT_POLY_POINTS 9
-#define BATTERY_LEVEL_LOW 50 
-#define BATTERY_LEVEL_FULL 512
 
 /*
   +-+

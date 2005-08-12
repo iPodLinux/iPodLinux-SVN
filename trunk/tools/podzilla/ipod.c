@@ -292,7 +292,7 @@ int ipod_read_apm(int *battery, int *charging)
 		return 0;
 	}
 
-	if (battery) *battery = BATTERY_MAX;
+	if (battery) *battery = BATTERY_LEVEL_FULL;
 	if (charging) *charging = 0;
 	return 0;
 }

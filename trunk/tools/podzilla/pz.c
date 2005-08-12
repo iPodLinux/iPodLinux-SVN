@@ -57,6 +57,7 @@ static int startup_contrast = -1;
 static unsigned long int last_keypress_event = 0;
 
 int battery_is_charging = 0;
+static int low_battery_count = 0;
 int usb_connected = 0;
 int old_usb_connected = 0;
 static int usb_dialog_open = 0;
@@ -296,7 +297,19 @@ void pz_event_handler(GR_EVENT *event)
 
 			} 
 			old_fw_connected = fw_connected;
-						
+			
+			if (!ipod_is_charging() && ipod_get_battery_level() < BATTERY_LEVEL_LOW) {
+				low_battery_count++;
+			} else {
+				low_battery_count = 0;
+			}
+			
+			if (low_battery_count > 4) {
+				ipod_beep();
+				// This is here to turn off the iPod before disk corruption occurs.
+				poweroff_ipod();
+			}
+				
 			header_timer_update();
 		}
 		else if (window != NULL)
