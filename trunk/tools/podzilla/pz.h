@@ -94,9 +94,6 @@ int dialog_create( char * title, char * text,
 #define DIALOG_ERROR_T3( title, text, button, but1, but2, timeout )\
     dialog_create( (title), (text), (button), (but1), (but2), timeout, 1 )
 
-
-void new_slider_widget(int setting, char *title, int slider_min, int slider_max);
-
 /* for the 'handle event' methods. */ 
 #define IPOD_BUTTON_ACTION		('\r')
 #define IPOD_BUTTON_MENU		('m')
