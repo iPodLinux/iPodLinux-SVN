@@ -126,6 +126,8 @@ static void buildLineData(char *starttextptr)
 			return;
 		}
 		snprintf(localAr[currentLine], curtextptr - sol + 1, "%s", sol);
+		while ((sol = strchr(localAr[currentLine], '\t')))
+				*sol = ' ';
 
 		if(*curtextptr == '\r')
 			curtextptr++;
