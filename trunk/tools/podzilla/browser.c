@@ -70,11 +70,13 @@ extern void new_mikmod_player(char *filename);
 extern void new_mikmod_player_song(char *filename);
 #endif
 #ifdef __linux__
+#ifndef MPDC
 extern int is_mp3_type(char *extension);
 extern int is_aac_type(char *extension);
 extern void new_mp3_window(char *filename, char *album, char *artist,
 		char *title, unsigned short len);
 extern void new_aac_window_get_meta(char *filename);
+#endif /* !MPDC */
 extern int is_raw_audio_type(char *extension);
 extern void new_playback_window(char *filename);
 extern int is_tzx_audio_type(char *extension);
@@ -301,6 +303,7 @@ static void handle_type_other(char *filename)
 		new_image_window(filename);
 	}
 #ifdef __linux__
+#ifndef MPDC
 	else if (is_mp3_type(ext)) {
 		new_mp3_window(filename, _("Unknown Album"),
 				_("Unknown Artist"), _("Unknown Title"), 0);
@@ -308,6 +311,7 @@ static void handle_type_other(char *filename)
 	else if (is_aac_type(ext)) {
 		new_aac_window_get_meta(filename);
 	}
+#endif /* !MPDC */
 	else if (is_tzx_audio_type(ext)) {
 		new_tzx_playback_window(filename);
 	}

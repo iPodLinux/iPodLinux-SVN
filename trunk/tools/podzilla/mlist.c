@@ -36,6 +36,7 @@
 #include "mlist.h"
 
 #define TRANSITION_STEPS 16
+#define CFLASH 512
 
 #ifdef DEBUG
 #define Dprintf printf
@@ -43,6 +44,8 @@
 #define Dprintf(...)
 #endif
 
+void menu_retext_pixmap(menu_st *menulist, int pixmap, item_st *item);
+void menu_clear_pixmap(menu_st *menulist, int pos);
 extern GR_FONT_ID get_current_font(void);
 
 void menu_draw_timer(menu_st *menulist)
@@ -50,6 +53,17 @@ void menu_draw_timer(menu_st *menulist)
 	char *c = strdup(">");
 	int colors[] = {CS_ARROW0, CS_ARROW1, CS_ARROW2, CS_ARROW3,
 			CS_ARROW3, CS_ARROW2, CS_ARROW1, CS_ARROW0};
+
+	if(menulist->items[menulist->sel].op & CFLASH) {
+		menulist->items[menulist->sel].op ^= CFLASH;
+		menu_clear_pixmap(menulist, menulist->sel - menulist->top_item);
+		menu_retext_pixmap(menulist, menulist->sel - menulist->top_item,
+				&menulist->items[menulist->sel]);
+		menu_handle_timer(menulist, 0);
+		free(c);
+		return;
+	}
+
 	if(menulist->items[menulist->sel].text_width >
 			menulist->w - (8 + (menulist->scrollbar ? 8 : 0))) {
 		int item, diff, move;
@@ -87,6 +101,7 @@ void menu_draw_timer(menu_st *menulist)
 					hw_version < 70000))
 		/* reset fix for xor on certain devices (host, photo) */
 			GrSetGCForeground(menulist->menu_gc, BLACK);
+		free(c);
 		return;
 	}
 	GrSetGCUseBackground(menulist->menu_gc, GR_FALSE);
@@ -125,7 +140,7 @@ void menu_handle_timer(menu_st *menulist, int force)
 	/* is a submenu item or is wider than the screen */
 	if((SUB_MENU_HEADER & item->op || item->text_width > menulist->w -
 			(8 * 2) || ARROW_MENU & item->op || EXECUTE_MENU &
-			item->op) && !force) {
+			item->op || CFLASH & item->op) && !force) {
 		if(!menulist->timer)
 			menulist->timer =
 				GrCreateTimer(menulist->menu_wid, 150);
@@ -714,6 +729,21 @@ void quicksort(item_st a[], int lower, int upper)
 void menu_sort_menu(menu_st *menulist)
 {
 	quicksort(menulist->items, 0, menulist->num_items-1);
+}
+
+/* flash selected item. ala apple fw */
+void menu_flash_selected(menu_st * menulist)
+{
+	int item;
+	item = menulist->sel - menulist->top_item;
+	GrSetGCForeground(menulist->menu_gc, WHITE);
+	GrFillRect(menulist->menu_wid, menulist->menu_gc, menulist->x,
+			menulist->y + item * menulist->height,
+			menulist->w - (menulist->scrollbar ? 8 : 0),
+			menulist->height);
+	GrSetGCForeground(menulist->menu_gc, BLACK);
+	menulist->items[menulist->sel].op |= CFLASH;
+	menu_handle_timer(menulist, 0);
 }
 
 #if 0
