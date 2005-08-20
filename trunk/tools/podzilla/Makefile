@@ -32,6 +32,7 @@ CFLAGS= -DIPOD -D__linux__
 LDFLAGS= -elf2flt
 MICROWINDOWS= ../microwindows/ipod/src
 LIBITUNESDB= ../libitunesdb/ipod/src
+LIBMPDCLIENT= ../libmpdclient/ipod
 IPP= ../ipp
 AACDEC= ../helix-aacdec/ipod
 MP4FF=../mp4ff/ipod
@@ -62,6 +63,7 @@ CC=gcc
 CFLAGS= -I$(IPP)/include 
 LDFLAGS= -L/usr/X11R6/lib -lX11
 LIBITUNESDB= ../libitunesdb/ipod-x11/src
+LIBMPDCLIENT= ../libmpdclient/ipod-x11
 ifneq ($(shell "arch"),ppc)
   # if not ppc or x86, change ppc with output from 'arch'
   AACDEC= ../helix-aacdec/ipod-x11
@@ -187,6 +189,17 @@ CFLAGS+= -DLOCALE
 ifneq ($(IPOD),)
 LDFLAGS+= -lintl
 endif
+endif
+
+# mpdc stuff
+ifneq ($(MPDC),)
+CFLAGS+= -DMPDC -I$(LIBMPDCLIENT)
+LDFLAGS+= $(LIBMPDCLIENT)/libmpdclient.a
+OBJS+= \
+	mpdc/mpdc.o \
+	mpdc/menu.o \
+	mpdc/playing.o \
+	mpdc/submenu.o
 endif
 
 

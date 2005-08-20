@@ -43,10 +43,12 @@ extern void new_oth_window(void);
 extern void new_steroids_window(void);
 extern void new_bluecube_window(void);
 extern void new_mandel_window(void);
+#ifndef MPDC
 extern void new_itunes_track(void);
 extern void new_itunes_artist(void);
 extern void new_itunes_album(void);
 extern void new_itunes_plist(void);
+#endif /* !MPDC */
 extern void new_pong_window(void);
 extern void new_mines_window(void);
 extern void new_tictactoe_window(void);
@@ -67,7 +69,11 @@ extern void about_window(void);
 #ifdef MIKMOD
 extern void new_mikmod_window(void);
 #endif
+#ifdef MPDC
+extern void mpd_currently_playing(void);
 
+extern item_st mpdc_menu[];
+#endif /* MPDC */
 extern item_st lights_menu[];
 
 extern void quit_podzilla(void);
@@ -235,6 +241,7 @@ static item_st turnoff_menu[] = {
 	{0}
 };
 
+#ifndef MPDC
 static item_st itunes_menu[] = {
 	{N_("Playlists"), new_itunes_plist, ACTION_MENU | ARROW_MENU},
 	{N_("Artists"), new_itunes_artist, ACTION_MENU | ARROW_MENU},
@@ -245,6 +252,7 @@ static item_st itunes_menu[] = {
 #endif
 	{0}
 };
+#endif /* !MPDC */
 
 static item_st power_menu[] = {
 	{N_("Quit Podzilla"), quit_podzilla, ACTION_MENU},
@@ -257,9 +265,16 @@ static item_st power_menu[] = {
 };
 
 static item_st main_menu[] = {
+#ifdef MPDC
+	{N_("Music"), mpdc_menu, SUB_MENU_HEADER},
+#else
 	{N_("Music"), itunes_menu, SUB_MENU_HEADER},
+#endif /* MPDC */
 	{N_("Extras"), extras_menu, SUB_MENU_HEADER},
 	{N_("Settings"), settings_menu, SUB_MENU_HEADER},
+#ifdef MPDC
+	{N_("Now Playing"), mpd_currently_playing, ACTION_MENU},
+#endif /* MPDC */
 	{N_("File Browser"), new_browser_window, ACTION_MENU | ARROW_MENU},
 	{N_("Power"), power_menu, SUB_MENU_HEADER},
 	{0}

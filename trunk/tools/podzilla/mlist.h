@@ -85,12 +85,18 @@ void menu_delete_item(menu_st *menulist, int num);
 /* sorts items alphabetically and indexes them */
 void menu_sort_menu(menu_st *menulist);
 
+/* flash currently selected item */
+void menu_flash_selected(menu_st * menulist);
+
 menu_st *menu_init(GR_WINDOW_ID menu_wid, char *title, int x, int y, int w,
 		int h, menu_st *parent, item_st *items, int op);
 menu_st *menu_destroy(menu_st *menulist);
 
 /* destroy all humans. err.. menus */
 void menu_destroy_all(menu_st *menulist);
+
+/* made public so mpdc can use it */
+void quicksort(item_st a[], int lower, int upper);
 
 #endif /* _MLIST_H_ */
 

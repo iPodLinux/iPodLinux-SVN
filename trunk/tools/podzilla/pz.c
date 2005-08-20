@@ -27,6 +27,9 @@
 #include "browser.h"
 #include "ipod.h"
 #include "vectorfont.h"
+#ifdef MPDC
+#include "mpdc/mpdc.h"
+#endif
 
 /* globals */
 GR_SCREEN_INFO screen_info;
@@ -78,6 +81,9 @@ void header_timer_update( void );
 void poweroff_ipod(void)
 {
 	ipod_touch_settings();
+#ifdef MPDC
+	mpdc_destroy();
+#endif
 	GrClose();
 	printf("\nPowering down.\nPress action to power on.\n");
 	execl("/bin/poweroff", "poweroff", NULL);
@@ -90,6 +96,9 @@ void poweroff_ipod(void)
 void reboot_ipod(void)
 {
 	ipod_touch_settings();
+#ifdef MPDC
+	mpdc_destroy();
+#endif
 	GrClose();
 	execl("/bin/reboot", "reboot", NULL);
 	exit(0);
@@ -98,6 +107,9 @@ void reboot_ipod(void)
 void quit_podzilla(void)
 {
 	ipod_touch_settings();
+#ifdef MPDC
+	mpdc_destroy();
+#endif
 	GrClose();
 	exit(0);
 }
@@ -119,17 +131,20 @@ void pz_default_handler(GR_EVENT *event)
 	switch (event->type) {
 	case GR_EVENT_TYPE_KEY_DOWN:
 		switch (event->keystroke.ch) {
-#if 0
+#ifdef MPDC
 		case 'f':
-			printf("unused::fastforward\n");
+		case '4':
+			mpdc_next(mpdz);
 			break;
 		case 'w':
-			printf("unused::rewind\n");
+		case '5':
+			mpdc_prev(mpdz);
 			break;
 		case 'd':
-			printf("unused::play\n");
+		case '1':
+			mpdc_playpause(mpdz);
 			break;
-#endif
+#endif /* MPDC */
 		default:
 			break;
 		}
@@ -458,6 +473,9 @@ main(int argc, char **argv)
 	ipod_load_settings();
 	load_font();
 	appearance_init();
+#ifdef MPDC
+	mpdc_init();
+#endif
 	backlight_tid = 0;
 	startupcontrast_tid = 0;
 	battery_tid = GrCreateTimer(root_wid, 1000);
