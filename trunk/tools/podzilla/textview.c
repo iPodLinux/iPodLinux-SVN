@@ -158,7 +158,7 @@ static void draw_scrollbar(const int height, const int y_top)
 	/* draw the bar */
 	GrSetGCForeground(tv_gc, appearance_get_color( CS_SCRLKNOB ));
 	GrFillRect(tv_wid, tv_gc, tv_winfo.width - (8 - 1), y_top, (8 - 2), height);
-	GrSetGCForeground(tv_gc, BLACK);
+	GrSetGCForeground(tv_gc, appearance_get_color(CS_FG));
 }
 
 static void drawtext(void)
@@ -167,20 +167,22 @@ static void drawtext(void)
 		lines_per_screen * 100 / totalLines :
 		lines_per_screen * 100 / (totalLines - lines_per_screen);
 	int height = (tv_winfo.height - 2) * (per < 3 ? 3 : per) / 100;
-	int y_top = ((((tv_winfo.height - 3) - height) * 100) * currentLine /
-			((totalLines - lines_per_screen) )) / 100 + 2;
+	int y_top;
 
-	GrSetGCForeground(tv_gc, WHITE);
+	GrSetGCForeground(tv_gc, appearance_get_color(CS_BG));
 	GrFillRect(tv_wid, tv_gc, 0, 0, tv_winfo.width - 8, tv_winfo.height);
-	GrSetGCForeground(tv_gc, BLACK);
+	GrSetGCForeground(tv_gc, appearance_get_color(CS_FG));
 
 	/* Draw the text */
 	printPage(currentLine, 0,0,0,0);
 
-	if (totalLines > lines_per_screen && y_top != last_y_top)
-		draw_scrollbar(height, y_top);
-
-	last_y_top = y_top;
+	if (totalLines > lines_per_screen) {
+		y_top = ((((tv_winfo.height - 3) - height)*100) * currentLine /
+				(totalLines - lines_per_screen)) / 100 + 2;
+		if (y_top != last_y_top)
+			draw_scrollbar(height, y_top);
+		last_y_top = y_top;
+	}
 }
 
 static void textview_do_draw()
@@ -287,11 +289,12 @@ void create_textview_window()
 	GR_SIZE width, height, base;	
 	tv_gc = pz_get_gc(1);
 	GrSetGCUseBackground(tv_gc, GR_FALSE);
-	GrSetGCForeground(tv_gc, BLACK);
+	GrSetGCForeground(tv_gc, appearance_get_color(CS_FG));
 
 	tv_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols,
 			screen_info.rows - (HEADER_TOPLINE + 1),
 			textview_do_draw, textview_do_keystroke);
+	GrSetWindowBackgroundColor(tv_wid, appearance_get_color(CS_BG));
 
 	GrSelectEvents(tv_wid, GR_EVENT_MASK_EXPOSURE| GR_EVENT_MASK_KEY_UP|
 			GR_EVENT_MASK_KEY_DOWN);
