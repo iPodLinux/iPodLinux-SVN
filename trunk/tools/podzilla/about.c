@@ -29,6 +29,8 @@
 
 static char *buf = NULL;
 
+extern void new_stringview_window(char *buf, char *title);
+
 static void populate_credits() {
 	int i, len = 0;
 	char *cnames[] = {"Bernard Leach", "Matthew J. Sahagian",
