@@ -25,71 +25,13 @@
 #include "ipod.h"
 
 #define BUFSIZR 2048
-#define NUM_GENS 7
+#define NUM_GENS 8
 
-static GR_WINDOW_ID about_wid;
-static GR_WINDOW_ID about_pix;
-static GR_WINDOW_ID about_bottom_wid;
-static GR_GC_ID about_gc;
+static char *buf = NULL;
 
-char kern[BUFSIZR], fstype[4];
-int page=0, reltop=20, j;
-
-int GrTextEx(GR_WINDOW_ID textwid,  GR_GC_ID textgc, char *buf, int x, int y,
-		int w, int h, int s) {
-	GR_SIZE width, height, base;
-	int i=0;
-	char *ptr, *optr, lsw='*';
-
-	while(1) {
-		GrGetGCTextSize(textgc, buf, -1, GR_TFASCII, &width, &height,
-				&base);
-		if(width<=w || (!strchr(buf, ' ') && !strchr(buf, '\t'))) {
-			GrText(textwid, textgc, x, y+(i++*s), buf,
-					-1, GR_TFASCII);
-			if(lsw!='*')
-				*ptr=lsw;
-			else
-				break;
-			buf=ptr+1;
-			lsw='*';
-		}
-		else {
-			if(lsw!='*')
-				optr=ptr;
-			if(!(ptr=strchr(buf, '\n')))
-				ptr=strrchr(buf, ' ');
-			if(lsw!='*')
-				*optr=lsw;
-			lsw=*ptr;
-			*ptr='\0';
-		}
-	}
-	return i;
-}
-
-static void about_switch_window() {
-	GR_SIZE width, height, base;
-	about_bottom_wid = GrNewWindowEx(GR_WM_PROPS_APPFRAME |
-			GR_WM_PROPS_CAPTION | GR_WM_PROPS_CLOSEBOX,
-			"About_Bottom", GR_ROOT_WINDOW_ID, 0,
-			screen_info.rows-15, screen_info.cols, 15, WHITE);
-
-	GrSelectEvents(about_bottom_wid, GR_EVENT_MASK_EXPOSURE);
-	GrMapWindow(about_bottom_wid);
-	GrGetGCTextSize(about_gc, "Press Action for Credits/Info", -1,
-			GR_TFASCII, &width, &height, &base);
-	GrSetGCForeground(about_gc, BLACK);
-	GrLine(about_bottom_wid, about_gc, 0, 0, screen_info.cols, 0);
-	GrText(about_bottom_wid, about_gc, (screen_info.cols-width)/2,
-			12, "Press Action for Credits/Info", -1, GR_TFASCII);
-}
-
-
-static void draw_about() {
-	int i;
-	char ipodgen[18], ipodrev[32], gen;
-	char *cnames[]={"Bernard Leach", "Matthew J. Sahagian",
+static void populate_credits() {
+	int i, len = 0;
+	char *cnames[] = {"Bernard Leach", "Matthew J. Sahagian",
 			"Courtney Cavin", "matz-josh", "Matthis Rouch",
 		       	"ansi", "Jens Taprogge", "Fredrik Bergholtz",
 			"Jeffrey Nelson", "Scott Lawrence",
@@ -97,56 +39,29 @@ static void draw_about() {
 			"David Carne", "Nik Rolls", "Filippo Forlani", 
 			"Martin Kaltenbrunner", "Adam Johnston",
 		        "Matthew Westcott", "Nils Schneider", "Damien Marchal",
-			"\0"};
-	char gens[NUM_GENS]={'F', '1', '2', '3', 'M', '4', 'P'};
-
-	GrSetGCForeground(about_gc, WHITE);
-	GrFillRect(about_pix, about_gc, 6, 0, screen_info.cols,
-			screen_info.rows);
-	GrSetGCForeground(about_gc, BLACK);
-	GrFillRect(about_pix, about_gc, 2, 0, 4, screen_info.rows);
-
-	j=0;
-
-	if(!page) {
-		GrText(about_pix, about_gc, 8, 15, PZ_VER, -1, GR_TFASCII);
-
-		j=GrTextEx(about_pix, about_gc, kern, 8, 35,
-				screen_info.cols-16, screen_info.rows-55, 15);
-		
-		i = (int)(hw_version/10000);
-		if (i > NUM_GENS || i < 0)
-			i = 0;
-		gen = gens[i];
-		
-		sprintf(ipodgen, "%s iPod.  Gen. %c", fstype, gen);
-		GrText(about_pix, about_gc, 8, 40+(15*j++), ipodgen, -1,
-				GR_TFASCII);
-		sprintf(ipodrev, "Rev. %ld", hw_version);
-		GrText(about_pix, about_gc, 8, 40+(15*j++), ipodrev, -1,
-				GR_TFASCII);
+			0};
+	for (i = 0; cnames[i] != 0; i++)
+		len += strlen(cnames[i]) + 9;
+	buf = malloc(sizeof(char) * (len + 47));
+	strcpy(buf, "Brought to you by:\n\n");
+	for (i = 0; cnames[i] != 0; i++) {
+		strcat(buf, "        ");
+		strcat(buf, cnames[i]);
+		strcat(buf, "\n");
 	}
-	else {
-		GrText(about_pix, about_gc, 8, reltop+(15*j++),
-		 	"Brought to you by:", -1, GR_TFASCII);
-		for(i=0; cnames[i]!="\0"; i++)
-			GrText(about_pix, about_gc, 17, reltop+(15*j++),
-					cnames[i], -1, GR_TFASCII);
-		GrText(about_pix, about_gc, 8, reltop+(15*++j),
-				"http://www.ipodlinux.org", -1, GR_TFASCII);
-	}
-	GrCopyArea(about_wid, about_gc, 0, 0, screen_info.cols,
-			screen_info.rows - (HEADER_TOPLINE + 1), about_pix,
-			0, 0, 0);
+	strcat(buf, "\nhttp://www.ipodlinux.org\n");
 }
 
-static void about_start_draw() {
+static void populate_about() {
+	int i;
+	char kern[BUFSIZR], fstype[BUFSIZR];
+	char *gens[NUM_GENS] = {"", "1st Generation", "2nd Generation",
+		"3rd Generation", "Mini", "4th Generation", "Photo",
+		"2nd Gen Mini"};
 #ifdef IPOD
 	char fslist[BUFSIZR], fsmount[11];
 #endif
 	FILE *ptr;
-
-	pz_draw_header("About");
 
 #if defined(__linux__) || defined(IPOD)
 	if((ptr = popen("uname -rv", "r")) != NULL) {
@@ -165,85 +80,38 @@ static void about_start_draw() {
 				break;
 		}
 		if(strncmp(fstype, "hfs", 3)==0)
-			sprintf(fstype, "Mac");
+			sprintf(fstype, "Mac iPod.");
 		else
-			sprintf(fstype, "Win");
+			sprintf(fstype, "Win iPod.");
 		fclose(ptr);
 	}
 #else
-	sprintf(fstype, "Not");
+	sprintf(fstype, "Not an iPod.");
 #endif
 
-	draw_about();
+	i = (int)(hw_version/10000);
+	if (i > NUM_GENS || i < 0)
+		i = 0;
+
+	buf = malloc(sizeof(char) * (18 + strlen(PZ_VER) + strlen(kern) +
+				strlen(fstype) + strlen(gens[i])));
+	sprintf(buf, "%s\n\n%s\n%s  %s\n    Rev. %ld", PZ_VER, kern,
+			fstype, gens[i], hw_version);
 }
 
-static int about_parse_keystroke(GR_EVENT * event) {
-	int ret = 0;
-
-	switch(event->type) {
-	case GR_EVENT_TYPE_KEY_DOWN:
-		switch (event->keystroke.ch) {
-		case '\r':
-		case '\n':
-			page=!page;
-			draw_about();
-			ret |= KEY_CLICK;
-			break;
-		case 'l':
-			if(page) {
-				reltop+=3;
-				if(reltop>20)
-					reltop=20;
-				else
-					ret |= KEY_CLICK;
-				draw_about();
-			}
-			break;
-		case 'r':
-			if(page) {
-				reltop-=3;
-				if(reltop<-1*((j+1)*15-screen_info.cols)-60)
-					reltop=-1*((j+1)*15-screen_info.cols)-60;
-				else
-					ret |= KEY_CLICK;
-				draw_about();
-			}
-			break;
-		case 'm':
-			ret |= KEY_CLICK;
-			GrUnmapWindow(about_bottom_wid);
-			GrDestroyWindow(about_bottom_wid);
-			GrDestroyWindow(about_pix);
-			pz_close_window(about_wid);
-			GrDestroyGC(about_gc);
-			break;
-		default:
-			ret |= KEY_UNUSED;
-		}
-		break;
-	default:
-		ret |= EVENT_UNUSED;
-		break;
-	}
-	return ret;
+void about_podzilla()
+{
+	populate_about();
+	new_stringview_window(buf, "About");
+	free(buf);
+	buf = NULL;
 }
 
-void about_window() {
-	about_gc = pz_get_gc(1);
-	GrSetGCUseBackground(about_gc, GR_TRUE);
-	GrSetGCBackground(about_gc, WHITE);
-	GrSetGCForeground(about_gc, BLACK);
-
-	about_pix = GrNewPixmap(screen_info.cols,
-			screen_info.rows - (HEADER_TOPLINE + 1), 0);
-	about_switch_window();
-	about_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols,
-			screen_info.rows - (HEADER_TOPLINE + 1) - 15,
-			about_start_draw, about_parse_keystroke);
-
-	GrSelectEvents(about_wid, GR_EVENT_MASK_EXPOSURE| GR_EVENT_MASK_KEY_UP|
-			GR_EVENT_MASK_KEY_DOWN);
-
-	GrMapWindow(about_wid);
+void show_credits()
+{
+	populate_credits();
+	new_stringview_window(buf, "Credits");
+	free(buf);
+	buf = NULL;
 }
 

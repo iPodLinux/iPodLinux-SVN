@@ -65,7 +65,8 @@ extern void new_invaders_window(void);
 extern void new_font_window(menu_st *);
 extern void new_vortex_window(void);
 extern void new_wumpus_window(void);
-extern void about_window(void);
+extern void about_podzilla(void);
+extern void show_credits(void);
 #ifdef MIKMOD
 extern void new_mikmod_window(void);
 #endif
@@ -211,7 +212,8 @@ void menu_adjust_nschemes( int val )
 }
 
 static item_st settings_menu[] = {
-	{N_("About"), about_window, ACTION_MENU},
+	{N_("About"), about_podzilla, ACTION_MENU},
+	{N_("Credits"), show_credits, ACTION_MENU},
 	{N_("Date & Time"), clocks_menu, SUB_MENU_HEADER},
 	{N_("Repeat"), repeat_options, OPTION_MENU, REPEAT, 3},
 	{N_("Shuffle"), shuffle_options, OPTION_MENU, SHUFFLE, 2},
