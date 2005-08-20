@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include "pz.h"
 #include "browser.h"
+#include "slider.h"
 #include "ipod.h"
 #include "vectorfont.h"
 #ifdef MPDC
@@ -116,12 +117,14 @@ void quit_podzilla(void)
 
 void set_wheeldebounce(void)
 {
-	new_slider_widget(WHEEL_DEBOUNCE, _("Wheel Sensitivity"), 1, 20);
+	new_settings_slider_window(_("Wheel Sensitivity"),
+			WHEEL_DEBOUNCE, 1, 20);
 }
 
 void set_buttondebounce(void)
 {
-	new_slider_widget(ACTION_DEBOUNCE, _("Action Debounce"), 100, 500);
+	new_settings_slider_window(_("Action Debounce"),
+			ACTION_DEBOUNCE, 100, 500);
 }
 
 

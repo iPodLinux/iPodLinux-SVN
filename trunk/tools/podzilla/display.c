@@ -18,15 +18,17 @@
 
 #include "pz.h"
 #include "ipod.h"
+#include "slider.h"
 
 void set_backlight_timer(void)
 {
-	new_slider_widget(BACKLIGHT_TIMER, _("Backlight Timer"), 0, 180);
+	new_settings_slider_window(_("Backlight Timer"), 
+			BACKLIGHT_TIMER, 0, 180);
 }
 
 void set_contrast(void)
 {
-	new_slider_widget(CONTRAST, _("Set Contrast"), 0, 128);
+	new_settings_slider_window(_("Set Contrast"), CONTRAST, 0, 128);
 }
 
 void toggle_backlight(void)
