@@ -209,4 +209,7 @@ podzilla: $(OBJS) Makefile
 	$(CC) $(OBJS) -o podzilla $(CFLAGS) $(LDFLAGS)
 
 clean: 
-	$(RM) $(OBJS) *~ podzilla podzilla.gdb
+	$(RM) $(OBJS) *~ podzilla podzilla.gdb podzilla.pot
+
+translate:
+	xgettext -kN_ -k_ -o podzilla.pot `find . -type f -name '*.c' -print`
