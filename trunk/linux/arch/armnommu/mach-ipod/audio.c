@@ -500,7 +500,7 @@ static void i2s_pp5002_rec_dma(void)
 	inl(0xcf001040);
 	outl(inl(0xc000251c) & ~(1<<14), 0xc000251c);
 
-	while (*dma_active) {
+	while (*dma_active != 2) {
 	       	int empty_count = (inl(0xc000251c) & 0x78000000) >> 27;
 		if (empty_count > 14) {
 			/* enable interrupt */
@@ -524,6 +524,9 @@ static void i2s_pp5002_rec_dma(void)
 
 	/* disable fifo */
 	outl(inl(0xc0002500) & ~0x8, 0xc0002500);
+
+	/* tell the cpu we are no longer active */
+	*dma_active = 3;
 }
 
 static void i2s_pp5020_rec_dma(void)
@@ -536,7 +539,7 @@ static void i2s_pp5020_rec_dma(void)
 
 	outl(inl(0x70002800) & ~0x1, 0x70002800);
 
-	while (*dma_active) {
+	while (*dma_active != 2) {
 		int full_count = (inl(0x7000280c) & 0x3f000000) >> 24;
 		if (full_count < 2) {
 			/* enable interrupt */
@@ -560,6 +563,9 @@ static void i2s_pp5020_rec_dma(void)
 
 	/* disable fifo */
 	outl(inl(0x70002800) & ~0x10000000, 0x70002800);
+
+	/* tell the cpu we are no longer active */
+	*dma_active = 3;
 }
 
 /*
@@ -583,9 +589,9 @@ static void i2s_reset(void)
 		/* since BIT.SIZ < FIFO.FORMAT low 16 bits will be 0 */
 		outl(inl(0x70002800) | 0x30, 0x70002800);
 
-		/* RX_ATN_LVL=1 == when 4 slots full */
-		/* TX_ATN_LVL=1 == when 4 slots empty */
-		outl(inl(0x70002800) | 0x11, 0x70002800);
+		/* RX_ATN_LVL=1 == when 12 slots full */
+		/* TX_ATN_LVL=1 == when 12 slots empty */
+		outl(inl(0x7000280c) | 0x33, 0x7000280c);
 
 		/* Rx.CLR = 1, TX.CLR = 1 */
 		outl(inl(0x7000280c) | 0x1100, 0x7000280c);
@@ -715,8 +721,20 @@ static int ipodaudio_close(struct inode *inode, struct file *filep)
 	if (filep->f_mode & FMODE_READ) {
 		volatile int *dma_active = (int *)DMA_ACTIVE;
 
-		/* tell COP dma to exit */
-		*dma_active = 0;
+		if (*dma_active) {
+			/* tell COP dma to exit */
+			*dma_active = 2;
+
+			/* wait for the COP to signal its done */
+			while (*dma_active != 3) {
+				set_current_state(TASK_INTERRUPTIBLE);
+				schedule_timeout(2);
+
+				if (signal_pending(current)) {
+					break;
+				}
+			}
+		}
 
 		if (ipod_hw_ver == 0x6) {
 			outl(inl(0x6000d120) | 0x40, 0x6000d120);
