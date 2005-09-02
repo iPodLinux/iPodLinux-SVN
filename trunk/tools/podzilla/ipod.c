@@ -271,6 +271,7 @@ void ipod_beep(void)
 
 int ipod_read_apm(int *battery, int *charging)
 {
+#ifdef IPOD
 	FILE *file;
 	int ac_line_status = 0xff;
 	int battery_status = 0xff;
@@ -291,7 +292,7 @@ int ipod_read_apm(int *battery, int *charging)
 
 		return 0;
 	}
-
+#endif
 	if (battery) *battery = BATTERY_LEVEL_FULL;
 	if (charging) *charging = 0;
 	return 0;
