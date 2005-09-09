@@ -98,7 +98,7 @@ static FILE * curFile;
 static dsp_st dspz;
 extern void ipod_handle_video(void);
 static unsigned char * audiobuffer;
-static unsigned int * indexes;
+/* static unsigned int * indexes; */
 static int audioreadoff = 0;
 static int audiowriteoff = 0;
 static unsigned int framestartoff = 0, frameendoff = 0;
@@ -283,7 +283,6 @@ static int fourccCmpLast2(char s1[4], char s2[2])
 static int openAviFile(char * filename)
 {
 	int i;
-	char jjj[256];
 	curFile = fopen(filename, "r");
 	if (curFile) {
 		filesize = getFilesize(curFile);
@@ -330,7 +329,6 @@ static int readVideoInfo(FILE * f)
 	AVISTREAMHEADER streamHeader;
 	riffHdr fileHdr;
 	BITMAPINFO bitmapHeader;
-	char holder[512];
 	int done = 0;
 	unsigned lastStartRead;
 
@@ -549,6 +547,8 @@ static int audio_alloc()
 		audioreadoff = 0;
 		audiowriteoff = 0;
 	}
+	return 0;
+
 }
 static int audio_free()
 {
@@ -556,6 +556,7 @@ static int audio_free()
 
 		free(audiobuffer);
 	}
+	return 0;
 }
 static int audio_open()
 {
@@ -565,6 +566,7 @@ static int audio_open()
 		dsp_open(&dspz, 1); /* DSP_LINEOUT); */
 		dsp_setup(&dspz, wavHeader.nChannels, wavHeader.nSamplesPerSec); 
 	}
+	return 0;
 }
 
 static void audio_close()
@@ -590,10 +592,9 @@ static void audio_flush()
 
 static char zero_buf[40*1024*2];
 static char audiostack[8*1024];
-static void audio_handler(void * p)
+static int audio_handler(void * p)
 {
 	int lenavail = 0;
-	int i;
 	audio_buf_info buf_info;
 	memset(zero_buf, 0, 40*1024*2);
 	while (1) /* video_status &~ VIDEO_CONTROL_MODE_EXITING) */
@@ -602,7 +603,7 @@ static void audio_handler(void * p)
 			while (video_status & VIDEO_CONTROL_MODE_AUDIOPAUSED)
 			{
 				if (video_status == VIDEO_CONTROL_MODE_EXITING) {
-					return; 
+					return 0; 
 				}
 				if (video_status != VIDEO_CONTROL_MODE_STARTING)
 				{
@@ -614,7 +615,7 @@ static void audio_handler(void * p)
 			}
 
 			if (video_status == VIDEO_CONTROL_MODE_EXITING) {
-				return;
+				return 0;
 			}
 
 
@@ -664,7 +665,9 @@ static void audio_handler(void * p)
 }
 
 static int audio_thread_pid;
+#ifdef USEMALLOCFORAUDIOSTACK
 static char * audio_thread_stack;
+#endif
 static void audio_thread_start(void)
 {
 #ifdef USEMALLOCFORAUDIOSTACK	
@@ -684,7 +687,6 @@ static void audio_thread_start(void)
 }
 static void audio_thread_stop(void)
 {
-	int status;
 #ifdef USEMALLOCFORAUDIOSTACK
 	free(audio_thread_stack);
 #endif	
@@ -728,11 +730,6 @@ static int playVideo(char * filename)
 	struct framet frames[VIDEO_FILEBUFFER_COUNT][NUM_FRAMES_BUFFER];
 	int i;
 	int buffersProcessed = 0;
-	audio_buf_info buf_info;
-	int lenavail;	
-	FILE * faudio;
-	char jjjj[256];
-	int numrun = 0;
 	
 	curbuffer = 0;
 	hw_vers = ipod_get_hw_version();
