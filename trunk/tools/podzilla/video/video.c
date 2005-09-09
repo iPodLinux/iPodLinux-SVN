@@ -16,6 +16,13 @@
  * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+
+
+
+
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
@@ -24,6 +31,9 @@
 #ifdef __linux
 #include <linux/soundcard.h>
 #endif
+#include <sched.h>
+#include <signal.h>
+#include <sys/soundcard.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
@@ -38,15 +48,23 @@
 
 
 
-
-
-
 #ifdef IPOD
-#define VIDEO_CONTROL_MODE_RUNNING 	0
-#define VIDEO_CONTROL_MODE_PAUSED	1
-#define VIDEO_CONTROL_MODE_SEARCH	(2 | VIDEO_CONTROL_MODE_PAUSED)
-#define VIDEO_CONTROL_MODE_VOLUME	(4 | VIDEO_CONTROL_MODE_RUNNING)
-#define VIDEO_CONTROL_MODE_EXITING	(8 | VIDEO_CONTROL_MODE_PAUSED)
+
+#define VIDEO_CONTROL_MODE_RUNNING 	(0)
+#define VIDEO_CONTROL_MODE_AUDIOPAUSED	(1 << 4)
+#define VIDEO_CONTROL_MODE_PAUSED	((1 << 0))
+#define VIDEO_CONTROL_MODE_SEARCH	((1 << 1) | VIDEO_CONTROL_MODE_AUDIOPAUSED | VIDEO_CONTROL_MODE_PAUSED)
+#define VIDEO_CONTROL_MODE_VOLUME	((1 << 2) | VIDEO_CONTROL_MODE_RUNNING)
+#define VIDEO_CONTROL_MODE_EXITING	((1 << 3) | VIDEO_CONTROL_MODE_PAUSED | VIDEO_CONTROL_MODE_AUDIOPAUSED)
+#define VIDEO_CONTROL_MODE_AUDIOSYNC	((1 << 6))
+
+#define VIDEO_CONTROL_MODE_GLOBALPAUSED (VIDEO_CONTROL_MODE_PAUSED | VIDEO_CONTROL_MODE_AUDIOPAUSED)
+
+#define VIDEO_CONTROL_MODE_STARTING	((1 << 5) | VIDEO_CONTROL_MODE_RUNNING | VIDEO_CONTROL_MODE_AUDIOSYNC)
+#define AUDIOBUFSIZE	(3*1024*1024)
+
+#define	BUFFER_FILL_FIRST_COUNT	(1)	
+
 
 static GR_WINDOW_ID video_wid;
 static GR_GC_ID video_gc;
@@ -56,6 +74,13 @@ static GR_IMAGE_ID video_id;
 #define outl(a, b) (*(volatile unsigned long *) (b) = (a))
 
 //////////////////////STATUS VARS
+
+#ifdef PLAYLISTING
+static char * playlistFiles[250];  /* YES - this needs to be changed - aegray = sloppy coder who likes to put big memory problem possibilities in podzilla */
+#endif
+
+
+
 static int video_status = VIDEO_CONTROL_MODE_RUNNING;
 static int video_useAudio = 0;
 static int video_screenWidth;
@@ -72,15 +97,23 @@ static FILE * curFile;
 
 static dsp_st dspz;
 extern void ipod_handle_video(void);
-static struct framet audioframes[100];
+static unsigned char * audiobuffer;
 static unsigned int * indexes;
 static int audioreadoff = 0;
 static int audiowriteoff = 0;
 static unsigned int framestartoff = 0, frameendoff = 0;
 static AVIMAINHEADER mainHeader;
-
+static WAVEFORMATEX wavHeader;
 static BITMAPINFO bitmapInfo;
 static int video_curPosition = 0;
+
+
+/* audio sync vars */
+static int audio_thread_starting;
+static int audio_thread_running;
+static int main_thread_starting;
+static int main_thread_running;
+
 
 struct framet {
 	unsigned char * buffer;
@@ -100,7 +133,7 @@ struct filebuffer {
 static void cop_wakeup();
 static void cop_initVideo();
 static void cop_setVideoParams(int, int, int);
-//static void cop_waitReady(int);
+/*static void cop_waitReady(int);*/
 static void cop_presentFrames(int, struct framet *, int);
 static void cop_setPlay(int);
 static int fbread(void *, unsigned, struct filebuffer *);
@@ -110,12 +143,12 @@ static int fourccCmp(char[4], char[4]);
 static int openAviFile(char *);
 static int closeAviFile();
 static int readVideoInfo();
-//static void fillIndexes(FILE *);
+/*static void fillIndexes(FILE *);*/
 static int bufferFrames(struct filebuffer *, struct framet *, int);
 static int video_seek(unsigned int);
-static void audio_open();
+static int audio_open();
 static void audio_close();
-//static void audio_adjustVolume(int);
+static void audio_adjustVolume(int);
 static int playVideo(char *);
 static void video_draw_pause();
 static void video_draw_play();
@@ -222,6 +255,7 @@ static unsigned  getFilesize(FILE * f)
 	return l;
 }
 
+
 static int fourccCmp(char s1[4], char s2[4])
 {
 	if ((s1[0]==s2[0]) &&
@@ -235,27 +269,36 @@ static int fourccCmp(char s1[4], char s2[4])
 }
 
 
+static int fourccCmpLast2(char s1[4], char s2[2])
+{
+	if ((s1[2]==s2[0]) &&
+	    (s1[3]==s2[1])) {
+		return 1;
+	}
+
+	return 0;
+}
 
 
 static int openAviFile(char * filename)
 {
 	int i;
-
+	char jjj[256];
 	curFile = fopen(filename, "r");
 	if (curFile) {
 		filesize = getFilesize(curFile);
 		for (i = 0; i < VIDEO_FILEBUFFER_COUNT; i++) {
 			fileBuffers[i].buffer = malloc(VIDEO_FILEBUFFER_SIZE);
 			fileBuffers[i].filesize = filesize;
-			fileBuffers[i].file = curFile;
+			fileBuffers[i].file = curFile;	
 			if (fileBuffers[i].buffer == NULL) {
 				for (i = i-1; i >= 0; i--) {
 					free(fileBuffers[i].buffer);
 				}
-				exit(1);
+				exit(1);	
 			}
-		}
 
+		}
 		return 0;
 	}
 
@@ -265,15 +308,17 @@ static int openAviFile(char * filename)
 static int closeAviFile()
 {
 	int i;
-
+	
 	fclose(curFile);
-	if (indexes != NULL) {
+/*	if (indexes != NULL) {
 		free(indexes);
-	}
+	} */
 
 	for (i = 0; i < VIDEO_FILEBUFFER_COUNT; i++) {
 		if (fileBuffers[i].buffer!=NULL)
+		{	
 			free(fileBuffers[i].buffer);
+		}
 	}
 	return 0;
 }
@@ -315,15 +360,15 @@ static int readVideoInfo(FILE * f)
 					fseek(f, -sizeof(bitmapHeader), SEEK_CUR);
 					memcpy(&bitmapInfo, &bitmapHeader, sizeof(bitmapHeader));
 				} else if ((fourccCmp(streamHeader.fccType, "auds"))) {
-					fread(&holder, 1, hdr.ckSize, f);
-					fseek(f, -hdr.ckSize, SEEK_CUR);
+					fread(&wavHeader, sizeof(wavHeader), 1, f);
+					fseek(f, -sizeof(wavHeader), SEEK_CUR);
 				}
 
 				fseek(f, hdr.ckSize, SEEK_CUR);
-			} else if ((fourccCmp(hdr.ckID, "00db")) || (fourccCmp(hdr.ckID, "00dc"))) {
+			} else if ((fourccCmpLast2(hdr.ckID, "db")) || (fourccCmpLast2(hdr.ckID, "dc"))) {
 				done = 1;
 				fseek(f, -sizeof(hdr), SEEK_CUR);
-			} else if (fourccCmp(hdr.ckID, "00wb")) {
+			} else if ((fourccCmpLast2(hdr.ckID, "wb")) || (fourccCmpLast2(hdr.ckID, "wc"))) {
 				done = 1;
 				fseek(f, -sizeof(hdr), SEEK_CUR);
 
@@ -373,8 +418,8 @@ static int readVideoInfo(FILE * f)
 }*/
 
 
-// WILL FAIL IF FILE JUST OPENED
-// Movie info must have been read and we must be at mov offset
+/* WILL FAIL IF FILE JUST OPENED
+	 Movie info must have been read and we must be at mov offset */
 static int bufferFrames(struct filebuffer * fb, struct framet * frames, int count)
 {
 	int curframe = 0;
@@ -396,7 +441,8 @@ static int bufferFrames(struct filebuffer * fb, struct framet * frames, int coun
 		if (fbread(&hdr, sizeof(hdr), fb)) {
 			if (fourccCmp(hdr.ckID, "LIST")) {
 				fbseek(fb, 4, SEEK_CUR);
-			} else if ((fourccCmp(hdr.ckID, "00db")) || (fourccCmp(hdr.ckID, "00dc"))) {
+			/*} else if ((fourccCmp(hdr.ckID, "00db") || (fourccCmp(hdr.ckID, "00dc")))) { */
+			} else if ((fourccCmpLast2(hdr.ckID, "db")) || (fourccCmpLast2(hdr.ckID, "dc"))) {
 				if (fb->localOff+hdr.ckSize > fb->size) {
 					doneBuff = 1;
 					fbseek(fb, -sizeof(hdr), SEEK_CUR);
@@ -410,19 +456,39 @@ static int bufferFrames(struct filebuffer * fb, struct framet * frames, int coun
 					curframe++;
 					fbseek(fb, hdr.ckSize, SEEK_CUR);
 				}
-			}  else if ((fourccCmp(hdr.ckID, "00wb")) || (fourccCmp(hdr.ckID, "01wb"))) {
+		/*	} else if ((fourccCmp(hdr.ckID, "01wb"))) {   */
+			} else if ((fourccCmpLast2(hdr.ckID, "wb")) || (fourccCmpLast2(hdr.ckID, "wc"))) {
 
 				if (fb->localOff+hdr.ckSize > fb->size) {
 					doneBuff=1;
 					fbseek(fb, -sizeof(hdr), SEEK_CUR);
 				} else {
-					frameptr = fb->buffer;
-					frameptr += fb->localOff - sizeof(hdr);
+					if (video_useAudio)
+					{	
+						int lenavail = 0, lenavail2 = 0;
+						
+						lenavail = AUDIOBUFSIZE - audiowriteoff;
+						if (lenavail <= 0)
+							lenavail = 0;
+						if (lenavail > hdr.ckSize)
+							lenavail = hdr.ckSize;
+						if (lenavail < hdr.ckSize)	
+							lenavail2 = hdr.ckSize - lenavail;
+						fbread(audiobuffer+audiowriteoff, lenavail, fb);
+						audiowriteoff = (audiowriteoff + lenavail) % AUDIOBUFSIZE;	
+	
+						if (lenavail2 > 0)
+						{
+							fbread(audiobuffer, lenavail2, fb);
+							audiowriteoff = lenavail2;
+							fbseek(fb, -lenavail2, SEEK_CUR);
+	
+						}
+						fbseek(fb, -lenavail, SEEK_CUR);	
+	
 
-					audioframes[audiowriteoff].buffer = frameptr;
-					audioframes[audiowriteoff].x = hdr.ckSize;
+					}	
 					fbseek(fb, hdr.ckSize, SEEK_CUR);
-					audiowriteoff = (audiowriteoff + 1) % 100;
 				}
 			} else {
 				fbseek(fb, hdr.ckSize, SEEK_CUR);
@@ -442,7 +508,7 @@ static int video_seek(unsigned int fileOff)
 	char * curbuf;
 	unsigned int off = 0;
 	struct filebuffer * fb;
-
+	
 	fb = &fileBuffers[0];
 	fseek(fb->file, fileOff, SEEK_SET);
 	fb->startOff = ftell(fb->file);
@@ -459,6 +525,8 @@ static int video_seek(unsigned int fileOff)
 	if (curbuf < (char *)(fb->buffer+fb->size)) {
 		cop_initVideo();
 		curbuffer = 0;
+		audioreadoff = 0;
+		audiowriteoff = 0;	
 		fseek(fb->file, fileOff+off, SEEK_SET);
 
 		return 1;
@@ -467,27 +535,192 @@ static int video_seek(unsigned int fileOff)
 	}
 }
 
-static void audio_open()
+
+static int audio_alloc()
 {
 	if (video_useAudio) {
-		dsp_open(&dspz, 1); // DSP_LINEOUT);
-		dsp_setup(&dspz, 2, 44100);
+		audiobuffer = malloc(AUDIOBUFSIZE);
+		if (audiobuffer==NULL)
+		{
+			video_status_message("AUDIO BUFFER IS NULL!");
+			sleep(1);
+			exit(1);
+		}
+		audioreadoff = 0;
+		audiowriteoff = 0;
+	}
+}
+static int audio_free()
+{
+	if (video_useAudio) {
+
+		free(audiobuffer);
+	}
+}
+static int audio_open()
+{
+	if (video_useAudio) {
+
+		audio_alloc();
+		dsp_open(&dspz, 1); /* DSP_LINEOUT); */
+		dsp_setup(&dspz, wavHeader.nChannels, wavHeader.nSamplesPerSec); 
 	}
 }
 
 static void audio_close()
 {
 	if (video_useAudio) {
+		audio_free();
 		dsp_close(&dspz);
 	}
 }
 
-/*static void audio_adjustVolume(int diff)
+static void audio_adjustVolume(int diff)
 {
 	if (video_useAudio) {
 		dsp_vol_change(&dspz, diff);
 	}
-}*/
+}
+
+static void audio_flush()
+{
+	if (video_useAudio) {
+	}
+}
+
+static char zero_buf[40*1024*2];
+static char audiostack[8*1024];
+static void audio_handler(void * p)
+{
+	int lenavail = 0;
+	int i;
+	audio_buf_info buf_info;
+	memset(zero_buf, 0, 40*1024*2);
+	while (1) /* video_status &~ VIDEO_CONTROL_MODE_EXITING) */
+	{
+		if ((video_useAudio)) {
+			while (video_status & VIDEO_CONTROL_MODE_AUDIOPAUSED)
+			{
+				if (video_status == VIDEO_CONTROL_MODE_EXITING) {
+					return; 
+				}
+				if (video_status != VIDEO_CONTROL_MODE_STARTING)
+				{
+					ioctl(dspz.dsp, SNDCTL_DSP_GETOSPACE, &buf_info);
+					lenavail = buf_info.bytes;				
+						
+					lenavail = write(dspz.dsp, zero_buf, lenavail);	
+				}
+			}
+
+			if (video_status == VIDEO_CONTROL_MODE_EXITING) {
+				return;
+			}
+
+
+			if (audioreadoff != audiowriteoff) {
+				if (audiowriteoff > audioreadoff)
+				{
+					lenavail = audiowriteoff - audioreadoff;
+				} else if (audiowriteoff < audioreadoff)
+				{
+					lenavail = AUDIOBUFSIZE - audioreadoff;	
+				} else {
+					lenavail = 0;
+				}
+				
+
+				ioctl(dspz.dsp, SNDCTL_DSP_GETOSPACE, &buf_info);
+				if (buf_info.bytes < lenavail)
+					lenavail = buf_info.bytes;				
+
+				if ((video_status & VIDEO_CONTROL_MODE_AUDIOSYNC) ||
+				    (video_status == VIDEO_CONTROL_MODE_STARTING))
+				{
+
+					audio_thread_starting = 1;
+					while (!main_thread_starting);
+					audio_thread_running = 1;
+					while (!main_thread_running);
+					
+				}
+				lenavail = write(dspz.dsp, audiobuffer+audioreadoff, lenavail);	
+					
+				audioreadoff = (audioreadoff + lenavail) % (AUDIOBUFSIZE);
+				
+				
+				/* cheap hack to make sure fiq always has data
+				 * due to bug in current audio driver */	
+#ifdef CHEAPAUDIOHACK_FORNOW_NOTTILLHELLFREEZESOVER	
+				ioctl(dspz.dsp, SNDCTL_DSP_GETOSPACE, &buf_info);
+				lenavail = buf_info.bytes;				
+				lenavail = write(dspz.dsp, zero_buf, lenavail);	
+#endif	
+				
+				usleep(100000);	
+			}
+		} 
+	}
+}
+
+static int audio_thread_pid;
+static char * audio_thread_stack;
+static void audio_thread_start(void)
+{
+#ifdef USEMALLOCFORAUDIOSTACK	
+	audio_thread_stack = malloc(250*1024);
+	if (audio_thread_stack == NULL)
+		exit(0); /* should be updated to handle condition better */
+#endif
+	audio_thread_pid = clone(audio_handler, 
+#ifndef USEMALLOCFORAUDIOSTACK	
+			audiostack+(8*1024-0x88), 
+#else	
+			audio_thread_stack+(250*1024 - 0x88), 
+#endif
+			CLONE_VM | SIGCHLD, NULL);
+
+
+}
+static void audio_thread_stop(void)
+{
+	int status;
+#ifdef USEMALLOCFORAUDIOSTACK
+	free(audio_thread_stack);
+#endif	
+}
+
+/* init globals to fix the not loading because I was being lazy before */
+static void init_variables()
+{
+
+	video_status = VIDEO_CONTROL_MODE_STARTING; 
+	video_useAudio = 0;
+	video_useKeys = 1;
+	hw_vers = 0;
+
+
+	audio_thread_starting = 0;
+	audio_thread_running = 0;
+	main_thread_starting = 0;
+	main_thread_running = 0;
+
+	curbuffer = 0;
+	video_vol_delta = 0;
+	video_waitUsecPause = 5000;
+	audioreadoff = 0;
+	audiowriteoff = 0;
+	framestartoff = 0;
+	frameendoff = 0;
+	video_curPosition = 0;
+	wavHeader.nChannels = 2;
+	wavHeader.nSamplesPerSec = 44100;
+	mainHeader.dwMicroSecPerFrame = 1000;
+	mainHeader.dwWidth = 220;   /* not really needed but for testing */
+	mainHeader.dwHeight = 176;
+	
+}
+
 
 static int playVideo(char * filename)
 {
@@ -495,6 +728,11 @@ static int playVideo(char * filename)
 	struct framet frames[VIDEO_FILEBUFFER_COUNT][NUM_FRAMES_BUFFER];
 	int i;
 	int buffersProcessed = 0;
+	audio_buf_info buf_info;
+	int lenavail;	
+	FILE * faudio;
+	char jjjj[256];
+	int numrun = 0;
 	
 	curbuffer = 0;
 	hw_vers = ipod_get_hw_version();
@@ -517,19 +755,23 @@ static int playVideo(char * filename)
 		video_screenWidth=220;
 		video_screenHeight=176;
 		video_screenBPP=16;
-		video_useAudio = 0;
+		video_useAudio = 1;
+		video_useKeys = 1;	
 		video_waitUsecPause = 15000;
 	}
 
 	i = 0;
-	
 
+		
 	openAviFile(filename);
 	readVideoInfo(curFile);
 	outl((unsigned int)&ipod_handle_video, VAR_COP_HANDLER);
 	cop_wakeup();
-
 	audio_open();
+
+	if (video_useAudio)
+		audio_thread_start();
+	cop_setPlay(0);
 	cop_initVideo();
 	cop_setVideoParams(bitmapInfo.bmiHeader.biWidth, bitmapInfo.bmiHeader.biHeight, mainHeader.dwMicroSecPerFrame);
 	curframes = 1;
@@ -539,27 +781,38 @@ static int playVideo(char * filename)
 				video_refresh_control_state();
 			}
 
+
 			if (video_status == VIDEO_CONTROL_MODE_EXITING) {
-				return 1;
-			}
-			if ((video_useAudio)) {
-				while (audioreadoff != audiowriteoff) {
-					dsp_write(&dspz, audioframes[audioreadoff].buffer, audioframes[audioreadoff].x);
-					audioreadoff = (audioreadoff + 1) % 100;
-				}
+				goto exiting;	
 			}
 		}
 
 		curframes = bufferFrames(&fileBuffers[curbuffer], frames[curbuffer], NUM_FRAMES_BUFFER);
 
+
+#ifndef DEBUGNODISP
 		cop_presentFrames(curbuffer, frames[curbuffer], curframes);
+#endif
 		video_curPosition+=curframes;
 
-		if (buffersProcessed >= VIDEO_FILEBUFFER_COUNT - 1) {
+		if (buffersProcessed ==  /* VIDEO_FILEBUFFER_COUNT - 1)  { */
+				BUFFER_FILL_FIRST_COUNT) { 
+
+			if (video_status & VIDEO_CONTROL_MODE_AUDIOSYNC)
+			{
+
+				while (!audio_thread_starting);
+				main_thread_starting = 1;
+				while (!audio_thread_running);
+				main_thread_running = 1;	
+			}
 			cop_setPlay(1);
+			
+			video_status = VIDEO_CONTROL_MODE_RUNNING;
+			buffersProcessed++;	
 		} else {
 			buffersProcessed++;
-		}
+		} 
 
 		curbuffer = (curbuffer+1)%VIDEO_FILEBUFFER_COUNT;
 
@@ -567,14 +820,9 @@ static int playVideo(char * filename)
 			video_refresh_control_state();
 		}
 		if (video_status == VIDEO_CONTROL_MODE_EXITING) {
-			return 1;
+			goto exiting;	
 		}
-		if ((video_useAudio)) {
-			if (audioreadoff != audiowriteoff) {
-				dsp_write(&dspz, audioframes[audioreadoff].buffer, audioframes[audioreadoff].x);
-				audioreadoff = (audioreadoff + 1) % 100;
-			}
-		}
+
 	}
 
 	curbuffer -= 2;
@@ -583,16 +831,26 @@ static int playVideo(char * filename)
 	}
 
 	while (!inl(VAR_VIDEO_BUFFER_DONE + curbuffer * sizeof(unsigned int))) {
-		video_refresh_control_state();
+		if (video_useKeys)
+			video_refresh_control_state();
 		if (video_status == VIDEO_CONTROL_MODE_EXITING) {
-			return 1;
+			goto exiting;	
 		}
 	}
+exiting:
 
 	cop_setPlay(0);
-	video_status_message("Video Done. Exiting.");
-	closeAviFile();
+	
+
+
+	video_status = VIDEO_CONTROL_MODE_EXITING;	
+
+
+	if (video_useAudio)	
+		audio_thread_stop(); 
 	audio_close();
+
+	closeAviFile();
 	pz_close_window(video_wid);
 	GrFreeImage(video_id);
 	GrDestroyGC(video_gc);
@@ -629,24 +887,30 @@ static void video_draw_searchbar()
 
 static void video_draw_exit()
 {
-	video_status_message("Exiting");
 }
 
 static void video_refresh_control_state()
 {
-	int currun, oldPos;
-
-	video_check_messages();
-	cop_setPlay(!(video_status & VIDEO_CONTROL_MODE_PAUSED));
+	static int currun, oldPos;
+	static int old_video_status; 
+	static int first_run = 1;
+	if (first_run)
+	{
+		first_run = 0;
+		old_video_status = video_status;
+	}	
+		
+	video_check_messages(); 
+	if (old_video_status != video_status)
+		cop_setPlay(!(video_status & VIDEO_CONTROL_MODE_PAUSED));
 	currun = 0;
 	oldPos = video_curPosition;
+	old_video_status = video_status; 	
 	while (video_status & VIDEO_CONTROL_MODE_PAUSED) {
 		if ((currun==0) || (oldPos!=video_curPosition)) {
 			usleep(video_waitUsecPause);
-			if (video_status==VIDEO_CONTROL_MODE_PAUSED) {
-				video_draw_pause();
-			}
-			else if (video_status==VIDEO_CONTROL_MODE_SEARCH) {
+
+			if (video_status==VIDEO_CONTROL_MODE_SEARCH) {
 				video_draw_searchbar();
 			}
 			else if (video_status==VIDEO_CONTROL_MODE_EXITING) {
@@ -654,6 +918,9 @@ static void video_refresh_control_state()
 			}
 			else if (video_status==VIDEO_CONTROL_MODE_RUNNING) {
 				video_draw_play();
+			}
+			else if (video_status== VIDEO_CONTROL_MODE_GLOBALPAUSED) {
+				video_draw_pause();
 			}
 			currun++;
 		}
@@ -663,22 +930,16 @@ static void video_refresh_control_state()
 
 		if (video_status == VIDEO_CONTROL_MODE_EXITING) {
 			sleep(1);
-			closeAviFile();
-			audio_close();
-
-			pz_close_window(video_wid);
-			GrFreeImage(video_id);
-			GrDestroyGC(video_gc);
 			return;
 		}
-	}
+	} 
 }
 
 static void video_check_messages()
 {
 	GR_EVENT event;
 	int evtcap = 200;
-
+	video_vol_delta = 0;
 	while (GrPeekEvent(&event) && evtcap--) {
 		GrGetNextEventTimeout(&event, 500);
 		if (event.type != GR_EVENT_TYPE_TIMEOUT) {
@@ -686,6 +947,12 @@ static void video_check_messages()
 		} else {
 			break;
 		}
+	}
+
+	if (video_vol_delta != 0)
+	{
+		audio_adjustVolume(video_vol_delta);
+
 	}
 }
 
@@ -739,10 +1006,11 @@ static int video_do_keystroke(GR_EVENT * event)
 			break;
 		case '\r':
 		case '\n':
-			if ((video_status == VIDEO_CONTROL_MODE_RUNNING) || (video_status==VIDEO_CONTROL_MODE_PAUSED)) {
+			if ((video_status == VIDEO_CONTROL_MODE_RUNNING) || (video_status==VIDEO_CONTROL_MODE_GLOBALPAUSED)) {
 				video_status = VIDEO_CONTROL_MODE_SEARCH;
 			}
 			else if (video_status == VIDEO_CONTROL_MODE_SEARCH) {
+				audio_flush();	
 				video_seek(((double)video_curPosition/mainHeader.dwTotalFrames) * (frameendoff - framestartoff) + framestartoff);
 				video_status = VIDEO_CONTROL_MODE_RUNNING;
 			} else {
@@ -754,11 +1022,12 @@ static int video_do_keystroke(GR_EVENT * event)
 			break;
 		case '1':
 		case 'd': /* Zoom fit/actual */
-			if (video_status == VIDEO_CONTROL_MODE_PAUSED) {
+			if (video_status == VIDEO_CONTROL_MODE_GLOBALPAUSED) {
+				audio_flush();
 				video_status = VIDEO_CONTROL_MODE_RUNNING;
 			}
 			else if (video_status != VIDEO_CONTROL_MODE_SEARCH) {
-				video_status = VIDEO_CONTROL_MODE_PAUSED;
+				video_status = VIDEO_CONTROL_MODE_GLOBALPAUSED;
 			}
 			break;
 		default:
@@ -767,7 +1036,7 @@ static int video_do_keystroke(GR_EVENT * event)
 		}
 		break;
 	}
-
+	
 	return ret;
 }
 
@@ -787,7 +1056,8 @@ void new_video_window(char *filename)
 #ifndef IPOD
 	pz_error("No video support on the desktop.");
 #else /* IPOD */
-	video_status = VIDEO_CONTROL_MODE_RUNNING;
+	init_variables();
+	video_status = VIDEO_CONTROL_MODE_STARTING; 
 	video_curPosition = 0;
 	video_gc = pz_get_gc(1);
 	GrSetGCUseBackground(video_gc, GR_FALSE);
@@ -795,7 +1065,8 @@ void new_video_window(char *filename)
 
 	video_wid = pz_new_window(0, 0, screen_info.cols, screen_info.rows, video_do_draw, video_do_keystroke);
 
-	GrSelectEvents(video_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_DOWN| GR_EVENT_MASK_KEY_UP);
+	GrSelectEvents(video_wid, 
+			GR_EVENT_MASK_KEY_DOWN| GR_EVENT_MASK_KEY_UP);
 	GrMapWindow(video_wid);
 
 	GrClearWindow(video_wid, GR_FALSE);

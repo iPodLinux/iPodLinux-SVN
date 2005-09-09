@@ -26,6 +26,19 @@ typedef struct {
 
 extern int timer_get_current();
 
+
+typedef struct {
+	short int wFormatTag;
+	short int nChannels;
+	unsigned int nSamplesPerSec;
+	unsigned int nAvgBytesPerSec;
+	short int nBlockAlign;
+	short int wBitsPerSample;
+	short int cbSize;
+} WAVEFORMATEX;
+
+
+
 typedef struct {
 	unsigned int biSize;
 	long biWidth;
