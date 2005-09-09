@@ -301,9 +301,12 @@ ipod_handle_video()
 	ipod_hw_ver = hw_version/10000; 
 	video_setup_display(ipod_hw_ver);
 
-	while (1) {
+	while (inl(VAR_VIDEO_ON)) {
 		curBuffer = inl(VAR_VIDEO_CURBUFFER_PLAYING);	
-		while ((inl(VAR_VIDEO_BUFFER_READY + sizeof(unsigned int)* curBuffer)==0) || (inl(VAR_VIDEO_MODE)==0));
+		while ((inl(VAR_VIDEO_BUFFER_READY + sizeof(unsigned int)* curBuffer)==0) || (inl(VAR_VIDEO_MODE)==0)) {
+			if (!inl(VAR_VIDEO_ON))
+				return;
+		}
 
 		curBuffer = inl(VAR_VIDEO_CURBUFFER_PLAYING);
 		x = 0;	

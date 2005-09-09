@@ -737,17 +737,17 @@ static int playVideo(char * filename)
 		video_screenWidth=160;
 		video_screenHeight=128;
 		video_screenBPP=2;
-		video_useAudio=0;
+		video_useAudio=1;
 	} else if (((hw_vers >= 40000) && (hw_vers < 50000)) || ((hw_vers >= 70000) && (hw_vers < 80000))) {
 		video_screenWidth=138;
 		video_screenHeight=110;
 		video_screenBPP=2;
-		video_useAudio=0;
+		video_useAudio=1;
 	} else if ((hw_vers>=50000) && (hw_vers < 60000)) {
 		video_screenWidth=160;
 		video_screenHeight=128;
 		video_screenBPP=2;
-		video_useAudio=0;
+		video_useAudio=1;
 	} else if ((hw_vers>=60000) && (hw_vers < 70000)) {
 		video_screenWidth=220;
 		video_screenHeight=176;
@@ -1053,6 +1053,7 @@ void new_video_window(char *filename)
 #ifndef IPOD
 	pz_error("No video support on the desktop.");
 #else /* IPOD */
+	outl(1, VAR_VIDEO_ON);
 	init_variables();
 	video_status = VIDEO_CONTROL_MODE_STARTING; 
 	video_curPosition = 0;
@@ -1070,6 +1071,7 @@ void new_video_window(char *filename)
 
 	video_status_message("Loading video...");
 	playVideo(filename);
+	outl(0, VAR_VIDEO_ON);
 #endif
 }
 
