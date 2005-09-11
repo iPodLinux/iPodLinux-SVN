@@ -80,7 +80,7 @@ static char * playlistFiles[250];  /* YES - this needs to be changed - aegray = 
 #endif
 
 
-
+static int audio_header_found = 0;
 static int video_status = VIDEO_CONTROL_MODE_RUNNING;
 static int video_useAudio = 0;
 static int video_screenWidth;
@@ -358,6 +358,7 @@ static int readVideoInfo(FILE * f)
 					fseek(f, -sizeof(bitmapHeader), SEEK_CUR);
 					memcpy(&bitmapInfo, &bitmapHeader, sizeof(bitmapHeader));
 				} else if ((fourccCmp(streamHeader.fccType, "auds"))) {
+					audio_header_found = 1;	
 					fread(&wavHeader, sizeof(wavHeader), 1, f);
 					fseek(f, -sizeof(wavHeader), SEEK_CUR);
 				}
@@ -597,6 +598,8 @@ static int audio_handler(void * p)
 	int lenavail = 0;
 	audio_buf_info buf_info;
 	memset(zero_buf, 0, 40*1024*2);
+	
+	
 	while (1) /* video_status &~ VIDEO_CONTROL_MODE_EXITING) */
 	{
 		if ((video_useAudio)) {
@@ -630,11 +633,9 @@ static int audio_handler(void * p)
 					lenavail = 0;
 				}
 				
-
 				ioctl(dspz.dsp, SNDCTL_DSP_GETOSPACE, &buf_info);
 				if (buf_info.bytes < lenavail)
 					lenavail = buf_info.bytes;				
-
 				if ((video_status & VIDEO_CONTROL_MODE_AUDIOSYNC) ||
 				    (video_status == VIDEO_CONTROL_MODE_STARTING))
 				{
@@ -649,16 +650,16 @@ static int audio_handler(void * p)
 					
 				audioreadoff = (audioreadoff + lenavail) % (AUDIOBUFSIZE);
 				
-				
+					
 				/* cheap hack to make sure fiq always has data
-				 * due to bug in current audio driver */	
+			 	* due to bug in current audio driver */	
 #ifdef CHEAPAUDIOHACK_FORNOW_NOTTILLHELLFREEZESOVER	
 				ioctl(dspz.dsp, SNDCTL_DSP_GETOSPACE, &buf_info);
 				lenavail = buf_info.bytes;				
 				lenavail = write(dspz.dsp, zero_buf, lenavail);	
 #endif	
 				
-				usleep(100000);	
+				usleep(100000);
 			}
 		} 
 	}
@@ -707,6 +708,8 @@ static void init_variables()
 	main_thread_starting = 0;
 	main_thread_running = 0;
 
+
+	audio_header_found = 0;
 	curbuffer = 0;
 	video_vol_delta = 0;
 	video_waitUsecPause = 5000;
@@ -762,6 +765,8 @@ static int playVideo(char * filename)
 		
 	openAviFile(filename);
 	readVideoInfo(curFile);
+	if (!audio_header_found)
+		video_useAudio = 0;
 	outl((unsigned int)&ipod_handle_video, VAR_COP_HANDLER);
 	cop_wakeup();
 	audio_open();
@@ -794,14 +799,16 @@ static int playVideo(char * filename)
 
 		if (buffersProcessed ==  /* VIDEO_FILEBUFFER_COUNT - 1)  { */
 				BUFFER_FILL_FIRST_COUNT) { 
+			if (video_useAudio)
+			{	
+				if (video_status & VIDEO_CONTROL_MODE_AUDIOSYNC)
+				{
 
-			if (video_status & VIDEO_CONTROL_MODE_AUDIOSYNC)
-			{
-
-				while (!audio_thread_starting);
-				main_thread_starting = 1;
-				while (!audio_thread_running);
-				main_thread_running = 1;	
+					while (!audio_thread_starting);
+					main_thread_starting = 1;
+					while (!audio_thread_running);
+					main_thread_running = 1;	
+				}
 			}
 			cop_setPlay(1);
 			
