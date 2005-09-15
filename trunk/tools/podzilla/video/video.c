@@ -33,7 +33,9 @@
 #endif
 #include <sched.h>
 #include <signal.h>
+#ifdef __linux__
 #include <sys/soundcard.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
