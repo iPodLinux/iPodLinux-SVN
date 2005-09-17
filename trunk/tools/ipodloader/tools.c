@@ -34,7 +34,13 @@ extern int ipod_ver;
 void
 get_ipod_rev()
 {
-	unsigned long rev = inl(0x2084) >> 16;
+	unsigned long rev;
+
+	if (inl(0x2000) == "gfCS") {
+		rev = inl(0x2084) >> 16;
+	} else {
+		rev = inl(0x4084) >> 16;
+	}
 
 	lcd_base = IPOD_PP5002_LCD_BASE;
 	ipod_rtc_reg = IPOD_PP5002_RTC;
