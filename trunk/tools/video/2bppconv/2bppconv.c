@@ -353,7 +353,7 @@ int convVideo(char * filename, char * outfilename)
 				fwrite(&hdr, sizeof(hdr), 1, f2);
 				fwrite(curframe[curbufferframe].buffer, 1, switch_32(hdr.ckSize), f2); 	
 				
-				printf("Writing frame \t %d \t at position \t %d\n", frames, ftell(f));	
+				printf("Writing frame \t %d \t at position \t %d\r", frames, ftell(f));	
 				frames++;
 				curbufferframe++;
 				curonframe = 0;
