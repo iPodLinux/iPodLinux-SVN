@@ -360,7 +360,7 @@ int convVideo(char * filename, char * outfilename)
 				
 			} 
 		} else if ((fourccCmp(hdr.ckID, "idx1")) || (fourccCmp(hdr.ckID, "indx"))){
-			fseek(f, 4+4+4+4+4+4, SEEK_CUR); 	
+			fseek(f, hdr.ckSize, SEEK_CUR); 	
 		} else {
 			randombuff = malloc(switch_32(hdr.ckSize));
 			fread(randombuff, 1, switch_32(hdr.ckSize), f);
