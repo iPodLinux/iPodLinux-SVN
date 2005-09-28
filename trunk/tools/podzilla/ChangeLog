@@ -1,3 +1,6 @@
+Brett Ryland - Wed Sep 28 2005
+	various memory leak fixes
+
 Courtney Cavin - Fri Aug 19 2005
 	merged in mpdc under the MPDC define
 	changed about to use the textviewer

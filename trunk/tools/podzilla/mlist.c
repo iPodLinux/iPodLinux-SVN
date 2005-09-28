@@ -764,6 +764,9 @@ menu_st *menu_init(GR_WINDOW_ID menu_wid, char *title, int x, int y, int w,
 	int i;
 
 	menulist = (menu_st *)malloc(sizeof(menu_st));
+	if (!menulist) {
+		return NULL;
+	}
 
 	/* starting with an empty slate */
 	if(items == NULL) {

@@ -333,7 +333,6 @@ int mp4_to_raw_aac(FILE *infile)
 	if (!mp4file) {
 		free(mp4cb);
 		free(audiobuf);
-		mp4ff_close(mp4file);
 		return -1;
 	}
 
@@ -396,6 +395,19 @@ int mp4_to_raw_aac(FILE *infile)
 
 	numSamples = mp4ff_num_samples(mp4file, track);
 	samplez = malloc(sizeof(unsigned short) * numSamples);
+	if (samplez == NULL) {
+		pz_draw_header("samplez malloc failed"); sleep(1);
+
+		if (aacbuf != NULL) {
+			free(aacbuf);
+		}
+
+		free(mp4cb);
+		free(audiobuf);
+		mp4ff_close(mp4file);
+
+		return -1;
+	}
 
 	sample_len = (int) (mp4ff_get_track_duration(mp4file, 0) /
 	                    mp4ff_num_samples(mp4file, 0)) 
@@ -630,14 +642,26 @@ static void start_aac_playback(char *filename)
 void new_aac_window(char *filename, char *album, char *artist, char *title, long len)
 {
 #ifdef USE_HELIXAACDEC
-	strncpy(current_album, album, sizeof(current_album)-1);
-	current_album[sizeof(current_album)-1] = 0;
+	if (album) {
+		strncpy(current_album, album, sizeof(current_album)-1);
+		current_album[sizeof(current_album)-1] = 0;
+	} else {
+		current_album[0] = 0;
+	}
 
-	strncpy(current_artist, artist, sizeof(current_artist)-1);
-	current_artist[sizeof(current_artist)-1] = 0;
+	if (artist) {
+		strncpy(current_artist, artist, sizeof(current_artist)-1);
+		current_artist[sizeof(current_artist)-1] = 0;
+	} else {
+		current_artist[0] = 0;
+	}
 
-	strncpy(current_title, title, sizeof(current_title)-1);
-	current_title[sizeof(current_title)-1] = 0;
+	if (title) {
+		strncpy(current_title, title, sizeof(current_title)-1);
+		current_title[sizeof(current_title)-1] = 0;
+	} else {
+		current_title[0] = 0;
+	}
 
 	if (playlistlength) {
 		sprintf(current_pos, "Song %d of %d",

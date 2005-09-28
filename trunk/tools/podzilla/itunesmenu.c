@@ -501,6 +501,7 @@ static int itunes_do_keystroke(GR_EVENT * event)
 			ret = 1;
 			pz_close_window(currentml->wid);
 			oldml = currentml;
+			currentml->itunes_menu = menu_destroy(currentml->itunes_menu);
 			currentml = currentml->prevml;
 			free(oldml);
 			if (currentml) itunes_draw(currentml);

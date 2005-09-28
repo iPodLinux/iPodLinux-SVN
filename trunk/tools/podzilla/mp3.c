@@ -444,14 +444,26 @@ static void start_mp3_playback(char *filename)
 
 void new_mp3_window(char *filename, char *album, char *artist, char *title, int len)
 {
-	strncpy(current_album, album, sizeof(current_album)-1);
-	current_album[sizeof(current_album)-1] = 0;
+	if (album) {
+		strncpy(current_album, album, sizeof(current_album)-1);
+		current_album[sizeof(current_album)-1] = 0;
+	}
+	else
+		current_album[0]=0;
 
-	strncpy(current_artist, artist, sizeof(current_artist)-1);
-	current_artist[sizeof(current_artist)-1] = 0;
+	if (artist) {
+		strncpy(current_artist, artist, sizeof(current_artist)-1);
+		current_artist[sizeof(current_artist)-1] = 0;
+	} else {
+		current_artist[0]=0;
+	}
 
-	strncpy(current_title, title, sizeof(current_title)-1);
-	current_title[sizeof(current_title)-1] = 0;
+	if (title) {
+		strncpy(current_title, title, sizeof(current_title)-1);
+		current_title[sizeof(current_title)-1] = 0;
+	} else {
+		current_title[0]=0;
+	}
 
 	sprintf(current_pos, _("Song %d of %d"), playlistpos, playlistlength);
 
