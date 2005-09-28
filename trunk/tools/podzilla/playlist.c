@@ -294,9 +294,18 @@ add_track_to_queue(struct track *song)
 	struct track *asong;
 
 	asong = (struct track *)malloc(sizeof(struct track));
+	if (!asong) {
+		return;
+	}
+
 	*asong = *song;
 
 	newsong = (struct tracknode *)malloc(sizeof(struct tracknode));
+	if (!newsong) {
+		free(asong);
+		return;
+	}
+
 	nextnode = songhead;
 	while (nextnode != NULL && nextnode->nextnode != NULL)
 	{
@@ -345,6 +354,7 @@ clear_play_queue()
 	while (curnode != NULL)
 	{
 		nextnode = curnode->nextnode;
+		free(curnode->cur);
 		free(curnode);
 		curnode = nextnode;
 	}
