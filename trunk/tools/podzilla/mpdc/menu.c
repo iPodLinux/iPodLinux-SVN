@@ -273,6 +273,9 @@ static void mm_scan_level(int level, char *searchstr, int searchIndex)
 				mm_curartist = NULL;
 				searchTable = MPD_TABLE_GENRE;
 			} else {
+				if (mm_curartist != NULL) {
+					free(mm_curartist);
+				}
 				mm_curartist = malloc(strlen(searchstr)+1);
 				memcpy(mm_curartist, searchstr, strlen(searchstr));
 				searchTable = MPD_TABLE_ARTIST; 	
@@ -582,6 +585,9 @@ void new_mm_window(int level, char * search, int searchIndex)
 		memcpy(searchstr, search, strlen(search));
 		searchstr[strlen(search)] = '\0';
 	}
+	if (mm_level_search[level] != NULL) {
+		free(mm_level_search[level]);
+	}
 	mm_level_search[level] = searchstr;
 	mm_gc = pz_get_gc(1);
 	mm_curlevel = level;
@@ -862,8 +868,7 @@ static int mm_fill_queue(char * search)
 		if (entity.type != MPD_INFO_ENTITY_TYPE_SONG) {
 			continue;
 		}
-		mm_add_item(song->title ? strdup(song->title) :
-				strdup(song->file));
+		mm_add_item(song->title ? song->title : song->file);
 		is_queuing = 1;
 	}
 	mpd_finishCommand(mpdz);
