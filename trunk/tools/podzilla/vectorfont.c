@@ -46,6 +46,7 @@ VECTOR_POINT V_points[] = {
 	{ 5, 8 }, { 2, 4 }
 };
 
+
 /* possible upgrade for this...
 	instead of having a lookup table of points, instead have each 
 	integer below be a hex byte:
@@ -125,7 +126,8 @@ VECTOR_POLY_STRUCT V_punctuation[] =
 	/* ] */ {{ 27, 28, 30, 29 }, { 1, 1, 1, 0,  0, 0, 0, 0}},
 	/* ' */ {{ 0, 1, 3, 0 }, { 1, 1, 1, 0,  0, 0, 0, 0}},
 	/* - */ {{ 6, 8 }, { 1, 0, 0, 0,  0, 0, 0, 0}},
-	/* & */ {{ 33, 3, 1, 5, 11, 15, 31}, { 1, 1, 1, 1,  1, 1, 0, 0 }}
+	/* & */ {{ 33, 3, 1, 5, 11, 15, 31}, { 1, 1, 1, 1,  1, 1, 0, 0 }},
+	/* % */ {{ 14, 2, 0, 1, 3, 16, 15, 13 }, { 1, 0, 1, 1,  0, 1, 1, 0}}
 };
 
 /* specials */
@@ -179,6 +181,8 @@ void vector_render_char( GR_WINDOW_ID wid, GR_GC_ID gc,
 	   searching through some sort of lookup table.... */
 	index = 0;
 	switch( c ) {
+	    case( '%' ):
+		index++;
 	    case( '&' ):
 		index++;
 	    case( '-' ):
