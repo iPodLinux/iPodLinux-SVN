@@ -41,6 +41,7 @@ static void populate_credits() {
 			"David Carne", "Nik Rolls", "Filippo Forlani", 
 			"Martin Kaltenbrunner", "Adam Johnston",
 		        "Matthew Westcott", "Nils Schneider", "Damien Marchal",
+			"Joshua Oreman",
 			0};
 	for (i = 0; cnames[i] != 0; i++)
 		len += strlen(cnames[i]) + 9;
