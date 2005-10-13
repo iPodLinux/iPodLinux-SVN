@@ -429,10 +429,6 @@ static void mandel_quit() {
 #ifdef MANDELPOD_STATUS
 	pz_close_window (status_wid);
 #endif
-	GrDestroyWindow(mandel_wid);
-#ifdef MANDELPOD_STATUS
-	GrDestroyWindow(status_wid);
-#endif
 	for (i=0;i<max_depth+1;i++) 
 		GrDestroyWindow(level[i].mandel_buffer);
 	for (i=0;i<16;i++) 
