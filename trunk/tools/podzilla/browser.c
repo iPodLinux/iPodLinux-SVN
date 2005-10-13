@@ -622,22 +622,56 @@ void new_browser_window(char *initial_path)
 void new_exec_window(char *filename)
 {
 #ifdef IPOD
-	int ttyfd, status, fd;
+	static const char *const tty0[] = {"/dev/tty0", "/dev/vc/0", 0};
+	static const char *const vcs[] = {"/dev/vc/%d", "/dev/tty%d", 0};
+	int i, tty0_fd, ttyfd, oldvt, curvt, fd, status;
 	pid_t pid;
 
-	if((ttyfd = open("/dev/console", O_RDWR)) == -1) {
-                perror("/dev/console");
+	/* query for a free VT */
+	ttyfd = -1;
+	tty0_fd = -1;
+	for (i = 0; tty0[i] && (tty0_fd < 0); ++i) {
+		tty0_fd = open(tty0[i], O_WRONLY, 0);
+	}
+
+	if (tty0_fd < 0) {
+		tty0_fd = dup(0); /* STDIN is a VT? */
+	}
+	ioctl(tty0_fd, VT_OPENQRY, &curvt);
+	close(tty0_fd);
+	
+	if ((geteuid() == 0) && (curvt > 0)) {
+		for (i = 0; vcs[i] && (ttyfd < 0); ++i) {
+			char vtpath[12];
+
+			sprintf(vtpath, vcs[i], curvt);
+			ttyfd = open(vtpath, O_RDWR);
+		}
+	}
+	if (ttyfd < 0) {
+		fprintf(stderr, "No available TTYs.\n");
 		return;
 	}
-	if(ioctl(ttyfd, VT_ACTIVATE, 0x2)) {
-		perror("child VT_ACTIVATE");
-		_exit(1);
+
+	if (ttyfd >= 0) {
+		/* switch to the correct vt */
+		if (curvt > 0) {
+			struct vt_stat vtstate;
+
+			if (ioctl(ttyfd, VT_GETSTATE, &vtstate) == 0) {
+				oldvt = vtstate.v_active;
+			}
+			if (ioctl(ttyfd, VT_ACTIVATE, curvt)) {
+				perror("child VT_ACTIVATE");
+				return;
+			}
+			if (ioctl(ttyfd, VT_WAITACTIVE, curvt)) {
+				perror("child VT_WAITACTIVE");
+				return;
+			}
+		}
 	}
-	if(ioctl(ttyfd, VT_WAITACTIVE, 0x2)) {
-		perror("child VT_WAITACTIVE");
-		_exit(1);
-	}
-	
+
 	switch(pid = vfork()) {
 	case -1: /* error */
 		perror("vfork");
@@ -670,25 +704,38 @@ void new_exec_window(char *filename)
 
 		execl("/bin/sh", "sh", "-c", filename);
 		fprintf(stderr, _("Exec failed! (Check Permissions)\n"));
-		exit(1);
+		_exit(1);
 		break;
 	default: /* parent */
 		waitpid(pid, &status, 0);
 		sleep(5);
 		
-        	if(ioctl(ttyfd, VT_ACTIVATE, 0x1)) {
-			perror("parent VT_ACTIVATE");
-			return;
+		if (oldvt > 0) {
+        		if (ioctl(ttyfd, VT_ACTIVATE, oldvt)) {
+				perror("parent VT_ACTIVATE");
+				return;
+			}
+        		if(ioctl(ttyfd, VT_WAITACTIVE, oldvt)) {
+				perror("parent VT_WAITACTIVE");
+				return;
+			}
 		}
-        	if(ioctl(ttyfd, VT_WAITACTIVE, 0x1)) {
-			perror("parent VT_WAITACTIVE");
-			return;
+		if (ttyfd > 0)
+			close(ttyfd);
+
+		if (curvt > 0) {
+			int oldfd;
+
+			if ((oldfd = open("/dev/vc/1", O_RDWR)) < 0)
+				oldfd = open("/dev/tty1", O_RDWR);
+			if (oldfd >= 0)
+				if (ioctl(oldfd, VT_DISALLOCATE, curvt)) {
+					perror("VT_DISALLOCATE");
+					return;
+				}
+				close(oldfd);
+			}
 		}
-		if(ioctl(ttyfd, VT_DISALLOCATE, 0x2)) {
-			perror("VT_DISALLOCATE");
-			return;
-		}
-		close(ttyfd);
 
 		browser_do_draw();
 		break;
