@@ -706,22 +706,34 @@ inline void swap(item_st a[], int i, int j)
 	a[i] = a[j];
 	a[j] = t;
 }
+
+static int partition(item_st a[], int left, int right)
+{
+	int first = left - 1;
+	int last = right;
+
+	while (1) {
+		while (strcasecmp(a[++first].text, a[right].text) < 0);
+		while (strcasecmp(a[right].text, a[--last].text) < 0) {
+			if (last == left)
+				break;
+		}
+
+		if (first >= left)
+			break;
+		swap(a, first, last);
+	}
+	swap (a, first, right);
+	return first;
+}
+
 /* sorting and indexing; this one doesnt require a sentiant */
 void quicksort(item_st a[], int lower, int upper)
 {
-	int i, m;
-	item_st pivot;
-
-	if(lower < upper) {
-		swap(a, lower, (upper+lower)/2);
-		pivot = a[lower];
-		m = lower;
-		for(i = lower + 1; i <= upper; i++)
-			if(strcasecmp(a[i].text, pivot.text) < 0)
-				swap(a, ++m, i);
-		swap(a, lower, m);
-		quicksort(a, lower, m - 1);
-		quicksort(a, m + 1, upper);
+	if (lower > upper) {
+		int mid = partition(a, upper, lower);
+		quicksort(a, mid - 1, upper);
+		quicksort(a, lower, mid + 1);
 	}
 }
 
