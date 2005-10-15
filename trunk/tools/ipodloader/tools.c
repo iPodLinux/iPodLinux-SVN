@@ -16,14 +16,22 @@
 #define IPOD_MINI_LCD_WIDTH	138
 #define IPOD_MINI_LCD_HEIGHT	110
 
+#define IPOD_PHOTO_LCD_WIDTH	220
+#define IPOD_PHOTO_LCD_HEIGHT	176
+
+#define IPOD_NANO_LCD_WIDTH	176
+#define IPOD_NANO_LCD_HEIGHT	132
+
 #define HW_REV_MINI		4
 #define HW_REV_4G		5
 #define HW_REV_PHOTO		6
 #define HW_REV_MINI_2		7
+#define HW_REV_NANO		0xc
 
 
 static unsigned long ipod_rtc_reg;
 static unsigned long lcd_base;
+static unsigned long lcd_busy_mask;
 
 static unsigned long lcd_width;
 static unsigned long lcd_height;
@@ -36,25 +44,42 @@ get_ipod_rev()
 {
 	unsigned long rev;
 
-	if (inl(0x2000) == "gfCS") {
+	if (inl(0x2000) == (unsigned)"gfCS") {
 		rev = inl(0x2084) >> 16;
 	} else {
 		rev = inl(0x4084) >> 16;
 	}
 
-	lcd_base = IPOD_PP5002_LCD_BASE;
-	ipod_rtc_reg = IPOD_PP5002_RTC;
+	lcd_busy_mask = 0x8000;
+
 	lcd_width = IPOD_STD_LCD_WIDTH;
 	lcd_height = IPOD_STD_LCD_HEIGHT;
 
 	if (rev > 3) {
 		lcd_base = IPOD_PP5020_LCD_BASE;
 		ipod_rtc_reg = IPOD_PP5020_RTC;
+	} else {
+		lcd_base = IPOD_PP5002_LCD_BASE;
+		ipod_rtc_reg = IPOD_PP5002_RTC;
 	}
 
-	if (rev == HW_REV_MINI || rev  == HW_REV_MINI_2) {
+	switch (rev) {
+	case HW_REV_MINI:
+	case HW_REV_MINI_2:
 		lcd_width = IPOD_MINI_LCD_WIDTH;
 		lcd_height = IPOD_MINI_LCD_HEIGHT;
+		break;
+	case HW_REV_4G:
+		break;
+	case HW_REV_PHOTO:
+		lcd_width = IPOD_PHOTO_LCD_WIDTH;
+		lcd_height = IPOD_PHOTO_LCD_HEIGHT;
+		lcd_busy_mask = 0x80000000;
+	case HW_REV_NANO:
+		lcd_width = IPOD_NANO_LCD_WIDTH;
+		lcd_height = IPOD_NANO_LCD_HEIGHT;
+		lcd_busy_mask = 0x80000000;
+		break;
 	}
 
 	ipod_ver = rev;
@@ -96,11 +121,11 @@ wait_usec(int usecs)
 void
 lcd_wait_write()
 {
-	if ((inl(lcd_base) & 0x8000) != 0) {
+	if ((inl(lcd_base) & lcd_busy_mask) != 0) {
 		int start = timer_get_current();
 
 		do {
-			if ((inl(lcd_base) & 0x8000) == 0) break;
+			if ((inl(lcd_base) & lcd_busy_mask) == 0) break;
 		} while (timer_check(start, 1000) == 0);
 	}
 }
@@ -172,6 +197,19 @@ display_image(img *img, int draw_bg)
 	unsigned int height_off_diff, width_off_diff, vert_space;
 	unsigned short cursor_pos;
 	unsigned char r7;
+
+	/* b&w models only */
+	switch (ipod_ver) {
+	case 1:
+	case 2:
+	case 3:
+	case HW_REV_MINI:
+	case HW_REV_MINI_2:
+	case HW_REV_4G:
+		break;
+	default:
+		return;
+	}
 
 	if ( img == 0x0 ) return;
 

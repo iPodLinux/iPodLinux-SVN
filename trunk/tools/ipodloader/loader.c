@@ -125,11 +125,7 @@ loader(void)
     get_ipod_rev();
     if (ipod_ver > 3) padding = 0x4600;
 
-    if (ipod_ver == 6) {
-	// not yet
-    } else {
-	display_image(&tux_hdr, 0x0);
-    }
+    display_image(&tux_hdr, 0x0);
 
     wait_usec(300);
 
@@ -141,16 +137,15 @@ loader(void)
     /* for appleOS as default, 0=happymac_hdr, 1=tux_hdr
        for linux as default,   0=tux_hdr, 1=happymac_hdr
     */
-    switch( imageno ) {
-    case( 0 ):
+    switch (imageno) {
+    case 0:
 	    display_image(&happymac_hdr, 0x0);
 	    break;
 
-    case( 1 ):
+    case 1:
     default:
 	    display_image(&tux_hdr, 0x0);
 	    break;
-			
     }
 
     tblp += imageno;
