@@ -728,7 +728,7 @@ void new_exec_window(char *filename)
 
 			if ((oldfd = open("/dev/vc/1", O_RDWR)) < 0)
 				oldfd = open("/dev/tty1", O_RDWR);
-			if (oldfd >= 0)
+			if (oldfd >= 0) {
 				if (ioctl(oldfd, VT_DISALLOCATE, curvt)) {
 					perror("VT_DISALLOCATE");
 					return;
