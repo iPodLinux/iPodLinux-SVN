@@ -1223,9 +1223,10 @@ is opened; if it is not, {\sf makesub} is called.
 The menu handler will generally only call {\sf makesub} \emph{once}, and use
 the window it returns from then on. If you wish to avoid this behavior, set \verb|win->data = 0x12345678|
 at some point; the next time that item is selected, the window will be freed and recreated from {\sf makesub}.
-If the ``window'' is set to a directive like \verb|TTK_MENU_DONOTHING| (as explained below) our of
-e.g.~an error that might not be permanent, you can set \verb|item->flags &= ~TTK_MENU_MADESUB| from
-your menu handler, and it will be called again the next time someone selects the item.
+
+If, however, the ``window'' is set to a directive like \verb|TTK_MENU_DONOTHING| (as explained below),
+the returned value will \emph{not} be cached; the menu handler function will be called again next time
+the item is selected.
 
 \subsection{The Menu Handler}
 The menu handler---that {\sf \<anon>.makesub} function---can do one of the following things. Those that
@@ -1251,7 +1252,6 @@ no control over the return value from \verb|ttk_run()|.
 and return \verb|TTK_MENU_REPLACE| from the menu handler.
 \item[+ Window should be reopened every time the item is selected.] The handler should, in addition, set
 the window's \verb|data| member to \verb|0x12345678|.
-\item[+ Handler returned directive but should still be called every time.] Set \verb|item->flags &= ~TTK_MENU_MADESUB| before returning from the handler.
 \end{description}
 
 \subsection{Menu Data Assemblers}

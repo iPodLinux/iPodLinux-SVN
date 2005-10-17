@@ -14,6 +14,7 @@
 #define TTK_MENU_ALREADYDONE (TWindow *)3
 #define TTK_MENU_QUIT       (TWindow *)4
 #define TTK_MENU_REPLACE    (TWindow *)5
+#define TTK_MENU_DESC_MAX   (TWindow *)8
 
 #define TTK_MENU_ICON_SUB 01
 #define TTK_MENU_ICON_EXE 02
