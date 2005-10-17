@@ -1,0 +1,397 @@
+Courtney Cavin - Fri Aug 19 2005
+	merged in mpdc under the MPDC define
+	changed about to use the textviewer
+
+Jeffrey Nelson - Fri Aug 12 2005
+	3G and later iPods turn off when battery is below 50 for 4 seconds.
+
+Jeffrey Nelson - Wed Aug 10 2005
+	Podzilla now asks if you want to reboot your iPod when there is 
+	FireWire connectivity for 1-3G iPods.
+
+Courtney Cavin - Sat Jul 30 2005
+	added initial i18n/l10n support
+
+Scott Lawrence - Sun Jul 24 2005
+	Dialog.c added (modal dialog with timeout)
+	Header stuff pulled out into header.c from pz.c
+	(prev) PodDraw: Colorized, added file saver
+	(prev) Mandelpod working display changed to pz_header text
+
+Courtney Cavin - Sat Jul 16 2005
+	integrated coob's new settings system
+	allowed font changing without restarting
+
+Scott Lawrence - Tue Jul 14 2005
+	Display of load average in title bar
+	Display of battery level as a digit instead of graphically
+
+Adam Johnston - Thu Jul 14 2005
+	Added standy mode support for 3g and newer ipods
+
+Adam Johnston - Wed Jul 13 2005
+	Added charging status support for 3g and newer ipods
+
+Scott Lawrence - Tue Jul 12 2005
+	Battery level displays and animates if low.
+	Charging indicator added, although not used yet
+
+Adam Johnston - Tue Jul 12 2005
+	Added Battery level support for 3g and newer iPods
+
+Scott Lawrence - Mon Jul 11 2005
+	Removed most new glitches from mlist.c (XOR-inversion issue remains)
+	Added m:robe color scheme (from Stuart Clark)
+	Added Decorations control with: Plain, Amiga 1.1, Amiga 1.3, m:robe
+	Appearance settings moved to their own menu
+
+Scott Lawrence - Sun Jul 10 2005
+	Added some more (crappy) color schemes, and a monochrome-inverted scheme
+	Full menu color scheming done (although it's a little glitchy)
+	(previously) Added 5+ second MENU contrast restore feature
+
+Courtney Cavin - Sun Jul 10 2005
+	added browser directory sorting, case-insensitive alpha, dirs first
+	added 'Show Hidden Files' setting
+	changed '..' to '.. [Parent Directory]'
+
+Scott Lawrence - Sat Jul 9 2005
+	Added appearance-based color scheming support
+	Added color scheme to settings, message, fixes for games, etc
+	(previously) Added Mandelpod
+	(previously) Integrated mikmod support
+
+Matthew Westcott - Sun Jun 5 2005
+	Added TZX (speecy cart) playback
+
+Adam Johnston - Sun Jun  5 2005
+	Added basic uncompressed video playback
+
+Scott Lawrence - Sun May 29 2005
+	Added yet another clock face (watch face)
+	Made clocks more locale friendly (strftime instead of static arrays)
+	(previously) Added World Clock support
+
+Courtney Cavin - Wed May 18 2005
+	added preliminary utf8 support
+	added loadable font support
+
+Scott Lawrence - Thu Apr 27 2005
+	added clocks and time setting
+	added 4 arrows to polyfont
+
+Scott Lawrence - Thu Apr 21 2005
+	1/2gs now set time based on the last time settings were saved
+
+Courtney Cavin - Tue Apr 19 2005
+	refactored dsp management into oss.[ch]
+
+Courtney Cavin - Sat Apr 16 2005
+	delayed menu keypress now toggles backlight
+
+Courtney Cavin - Fri Apr 15 2005
+	added Filippo Forlani's "invaders" clone and added hold
+	added BleuLlama's "polyfont" - a vector polyline font
+	added Filippo Forlani's "iPobble"
+	enabled hold pausing in Steroids; allowed for default key handlers
+	added BleuLlama's "Lights"
+
+Alastair S - Wed Apr 13 2005
+	added AAC support
+
+Alastair S - Mon Apr 4 2005
+	title truncation moved to pz_draw_header
+	rewrote minesweeper clone
+
+Alastair S - Fri Apr 1 2005
+	textviewer enhancements - long titles truncated, fixed int scrollbar
+
+Alastair S - Tue Mar 29 2005
+	bluecube input fixes. can now be paused with hold.
+
+Alastair S - Tue Mar 22 2005
+	bluecube now in colour for the photo
+
+Courtney Cavin - Thu Mar 17 2005
+	backlight timer implemented
+	max item length for scroller upped to 440px
+	arrows now always show for submenu items
+	moved Entertainment to Stuff
+
+Alastair S - Sun Mar 13 2005
+	matrix now based on cmatrix algorithm, also ported to photo
+	bluecube no longer has its own event loop
+
+Courtney Cavin - Sun Mar 13 2005
+	browser execution now uses absolute path
+
+Djaconil -  Sun Mar 13 2005
+	ported tuxchess to iPod
+
+Prashant V - Sun Mar 13 2005
+	patched itunesmenu to use new menu system
+
+Alastair S - Fri Mar 11 2005
+	cube photo-ised, hold also now pauses the spin
+
+Courtney Cavin - Thu Mar 10 2005
+	added a delayed keypress menu in the filebrowser, current options:
+	 - Delete
+	 - Open in viP (if viP is located in /bin/)
+
+Courtney Cavin - Wed Mar 9 2005
+	fix for menu xoring on the ipod photo using a revision check
+
+Alastair S - Wed Mar 9 2005
+	hw_version now delimits ipod revision as read from /proc/cpuinfo
+	generation checks on recording/playback
+
+Courtney Cavin - Wed Mar 9 2005
+	event handler passes unparsed events to a 'default action' function
+	timer now directs events to the corrent window
+	menu refactored
+	browser changed to new menu system
+
+Fredrik Bergholtz - Sun Mar 6 2005
+	steroids uses global screen_info and pz_get_gc, drawing buffered
+
+Alastair S - Sat Mar 5 2005
+	bluecube: mini-ised; global functions made static where needed
+	ambiguously named globals renamed
+	calendar no longer redraws everything when scrolling through
+
+Alastair S - Thu Mar 3 2005
+	added matrix, a matrix screen simulation
+
+Alastair S - Tue Mar 1 2005
+	calc and othello are now relative
+	image viewer zoom global fix
+
+Alastair S - Thu Feb 24 2005
+	slider is now relative to screen size; is now grey also
+	screen_info globalized
+	allowed for global settings accross GCs
+
+Alastair S - Sun Feb 21 2005
+	calendar mini-ised and uses gridlines
+	uses bitmaps for the numbers
+
+Courtney Cavin - Fri Feb 14 2005
+	implemented new Makefile
+	Games moved to Fun
+
+Alastair S - Fri Feb 14 2005
+	ported cube from rockbox - a spinning 3D graphics demo
+	 - changed control system, stats display
+	 - added zoom, added solid rendering
+	
+Courtney Cavin - Fri Feb 14 2005
+	changed some mp3 error messages to pz_perror
+	mini-ized textviewer and fixed a few small bugs
+	
+Courtney Cavin - Fri Feb 12 2005
+	global error functions added
+	please use pz_error for custom errors & pz_perror for errno based ones 
+	allowed for KEY_UP events to be recognized by applications
+
+Courtney Cavin - Fri Feb 11 2005
+	new_message_window now wraps lines
+
+Courtney Cavin - Fri Feb 11 2005
+	enabled browser execution
+	 - open apps in a seperate virtual terminal
+	 - return to podzilla when execution finished
+
+Matthis - Tue Feb 08 2005
+	bluecube changes:
+	 - falling cubes are colored when falling and white when fell
+	 - movement left-right with the scroll wheel, adapted wheel sensitivity
+	 - high score
+
+Alastair S - Tue Feb 08 2005
+	MAX_MENU_ITEMS is now a variable
+	menu, Pong, Nimesweeper, and browser are now relative to screen size
+	can now unflag mines in Nimesweeper
+	battery image is now relative to the right side of the screen
+
+Bernard Leach - Friday Feb 04 2005
+	added support for remote in mp3 & wav playback
+
+Prashant V - Friday Feb 04 2005
+	added music suffle/repeat
+	only playback mp3 files (skips files not ending in .mp3)
+	added Song queuing with next & previous support
+
+Courtney Cavin - Fri Feb 04 2005
+	textviewer has better memory management
+	 - no longer crashes on particular files
+	 - malloc/free's replaced with realloc's
+	filebrowser now opens any ascii file, including those in /proc
+	string viewing can now be done with new_stringview_window
+
+David Carne - Thursday Feb 03 2005
+	semi-fixed volume scroll for mp3 playback
+
+Fredrik Bergholtz - Sat Jan 22 2005
+	added exhaust vapour to Steroids ship
+
+Courtney Cavin - Sat Jan 22 2005
+	.jpeg; .pnm; and .xcf extentions now open
+	fixed about, the scrolling was a little funky/incorrect
+
+Cameron Nishiyama - Sat Jan 22 2005
+	image viewer scaling and zooming added
+	image extentions are no longer case sensitive
+
+Scott Lawrence - Sat Jan 22 2005
+	added PodDraw, an etch-a-sketch simulation
+
+Courtney Cavin - Wed Jan 12 2005
+	PZ_VER is now date compiled +CVS by default
+
+Jeffrey Nelson - Wed Jan 12 2005
+	added Tic-Tac-Toe
+
+Courtney Cavin - Mon Jan 3 2005
+	paths to mp3s are now absolute
+
+Fredrik Bergholtz - Mon Jan 3 2005
+	asteroids are now lethal, and you only have five ships.
+	destroying asteroids gives you a score relative to the asteroid size.
+
+leachbj - Sat Dec 18 2004
+	added hold switch feedback
+
+jolan - Fri Dec 17 2004
+	added visual feedback for volume setting in mp3 playback
+	added progress bar for mp3 playback
+
+Fredrik Bergholtz - Sun Dec 12 2004
+	added beta Asteroids clone (Steroids)
+
+Courtney Cavin - Mon Dec 6 2004
+	added about page
+	-Wall fixes
+
+Courtney Cavin - Tue Nov 23 2004
+	inverted color - the right way around
+
+leachbj - Sat Nov  6 2004
+	implemented integrated mp3 playback
+	implemented non-threaded version of audio recording & playback
+	fixed settings reset to ensure that the contrast is not set to 0
+	load settings now loads load contrast setting correctly
+	made reset settings return to parent menu
+
+Courtney Cavin - Sun Oct 24 2004
+	calculator now uses inverse text for current selection
+	calendar no longer redraws entire screen on selection change
+	fix for december 31 to jan 31 bug
+
+Courtney Cavin - Wed Oct 20 2004
+	added calculator
+
+Jens Taprogge - Fri July 27 2004
+	lots of improvements around the new iTunesDB browser. Including
+	playlist support (just the normal ones so far). Depends on libitunesdb
+	V0.5 (http://shamrock.dyndns.org/~ln/ipod/libitunesdb_0.5.tar.gz ).
+
+Jens Taprogge - Fri July 16 2004
+	added a new iTunesDB browser written from scratch. It provides
+	browsing by Track, Artist or Album so far. The implementation is based
+	on libitunesdb V0.4 (http://shamrock.dyndns.org/~ln/ipod/libitunesdb_0.4.tar.gz ).
+
+leachbj - Sat October 9 2004
+	added basic line-in recording support
+	minor recording bug fixes
+
+leachbj - Fri October 8 2004
+	removed limit on number of songs per artist
+	fixed some memory overwrites in iTunesDB parsing
+
+ansi - Fri October 8 2004
+	new OPTION_MENU support
+	cleaned up BOOLEAN_MENU support display
+	implemented new OPTION_MENU for audio recording sample rate
+
+leachbj - Thu October 7 2004
+	added volume control for wav playback (requires kernel support!)
+	ported calendar from linav project (http://linav.sf.net)
+	merged settings menu support from ansi
+	merged play/pause and timer patch from Prashant
+
+leachbj - Fri October 1 2004
+	merged wav record/playback patch from Prashant
+
+leachbj - Sat Septemper  4 2004
+	merged Nimesweeper port from matthis
+
+courtc - Sun July 11 2004
+	added pong game
+
+leachbj - Mon Jun 28 2004
+	fixed crash in textview when a line contains only tabs
+
+matz-josh - Sun July 27 2004
+	fixed crash on dos/windows textfiles containing empty lines
+	the handle on the scrollbar is now at least 2 Pixels high
+	  it has been sometimes invisible (hight 0) in large files
+	added support for rewind and forward keys:
+	  rewind scrolls up and forward scrolls down one screen.
+	removed flicker, when trying to scroll beyond the last(first) line of text
+
+leachbj - Thu June 17 2004
+	Fixed up scroll wheel sensitivity
+	Cleaned up some menu names
+	Sliders now display heading correctly
+	Added BlueCube (tetris clone) port from Matthis
+
+leachbj - Sun June 06 2004
+	In browser, execute .sh files as shell scripts
+	Removed un-implemented menus to avoid confusion
+
+Courtney Cavin - Fri June 4, 2004
+	Cursor no longer erases edges of previosly selected pieces
+	Score now shows at end along with the degrading comment.
+	Computer player now likes edges and loves corners..
+	Cursor only moves to valid moves
+
+leachbj - Mon May 24 2004
+	Fixed partial read/write bug
+	Playback window now plays the file requested
+	Tweaked record/playback buffer sizes
+
+leachbj - Sun May 23 2004
+	Added simple voice recording via microphone
+	Added .raw file playback (44.1kHz only)
+
+Courtney Cavin - Fri May 21, 2004
+        Added Othello game
+
+leachbj - Sat May 8 2004
+	Merged Matthew's changes in
+	Fixed backlight timer to work with GR_EVENT_TYPE_TIMEOUT
+	Fixed reboot.
+
+Matthew J. Sahagian - Sat Apr 10, 2004
+	Added Backlight timer support for turning backlight off
+	Support for turning backlight on at keypress
+	Simplified event handling
+
+Matthew J. Sahagian - Fri Apr 9, 2004
+	Removed the "current directory" leading "." from file browser listing
+	Changed "previous directory" "." to a double << listing
+	Files without extensions are displayed as text
+
+Matthew J. Sahagian - Thu Apr 08, 2004
+	Added support for saving settings (contrast,clicker etc)
+		Settings->Save Settings
+		Settings->Load Settings
+		Settings->Reset Settings
+	Podzilla no longer exits on menu keypress at toplevel
+	Added quit function
+
+podzilla - 0.1 - Wed Feb 25 23:06:35 CET 2004
+	Initial release
+
+
