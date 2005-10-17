@@ -438,6 +438,7 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
 	    ttk_menu_item_updated (this, data->menu[i]);
 	render (this, data->top, data->visible);
 	data->epoch = ttk_epoch;
+	data->scroll = (data->items > data->visible);
     }
     
     if (!data->items) {

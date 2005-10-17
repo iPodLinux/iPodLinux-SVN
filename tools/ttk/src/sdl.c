@@ -1456,7 +1456,7 @@ void ttk_load_font (ttk_fontinfo *fi, const char *fnbase, int size)
     strcpy (fname, fnbase);
     strcat (fname, ".fnt");
     if (stat (fname, &st) >= 0) {
-	fi->f.bf = malloc (sizeof(Bitmap_Font));
+	fi->f.bf = calloc (1, sizeof(Bitmap_Font));
 	load_fnt (fi->f.bf, fname);
 	fi->f.draw = draw_bf;
 	fi->f.width = width_bf;
@@ -1468,7 +1468,7 @@ void ttk_load_font (ttk_fontinfo *fi, const char *fnbase, int size)
     strcpy (fname, fnbase);
     strcat (fname, ".pcf");
     if (stat (fname, &st) >= 0) {
-	fi->f.bf = malloc (sizeof(Bitmap_Font));
+	fi->f.bf = calloc (1, sizeof(Bitmap_Font));
 	load_pcf (fi->f.bf, fname);
 	fi->f.draw = draw_bf;
 	fi->f.width = width_bf;
