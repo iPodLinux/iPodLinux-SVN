@@ -61,7 +61,7 @@ extern void new_cube_window(void);
 extern void new_matrix_window(void);
 extern void new_ipobble_window(void);
 extern void new_invaders_window(void);
-extern void new_font_window(ttk_menu_item *);
+extern TWindow *new_font_window(ttk_menu_item *);
 extern void new_vortex_window(void);
 extern void new_wumpus_window(void);
 extern void about_podzilla(void);
@@ -219,7 +219,7 @@ static ttk_menu_item appearance_menu[] = {
 	{N_("Battery Digits"), MENU_BOOL (BATTERY_DIGITS) },
 	{N_("Display Load Average"), MENU_BOOL (DISPLAY_LOAD) },
 	{N_("Menu Transition"), MENU_SETTING (transit_options, SLIDE_TRANSIT) },
-	{N_("Font"), {pz_mh_legacy}, TTK_MENU_ICON_SUB, new_font_window},
+	{N_("Font"), {new_font_window}, TTK_MENU_ICON_SUB},
 	{ 0 }
 };
 

@@ -120,7 +120,7 @@ TWindow *appearance_select_color_scheme (ttk_menu_item *item);
 
 /* Decorations stuff */
 #define NDECORATIONS	(4)	/* total number of decorations */
-extern char * appearance_decorations[];
+extern const char * appearance_decorations[];
 
 void appearance_set_decorations( int index );
 int appearance_get_decorations( void );

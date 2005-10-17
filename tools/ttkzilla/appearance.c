@@ -193,7 +193,7 @@ TWindow *appearance_select_color_scheme (ttk_menu_item *item)
 ** Decoration stuff
 */
 
-char * appearance_decorations[] = { "Plain",
+const char * appearance_decorations[] = { "Plain",
 		"Amiga 1.1", "Amiga 1.3",
 		"m:robe", 0 };
 
