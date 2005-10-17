@@ -1,0 +1,73 @@
+
+podzilla v0.*
+-------------
+
+'podzilla' is currently the default user interface for iPodLinux. It provides a
+very familiar user interface for accessing various functionality in iPodLinux,
+such as playing music, file browsing, image viewing, and more.
+
+!! This version needs the latest kernel available from the ipodlinux
+sourceforge CVS repository. !!
+
+
+Features
+--------
+
+    * A music browser
+    * Basic MP3/AAC/WAV playback (with volume control)
+    * Basic recording on 3rd Generation iPods
+    * Some simple games
+        o Bluecube (Tetris)
+        o Hunt The Wumpus (Wumpus)
+        o Invaders (Space Invaders)
+        o iPobble (Puzzle Bobble or Bust a Move)
+        o Lights (Lights Out)
+        o Nimesweeper (Minesweeper)
+        o Othello
+        o Pong
+        o Steroids (Asteroids)
+        o Tic-Tac-Toe
+        o Tunnel
+        o Tuxchess (Chess) 
+    * A few GFX demos
+        o Cube
+        o Matrix
+        o Mandelpod 
+    * Some useful utilities
+        o Calculator
+        o Calendar display
+        o Touch-Tone Dialer 
+    * A file browser able to:
+        o Read text files
+        o View images (JPEG, GIF, BMP, PNM and XPM formats are supported)
+        o Play video
+        o Execute external applications 
+
+
+Build Instructions
+------------------
+
+podzilla can be built to run on the iPod or on your host computer.  You should
+reference http://www.ipodlinux.org/Building_Podzilla for instructions.
+
+Some features can be enabled/disabled by setting environmental varables:
+
+    * IPOD   - If set compile for the iPod. Otherwise compile for host.
+        o MINI  - On host compile for a 138x110 2bpp screen.
+        o PHOTO - On host compile for a 220x176 16bpp screen.
+    * LOCALE - If set compile in gettext locale support.
+    * MIKMOD - If set compile in mikmod support.
+    * MPDC   - If set compile in MPD client rather than audio support for MP3,
+               and AAC.  See musicpd.org and www.ipodlinux.org/MPD for more
+               information.
+
+You can specify these variables on the command line, like so:
+% make IPOD=1 LOCALE=1 MIKMOD=1 MPDC=1
+
+
+Contributors
+------------
+
+The list of contributors has grown quite long. It can be viewed under
+Settings -> About, the list can be added to in about.c
+
