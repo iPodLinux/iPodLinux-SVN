@@ -2,28 +2,33 @@ This is ttk, a GUI (and other stuff) toolkit for the iPod.
 
 Overview
 --------
-See API.txt for a (possibly slightly out-of-date) description of
-the API.
+See API/API.pdf for a probably up-to-date documentation of the API.
+You can regenerate it from the LaTeX source API/API.tex with
+`make docs'.
 
-The core library is complete, except for the COP functions.
-An SDL interface is done.
-A Microwindows interface is in the works.
-Widgets still need to be written and are being worked on now.
-
-For an example program, see src/exscroll.c. It's automatically
-compiled with the rest of the library.
+Everything is done now except the COP functions, which arguably
+shouldn't be in a graphics library.
 
 To compile the library, just type `make'. To install it,
 `sudo make install'. To compile the examples, `make examples'.
 
-In order to run exscroll on your iPod, you'll need to copy
+The examples are build/*/ex*, built with `make examples'.
+They are:
+* exscroll - see below
+* exmenu - demonstration of the menu, slider, and textarea widgets
+* eximage - demonstration of the image viewer widget (must be run
+            with one argument, the image to show)
+* exti - a text input demonstration for desktop only.
+
+In order to run TTK apps on your iPod, you'll need to copy
 the binary to /mnt/ipod/bin/ and copy the `fonts/' directory
 in this archive to /mnt/ipod/usr/share/fonts. The fonts.lst
 format is like the one used by Podzilla's font.lst, except
 that the [filename] field is missing the extension. (This allows
 different fonts to be used for different iPods, e.g. using an
 anti-aliased font on the Photo). This small difference is the
-reason for the slight name change.
+reason for the slight name change. See section 6.2 of the API
+reference for details.
 
 Four versions of the library are built: ipod-sdl, ipod-mwin,
 x11-sdl, x11-mwin. Be sure to link with the appropriate one.
@@ -57,4 +62,4 @@ finger off the wheel.
 
 Have a lot of fun!
 
-- Joshua Oreman, September 2005
+- Joshua Oreman, October 2005
