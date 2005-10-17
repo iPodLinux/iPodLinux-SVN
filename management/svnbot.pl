@@ -122,9 +122,6 @@ sub parse_data($) {
     my($flist) = "";
     my(@dirs) = @files;
 
-    map { s/$/10/ } @files;
-    map { s|(([^/]*){2})|$1| } @files;
-
     map { s|/[^/]*$|| } @dirs;
     @dirs = keys %{{ map { $_ => 1 } @dirs }};
 
@@ -141,16 +138,15 @@ sub parse_data($) {
 	my($firstpart) = ($files[0] =~ m|^((?:[^/]+/){$samelevels})|);
 	$firstpart = "" unless defined $firstpart;
 	map { s|^$firstpart|| } @files;
-	$firstpart .= "";
 
 	if (scalar @files > 4) {
 	    if (scalar @dirs > 1) {
-		$flist = $firstpart . " (". scalar(@files) ." files in ". scalar(@dirs) ." directories)";
+		$flist = "10".$firstpart . " (". scalar(@files) ." files in ". scalar(@dirs) ." directories)";
 	    } else {
-		$flist = $firstpart . " (". scalar(@files) ." files)";
+		$flist = "10".$firstpart . " (". scalar(@files) ." files)";
 	    }
 	} else {
-	    $flist = $firstpart . " (@files)";
+	    $flist = "10".$firstpart . " (@files)";
 	}
     }
 
