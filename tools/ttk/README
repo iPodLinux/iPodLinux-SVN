@@ -1,0 +1,60 @@
+This is ttk, a GUI (and other stuff) toolkit for the iPod.
+
+Overview
+--------
+See API.txt for a (possibly slightly out-of-date) description of
+the API.
+
+The core library is complete, except for the COP functions.
+An SDL interface is done.
+A Microwindows interface is in the works.
+Widgets still need to be written and are being worked on now.
+
+For an example program, see src/exscroll.c. It's automatically
+compiled with the rest of the library.
+
+To compile the library, just type `make'. To install it,
+`sudo make install'. To compile the examples, `make examples'.
+
+In order to run exscroll on your iPod, you'll need to copy
+the binary to /mnt/ipod/bin/ and copy the `fonts/' directory
+in this archive to /mnt/ipod/usr/share/fonts. The fonts.lst
+format is like the one used by Podzilla's font.lst, except
+that the [filename] field is missing the extension. (This allows
+different fonts to be used for different iPods, e.g. using an
+anti-aliased font on the Photo). This small difference is the
+reason for the slight name change.
+
+Four versions of the library are built: ipod-sdl, ipod-mwin,
+x11-sdl, x11-mwin. Be sure to link with the appropriate one.
+
+Compilation
+-----------
+Use the output of
+`ttk-config --[ipod|x11] --[mwin|sdl] --[cflags|libs|(both)]`.
+Most necessary libraries are linked into libttk on the iPod.
+
+exscroll
+--------
+exscroll is a quickie demo program for TTK. The interface
+consists of two numbers. I'll call them #1 (top) and #2 (bottom).
+
+ * Scrolling left or right changes #1 by that amount.
+ * Tapping the scroll wheel sets #2 to that position.
+ * << or >> decreases or increases (resp.) #1 by 10.
+ * Menu exits.
+ * Play resets #1 and #2 to 0.
+ * Action sets #2 to 100.
+ * #2 is reset to 0 every three seconds.
+
+This demonstrates most of the base functionality of the TTK GUI.
+Widgets can respond to all of this.
+
+A few heuristics are used to avoid counting scrolling or button
+pressing as a scrollwheel tap or vice versa, but the cost of this
+is that scrollwheel taps cannot be detected until you take your
+finger off the wheel.
+
+Have a lot of fun!
+
+- Joshua Oreman, September 2005
