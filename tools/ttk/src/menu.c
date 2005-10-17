@@ -171,6 +171,10 @@ void ttk_menu_item_updated (TWidget *this, ttk_menu_item *p)
 	p->textofs = 0;
 	p->scrolldelay = 10;
     }
+
+    if (data->items > data->visible) {
+	data->scroll = 1;
+    }
 }
 
 static int menu_return_false (struct ttk_menu_item *item) { return 0; }
