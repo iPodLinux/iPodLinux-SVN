@@ -108,8 +108,9 @@ usage()
 {
     printf("Usage: patch_fw [-h]\n"
 	   "       patch_fw [-v] -o outfile -e img_no fw_file\n"   
-	   "       patch_fw [-v] [-3] [-r rev] -o outfile [-i img_from_-e]* [-l raw_img]* ldr_img\n\n"
-	   "  -3:    create version 3 firmware (required for mini, 4g, photo)\n"
+	   "       patch_fw [-v] -g gen [-r rev] -o outfile [-i img_from_-e]* [-l raw_img]* ldr_img\n\n"
+	   "  -g:    set target ipod generation, valid options are: 1g, 2g, 3g\n"
+	   "         4g, 5g, scroll, touch, dock, mini, photo, color, nano and video\n"
 	   "  -e:    extract the image at img_no in boot table to outfile\n"
 	   "         fw_file is an original firmware image\n"
 	   "         the original firmware has the sw at 0, and a flash updater at 1\n"
@@ -265,6 +266,7 @@ main(int argc, char **argv)
     int c;
     int verbose = 0, i, ext = 0;
     FILE *in = NULL, *out = NULL;
+    char gen_set = 0;
     image_t images[5];
     image_t image = {
 	{ '!', 'A', 'T', 'A' },	    // magic
@@ -285,7 +287,7 @@ main(int argc, char **argv)
     
     /* parse options */
     opterr = 0;
-    while ((c = getopt(argc, argv, "3hve:o:i:l:r:")) != -1)
+    while ((c = getopt(argc, argv, "3hve:o:i:l:r:g:")) != -1)
 	switch (c) {
 	    case 'h':
 		if (verbose || in || out || images_done || ext) {
@@ -301,8 +303,33 @@ main(int argc, char **argv)
 		    fprintf(stderr, "Warning: multiple -v options specified\n");
 		break;
 	    case '3':
+		gen_set = 1;
 		fw_version = 3;
 		image.addr = 0x10000000;
+		break;
+	    case 'g':
+		gen_set = 1;
+		if ((strcasecmp(optarg, "4g") == 0) ||
+			(strcasecmp(optarg, "mini") == 0) ||
+			(strcasecmp(optarg, "nano") == 0) ||
+			(strcasecmp(optarg, "photo") == 0) ||
+			(strcasecmp(optarg, "color") == 0) ||
+			(strcasecmp(optarg, "video") == 0) ||
+			(strcasecmp(optarg, "5g") == 0)) {
+		    fw_version = 3;
+		    image.addr = 0x10000000;
+		}
+		else if ((strcasecmp(optarg, "1g") != 0) &&
+			(strcasecmp(optarg, "2g") != 0) &&
+			(strcasecmp(optarg, "3g") != 0) &&
+			(strcasecmp(optarg, "scroll") != 0) &&
+			(strcasecmp(optarg, "touch") != 0) &&
+			(strcasecmp(optarg, "dock") != 0)) {
+		    fprintf(stderr, "%s: bad gen. Valid options are: 1g, 2g,"
+			    " 3g, 4g, 5g, scroll, touch, dock, mini, nano,"
+			    " photo, color, and video\n", optarg);
+		    return 1;
+		}
 		break;
 	    case 'o':
 		if (out) {
@@ -405,7 +432,7 @@ main(int argc, char **argv)
 	usage();
 	return 1;
     }
-   
+ 
     if (ext) {
 	if ((in = fopen(argv[optind], "rb")) == NULL) {
 	    fprintf(stderr, "Cannot open firmware image file %s\n", argv[optind]);
@@ -414,6 +441,10 @@ main(int argc, char **argv)
 	if (extract(in, ext-1, out) == -1) return 1;
 	fclose(in); fclose(out);
 	return 0;
+    }
+    else if (!gen_set) {
+	usage();
+	return 1;
     }
 
     printf("Generating firmware image compatible with ");
