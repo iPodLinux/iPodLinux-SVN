@@ -1,0 +1,40 @@
+#!/bin/sh
+
+prefix=@PREFIX@
+libdir=
+libfile=
+linkflags=
+ccflags=
+target=
+
+usage () {
+    echo
+    echo "Usage: ttk-config [--prefix[=DIR]] [--version] [--cflags] [--libs] {--ipod | --x11} {--sdl | --mwin}" 1>&2
+    echo
+    exit 1
+}
+
+if test $# -eq 0; then
+    usage
+fi
+
+while test $# -gt 0; do
+    case "$1" in
+    -*=*) optarg=`echo "$1" | sed 's/[-_a-zA-Z0-9]*=//'` ;;
+    *) optarg= ;;
+    esac
+
+    case $1 in
+	--prefix=*) prefix=$optarg ;;
+	--prefix) echo $prefix ;;
+	--version) echo @VERSION@ ;;
+	--ipod) libdir=@IPOD_LIBS@; target=ipod; ccflags="${ccflags} -DIPOD" ;;
+	--x11) libdir=@X11_LIBS@; target=x ;;
+	--sdl) if test x$target = x; then usage; fi; libfile=ttk-SDL; if test x$target = xipod; then linkflags="${linkflags} -lm"; else linkflags="${linkflags} `sdl-config --libs` -lSDL_image"; fi; ccflags="${ccflags} -DSDL -DNO_SF -DNO_TF" ;;
+	--mwin) if test x$target = x; then usage; fi; libfile=ttk-mwin; linkflags="${linkflags} -lm"; if test x$target = xx; then linkflags="${linkflags} -L/usr/X11R6/lib -lX11"; fi; ccflags="${ccflags} -DMWIN" ;;
+	--cflags) echo ${ccflags} -I${prefix}/include/ttk -I${prefix}/include/SDL -I${prefix}/include/ttk/mwincludes -I/usr/local/include/SDL -I/sw/include/SDL ;;
+	--libs) if test x$libfile = x; then usage; fi; echo -L${libdir} -l${libfile} ${linkflags}; if test x$target = xx; then echo -L/sw/lib -L/usr/local/lib; fi ;;
+	*) usage ;;
+    esac
+    shift
+done
