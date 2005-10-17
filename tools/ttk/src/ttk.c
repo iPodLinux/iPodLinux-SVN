@@ -764,7 +764,7 @@ TWindow *ttk_new_window()
     ret->color = (ttk_screen->bpp == 16);
     ret->srf = ttk_new_surface (ttk_screen->w, ttk_screen->h, ret->color? 16 : 2);
     ret->background = 0;
-    ret->focus = 0;
+    ret->focus = ret->input = 0;
     ret->dirty = 0;
     ret->epoch = ttk_epoch;
     ret->inbuf_start = ret->inbuf_end = 0;
