@@ -583,12 +583,13 @@ void new_browser_window(char *initial_path)
     ttk_show_window (ret);
 }
 
+
 void new_exec_window(char *filename)
 {
 #ifdef IPOD
 	static const char * const tty0[] = { "/dev/tty0", "/dev/vc/0", 0 };
 	static const char * const vcs[] = { "/dev/vc/%d", "/dev/tty%d", 0 };
-	int i, tty0_fd, fd, ttyfd = -1, oldvt, curvt, status;
+	int i, tty0_fd, ttyfd = -1, oldvt, curvt, fd, status;
 	pid_t pid;
 
 	/* query for a free VT */
@@ -601,9 +602,7 @@ void new_exec_window(char *filename)
 	if (tty0_fd < 0) {
 		tty0_fd = dup(0); /* STDIN is a VT? */
 	}
-	if (ioctl(tty0_fd, VT_OPENQRY, &curvt) < 0) {
-		pz_perror ("VT_OPENQRY");
-	}
+	ioctl(tty0_fd, VT_OPENQRY, &curvt);
 	close(tty0_fd);
 	
 	if ((geteuid() == 0) && (curvt > 0)) {
@@ -615,7 +614,7 @@ void new_exec_window(char *filename)
 		}
 	}
 	if (ttyfd < 0) {
-		pz_error ("No available TTYs.\n");
+		fprintf(stderr, "No available TTYs.\n");
 		return;
 	}
 
@@ -626,16 +625,13 @@ void new_exec_window(char *filename)
 
 			if (ioctl(ttyfd, VT_GETSTATE, &vtstate) == 0) {
 				oldvt = vtstate.v_active;
-			} else {
-				pz_perror ("VT_GETSTATE");
 			}
-
 			if (ioctl(ttyfd, VT_ACTIVATE, curvt)) {
-				pz_perror("child VT_ACTIVATE");
+				perror("child VT_ACTIVATE");
 				return;
 			}
 			if (ioctl(ttyfd, VT_WAITACTIVE, curvt)) {
-				pz_perror("child VT_WAITACTIVE");
+				perror("child VT_WAITACTIVE");
 				return;
 			}
 		}
@@ -681,11 +677,11 @@ void new_exec_window(char *filename)
 		
 		if (oldvt > 0) {
         		if (ioctl(ttyfd, VT_ACTIVATE, oldvt)) {
-				pz_perror("parent VT_ACTIVATE");
+				perror("parent VT_ACTIVATE");
 				return;
 			}
         		if(ioctl(ttyfd, VT_WAITACTIVE, oldvt)) {
-				pz_perror("parent VT_WAITACTIVE");
+				perror("parent VT_WAITACTIVE");
 				return;
 			}
 		}
@@ -696,16 +692,25 @@ void new_exec_window(char *filename)
 			int oldfd;
 
 			if ((oldfd = open("/dev/vc/1", O_RDWR)) < 0)
-			    oldfd = open("/dev/tty1", O_RDWR);
+				oldfd = open("/dev/tty1", O_RDWR);
 			if (oldfd >= 0) {
-			    if (ioctl(oldfd, VT_DISALLOCATE, curvt)) {
-				pz_perror("VT_DISALLOCATE");
-				return;
-			    }
-			    close(oldfd);
+				if (ioctl(oldfd, VT_DISALLOCATE, curvt)) {
+					perror("VT_DISALLOCATE");
+					return;
+				}
+				close(oldfd);
 			}
 		}
 		break;
+	}
+
+	if (oldvt > 0) {
+	    ioctl (ttyfd, VT_ACTIVATE, oldvt);
+	    ioctl (ttyfd, VT_WAITACTIVE, oldvt);
+	}
+	if (ttyfd > 0) {
+	    ioctl (ttyfd, VT_DISALLOCATE, curvt);
+	    close (ttyfd);
 	}
 #else
 	new_message_window(filename);

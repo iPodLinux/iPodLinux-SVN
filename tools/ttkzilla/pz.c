@@ -48,9 +48,7 @@ struct pz_window {
 /* int BACKLIGHT_TIMER = 10; // in seconds */
 
 #ifdef IPOD
-static unsigned long int last_button_event = 0;
-static unsigned long int wheel_evt_count = 0;
-static int startup_contrast = -1;
+int pz_startup_contrast = -1;
 
 #endif
 //static unsigned long int last_keypress_event = 0;
@@ -151,8 +149,8 @@ extern void header_fix_hold (void);
 static ttk_timer bloff_timer = 0;
 static int bl_forced_on = 0;
 
-static void backlight_off() { if (!bl_forced_on) ipod_set_backlight (0); bloff_timer = 0; }
-static void backlight_on()  { ipod_set_backlight (1); }
+static void backlight_off() { if (!bl_forced_on) ipod_set_setting (BACKLIGHT, 0); bloff_timer = 0; }
+static void backlight_on()  { ipod_set_setting (BACKLIGHT, 1); }
 
 #define RESET 0
 void pz_set_backlight_timer (int sec) 
@@ -160,12 +158,25 @@ void pz_set_backlight_timer (int sec)
     static int last = 0;
     if (sec) last = sec;
     
-    ipod_set_backlight (sec? 1 : 0);
-
+    backlight_on();
+    
     if (bloff_timer) ttk_destroy_timer (bloff_timer);
     if (last) bloff_timer = ttk_create_timer (1000*last, backlight_off);
     else bloff_timer = 0;
 }
+
+int held_times[128] = { ['m'] = 500, ['d'] = 1000 }; // key => ms
+int held_ignores[128]; // set a char to 1 = ignore its UP event once.
+ttk_timer held_timers[128]; // the timers
+
+void backlight_toggle() 
+{
+    bl_forced_on = !bl_forced_on;
+    held_timers['m'] = 0;
+    held_ignores['m']++;
+}
+
+void (*held_handlers[128])() = { ['m'] = backlight_toggle, ['d'] = /* sleep_ipod */ 0 }; // key => fn
 
 int pz_new_event_handler (int ev, int earg, int time)
 {
@@ -184,8 +195,20 @@ int pz_new_event_handler (int ev, int earg, int time)
 	    vtswitched = 0;
 	    break;
 	}
+	if (held_times[earg] && held_handlers[earg]) {
+	    if (held_timers[earg]) ttk_destroy_timer (held_timers[earg]);
+	    held_timers[earg] = ttk_create_timer (held_times[earg], held_handlers[earg]);
+	}
 	break;
     case TTK_BUTTON_UP:
+	if (held_timers[earg]) {
+	    ttk_destroy_timer (held_timers[earg]);
+	    held_timers[earg] = 0;
+	}
+	if (held_ignores[earg]) {
+	    held_ignores[earg] = 0;
+	    return 1;
+	}
 	switch (earg) {
 	case TTK_BUTTON_HOLD:
 	    hold_is_on = 0;
@@ -196,10 +219,6 @@ int pz_new_event_handler (int ev, int earg, int time)
 		bl_forced_on = !bl_forced_on;
 		if (bl_forced_on)
 		    backlight_on();
-		return 1;
-	    }
-	    if (time > 5000) {
-		ipod_set_contrast (64);
 		return 1;
 	    }
 	    break;
@@ -463,7 +482,7 @@ int
 main(int argc, char **argv)
 {
 #ifdef IPOD
-	startup_contrast = ipod_get_contrast();
+	pz_startup_contrast = ipod_get_contrast();
 #endif
 
 	if ((root_wid = ttk_init()) == 0) {
