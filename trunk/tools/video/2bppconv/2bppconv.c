@@ -125,7 +125,7 @@ int convVideo(char * filename, char * outfilename)
 	int countpix;	
 	long ccoff;	
 	int width, height;
-	
+	int res;	
 	unsigned char * randombuff;	
 	int bitcount = 2;
 	RGBQUAD * colortable = NULL;	
@@ -184,8 +184,9 @@ int convVideo(char * filename, char * outfilename)
 	while (!feof(f))
 	{
 		ccoff = ftell(f);	
-		fread(&hdr.ckID, sizeof(hdr), 1, f);
-		
+		res = fread(&hdr.ckID, sizeof(hdr), 1, f);
+		if (res <= 0)
+			goto done;	
 		while (hdr.ckID[0]=='\0')
 		{
 			fseek(f, ccoff+1, SEEK_SET);
@@ -375,7 +376,7 @@ int convVideo(char * filename, char * outfilename)
 			curonframe = 0;
 		}	
 	}
-	
+done:	
 	// Close the files
 	closeFiles(f, f2);
 	
