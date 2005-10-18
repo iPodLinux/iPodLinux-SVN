@@ -70,6 +70,7 @@ void ttk_menu_updated (TWidget *_this); // call whenever you edit the item list 
 void ttk_menu_draw (TWidget *_this, ttk_surface srf);
 int ttk_menu_scroll (TWidget *_this, int dir);
 int ttk_menu_down (TWidget *_this, int button);
+int ttk_menu_button (TWidget *_this, int button, int time);
 int ttk_menu_frame (TWidget *_this);
 void ttk_menu_free (TWidget *_this); // You don't need to call this, just call ttk_free_widget()
 
