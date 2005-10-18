@@ -102,7 +102,7 @@ static void populate_about() {
 			fstype, gens[i], hw_version);
 }
 
-TWindow *about_podzilla()
+TWindow *about_podzilla (ttk_menu_item *item)
 {
 	if (buf) {
 	    free (buf);
@@ -112,7 +112,7 @@ TWindow *about_podzilla()
 	return new_stringview_window(buf, "About");
 }
 
-TWindow *show_credits()
+TWindow *show_credits (ttk_menu_item *item)
 {
 	if (buf) {
 	    free (buf);
