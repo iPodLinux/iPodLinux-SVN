@@ -547,9 +547,9 @@ int ttk_run()
 		sofar += earg;
 		if (sofar > -ttk_scroll_denom && sofar < ttk_scroll_denom) local = 0;
 		else if (sofar < 0) {
-		    while (sofar < -ttk_scroll_denom) sofar += ttk_scroll_denom;
+		    while (sofar <= -ttk_scroll_denom) sofar += ttk_scroll_denom;
 		} else {
-		    while (sofar > ttk_scroll_denom) sofar -= ttk_scroll_denom;
+		    while (sofar >= ttk_scroll_denom) sofar -= ttk_scroll_denom;
 		}
 	    }
 	    earg *= ttk_scroll_num;
