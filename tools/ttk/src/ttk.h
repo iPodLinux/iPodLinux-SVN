@@ -23,6 +23,7 @@
 
 #define TTK_MOVE_ABS      0
 #define TTK_MOVE_REL      1
+#define TTK_MOVE_END      2
 
 #define TTK_DIRTY_HEADER     1
 #define TTK_DIRTY_WINDOWAREA 2
@@ -125,6 +126,7 @@ typedef struct TWindow
     /* private */ int epoch;
     /* private */ char inbuf[32]; // circular buffer
     /* private */ int inbuf_start, inbuf_end;
+    /* private */ int onscreen;
     int data;
 } TWindow;
 

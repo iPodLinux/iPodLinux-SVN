@@ -246,7 +246,7 @@ TWindow *ttk_init()
     ttk_windows->w = ret;
     ttk_windows->minimized = 0;
     ttk_windows->next = 0;
-
+    ret->onscreen++;
 
     return ret;
 }
@@ -300,6 +300,7 @@ int ttk_run()
     static int initd = 0;
     int local, global;
     static int sofar = 0;
+    int time = 0;
 
     ttk_started = 1;
 
@@ -323,11 +324,11 @@ int ttk_run()
 	if (!ttk_windows)
 	    return 0;
 
-	// This has the effect of briefly shuttling through all minimized windows
-	// between a just-closed window and the next real window. Somewhat nice.
-	// Note the "if" instead of "while" -- that's what does it.
+	// If all windows are minimized, this'll loop however-many times
+	// and eventually one of the minimized flags will get reset to 0
+	// by ttk_move_window().
 	if (ttk_windows->minimized)
-	    ttk_move_window (ttk_windows->w, -1, TTK_MOVE_REL);
+	    ttk_move_window (ttk_windows->w, 0, TTK_MOVE_END);
 	    
 	win = ttk_windows->w;
 
@@ -555,44 +556,43 @@ int ttk_run()
 	    earg *= ttk_scroll_num;
 	}
 
-	if (local) {
-	    int time = 0;
-	    /* pass event to local */
-	    switch (ev) {
-	    case TTK_BUTTON_DOWN:
-		if (!ttk_button_presstime[earg] || !ttk_button_pressedfor[earg]) { // don't reset with key-repted buttons
-		    ttk_button_presstime[earg] = tick;
-		    ttk_button_pressedfor[earg] = evtarget;
-		    ttk_button_holdsent[earg] = 0;
-		}
-
-		// Don't send different parts of same keyt-rept to different widgets:
-		if ((ttk_button_pressedfor[earg] == evtarget) &&
-		    ((ttk_button_presstime[earg] == tick) || evtarget->keyrepeat))
-		{
-		    eret |= evtarget->down (evtarget, earg);
-		}
-		break;
-	    case TTK_BUTTON_UP:
-		time = tick - ttk_button_presstime[earg];
-		TWidget *pf = ttk_button_pressedfor[earg];
-
-		// Need to be before, in case button() launches its own ttk_run().
-		ttk_button_presstime[earg] = 0;
+	/* pass event to local, if we should; update event
+	   metadata in all cases. */
+	switch (ev) {
+	case TTK_BUTTON_DOWN:
+	    if (!ttk_button_presstime[earg] || !ttk_button_pressedfor[earg]) { // don't reset with key-repted buttons
+		ttk_button_presstime[earg] = tick;
+		ttk_button_pressedfor[earg] = evtarget;
 		ttk_button_holdsent[earg] = 0;
-		ttk_button_pressedfor[earg] = 0;
-
-		if (evtarget == pf)
-		    eret |= evtarget->button (evtarget, earg, time);
-		break;
-	    case TTK_SCROLL:
-		eret |= evtarget->scroll (evtarget, earg);
-		break;
 	    }
-
-	    if ((eret & TTK_EV_UNUSED) && ttk_global_unusedhandler)
-		eret |= ttk_global_unusedhandler (ev, earg, time);
+	    
+	    // Don't send different parts of same keyt-rept to different widgets:
+	    if (local && (ttk_button_pressedfor[earg] == evtarget) &&
+		((ttk_button_presstime[earg] == tick) || evtarget->keyrepeat))
+	    {
+		eret |= evtarget->down (evtarget, earg);
+	    }
+	    break;
+	case TTK_BUTTON_UP:
+	    time = tick - ttk_button_presstime[earg];
+	    TWidget *pf = ttk_button_pressedfor[earg];
+	    
+	    // Need to be before, in case button() launches its own ttk_run().
+	    ttk_button_presstime[earg] = 0;
+	    ttk_button_holdsent[earg] = 0;
+	    ttk_button_pressedfor[earg] = 0;
+	    
+	    if (evtarget == pf && local)
+		eret |= evtarget->button (evtarget, earg, time);
+	    break;
+	case TTK_SCROLL:
+	    if (local)
+		eret |= evtarget->scroll (evtarget, earg);
+	    break;
 	}
+	
+	if ((eret & TTK_EV_UNUSED) && ttk_global_unusedhandler)
+	    eret |= ttk_global_unusedhandler (ev, earg, time);
 
 	/* check old events (stap, held) */
 	if (evtarget) {
@@ -800,6 +800,7 @@ TWindow *ttk_new_window()
     ret->dirty = 0;
     ret->epoch = ttk_epoch;
     ret->inbuf_start = ret->inbuf_end = 0;
+    ret->onscreen = 0;
 
     if (ttk_screen->bpp == 2)
 	ttk_ap_fillrect (ret->srf, ttk_ap_get ("window.bg"), 0, 0, ret->w, ret->h);
@@ -856,39 +857,69 @@ void ttk_free_window (TWindow *win)
 }
 
 
+/*debug*/ void print_window_stack() 
+{
+    if (!ttk_windows) {
+	printf ("<empty>\n");
+	return;
+    }
+
+    TWindowStack *cur = ttk_windows;
+    if (!strcmp (cur->w->title, "TTK"))
+	printf ("%p%s", cur->w, cur->minimized? "[-]" : "");
+    else
+	printf ("%s%s", cur->w->title, cur->minimized? "[-]" : "");
+    while (cur->next) {
+	cur = cur->next;
+	if (!strcmp (cur->w->title, "TTK"))
+	    printf (", %p%s", cur->w, cur->minimized? "[-]" : "");
+	else
+	    printf (", %s%s", cur->w->title, cur->minimized? "[-]" : "");
+    }
+    printf ("\n");
+}
+
 void ttk_show_window (TWindow *win) 
 {
-    TWindow *oldwindow = ttk_windows->w;
-    TWindowStack *next = ttk_windows;
-    ttk_windows = malloc (sizeof(struct TWindowStack));
-    ttk_windows->w = win;
-    ttk_windows->minimized = 0;
-    ttk_windows->next = next;
+    if (!win->onscreen) {
+	TWindow *oldwindow = ttk_windows? ttk_windows->w : 0;
+	TWindowStack *next = ttk_windows;
+	ttk_windows = malloc (sizeof(struct TWindowStack));
+	ttk_windows->w = win;
+	ttk_windows->minimized = 0;
+	ttk_windows->next = next;
+	win->onscreen++;
 
-    if (ttk_started &&
-	oldwindow->w == win->w && oldwindow->h == win->h &&
-	oldwindow->x == ttk_screen->wx && oldwindow->y == ttk_screen->wy) {
-
-	int i;
-	int jump = win->w / ttk_transit_frames;
-
-	for (i = 0; i < ttk_transit_frames; i++) {
-	    ttk_blit_image_ex (oldwindow->srf, i * jump, 0, oldwindow->w - i*jump, oldwindow->h,
-			       ttk_screen->srf, ttk_screen->wx, ttk_screen->wy);
-	    ttk_blit_image_ex (win->srf, 0, 0, i * jump, oldwindow->h,
-			       ttk_screen->srf, oldwindow->w - i*jump + ttk_screen->wx,
-			       ttk_screen->wy);
-	    ttk_gfx_update (ttk_screen->srf);
+	if (ttk_started && oldwindow &&
+	    oldwindow->w == win->w && oldwindow->h == win->h &&
+	    oldwindow->x == ttk_screen->wx && oldwindow->y == ttk_screen->wy) {
+	    
+	    int i;
+	    int jump = win->w / ttk_transit_frames;
+	    
+	    for (i = 0; i < ttk_transit_frames; i++) {
+		ttk_blit_image_ex (oldwindow->srf, i * jump, 0, oldwindow->w - i*jump, oldwindow->h,
+				   ttk_screen->srf, ttk_screen->wx, ttk_screen->wy);
+		ttk_blit_image_ex (win->srf, 0, 0, i * jump, oldwindow->h,
+				   ttk_screen->srf, oldwindow->w - i*jump + ttk_screen->wx,
+				   ttk_screen->wy);
+		ttk_gfx_update (ttk_screen->srf);
 #ifndef IPOD
-	    ttk_delay (10);
+		ttk_delay (10);
 #endif
+	    }
+	    
+	    ttk_blit_image (win->srf, ttk_screen->srf, ttk_screen->wx, ttk_screen->wy);
+	    ttk_gfx_update (ttk_screen->srf);
 	}
-
-	ttk_blit_image (win->srf, ttk_screen->srf, ttk_screen->wx, ttk_screen->wy);
-	ttk_gfx_update (ttk_screen->srf);
+    } else {
+	ttk_move_window (win, 0, TTK_MOVE_ABS);
+	ttk_windows->minimized = 0;
     }
 
     ttk_dirty |= TTK_DIRTY_WINDOWAREA | TTK_DIRTY_HEADER;
+
+    /* debug */ printf ("Adding window %s (%p): ", win->title, win); print_window_stack();
 }
 
 
@@ -938,7 +969,6 @@ int ttk_hide_window (TWindow *win)
     int ret = 0;
     
     if (!current) return 0;
-    if (current->w == win && !current->next) return -1;
 
     while (current) {
 	if (current->w == win) {
@@ -951,6 +981,7 @@ int ttk_hide_window (TWindow *win)
 
 	    free (current);
 	    current = last;
+	    win->onscreen = 0;
 	    ret++;
 	}
 
@@ -958,29 +989,33 @@ int ttk_hide_window (TWindow *win)
 	if (current) current = current->next;
     }
 
-    TWindow *newwindow = ttk_windows->w;
-
-    if (newwindow->w == win->w && newwindow->h == win->h &&
-	newwindow->x == ttk_screen->wx && newwindow->y == ttk_screen->wy) {
-
-	int i;
-	int jump = win->w / ttk_transit_frames;
-
-	for (i = ttk_transit_frames - 1; i >= 0; i--) {
-	    ttk_blit_image_ex (newwindow->srf, i * jump, 0, win->w - i*jump, win->h,
-			       ttk_screen->srf, ttk_screen->wx, ttk_screen->wy);
-	    ttk_blit_image_ex (win->srf, 0, 0, i * jump, win->h,
-			       ttk_screen->srf, win->w - i*jump + ttk_screen->wx,
-			       ttk_screen->wy);
-	    ttk_gfx_update (ttk_screen->srf);
+    if (ttk_windows) {
+	TWindow *newwindow = ttk_windows->w;
+	
+	if (newwindow->w == win->w && newwindow->h == win->h &&
+	    newwindow->x == ttk_screen->wx && newwindow->y == ttk_screen->wy) {
+	    
+	    int i;
+	    int jump = win->w / ttk_transit_frames;
+	    
+	    for (i = ttk_transit_frames - 1; i >= 0; i--) {
+		ttk_blit_image_ex (newwindow->srf, i * jump, 0, win->w - i*jump, win->h,
+				   ttk_screen->srf, ttk_screen->wx, ttk_screen->wy);
+		ttk_blit_image_ex (win->srf, 0, 0, i * jump, win->h,
+				   ttk_screen->srf, win->w - i*jump + ttk_screen->wx,
+				   ttk_screen->wy);
+		ttk_gfx_update (ttk_screen->srf);
 #ifndef IPOD
-	    ttk_delay (10);
+		ttk_delay (10);
 #endif
+	    }
+	    
+	    ttk_blit_image (newwindow->srf, ttk_screen->srf, ttk_screen->wx, ttk_screen->wy);
+	    ttk_gfx_update (ttk_screen->srf);
 	}
-
-	ttk_blit_image (newwindow->srf, ttk_screen->srf, ttk_screen->wx, ttk_screen->wy);
-	ttk_gfx_update (ttk_screen->srf);
     }
+
+    /* debug */ printf ("Removing window %s (%p): ", win->title, win); print_window_stack();
 
     return ret;
 }
@@ -989,7 +1024,7 @@ int ttk_hide_window (TWindow *win)
 void ttk_move_window (TWindow *win, int offset, int whence)
 {
     TWindowStack *cur = ttk_windows, *last = 0;
-    int idx = -1, nitems = 0, i = 0;
+    int oidx, idx = -1, nitems = 0, i = 0;
     int minimized;
     if (!cur) return;
 
@@ -1009,10 +1044,12 @@ void ttk_move_window (TWindow *win, int offset, int whence)
 	}
 	nitems++;
 	last = cur;
-	cur = cur->next;
+	if (cur) cur = cur->next;
     }
 
     if (idx == -1) return;
+
+    oidx = idx;
 
     switch (whence) {
     case TTK_MOVE_ABS:
@@ -1022,10 +1059,13 @@ void ttk_move_window (TWindow *win, int offset, int whence)
     case TTK_MOVE_REL:
 	idx -= offset;
 	break;
+
+    case TTK_MOVE_END:
+	idx = 32767; // obscenely high number
+	break;
     }
 
     if (idx < 0) idx = 0;
-    if (idx >= nitems) idx = nitems - 1;
     
     cur = ttk_windows;
     last = 0;
@@ -1033,17 +1073,39 @@ void ttk_move_window (TWindow *win, int offset, int whence)
     while (cur) {
 	if (idx == i) {
 	    TWindowStack *s = malloc (sizeof(TWindowStack));
-	    last->next = s;
+	    if (last)
+		last->next = s;
+	    else
+		ttk_windows = s;
 	    s->next = cur;
 	    s->w = win;
 	    s->minimized = minimized;
 	    break;
 	}
 
+	if (oidx == i)
+	    i++; // double-increment, since something used to
+	         // be here and [idx] is still based on that. :TRICKY:
+
 	last = cur;
 	cur = cur->next;
 	i++;
     }
+
+    if (!cur && ttk_windows) { // index was past end, put it on end
+	cur = ttk_windows;
+	while (cur->next) cur = cur->next;
+	cur->next = malloc (sizeof(TWindowStack));
+	cur->next->w = win;
+	cur->next->minimized = minimized;
+	cur->next->next = 0;
+	printf ("End-");
+    }
+
+    ttk_windows->minimized = 0;
+    ttk_dirty |= TTK_FILTHY;
+
+    /* debug */ printf ("Moving window %s (%p) %+d w%d: ", win->title, win, offset, whence); print_window_stack();
 }
 
 

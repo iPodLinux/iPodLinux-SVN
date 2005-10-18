@@ -298,6 +298,7 @@ be one of these.
 \begin{verbatim}
   #define TTK_MOVE_ABS      0
   #define TTK_MOVE_REL      1
+  #define TTK_MOVE_END      2
 \end{verbatim}
 These are the arguments to the {\tt ttk\_move\_window()} function.
 
@@ -700,7 +701,8 @@ coordinates are chosen so the window will be in the middle of the screen.
 \item[{\tt ttk\_popup\_window}] calls \verb|ttk_set_popup()| followed by \verb|ttk_show_window()|.
 \item[{\tt ttk\_move\_window}] moves \verb|win| to position \verb|offset| in the window stack (with the
 top window 0) if \verb|whence| is \verb|TTK_MOVE_ABS|; or moves \verb|win| down \verb|offset| windows
-in the window stack if \verb|whence| is \verb|TTK_MOVE_REL|.
+in the window stack if \verb|whence| is \verb|TTK_MOVE_REL|; or moves \verb|win| \verb|offset| windows
+\emph{away} from the end of the window stack if \verb|whence| is \verb|TTK_MOVE_END|.
 \item[{\tt ttk\_window\_title}] (or \verb|ttk_window_set_title|) sets the title of \verb|win| to
 a copy of \verb|str|, sets a flag in \verb|win| so the title will be freed when the window is,
 and causes the header to be redrawn. If you don't need all of this, you can just do \verb|win->title = str|.
