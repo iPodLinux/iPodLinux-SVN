@@ -49,6 +49,8 @@
 #define inl(a) (*(volatile unsigned long *) (a))
 #define outl(a,b) (*(volatile unsigned long *) (b) = (a))
 
+extern int pz_setting_debounce;
+
 static int ipod_ioctl(int request, int *arg)
 {
 #ifdef IPOD
@@ -127,6 +129,14 @@ int ipod_set_backlight_timer(int timer)
 	return 0;
 }
 
+void ipod_set_wheelspeed (int value) 
+{
+    int   num[] = {1, 1, 1, 1, 2, 1, 3, 2, 3, 4, 1, 3, 4, 2, 5, 3, 7, 4, 9, 5};
+    int denom[] = {6, 5, 4, 3, 5, 2, 5, 3, 4, 5, 1, 2, 3, 1, 2, 1, 2, 1, 2, 1};
+
+    ttk_set_scroll_multiplier (num[value], denom[value]);
+}
+
 int ipod_set_setting(short setting, int value)
 {
 	if (value <= 0) {
@@ -157,6 +167,10 @@ int ipod_set_setting(short setting, int value)
 			ttk_set_clicker (ttk_click);
 		else
 			ttk_set_clicker (0);
+		break;
+	case WHEEL_DEBOUNCE:
+		if (!pz_setting_debounce)
+			ipod_set_wheelspeed (value);
 		break;
 	case SLIDE_TRANSIT:
 		switch (value) {
@@ -202,7 +216,7 @@ int ipod_load_settings(void)
 
 		ipod_set_setting(CONTRAST, 96);
 		ipod_set_setting(CLICKER, 1);
-		ipod_set_setting(WHEEL_DEBOUNCE, 3);
+		ipod_set_setting(WHEEL_DEBOUNCE, 10);
 		ipod_set_setting(ACTION_DEBOUNCE, 400);
 		ipod_set_setting(DSPFREQUENCY, 0);
 		ipod_set_setting(COLORSCHEME, 0);
@@ -212,6 +226,10 @@ int ipod_load_settings(void)
 	ipod_set_contrast(ipod_get_setting(CONTRAST));
 	ipod_set_backlight_timer(ipod_get_setting(BACKLIGHT_TIMER));
 	appearance_set_decorations(ipod_get_setting(DECORATIONS));
+	ipod_set_setting (DISPLAY_LOAD, ipod_get_setting (DISPLAY_LOAD));
+	ipod_set_setting (CLICKER, ipod_get_setting (CLICKER));
+	ipod_set_setting (WHEEL_DEBOUNCE, ipod_get_setting (WHEEL_DEBOUNCE));
+	ipod_set_setting (SLIDE_TRANSIT, ipod_get_setting (SLIDE_TRANSIT));
 
 	return 0;
 }

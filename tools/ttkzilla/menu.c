@@ -64,8 +64,8 @@ extern void new_invaders_window(void);
 extern TWindow *new_font_window(ttk_menu_item *);
 extern void new_vortex_window(void);
 extern void new_wumpus_window(void);
-extern void about_podzilla(void);
-extern void show_credits(void);
+extern TWindow *about_podzilla(ttk_menu_item *);
+extern TWindow *show_credits(ttk_menu_item *);
 #ifdef MIKMOD
 extern void new_mikmod_window(void);
 #endif

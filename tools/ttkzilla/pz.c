@@ -32,6 +32,8 @@
 #include "mpdc/mpdc.h"
 #endif
 
+int pz_setting_debounce = 0;
+
 /* globals */
 GR_SCREEN_INFO screen_info;
 long hw_version;
@@ -109,14 +111,11 @@ void quit_podzilla(void)
 
 void set_wheeldebounce(void)
 {
+	pz_setting_debounce = 1;
+	ttk_set_scroll_multiplier (1, 1); // for selecting the speed
 	new_settings_slider_window(_("Wheel Sensitivity"),
-			WHEEL_DEBOUNCE, 1, 20);
-}
-
-void set_buttondebounce(void)
-{
-	new_settings_slider_window(_("Action Debounce"),
-			ACTION_DEBOUNCE, 100, 500);
+				   WHEEL_DEBOUNCE, 0, 19);
+	ttk_windows->w->data = 0x12345678;
 }
 
 void pz_event_handler (t_GR_EVENT *ev) 
@@ -183,6 +182,11 @@ int pz_new_event_handler (int ev, int earg, int time)
     static int vtswitched = 0;
 
     pz_set_backlight_timer (RESET);
+
+    if (pz_setting_debounce && (ttk_windows->w->focus->draw != ttk_slider_draw)) {
+	pz_setting_debounce = 0;
+	ipod_set_setting (WHEEL_DEBOUNCE, ipod_get_setting (WHEEL_DEBOUNCE));
+    }
 
     switch (ev) {
     case TTK_BUTTON_DOWN:
