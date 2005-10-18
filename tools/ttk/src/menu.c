@@ -395,6 +395,7 @@ TWidget *ttk_new_menu_widget (ttk_menu_item *items, ttk_font font, int w, int h)
     ret->draw = ttk_menu_draw;
     ret->frame = ttk_menu_frame;
     ret->down = ttk_menu_down;
+    ret->button = ttk_menu_button;
     ret->scroll = ttk_menu_scroll;
     ret->destroy = ttk_menu_free;
 
@@ -607,6 +608,22 @@ int ttk_menu_scroll (TWidget *this, int dir)
     return 0;
 }
 
+int ttk_menu_button (TWidget *this, int button, int time)
+{
+    _MAKETHIS;
+    
+    if (button == TTK_BUTTON_MENU) {
+	if (data->closeable) {
+	    if (ttk_hide_window (this->win) == -1) {
+		return TTK_EV_DONE;
+	    }
+	    return TTK_EV_CLICK;
+	}
+	return 0;
+    }
+    return TTK_EV_UNUSED;
+}
+
 int ttk_menu_down (TWidget *this, int button)
 {
     _MAKETHIS;
@@ -678,8 +695,7 @@ int ttk_menu_down (TWidget *this, int button)
 	    ttk_show_window (item->sub);
 	    break;
 	}
-	// else FALLTHRU -- mh said "close this menu"
-    case TTK_BUTTON_MENU:
+	// else mh said "close this menu"
 	if (data->closeable) {
 	    if (ttk_hide_window (this->win) == -1) {
 		return TTK_EV_DONE;

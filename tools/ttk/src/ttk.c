@@ -576,14 +576,13 @@ int ttk_run()
 	    case TTK_BUTTON_UP:
 		time = tick - ttk_button_presstime[earg];
 		TWidget *pf = ttk_button_pressedfor[earg];
-		int hs = ttk_button_holdsent[earg];
 
 		// Need to be before, in case button() launches its own ttk_run().
 		ttk_button_presstime[earg] = 0;
 		ttk_button_holdsent[earg] = 0;
 		ttk_button_pressedfor[earg] = 0;
 
-		if ((evtarget == pf) && !hs)
+		if (evtarget == pf)
 		    eret |= evtarget->button (evtarget, earg, time);
 		break;
 	    case TTK_SCROLL:
