@@ -140,7 +140,7 @@ int apsc_down (TWidget *this, int button)
 {
     if (button == TTK_BUTTON_ACTION) {
 	appearance_set_color_scheme (ttk_menu_get_selected_item (this) -> data, 1);
-	return ttk_menu_down (this, TTK_BUTTON_MENU);
+	return ttk_menu_button (this, TTK_BUTTON_MENU, 0);
     }
     return ttk_menu_down (this, button);
 }

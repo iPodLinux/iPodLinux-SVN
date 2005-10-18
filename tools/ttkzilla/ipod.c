@@ -123,7 +123,7 @@ int ipod_set_backlight(int backlight)
 
 int ipod_set_backlight_timer(int timer)
 {
-	int times[] = {0, 1, 2, 5, 10, 30, 60, 0};
+	int times[] = {-2, 1, 2, 5, 10, 30, 60, 0};
 	pz_set_backlight_timer (times[timer]);
 	ipod_set_setting (BACKLIGHT, timer ? 1 : 0);
 	return 0;

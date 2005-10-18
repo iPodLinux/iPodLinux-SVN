@@ -424,10 +424,10 @@ static ttk_menu_item empty_menu[] = {
     /* files:*/ { N_("Delete"), { browser_delete }, 0, 0 }
 };
 
-static int action_maybequit (TWidget *this, int button) 
+static int action_maybequit (TWidget *this, int button, int time) 
 {
     if (button != TTK_BUTTON_MENU)
-	return ttk_menu_down (this, button);
+	return ttk_menu_button (this, button, 0);
     return TTK_EV_DONE;
 }
 
@@ -458,7 +458,7 @@ static int browser_action (TWidget *this, int button)
 	ttk_menu_append (popmenu, empty_menu + 4);
 	break;
     }
-    popmenu->down = action_maybequit;
+    popmenu->button = action_maybequit;
     ttk_window_set_title (popwin, _("Select Action"));
     ttk_add_widget (popwin, popmenu);
     ttk_popup_window (popwin);
@@ -491,7 +491,7 @@ static int browser_button (TWidget *this, int button, int time)
 	ttk_widget_set_timer (this, 0);
 	if (time > 1750)
 	    browser_quit (this);
-	return ttk_menu_down (this, button);
+	return ttk_menu_button (this, button, time);
     } else if (button == TTK_BUTTON_ACTION) {
 	return ttk_menu_down (this, button);
     }
