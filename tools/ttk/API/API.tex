@@ -1021,6 +1021,7 @@ void ttk_delay (int ms);
 ttk_timer ttk_create_timer (int ms, void (*callback)());
 void ttk_destroy_timer (ttk_timer tim);
 
+void ttk_set_scroll_multiplier (int num, int denom);
 void ttk_set_transition_frames (int frames);
 void ttk_set_clicker (void (*clickfn)());
   void ttk_click();
@@ -1036,6 +1037,12 @@ started. \verb|ttk_delay| sleeps for \verb|ms| milliseconds.
 \verb|ttk_create_timer| creates and returns a new timer set to call {\sf callback} once, \verb|ms| milliseconds
 from now. The returned \verb|ttk_timer| can be used as an argument to \verb|ttk_destroy_timer|
 to stop it from firing.
+
+\verb|ttk_set_scroll_multiplier| is the ``wheel sensitivity'' setting;
+it sets things up so a physical scroll of \verb|denom| units will be treated
+as one of \verb|num| units by all widgets. (Try to keep the denominator low;
+something like $127/128$ would fire 127 scroll events at once, every time
+you scrolled continuously for 128!)
 
 \verb|ttk_set_transition_frames| sets the number of frames used by the window transition;
 1 or less turns the transition off. \verb|ttk_set_clicker| sets the function used when

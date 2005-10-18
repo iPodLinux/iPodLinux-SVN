@@ -242,6 +242,7 @@ void ttk_destroy_timer (ttk_timer tim);
 
 void ttk_set_transition_frames (int frames);
 void ttk_set_clicker (void (*fn)());
+void ttk_set_scroll_multiplier (int num, int denom);
 
 // -- Implemented by GFX driver --
 
