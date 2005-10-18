@@ -296,10 +296,11 @@ int ttk_run()
     int in, st, touch;
     int iter = 0;
     const char *keys = "mfwd\n", *p;
+    static int initd = 0;
+    int local, global;
 
     ttk_started = 1;
 
-    static int initd = 0;
     if (!initd) {
 	for (i = 0; i < 128; i++) {
 	    ttk_button_presstime[i] = 0;
@@ -520,9 +521,26 @@ int ttk_run()
 	else
 	    ev = ttk_get_event (&earg);
 
-	if (ev && (!ttk_global_evhandler ||
-		   !ttk_global_evhandler (ev, earg, tick - ttk_button_presstime[earg])) &&
-	    evtarget) { /* note global call, short-circuit eval; :TRICKY: */
+	local = global = 1;
+
+	if (!ev)
+	    local = global = 0;
+
+	if (!ttk_global_evhandler)
+	    global = 0;
+	if (ev == TTK_BUTTON_DOWN) {
+	    if (!((ttk_button_pressedfor[earg] == 0 || ttk_button_pressedfor[earg] == evtarget) &&
+		  (ttk_button_presstime[earg] == 0 || ttk_button_presstime[earg] == tick))) // key rept
+		global = 0;
+	}
+
+	if (!evtarget) local = 0;
+
+	if (global) {
+	    local &= !ttk_global_evhandler (ev, earg, tick - ttk_button_presstime[earg]);
+	}
+
+	if (local) {
 	    int time = 0;
 	    /* pass event to local */
 	    switch (ev) {
