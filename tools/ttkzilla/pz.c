@@ -55,14 +55,24 @@ int pz_startup_contrast = -1;
 #endif
 //static unsigned long int last_keypress_event = 0;
 
-int battery_is_charging = 0;
-//static int low_battery_count = 0;
 int usb_connected = 0;
-int old_usb_connected = 0;
-//static int usb_dialog_open = 0;
 int fw_connected = 0;
-int old_fw_connected = 0;
-//static int fw_dialog_open = 0;
+ttk_timer connection_timer = 0;
+
+void check_connection() 
+{
+    int temp;
+    
+    if ((temp = usb_is_connected()) != usb_connected) {
+	usb_connected = temp;
+	usb_check_goto_diskmode();
+    }
+    if ((temp = fw_is_connected()) != fw_connected) {
+	fw_connected = temp;
+	fw_check_goto_diskmode();
+    }
+    connection_timer = ttk_create_timer (1000, check_connection);
+}
 
 int hold_is_on = 0;
 
@@ -151,17 +161,24 @@ static int bl_forced_on = 0;
 static void backlight_off() { if (!bl_forced_on) ipod_set_setting (BACKLIGHT, 0); bloff_timer = 0; }
 static void backlight_on()  { ipod_set_setting (BACKLIGHT, 1); }
 
-#define RESET 0
 void pz_set_backlight_timer (int sec) 
 {
-    static int last = 0;
-    if (sec) last = sec;
-    
-    backlight_on();
-    
-    if (bloff_timer) ttk_destroy_timer (bloff_timer);
-    if (last) bloff_timer = ttk_create_timer (1000*last, backlight_off);
-    else bloff_timer = 0;
+    static int last = BL_OFF;
+    if (sec != BL_RESET) last = sec;
+
+    if (last == BL_OFF) {
+	if (bloff_timer) ttk_destroy_timer (bloff_timer);
+	bloff_timer = 0;
+	backlight_off();
+    } else if (last == BL_ON) {
+	if (bloff_timer) ttk_destroy_timer (bloff_timer);
+	bloff_timer = 0;
+	backlight_on();
+    } else {
+	if (bloff_timer) ttk_destroy_timer (bloff_timer);
+	bloff_timer = ttk_create_timer (1000*last, backlight_off);
+	backlight_on();
+    }
 }
 
 int held_times[128] = { ['m'] = 500, ['d'] = 1000 }; // key => ms
@@ -181,7 +198,7 @@ int pz_new_event_handler (int ev, int earg, int time)
 {
     static int vtswitched = 0;
 
-    pz_set_backlight_timer (RESET);
+    pz_set_backlight_timer (BL_RESET);
 
     if (pz_setting_debounce && (ttk_windows->w->focus->draw != ttk_slider_draw)) {
 	pz_setting_debounce = 0;
@@ -229,35 +246,47 @@ int pz_new_event_handler (int ev, int earg, int time)
 	case TTK_BUTTON_PREVIOUS:
 	    if (ttk_button_pressed (TTK_BUTTON_MENU) && ttk_button_pressed (TTK_BUTTON_PLAY)) {
 		// vt switch code <<
+		printf ("VT SWITCH <<\n");
 		vtswitched = 1;
 		return 1;
 	    } else if (ttk_button_pressed (TTK_BUTTON_MENU) && ttk_button_pressed (TTK_BUTTON_NEXT)) {
 		// vt switch code [0]
+		printf ("VT SWITCH 0 (N-P)\n");
 		vtswitched = 1;
 		return 1;
 	    } else if (ttk_button_pressed (TTK_BUTTON_MENU) && !vtswitched) {
-		ttk_move_window (ttk_windows->w, -1, TTK_MOVE_REL);
+		TWindowStack *lastwin = ttk_windows;
+		while (lastwin->next) lastwin = lastwin->next;
+		if (lastwin->w != ttk_windows->w) {
+		    ttk_move_window (lastwin->w, 0, TTK_MOVE_ABS);
+		    printf ("WINDOW CYCLE >>\n");
+		} else
+		    printf ("WINDOW CYCLE >> DIDN'T\n");
 		return 1;
 	    }
 	    break;
 	case TTK_BUTTON_NEXT:
 	    if (ttk_button_pressed (TTK_BUTTON_MENU) && ttk_button_pressed (TTK_BUTTON_PLAY)) {
 		// vt switch code >>
+		printf ("VT SWITCH >>\n");
 		vtswitched = 1;
 		return 1;
 	    } else if (ttk_button_pressed (TTK_BUTTON_MENU) && ttk_button_pressed (TTK_BUTTON_PREVIOUS)) {
 		// vt switch code [0]
+		printf ("VT SWITCH 0 (P-N)\n");
 		vtswitched = 1;
 		return 1;
 	    } else if (ttk_button_pressed (TTK_BUTTON_MENU) && !vtswitched) {
+		printf ("WINDOW CYCLE <<\n");
 		if (ttk_windows->next) {
-		    ttk_move_window (ttk_windows->next->w, 0, TTK_MOVE_ABS);
+		    ttk_move_window (ttk_windows->w, 0, TTK_MOVE_END);
 		    return 1;
 		}
 	    }
 	    break;
 	case TTK_BUTTON_PLAY:
 	    if (ttk_button_pressed (TTK_BUTTON_MENU) && !vtswitched) {
+		printf ("WINDOW MINIMIZE\n");
 		if (ttk_windows->next) {
 		    ttk_windows->minimized = 1;
 		    return 1;
@@ -487,12 +516,15 @@ main(int argc, char **argv)
 {
 #ifdef IPOD
 	pz_startup_contrast = ipod_get_contrast();
+	usb_connected = usb_is_connected();
+	fw_connected = fw_is_connected();
 #endif
 
 	if ((root_wid = ttk_init()) == 0) {
 	    fprintf(stderr, _("ttk_init failed"));
 	    exit(1);
 	}
+	ttk_hide_window (root_wid);
 
 	ttk_set_global_event_handler (pz_new_event_handler);
 	ttk_set_global_unused_handler (pz_unused_handler);
@@ -515,23 +547,17 @@ main(int argc, char **argv)
 	}
 
 	ipod_load_settings();
-
 	load_font();
-
 	appearance_init();
-
 #ifdef MPDC
 	mpdc_init();
 #endif
 	header_init();
 
-	usb_connected = usb_is_connected();
-	old_usb_connected = usb_connected;
-	fw_connected = fw_is_connected();
-	old_fw_connected = fw_connected;
+	if (ipod_get_setting (CONTRAST) < 40) // probably no pz.conf file
+	    ipod_set_setting (CONTRAST, 96);
 
-	if (ipod_get_setting (CONTRAST) < 32) // probably no pz.conf file
-	    ipod_set_setting (CONTRAST, 64);
+	connection_timer = ttk_create_timer (1000, check_connection);
 
 	new_menu_window();
 

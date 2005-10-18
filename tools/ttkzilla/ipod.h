@@ -73,6 +73,11 @@
 #define MIN_CONTRAST	0
 #define MAX_CONTRAST	128
 
+// for pz_set_backlight_timer
+#define BL_RESET -1
+#define BL_OFF   -2
+#define BL_ON     0
+
 int ipod_get_contrast(void);
 int ipod_set_contrast(int contrast);
 
