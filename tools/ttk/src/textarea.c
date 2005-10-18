@@ -225,7 +225,9 @@ void ttk_textarea_draw (TWidget *this, ttk_surface srf)
 int ttk_textarea_scroll (TWidget *this, int dir) 
 {
     _MAKETHIS;
-    
+ 
+    int oldtop = data->top;
+   
     if (!data->scroll) return 0;
 
     data->top += 5*dir;
@@ -240,13 +242,15 @@ int ttk_textarea_scroll (TWidget *this, int dir)
 
     this->dirty++;
 
-    return TTK_EV_CLICK;
+    if (oldtop != data->top)
+	return TTK_EV_CLICK;
+    return 0;
 }
 
 
 int ttk_textarea_down (TWidget *this, int button) 
 {
-    int ret;
+    int ret = 0;
     
     switch (button) {
     case TTK_BUTTON_MENU:

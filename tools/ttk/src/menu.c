@@ -559,9 +559,10 @@ int ttk_menu_scroll (TWidget *this, int dir)
     data->sel += dir;
     
     if (data->sel >= data->visible) {
-	data->top += (data->visible - data->sel + 1);
-	data->sel -= (data->visible - data->sel + 1);
-    } else if (data->sel < 0) {
+	data->top += (data->sel - data->visible + 1);
+	data->sel -= (data->sel - data->visible + 1);
+    }
+    if (data->sel < 0) {
 	data->top += data->sel; // actually subtracts; sel is negative
 	data->sel = 0;
     }
