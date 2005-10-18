@@ -23,6 +23,7 @@ static void (*ttk_clicker)() = ttk_click;
 
 static int ttk_started = 0;
 static int ttk_podversion = -1;
+static int ttk_scroll_num = 1, ttk_scroll_denom = 1;
 
 #ifdef IPOD
 #define outl(datum,addr) (*(volatile unsigned long *)(addr) = (datum))
@@ -298,6 +299,7 @@ int ttk_run()
     const char *keys = "mfwd\n", *p;
     static int initd = 0;
     int local, global;
+    static int sofar = 0;
 
     ttk_started = 1;
 
@@ -538,6 +540,19 @@ int ttk_run()
 
 	if (global) {
 	    local &= !ttk_global_evhandler (ev, earg, tick - ttk_button_presstime[earg]);
+	}
+
+	if (ev == TTK_SCROLL) {
+	    if (ttk_scroll_denom > 1) {
+		sofar += earg;
+		if (sofar > -ttk_scroll_denom && sofar < ttk_scroll_denom) local = 0;
+		else if (sofar < 0) {
+		    while (sofar < -ttk_scroll_denom) sofar += ttk_scroll_denom;
+		} else {
+		    while (sofar > ttk_scroll_denom) sofar -= ttk_scroll_denom;
+		}
+	    }
+	    earg *= ttk_scroll_num;
 	}
 
 	if (local) {
@@ -1546,6 +1561,13 @@ void ttk_set_clicker (void (*fn)())
 {
     if (!fn) fn = do_nothing;
     ttk_clicker = fn;
+}
+
+
+void ttk_set_scroll_multiplier (int num, int denom) 
+{
+    ttk_scroll_num = num;
+    ttk_scroll_denom = denom;
 }
 
 
