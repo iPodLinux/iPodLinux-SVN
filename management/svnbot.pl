@@ -14,6 +14,8 @@ $conn = $irc->newconn( Server   => 'irc.freenode.net',
 		       Ircname  => 'iPodLinux SVN-tracking bot',
 		       Username => 'iplsvn');
 
+$SIG{'CHLD'} = sub { wait; };
+
 sub do_smtp_stuff {
     $server = IO::Socket::INET->new( Proto     => 'tcp',
 				     LocalPort => $PORT,
@@ -51,7 +53,8 @@ sub do_smtp_stuff {
 		next unless /\S/;       # blank line
 		if (/^quit/i) {
 		    print $client "221 bye\n";
-		    last;
+		    close $client;
+		    exit 0;
 		} elsif (/^helo/i or /^ehlo/i) {
 		    print $client "250 hello to you too\n";
 		} elsif (/^mail/i) {
@@ -64,7 +67,8 @@ sub do_smtp_stuff {
 		    } else {
 			print $client "551 buzz off, I'm not an open relay\n";
 			print $client "221 goodbye, spammer\n";
-			last;
+			close $client;
+			exit 0;
 		    }
 		} elsif (/^data/i) {
 		    $datamode = 1;
@@ -74,7 +78,6 @@ sub do_smtp_stuff {
 		}
 	    }
 	}
-	close $client;
     }
 }
 
