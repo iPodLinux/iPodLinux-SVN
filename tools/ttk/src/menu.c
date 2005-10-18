@@ -631,7 +631,7 @@ int ttk_menu_down (TWidget *this, int button)
 	// If you set window->data to 0x12345678, the window will be recreated
 	// anew each time it is selected. This is to support legacy code
 	if ((item->flags & TTK_MENU_MADESUB) && item->sub &&
-	    (item->sub < TTK_MENU_DESC_MAX) && (item->sub->data == 0x12345678))
+	    !(item->sub < TTK_MENU_DESC_MAX) && (item->sub->data == 0x12345678))
 	{
 	    ttk_free_window (item->sub);
 	    item->sub = 0;
