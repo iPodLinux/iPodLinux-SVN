@@ -28,7 +28,7 @@ void set_backlight_timer(void)
 
 void set_contrast(void)
 {
-	new_settings_slider_window(_("Set Contrast"), CONTRAST, 48, 112);
+	new_settings_slider_window(_("Set Contrast"), CONTRAST, 64, 128);
 }
 
 void toggle_backlight(void)
