@@ -1544,7 +1544,7 @@ void ttk_set_transition_frames (int frames)
 static void do_nothing() {}
 void ttk_set_clicker (void (*fn)()) 
 {
-    if (!fn) ttk_clicker = do_nothing;
+    if (!fn) fn = do_nothing;
     ttk_clicker = fn;
 }
 
