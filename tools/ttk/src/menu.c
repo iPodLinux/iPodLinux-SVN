@@ -640,7 +640,7 @@ int ttk_menu_down (TWidget *this, int button)
 	}
 	
 	// don't cache the directives
-	if ((item->flags & TTK_MENU_MADESUB) && (item->sub < TTK_MENU_DESC_MAX)) {
+	if ((item->flags & TTK_MENU_MADESUB) && (item->sub < TTK_MENU_DESC_MAX) && item->makesub) {
 	    item->sub = 0;
 	    item->flags &= ~TTK_MENU_MADESUB;
 	}
@@ -648,7 +648,7 @@ int ttk_menu_down (TWidget *this, int button)
 	// free-it window
 	// If you set window->data to 0x12345678, the window will be recreated
 	// anew each time it is selected. This is to support legacy code
-	if ((item->flags & TTK_MENU_MADESUB) && item->sub &&
+	if ((item->flags & TTK_MENU_MADESUB) && item->sub && item->makesub &&
 	    !(item->sub < TTK_MENU_DESC_MAX) && (item->sub->data == 0x12345678))
 	{
 	    ttk_free_window (item->sub);

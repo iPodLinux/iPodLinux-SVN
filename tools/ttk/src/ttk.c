@@ -857,28 +857,6 @@ void ttk_free_window (TWindow *win)
 }
 
 
-/*debug*/ void print_window_stack() 
-{
-    if (!ttk_windows) {
-	printf ("<empty>\n");
-	return;
-    }
-
-    TWindowStack *cur = ttk_windows;
-    if (!strcmp (cur->w->title, "TTK"))
-	printf ("%p%s", cur->w, cur->minimized? "[-]" : "");
-    else
-	printf ("%s%s", cur->w->title, cur->minimized? "[-]" : "");
-    while (cur->next) {
-	cur = cur->next;
-	if (!strcmp (cur->w->title, "TTK"))
-	    printf (", %p%s", cur->w, cur->minimized? "[-]" : "");
-	else
-	    printf (", %s%s", cur->w->title, cur->minimized? "[-]" : "");
-    }
-    printf ("\n");
-}
-
 void ttk_show_window (TWindow *win) 
 {
     if (!win->onscreen) {
@@ -918,8 +896,6 @@ void ttk_show_window (TWindow *win)
     }
 
     ttk_dirty |= TTK_DIRTY_WINDOWAREA | TTK_DIRTY_HEADER;
-
-    /* debug */ printf ("Adding window %s (%p): ", win->title, win); print_window_stack();
 }
 
 
@@ -1015,8 +991,6 @@ int ttk_hide_window (TWindow *win)
 	}
     }
 
-    /* debug */ printf ("Removing window %s (%p): ", win->title, win); print_window_stack();
-
     return ret;
 }
 
@@ -1099,13 +1073,10 @@ void ttk_move_window (TWindow *win, int offset, int whence)
 	cur->next->w = win;
 	cur->next->minimized = minimized;
 	cur->next->next = 0;
-	printf ("End-");
     }
 
     ttk_windows->minimized = 0;
     ttk_dirty |= TTK_FILTHY;
-
-    /* debug */ printf ("Moving window %s (%p) %+d w%d: ", win->title, win, offset, whence); print_window_stack();
 }
 
 
@@ -1574,11 +1545,11 @@ ttk_timer ttk_create_timer (int ms, void (*fn)())
 {
     ttk_timer cur;
     if (!ttk_timers) {
-	cur = ttk_timers = malloc (sizeof(ttk_timer));
+	cur = ttk_timers = malloc (sizeof(struct _ttk_timer));
     } else {
 	cur = ttk_timers;
 	while (cur->next) cur = cur->next;
-	cur->next = malloc (sizeof(ttk_timer));
+	cur->next = malloc (sizeof(struct _ttk_timer));
 	cur = cur->next;
     }
     cur->started = ttk_getticks();
