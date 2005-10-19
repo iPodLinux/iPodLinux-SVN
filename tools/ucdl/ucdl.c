@@ -84,7 +84,10 @@ typedef struct handle
     int nsecs, nsyms, shstrtabidx, symstrtabidx;
     char **strtabs;
     void *loc;
+    struct handle *next;
 } handle;
+
+struct handle *uCdl_loaded_modules = 0;
 
 
 // Used to determine the location of the text segment in memory.
@@ -442,6 +445,7 @@ void *uCdl_open (const char *path)
     for (sym = ret->symbols + 1, i = 1; i < ret->nsyms; i++, sym++) {
 	if (sym->sectionidx == SHN_UNDEF) {
 	    symbol *sy = mysyms;
+	    handle *curh = uCdl_loaded_modules;
 	    int defined = 0;
 
 	    sym->sectionidx = 0; /* yes, I know it's the same thing. */
@@ -456,6 +460,23 @@ void *uCdl_open (const char *path)
 		    sym->binding = STB_GLOBAL;
 		}
 		sy = sy->next;
+	    }
+
+	    while (!defined && curh) {
+		esymbol *esy;
+		int i;
+
+		for (esy = curh->symbols, i = 0; i < curh->nsyms; i++, esy++) {
+		    if (!strcmp (esy->name, sym->name)) {
+			defined++;
+			sym->value = esy->value;
+			sym->size = 0;
+			sym->type = STT_FUNC;
+			sym->binding = STB_GLOBAL;
+		    }
+		}
+
+		curh = curh->next;
 	    }
 
 	    if (defined == 0) {
@@ -593,6 +614,15 @@ void *uCdl_open (const char *path)
 		val, *addr32);
     }
 
+    handle *curh = uCdl_loaded_modules;
+    ret->next = 0;
+    if (!curh) {
+	curh = ret;
+    } else {
+	while (curh->next) curh = curh->next;
+	curh->next = ret;
+    }
+    
     return (void *)ret;
 }
 
@@ -613,13 +643,28 @@ void *uCdl_sym (void *handle, const char *name)
     return 0;
 }
 
+// Note: There's nothing preventing you from unloading a module
+// with symbols used by another module right now. It's up to the
+// app to prevent that from happening.
 void uCdl_close (void *handle) 
 {
     reloc *rel;
-    struct handle *h;
+    struct handle *h, *prev;
     int i;
     
     h = (struct handle *)handle;
+    if (h == uCdl_loaded_modules) {
+	prev = 0;
+    } else {
+	prev = uCdl_loaded_modules;
+	while (prev && prev->next && (prev->next != h))
+	    prev = prev->next;
+	
+	if (!prev->next) { // off the end
+	    fprintf (stderr, "Warning: I don't think %%%p is loaded.\n", handle);
+	    prev = 0;
+	}
+    }
 
     for (i = 0; i < h->nsecs; i++) {
 	if (h->strtabs[i]) free (h->strtabs[i]);
@@ -634,6 +679,12 @@ void uCdl_close (void *handle)
 	rel = rel->next;
     }
 
+    if (h == uCdl_loaded_modules) {
+	uCdl_loaded_modules = h->next;
+    } else if (prev) {
+	prev->next = h->next;
+    }
+
     free (h);
 }
 
@@ -643,12 +694,12 @@ int main (int argc, char **argv)
     void *handle;
 
     if (argc < 3) {
-	fprintf (stderr, "usage: ucdl symfile objfile\n");
+	fprintf (stderr, "usage: ucdl objfile\n");
 	return 1;
     }
     
-    uCdl_init (argv[1]);
-    handle = uCdl_open (argv[2]);
+    uCdl_init (argv[0]);
+    handle = uCdl_open (argv[1]);
     
     return 0;
 }
