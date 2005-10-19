@@ -85,6 +85,7 @@ void header_timer_update( void );
 
 void poweroff_ipod(void)
 {
+#ifdef IPOD
 	ipod_touch_settings();
 #ifdef MPDC
 	mpdc_destroy();
@@ -96,10 +97,14 @@ void poweroff_ipod(void)
 	printf("No poweroff binary available.  Rebooting.\n");
 	execl("/bin/reboot", "reboot", NULL);
 	exit(0);
+#else
+	pz_error ("I don't think you want to reboot your desktop...");
+#endif
 }
 
 void reboot_ipod(void)
 {
+#ifdef IPOD
 	ipod_touch_settings();
 #ifdef MPDC
 	mpdc_destroy();
@@ -107,6 +112,9 @@ void reboot_ipod(void)
 	GrClose();
 	execl("/bin/reboot", "reboot", NULL);
 	exit(0);
+#else
+	pz_error ("I don't think you want me to reboot your desktop...");
+#endif
 }
 
 void quit_podzilla(void)
