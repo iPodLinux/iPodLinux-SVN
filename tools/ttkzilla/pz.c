@@ -516,8 +516,6 @@ main(int argc, char **argv)
 {
 #ifdef IPOD
 	pz_startup_contrast = ipod_get_contrast();
-	usb_connected = usb_is_connected();
-	fw_connected = fw_is_connected();
 #endif
 
 	if ((root_wid = ttk_init()) == 0) {
@@ -528,20 +526,20 @@ main(int argc, char **argv)
 
 	ttk_set_global_event_handler (pz_new_event_handler);
 	ttk_set_global_unused_handler (pz_unused_handler);
-	
+
 #ifdef LOCALE
 	setlocale(LC_ALL, "");
 	bindtextdomain("podzilla", LOCALEDIR);
 	textdomain("podzilla");
 #endif
-	
+
 	root_gc = GrNewGC();
 	GrSetGCUseBackground(root_gc, GR_FALSE);
 	GrSetGCForeground(root_gc, BLACK);
 	GrGetScreenInfo(&screen_info);
 
 	hw_version = ipod_get_hw_version();
-	
+
 	if( hw_version && hw_version < 30000 ) { /* 1g/2g only */
 		pz_set_time_from_file();
 	}
@@ -557,11 +555,14 @@ main(int argc, char **argv)
 	if (ipod_get_setting (CONTRAST) < 40) // probably no pz.conf file
 	    ipod_set_setting (CONTRAST, 96);
 
-	connection_timer = ttk_create_timer (1000, check_connection);
-
 	new_menu_window();
 
+	connection_timer = ttk_create_timer (1000, check_connection);
+	usb_connected = usb_is_connected();
+	fw_connected = fw_is_connected();
+
 	ttk_run();
+
 	quit_podzilla();
 
 	return 0;

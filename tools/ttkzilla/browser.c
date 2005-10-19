@@ -31,6 +31,7 @@
 #endif
 #include <dirent.h>
 #include <string.h>
+#include <errno.h>
 
 #define PZMOD
 #include "pz.h"
@@ -592,6 +593,11 @@ void new_exec_window(char *filename)
 	int i, tty0_fd, ttyfd = -1, oldvt, curvt, fd, status;
 	pid_t pid;
 
+	FILE *bdbg = fopen ("/etc/browser.dbg", "w");
+	setbuf (bdbg, 0);
+	fprintf (bdbg, "\nnew_exec_window()\n");
+	int bdbgfd = fileno (bdbg);
+
 	/* query for a free VT */
 	ttyfd = -1;
 	tty0_fd = -1;
@@ -602,9 +608,14 @@ void new_exec_window(char *filename)
 	if (tty0_fd < 0) {
 		tty0_fd = dup(0); /* STDIN is a VT? */
 	}
+
+	fprintf (bdbg, "tty0_fd = %d\n", tty0_fd);
+
 	ioctl(tty0_fd, VT_OPENQRY, &curvt);
 	close(tty0_fd);
 	
+	fprintf (bdbg, "curvt = %d\n", curvt);
+
 	if ((geteuid() == 0) && (curvt > 0)) {
 		for (i = 0; vcs[i] && (ttyfd < 0); ++i) {
 			char vtpath[12];
@@ -618,30 +629,36 @@ void new_exec_window(char *filename)
 		return;
 	}
 
+	fprintf (bdbg, "ttyfd = %d\n", ttyfd);
+
 	if (ttyfd >= 0) {
 		/* switch to the correct vt */
 		if (curvt > 0) {
 			struct vt_stat vtstate;
 
+			fprintf (bdbg, "switching\n");
+
 			if (ioctl(ttyfd, VT_GETSTATE, &vtstate) == 0) {
 				oldvt = vtstate.v_active;
 			}
+			fprintf (bdbg, "oldvt = %d\n", oldvt);
 			if (ioctl(ttyfd, VT_ACTIVATE, curvt)) {
 				perror("child VT_ACTIVATE");
 				return;
 			}
-			if (ioctl(ttyfd, VT_WAITACTIVE, curvt)) {
-				perror("child VT_WAITACTIVE");
-				return;
-			}
+			fprintf (bdbg, "on new vt\n");
 		}
 	}
 
+	fprintf (bdbg, "vt switched\n");
+
 	switch(pid = vfork()) {
 	case -1: /* error */
-		perror("vfork");
+	    fprintf (bdbg, "vfork error: %s\n", strerror (errno));
+		pz_perror("vfork");
 		break;
 	case 0: /* child */
+	    write (bdbgfd, "in child\n", 9);
 		close(ttyfd);
 		if(setsid() < 0) {
 			perror("setsid");
@@ -666,52 +683,62 @@ void new_exec_window(char *filename)
 			perror("stderr dup");
 			_exit(1);
 		}
+		write (bdbgfd, "execing\n", 8);
 
 		execl("/bin/sh", "sh", "-c", filename);
+
+		write (bdbgfd, "failed\n", 7);
 		fprintf(stderr, _("Exec failed! (Check Permissions)\n"));
 		_exit(1);
 		break;
 	default: /* parent */
+	    fprintf (bdbg, "@%d waiting...\n", ttk_getticks());
 		waitpid(pid, &status, 0);
+		fprintf (bdbg, "@%d status=%d\n", ttk_getticks(), status);
 		sleep(5);
 		
 		if (oldvt > 0) {
+		    fprintf (bdbg, "deactivating\n");
         		if (ioctl(ttyfd, VT_ACTIVATE, oldvt)) {
 				perror("parent VT_ACTIVATE");
 				return;
 			}
-        		if(ioctl(ttyfd, VT_WAITACTIVE, oldvt)) {
-				perror("parent VT_WAITACTIVE");
-				return;
-			}
+			usleep (200000);
+			fprintf (bdbg, "old vt activated\n");
 		}
+		fprintf (bdbg, "switched back\n");
+		
 		if (ttyfd > 0)
 			close(ttyfd);
 
+		fprintf (bdbg, "closed ttyfd\n");
+		
 		if (curvt > 0) {
 			int oldfd;
+
+			fprintf (bdbg, "disallocating vt\n");
 
 			if ((oldfd = open("/dev/vc/1", O_RDWR)) < 0)
 				oldfd = open("/dev/tty1", O_RDWR);
 			if (oldfd >= 0) {
+			    fprintf (bdbg, "vt_disallocate... ");
 				if (ioctl(oldfd, VT_DISALLOCATE, curvt)) {
+				    fprintf (bdbg, "failed\n");
 					perror("VT_DISALLOCATE");
 					return;
 				}
+				fprintf (bdbg, "success!\n");
 				close(oldfd);
 			}
+			fprintf (bdbg, "done\n");
 		}
+
+		fprintf (bdbg, "disallocated stuff\n");
 		break;
 	}
 
-	if (oldvt > 0) {
-	    ioctl (ttyfd, VT_ACTIVATE, oldvt);
-	    ioctl (ttyfd, VT_WAITACTIVE, oldvt);
-	}
-	if (ttyfd > 0) {
-	    ioctl (ttyfd, VT_DISALLOCATE, curvt);
-	    close (ttyfd);
-	}
+	fprintf (bdbg, "exiting\n");
+	fclose (bdbg);
 #else
 	new_message_window(filename);
 #endif /* IPOD */

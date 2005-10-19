@@ -184,7 +184,6 @@ static ttk_menu_item extras_menu[] = {
 };
 
 static TWindow *menu_reset_settings (ttk_menu_item *item) { ipod_reset_settings(); return TTK_MENU_UPONE; }
-static TWindow *menu_save_settings (ttk_menu_item *item) { ipod_save_settings(); return TTK_MENU_UPONE; }
 
 static ttk_menu_item reset_menu[] = {
 	{N_("Cancel"), { .sub = (TWindow *)TTK_MENU_UPONE }, TTK_MENU_MADESUB},
@@ -223,7 +222,6 @@ static ttk_menu_item appearance_menu[] = {
 };
 
 static ttk_menu_item settings_menu[] = {
-	{N_("Save and Exit"), {menu_save_settings}},
 	{N_("About"), {about_podzilla}},
 	{N_("Credits"), {show_credits}},
 	{N_("Date & Time"), {ttk_mh_sub}, TTK_MENU_ICON_SUB, clocks_menu},
@@ -238,6 +236,7 @@ static ttk_menu_item settings_menu[] = {
 	{N_("Appearance"), {ttk_mh_sub}, TTK_MENU_ICON_SUB, appearance_menu},
 	{N_("Browser Path Display"), MENU_BOOL (BROWSER_PATH)},
 	{N_("Show Hidden Files"), MENU_BOOL (BROWSER_HIDDEN)},
+	{N_("Exit Without Saving"), {.sub=TTK_MENU_UPONE}, TTK_MENU_MADESUB},
 	{N_("Reset All Settings"), {ttk_mh_sub}, TTK_MENU_ICON_SUB, reset_menu},
 	{0}
 };
@@ -277,6 +276,24 @@ static ttk_menu_item power_menu[] = {
 	{0}
 };
 
+int settings_button (TWidget *this, int button, int time)
+{
+    if (button == TTK_BUTTON_MENU)
+       ipod_save_settings();
+    return ttk_menu_button (this, button, time);
+}
+
+TWindow *pz_settings_sub (ttk_menu_item *item)
+{
+    TWindow *ret = ttk_new_window();
+    TWidget *menu = ttk_new_menu_widget (item->data, ttk_menufont, item->menuwidth, item->menuheight);
+    ttk_window_title (ret, item->name);
+    menu->draw (menu, ret->srf);
+    menu->button = settings_button;
+    ttk_add_widget (ret, menu);
+    return ret;
+}
+
 static ttk_menu_item main_menu[] = {
 #ifdef MPDC
 	{N_("Music"), {ttk_mh_sub}, TTK_MENU_ICON_SUB, mpdc_menu},
@@ -284,7 +301,7 @@ static ttk_menu_item main_menu[] = {
 	{N_("Music"), {ttk_mh_sub}, TTK_MENU_ICON_SUB, itunes_menu},
 #endif /* MPDC */
 	{N_("Extras"), {ttk_mh_sub}, TTK_MENU_ICON_SUB, extras_menu},
-	{N_("Settings"), {ttk_mh_sub}, TTK_MENU_ICON_SUB, settings_menu},
+	{N_("Settings"), {pz_settings_sub}, TTK_MENU_ICON_SUB, settings_menu},
 #ifdef MPDC
 	{N_("Now Playing"), {pz_mh_legacy}, 0, mpd_currently_playing},
 #endif /* MPDC */
