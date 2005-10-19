@@ -246,7 +246,7 @@ int dialog_scroll (TWidget *this, int dir)
 #ifdef IPOD
     static int sofar = 0;
     sofar += dir;
-    if (sofar > -7 || sofar < 7) return 0;
+    if (sofar > -7 && sofar < 7) return 0;
     dir = sofar / 7;
     sofar = 0;
 #endif
