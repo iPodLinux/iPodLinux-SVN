@@ -687,8 +687,9 @@ are set to a sensible default.
 is shown onscreen, it is hidden first. {\bf All widgets in the window are also freed.}
 \item[{\tt ttk\_show\_window}] shows a window onscreen.
 \item[{\tt ttk\_hide\_window}] hides it. \returns the number of windows hidden (can
-be more than 1 in degenerate cases or 0 if \verb|win| is not shown), or $-1$ if \verb|win|
-is the last window onscreen. (If $-1$ is returned, \verb|win| is \emph{not} hidden.)
+be more than 1 in degenerate cases or 0 if \verb|win| is not shown). \verb|win| will
+be hidden even if it is the last window onscreen; however, in that case \verb|ttk_run()|
+will exit very soon.
 \item[{\tt ttk\_draw\_window}] draws a window to the screen in exactly the manner used by
 \verb|ttk_run()|. It is useful mainly for multi-window interfaces, where
 lower windows need to be drawn though they are not receiving input, and in combination with
