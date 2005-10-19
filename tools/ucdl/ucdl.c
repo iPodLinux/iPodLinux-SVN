@@ -467,7 +467,7 @@ void *uCdl_open (const char *path)
 		int i;
 
 		for (esy = curh->symbols, i = 0; i < curh->nsyms; i++, esy++) {
-		    if (!strcmp (esy->name, sym->name)) {
+		    if (!strcmp (esy->name, sym->name) && esy->binding == STB_GLOBAL) {
 			defined++;
 			sym->value = esy->value;
 			sym->size = 0;
