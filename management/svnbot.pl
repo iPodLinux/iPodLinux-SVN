@@ -6,13 +6,13 @@ use Data::Dumper;
 
 use POSIX qw/getpid setsid/;
 
-my($CHANNEL) = "#ipodlinux.bot";
-my($KEY)     = "";
+my($CHANNEL) = "#ipodlinux.dev";
+my($KEY)     = "rs232";
 
 sub parse_data($) {
     my(@data) = split /\n/, $_[0];
     my($headers) = 1;
-    my($user,$date,$log,$tracurl);
+    my($user,$date,@log,$tracurl);
     my($key) = "";
     my(@files) = ();
     for (@data) {
@@ -28,7 +28,7 @@ sub parse_data($) {
 	    } elsif (/^\s\s\s\s(.*)/ or $key eq "Changes") {
 		$val = $1;
 		if ($key eq "Log") {
-		    $log = $val;
+		    push @log, $val;
 		} elsif ($key eq "Trac view") {
 		    $tracurl = $val;
 		} elsif ($key eq "Changes") {
@@ -80,6 +80,11 @@ sub parse_data($) {
 	}
     }
 
+    my($log) = join "; " => @log;
+    if (length $log >= 256) {
+	$log = substr $log, 0, 255;
+    }
+
     $conn->privmsg ($CHANNEL, "03$user * $flist: $log ($tracurl)");
 }
 
@@ -102,7 +107,7 @@ sub on_msg {
     if ($arg =~ /restart/) {
 	$SIG{'TERM'} = sub { };
 	kill -15, getpid;
-	exec "svnbot.pl";
+	exec "./svnbot.pl";
     }
     if ($arg =~ /join (#[a-zA-Z0-9.-]*) (.*)?/) {
 	$self->join($1, $2);
@@ -116,6 +121,7 @@ sub on_connect {
     my $self = shift;
     $self->join($CHANNEL, $KEY);
     $self->privmsg("nickserv", "identify ipsofatso");
+    alarm 5;
 }
 
 my($bg) = 1;
@@ -129,14 +135,13 @@ if (defined($ARGV[0])) {
 	exit 0;
     } elsif ($ARGV[0] eq "-q") {
 	# queue message
+        chdir "/home/oremanj/dev/ipl/management";
 	-d ".svnc" or mkdir ".svnc";
 	chdir ".svnc";
-	open FILE, ">".time.".".getpid.".svn";
+	umask 0;
+	open FILE, ">".time.".".getpid.".svn" or die "Can't open >SOMEID.svn: $!\n";
 	print FILE while <STDIN>;
 	close FILE;
-	open PIDFILE, "svnbot.pid" or die "svnbot not running\n";
-	$pid = <PIDFILE>; chomp $pid; close PIDFILE;
-	kill 1, $pid or die "unable to signal svnbot\n";
 	exit 0;
     } elsif ($ARGV[0] eq "-f") {
 	$bg = 0;
@@ -147,26 +152,18 @@ if ($bg) {
     exit 0 if fork; setsid;
 }
 
-$SIG{'HUP'} = sub {
-    chdir ".svnc";
-    opendir SVNC, "." or do {
-	$conn->privmsg($CHANNEL, "I'm misconfigured. Bye.");
-	exit 1;
-    };
-    @newfiles = grep { /^[0-9]*\.[0-9]*\.svn$/ } readdir SVNC;
-    closedir SVNC;
+$SIG{'ALRM'} = sub {
+    @newfiles = </home/oremanj/dev/ipl/management/.svnc/*.*.svn>;
     for (@newfiles) {
-	local $/ = 0;
+	local $/; # slurp mode
 	open THISF, $_;
 	my($data) = <THISF>;
 	close THISF;
-
-	print "== $_ ==\n";
-        print <THISF>;
-	print "<< End >>\n\n";
+	unlink;
 
 	parse_data $data;
     }
+    alarm 5;
 };
 
 open PIDFILE, ">.svnc/svnbot.pid" or die "Can't open PID file; do you need to mkdir .svnc?\n";
