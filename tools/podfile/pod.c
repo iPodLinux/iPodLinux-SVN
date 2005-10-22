@@ -8,6 +8,7 @@
 #define BUFFERSIZE 2048
 
 unsigned long blocksize;
+char verbose = 0;
 
 long read_long(FILE *fp)
 {
@@ -112,6 +113,8 @@ void create(int num, char **args)
 		write_long(fp, offset);
 		write_long(fp, length);
 		fseek(fp, clen, SEEK_SET);
+		if (verbose)
+			printf("%s\n", args[i]);
 	}
 	fclose(fp);
 	free(offsets);
@@ -173,25 +176,75 @@ void extract(char *filename)
 		file.offset = read_long(fp);
 		file.length = read_long(fp);
 		extract_file(fp, &file);
+		if (verbose)
+			printf("%s\n", file.filename);
 		free(file.filename);
 	}
+	fclose(fp);
+}
+
+void list_files(char *filename)
+{
+	long l;
+	Pod_header header;
+	FILE *fp;
+
+	if ((fp = fopen(filename, "rb")) == NULL) {
+		perror(filename);
+		exit(2);
+	}
+	fread(&header.magic, sizeof(char), 5, fp);
+	if (memcmp(PODMAGIC, &header.magic, 5) != 0) {
+		fprintf(stderr, "Not a pod file.\n");
+		exit(3);
+	}
+	header.rev = read_short(fp);
+	if (header.rev != REV) {
+		fprintf(stderr, "Podfile is revision %d. This extracter only"
+				" extracts revision %d podfiles.\n", header.rev,
+				REV);
+		exit(4);
+	}
+	header.blocksize = read_long(fp);
+	header.file_count = read_long(fp);
+
+	if (verbose)
+		puts("  length@address \tfilename");
+	for (l = header.file_count; l > 0; l--) {
+		Ar_file file;
+		file.type = read_short(fp);
+		file.filename = read_string(fp);
+		file.offset = read_long(fp);
+		file.length = read_long(fp);
+		if (verbose)
+			printf("%08ld@%#08lx\t", file.length, file.offset);
+		printf("%s\n", file.filename);
+		free(file.filename);
+	}
+	if (verbose)
+		printf("files: %ld\nblocksize: %ld\nrevision: %d\n",
+				header.file_count,header.blocksize,header.rev);
 	fclose(fp);
 }
 
 void usage(char *rstr)
 {
 	fprintf(stderr, "%s -x <archive>\n"
+			"%s -l <archive>\n"
 			"%s [-b <blocksize>] -c <archive> ...\n"
 			"      -x   extract archive\n"
 			"      -c   create archive from files\n"
+			"      -l   list files in archive\n"
+			"      -v   verbose\n"
 			"      -b   specify blocksize to use when creating\n",
-			rstr, rstr);	
+			rstr, rstr, rstr);	
 }
 
 int main(int argc, char **argv)
 {
 	char ext = 0;
 	char creat = 0;
+	char list = 0;
 	int ch;
 
 	char *app = strrchr(argv[0], '/');
@@ -199,7 +252,7 @@ int main(int argc, char **argv)
 		app = argv[0];
 	blocksize = DEFAULT_BLOCKSIZE;
 
-	while ((ch = getopt(argc, argv, "xcb:")) != -1) {
+	while ((ch = getopt(argc, argv, "b:clvx")) != -1) {
 		switch (ch) {
 		case 'x':
 			ext = 1;
@@ -207,8 +260,14 @@ int main(int argc, char **argv)
 		case 'c':
 			creat = 1;
 			break;
+		case 'l':
+			list = 1;
+			break;
 		case 'b':
 			blocksize = atol(optarg);
+			break;
+		case 'v':
+			verbose = 1;
 			break;
 		default:
 			usage(app);
@@ -218,8 +277,9 @@ int main(int argc, char **argv)
 	argc -= optind;
 	argv += optind;
 
-	if ((ext && creat) || (!ext && !creat) ||
-			(ext && argc != 1) || (creat && argc < 2)) {
+	if ((ext && (creat || list)) || (list && (creat || ext)) ||
+	    (!ext && !creat && !list) || (ext && argc != 1) ||
+	    (creat && argc < 2) || (list && argc != 1)) {
 		usage(app);
 		return 1;
 	}
@@ -228,6 +288,9 @@ int main(int argc, char **argv)
 
 	if (creat)
 		create(argc, argv);
+
+	if (list)
+		list_files(argv[0]);
 
 	return 0;
 }
