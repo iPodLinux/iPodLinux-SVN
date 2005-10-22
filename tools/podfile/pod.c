@@ -38,14 +38,13 @@ char *read_string(FILE *fp)
 	long length, offset;
 	char *string;
 
-	length = 0;
+	length = 1;
 	offset = ftell(fp);
 	while (fgetc(fp) != '\0') length++;
 	fseek(fp, offset, SEEK_SET);
 
 	string = malloc(sizeof(char) * length);
 	fread(string, sizeof(char), length, fp);
-	fseek(fp, 1, SEEK_CUR);
 
 	return string;
 }
