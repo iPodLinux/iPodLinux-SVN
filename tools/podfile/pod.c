@@ -7,6 +7,8 @@
 
 #define BUFFERSIZE 2048
 
+unsigned long blocksize;
+
 long read_long(FILE *fp)
 {
 	long value;
@@ -70,6 +72,7 @@ void create(int num, char **args)
 	offsets = (long *)malloc(sizeof(long) * (num - 2));
 	fwrite(PODMAGIC, sizeof(char), 5, fp);
 	write_short(fp, REV);
+	write_long(fp, blocksize);
 	write_long(fp, num - 1);
 	
 
@@ -87,6 +90,10 @@ void create(int num, char **args)
 		if ((nfp = fopen(args[i], "rb")) == NULL) {
 			perror(args[i]);
 			exit(4);
+		}
+		if (offset % blocksize != 0) {
+			fseek(fp, blocksize - (offset % blocksize), SEEK_CUR);
+			offset = ftell(fp);
 		}
 		fseek(nfp, 0, SEEK_END);
 		length = ftell(nfp);
@@ -156,6 +163,7 @@ void extract(char *filename)
 				REV);
 		exit(4);
 	}
+	header.blocksize = read_long(fp);
 	header.file_count = read_long(fp);
 
 	for (l = header.file_count; l > 0; l--) {
@@ -173,9 +181,10 @@ void extract(char *filename)
 void usage(char *rstr)
 {
 	fprintf(stderr, "%s -x <archive>\n"
-			"%s -c <archive> ...\n\n"
+			"%s [-b <blocksize>] -c <archive> ...\n"
 			"      -x   extract archive\n"
-			"      -c   create archive from files\n",
+			"      -c   create archive from files\n"
+			"      -b   specify blocksize to use when creating\n",
 			rstr, rstr);	
 }
 
@@ -188,14 +197,18 @@ int main(int argc, char **argv)
 	char *app = strrchr(argv[0], '/');
 	if (!app++)
 		app = argv[0];
+	blocksize = DEFAULT_BLOCKSIZE;
 
-	while ((ch = getopt(argc, argv, "xc")) != -1) {
+	while ((ch = getopt(argc, argv, "xcb:")) != -1) {
 		switch (ch) {
 		case 'x':
 			ext = 1;
 			break;
 		case 'c':
 			creat = 1;
+			break;
+		case 'b':
+			blocksize = atol(optarg);
 			break;
 		default:
 			usage(app);

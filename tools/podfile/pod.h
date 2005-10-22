@@ -1,6 +1,7 @@
 /*
  * MAGIC (5 chars)
  * REVISION (short)
+ * BLOCKSIZE (long)
  * FILE COUNT (long)
  *	TYPE (short)
  *	FILENAME (NULL terminated)
@@ -13,11 +14,13 @@
 #define _POD_H_
 
 #define PODMAGIC "PODar"
-#define REV 1
+#define REV 2
+#define DEFAULT_BLOCKSIZE 4096
 
 typedef struct _Pod_header {
 	char magic[5];
 	unsigned short rev;
+	unsigned long blocksize;
 	unsigned long file_count;
 } Pod_header;
 
