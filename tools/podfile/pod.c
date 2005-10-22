@@ -194,13 +194,14 @@ int main(int argc, char **argv)
 			break;
 		default:
 			usage(app);
-			break;
+			return 1;
 		}
 	}
 	argc -= optind;
 	argv += optind;
 
-	if ((ext && creat) || (!ext && !creat)) {
+	if ((ext && creat) || (!ext && !creat) ||
+			(ext && argc != 1) || (creat && argc < 2)) {
 		usage(app);
 		return 1;
 	}
