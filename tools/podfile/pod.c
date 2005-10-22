@@ -150,6 +150,12 @@ void extract(char *filename)
 		exit(3);
 	}
 	header.rev = read_short(fp);
+	if (header.rev != REV) {
+		fprintf(stderr, "Podfile is revision %d. This extracter only"
+				" extracts revision %d podfiles.\n", header.rev,
+				REV);
+		exit(4);
+	}
 	header.file_count = read_long(fp);
 
 	for (l = header.file_count; l > 0; l--) {
