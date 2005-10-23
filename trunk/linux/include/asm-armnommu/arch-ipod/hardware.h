@@ -100,6 +100,7 @@ struct sysinfo_t {
 
 extern unsigned ipod_get_hw_version(void);
 extern struct sysinfo_t *ipod_get_sysinfo(void);
+extern int ipod_is_pp5022();
 
 extern void ipod_i2c_init(void);
 extern int ipod_i2c_send_bytes(unsigned int addr, unsigned int len, unsigned char *data);

@@ -21,6 +21,8 @@ static int ipod_sys_info_set;
 void ipod_set_sys_info(void);
 
 /*
+ * nano  0x000C0005
+ * mini2 0x00070002
  * ipod photo 0x60000
  * 4th generation 0x50000
  * ipod mini 0x40000
@@ -36,7 +38,7 @@ unsigned ipod_get_hw_version(void)
 	}
 
 	if (ipod_sys_info_set > 0) {
-		return ipod_sys_info.boardHwSwInterfaceRev;
+		return system_rev;
 	}
 
 	return 0x0;
@@ -55,7 +57,7 @@ struct sysinfo_t *ipod_get_sysinfo(void)
 	return 0x0;
 }
 
-static int is_pp5022(void) {
+int ipod_is_pp5022(void) {
 	return (inl(0x70000000) << 8) >> 24 == '2';
 }
 
@@ -65,7 +67,7 @@ void ipod_set_sys_info(void)
 		unsigned sysinfo_tag = SYSINFO_TAG;
 		struct sysinfo_t ** sysinfo_ptr = SYSINFO_PTR;
 
-		if (is_pp5022()) {
+		if (ipod_is_pp5022()) {
 			sysinfo_tag = SYSINFO_TAG_PP5022;
 			sysinfo_ptr = SYSINFO_PTR_PP5022;
 		}
@@ -74,7 +76,12 @@ void ipod_set_sys_info(void)
 				&& (*(struct sysinfo_t **)sysinfo_ptr)->IsyS ==  *(unsigned *)"IsyS" ) {
 			memcpy(&ipod_sys_info, *sysinfo_ptr, sizeof(struct sysinfo_t));
 			ipod_sys_info_set = 1;
-			system_rev = ipod_sys_info.boardHwSwInterfaceRev;
+			/* magic length based on newer ipod nano sysinfo */
+			if (ipod_sys_info.len == 0xf8) {
+				system_rev = ipod_sys_info.sdram_zero2;
+			} else {
+				system_rev = ipod_sys_info.boardHwSwInterfaceRev;
+			}
 		}
 		else {
 			ipod_sys_info_set = -1;
@@ -477,6 +484,7 @@ void ipod_handle_dma(void)
 
 EXPORT_SYMBOL(ipod_get_hw_version);
 EXPORT_SYMBOL(ipod_get_sysinfo);
+EXPORT_SYMBOL(ipod_is_pp5022);
 EXPORT_SYMBOL(ipod_i2c_init);
 EXPORT_SYMBOL(ipod_i2c_send_bytes);
 EXPORT_SYMBOL(ipod_i2c_send);
