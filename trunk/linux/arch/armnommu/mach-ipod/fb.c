@@ -48,6 +48,9 @@
 #define IPOD_PHOTO_LCD_WIDTH	220
 #define IPOD_PHOTO_LCD_HEIGHT	176
 
+#define IPOD_NANO_LCD_WIDTH	176
+#define IPOD_NANO_LCD_HEIGHT	132
+
 static int ipod_hw_ver;
 
 
@@ -58,8 +61,10 @@ static unsigned long lcd_busy_mask;
 static unsigned long lcd_width;
 static unsigned long lcd_height;
 
+static unsigned long lcd_type;
+
 /* allow for 16bpp for photo res */ /* Sized to max we could possibly need */
-static char ipod_scr[IPOD_PHOTO_LCD_HEIGHT * IPOD_PHOTO_LCD_WIDTH * 2];
+static char ipod_scr[IPOD_PHOTO_LCD_HEIGHT * IPOD_PHOTO_LCD_WIDTH * 8];
 
 static unsigned int lcd_contrast = 0x6a;	/* required for mini2 */
 
@@ -127,20 +132,11 @@ lcd_prepare_cmd(int cmd)
 }
 
 /* send LCD command and data */
+/* this is only used for b&w lcds */
 static void lcd_cmd_and_data(int cmd, int data_lo, int data_hi)
 {
-	if (ipod_hw_ver == 0x6) {
-		lcd_wait_write();
-		outl(cmd | 0x80000000, 0x70008A0C);
-
-		lcd_wait_write();
-		outl(data_lo | 0x80000000, 0x70008A0C);
-	}
-	else {
-		lcd_prepare_cmd(cmd);
-
-		lcd_send_data(data_lo, data_hi);
-	}
+	lcd_prepare_cmd(cmd);
+	lcd_send_data(data_lo, data_hi);
 }
 
 static unsigned
@@ -182,9 +178,9 @@ get_backlight(void)
 {
 	if (ipod_hw_ver >= 0x04)
 	{
-		/* is Port B bit 4 on or off */
+		/* is Port B03 on or off */
 		if (inl(0x6000d824) & (1<<3)) {
-			if (ipod_hw_ver == 0x5 || ipod_hw_ver == 0x6) {
+			if (ipod_hw_ver == 0x5 || ipod_hw_ver == 0x6 || ipod_hw_ver == 0xc) {
 				return (inl(0x7000a010) >> 16) & 0xff;
 			}
 
@@ -192,9 +188,7 @@ get_backlight(void)
 		}
 
 		return 0;
-	}
-	else
-	{
+	} else {
 		return inl(lcd_base) & 0x2 ? 1 : 0;
 	}
 }
@@ -209,19 +203,25 @@ set_backlight(int on)
 				/* brightness full */
 				outl(0x80000000 | (0xff << 16), 0x7000a010);
 
-				/* set port b bit 3 on */
+				/* set port B03 on */
 				outl(((0x100 | 1) << 3), 0x6000d824);
 			}
 			else {
 				/* fades backlght off on 4g */
+				/* GPO D01 disable */
 				outl(inl(0x70000084) & ~0x2000000, 0x70000084);
 				outl(0x80000000, 0x7000a010);
 			}
 		} else if (ipod_hw_ver == 0x04 || ipod_hw_ver == 0x7) {
+			/* set port B03 */
 			outl(((0x100 | (on ? 1 : 0)) << 3), 0x6000d824);
+		} else if (ipod_hw_ver == 0xc) {
+			/* set port B03 */
+			outl(((0x100 | (on ? 1 : 0)) << 3), 0x6000d824);
+			/* set port L07 */
+			outl(((0x100 | (on ? 1 : 0)) << 7), 0x6000d12c);
 		}
-	}
-	else {
+	} else {
 		int lcd_state;
 
 		lcd_state = inl(IPOD_PP5002_LCD_BASE);
@@ -303,15 +303,15 @@ init_lcd(void)
 	}
 
 	if (ipod_hw_ver == 0x5 || ipod_hw_ver == 0x6) {
-		outl(inl(0x6000d004) | 0x4, 0x6000d004); /* port b bit 2 */
-		outl(inl(0x6000d004) | 0x8, 0x6000d004); /* port b bit 3 */
-		outl(inl(0x70000084) | 0x2000000, 0x70000084);
-		outl(inl(0x70000080) | 0x2000000, 0x70000080);
+		outl(inl(0x6000d004) | 0x4, 0x6000d004); /* B02 enable */
+		outl(inl(0x6000d004) | 0x8, 0x6000d004); /* B03 enable */
+		outl(inl(0x70000084) | 0x2000000, 0x70000084); /* D01 enable */
+		outl(inl(0x70000080) | 0x2000000, 0x70000080); /* D01 =1 */
 
-		outl(inl(0x6000600c) | 0x20000,    0x6000600c);
+		outl(inl(0x6000600c) | 0x20000, 0x6000600c);	/* PWM enable */
 	}
 
-	if (ipod_hw_ver == 0x6) {
+	if (ipod_hw_ver == 0x6 && lcd_type == 0) {
 		lcd_cmd_data(0xef, 0x0);
 		lcd_cmd_data(0x1, 0x0);
 		lcd_cmd_data(0x80, 0x1);
@@ -323,26 +323,7 @@ init_lcd(void)
 	}
 
 	/* backlight off & set grayscale */
-	set_backlight(0);
-}
-
-
-void contrast_up(void)
-{
-	int contrast = get_contrast();
-	if ( contrast < 0xff ) {
-		contrast++; 
-		lcd_cmd_and_data(0x4, 0x4, contrast);
-	}
-}
-
-void contrast_down(void)
-{
-	int contrast = get_contrast();
-	if ( contrast > 0 ) {
-		contrast--; 
-		lcd_cmd_and_data(0x4, 0x4, contrast);
-	}
+	set_backlight(1);
 }
 
 static void ipod_update_display(struct display *p, int sx, int sy, int mx, int my)
@@ -378,33 +359,97 @@ static void ipod_update_display(struct display *p, int sx, int sy, int mx, int m
 	}
 }
 
-static void lcd_cmd_data(int cmd, int data)
+static void lcd_send_lo(int v)
 {
 	lcd_wait_write();
-	outl(cmd | 0x80000000, 0x70008A0C);
+	outl(v | 0x80000000, 0x70008A0C);
+}
 
+static void lcd_send_hi(int v)
+{
 	lcd_wait_write();
-	outl(data | 0x80000000, 0x70008A0C);
+	outl(v | 0x81000000, 0x70008A0C);
+}
+
+static void lcd_cmd_data(int cmd, int data)
+{
+	if (lcd_type == 0) {
+		lcd_send_lo(cmd);
+		lcd_send_lo(data);
+	} else {
+		lcd_send_lo(0x0);
+		lcd_send_lo(cmd);
+		lcd_send_hi((data >> 8) & 0xff);
+		lcd_send_hi(data & 0xff);
+	}
 }
 
 static void ipod_update_photo(struct display *p, int sx, int sy, int mx, int my)
 {
-	int startY = sy * fontheight(p);
-	int startX = sx * fontwidth(p);
+	int startx = sy * fontheight(p);
+	int starty = sx * fontwidth(p);
 	int height = (my - sy) * fontheight(p);
 	int width = (mx - sx) * fontwidth(p);
+	int rect1, rect2, rect3, rect4;
 
 	unsigned short *addr = (unsigned short *)ipod_scr;
 
-	/* start X and Y */
-	lcd_cmd_data(0x12, (startY & 0xff));
-	lcd_cmd_data(0x13, (((lcd_width - 1) - startX) & 0xff));
+	/* calculate the drawing region */
+	if (ipod_hw_ver != 0x6) {
+		rect1 = starty;			/* start horiz */
+		rect2 = startx;			/* start vert */
+		rect3 = (starty + width) - 1;	/* max horiz */
+		rect4 = (startx + height) - 1;	/* max vert */
+	} else {
+		rect1 = startx;			/* start vert */
+		rect2 = (lcd_width - 1) - starty;	/* start horiz */
+		rect3 = (startx + height) - 1;	/* end vert */
+		rect4 = (rect2 - width) + 1;		/* end horiz */
+	}
 
-	/* max X and Y */
-	lcd_cmd_data(0x15, (((startY + height) - 1) & 0xff));
-	lcd_cmd_data(0x16, (((((lcd_width - 1) - startX) - width) + 1) & 0xff));
+	/* setup the drawing region */
+	if (lcd_type == 0) {
+		lcd_cmd_data(0x12, rect1);	/* start vert */
+		lcd_cmd_data(0x13, rect2);	/* start horiz */
+		lcd_cmd_data(0x15, rect3);	/* end vert */
+		lcd_cmd_data(0x16, rect4);	/* end horiz */
+	} else {
+		/* swap max horiz < start horiz */
+		if (rect3 < rect1) {
+			int t;
+			t = rect1;
+			rect1 = rect3;
+			rect3 = t;
+		}
 
-	addr += startY * p->line_length + startX;
+		/* swap max vert < start vert */
+		if (rect4 < rect2) {
+			int t;
+			t = rect2;
+			rect2 = rect4;
+			rect4 = t;
+		}
+
+		/* max horiz << 8 | start horiz */
+		lcd_cmd_data(0x44, (rect3 << 8) | rect1);
+		/* max vert << 8 | start vert */
+		lcd_cmd_data(0x45, (rect4 << 8) | rect2);
+
+		if (ipod_hw_ver == 0x6) {
+			/* start vert = max vert */
+			rect2 = rect4;
+		}
+
+		/* position cursor (set AD0-AD15) */
+		/* start vert << 8 | start horiz */
+		lcd_cmd_data(0x21, (rect2 << 8) | rect1);
+
+		/* start drawing */
+		lcd_send_lo(0x0);
+		lcd_send_lo(0x22);
+	}
+
+	addr += startx * p->line_length + starty;
 
 	while (height > 0) {
 		int x, y;
@@ -424,10 +469,9 @@ static void ipod_update_photo(struct display *p, int sx, int sy, int mx, int my)
 		outl(0x34000000, 0x70008a20);
 
 		/* for each row */
-		for (y = 0x0; y < h; y++)
-		{
+		for (x = 0; x < h; x++) {
 			/* for each column */
-			for (x = 0; x < width; x += 2) {
+			for (y = 0; y < width; y += 2) {
 				unsigned two_pixels;
 
 				two_pixels = addr[0] | (addr[1] << 16);
@@ -632,12 +676,11 @@ static int ipod_encode_fix(struct fb_fix_screeninfo *fix, struct ipodfb_par *par
 
 	fix->type = FB_TYPE_PACKED_PIXELS;
 
-	if (ipod_hw_ver == 0x6) {
+	if (ipod_hw_ver == 0x6 || ipod_hw_ver == 0xc) {
 		fix->visual = FB_VISUAL_TRUECOLOR;
 		fix->line_length = lcd_width << 1;	/* cfb16 default */
 		fix->smem_len = lcd_height * lcd_width * 2;
-	}
-	else {
+	} else {
 		fix->visual = FB_VISUAL_PSEUDOCOLOR;	/* fixed visual */
 		fix->line_length = lcd_width >> 2;	/* cfb2 default */
 		fix->smem_len = lcd_height * (lcd_width/4);
@@ -673,12 +716,11 @@ static int ipod_decode_var(struct fb_var_screeninfo *var, struct ipodfb_par *par
 		return -EINVAL;
 	}
 
-	if (ipod_hw_ver == 0x6) {
+	if (ipod_hw_ver == 0x6 || ipod_hw_ver == 0xc) {
 		if ( var->bits_per_pixel != 16 ) {
 			return -EINVAL;
 		}
-	}
-	else {
+	} else {
 		if ( var->bits_per_pixel != 2 ) {
 			return -EINVAL;
 		}
@@ -702,10 +744,9 @@ static int ipod_encode_var(struct fb_var_screeninfo *var, struct ipodfb_par *par
 	var->xoffset = 0;
 	var->yoffset = 0;
 
-	if (ipod_hw_ver == 0x6) {
+	if (ipod_hw_ver == 0x6 || ipod_hw_ver == 0xc) {
 		var->bits_per_pixel = 16;
-	}
-	else {
+	} else {
 		var->bits_per_pixel = 2;
 		var->grayscale = 1;
 	}
@@ -784,7 +825,7 @@ static int ipod_blank(int blank_mode, const struct fb_info *info)
 {
 	static int backlight_on = -1;
 
-	if (ipod_hw_ver == 0x6) {
+	if (ipod_hw_ver == 0x6 || ipod_hw_ver == 0xc) {
 		return 0;
 	}
 
@@ -850,7 +891,7 @@ static void ipod_set_disp(const void *par, struct display *disp,
 	 */
 
 	disp->screen_base = ipod_scr;
-	if (ipod_hw_ver == 0x6) {
+	if (ipod_hw_ver == 0x6 || ipod_hw_ver == 0xc) {
 		disp->dispsw = &fbcon_ipod16;
 	}
 	else {
@@ -968,7 +1009,33 @@ int __init ipodfb_init(void)
 	ipod_hw_ver = ipod_get_hw_version() >> 16;
 	switch (ipod_hw_ver)
 	{
+	case 0xc: /* nano */
+		lcd_type = 1;
+		lcd_width = IPOD_NANO_LCD_WIDTH;
+		lcd_height = IPOD_NANO_LCD_HEIGHT;
+		ipod_rtc = IPOD_PP5020_RTC;
+		lcd_base = 0x70008a0c;
+		lcd_busy_mask = 0x80000000;
+		break;
+
 	case 6: /* photo */
+		if (ipod_get_hw_version() == 0x60000) {
+			lcd_type = 0;
+		} else {
+			int gpio_a01, gpio_a04;
+
+			/* A01 */
+			gpio_a01 = (inl(0x6000D8030) & 0x2) >> 1;
+			/* A04 */
+			gpio_a04 = (inl(0x6000D8030) & 0x10) >> 4;
+
+			if ((gpio_a01 | (gpio_a04<<1)) == 0 || (gpio_a01 | (gpio_a04<<1)) == 2) {
+				lcd_type = 0;
+			} else {
+				lcd_type = 1;
+			}
+		}
+
 		lcd_width = IPOD_PHOTO_LCD_WIDTH;
 		lcd_height = IPOD_PHOTO_LCD_HEIGHT;
 		ipod_rtc = IPOD_PP5020_RTC;
