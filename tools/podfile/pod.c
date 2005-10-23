@@ -62,6 +62,7 @@ void read_header(FILE *fp, Pod_header *header)
 	header->rev = read16(fp);
 	header->blocksize = read32(fp);
 	header->file_count = read32(fp);
+	header->filehdr_size = read32(fp);
 }
 void read_filehdr(FILE *fp, Ar_file *filehdr)
 {
@@ -78,6 +79,7 @@ void create(int num, char **args)
 	FILE *fp;
 	u_int32_t type = 0;
 	u_int32_t *offsets;
+	u_int32_t headers_size = 0;
 	int i;
 
 	if ((fp = fopen(args[0], "wb")) == NULL) {
@@ -89,6 +91,7 @@ void create(int num, char **args)
 	write16(fp, REV);
 	write32(fp, blocksize);
 	write32(fp, num - 1);
+	write32(fp, 0); // will insert filehdrs size later`
 
 	for (i = 1; i < num; i++) {
 		write16(fp, type);
@@ -97,6 +100,7 @@ void create(int num, char **args)
 		write32(fp, 0);
 		write32(fp, 0);
 		write_string(fp, args[i]);
+		headers_size += FILEHDR_SIZE + strlen (args[i]);
 	}
 	for (i = 1; i < num; i++) {
 		FILE *nfp;
@@ -131,6 +135,8 @@ void create(int num, char **args)
 		if (verbose)
 			printf("%s\n", args[i]);
 	}
+	fseek(fp, 16, SEEK_SET);
+	write32(fp, headers_size);
 	fclose(fp);
 	free(offsets);
 }

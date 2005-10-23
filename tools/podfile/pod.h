@@ -12,21 +12,24 @@
 
 #ifndef _POD_H_
 #define _POD_H_
-#include <arpa/inet.h>
 
 #define PODMAGIC "PODar"
-#define REV 3
+#define REV 4
 #define DEFAULT_BLOCKSIZE 4096
 
+#ifndef __KERNEL__
+#include <arpa/inet.h>
 #include <stdint.h>
 #include <sys/types.h>
+#endif
 
-#define HEADER_SIZE 16
+#define HEADER_SIZE 20
 typedef struct _Pod_header {
 	char magic[6];
 	u_int16_t rev;
 	u_int32_t blocksize;
 	u_int32_t file_count;
+	u_int32_t filehdr_size;
 } Pod_header;
 
 #define FILEHDR_SIZE 16 /* not including name itself, but including name length*/
