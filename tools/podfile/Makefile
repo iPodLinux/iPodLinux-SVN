@@ -10,6 +10,8 @@ OBJS = pod.o
 all: $(OBJS)
 	$(CC) -o pod $(OBJS) $(LDFLAGS)
 
+pod.o: pod.h
+
 module-2.6:
 	make -C /usr/src/linux SUBDIRS=${PWD} MOD_2_6=1 modules
 
