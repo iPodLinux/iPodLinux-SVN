@@ -11,35 +11,35 @@
 unsigned long blocksize;
 char verbose = 0;
 
-uint32_t read32(FILE *fp)
+u_int32_t read32(FILE *fp)
 {
-	uint32_t value;
-	fread(&value, sizeof(uint32_t), 1, fp);
+	u_int32_t value;
+	fread(&value, sizeof(u_int32_t), 1, fp);
 	value = ntohl(value);
 	return value;
 }
-void write32(FILE *fp, uint32_t value)
+void write32(FILE *fp, u_int32_t value)
 {
 	value = htonl(value);
-	fwrite(&value, sizeof(uint32_t), 1, fp);
+	fwrite(&value, sizeof(u_int32_t), 1, fp);
 }
 
-uint16_t read16(FILE *fp)
+u_int16_t read16(FILE *fp)
 {
-	uint16_t value;
-	fread(&value, sizeof(uint16_t), 1, fp);
+	u_int16_t value;
+	fread(&value, sizeof(u_int16_t), 1, fp);
 	value = ntohs(value);
 	return value;
 }
-void write16(FILE *fp, uint16_t value)
+void write16(FILE *fp, u_int16_t value)
 {
 	value = htons(value);
-	fwrite(&value, sizeof(uint16_t), 1, fp);
+	fwrite(&value, sizeof(u_int16_t), 1, fp);
 }
 
 char *read_string(FILE *fp)
 {
-	uint16_t length;
+	u_int16_t length;
 	char *string;
 
 	length = read16(fp);
@@ -51,7 +51,7 @@ char *read_string(FILE *fp)
 }
 void write_string(FILE *fp, char *string)
 {
-	uint16_t length = strlen (string);
+	u_int16_t length = strlen (string);
 	write16(fp, length);
 	fwrite(string, sizeof(char), length, fp);
 }
@@ -76,15 +76,15 @@ void create(int num, char **args)
 {
 	char buf[BUFFERSIZE];
 	FILE *fp;
-	uint32_t type = 0;
-	uint32_t *offsets;
+	u_int32_t type = 0;
+	u_int32_t *offsets;
 	int i;
 
 	if ((fp = fopen(args[0], "wb")) == NULL) {
 		perror(args[0]);
 		exit(2);
 	}
-	offsets = (uint32_t *)malloc(sizeof(uint32_t) * (num - 2));
+	offsets = (u_int32_t *)malloc(sizeof(u_int32_t) * (num - 2));
 	fwrite(PODMAGIC, sizeof(char), 8, fp);
 	write16(fp, REV);
 	write32(fp, blocksize);
@@ -100,8 +100,8 @@ void create(int num, char **args)
 	}
 	for (i = 1; i < num; i++) {
 		FILE *nfp;
-		uint32_t offset = ftell(fp);
-		uint32_t length, pos, clen;
+		u_int32_t offset = ftell(fp);
+		u_int32_t length, pos, clen;
 		if ((nfp = fopen(args[i], "rb")) == NULL) {
 			perror(args[i]);
 			exit(4);
@@ -138,7 +138,7 @@ void create(int num, char **args)
 void extract_file(FILE *ofp, Ar_file *file)
 {
 	char buf[BUFFERSIZE];
-	uint32_t length, pos;
+	u_int32_t length, pos;
 	FILE *fp, *nfp;
 
 	fp = fdopen(dup(fileno(ofp)), "rb");
@@ -161,7 +161,7 @@ void extract_file(FILE *ofp, Ar_file *file)
 
 void extract(char *filename)
 {
-	uint32_t l;
+	u_int32_t l;
 	Pod_header header;
 	FILE *fp;
 
@@ -183,7 +183,7 @@ void extract(char *filename)
 
 	for (l = header.file_count; l > 0; l--) {
 		Ar_file file;
-		uint32_t pos;
+		u_int32_t pos;
 		read_filehdr(fp, &file);
 		pos = ftell(fp);
 		extract_file(fp, &file);
@@ -197,7 +197,7 @@ void extract(char *filename)
 
 void list_files(char *filename)
 {
-	uint32_t l;
+	u_int32_t l;
 	Pod_header header;
 	FILE *fp;
 
@@ -221,7 +221,7 @@ void list_files(char *filename)
 		puts("  length/blocks@address \tfilename");
 	for (l = header.file_count; l > 0; l--) {
 		Ar_file file;
-		uint32_t pos;
+		u_int32_t pos;
 		read_filehdr(fp, &file);
 		pos = ftell(fp);
 		if (verbose)

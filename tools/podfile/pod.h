@@ -18,21 +18,24 @@
 #define REV 3
 #define DEFAULT_BLOCKSIZE 4096
 
+#include <stdint.h>
+#include <sys/types.h>
+
 #define HEADER_SIZE 16
 typedef struct _Pod_header {
 	char magic[6];
-	uint16_t rev;
-	uint32_t blocksize;
-	uint32_t file_count;
+	u_int16_t rev;
+	u_int32_t blocksize;
+	u_int32_t file_count;
 } Pod_header;
 
 #define FILEHDR_SIZE 16 /* not including name itself, but including name length*/
 typedef struct _Ar_file {
-	uint16_t type;
-	uint32_t offset;
-	uint32_t length;
-	uint32_t blocks;
-	uint16_t namelen;
+	u_int16_t type;
+	u_int32_t offset;
+	u_int32_t length;
+	u_int32_t blocks;
+	u_int16_t namelen;
 	char *filename; /* NOT NUL-terminated on disk, but it is in RAM */
 } Ar_file;
 
