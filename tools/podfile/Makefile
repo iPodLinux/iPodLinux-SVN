@@ -19,6 +19,6 @@ module-2.4:
 	gcc -D__KERNEL__ -DMODULE -I/usr/src/linux/include -O2 -c kpod.c
 
 clean:
-	$(RM) pod $(OBJS)
+	$(RM) pod $(OBJS) kpod.mod.c kpod.mod.o kpod.o kpod.ko
 
 endif
