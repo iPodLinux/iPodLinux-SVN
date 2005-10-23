@@ -87,11 +87,11 @@ void create(int num, char **args)
 		exit(2);
 	}
 	offsets = (u_int32_t *)malloc(sizeof(u_int32_t) * (num - 2));
-	fwrite(PODMAGIC, sizeof(char), 8, fp);
+	fwrite(PODMAGIC, sizeof(char), 6, fp);
 	write16(fp, REV);
 	write32(fp, blocksize);
 	write32(fp, num - 1);
-	write32(fp, 0); // will insert filehdrs size later`
+	write32(fp, 0); /* will insert filehdrs size later */
 
 	for (i = 1; i < num; i++) {
 		write16(fp, type);
