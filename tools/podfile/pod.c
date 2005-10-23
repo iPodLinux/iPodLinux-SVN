@@ -24,12 +24,25 @@ void write32(FILE *fp, uint32_t value)
 	fwrite(&value, sizeof(uint32_t), 1, fp);
 }
 
+uint16_t read16(FILE *fp)
+{
+	uint16_t value;
+	fread(&value, sizeof(uint16_t), 1, fp);
+	value = ntohs(value);
+	return value;
+}
+void write16(FILE *fp, uint16_t value)
+{
+	value = htons(value);
+	fwrite(&value, sizeof(uint16_t), 1, fp);
+}
+
 char *read_string(FILE *fp)
 {
-	uint32_t length;
+	uint16_t length;
 	char *string;
 
-	length = read32(fp);
+	length = read16(fp);
 	string = malloc(length + 1);
 	fread(string, sizeof(char), length, fp);
 	*(string + length) = '\0';
@@ -38,21 +51,21 @@ char *read_string(FILE *fp)
 }
 void write_string(FILE *fp, char *string)
 {
-	uint32_t length = strlen (string);
-	write32(fp, length);
+	uint16_t length = strlen (string);
+	write16(fp, length);
 	fwrite(string, sizeof(char), length, fp);
 }
 
 void read_header(FILE *fp, Pod_header *header)
 {
 	fread(header->magic, sizeof(header->magic), 1, fp);
-	header->rev = read32(fp);
+	header->rev = read16(fp);
 	header->blocksize = read32(fp);
 	header->file_count = read32(fp);
 }
 void read_filehdr(FILE *fp, Ar_file *filehdr)
 {
-	filehdr->type = read32(fp);
+	filehdr->type = read16(fp);
 	filehdr->offset = read32(fp);
 	filehdr->length = read32(fp);
 	filehdr->blocks = read32(fp);
@@ -73,12 +86,12 @@ void create(int num, char **args)
 	}
 	offsets = (uint32_t *)malloc(sizeof(uint32_t) * (num - 2));
 	fwrite(PODMAGIC, sizeof(char), 8, fp);
-	write32(fp, REV);
+	write16(fp, REV);
 	write32(fp, blocksize);
 	write32(fp, num - 1);
 
 	for (i = 1; i < num; i++) {
-		write32(fp, type);
+		write16(fp, type);
 		offsets[i - 1] = ftell(fp);
 		write32(fp, 0);
 		write32(fp, 0);
