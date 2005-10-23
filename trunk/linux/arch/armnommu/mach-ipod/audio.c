@@ -1269,6 +1269,7 @@ static void __init ipodaudio_hw_init(void)
 		break;
 	case 5:		/* 4g */
 	case 6:		/* photo */
+	case 0xc:	/* nano */
 		codec_chip = WM8975;
 		break;
 	}
