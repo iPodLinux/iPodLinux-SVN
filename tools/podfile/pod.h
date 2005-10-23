@@ -14,22 +14,25 @@
 #define _POD_H_
 
 #define PODMAGIC "PODar"
-#define REV 2
+#define REV 3
 #define DEFAULT_BLOCKSIZE 4096
 
+#define HEADER_SIZE 20
 typedef struct _Pod_header {
-	char magic[5];
-	unsigned short rev;
-	unsigned long blocksize;
-	unsigned long file_count;
-} __attribute__ ((packed)) Pod_header;
+	char magic[8];
+	uint32_t rev;
+	uint32_t blocksize;
+	uint32_t file_count;
+} Pod_header;
 
+#define FILEHDR_SIZE 20 /* not including name itself, but including name length*/
 typedef struct _Ar_file {
-	short type;
-	char *filename;
-	long offset;
-	long length;
-	void *data;
-} __attribute__ ((packed)) Ar_file;
+	uint32_t type;
+	uint32_t offset;
+	uint32_t length;
+	uint32_t blocks;
+	uint32_t namelen;
+	char *filename; /* NOT NUL-terminated on disk, but it is in RAM */
+} Ar_file;
 
 #endif /* _POD_H_ */
