@@ -12,6 +12,7 @@
 
 #ifndef _POD_H_
 #define _POD_H_
+#include <arpa/inet.h>
 
 #define PODMAGIC "PODar"
 #define REV 3
