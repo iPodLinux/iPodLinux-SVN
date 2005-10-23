@@ -22,7 +22,7 @@ typedef struct _Pod_header {
 	unsigned short rev;
 	unsigned long blocksize;
 	unsigned long file_count;
-} Pod_header;
+} __attribute__ ((packed)) Pod_header;
 
 typedef struct _Ar_file {
 	short type;
@@ -30,6 +30,6 @@ typedef struct _Ar_file {
 	long offset;
 	long length;
 	void *data;
-} Ar_file;
+} __attribute__ ((packed)) Ar_file;
 
 #endif /* _POD_H_ */
