@@ -1,9 +1,22 @@
+ifdef MOD_2_6
+
+obj-m := kpod.o
+
+else
+
 CFLAGS = -Wall -pedantic -g
-OBJS =\
-	pod.o
+OBJS = pod.o
 
 all: $(OBJS)
 	$(CC) -o pod $(OBJS) $(LDFLAGS)
 
+module-2.6:
+	make -C /usr/src/linux SUBDIRS=${PWD} MOD_2_6=1 modules
+
+module-2.4:
+	gcc -D__KERNEL__ -DMODULE -I/usr/src/linux/include -O2 -c kpod.c
+
 clean:
 	$(RM) pod $(OBJS)
+
+endif
