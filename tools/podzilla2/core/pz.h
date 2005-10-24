@@ -67,6 +67,9 @@ extern long hw_version;
 t_GR_WINDOW_ID pz_old_window (int x, int y, int w, int h,
 			      void (*do_draw)(void), int (*keystroke)(t_GR_EVENT *event));
 void pz_old_event_handler (t_GR_EVENT *ev);
+void pz_draw_header(char *header);
+t_GR_GC_ID pz_get_gc(int copy);
+TWindow *pz_mh_legacy (ttk_menu_item *); // calls the void(*)() in item->data
 #endif
 
 /** Module and .POD/.PCD functions - module.c **/
@@ -129,8 +132,8 @@ void pz_set_blob_setting (PzConfig *conf, unsigned int sid, void *val, int bytes
 /* These enable you to set reserved settings (0xf0000000+) only.
  * Don't use in modules.
  */
-void pz_reallyset_int_setting (PzConfig *conf, unsigned int sid, int val);
-void pz_reallyset_string_setting (PzConfig *conf, unsigned int sid, const char *val);
+void pz_setr_int_setting (PzConfig *conf, unsigned int sid, int val);
+void pz_setr_string_setting (PzConfig *conf, unsigned int sid, const char *val);
 #endif
 
 
@@ -144,9 +147,17 @@ void pz_menu_sort (const char *menupath);
 void pz_menu_remove (const char *menupath);
 
 
-/** Widget/window stuff - gui.c **/
+/** Widget/window/event stuff - gui.c **/
 typedef TWindow PzWindow;
 typedef TWidget PzWidget;
+
+/* #define event types here XXX */
+typedef struct _pz_Event 
+{
+    int type;
+    int arg;
+    int time;
+} PzEvent;
 
 #define PZ_WINDOW_NORMAL      0
 #define PZ_WINDOW_FULLSCREEN  1
@@ -169,12 +180,42 @@ void pz_hide_window (PzWindow *win);
 void pz_close_window (PzWindow *win);
 void pz_show_window (PzWindow *win);
 
-
 /** Secrets - secrets.c **/
 #ifndef PZ_MOD
 void pz_init_secrets();
 #endif
 int pz_has_secret (const char *key);
+
+
+/** Header - header.c **/
+#ifndef PZ_MOD
+void pz_header_init (void);
+#endif
+void pz_hwid_pack_left (TWidget *wid);
+void pz_hwid_pack_right (TWidget *wid);
+void pz_hwid_unpack (TWidget *wid);
+void pz_header_set_local (TWidget *left, TWidget *right);
+void pz_header_unset_local();
+
+
+/** Dialog and message - dialog.c **/
+int pz_dialog (const char *title, const char *text,
+	       int nbuttons, int timeout, ...); // supply [nbuttons] const char *'s in the ... for buttons
+int pz_errdialog (const char *title, const char *text,
+		  int nbuttons, int timeout, ...); // supply [nbuttons] const char *'s in the ... for buttons
+void pz_message (const char *title, const char *text);
+void pz_error (const char *title, const char *text);
+
+
+/** Vector text - vector.c **/
+void pz_vector_string (ttk_surface srf, const char *string, int x, int y, int cw, int ch, int kern, ttk_color col);
+void pz_vector_string_center (ttk_surface srf, const char *string, int x, int y, int cw, int ch, int kern, ttk_color col);
+int pz_vector_width (const char *string, int cw, int ch, int kern);
+
+
+/** Other things - pz.c **/
+void pz_register_global_hold_button (char ch, int ms, void (*handler)());
+void pz_register_global_unused_button (char ch, void (*handler)(int)); // (int) = ms button was pressed
 
 
 #endif
