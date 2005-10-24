@@ -30,7 +30,7 @@ typedef struct _Pod_header {
 	u_int32_t blocksize;
 	u_int32_t file_count;
 	u_int32_t filehdr_size;
-} Pod_header;
+} __attribute__ ((packed)) Pod_header;
 
 #define FILEHDR_SIZE 16 /* not including name itself, but including name length*/
 typedef struct _Ar_file {
@@ -40,6 +40,6 @@ typedef struct _Ar_file {
 	u_int32_t blocks;
 	u_int16_t namelen;
 	char *filename; /* NOT NUL-terminated on disk, but it is in RAM */
-} Ar_file;
+} __attribute__ ((packed)) Ar_file;
 
 #endif /* _POD_H_ */

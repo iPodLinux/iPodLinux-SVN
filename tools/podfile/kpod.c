@@ -100,8 +100,6 @@ static int podfs_fill_super (struct super_block *s, void *data, int silent)
     hdr->file_count = be32_to_cpu (hdr->file_count);
     hdr->filehdr_size = be32_to_cpu (hdr->filehdr_size);
 
-    printk ("<06>podfs: r=%d, b=%d, fc=%d, fhs=%d\n", hdr->rev, hdr->blocksize, hdr->file_count, hdr->filehdr_size);
-
     if (hdr->rev != REV) {
 	printk ("podfs: revision mismatch, I understand %d but podfile is %d.\n",
 		REV, hdr->rev);
@@ -171,25 +169,23 @@ podfs_statfs (struct super_block *sb, struct kstatfs *buf)
 
 /* Extraordinarily similar to romfs_copyfrom ;-) */
 static int
-podfs_copyfrom (struct super_block *sb, void *dest, unsigned long offset, unsigned long count) 
+podfs_copyfrom (struct super_block *sb, void *dest, unsigned int offset, unsigned int count) 
 {
     struct buffer_head *bh;
-    unsigned long avail, maxsize, res;
+    unsigned int avail, maxsize, res;
+    char *ptr;
 
-    printk ("<0> podfs_copyfrom: %p, %p, %d, %d\n", sb, dest, offset, count);
-    printk ("<0> first block: %d\n", offset / sb->s_blocksize);
     bh = sb_bread (sb, offset / sb->s_blocksize);
     if (!bh)
 	return -1;
     
     avail = sb->s_blocksize - (offset & (sb->s_blocksize - 1));
-    maxsize = min_t (unsigned long, count, avail);
-    printk ("<0> will copy %d bytes\n", maxsize);
-    memcpy (dest, ((char *)bh->b_data) + (offset & (sb->s_blocksize - 1)), maxsize);
+    maxsize = min_t (unsigned int, count, avail);
+    ptr = bh->b_data + (offset & (sb->s_blocksize - 1));
+    memcpy (dest, ptr, maxsize);
     brelse (bh);
     
     res = maxsize;
-    printk ("<0> %d bytes left\n", count - res);
     while (res < count) {
 	offset += maxsize;
 	dest += maxsize;
@@ -197,31 +193,22 @@ podfs_copyfrom (struct super_block *sb, void *dest, unsigned long offset, unsign
 	bh = sb_bread (sb, offset / sb->s_blocksize);
 	if (!bh)
 	    return -1;
-	maxsize = min_t (unsigned long, count - res, sb->s_blocksize);
+	maxsize = min_t (unsigned int, count - res, sb->s_blocksize);
 	memcpy (dest, bh->b_data, maxsize);
-	printk ("<0> %d more bytes copied from blk %d to %p, %d left\n", maxsize,
-		offset / sb->s_blocksize, dest, count - res - maxsize);
 	brelse (bh);
 	res += maxsize;
     };
-    printk ("<0> %d bytes copied, returning\n", res);
     return res;
 }
 
 static void
 podfs_fh_fix_endian (Ar_file *i) 
 {
-    printk ("<0>big endian values: t=%x o=%x l=%x b=%x nl=%x\n",
-	    i->type, i->offset, i->length, i->blocks, i->namelen);
-    
     i->type = be16_to_cpu (i->type);
     i->offset = be32_to_cpu (i->offset);
     i->length = be32_to_cpu (i->length);
     i->blocks = be32_to_cpu (i->blocks);
     i->namelen = be16_to_cpu (i->namelen);
-
-    printk ("<0>lil endian values: t=%x o=%x l=%x b=%x nl=%x\n",
-	    i->type, i->offset, i->length, i->blocks, i->namelen);
 }
 
 static int
@@ -234,27 +221,19 @@ podfs_readdir (struct file *filp, void *dirent, filldir_t filldir)
     int copied;
     Ar_file i;
     
-    printk ("<0> podfs_readdir %p, %p, %p\n", filp, dirent, filldir);
-
     offset = filp->f_pos;
     if (offset >= sbi->header->filehdr_size)
 	return 0;
 
-    printk ("<0> f->offset = %d\n", offset);
-    
     copied = 0;
     while (offset < sbi->header->filehdr_size) {
 	podfs_copyfrom (sb, &i, HEADER_SIZE + offset, FILEHDR_SIZE);
 	podfs_fh_fix_endian (&i);
-	printk ("<0> t=%hd o=%d l=%d b=%d nl=%d\n", i.type, i.offset, i.length,
-		i.blocks, i.namelen);
 	i.filename = kmalloc (i.namelen + 1, GFP_KERNEL);
 	podfs_copyfrom (sb, i.filename, HEADER_SIZE + offset + FILEHDR_SIZE, i.namelen);
 	i.filename[i.namelen] = 0;
-	printk ("<0> name = %s (len %d = %d)\n", i.filename, strlen (i.filename), i.namelen);
 
 	if (filldir (dirent, i.filename, i.namelen, offset, i.offset, (S_IFREG | 0755) >> 12)) {
-	    printk ("<0> filldir failed\n");
 	    break;
 	}
 	
@@ -262,10 +241,7 @@ podfs_readdir (struct file *filp, void *dirent, filldir_t filldir)
 	offset += FILEHDR_SIZE + i.namelen;
 	filp->f_pos = offset;
 	copied++;
-	printk ("<0> new f->offset: %d,  %d dentries copied so far\n", offset,
-		copied);
     }
-    printk ("<0> done, exiting\n");
     return 0;
 }
 
@@ -275,26 +251,21 @@ static struct dentry * podfs_lookup (struct inode *dir, struct dentry *dentry, s
     struct super_block *sb = dir->i_sb;
     struct podfs_info *sbi = (struct podfs_info *)sb->s_fs_info;
 
-    printk ("<0> podfs_lookup %p, %p, %p\n", dir, dentry, nd);
-
     while (offset < sbi->header->filehdr_size) {
 	Ar_file i;
 	struct inode *ino;
 
-	printk ("<0> offset = %d, fhsz = %d\n", offset, sbi->header->filehdr_size);
-
 	podfs_copyfrom (sb, &i, HEADER_SIZE + offset, FILEHDR_SIZE);
 	podfs_fh_fix_endian (&i);
-	printk ("<0> t=%hd o=%d l=%d b=%d nl=%d\n", i.type, i.offset, i.length,
-		i.blocks, i.namelen);
-	offset += FILEHDR_SIZE + i.namelen;
-	if (dentry->d_name.len != i.namelen)
+	if (dentry->d_name.len != i.namelen) {
+	    offset += FILEHDR_SIZE + i.namelen;
 	    continue;
+	}
 
 	i.filename = kmalloc (i.namelen + 1, GFP_KERNEL);
 	podfs_copyfrom (sb, i.filename, HEADER_SIZE + offset + FILEHDR_SIZE, i.namelen);
 	i.filename[i.namelen] = 0;
-	printk ("<0> name = %s (len %d = %d)\n", i.filename, strlen (i.filename), i.namelen);
+	offset += FILEHDR_SIZE + i.namelen;
 
 	if (memcmp (dentry->d_name.name, i.filename, i.namelen) != 0) {
 	    kfree (i.filename);
@@ -315,7 +286,6 @@ static struct dentry * podfs_lookup (struct inode *dir, struct dentry *dentry, s
 	ino->i_fop = &generic_ro_fops;
 	ino->i_data.a_ops = &podfs_aops;
 	d_add (dentry, ino);
-	printk ("<0> match! ino=%p\n", ino);
 	return NULL;
     }
     d_add (dentry, NULL);
@@ -326,7 +296,7 @@ static struct dentry * podfs_lookup (struct inode *dir, struct dentry *dentry, s
 static int podfs_readpage (struct file *file, struct page *page) 
 {
     struct inode *inode = page->mapping->host;
-    unsigned long offset, avail, readlen;
+    unsigned int offset, avail, readlen;
     void *buf;
     int result = -EIO;
     
@@ -339,7 +309,7 @@ static int podfs_readpage (struct file *file, struct page *page)
     offset = page->index << PAGE_CACHE_SHIFT;
     if (offset < inode->i_size) {
 	avail = inode->i_size - offset;
-	readlen = min_t (unsigned long, avail, PAGE_SIZE);
+	readlen = min_t (unsigned int, avail, PAGE_SIZE);
 	if (podfs_copyfrom (inode->i_sb, buf, inode->i_ino + offset, readlen) == readlen) {
 	    if (readlen < PAGE_SIZE) {
 		memset (buf + readlen, 0, PAGE_SIZE - readlen);
