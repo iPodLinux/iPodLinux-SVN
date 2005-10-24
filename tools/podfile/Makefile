@@ -1,10 +1,10 @@
 ifdef MOD_2_6
 
-obj-m := kpod.o
+obj-m := podfs.o
 
 else
 
-CFLAGS = -Wall -pedantic -g
+CFLAGS += -Wall -pedantic -g
 OBJS = pod.o
 
 all: $(OBJS)
@@ -16,9 +16,9 @@ module-2.6:
 	make -C /usr/src/linux SUBDIRS=${PWD} MOD_2_6=1 modules
 
 module-2.4:
-	gcc -D__KERNEL__ -DMODULE -I/usr/src/linux/include -O2 -c kpod.c
+	gcc -D__KERNEL__ -DMODULE -I/usr/src/linux/include -O2 -c podfs.c
 
 clean:
-	$(RM) pod $(OBJS) kpod.mod.c kpod.mod.o kpod.o kpod.ko
+	$(RM) pod $(OBJS) podfs.mod.c podfs.mod.o podfs.o podfs.ko
 
 endif
