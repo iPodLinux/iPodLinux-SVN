@@ -86,23 +86,25 @@ void create(int num, char **args)
 		perror(args[0]);
 		exit(2);
 	}
-	offsets = (u_int32_t *)malloc(sizeof(u_int32_t) * (num - 2));
+	args++; num--;
+
+	offsets = (u_int32_t *)malloc(sizeof(u_int32_t) * num);
 	fwrite(PODMAGIC, sizeof(char), 6, fp);
 	write16(fp, REV);
 	write32(fp, blocksize);
 	write32(fp, num - 1);
 	write32(fp, 0); /* will insert filehdrs size later */
 
-	for (i = 1; i < num; i++) {
+	for (i = 0; i < num; i++) {
 		write16(fp, type);
-		offsets[i - 1] = ftell(fp);
+		offsets[i] = ftell(fp);
 		write32(fp, 0);
 		write32(fp, 0);
 		write32(fp, 0);
 		write_string(fp, args[i]);
 		headers_size += FILEHDR_SIZE + strlen (args[i]);
 	}
-	for (i = 1; i < num; i++) {
+	for (i = 0; i < num; i++) {
 		FILE *nfp;
 		u_int32_t offset = ftell(fp);
 		u_int32_t length, pos, clen;
@@ -127,7 +129,7 @@ void create(int num, char **args)
 		fclose(nfp);
 
 		clen = ftell(fp);
-		fseek(fp, offsets[i - 1], SEEK_SET);
+		fseek(fp, offsets[i], SEEK_SET);
 		write32(fp, offset);
 		write32(fp, length);
 		write32(fp, (length + blocksize - 1) / blocksize);
