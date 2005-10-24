@@ -14,7 +14,7 @@
 #define _POD_H_
 
 #define PODMAGIC "PODar"
-#define REV 4
+#define REV 5
 #define DEFAULT_BLOCKSIZE 4096
 
 #ifndef __KERNEL__
