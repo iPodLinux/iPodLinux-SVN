@@ -44,7 +44,7 @@
 #ifndef _PZ_H_
 #define _PZ_H_
 
-#ifdef __PZ_H__  // old pz.h symbol
+#ifdef _PZ_H__  // old pz.h symbol
 #error Version mismatch.
 #endif
 
@@ -55,8 +55,9 @@
 #endif
 #include <ttk.h>
 
-/** Compat defs **/
+/** Compat defs - legacy.c **/
 #ifdef PZ_COMPAT
+#warning Legacy code alert... please fix ASAP.
 #define HEADER_TOPLINE 19
 #define KEY_CLICK 1
 #define KEY_UNUSED 2
@@ -66,6 +67,7 @@ extern t_GR_SCREEN_INFO screen_info;
 extern long hw_version;
 t_GR_WINDOW_ID pz_old_window (int x, int y, int w, int h,
 			      void (*do_draw)(void), int (*keystroke)(t_GR_EVENT *event));
+#define pz_new_window(x,y,w,h,d,k) pz_old_window(x,y,w,h,d,k) /* hopefully no conflict with new_win(title,XYWH,x,y,w,h) */
 void pz_old_event_handler (t_GR_EVENT *ev);
 void pz_draw_header(char *header);
 t_GR_GC_ID pz_get_gc(int copy);
@@ -138,6 +140,12 @@ void pz_setr_string_setting (PzConfig *conf, unsigned int sid, const char *val);
 
 
 /** Menu stuff - menu.c **/
+#ifndef PZ_MOD
+TWindow *pz_menu_init(void);
+#endif
+#ifdef PZ_COMPAT
+void pz_menu_add_legacy (const char *menupath, void (*handler)());
+#endif
 void pz_menu_add_action (const char *menupath, PzWindow *(*handler)());
 void pz_menu_add_option (const char *menupath, const char **choices);
 int pz_menu_get_option (const char *menupath);
@@ -182,7 +190,7 @@ void pz_show_window (PzWindow *win);
 
 /** Secrets - secrets.c **/
 #ifndef PZ_MOD
-void pz_init_secrets();
+void pz_secrets_init();
 #endif
 int pz_has_secret (const char *key);
 
@@ -190,12 +198,13 @@ int pz_has_secret (const char *key);
 /** Header - header.c **/
 #ifndef PZ_MOD
 void pz_header_init (void);
+void pz_header_fix_hold (void);
 #endif
 void pz_hwid_pack_left (TWidget *wid);
 void pz_hwid_pack_right (TWidget *wid);
 void pz_hwid_unpack (TWidget *wid);
 void pz_header_set_local (TWidget *left, TWidget *right);
-void pz_header_unset_local();
+void pz_header_unset_local (void);
 
 
 /** Dialog and message - dialog.c **/
@@ -213,9 +222,30 @@ void pz_vector_string_center (ttk_surface srf, const char *string, int x, int y,
 int pz_vector_width (const char *string, int cw, int ch, int kern);
 
 
+/** iPod stuff - ipod.c **/
+void pz_ipod_set (int sid, int value);
+void pz_ipod_fix_settings (PzConfig *conf);
+void pz_ipod_touch_settings(void);
+int pz_ipod_get_battery_level(void);
+int pz_ipod_is_charging(void);
+long pz_ipod_get_hw_version(void);
+void pz_ipod_go_to_diskmode(void);
+void pz_ipod_reboot(void);
+void pz_ipod_powerdown(void);
+int pz_ipod_usb_is_connected(void);
+int pz_ipod_fw_is_connected(void);
+
+
+
 /** Other things - pz.c **/
 void pz_register_global_hold_button (char ch, int ms, void (*handler)());
-void pz_register_global_unused_button (char ch, void (*handler)(int)); // (int) = ms button was pressed
+void pz_register_global_unused_button (char ch, void (*handler)(int, int)); // args = (button, time)
+void pz_unregister_global_hold_button (char ch);
+void pz_unregister_global_unused_button (char ch);
+void pz_handled_hold (char ch); // call from the hold handler or all hell *WILL* break loose :-)
 
+#define PZ_BL_OFF    -2
+#define PZ_BL_RESET  -1
+#define PZ_BL_ON      0
 
 #endif
