@@ -419,7 +419,7 @@ ipod_serial_init(void)
 		outl(inl(0xcf00000c) & ~0x8, 0xcf00000c);
 	}
 
-	if (hw_ver > 0x3) {
+	if (hw_ver == 0x4 || hw_ver == 0x5 || hw_ver == 0x7) {
 		/* 4g diag for ser1 */
 		outl(inl(0x70000014) & ~0xF00, 0x70000014);
 		outl(inl(0x70000014) | 0xA00, 0x70000014);
