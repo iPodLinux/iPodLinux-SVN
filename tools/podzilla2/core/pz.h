@@ -44,7 +44,7 @@
 #ifndef _PZ_H_
 #define _PZ_H_
 
-#ifdef _PZ_H__  // old pz.h symbol
+#ifdef __PZ_H__  // old pz.h symbol
 #error Version mismatch.
 #endif
 
@@ -80,6 +80,7 @@ PzModule *pz_register_module (const char *name, void (*cleanup)());
 const char *pz_module_get_path (PzModule *mod, const char *filename);
 #ifndef PZ_MOD
 /* called from core */
+void pz_modules_load (void);
 PzModule *pz_load_module (const char *name);
 void pz_unload_module (PzModule *mod);
 void *pz_module_dlsym (PzModule *mod, const char *sym);
@@ -212,8 +213,10 @@ int pz_dialog (const char *title, const char *text,
 	       int nbuttons, int timeout, ...); // supply [nbuttons] const char *'s in the ... for buttons
 int pz_errdialog (const char *title, const char *text,
 		  int nbuttons, int timeout, ...); // supply [nbuttons] const char *'s in the ... for buttons
-void pz_message (const char *title, const char *text);
-void pz_error (const char *title, const char *text);
+void pz_message_title (const char *title, const char *text);
+void pz_message (const char *text);
+void pz_error (const char *fmt, ...);
+void pz_perror (const char *firstpart);
 
 
 /** Vector text - vector.c **/
