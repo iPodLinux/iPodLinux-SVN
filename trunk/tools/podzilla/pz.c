@@ -34,7 +34,7 @@
 
 /* globals */
 GR_SCREEN_INFO screen_info;
-long hw_version;
+int hw_version;
 
 GR_WINDOW_ID root_wid;
 GR_GC_ID root_gc;
@@ -467,9 +467,10 @@ main(int argc, char **argv)
 
 	GrMapWindow(root_wid);
 
-	hw_version = ipod_get_hw_version();
+	hw_version = (int)(ipod_get_hw_version() >> 16);
 	
-	if( hw_version && hw_version < 30000 ) { /* 1g/2g only */
+	if (hw_version && hw_version < 0x3) {
+		/* 1g/2g only */
 		pz_set_time_from_file();
 	}
 	

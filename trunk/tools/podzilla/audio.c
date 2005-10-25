@@ -546,10 +546,9 @@ void new_record_window()
 	char myfilename[128];
 	time_t now;
 	struct tm *tm;
-	int hw_ver = hw_version/10000;
 
 	// 3G, 4G and photo only
-	if (!(hw_ver == 3 || hw_ver == 5 || hw_ver == 6)) {
+	if (!(hw_version == 3 || hw_version == 5 || hw_version == 6)) {
 		pz_error(_("Recording is unsupported on this hardware."));
 		return;
 	}

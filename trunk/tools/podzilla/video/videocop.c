@@ -39,8 +39,6 @@
 #define LCD_CMD 0x8
 #define LCD_DATA 0x10
 
-static int ipod_hw_ver;
-
 static unsigned long ipod_rtc = 0x60005010;
 static unsigned long lcd_base = 0x70008a0c;
 static unsigned long lcd_busy_mask = 0x80000000;
@@ -48,9 +46,10 @@ static unsigned long lcd_busy_mask = 0x80000000;
 static unsigned long lcd_width = 220;
 static unsigned long lcd_height = 176;
 
+extern int hw_version;
+
 static void video_setup_display(long hw_ver)
 {
-	
 	switch (hw_ver)
 	{
 	case 6:	
@@ -122,7 +121,7 @@ static void video_lcd_wait_write(void)
 static void video_lcd_send_data(int data_lo, int data_hi)
 {
 	video_lcd_wait_write();
-	if (ipod_hw_ver == 0x7) {
+	if (hw_version == 0x7) {
 		outl((inl(0x70003000) & ~0x1f00000) | 0x1700000, 0x70003000);
 		outl(data_hi | (data_lo << 8) | 0x760000, 0x70003008);
 	}
@@ -136,7 +135,7 @@ static void video_lcd_send_data(int data_lo, int data_hi)
 static void video_lcd_prepare_cmd(int cmd)
 {
 	video_lcd_wait_write();
-	if (ipod_hw_ver == 0x7) {
+	if (hw_version == 0x7) {
 		outl((inl(0x70003000) & ~0x1f00000) | 0x1700000, 0x70003000);
 		outl(cmd | 0x740000, 0x70003008);
 	}
@@ -278,8 +277,6 @@ static void video_ipod_update_photo(unsigned short * x, int sx, int sy, int mx, 
 	}
 }
 
-extern int hw_version;
-
 void
 ipod_handle_video()
 {
@@ -298,8 +295,7 @@ ipod_handle_video()
 	outl(0, VAR_VIDEO_BUFFER_READY);
 	outl(0, VAR_VIDEO_MODE);
 	
-	ipod_hw_ver = hw_version/10000; 
-	video_setup_display(ipod_hw_ver);
+	video_setup_display(hw_version);
 
 	while (inl(VAR_VIDEO_ON)) {
 		curBuffer = inl(VAR_VIDEO_CURBUFFER_PLAYING);	
@@ -323,7 +319,7 @@ ipod_handle_video()
 			}
 
 			curframe = inl(VAR_VIDEO_FRAMES + curBuffer * sizeof(unsigned int) * FRAMES_PER_BUFFER + x * sizeof(unsigned int));	
-			if (ipod_hw_ver==0x6) {	
+			if (hw_version==0x6) {	
 				video_ipod_update_photo((unsigned short *)curframe, 0, 0, frameWidth, frameHeight);
 			} else {
 				video_ipod_update_display((unsigned char *)curframe, 0,0, frameWidth, frameHeight);

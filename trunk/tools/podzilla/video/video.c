@@ -89,7 +89,6 @@ static int video_screenWidth;
 static int video_screenHeight;
 static int video_screenBPP;
 static int video_useKeys = 1;
-static long hw_vers = 0;
 static int curbuffer = 0;
 static int video_vol_delta = 0;
 static int video_waitUsecPause = 5000;
@@ -168,7 +167,7 @@ static void video_status_message(char *);
 //  /////////////////////////////////////////////////////
 static void cop_wakeup()
 {
-	if (hw_vers >= 40000) {
+	if (hw_version >= 0x4) {
 		outl(0x0, 0x60007004);
 	}
 	else {
@@ -698,12 +697,9 @@ static void audio_thread_stop(void)
 /* init globals to fix the not loading because I was being lazy before */
 static void init_variables()
 {
-
 	video_status = VIDEO_CONTROL_MODE_STARTING; 
 	video_useAudio = 0;
 	video_useKeys = 1;
-	hw_vers = 0;
-
 
 	audio_thread_starting = 0;
 	audio_thread_running = 0;
@@ -737,23 +733,22 @@ static int playVideo(char * filename)
 	int buffersProcessed = 0;
 	
 	curbuffer = 0;
-	hw_vers = ipod_get_hw_version();
-	if (hw_vers < 40000) {
+	if (hw_version < 0x4) {
 		video_screenWidth=160;
 		video_screenHeight=128;
 		video_screenBPP=2;
 		video_useAudio=1;
-	} else if (((hw_vers >= 40000) && (hw_vers < 50000)) || ((hw_vers >= 70000) && (hw_vers < 80000))) {
+	} else if (hw_version == 0x4 || hw_version == 0x7) {
 		video_screenWidth=138;
 		video_screenHeight=110;
 		video_screenBPP=2;
 		video_useAudio=1;
-	} else if ((hw_vers>=50000) && (hw_vers < 60000)) {
+	} else if (hw_version==0x5) {
 		video_screenWidth=160;
 		video_screenHeight=128;
 		video_screenBPP=2;
 		video_useAudio=1;
-	} else if ((hw_vers>=60000) && (hw_vers < 70000)) {
+	} else if (hw_version==0x6) {
 		video_screenWidth=220;
 		video_screenHeight=176;
 		video_screenBPP=16;

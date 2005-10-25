@@ -140,7 +140,7 @@ static int usb_test_core(int arg0)
 int usb_is_connected(void)
 {
 #ifdef IPOD
-	if (hw_version>=40000)
+	if (hw_version >= 0x4)
 	{	
 		static int r0;
 		r0 = usb_test_core(0x22fA05);
@@ -169,7 +169,7 @@ static void goto_diskmode()
 
 void usb_check_goto_diskmode()
 {
-	if (hw_version < 40000)
+	if (hw_version < 0x4)
 		return;
 
 

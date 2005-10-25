@@ -241,7 +241,7 @@ int ipod_set_blank_mode(int blank)
 void ipod_beep(void)
 {
 #ifdef IPOD
-	if (hw_version >= 40000) {
+	if (hw_version >= 0x4) {
 		int i, j;
 		outl(inl(0x70000010) & ~0xc, 0x70000010);
 		outl(inl(0x6000600c) | 0x20000, 0x6000600c);    /* enable device */
@@ -330,11 +330,12 @@ long ipod_get_hw_version(void)
 	} else {
 		return 0;
 	}
+
 	for (i = 0; !isspace(cpuinfo[i]); i++);
 	for (; isspace(cpuinfo[i]); i++);
 	ptr = cpuinfo + i + 2;
 
-	return strtol(ptr, NULL, 10);
+	return strtol(ptr, NULL, 16);
 #else
 	return 0;
 #endif
