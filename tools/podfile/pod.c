@@ -92,7 +92,7 @@ void create(int num, char **args)
 	fwrite(PODMAGIC, sizeof(char), 6, fp);
 	write16(fp, REV);
 	write32(fp, blocksize);
-	write32(fp, num - 1);
+	write32(fp, num);
 	write32(fp, 0); /* will insert filehdrs size later */
 
 	for (i = 0; i < num; i++) {
