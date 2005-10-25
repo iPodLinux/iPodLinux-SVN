@@ -249,7 +249,7 @@ void pz_set_time_from_file(void)
 	struct stat statbuf;
 
 	/* find the last modified time of the settings file */
-	stat( IPOD_SETTINGS_FILE, &statbuf );
+	stat( "/etc/podzilla/podzilla.conf", &statbuf );
 
 	/* convert timespec to timeval */
 	tv_s.tv_sec  = statbuf.st_mtime;
@@ -257,6 +257,11 @@ void pz_set_time_from_file(void)
 
 	settimeofday( &tv_s, NULL );
 #endif
+}
+
+void pz_touch_settings(void) 
+{
+	close (open ("/etc/podzilla/podzilla.conf", O_WRONLY));
 }
 
 
@@ -270,7 +275,11 @@ main(int argc, char **argv)
 	}
 	ttk_hide_window (first);
 	atexit (ttk_quit);
-	atexit (pz_ipod_touch_settings);
+	atexit (pz_touch_settings);
+
+#ifdef IPOD
+	uCdl_init (argv[0]);
+#endif
 
 	ttk_set_global_event_handler (pz_event_handler);
 	ttk_set_global_unused_handler (pz_unused_handler);
@@ -296,13 +305,12 @@ main(int argc, char **argv)
 	pz_font_load(); // in fonts.c
 	pz_secrets_init();
 	pz_header_init();
+	pz_modules_load();
 	ttk_add_window (pz_menu_init());
 
-	/**** XXX load modules here ****/
-
 	connection_timer = ttk_create_timer (1000, check_connection);
-	usb_connected = usb_is_connected();
-	fw_connected = fw_is_connected();
+	usb_connected = pz_ipod_usb_is_connected();
+	fw_connected = pz_ipod_fw_is_connected();
 
 	return ttk_run();
 }
