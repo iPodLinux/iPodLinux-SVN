@@ -17,6 +17,9 @@
 #endif
 #include <string.h>
 
+extern int mw_ipod_hw_ver;
+extern int mw_ipod_lcd_type;
+
 #include "device.h"
 #include "fb.h"
 
@@ -282,19 +285,37 @@ static void lcd_wait_write(void)
 		} while (timer_check(start, 1000) == 0);
 	}
 }
-static void lcd_cmd_data(int cmd, int data)
+
+static void lcd_send_lo(int v)
 {
 	lcd_wait_write();
-	outl(cmd | 0x80000000, 0x70008A0C);
+	outl(v | 0x80000000, 0x70008A0C);
+}
 
+static void lcd_send_hi(int v)
+{
 	lcd_wait_write();
-	outl(data | 0x80000000, 0x70008A0C);
+	outl(v | 0x81000000, 0x70008A0C);
+}
+
+static void lcd_cmd_data(int cmd, int data)
+{
+	if (mw_ipod_lcd_type == 0) {
+		lcd_send_lo(cmd);
+		lcd_send_lo(data);
+	} else {
+		lcd_send_lo(0);
+		lcd_send_lo(cmd);
+		lcd_send_hi((data >> 8) & 0xff);
+		lcd_send_hi(data & 0xff);
+	}
 }
 
 static void lcd_update_display(PSD psd, int sx, int sy, int mx, int my)
 {
 	int height = (my - sy) + 1;
 	int width = (mx - sx) + 1;
+	int rect1, rect2, rect3, rect4;
 
 	ADDR16	addr = psd->addr;
 	assert (addr != 0);
@@ -304,13 +325,57 @@ static void lcd_update_display(PSD psd, int sx, int sy, int mx, int my)
 
 	if (width & 1) width++;
 
-	/* start X and Y */
-	lcd_cmd_data(0x12, (sy & 0xff));
-	lcd_cmd_data(0x13, (((psd->xres - 1) - sx) & 0xff));
+	/* calculate the drawing region */
+	if (mw_ipod_hw_ver != 0x6) {
+		rect1 = sx;
+		rect2 = sy;
+		rect3 = (sx + width) - 1;
+		rect4 = (sy + height) - 1;
+	} else {
+		rect1 = sy;
+		rect2 = (psd->xres - 1) - sx;
+		rect3 = (sy + height) - 1;
+		rect4 = (rect2 - width) + 1;
+	}
 
-	/* max X and Y */
-	lcd_cmd_data(0x15, (((sy + height) - 1) & 0xff));
-	lcd_cmd_data(0x16, (((((psd->xres - 1) - sx) - width) + 1) & 0xff));
+	/* setup the drawing region */
+	if (mw_ipod_lcd_type == 0) {
+		lcd_cmd_data(0x12, rect1 & 0xff);
+		lcd_cmd_data(0x13, rect2 & 0xff);
+		lcd_cmd_data(0x15, rect3 & 0xff);
+		lcd_cmd_data(0x16, rect4 & 0xff);
+	} else {
+		if (rect3 < rect1) {
+			int t;
+			t = rect1;
+			rect1 = rect3;
+			rect3 = t;
+		}
+
+		if (rect4 < rect2) {
+			int t;
+			t = rect2;
+			rect2 = rect4;
+			rect4 = t;
+		}
+
+		/* max horiz << 8 | start horiz */
+		lcd_cmd_data(0x44, (rect3 << 8) | rect1);
+		/* max vert << 8 | start vert */
+		lcd_cmd_data(0x45, (rect4 << 8) | rect2);
+
+		if (mw_ipod_hw_ver == 0x6) {
+			rect2 = rect4;
+		}
+
+		/* position cursor (set AD0-AD15) */
+		/* start vert << 8 | start horiz */
+		lcd_cmd_data(0x21, (rect2 << 8) | rect1);
+
+		/* start drawing */
+		lcd_send_lo(0x0);
+		lcd_send_lo(0x22);
+	}
 
 	addr += sx + sy * psd->linelen;
 
@@ -341,6 +406,13 @@ static void lcd_update_display(PSD psd, int sx, int sy, int mx, int my)
 				addr += 2;
 
 				while ((inl(0x70008A20) & 0x1000000) == 0);
+
+				if (mw_ipod_lcd_type != 0) {
+					unsigned t = (two_pixels & ~0xFF0000) >> 8;
+					two_pixels = two_pixels & ~0xFF00;
+					two_pixels = t | (two_pixels << 8);
+				}
+
 
 				/* output 2 pixels */
 				outl(two_pixels, 0x70008B00);
