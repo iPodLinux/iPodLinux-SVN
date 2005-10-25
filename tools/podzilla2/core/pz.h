@@ -215,6 +215,7 @@ int pz_errdialog (const char *title, const char *text,
 		  int nbuttons, int timeout, ...); // supply [nbuttons] const char *'s in the ... for buttons
 void pz_message_title (const char *title, const char *text);
 void pz_message (const char *text);
+void pz_warning (const char *fmt, ...);
 void pz_error (const char *fmt, ...);
 void pz_perror (const char *firstpart);
 
