@@ -43,6 +43,9 @@ typedef struct _pz_Module
     int verified;
 
     struct _pz_Module **deps; // terminated with a 0 entry
+    const char *depsstr;
+    const char *providesstr;
+
     const char *podpath;
     const char *mountpt;
     const char *cfgpath;
@@ -61,8 +64,8 @@ static PzModule *module_head;
 #endif
 #endif
 
-// sets mod->mountpt = 0 on failure
-static void mount_pod (PzModule *mod) 
+// sets mod->mountpt = 0 on failure, returns -1. 0 = success.
+static int mount_pod (PzModule *mod) 
 {
     char devstr[64];
     int devfd, podfd;
@@ -85,7 +88,7 @@ static void mount_pod (PzModule *mod)
 	pz_perror (devstr);
 	free (mod->mountpt);
 	mod->mountpt = 0;
-	return;
+	return -1;
     }
     podfd = open (mod->podpath, O_RDONLY);
     if (podfd < 0) {
@@ -93,7 +96,7 @@ static void mount_pod (PzModule *mod)
 	free (mod->mountpt);
 	mod->mountpt = 0;
 	close (devfd);
-	return;
+	return -1;
     }
     
     ioctl (devfd, LOOP_CLR_FD, 0);
@@ -103,7 +106,7 @@ static void mount_pod (PzModule *mod)
 	mod->mountpt = 0;
 	close (podfd);
 	close (devfd);
-	return;
+	return -1;
     }
     close (podfd);
     close (devfd);
@@ -113,7 +116,7 @@ static void mount_pod (PzModule *mod)
 	pz_perror ("mount");
 	free (mod->mountpt);
 	mod->mountpt = 0;
-	return;
+	return -1;
     }
 #else
     mod->mountpt = malloc (strlen ("xpods/") + strlen (strrchr (mod->podpath, '/')) + 1);
@@ -122,10 +125,167 @@ static void mount_pod (PzModule *mod)
 	pz_error ("Couldn't access xpod dir for %s: %s", mod->mountpt, strerror (errno));
 	free (mod->mountpt);
 	mod->mountpt = 0;
-	return;
+	return -1;
     }
 #endif
+    return 0;
 }
+
+#define MODULE_INF_FILE "Module"
+static void load_modinf (PzModule *mod) 
+{
+    char buf[80];
+    sprintf (buf, "%s/" MODULE_INF_FILE);
+    FILE *fp = fopen (buf, "r");
+    if (!fp) {
+	pz_perror (buf);
+	return;
+    }
+
+    while (fgets (buf, 79, fp)) {
+	char *key, *value;
+
+	if (buf[strlen (buf) - 1] == '\n')
+	    buf[strlen (buf) - 1] = 0;
+	if (strchr (buf, '#'))
+	    *strchr (buf, '#') = 0;
+	if (strlen (buf) < 1)
+	    continue;
+	if (!strchr (buf, ':')) {
+	    pz_error (_("Line without colon in Module file for %s, ignored"), strrchr (mod->podpath, '/'));
+	    continue;
+	}
+
+	key = buf;
+	value = strchr (buf, ':') + 1;
+	while (isspace (*value)) value++;
+	while (isspace (*(value + strlen (value) - 1))) value[strlen (value) - 1] = 0;
+	*strchr (key, ':') = 0;
+
+	if (strcmp (key, "Module") == 0) {
+	    mod->name = malloc (strlen (value) + 1);
+	    strcpy (mod->name, value);
+	} else if (strcmp (key, "Display-name") == 0) {
+	    mod->longname = malloc (strlen (value) + 1);
+	    strcpy (mod->longname, value);
+	} else if (strcmp (key, "Author") == 0) {
+	    mod->author = malloc (strlen (value) + 1);
+	    strcpy (mod->author, value);
+	} else if (strcmp (key, "Signature") == 0) {
+	    mod->signature = malloc (strlen (value) + 1);
+	    strcpy (mod->signature, value);
+	} else if (strcmp (key, "Dependencies") == 0) {
+	    mod->depsstr = malloc (strlen (value) + 1);
+	    strcpy (mod->depsstr, value);
+	} else if (strcmp (key, "Provides") == 0) {
+	    mod->providesstr = malloc (strlen (value) + 1);
+	    strcpy (mod->providesstr, value);
+	} else if (strcmp (key, "Unstable") == 0) {
+	    // You can override "beta" with secret=testing but you can't
+	    // override other things, e.g. "alpha" or "does not work".
+	    if (strcmp (value, "beta") == 0 && !pz_has_secret ("testing"))
+		pz_warning (_("Module %s is in beta. Use at your own risk."), mod->name);
+	    else
+		pz_warning (_("Module %s is unstable: %s. Use at your own risk."), mod->name, value);
+	} else {
+	    pz_error (_("Unrecognized key <%s> in Module file for %s, ignored"), key,
+		      mod->name? mod->name : strrchr (mod->podpath, '/'));
+	}
+    }
+
+    if (!mod->name) {
+	pz_error (_("Module %s's module file provides no name! Using podfile name without the extension."), 
+		  strrchr (mod->podpath, '/'));
+	mod->name = malloc (strlen (strrchr (mod->podpath, '/') + 1) + 1);
+	strcpy (mod->name, strrchr (mod->podpath, '/') + 1);
+	if (strchr (mod->name, '.'))
+	    *strchr (mod->name, '.') = 0;
+    }
+    if (!mod->longname) {
+	mod->longname = malloc (strlen (mod->name) + 1);
+	strcpy (mod->longname, mod->name);
+    }
+    if (!mod->author) {
+	mod->author = malloc (strlen (_("Anonymous")) + 1);
+	strcpy (mod->author, _("Anonymous"));
+    }
+}
+
+// Turns the depsstr into a list of deps. returns 0 for success, -1 for failure
+static int fix_dependencies (PzModule *mod) 
+{
+    char separator;
+    char *str = mod->depsstr;
+    char *mod;
+    char *next;
+    PzModule *pdep;
+    int ndeps = 0;
+    
+    if (!str) return;
+    
+    if (strchr (str, ','))
+	separator = ',';
+    else if (strchr (str, ';'))
+	separator = ';';
+    else if (strchr (str, ':'))
+	separator = ':';
+    else
+	separator = ' ';
+    
+    while (*str) {
+	if (*str == separator) {
+	    ndeps++;
+	    while (*str && (isspace (*str) || (*str == separator))) str++;
+	} else {
+	    str++;
+	}
+    }
+
+    ndeps += 2; // the first one, the 0 at the end
+    mod->deps = calloc (ndeps, sizeof(PzModule *));
+    str = mod->depsstr;
+    while (isspace (str)) str++; // trim WS on left
+    pdep = mod->deps;
+
+    do {
+	if (strchr (str, separator)) {
+	    next = strchr (str, separator);
+	    *strchr (str, separator) = 0;
+	    next++;
+	    while (*next && (isspace (*next) || (*next == separator))) next++; // trim extra sep and WS on left
+	} else {
+	    next = 0;
+	}
+	while (strlen (str) && isspace (str[strlen (str) - 1])) str[strlen (str) - 1] = 0; // trim WS on right
+
+	if (strlen (str)) {
+	    // set *pdep++ to the module named [str] if it's loaded, or error out if not.
+	}
+
+	str = next;
+    } while (next);
+}
+
+
+static void free_module (PzModule *mod) 
+{
+    if (mod->name) free (mod->name);
+    if (mod->longname) free (mod->longname);
+    if (mod->author) free (mod->author);
+    if (mod->signature) free (mod->signature);
+    
+    if (mod->deps) free (mod->deps);
+    if (mod->depsstr) free (mod->depsstr);
+    if (mod->providesstr) free (mod->providesstr);
+    
+    if (mod->podpath) free (mod->podpath);
+    if (mod->mountpt) free (mod->mountpt);
+    if (mod->cfgpath) free (mod->cfgpath);
+    if (mod->handle) uCdl_close (mod->handle);
+    
+    free (mod);
+}
+
 
 void pz_modules_init() 
 {
@@ -136,7 +296,7 @@ void pz_modules_init()
 #endif
 
     struct stat st;
-    PzModule *cur;
+    PzModule *last, *cur;
     int nmods = 0;
     struct dirent *d;
     DIR *dp = opendir (MODULEDIR);
@@ -169,11 +329,11 @@ void pz_modules_init()
 	}
 
 	if (module_head == 0) {
-	    cur = module_head = malloc (sizeof(PzModule));
+	    cur = module_head = calloc (1, sizeof(PzModule));
 	} else {
 	    cur = module_head;
 	    while (cur->next) cur = cur->next;
-	    cur->next = malloc (sizeof(PzModule));
+	    cur->next = calloc (1, sizeof(PzModule));
 	    cur = cur->next;
 	}
     }
@@ -186,13 +346,40 @@ void pz_modules_init()
 
     // Mount 'em
     cur = module_head;
+    last = 0;
     while (cur) {
-	mount_pod (cur);
-	if (!cur->mountpt)
-	    pz_error ("Module %s will not be loaded.\n", strrchr (cur->podpath, "/"));
+	if (mount_pod (cur) == -1) {
+	    if (last) last->next = cur->next;
+	    else module_head = cur->next;
+	    free (cur->podpath);
+	    free (cur);
+	    cur = last->next;
+	} else {
+	    last = cur;
+	    cur = cur->next;
+	}
+    }
+
+    // Load the module.inf
+    cur = module_head;
+    while (cur) {
+	load_modinf (cur);
 	cur = cur->next;
     }
 
-    // . . .
+    // Figure out the dependencies
+    cur = module_head;
+    last = 0;
+    while (cur) {
+	if (fix_dependencies (cur) == -1) {
+	    if (last) last->next = cur->next;
+	    else module_head = cur->next;
+	    free_module (cur);
+	    cur = last->next;
+	} else {
+	    last = cur;
+	    cur = cur->next;
+	}
+    }
 }
 
