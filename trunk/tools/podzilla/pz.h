@@ -34,7 +34,7 @@
 
 /* pz.c */
 extern GR_SCREEN_INFO screen_info;
-extern long hw_version;
+extern int hw_version;
 
 void pz_draw_header(char *header);
 GR_GC_ID pz_get_gc(int copy);

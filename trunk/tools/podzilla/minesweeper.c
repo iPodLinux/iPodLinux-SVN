@@ -251,10 +251,11 @@ static void mines_draw_clear(const int x, const int y)
 static void mines_draw_xor(const int x, const int y)
 {
 	GrSetGCMode(mines_gc, GR_MODE_XOR);
-	if (hw_version == 0 || (hw_version >= 60000 && hw_version < 70000))
+	if (hw_version == 0 || hw_version == 0x6 || hw_version == 0xc) {
 		GrSetGCForeground(mines_gc, WHITE);
-	else
+	} else {
 		GrSetGCForeground(mines_gc, BLACK);
+	}
 	mines_draw_clear(x, y);
 	GrSetGCMode(mines_gc, GR_MODE_SET);
 }

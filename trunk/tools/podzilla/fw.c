@@ -31,7 +31,7 @@ static void goto_diskmode();
 int fw_is_connected(void)
 {
 #ifdef IPOD
-	if (hw_version<40000)
+	if (hw_version<0x4)
 	{	
 		if ((inl(0xcf000038) & (1<<4)))
 			return 0;

@@ -25,7 +25,7 @@
 #include "ipod.h"
 
 #define BUFSIZR 2048
-#define NUM_GENS 8
+#define NUM_GENS 13
 
 static char *buf = NULL;
 
@@ -60,7 +60,7 @@ static void populate_about() {
 	char kern[BUFSIZR], fstype[BUFSIZR];
 	char *gens[NUM_GENS] = {"", "1st Generation", "2nd Generation",
 		"3rd Generation", "Mini", "4th Generation", "Photo",
-		"2nd Gen Mini"};
+		"2nd Gen Mini", "", "", "", "5th Generation", "Nano" };
 #ifdef IPOD
 	char fslist[BUFSIZR], fsmount[11];
 #endif
@@ -92,14 +92,14 @@ static void populate_about() {
 	sprintf(fstype, "Not an iPod.");
 #endif
 
-	i = (int)(hw_version/10000);
+	i = hw_version;
 	if (i > NUM_GENS || i < 0)
 		i = 0;
 
-	buf = malloc(sizeof(char) * (18 + strlen(PZ_VER) + strlen(kern) +
+	buf = malloc(sizeof(char) * (32 + strlen(PZ_VER) + strlen(kern) +
 				strlen(fstype) + strlen(gens[i])));
-	sprintf(buf, "%s\n\n%s\n%s  %s\n    Rev. %ld", PZ_VER, kern,
-			fstype, gens[i], hw_version);
+	sprintf(buf, "%s\n\n%s\n%s  %s\n    Rev. 0x%05X", PZ_VER, kern,
+			fstype, gens[i], ipod_get_hw_version());
 }
 
 void about_podzilla()
