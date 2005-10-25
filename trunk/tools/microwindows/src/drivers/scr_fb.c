@@ -24,6 +24,10 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+#ifdef __uClinux__
+#include <string.h>
+#include <ctype.h>
+#endif
 #include "device.h"
 #include "genfont.h"
 #include "genmem.h"
@@ -75,6 +79,11 @@ static short saved_red[16];	/* original hw palette*/
 static short saved_green[16];
 static short saved_blue[16];
 
+#ifdef __uClinux__
+int mw_ipod_lcd_type;
+int mw_ipod_hw_ver;
+#endif
+
 extern SUBDRIVER fbportrait_left, fbportrait_right, fbportrait_down;
 static PSUBDRIVER pdrivers[4] = { /* portrait mode subdrivers*/
 	NULL, &fbportrait_left, &fbportrait_right, &fbportrait_down
@@ -82,6 +91,34 @@ static PSUBDRIVER pdrivers[4] = { /* portrait mode subdrivers*/
 
 /* local functions*/
 static void	set_directcolor_palette(PSD psd);
+
+#ifdef __uClinux__
+static int mw_get_hw_version(void)
+{
+	int i;
+	char cpuinfo[512];
+	char *ptr;
+	FILE *file;
+
+	if ((file = fopen("/proc/cpuinfo", "r")) != NULL) {
+		while (fgets(cpuinfo, sizeof(cpuinfo), file) != NULL) {
+			if (strncmp(cpuinfo, "Revision", 8) == 0) {
+				break;
+			}
+		}
+		fclose(file);
+	} else {
+		return 0;
+	}
+
+	for (i = 0; !isspace(cpuinfo[i]); i++);
+	for (; isspace(cpuinfo[i]); i++);
+
+	ptr = cpuinfo + i + 2;
+
+	return (int)strtol(ptr, NULL, 16);
+}
+#endif
 
 /* init framebuffer*/
 static PSD
@@ -272,12 +309,29 @@ fb_open(PSD psd)
 #ifndef __uClinux__
 	psd->addr = mmap(NULL, psd->size, PROT_READ|PROT_WRITE,MAP_SHARED,fb,0);
 #else
-	// psd->addr = mmap(NULL, psd->size, PROT_READ|PROT_WRITE,0,fb,0);
-#define IPOD_LCD_WIDTH  160
-#define IPOD_LCD_HEIGHT 128
-#define IPOD_PHOTO_LCD_WIDTH	220
-#define IPOD_PHOTO_LCD_HEIGHT	176
-	psd->addr = malloc(IPOD_PHOTO_LCD_HEIGHT * IPOD_PHOTO_LCD_WIDTH*2);
+#define inl(p) (*(volatile unsigned long *) (p))
+#define outl(v,p) (*(volatile unsigned long *) (p) = (v))
+
+	psd->addr = mmap(NULL, psd->size, PROT_READ|PROT_WRITE, 0, fb, 0);
+
+	mw_ipod_hw_ver = mw_get_hw_version() >> 16;
+	if (mw_get_hw_version() == 0x60000) {
+		mw_ipod_lcd_type = 0;
+	} else {
+		if (mw_ipod_hw_ver == 0x6) {
+			int gpio_a01, gpio_a04;
+
+			gpio_a01 = (inl(0x6000D030) & 0x2) >> 1;
+			gpio_a04 = (inl(0x6000D030) & 0x10) >> 4;
+			if ((gpio_a01 | (gpio_a04<<1)) == 0 || (gpio_a01 | (gpio_a04<<1)) == 2) {
+				mw_ipod_lcd_type = 1;
+			} else {
+				mw_ipod_lcd_type = 0;
+			}
+		} else if (mw_ipod_hw_ver == 0xc) {
+			mw_ipod_lcd_type = 1;
+		}
+	}
 #endif
 #endif
 	if(psd->addr == NULL || psd->addr == (unsigned char *)-1) {
@@ -317,8 +371,7 @@ fb_close(PSD psd)
 	ioctl_setpalette(0, 16, saved_red, saved_green, saved_blue);
   
 	/* unmap framebuffer*/
-	// munmap(psd->addr, psd->size);
-	free(psd->addr);
+	munmap(psd->addr, psd->size);
   
 #if HAVETEXTMODE
 	/* enter text mode*/
