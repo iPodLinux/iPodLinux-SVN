@@ -1030,9 +1030,9 @@ int __init ipodfb_init(void)
 			gpio_a04 = (inl(0x6000D030) & 0x10) >> 4;
 
 			if ((gpio_a01 | (gpio_a04<<1)) == 0 || (gpio_a01 | (gpio_a04<<1)) == 2) {
-				lcd_type = 0;
-			} else {
 				lcd_type = 1;
+			} else {
+				lcd_type = 0;
 			}
 		}
 
