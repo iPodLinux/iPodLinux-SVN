@@ -323,10 +323,10 @@ fb_open(PSD psd)
 
 			gpio_a01 = (inl(0x6000D030) & 0x2) >> 1;
 			gpio_a04 = (inl(0x6000D030) & 0x10) >> 4;
-			if ((gpio_a01 | (gpio_a04<<1)) == 0 || (gpio_a01 | (gpio_a04<<1)) == 2) {
-				mw_ipod_lcd_type = 1;
-			} else {
+			if (((gpio_a01 << 1) | gpio_a04) == 0 || ((gpio_a01 << 1) | gpio_a04) == 2) {
 				mw_ipod_lcd_type = 0;
+			} else {
+				mw_ipod_lcd_type = 1;
 			}
 		} else if (mw_ipod_hw_ver == 0xc) {
 			mw_ipod_lcd_type = 1;
