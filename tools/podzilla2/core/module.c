@@ -44,12 +44,14 @@ typedef struct _pz_Module
 
     struct _pz_Module **deps; // terminated with a 0 entry
     const char *depsstr;
-    const char *providesstr;
+    const char *providesstr; // We don't enforce the "provides" in mod_init, only in the mod select interface.
 
     const char *podpath;
     const char *mountpt;
     const char *cfgpath;
+
     void *handle;
+    int to_load;
 
     struct _pz_Module *next;
 } PzModule;
@@ -60,7 +62,7 @@ static PzModule *module_head;
 #define MountPods
 #else
 #ifdef MountPods
-#warning You need to: have a 2.6 kernel; run podzilla as root; make module-2.6, load podfs.ko; pass max_loop=128 on the kernel command line; and be using devfs. As you can see, we do not recommend this.
+#warning You decided you want me to MountPods. You need to: have a 2.6 kernel; run podzilla as root; make module-2.6, load podfs.ko; pass max_loop=128 on the kernel command line; and be using devfs. As you can see, we do not recommend this.
 #endif
 #endif
 
@@ -212,7 +214,10 @@ static void load_modinf (PzModule *mod)
 }
 
 // Turns the depsstr into a list of deps. returns 0 for success, -1 for failure
-static int fix_dependencies (PzModule *mod) 
+// [initing] concerns the autoselection of deps for loading: if true, all
+// dependencies will be marked to_load regardless of whether they are. If false,
+// they have to be loaded beforehand.
+static int fix_dependencies (PzModule *mod, int initing) 
 {
     char separator;
     char *str = mod->depsstr;
@@ -260,10 +265,33 @@ static int fix_dependencies (PzModule *mod)
 
 	if (strlen (str)) {
 	    // set *pdep++ to the module named [str] if it's loaded, or error out if not.
+	    PzModule *cur = module_head;
+	    while (cur) {
+		if (cur->name && !strcmp (str, cur->name)) {
+		    *pdep++ = cur;
+		    break;
+		}
+		cur = cur->next;
+	    }
+	    if (!cur) {
+		pz_error ("Unresolved dependency for %s: %s. Please install.", mod->name, str);
+		return -1;
+	    }
+
+	    if (!initing) {
+		if (!cur->to_load) {
+		    pz_error ("Module %s requires %s. You have it, but it isn't loaded. Please load it.", mod->name, str);
+		    return -1;
+		}
+	    } else {
+		cur->to_load++;
+	    }
 	}
 
 	str = next;
     } while (next);
+    *pdep++ = 0;
+    return 0;
 }
 
 
@@ -297,9 +325,18 @@ void pz_modules_init()
 
     struct stat st;
     PzModule *last, *cur;
+    PzConfItem *modlist = pz_get_setting (conf, MODULE_LIST);
     int nmods = 0;
     struct dirent *d;
-    DIR *dp = opendir (MODULEDIR);
+    DIR *dp;
+    int i;
+
+    if (!modlist || (modlist->type != PZ_CONF_SLIST)) {
+	pz_warning ("No modules selected. Podzilla will probably be very boring.");
+	return;
+    }
+
+    dp = opendir (MODULEDIR);
     if (!dp) {
 	pz_perror (MODULEDIR);
 	return;
@@ -360,10 +397,17 @@ void pz_modules_init()
 	}
     }
 
-    // Load the module.inf
+    // Load the module.inf, mark which ones have been selected by
+    // the user
     cur = module_head;
     while (cur) {
 	load_modinf (cur);
+	for (i = 0; i < modlist->nstrvals; i++) {
+	    if (!strcmp (cur->name, modlist->strvals[i])) {
+		cur->to_load = 1;
+		break;
+	    }
+	}
 	cur = cur->next;
     }
 
@@ -371,7 +415,7 @@ void pz_modules_init()
     cur = module_head;
     last = 0;
     while (cur) {
-	if (fix_dependencies (cur) == -1) {
+	if (fix_dependencies (cur, 1) == -1) {
 	    if (last) last->next = cur->next;
 	    else module_head = cur->next;
 	    free_module (cur);
