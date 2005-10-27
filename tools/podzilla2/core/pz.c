@@ -23,11 +23,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include "pz.h"
 
 /* compat globals */
 t_GR_SCREEN_INFO screen_info;
 long hw_version;
+ttk_gc root_gc;
 
 /* static stuff */
 static int usb_connected = 0;
@@ -42,6 +44,9 @@ int pz_setting_debounce = 0;
 
 /* Is hold on? */
 int pz_hold_is_on = 0;
+
+/* The global config. */
+PzConfig *pz_global_config;
 
 static void check_connection() 
 {
@@ -65,7 +70,6 @@ static void check_connection()
 }
 
 static ttk_timer bloff_timer = 0;
-static int bl_forced_on = 0;
 
 static void backlight_off() { if (!bl_forced_on) pz_ipod_set (BACKLIGHT, 0); bloff_timer = 0; }
 static void backlight_on()  { pz_ipod_set (BACKLIGHT, 1); }
@@ -110,10 +114,10 @@ void pz_register_global_hold_button (char ch, int ms, void (*handler)())
 }
 void pz_unregister_global_hold_button (char ch) 
 {
-    held_times[ch] = held_handlers[ch] = 0;
+    held_times[ch] = 0; held_handlers[ch] = 0;
 }
 
-void pz_register_global_unused_handler (char ch, void (*handler)(int, int)) 
+void pz_register_global_unused_handler (char ch, int (*handler)(int, int)) 
 {
     unused_handlers[ch] = handler;
 }
@@ -167,8 +171,8 @@ int pz_event_handler (int ev, int earg, int time)
 	}
 	switch (earg) {
 	case TTK_BUTTON_HOLD:
-	    hold_is_on = 0;
-	    header_fix_hold();
+	    pz_hold_is_on = 0;
+	    pz_header_fix_hold();
 	    break;
 	case TTK_BUTTON_PREVIOUS:
 	    if (pz_has_secret ("vtswitch") &&
@@ -291,8 +295,8 @@ main(int argc, char **argv)
 #endif
 
 	root_gc = ttk_new_gc();
-	ttk_set_gc_usebg(root_gc, GR_FALSE);
-	ttk_set_gc_foreground(root_gc, BLACK);
+	ttk_set_gc_usebg(root_gc, 0);
+	ttk_set_gc_foreground(root_gc, ttk_makecol (0, 0, 0));
 	t_GrGetScreenInfo(&screen_info);
 
 	hw_version = pz_ipod_get_hw_version();
@@ -301,7 +305,7 @@ main(int argc, char **argv)
 		pz_set_time_from_file();
 	}
 
-	pz_ipod_fix_settings ((pz_global_settings = pz_load_config ("/etc/podzilla/podzilla.conf")));
+	pz_ipod_fix_settings ((pz_global_config = pz_load_config ("/etc/podzilla/podzilla.conf")));
 	pz_font_load(); // in fonts.c
 	pz_secrets_init();
 	pz_header_init();

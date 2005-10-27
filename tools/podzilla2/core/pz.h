@@ -76,6 +76,7 @@ TWindow *pz_mh_legacy (ttk_menu_item *); // calls the void(*)() in item->data
 
 /** Module and .POD/.PCD functions - module.c **/
 /* called from module */
+typedef struct PzModule PzModule;
 PzModule *pz_register_module (const char *name, void (*cleanup)());
 const char *pz_module_get_path (PzModule *mod, const char *filename);
 #ifndef PZ_MOD
@@ -88,6 +89,8 @@ int pz_module_check_signature (PzModule *mod);
 #endif
 
 /** Configuration stuff - config.c **/
+typedef struct PzConfig PzConfig;
+
 extern PzConfig *pz_global_config;
 
 PzConfig *pz_load_config (const char *filename);
@@ -140,7 +143,13 @@ void pz_setr_string_setting (PzConfig *conf, unsigned int sid, const char *val);
 #endif
 
 
+typedef TWindow PzWindow;
+typedef TWidget PzWidget;
+
+
+
 /** Menu stuff - menu.c **/
+
 #ifndef PZ_MOD
 TWindow *pz_menu_init(void);
 #endif
@@ -157,8 +166,6 @@ void pz_menu_remove (const char *menupath);
 
 
 /** Widget/window/event stuff - gui.c **/
-typedef TWindow PzWindow;
-typedef TWidget PzWidget;
 
 /* #define event types here XXX */
 typedef struct _pz_Event 
@@ -251,5 +258,27 @@ void pz_handled_hold (char ch); // call from the hold handler or all hell *WILL*
 #define PZ_BL_OFF    -2
 #define PZ_BL_RESET  -1
 #define PZ_BL_ON      0
+
+
+/** Locale **/
+#define LOCALE
+#ifdef IPOD
+#ifndef __UCLIBC_HAS_LOCALE__
+#warning You need to update your toolchain if you wish to have locale support. ("http://so2.sys-techs.net/ipod/toolchain/")
+#undef LOCALE
+#endif
+#define LOCALEDIR "/usr/share/locale"
+#else
+#define LOCALEDIR "./locale"
+#endif
+#ifdef LOCALE
+#define _(str) gettext(str)
+#include <libintl.h>
+#include <locale.h>
+#else
+#define _(str) str
+#define gettext(str) str
+#endif
+#define N_(str) str
 
 #endif
