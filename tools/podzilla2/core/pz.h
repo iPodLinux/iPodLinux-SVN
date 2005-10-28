@@ -76,7 +76,9 @@ TWindow *pz_mh_legacy (ttk_menu_item *); // calls the void(*)() in item->data
 
 /** Module and .POD/.PCD functions - module.c **/
 /* called from module */
-typedef struct PzModule PzModule;
+#ifndef NODEF_MODULE
+typedef struct _pz_Module PzModule;
+#endif
 PzModule *pz_register_module (const char *name, void (*cleanup)());
 const char *pz_module_get_path (PzModule *mod, const char *filename);
 #ifndef PZ_MOD
@@ -89,7 +91,9 @@ int pz_module_check_signature (PzModule *mod);
 #endif
 
 /** Configuration stuff - config.c **/
-typedef struct PzConfig PzConfig;
+#ifndef NODEF_CONFIG
+typedef struct _pz_Config PzConfig;
+#endif
 
 extern PzConfig *pz_global_config;
 
@@ -236,7 +240,6 @@ int pz_vector_width (const char *string, int cw, int ch, int kern);
 /** iPod stuff - ipod.c **/
 void pz_ipod_set (int sid, int value);
 void pz_ipod_fix_settings (PzConfig *conf);
-void pz_ipod_touch_settings(void);
 int pz_ipod_get_battery_level(void);
 int pz_ipod_is_charging(void);
 long pz_ipod_get_hw_version(void);
@@ -254,6 +257,9 @@ void pz_register_global_unused_button (char ch, void (*handler)(int, int)); // a
 void pz_unregister_global_hold_button (char ch);
 void pz_unregister_global_unused_button (char ch);
 void pz_handled_hold (char ch); // call from the hold handler or all hell *WILL* break loose :-)
+#ifndef PZ_MOD
+void pz_uninit();
+#endif
 
 #define PZ_BL_OFF    -2
 #define PZ_BL_RESET  -1
@@ -280,5 +286,51 @@ void pz_handled_hold (char ch); // call from the hold handler or all hell *WILL*
 #define gettext(str) str
 #endif
 #define N_(str) str
+
+/************* Global settings values *************/
+
+/* DISPLAY SETINGS 0 - 9 */
+
+#define CONTRAST        (0)
+#define BACKLIGHT       (1)
+#define BACKLIGHT_TIMER (2)
+
+/* AUDIO SETTIGNS 10 - 19 */
+
+#define CLICKER         (10)
+#define VOLUME          (11)
+#define EQUALIZER       (12)
+#define DSPFREQUENCY    (13)
+
+/* PLAYLIST SETTINGS 20 - 29 */
+ 
+#define SHUFFLE         (20)
+#define REPEAT          (21)
+
+/* OTHER SETTINGS 30 - 99 */
+
+#define LANGUAGE        (30)
+#define WHEEL_DEBOUNCE  (34)
+
+#define TIME_ZONE	(35)
+#define TIME_DST	(36)
+#define TIME_IN_TITLE	(37)
+#define TIME_TICKER	(38)
+#define TIME_1224	(39)
+#define TIME_WORLDTZ	(40)
+#define TIME_WORLDDST	(41)
+
+#define BROWSER_PATH	(42)
+#define BROWSER_HIDDEN	(43)
+
+#define COLORSCHEME	(44)	/* appearance */
+#define DECORATIONS	(45)	/* appearance */
+#define BATTERY_DIGITS	(46)	/* appearance */
+#define DISPLAY_LOAD	(47)	/* appearance */
+#define FONT_FILE	(48)
+#define SLIDE_TRANSIT	(49)
+
+/* MODULE METASETTINGS 100 - 110 */
+#define MODULE_LIST     (100)
 
 #endif
