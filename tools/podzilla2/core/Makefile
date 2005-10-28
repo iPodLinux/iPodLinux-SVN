@@ -8,7 +8,7 @@ CFLAGS += `ttk-config --x11 --sdl --cflags`
 LIBS += `ttk-config --x11 --sdl --libs` -ldl
 endif
 
-OBJS= pz.o module.o ipod.o dialog.o secrets.o
+OBJS= pz.o module.o ipod.o dialog.o secrets.o header.o
 HDRS= pz.h ipod.h
 
 all: podzilla

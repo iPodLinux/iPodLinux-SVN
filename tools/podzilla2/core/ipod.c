@@ -153,7 +153,7 @@ static void fix_setting (int setting, int value)
 		break;
 	case DECORATIONS:
 		ttk_dirty |= TTK_DIRTY_HEADER;
-		//		appearance_set_decorations(value);
+		pz_header_set_decorations (value);
 		break;
 	case DISPLAY_LOAD:
 		ttk_dirty |= TTK_DIRTY_HEADER;

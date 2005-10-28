@@ -56,7 +56,7 @@ static void check_connection()
 	((temp = pz_ipod_fw_is_connected()) && !fw_connected))
     {
 	const char *title;
-	if (pz_usb_is_connected()) title = _("USB Connect");
+	if (pz_ipod_usb_is_connected()) title = _("USB Connect");
 	else title = _("FireWire Connect");
 
 	if (pz_dialog (title, _("Go to disk mode?"), 2, 10, "No", "Yes") == 1) {

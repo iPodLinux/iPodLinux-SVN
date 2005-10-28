@@ -212,8 +212,14 @@ int pz_has_secret (const char *key);
 void pz_header_init (void);
 void pz_header_fix_hold (void);
 #endif
-void pz_hwid_pack_left (TWidget *wid);
-void pz_hwid_pack_right (TWidget *wid);
+#define PZ_DEC_PLAIN    (0)
+#define PZ_DEC_AMIGA11  (1)
+#define PZ_DEC_AMIGA13  (2)
+#define PZ_DEC_MROBE    (3)
+void pz_header_set_decorations (int decor);
+void pz_hwid_put_left (TWidget *wid); // puts wid as leftmost of left widgets, has to be called from mod init
+void pz_hwid_pack_left (TWidget *wid); // puts wid as rightmost of left widgets
+void pz_hwid_pack_right (TWidget *wid); // puts wid as leftmost of right widgets
 void pz_hwid_unpack (TWidget *wid);
 void pz_header_set_local (TWidget *left, TWidget *right);
 void pz_header_unset_local (void);
