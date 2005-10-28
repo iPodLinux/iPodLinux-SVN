@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005 Joshua Oreman
+ * Copyright) 2005 Joshua Oreman
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <dirent.h>
 #ifdef linux
 #include <sys/mount.h>
 #include <linux/loop.h>
@@ -31,30 +32,36 @@
 #endif
 #endif
 
-#include "pz.h"
+#ifdef IPOD
 #include "ucdl.h"
+#else
+#include <dlfcn.h>
+#endif
 
 typedef struct _pz_Module
 {
-    const char *name;
-    const char *longname;
-    const char *author;
-    const char *signature;
+    char *name;
+    char *longname;
+    char *author;
+    char *signature;
     int verified;
 
     struct _pz_Module **deps; // terminated with a 0 entry
-    const char *depsstr;
-    const char *providesstr; // We don't enforce the "provides" in mod_init, only in the mod select interface.
+    char *depsstr;
+    char *providesstr; // We don't enforce the "provides" in mod_init, only in the mod select interface.
 
-    const char *podpath;
-    const char *mountpt;
-    const char *cfgpath;
+    char *podpath;
+    char *mountpt;
+    char *cfgpath;
 
     void *handle;
     int to_load;
 
     struct _pz_Module *next;
 } PzModule;
+
+#define NODEF_MODULE
+#include "pz.h"
 
 static PzModule *module_head;
 
@@ -221,9 +228,8 @@ static int fix_dependencies (PzModule *mod, int initing)
 {
     char separator;
     char *str = mod->depsstr;
-    char *mod;
     char *next;
-    PzModule *pdep;
+    PzModule **pdep;
     int ndeps = 0;
     
     if (!str) return;
@@ -309,7 +315,11 @@ static void free_module (PzModule *mod)
     if (mod->podpath) free (mod->podpath);
     if (mod->mountpt) free (mod->mountpt);
     if (mod->cfgpath) free (mod->cfgpath);
+#ifdef IPOD
     if (mod->handle) uCdl_close (mod->handle);
+#else
+    if (mod->handle) dlclose (mod->handle);
+#endif
     
     free (mod);
 }
@@ -325,7 +335,7 @@ void pz_modules_init()
 
     struct stat st;
     PzModule *last, *cur;
-    PzConfItem *modlist = pz_get_setting (conf, MODULE_LIST);
+    PzConfItem *modlist = pz_get_setting (pz_global_config, MODULE_LIST);
     int nmods = 0;
     struct dirent *d;
     DIR *dp;

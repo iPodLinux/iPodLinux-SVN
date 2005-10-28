@@ -52,8 +52,8 @@ static void check_connection()
 {
     int temp;
     
-    if (((temp = pz_usb_is_connected()) && !usb_connected) ||
-	((temp = pz_fw_is_connected()) && !fw_connected))
+    if (((temp = pz_ipod_usb_is_connected()) && !usb_connected) ||
+	((temp = pz_ipod_fw_is_connected()) && !fw_connected))
     {
 	const char *title;
 	if (pz_usb_is_connected()) title = _("USB Connect");
@@ -295,8 +295,8 @@ main(int argc, char **argv)
 #endif
 
 	root_gc = ttk_new_gc();
-	ttk_set_gc_usebg(root_gc, 0);
-	ttk_set_gc_foreground(root_gc, ttk_makecol (0, 0, 0));
+	ttk_gc_set_usebg(root_gc, 0);
+	ttk_gc_set_foreground(root_gc, ttk_makecol (0, 0, 0));
 	t_GrGetScreenInfo(&screen_info);
 
 	hw_version = pz_ipod_get_hw_version();
@@ -309,8 +309,8 @@ main(int argc, char **argv)
 	pz_font_load(); // in fonts.c
 	pz_secrets_init();
 	pz_header_init();
-	pz_modules_load();
-	ttk_add_window (pz_menu_init());
+	pz_modules_init();
+	ttk_show_window (pz_menu_init());
 
 	connection_timer = ttk_create_timer (1000, check_connection);
 	usb_connected = pz_ipod_usb_is_connected();
