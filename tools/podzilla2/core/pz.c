@@ -319,9 +319,9 @@ main(int argc, char **argv)
 	ttk_show_window (pz_menu_init());
 #else
 	pz_message ("Ok, I'm done. Bye.");
-	ttk_show_window (ttk_new_window());
+	return 0;
 #endif
-
+	
 	connection_timer = ttk_create_timer (1000, check_connection);
 	usb_connected = pz_ipod_usb_is_connected();
 	fw_connected = pz_ipod_fw_is_connected();

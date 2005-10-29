@@ -410,6 +410,16 @@ static int dialog_create (const char *title, const char *text,
     ret = ttk_run();
     ttk_popdown_window (dialog);
     ttk_free_window (dialog);
+    if (ttk_windows) {
+	ttk_draw_window (ttk_windows->w);
+    } else {
+	ttk_fillrect (ttk_screen->srf, ttk_screen->wx,
+		      ttk_screen->wy,
+		      ttk_screen->w, ttk_screen->h,
+		      ttk_makecol (255, 255, 255));
+    }
+    ttk_gfx_update (ttk_screen->srf);
+
     return ret;
 }
 
