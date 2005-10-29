@@ -56,7 +56,7 @@ sub parse_data($) {
     @dirs = keys %{{ map { $_ => 1 } @dirs }};
 
     if (scalar @files == 1) {
-	($flist = $files[0]) =~ s#^((?:tools/)?[^/]+/)#10$10#;
+	($flist = $files[0]) =~ s#^((?:tools/)?[^/]+/)#10$1#;
     } else {
 	my(@fileparts) = map { [ split m|/| ] } @files;
 	my($samelevels) = 0;
