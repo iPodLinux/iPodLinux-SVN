@@ -786,7 +786,6 @@ TWindow *ttk_new_window()
 {
     TWindow *ret = malloc (sizeof(TWindow));
     ret->show_header = 1;
-    ret->title = "TTK";
     ret->titlefree = 0;
     ret->widgets = 0;
     ret->x = ttk_screen->wx;
@@ -801,6 +800,13 @@ TWindow *ttk_new_window()
     ret->epoch = ttk_epoch;
     ret->inbuf_start = ret->inbuf_end = 0;
     ret->onscreen = 0;
+
+    if (ttk_windows) {
+	ret->title = strdup (ttk_windows->w->title);
+	ret->titlefree = 1;
+    } else {
+	ret->title = "TTK";
+    }
 
     if (ttk_screen->bpp == 2)
 	ttk_ap_fillrect (ret->srf, ttk_ap_get ("window.bg"), 0, 0, ret->w, ret->h);
