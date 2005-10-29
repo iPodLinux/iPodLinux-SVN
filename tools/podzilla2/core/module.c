@@ -341,7 +341,7 @@ void pz_modules_init()
     DIR *dp;
     int i;
 
-    if (!modlist || (modlist->type != PZ_CONF_SLIST)) {
+    if (!modlist || (modlist->type != PZ_SETTING_SLIST)) {
 	pz_warning ("No modules selected. Podzilla will probably be very boring.");
 	return;
     }

@@ -135,7 +135,7 @@ static void ipod_set_wheelspeed (int value)
     ttk_set_scroll_multiplier (num[value], denom[value]);
 }
 
-static void fix_setting (int setting, int value)
+void pz_ipod_fix_setting (int setting, int value)
 {
 	if (value <= 0) {
 		value = 0;
@@ -187,8 +187,18 @@ static void fix_setting (int setting, int value)
 
 void pz_ipod_set (int sid, int value) 
 {
-    fix_setting (sid, value);
-    //	set_int_setting(setting, value);
+    pz_ipod_fix_setting (sid, value);
+    pz_set_int_setting(pz_global_config, sid, value);
+}
+
+static void fix_setting_fn (PzConfItem *ci) 
+{
+    if (ci->type == PZ_SETTING_INT)
+	pz_ipod_fix_setting (ci->sid, ci->ival);
+}
+void pz_ipod_fix_settings (PzConfig *conf) 
+{
+    pz_config_iterate (conf, fix_setting_fn);
 }
 
 /*

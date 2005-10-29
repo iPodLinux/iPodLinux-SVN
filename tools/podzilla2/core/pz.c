@@ -306,11 +306,21 @@ main(int argc, char **argv)
 	}
 
 	pz_ipod_fix_settings ((pz_global_config = pz_load_config ("/etc/podzilla/podzilla.conf")));
+#if 0
 	pz_font_load(); // in fonts.c
+#else
+	ttk_menufont = ttk_get_font ("Chicago", 12);
+	ttk_textfont = ttk_get_font ("Espy Sans", 10);
+#endif
 	pz_secrets_init();
-	pz_header_init();
 	pz_modules_init();
+	pz_header_init();
+#if 0
 	ttk_show_window (pz_menu_init());
+#else
+	pz_message ("Ok, I'm done. Bye.");
+	ttk_show_window (ttk_new_window());
+#endif
 
 	connection_timer = ttk_create_timer (1000, check_connection);
 	usb_connected = pz_ipod_usb_is_connected();
