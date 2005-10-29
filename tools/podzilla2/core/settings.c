@@ -125,7 +125,7 @@ int pz_get_int_setting (PzConfig *conf, unsigned int sid)
 	if ((ci = pz_get_setting (conf, sid)) && (ci->type == PZ_SETTING_INT)) {
 		return ci->ival;
 	}
-	return -1;
+	return 0;
 }
 
 const char *pz_get_string_setting (PzConfig *conf, unsigned int sid) 
