@@ -106,29 +106,31 @@ typedef struct _pz_ConfItem
 {
     unsigned int sid;
 
-#define PZ_CONF_INT     1
-#define PZ_CONF_STRING  2
-#define PZ_CONF_FLOAT   3
-#define PZ_CONF_ILIST   4
-#define PZ_CONF_SLIST   5
-#define PZ_CONF_BLOB    255
+#define PZ_SETTING_INT     1
+#define PZ_SETTING_STRING  2
+#define PZ_SETTING_FLOAT   3
+#define PZ_SETTING_ILIST   4
+#define PZ_SETTING_SLIST   5
+#define PZ_SETTING_BLOB    255
     int type;
 
     union 
     {
 	int ival;
-	const char *strval;
+	char *strval;
 	double fval;
-	int *ivals; int nivals;
-	const char **strvals; int nstrvals;
-	void *blobval; int bloblen;
+	struct { int *ivals; int nivals; };
+	struct { char **strvals; int nstrvals; };
+	struct { void *blobval; int bloblen; };
     };
+    struct _pz_ConfItem *next;
 } PzConfItem;
 
 #define PZ_SID_FORMAT  0xe0000000
 
 PzConfItem *pz_get_setting (PzConfig *conf, unsigned int sid);
 void pz_unset_setting (PzConfig *conf, unsigned int sid);
+void pz_config_iterate (PzConfig *conf, void (*fn)(PzConfItem *));
 
 int pz_get_int_setting (PzConfig *conf, unsigned int sid);
 const char *pz_get_string_setting (PzConfig *conf, unsigned int sid);
@@ -245,6 +247,7 @@ int pz_vector_width (const char *string, int cw, int ch, int kern);
 
 /** iPod stuff - ipod.c **/
 void pz_ipod_set (int sid, int value);
+void pz_ipod_fix_setting (int sid, int value); // sets on iPod w/o setting in config
 void pz_ipod_fix_settings (PzConfig *conf);
 int pz_ipod_get_battery_level(void);
 int pz_ipod_is_charging(void);

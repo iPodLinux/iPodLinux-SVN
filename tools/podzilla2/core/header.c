@@ -575,10 +575,12 @@ void pz_header_init()
     if (pz_get_int_setting (pz_global_config, DISPLAY_LOAD))
 	pz_hwid_pack_left (new_load_average_display());
 
-    while (--farleft_next) {
-	pz_hwid_pack_left (farleft_wids[farleft_next]); // will put most recently pushed furthest to the left
+    if (farleft_next > 0) {
+	while (--farleft_next) {
+	    pz_hwid_pack_left (farleft_wids[farleft_next]); // will put most recently pushed furthest to the left
+	}
     }
-    
+	
     pz_hwid_pack_left (new_hold_status_indicator());
     pz_hwid_pack_right (new_battery_indicator());
 

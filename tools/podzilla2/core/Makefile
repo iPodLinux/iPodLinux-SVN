@@ -1,25 +1,27 @@
 ifdef IPOD
 CC ?= arm-elf-gcc
-CFLAGS += `ttk-config --ipod --sdl --cflags` -I../contrib/ucdl
-LIBS += `ttk-config --ipod --sdl --libs` ../contrib/ucdl/libuCdl.a
+LD ?= arm-elf-ld
+MYCFLAGS = `ttk-config --ipod --sdl --cflags` -I../contrib/ucdl
 else
 CC ?= cc
-CFLAGS += `ttk-config --x11 --sdl --cflags`
-LIBS += `ttk-config --x11 --sdl --libs` -ldl
+LD ?= ld
+MYCFLAGS = `ttk-config --x11 --sdl --cflags`
 endif
 
-OBJS= pz.o module.o ipod.o dialog.o secrets.o header.o
-HDRS= pz.h ipod.h
+OBJS= pz.o module.o ipod.o dialog.o secrets.o header.o settings.o
+HDRS= pz.h
 
-all: podzilla
+all: built-in.o
 
-podzilla: $(OBJS)
-	$(CC) $(CFLAGS) -o podzilla $(OBJS) $(LIBS)
+built-in.o: $(OBJS)
+	$(LD) -r -o built-in.o $(OBJS)
 
-%.o: %.c $(HDRS)
-	$(CC) $(CFLAGS) -c -o $@ $<
+$(OBJS): $(HDRS)
+
+%.o: %.c
+	$(CC) $(CFLAGS) $(MYCFLAGS) -c -o $@ $<
 
 clean:
-	rm -f podzilla *.o
+	rm -f *.o
 
 .PHONY: clean all
