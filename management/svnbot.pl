@@ -30,7 +30,7 @@ sub parse_data($) {
 		if ($key eq "Log") {
 		    push @log, $val;
 		} elsif ($key eq "Trac view") {
-		    $tracurl = $val;
+		    ($tracurl = $val) =~ s#https://OpenSVN.csie.org/traccgi/courtc/trac.cgi#http://tinyurl.com/ajwmu#;
 		} elsif ($key eq "Changes") {
 		    /\s\s([A-Z])\s*\+\d+\s*-\d+\s*(.*)/ or print "Couldn't figure out email\n";
 		    my($flag,$file) = ($1,$2);
