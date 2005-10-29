@@ -30,31 +30,25 @@ typedef struct _pz_Config
 } PzConfig;
 
 #define NODEF_CONFIG
-#include "pz.h"
+#include "settings.h"
 
 #define SETTINGS_MAGIC "EtRR" /* Expanded the Reading/Righting. Or not */
 
 static PzConfItem *find_setting(PzConfig *conf, unsigned int sid)
 {
-	PzConfItem *current_setting = conf->settings;
-	PzConfItem *prev_setting;
+	PzConfItem *setting = conf->settings;
 
-	if (current_setting == NULL)
+	if (setting == NULL)
 		return NULL;
 
-	while (current_setting != NULL) {
-		prev_setting = current_setting;
-		current_setting = current_setting->next;
-
-		if (prev_setting->sid == sid) {
+	while (setting != NULL) {
+		if (setting->sid == sid) {
 			break;
 		}
+		setting = setting->next;
 	}
 
-	if (current_setting)
-		return prev_setting;
-	else
-		return 0;
+	return setting;
 }
 
 void free_setting(PzConfItem *setting)
@@ -112,9 +106,12 @@ void pz_unset_setting (PzConfig *conf, unsigned int sid)
 	PzConfItem *setting = conf->settings, *last = 0;
 	while (setting) {
 		if (setting->sid == sid) {
-			last->next = setting->next;
+			if (last)
+				last->next = setting->next;
+			else
+				conf->settings = setting->next;
 			free_setting (setting);
-			setting = last->next;
+			setting = last? last->next : conf->settings;
 		} else {
 			last = setting;
 			setting = setting->next;
@@ -144,63 +141,150 @@ void pz_set_int_setting(PzConfig *conf, unsigned int sid, int value)
 {
 	PzConfItem *setting, *last_setting;
 
-	if (find_setting (conf, sid)) {
-		setting = find_setting (conf, sid);
-		setting->ival = value;
-	} else {
-		if (!conf->settings) {
-			last_setting = conf->settings = malloc (sizeof(PzConfItem));
-		} else {
-			last_setting = conf->settings;
-			while (last_setting->next) last_setting = last_setting->next;
+	if ((setting = find_setting (conf, sid))) {
+		if (setting->type == PZ_SETTING_INT) {
+			setting->ival = value;
+			return;
 		}
-		last_setting->sid = sid;
-		last_setting->type = PZ_SETTING_INT;
-		last_setting->ival = value;
 	}
+	pz_unset_setting (conf, sid);
+	
+	if (!conf->settings) {
+		last_setting = conf->settings = malloc (sizeof(PzConfItem));
+	} else {
+		last_setting = conf->settings;
+		while (last_setting->next) last_setting = last_setting->next;
+		last_setting->next = malloc (sizeof(PzConfItem));
+		last_setting = last_setting->next;
+	}
+	last_setting->sid = sid;
+	last_setting->type = PZ_SETTING_INT;
+	last_setting->ival = value;
+	last_setting->next = 0;
 }
 
 void pz_set_string_setting(PzConfig *conf, unsigned int sid, const char *value)
 {
 	PzConfItem *setting, *last_setting;
 
-	if (find_setting (conf, sid)) {
-		setting = find_setting (conf, sid);
-		free (setting->strval);
-		setting->strval = strdup (value);
-	} else {
-		if (!conf->settings) {
-			last_setting = conf->settings = malloc (sizeof(PzConfItem));
-		} else {
-			last_setting = conf->settings;
-			while (last_setting->next) last_setting = last_setting->next;
+	if ((setting = find_setting (conf, sid))) {
+		if (setting->type == PZ_SETTING_STRING) {
+			free (setting->strval);
+			setting->strval = strdup (value);
+			return;
 		}
-		last_setting->sid = sid;
-		last_setting->type = PZ_SETTING_STRING;
-		last_setting->strval = strdup (value);
 	}
+	pz_unset_setting (conf, sid);
+	
+	if (!conf->settings) {
+		last_setting = conf->settings = malloc (sizeof(PzConfItem));
+	} else {
+		last_setting = conf->settings;
+		while (last_setting->next) last_setting = last_setting->next;
+		last_setting->next = malloc (sizeof(PzConfItem));
+		last_setting = last_setting->next;
+	}
+	last_setting->sid = sid;
+	last_setting->type = PZ_SETTING_STRING;
+	last_setting->strval = strdup (value);
+	last_setting->next = 0;
 }
 
 void pz_set_float_setting(PzConfig *conf, unsigned int sid, double value)
 {
 	PzConfItem *setting, *last_setting;
 
-	if (find_setting (conf, sid)) {
-		setting = find_setting (conf, sid);
-		setting->fval = value;
-	} else {
-		if (!conf->settings) {
-			last_setting = conf->settings = malloc (sizeof(PzConfItem));
-		} else {
-			last_setting = conf->settings;
-			while (last_setting->next) last_setting = last_setting->next;
+	if ((setting = find_setting (conf, sid))) {
+		if (setting->type == PZ_SETTING_FLOAT) {
+			setting->fval = value;
+			return;
 		}
-		last_setting->sid = sid;
-		last_setting->type = PZ_SETTING_FLOAT;
-		last_setting->fval = value;
 	}
+	pz_unset_setting (conf, sid);
+	
+	if (!conf->settings) {
+		last_setting = conf->settings = malloc (sizeof(PzConfItem));
+	} else {
+		last_setting = conf->settings;
+		while (last_setting->next) last_setting = last_setting->next;
+		last_setting->next = malloc (sizeof(PzConfItem));
+		last_setting = last_setting->next;
+	}
+	last_setting->sid = sid;
+	last_setting->type = PZ_SETTING_FLOAT;
+	last_setting->fval = value;
+	last_setting->next = 0;
 }
 
+void pz_set_ilist_setting(PzConfig *conf, unsigned int sid, int *vals, int nvals)
+{
+	PzConfItem *setting, *last_setting;
+
+	if ((setting = find_setting (conf, sid))) {
+		if (setting->type == PZ_SETTING_ILIST) {
+			free (setting->ivals);
+			setting->ivals = calloc (nvals, sizeof(int));
+			memcpy (setting->ivals, vals, nvals * sizeof(int));
+			setting->nivals = nvals;
+			return;
+		}
+	}
+	pz_unset_setting (conf, sid);
+	
+	if (!conf->settings) {
+		last_setting = conf->settings = malloc (sizeof(PzConfItem));
+	} else {
+		last_setting = conf->settings;
+		while (last_setting->next) last_setting = last_setting->next;
+		last_setting->next = malloc (sizeof(PzConfItem));
+		last_setting = last_setting->next;
+	}
+	last_setting->sid = sid;
+	last_setting->type = PZ_SETTING_ILIST;
+	last_setting->ivals = calloc (nvals, sizeof(int));
+	memcpy (last_setting->ivals, vals, nvals * sizeof(int));
+	last_setting->nivals = nvals;
+	last_setting->next = 0;
+}
+
+void pz_set_slist_setting(PzConfig *conf, unsigned int sid, char **vals, int nvals)
+{
+	PzConfItem *setting, *last_setting;
+	int i;
+
+	if ((setting = find_setting (conf, sid))) {
+		if (setting->type == PZ_SETTING_SLIST) {
+			for (i = 0; i < setting->nstrvals; i++) {
+				free (setting->strvals[i]);
+			}
+			free (setting->strvals);
+			setting->strvals = calloc (nvals + 1, sizeof(char*));
+			setting->nstrvals = nvals;
+			for (i = 0; i < nvals; i++) {
+				setting->strvals[i] = strdup (vals[i]);
+			}
+			return;
+		}
+	}
+	pz_unset_setting (conf, sid);
+	
+	if (!conf->settings) {
+		last_setting = conf->settings = malloc (sizeof(PzConfItem));
+	} else {
+		last_setting = conf->settings;
+		while (last_setting->next) last_setting = last_setting->next;
+		last_setting->next = malloc (sizeof(PzConfItem));
+		last_setting = last_setting->next;
+	}
+	last_setting->sid = sid;
+	last_setting->type = PZ_SETTING_SLIST;
+	last_setting->strvals = calloc (nvals + 1, sizeof(char*));
+	last_setting->nstrvals = nvals;
+	for (i = 0; i < nvals; i++) {
+		last_setting->strvals[i] = strdup (vals[i]);
+	}
+	last_setting->next = 0;
+}
 
 PzConfig *pz_load_config(const char *settings_file)
 {
@@ -282,7 +366,7 @@ void pz_save_config(PzConfig *conf)
 	PzConfItem *setting = conf->settings;
 
 	if ((fp = fopen(conf->filename, "w")) == NULL) {
-		pz_perror (conf->filename);
+		perror (conf->filename);
 		return;
 	}
 	fwrite(SETTINGS_MAGIC, strlen(SETTINGS_MAGIC), 1, fp);
