@@ -64,13 +64,15 @@ LIBSA =
 endif
 
 ifeq ($(GFXLIB),SDL)
-CFLAGS += -DSDL -I/usr/include/SDL -I/usr/local/include/SDL `sdl-config --cflags`
+CFLAGS += -DSDL
 OBJS += sdl.o SDL_gfxPrimitives.o SDL_gfxPrimitives_Byte.o SDL_rotozoom.o
 HDR += SDL_gfxPrimitives.h SDL_rotozoom.h
 ifdef IPOD
+CFLAGS += -I../sdlincludes
 LIBSA += ../libs/SDL/*.a
 LIBS += -lpthread -lm
 else
+CFLAGS += -I/usr/include/SDL -I/usr/local/include/SDL `sdl-config --cflags`
 LIBS += `sdl-config --libs` -lSDL_image -lpng -ljpeg
 endif
 

@@ -47,7 +47,7 @@ build/ipod-sdl:
 	./make-build-dirs.sh
 	ln -s ../../fonts ../../schemes build/x11-mwin/
 	ln -s ../../fonts ../../schemes build/x11-sdl/
-	ln -s ../libs ../mwincludes build/
+	ln -s ../libs ../mwincludes ../sdlincludes build/
 	@echo "<<< Done."
 	@echo
 
@@ -76,7 +76,7 @@ endif
 	install -m 644 src/all-ttk.h $(PREFIX)/include/ttk/ttk.h
 	sed 's:@PREFIX@:$(PREFIX):g' < ttk-config.tmp > ttk-config
 	install -m 755 ttk-config $(PREFIX)/bin/
-	cp -pR mwincludes $(PREFIX)/include/ttk/
+	cp -pR mwincludes sdlincludes $(PREFIX)/include/ttk/
 	rm -f ttk-config.tmp
 	@echo "<<< Done."
 	@echo
