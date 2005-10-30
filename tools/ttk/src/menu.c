@@ -25,6 +25,7 @@ typedef struct _menu_data
     int ds;
     int closeable;
     int epoch;
+    int free_everything;
 } menu_data;
 
 // Note:
@@ -115,6 +116,7 @@ static void render (TWidget *this, int first, int n)
 ttk_menu_item *ttk_menu_get_item (TWidget *this, int xi) 
 {
     _MAKETHIS;
+    if (xi > data->items) return 0;
     if (data->menu) return data->menu[xi];
     return data->mlist + xi;
 }
@@ -148,6 +150,9 @@ ttk_menu_item *ttk_menu_get_selected_item (TWidget *this)
 void ttk_menu_item_updated (TWidget *this, ttk_menu_item *p)
 {
     _MAKETHIS;
+
+    if (!this) this = p->menu;
+    p->menu = this;
 
     if (p->choices) {
 	const char **q = p->choices;
@@ -406,6 +411,7 @@ TWidget *ttk_new_menu_widget (ttk_menu_item *items, ttk_font font, int w, int h)
     data->font = font;
     data->closeable = 1;
     data->epoch = ttk_epoch;
+    data->free_everything = !items;
 
     ttk_widget_set_fps (ret, 10);
 
@@ -724,6 +730,7 @@ void ttk_menu_free (TWidget *this)
 		ttk_free_window (data->menu[i]->sub);
 	    if (data->itemsrf[i]) ttk_free_surface (data->itemsrf[i]);
 	    if (data->itemsrfI[i]) ttk_free_surface (data->itemsrfI[i]);
+	    if (data->free_everything) free (data->menu[i]);
 	}
 	free (data->menu);
     }
