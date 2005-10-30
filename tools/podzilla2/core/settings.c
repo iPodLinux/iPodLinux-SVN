@@ -30,7 +30,7 @@ typedef struct _pz_Config
 } PzConfig;
 
 #define NODEF_CONFIG
-#include "settings.h"
+#include "pz.h"
 
 #define SETTINGS_MAGIC "EtRR" /* Expanded the Reading/Righting. Or not */
 
