@@ -2,19 +2,43 @@ PREFIX ?= /usr
 
 all: build/ipod-sdl
 	@echo ">>> Building TTK..."
+ifndef NOSDL
+ifndef NOIPOD
 	make -C build/ipod-sdl IPOD=1 SDL=1 all
+endif
+ifndef NOX11
 	make -C build/x11-sdl SDL=1 all
+endif
+endif
+ifndef NOMWIN
+ifndef NOIPOD
 	make -C build/ipod-mwin IPOD=1 MWIN=1 all
+endif
+ifndef NOX11
 	make -C build/x11-mwin MWIN=1 all
+endif
+endif
 	@echo "<<< Done."
 	@echo
 
 examples:
 	@echo ">>> Compiling examples..."
+ifndef NOSDL
+ifndef NOIPOD
 	make -C build/ipod-sdl IPOD=1 SDL=1 examples
+endif
+ifndef NOX11
 	make -C build/x11-sdl SDL=1 examples
+endif
+endif
+ifndef NOMWIN
+ifndef NOIPOD
 	make -C build/ipod-mwin IPOD=1 MWIN=1 examples
+endif
+ifndef NOX11
 	make -C build/x11-mwin MWIN=1 examples
+endif
+endif
 	@echo "<<< Done."
 	@echo
 
@@ -30,10 +54,22 @@ build/ipod-sdl:
 install: all
 	@echo ">>> Installing TTK..."
 	cp ttk-config.in ttk-config.tmp
+ifndef NOSDL
+ifndef NOIPOD
 	make -C build/ipod-sdl IPOD=1 SDL=1 install
+endif
+ifndef NOX11
 	make -C build/x11-sdl SDL=1 install
+endif
+endif
+ifndef NOMWIN
+ifndef NOIPOD
 	make -C build/ipod-mwin IPOD=1 MWIN=1 install
+endif
+ifndef NOX11
 	make -C build/x11-mwin MWIN=1 install
+endif
+endif
 	install -d $(PREFIX)/include/ttk
 	install -d $(PREFIX)/include/ttk/ttk
 	install -m 644 src/*.h $(PREFIX)/include/ttk/ttk/
