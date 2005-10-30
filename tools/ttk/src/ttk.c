@@ -302,6 +302,7 @@ int ttk_run()
     static int sofar = 0;
     int time = 0;
     ttk_timer ctim;
+    TWidget *pf;
 
     ttk_started = 1;
 
@@ -576,7 +577,7 @@ int ttk_run()
 	    break;
 	case TTK_BUTTON_UP:
 	    time = tick - ttk_button_presstime[earg];
-	    TWidget *pf = ttk_button_pressedfor[earg];
+	    pf = ttk_button_pressedfor[earg];
 	    
 	    // Need to be before, in case button() launches its own ttk_run().
 	    ttk_button_presstime[earg] = 0;
