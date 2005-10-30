@@ -137,9 +137,12 @@ const char *pz_get_string_setting (PzConfig *conf, unsigned int sid)
 	return "";
 }
 
-void pz_set_int_setting(PzConfig *conf, unsigned int sid, int value)
+static void set_int_setting(PzConfig *conf, unsigned int sid, int value, int rsvd)
 {
 	PzConfItem *setting, *last_setting;
+
+	if ((rsvd && (sid < 0xf0000000)) || (!rsvd && (sid >= 0xf0000000)))
+		return;
 
 	if ((setting = find_setting (conf, sid))) {
 		if (setting->type == PZ_SETTING_INT) {
@@ -162,10 +165,17 @@ void pz_set_int_setting(PzConfig *conf, unsigned int sid, int value)
 	last_setting->ival = value;
 	last_setting->next = 0;
 }
+void pz_set_int_setting (PzConfig *conf, unsigned int sid, int value)
+{ set_int_setting (conf, sid, value, 0); }
+void pz_setr_int_setting (PzConfig *conf, unsigned int sid, int value)
+{ set_int_setting (conf, sid, value, 1); }
 
-void pz_set_string_setting(PzConfig *conf, unsigned int sid, const char *value)
+static void set_string_setting(PzConfig *conf, unsigned int sid, const char *value, int rsvd)
 {
 	PzConfItem *setting, *last_setting;
+
+	if ((rsvd && (sid < 0xf0000000)) || (!rsvd && (sid >= 0xf0000000)))
+		return;
 
 	if ((setting = find_setting (conf, sid))) {
 		if (setting->type == PZ_SETTING_STRING) {
@@ -189,6 +199,10 @@ void pz_set_string_setting(PzConfig *conf, unsigned int sid, const char *value)
 	last_setting->strval = strdup (value);
 	last_setting->next = 0;
 }
+void pz_set_string_setting (PzConfig *conf, unsigned int sid, const char *value)
+{ set_string_setting (conf, sid, value, 0); }
+void pz_setr_string_setting (PzConfig *conf, unsigned int sid, const char *value)
+{ set_string_setting (conf, sid, value, 1); }
 
 void pz_set_float_setting(PzConfig *conf, unsigned int sid, double value)
 {

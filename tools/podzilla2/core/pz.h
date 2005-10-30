@@ -90,7 +90,7 @@ void *pz_module_dlsym (PzModule *mod, const char *sym);
 int pz_module_check_signature (PzModule *mod);
 #endif
 
-/** Configuration stuff - config.c **/
+/** Configuration stuff - settings.c **/
 #ifndef NODEF_CONFIG
 typedef struct _pz_Config PzConfig;
 #endif
