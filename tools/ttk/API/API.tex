@@ -1312,7 +1312,8 @@ void ttk_menu_free (TWidget *_this);
 \begin{description}
 \item[{\tt ttk_new_menu_widget}] creates and returns a new menu widget created from the list of items in \verb|items|.
 The menu will be displayed with the font \verb|font|, but submenus will be displayed with \verb|ttk_menufont|
-for various reasons. The menu will be $\verb|w| \times \verb|h|$ pixels in dimension, located at $(0,0)$.
+for various reasons. The menu will be $\verb|w| \times \verb|h|$ pixels in dimension, located at $(0,0)$. \ {\bf If $\verb|items| = 0$, all items later added to the menu will be freed when it is freed. If not,
+they won't.}
 \item[{\tt ttk_menu_get_item}] returns item number \verb|i| in the supplied menu.
 \item[{\tt ttk_menu_get_item_called}] returns the first item whose name compares equal to \verb|s|.
 \item[{\tt ttk_menu_get_selected_item}] returns the selected item in the supplied menu.

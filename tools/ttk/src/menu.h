@@ -49,6 +49,7 @@ typedef struct ttk_menu_item
     /* private */ int textofs, scrolldelay;
     /* private */ int textwidth, linewidth;
     /* private */ void *menudata;
+    /* readonly */ TWidget *menu;
 } ttk_menu_item;
 
 TWidget *ttk_new_menu_widget (ttk_menu_item *items, ttk_font font, int w, int h);
