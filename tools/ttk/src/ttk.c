@@ -301,6 +301,7 @@ int ttk_run()
     int local, global;
     static int sofar = 0;
     int time = 0;
+    ttk_timer ctim;
 
     ttk_started = 1;
 
@@ -363,7 +364,7 @@ int ttk_run()
 	}
 
 	/*** Do timers ***/
-	ttk_timer ctim = ttk_timers;
+	ctim = ttk_timers;
 	while (ctim) {
 	    if (tick > (ctim->started + ctim->delay)) {
 		ttk_timer next = ctim->next;
