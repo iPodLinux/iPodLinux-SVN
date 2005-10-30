@@ -311,12 +311,8 @@ main(int argc, char **argv)
 #define CONFIG_FILE "config/podzilla.conf"
 #endif
 	pz_ipod_fix_settings ((pz_global_config = pz_load_config (CONFIG_FILE)));
-#if 0
-	pz_font_load(); // in fonts.c
-#else
-	ttk_menufont = ttk_get_font ("Chicago", 12);
-	ttk_textfont = ttk_get_font ("Espy Sans", 10);
-#endif
+	pz_load_font (&ttk_textfont, TEXT_FONT);
+	pz_load_font (&ttk_menufont, MENU_FONT);
 	pz_secrets_init();
 	pz_modules_init();
 	pz_header_init();

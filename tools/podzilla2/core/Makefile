@@ -8,7 +8,7 @@ LD ?= ld
 MYCFLAGS = `ttk-config --x11 --sdl --cflags`
 endif
 
-OBJS= pz.o module.o ipod.o dialog.o secrets.o header.o settings.o
+OBJS= pz.o module.o ipod.o dialog.o secrets.o header.o settings.o fonts.o
 HDRS= pz.h
 
 all: built-in.o
