@@ -71,8 +71,8 @@ t_GR_WINDOW_ID pz_old_window (int x, int y, int w, int h,
 void pz_old_event_handler (t_GR_EVENT *ev);
 void pz_draw_header(char *header);
 t_GR_GC_ID pz_get_gc(int copy);
-TWindow *pz_mh_legacy (ttk_menu_item *); // calls the void(*)() in item->data
 #endif
+TWindow *pz_mh_legacy (ttk_menu_item *); // calls the void(*)() in item->data
 
 /** Module and .POD/.PCD functions - module.c   XXX MOST NOT DONE**/
 /* called from module */
@@ -156,12 +156,16 @@ typedef TWidget PzWidget;
 
 /** Menu stuff - menu.c   XXX NOT DONE **/
 
+extern TWindow *(*pz_new_menu_window)(ttk_menu_item *menu);
+TWindow *pz_default_new_menu_window (ttk_menu_item *menu);
 #ifndef PZ_MOD
-TWindow *pz_menu_init(void);
+TWindow *pz_menu_init (void);
 #endif
 #ifdef PZ_COMPAT
 void pz_menu_add_legacy (const char *menupath, void (*handler)());
 #endif
+void pz_menu_add_after (const char *menupath, PzWindow *(*handler)(), const char *after);
+void pz_menu_add_top (const char *menupath, PzWindow *(*handler)());
 void pz_menu_add_action (const char *menupath, PzWindow *(*handler)());
 void pz_menu_add_option (const char *menupath, const char **choices);
 int pz_menu_get_option (const char *menupath);
@@ -237,6 +241,13 @@ void pz_header_unset_local (void);
 
 
 /** Dialog and message - dialog.c **/
+extern int (*pz_do_dialog) (const char *title, const char *text,
+			    const char *b0, const char *b1, const char *b2,
+			    int timeout, int is_err);
+int pz_default_do_dialog (const char *title, const char *text,
+			  const char *b0, const char *b1, const char *b2,
+			  int timeout, int is_err);
+
 int pz_dialog (const char *title, const char *text,
 	       int nbuttons, int timeout, ...); // supply [nbuttons] const char *'s in the ... for buttons
 int pz_errdialog (const char *title, const char *text,
