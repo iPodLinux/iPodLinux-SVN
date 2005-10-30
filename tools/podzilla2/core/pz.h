@@ -55,7 +55,7 @@
 #endif
 #include <ttk.h>
 
-/** Compat defs - legacy.c **/
+/** Compat defs - legacy.c   XXX NOT DONE **/
 #ifdef PZ_COMPAT
 #warning Legacy code alert... please fix ASAP.
 #define HEADER_TOPLINE 19
@@ -74,7 +74,7 @@ t_GR_GC_ID pz_get_gc(int copy);
 TWindow *pz_mh_legacy (ttk_menu_item *); // calls the void(*)() in item->data
 #endif
 
-/** Module and .POD/.PCD functions - module.c **/
+/** Module and .POD/.PCD functions - module.c   XXX MOST NOT DONE**/
 /* called from module */
 #ifndef NODEF_MODULE
 typedef struct _pz_Module PzModule;
@@ -83,7 +83,7 @@ PzModule *pz_register_module (const char *name, void (*cleanup)());
 const char *pz_module_get_path (PzModule *mod, const char *filename);
 #ifndef PZ_MOD
 /* called from core */
-void pz_modules_load (void);
+void pz_modules_init (void);
 PzModule *pz_load_module (const char *name);
 void pz_unload_module (PzModule *mod);
 void *pz_module_dlsym (PzModule *mod, const char *sym);
@@ -154,7 +154,7 @@ typedef TWidget PzWidget;
 
 
 
-/** Menu stuff - menu.c **/
+/** Menu stuff - menu.c   XXX NOT DONE **/
 
 #ifndef PZ_MOD
 TWindow *pz_menu_init(void);
@@ -171,7 +171,7 @@ void pz_menu_sort (const char *menupath);
 void pz_menu_remove (const char *menupath);
 
 
-/** Widget/window/event stuff - gui.c **/
+/** Widget/window/event stuff - gui.c    XXX NOT DONE **/
 
 /* #define event types here XXX */
 typedef struct _pz_Event 
@@ -239,7 +239,7 @@ void pz_error (const char *fmt, ...);
 void pz_perror (const char *firstpart);
 
 
-/** Vector text - vector.c **/
+/** Vector text - vector.c    XXX NOT DONE **/
 void pz_vector_string (ttk_surface srf, const char *string, int x, int y, int cw, int ch, int kern, ttk_color col);
 void pz_vector_string_center (ttk_surface srf, const char *string, int x, int y, int cw, int ch, int kern, ttk_color col);
 int pz_vector_width (const char *string, int cw, int ch, int kern);
