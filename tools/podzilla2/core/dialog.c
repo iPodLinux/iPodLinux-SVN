@@ -255,7 +255,7 @@ static void dialog_destroy (TWidget *this)
 }
 
 
-static int dialog_create (const char *title, const char *text,
+int pz_default_do_dialog (const char *title, const char *text,
 			  const char *button0, const char *button1, const char *button2,
 			  int timeout, int e) 
 {
@@ -423,6 +423,9 @@ static int dialog_create (const char *title, const char *text,
     return ret;
 }
 
+int (*pz_do_dialog)(const char *, const char *, const char *, const char *, const char *,
+		    int, int) = pz_default_do_dialog;
+
 int pz_dialog (const char *title, const char *text,
 	       int nbuttons, int timeout, ...) 
 {
@@ -438,7 +441,7 @@ int pz_dialog (const char *title, const char *text,
     }
     va_end (ap);
 
-    return dialog_create (title, text, b[0], b[1], b[2], timeout, 0);
+    return pz_do_dialog (title, text, b[0], b[1], b[2], timeout, 0);
 }
 
 int pz_errdialog (const char *title, const char *text,
@@ -456,22 +459,22 @@ int pz_errdialog (const char *title, const char *text,
     }
     va_end (ap);
 
-    return dialog_create (title, text, b[0], b[1], b[2], timeout, 1);
+    return pz_do_dialog (title, text, b[0], b[1], b[2], timeout, 1);
 }
 
 void pz_message_title (const char *title, const char *text) 
 {
-    dialog_create (title, text, _("Ok"), 0, 0, 0, 0);
+    pz_do_dialog (title, text, _("Ok"), 0, 0, 0, 0);
 }
 void pz_message (const char *text) 
 {
-    dialog_create (_("Information"), text, _("Ok"), 0, 0, 0, 0);
+    pz_do_dialog (_("Information"), text, _("Ok"), 0, 0, 0, 0);
 }
 static void warn_or_err (const char *title, const char *fmt, va_list ap)
 {
     char *str = malloc (1024);
     vsnprintf (str, 1024, fmt, ap);
-    dialog_create (title, str, _("Ok"), 0, 0, 0, 1);
+    pz_do_dialog (title, str, _("Ok"), 0, 0, 0, 1);
 }
 void pz_warning (const char *fmt, ...) 
 {
