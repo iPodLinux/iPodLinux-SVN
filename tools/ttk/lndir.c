@@ -43,8 +43,6 @@ in this Software without prior written authorization from The Open Group.
    	%  lndir ../X
 */
 
-#include <X11/Xos.h>
-#include <X11/Xfuncproto.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -53,22 +51,7 @@ in this Software without prior written authorization from The Open Group.
 #endif
 #include <errno.h>
 
-#ifndef X_NOT_POSIX
 #include <dirent.h>
-#else
-#ifdef SYSV
-#include <dirent.h>
-#else
-#ifdef USG
-#include <dirent.h>
-#else
-#include <sys/dir.h>
-#ifndef dirent
-#define dirent direct
-#endif
-#endif
-#endif
-#endif
 #ifndef MAXPATHLEN
 #define MAXPATHLEN 2048
 #endif
