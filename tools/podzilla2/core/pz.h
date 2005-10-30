@@ -173,8 +173,17 @@ void pz_menu_remove (const char *menupath);
 
 /** Widget/window/event stuff - gui.c    XXX NOT DONE **/
 
-/* #define event types here XXX */
-typedef struct _pz_Event 
+#define PZ_EVENT_SCROLL       1
+#define PZ_EVENT_STAP         2
+#define PZ_EVENT_BUTTON_UP    3
+#define PZ_EVENT_BUTTON_DOWN  4
+#define PZ_EVENT_BUTTON_HELD  5
+#define PZ_EVENT_INPUT        6
+#define PZ_EVENT_FRAME        7
+#define PZ_EVENT_TIMER        8
+#define PZ_EVENT_DESTROY      9
+
+typedef struct _pz_Event
 {
     int type;
     int arg;
@@ -259,6 +268,11 @@ int pz_ipod_usb_is_connected(void);
 int pz_ipod_fw_is_connected(void);
 
 
+/** Fonts - fonts.c **/
+void pz_load_font (ttk_font *f, int setting);
+// menu handler, data = &font_to_set, cdata = setting_to_set:
+TWindow *pz_select_font (ttk_menu_item *item);
+
 
 /** Other things - pz.c **/
 void pz_register_global_hold_button (char ch, int ms, void (*handler)());
@@ -336,8 +350,9 @@ void pz_uninit();
 #define DECORATIONS	(45)	/* appearance */
 #define BATTERY_DIGITS	(46)	/* appearance */
 #define DISPLAY_LOAD	(47)	/* appearance */
-#define FONT_FILE	(48)
+#define TEXT_FONT	(48)
 #define SLIDE_TRANSIT	(49)
+#define MENU_FONT	(50)
 
 /* MODULE METASETTINGS 100 - 110 */
 #define MODULE_LIST     (100)
