@@ -305,7 +305,12 @@ main(int argc, char **argv)
 		pz_set_time_from_file();
 	}
 
-	pz_ipod_fix_settings ((pz_global_config = pz_load_config ("/etc/podzilla/podzilla.conf")));
+#ifdef IPOD
+#define CONFIG_FILE "/etc/podzilla/podzilla.conf"
+#else
+#define CONFIG_FILE "config/podzilla.conf"
+#endif
+	pz_ipod_fix_settings ((pz_global_config = pz_load_config (CONFIG_FILE)));
 #if 0
 	pz_font_load(); // in fonts.c
 #else

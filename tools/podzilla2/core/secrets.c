@@ -52,7 +52,8 @@ void pz_secrets_init()
 
 int pz_has_secret (const char *key) 
 {
-    if (strstr (secrets, key) &&
+    if (secrets &&
+	strstr (secrets, key) &&
 	!isalpha (*(strstr (secrets, key) - 1)))
 	return 1;
     return 0;

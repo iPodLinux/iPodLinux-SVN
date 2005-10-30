@@ -130,7 +130,12 @@ static int mount_pod (PzModule *mod)
 #else
     mod->mountpt = malloc (strlen ("xpods/") + strlen (strrchr (mod->podpath, '/')) + 1);
     sprintf (mod->mountpt, "xpods/%s", strrchr (mod->podpath, '/') + 1);
+    if (strrchr (mod->mountpt, '.'))
+	*strrchr (mod->mountpt, '.') = 0;
+    
     if (stat (mod->mountpt, &st) < 0 || !S_ISDIR (st.st_mode)) {
+	if (stat (mod->mountpt, &st) >= 0)
+	    errno = ENOTDIR;
 	pz_error ("Couldn't access xpod dir for %s: %s", mod->mountpt, strerror (errno));
 	free (mod->mountpt);
 	mod->mountpt = 0;
@@ -144,7 +149,7 @@ static int mount_pod (PzModule *mod)
 static void load_modinf (PzModule *mod) 
 {
     char buf[80];
-    sprintf (buf, "%s/" MODULE_INF_FILE);
+    sprintf (buf, "%s/" MODULE_INF_FILE, mod->mountpt);
     FILE *fp = fopen (buf, "r");
     if (!fp) {
 	pz_perror (buf);
@@ -330,7 +335,7 @@ void pz_modules_init()
 #ifdef IPOD
 #define MODULEDIR "/usr/share/podzilla/modules/"
 #else
-#define MODULEDIR "modules/"
+#define MODULEDIR "pods/"
 #endif
 
     struct stat st;
@@ -359,7 +364,9 @@ void pz_modules_init()
     }
 
     while ((d = readdir (dp)) != 0) {
-	char *podpath = malloc (strlen (MODULEDIR) + strlen (d->d_name) + 1);
+	char *podpath;
+	if (d->d_name[0] == '.') continue;
+	podpath = malloc (strlen (MODULEDIR) + strlen (d->d_name) + 1);
 	strcpy (podpath, MODULEDIR); // has trailing /
 	strcat (podpath, d->d_name);
 #ifdef MountPods
@@ -383,6 +390,7 @@ void pz_modules_init()
 	    cur->next = calloc (1, sizeof(PzModule));
 	    cur = cur->next;
 	}
+	cur->podpath = podpath;
     }
     closedir (dp);
 
@@ -400,7 +408,7 @@ void pz_modules_init()
 	    else module_head = cur->next;
 	    free (cur->podpath);
 	    free (cur);
-	    cur = last->next;
+	    cur = last? last->next : module_head;
 	} else {
 	    last = cur;
 	    cur = cur->next;
@@ -429,7 +437,7 @@ void pz_modules_init()
 	    if (last) last->next = cur->next;
 	    else module_head = cur->next;
 	    free_module (cur);
-	    cur = last->next;
+	    cur = last? last->next : module_head;
 	} else {
 	    last = cur;
 	    cur = cur->next;
