@@ -1,5 +1,5 @@
 /*
- * Copyright) 2005 Joshua Oreman
+ * Copyright (c) 2005 Joshua Oreman
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -260,7 +260,7 @@ static int fix_dependencies (PzModule *mod, int initing)
     ndeps += 2; // the first one, the 0 at the end
     mod->deps = calloc (ndeps, sizeof(PzModule *));
     str = mod->depsstr;
-    while (isspace (str)) str++; // trim WS on left
+    while (isspace (*str)) str++; // trim WS on left
     pdep = mod->deps;
 
     do {
