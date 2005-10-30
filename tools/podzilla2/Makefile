@@ -5,8 +5,9 @@ else
 LIBS += `ttk-config --x11 --sdl --libs` -ldl
 CC ?= cc
 endif
+POD ?= ../../../podfile/pod # relative to two dirs down
 
-all: core modules contrib
+all: core modules contrib deskpods
 	$(CC) -o podzilla core/built-in.o modules/built-in.o $(LIBS)
 
 core:
@@ -21,4 +22,16 @@ clean:
 	make clean -C core
 #	make clean -C modules
 
-.PHONY: core modules clean
+dev-env:
+	mkdir -p config pods xpods
+	-ln -sf ../ttk/fonts
+	-ln -sf ../ttk/schemes
+
+pods:
+	@for dir in xpods/*; do ( cd $$dir; echo -n "$$dir.. "; $(POD) -c ../../pods/`echo $$dir | sed 's|xpods/||'`.pod *; echo "done" ); done
+
+# Just makes dummy files
+deskpods:
+	@for dir in xpods/*; do touch `echo $$dir | sed 's|^x||;s|$$|.pod|'`; done
+
+.PHONY: core modules clean pods dev-env
