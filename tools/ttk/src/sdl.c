@@ -223,9 +223,11 @@ void ttk_unmakecol_ex (ttk_color col, int *r, int *g, int *b, ttk_surface srf)
 {
     if (!srf) srf = ttk_screen->srf;
     if (ttk_screen->bpp == 2) {
+	int v;
+	
 	col &= 3;
 	
-	int v = (col == 3)? 0 : (col == 2)? 80 : (col == 1)? 160 : 255;
+	v = (col == 3)? 0 : (col == 2)? 80 : (col == 1)? 160 : 255;
 	*r = *g = *b = v;
     } else {
 	Uint8 R, G, B;

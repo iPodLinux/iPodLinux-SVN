@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define _MAKETHIS textarea_data *data = (textarea_data *)this->data;
+#define _MAKETHIS textarea_data *data = (textarea_data *)this->data
 extern ttk_screeninfo *ttk_screen;
 
 typedef struct _textarea_data
@@ -24,8 +24,9 @@ typedef struct _textarea_data
 static void render (TWidget *this) 
 {
     _MAKETHIS;
-
     int wid = this->w - 2;
+    int line;
+    char *End;
 
     // *wrapat[] stores pointers to the char we wrap *after* on each line.
     // (If it's a space, tab, or nl, it's eaten.)
@@ -121,8 +122,8 @@ static void render (TWidget *this)
     }
     *end = 0;
     
-    int line = 0;
-    char *End = data->text + strlen (data->text);
+    line = 0;
+    End = data->text + strlen (data->text);
 
     data->textsrf = ttk_new_surface (wid, (lines + 1) * data->baselineskip, ttk_screen->bpp);
 

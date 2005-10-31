@@ -288,6 +288,8 @@ void ttk_ap_dorect (ttk_surface srf, TApItem *ap, int x1, int y1, int x2, int y2
     ttk_color col;
     ttk_surface img;
     int iscol = 1;
+    int tmp;
+    int dospc = 1;
 
     if (!ap) return; // not an error
     
@@ -295,11 +297,9 @@ void ttk_ap_dorect (ttk_surface srf, TApItem *ap, int x1, int y1, int x2, int y2
 	ttk_line (srf, x1, y1, x2, y2, ap->color);
 	return;
     }
-    int tmp;
     if (x1 > x2) tmp = x1, x1 = x2, x2 = tmp;
     if (y1 > y2) tmp = y1, y1 = y2, y2 = tmp;
 
-    int dospc = 1;
     if (ap->type & TTK_AP_SPACING) {
 	if ((x1 + ap->spacing) > (x2 - ap->spacing))
 	    dospc = 0;

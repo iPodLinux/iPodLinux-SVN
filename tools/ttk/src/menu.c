@@ -9,7 +9,7 @@
 #define MIN(x,y) (((x)<(y))?(x):(y))
 #endif
 
-#define _MAKETHIS  menu_data *data = (menu_data *)this->data;
+#define _MAKETHIS  menu_data *data = (menu_data *)this->data
 
 extern ttk_screeninfo *ttk_screen;
 
@@ -59,13 +59,14 @@ static int VIFromXI (TWidget *this, int xiFinal)
 static int XIFromVI (TWidget *this, int vi) 
 {
     int xi = 0;
+    int xiOld;
     _MAKETHIS;
     
     for (xi = 0; data->menu && data->menu[xi] && vi; vi--, xi++) {
 	if (data->menu[xi]->visible && !data->menu[xi]->visible (data->menu[xi]))
 	    vi++;
     }
-    int xiOld = xi;
+    xiOld = xi;
     while ((xi < data->items) && data->menu[xi] && data->menu[xi]->visible && !data->menu[xi]->visible (data->menu[xi]))
 	xi++;
     if (xi >= data->items) xi = xiOld;
@@ -338,7 +339,8 @@ void ttk_menu_updated (TWidget *this)
 
 
 int ttk_menu_frame (TWidget *this) 
-{    
+{   
+    int oldflags;
     _MAKETHIS;
     ttk_menu_item *selected = data->menu[XIFromVI (this, data->top + data->sel)];
 
@@ -370,7 +372,7 @@ int ttk_menu_frame (TWidget *this)
 	}
     }
 
-    int oldflags = selected->flags;
+    oldflags = selected->flags;
 
     if ((data->ds % 20) >= 15) {
 	selected->flags |= TTK_MENU_ICON_FLASHOFF;
@@ -435,6 +437,7 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
     int ofs = (data->itemheight - ttk_text_height (data->font)) / 2;
     int nivis = 0, nvvis = 0;
     int spos, sheight;
+    int vi, xi;
 
     if (ttk_epoch > data->epoch) {
 	int i;
@@ -464,8 +467,6 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
     }
     
     if (!data->menu) return;
-
-    int vi, xi;
 
     for (vi = data->top, xi = XIFromVI (this, data->top);
 	 data->menu[xi] && vi < MIN (data->top + data->visible, data->items);
@@ -635,6 +636,7 @@ int ttk_menu_down (TWidget *this, int button)
     _MAKETHIS;
     ttk_menu_item *item = data->menu[XIFromVI (this, data->top + data->sel)];
     int ret = 0;
+    TWindow *sub;
 
     switch (button) {
     case TTK_BUTTON_ACTION:
@@ -669,7 +671,7 @@ int ttk_menu_down (TWidget *this, int button)
 		// In the special case that makesub() simply blasts the window onto the
 		// screen itself, it can return TTK_MENU_ALREADYDONE and set item->sub
 		// itself.
-		TWindow *sub = item->makesub (item);
+		sub = item->makesub (item);
 		if (sub != TTK_MENU_ALREADYDONE) {
 		    item->sub = sub;
 		} else {

@@ -8,7 +8,7 @@
 #define MAX(x,y) (((x)>(y))?(x):(y))
 #endif
 
-#define _MAKETHIS imgview_data *data = (imgview_data *)this->data;
+#define _MAKETHIS imgview_data *data = (imgview_data *)this->data
 extern ttk_screeninfo *ttk_screen;
 
 #define MAGSTEP 1.414
