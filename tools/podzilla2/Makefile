@@ -2,13 +2,13 @@ ifdef IPOD
 LIBS += `ttk-config --ipod --sdl --libs` contrib/ucdl/libuCdl.a
 CC ?= arm-elf-gcc
 else
-LIBS += `ttk-config --x11 --sdl --libs` -ldl
+LIBS += `ttk-config --x11 --sdl --libs` -ldl $(shell gcc -o .conftest -lintl 2>/dev/null && rm -f .conftest && echo -- -lintl)
 CC ?= cc
 endif
 POD ?= ../../../podfile/pod # relative to two dirs down
 
 all: core modules contrib deskpods
-	$(CC) -o podzilla core/built-in.o modules/built-in.o $(LIBS)
+	$(CC) -o podzilla core/built-in.o $(LIBS)
 
 core:
 	make -C core
