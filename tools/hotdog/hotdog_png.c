@@ -34,9 +34,15 @@
 #include "hotdog.h"
 #include "hotdog_png.h"
 
-#define BLEND_ARGB8888_ON_ARGB8888(dst_argb8888, src_argb8888)         \
-{                                                                      \
-// TEMPORARILY REMOVED                                                 \
+#define BLEND_ARGB8888_ON_ARGB8888(dst_argb, src_argb)         \
+{                                                              \
+ uint32 alpha,dst[2];                                          \
+ uint32 idst = (dst_argb);                                      \
+ uint32 isrc = (src_argb);                                      \
+ alpha = (uint32)(255 - (int32)(isrc >> 24));      \
+ dst[0] = ((idst & 0x00FF00FF) * alpha + 0x00800080) & 0xFF00FF00;          \
+ dst[1] = (((idst>>8) & 0x00FF00FF) * alpha + 0x00800080) & 0xFF00FF00;          \
+ (dst_argb) = (dst[0]>>8) + dst[1] + isrc;                      \
 }
 
 void HD_PNG_Render(hd_engine *eng,hd_object *obj) {
