@@ -3,7 +3,7 @@
 #include "slider.h"
 #include <stdlib.h>
 
-#define _MAKETHIS slider_data *data = (slider_data *)this->data;
+#define _MAKETHIS slider_data *data = (slider_data *)this->data
 extern ttk_screeninfo *ttk_screen;
 
 typedef struct _slider_data
@@ -74,6 +74,7 @@ void ttk_slider_set_bar (TWidget *this, ttk_surface empty, ttk_surface full)
 void ttk_slider_draw (TWidget *this, ttk_surface srf)
 {
     int y = this->y;
+    int X;
     _MAKETHIS;
 
     if (data->epoch < ttk_epoch) {
@@ -89,7 +90,7 @@ void ttk_slider_draw (TWidget *this, ttk_surface srf)
 	y += 15;
     }
 
-    int X = (data->lastval - data->min) * this->w / (data->max - data->min);
+    X = (data->lastval - data->min) * this->w / (data->max - data->min);
     if (!X) X = 1; // show left edge of the "full" graphic
 
     ttk_blit_image_ex (data->full, 0, 0, X, 11, srf, this->x, y);
@@ -100,6 +101,7 @@ void ttk_slider_draw (TWidget *this, ttk_surface srf)
 int ttk_slider_scroll (TWidget *this, int dir)
 {
     _MAKETHIS;
+    int oldval;
     
 #ifdef IPOD
     static int sofar = 0;
@@ -111,7 +113,7 @@ int ttk_slider_scroll (TWidget *this, int dir)
     dir = dir * (data->max - data->min) / 96;
 #endif
 
-    int oldval = data->lastval;
+    oldval = data->lastval;
 
     data->lastval += dir;
     if (data->lastval > data->max) data->lastval = data->max;
