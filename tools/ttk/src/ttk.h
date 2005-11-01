@@ -166,6 +166,7 @@ typedef struct TWidget
     void (*destroy) (struct TWidget *);
 
     void *data;
+    void *data2;
 } TWidget;
 
 typedef struct ttk_fontinfo {

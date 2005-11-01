@@ -151,6 +151,7 @@ ttk_menu_item *ttk_menu_get_selected_item (TWidget *this)
 void ttk_menu_item_updated (TWidget *this, ttk_menu_item *p)
 {
     _MAKETHIS;
+    int i;
 
     if (!this) this = p->menu;
     p->menu = this;
@@ -180,6 +181,15 @@ void ttk_menu_item_updated (TWidget *this, ttk_menu_item *p)
 
     if (data->items > data->visible) {
 	data->scroll = 1;
+    }
+
+    if (data->menu) {
+	for (i = 0; i < data->items; i++) {
+	    if (p == data->menu[i])
+		break;
+	}
+	if (i < data->items)
+	    render (this, i, 1);
     }
 }
 
@@ -246,12 +256,12 @@ void ttk_menu_insert (TWidget *this, ttk_menu_item *item, int xi)
     if (xi >= data->items) {
 	ttk_menu_append (this, item);
     } else {
-	ttk_menu_item_updated (this, item);
-	item->menudata = data;
-	
 	memmove (data->menu + xi + 1, data->menu + xi, sizeof(void*) * (data->items - xi));
 	data->menu[xi] = item;
 	data->items++;
+
+	ttk_menu_item_updated (this, item);
+	item->menudata = data;
     }
 }
 
@@ -271,13 +281,13 @@ void ttk_menu_append (TWidget *this, ttk_menu_item *item)
 	    memset (data->itemsrfI + data->items, 0, (data->allocation - data->items) * sizeof(ttk_surface));
 	}
     }
-    
-    ttk_menu_item_updated (this, item);
-    item->menudata = data;
 
     data->menu[data->items] = item;
     data->items++;
     data->menu[data->items] = 0;
+    
+    ttk_menu_item_updated (this, item);
+    item->menudata = data;
     if (data->top + data->sel == 0) {
 	render (this, 0, data->visible);
     }
