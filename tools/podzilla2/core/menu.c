@@ -257,7 +257,6 @@ void pz_menu_add_top (const char *menupath, PzWindow *(*handler)())
     ttk_menu_item_updated (item->menu, item);
 }
 
-#if 0
 void pz_menu_add_legacy (const char *menupath, void (*handler)()) 
 {
     ttk_menu_item *item = resolve_menupath (menupath, LOC_END);
@@ -266,7 +265,6 @@ void pz_menu_add_legacy (const char *menupath, void (*handler)())
     item->flags = 0;
     ttk_menu_item_updated (item->menu, item);
 }
-#endif
 
 void pz_menu_add_ttkh (const char *menupath, TWindow *(*handler)(ttk_menu_item *), void *data) 
 {

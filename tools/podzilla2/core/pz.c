@@ -29,7 +29,7 @@
 /* compat globals */
 t_GR_SCREEN_INFO screen_info;
 long hw_version;
-ttk_gc root_gc;
+ttk_gc pz_root_gc;
 
 /* static stuff */
 static int usb_connected = 0;
@@ -302,9 +302,9 @@ main(int argc, char **argv)
 	textdomain("podzilla");
 #endif
 
-	root_gc = ttk_new_gc();
-	ttk_gc_set_usebg(root_gc, 0);
-	ttk_gc_set_foreground(root_gc, ttk_makecol (0, 0, 0));
+	pz_root_gc = ttk_new_gc();
+	ttk_gc_set_usebg(pz_root_gc, 0);
+	ttk_gc_set_foreground(pz_root_gc, ttk_makecol (0, 0, 0));
 	t_GrGetScreenInfo(&screen_info);
 
 	hw_version = pz_ipod_get_hw_version();
@@ -325,13 +325,8 @@ main(int argc, char **argv)
 	pz_menu_init();
 	pz_modules_init();
 	pz_header_init();
-#if 1
 	ttk_show_window (pz_menu_get());
-#else
-	pz_message ("Ok, I'm done. Bye.");
-	return 0;
-#endif
-	
+
 	connection_timer = ttk_create_timer (1000, check_connection);
 	usb_connected = pz_ipod_usb_is_connected();
 	fw_connected = pz_ipod_fw_is_connected();
