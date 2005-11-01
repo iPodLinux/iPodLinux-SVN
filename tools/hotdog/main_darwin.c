@@ -97,10 +97,10 @@ int main(int argc, char *argv[]) {
 	obj2.sub.font = HD_Font_Create("font.ttf",obj2.h,"Hello");
 	obj2.w = obj2.sub.font->w; // Use the width extracted by the font-engine as to not scale the text
 
-	obj3.x = 40;
-	obj3.y = 60;
-	obj3.w = 50;
-	obj3.h = 50;
+	obj3.x = 240;
+	obj3.y = -19;
+	obj3.w = 75;
+	obj3.h = 75;
 	obj3.depth    = 3;
 	obj3.type     = HD_TYPE_PNG;
 	obj3.sub.png  = HD_PNG_Create("50x50-32bit.png");
@@ -149,12 +149,13 @@ int main(int argc, char *argv[]) {
 		obj.x = (int32)(110.0 + 160.0 * cos(f/2));
 		obj.y = (int32)(70.0 + 150.0 * sin(f/2));
 
-		obj2.x = (int32)(30.0 + 20.0 * cos(f));
-		obj2.y = (int32)(30.0 + 20.0 * sin(f));
+		obj2.x = (int32)(30.0 + 50.0 * cos(f));
+		obj2.y = (int32)(30.0 + 50.0 * sin(f));
 
-		//obj3.x = 10.0 + 40.0 * sin(f/2.0);
-		obj3.w = 100.0 + 40.0 * sin(f);
-		obj3.h = 100.0 + 40.0 * cos(f);
+		obj3.x = (int32)(130.0 + 140.0 * cos(f/4.0));
+		obj3.y = (int32)(90.0 + 100.0 * sin(f/4.0));
+		//obj3.w = 100.0 + 40.0 * sin(f);
+		//obj3.h = 100.0 + 40.0 * cos(f);
 
 		f = (double)GetTimeMillis() / 400.0;
 

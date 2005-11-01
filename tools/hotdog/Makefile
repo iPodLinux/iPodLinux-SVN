@@ -5,8 +5,8 @@ endif
 ifeq ($(OSTYPE),Darwin)
         CC = gcc
         LD = ld
-        CFLAGS = -g -mcpu=750 -maltivec -mabi=altivec -fomit-frame-pointer -funroll-loops
-        LDFLAGS = -framework Foundation -framework Cocoa
+        CFLAGS = -g -mcpu=750 -maltivec -mabi=altivec -fomit-frame-pointer -funroll-loops -I /usr/X11R6/include/freetype2
+        LDFLAGS = -framework Foundation -framework Cocoa -L/usr/X11R6/lib
 endif
 ifeq ($(OSTYPE),Linux)
         CC = gcc
@@ -16,8 +16,8 @@ ifeq ($(OSTYPE),Linux)
 endif
 
 PROG=hotdog
-CFLAGS  +=`sdl-config --cflags` -g `pkg-config --cflags libpng`
-LDFLAGS +=`sdl-config --libs` `pkg-config --libs libpng` -lfreetype
+CFLAGS  +=`sdl-config --cflags` -g `libpng-config --cflags`
+LDFLAGS +=`sdl-config --libs` `libpng-config --ldflags` -lfreetype
 
 OBJS=  main_darwin.o hotdog.o hotdog_png.o hotdog_primitive.o hotdog_font.o
 

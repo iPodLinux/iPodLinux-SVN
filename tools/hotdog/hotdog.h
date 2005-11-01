@@ -74,7 +74,7 @@ typedef struct hd_obj_list {
 
 typedef struct {
 	struct {
-		uint32  width,height;
+		int32  width,height;
 		uint16 *framebuffer;
 	} screen;
 
