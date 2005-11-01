@@ -33,12 +33,19 @@
 
 #define HD_TYPE_PRIMITIVE 0x00
 #define HD_TYPE_PNG       0x01
+#define HD_TYPE_FONT      0x02
+
 #define HD_PRIM_RECTANGLE 0x00
 
 typedef struct {
 	uint32 type;
 	uint32 color; // ARGB
 } hd_primitive;
+
+typedef struct {
+  int32   w,h;
+  uint32 *argb;
+} hd_font;
 
 typedef struct {
 	int32 w,h;
@@ -52,8 +59,9 @@ typedef struct {
 	uint32 type;
 
 	union {
-		hd_png       *png;
-		hd_primitive *prim;
+	  hd_png       *png;
+	  hd_primitive *prim;
+	  hd_font      *font;
 	} sub;
 
 } hd_object;
@@ -74,6 +82,19 @@ typedef struct {
 
 	hd_obj_list *list;
 } hd_engine;
+
+#define BLEND_ARGB8888_ON_ARGB8888(dst_argb, src_argb)         \
+{                                                              \
+ uint32 alpha,dst[2];                                          \
+ uint32 idst = (dst_argb);                                      \
+ uint32 isrc = (src_argb);                                      \
+ alpha = (uint32)(255 - (int32)(isrc >> 24));      \
+ dst[0] = ((idst & 0x00FF00FF) * alpha + 0x00800080) & 0xFF00FF00;          \
+ dst[1] = (((idst>>8) & 0x00FF00FF) * alpha + 0x00800080) & 0xFF00FF00;          \
+ (dst_argb) = (dst[0]>>8) + dst[1] + isrc;                      \
+}
+
+
 
 hd_engine *HD_Initialize(uint32 width,uint32 height,uint16 *framebuffer);
 uint8 HD_Register(hd_engine *eng,hd_object *obj);

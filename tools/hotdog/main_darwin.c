@@ -35,6 +35,7 @@
 #include "main.h"
 #include "hotdog.h"
 #include "hotdog_png.h"
+#include "hotdog_font.h"
 
 #include "SDL.h"
 
@@ -90,16 +91,14 @@ int main(int argc, char *argv[]) {
 
 	obj2.x = 30;
 	obj2.y = 30;
-	obj2.w = 50;
-	obj2.h = 50;
+	obj2.h = 40;
 	obj2.depth    = 2;
-	obj2.type     = HD_TYPE_PRIMITIVE;
-	obj2.sub.prim = &pri2;
-	pri2.type  = HD_PRIM_RECTANGLE;
-	pri2.color = 0x80008000;
+	obj2.type     = HD_TYPE_FONT;
+	obj2.sub.font = HD_Font_Create("font.ttf",obj2.h,"Hello");
+	obj2.w = obj2.sub.font->w; // Use the width extracted by the font-engine as to not scale the text
 
 	obj3.x = 40;
-	obj3.y = 10;
+	obj3.y = 60;
 	obj3.w = 50;
 	obj3.h = 50;
 	obj3.depth    = 3;
