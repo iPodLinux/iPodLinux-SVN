@@ -1405,6 +1405,7 @@ void ttk_text (ttk_surface srf, ttk_font fnt, int x, int y, ttk_color col, const
 }
 int ttk_text_width (ttk_font fnt, const char *str)
 {
+    if (!str) return 0;
     return fnt.width (&fnt, str);
 }
 int ttk_text_width_gc (ttk_gc gc, const char *str) 
