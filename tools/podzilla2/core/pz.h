@@ -229,6 +229,7 @@ PzWidget *pz_add_widget (PzWindow *win, void (*draw)(PzWidget *this, ttk_surface
 			 int (*event)(PzEvent *ev));
 PzWidget *pz_new_widget (void (*draw)(PzWidget *this, ttk_surface srf), int (*event)(PzEvent *ev));
 void pz_resize_widget (PzWidget *wid, int w, int h);
+void pz_widget_set_timer (PzWidget *wid, int ms);
 
 void pz_hide_window (PzWindow *win);
 void pz_close_window (PzWindow *win);
