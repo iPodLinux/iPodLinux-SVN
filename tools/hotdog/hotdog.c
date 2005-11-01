@@ -33,6 +33,7 @@
 #include "hotdog.h"
 #include "hotdog_primitive.h"
 #include "hotdog_png.h"
+#include "hotdog_font.h"
 
 hd_engine *HD_Initialize(uint32 width,uint32 height,uint16 *framebuffer) {
 	hd_engine *eng;
@@ -90,6 +91,9 @@ void HD_Render(hd_engine *eng) {
 				break;
 			case( HD_TYPE_PNG ):
 				HD_PNG_Render(eng,curr->obj);
+				break;
+			case( HD_TYPE_FONT ):
+				HD_Font_Render(eng,curr->obj);
 				break;
 			default:
 				break;

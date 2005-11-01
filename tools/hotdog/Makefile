@@ -17,9 +17,9 @@ endif
 
 PROG=hotdog
 CFLAGS  +=`sdl-config --cflags` -g `pkg-config --cflags libpng`
-LDFLAGS +=`sdl-config --libs` `pkg-config --libs libpng`
+LDFLAGS +=`sdl-config --libs` `pkg-config --libs libpng` -lfreetype
 
-OBJS=  main_darwin.o hotdog.o hotdog_png.o hotdog_primitive.o
+OBJS=  main_darwin.o hotdog.o hotdog_png.o hotdog_primitive.o hotdog_font.o
 
 all: $(PROG)
 

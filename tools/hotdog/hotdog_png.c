@@ -34,17 +34,6 @@
 #include "hotdog.h"
 #include "hotdog_png.h"
 
-#define BLEND_ARGB8888_ON_ARGB8888(dst_argb, src_argb)         \
-{                                                              \
- uint32 alpha,dst[2];                                          \
- uint32 idst = (dst_argb);                                      \
- uint32 isrc = (src_argb);                                      \
- alpha = (uint32)(255 - (int32)(isrc >> 24));      \
- dst[0] = ((idst & 0x00FF00FF) * alpha + 0x00800080) & 0xFF00FF00;          \
- dst[1] = (((idst>>8) & 0x00FF00FF) * alpha + 0x00800080) & 0xFF00FF00;          \
- (dst_argb) = (dst[0]>>8) + dst[1] + isrc;                      \
-}
-
 void HD_PNG_Render(hd_engine *eng,hd_object *obj) {
 	int32 fp_step_x,fp_step_y,fp_ix,fp_iy;
 	int32 x,y;
@@ -161,7 +150,14 @@ hd_png *HD_PNG_Create(char *fname) {
 		// Convert RGBA to ARGB8888 w/ premultiplied alpha
 		for(off=0;off<ret->w;off++) {
 			uint16 argb[4];
-		
+
+#ifndef _BIG_ENDIAN		
+			*(uint32*)(ret->argb + y*ret->w + off) = 
+			  ((*(uint32*)(ret->argb + y*ret->w + off) & 0xFF000000) >> 24) |
+			  ((*(uint32*)(ret->argb + y*ret->w + off) & 0x00FF0000) >>  8) |
+			  ((*(uint32*)(ret->argb + y*ret->w + off) & 0x0000FF00) <<  8) |
+			  ((*(uint32*)(ret->argb + y*ret->w + off) & 0x000000FF) << 24);
+#endif
 			argb[1] = (*(uint32*)(ret->argb + y*ret->w + off) & 0xFF000000) >> 24;
 			argb[2] = (*(uint32*)(ret->argb + y*ret->w + off) & 0x00FF0000) >> 16;
 			argb[3] = (*(uint32*)(ret->argb + y*ret->w + off) & 0x0000FF00) >> 8;
