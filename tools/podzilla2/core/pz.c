@@ -265,7 +265,16 @@ void pz_set_time_from_file(void)
 
 void pz_touch_settings(void) 
 {
+#ifdef IPOD
 	close (open ("/etc/podzilla/podzilla.conf", O_WRONLY));
+#endif
+}
+
+
+void pz_uninit() 
+{
+	ttk_quit();
+	pz_touch_settings();
 }
 
 
@@ -278,8 +287,7 @@ main(int argc, char **argv)
 		exit(1);
 	}
 	ttk_hide_window (first);
-	atexit (ttk_quit);
-	atexit (pz_touch_settings);
+	atexit (pz_uninit);
 
 #ifdef IPOD
 	uCdl_init (argv[0]);
@@ -314,10 +322,11 @@ main(int argc, char **argv)
 	pz_load_font (&ttk_textfont, TEXT_FONT);
 	pz_load_font (&ttk_menufont, MENU_FONT);
 	pz_secrets_init();
+	pz_menu_init();
 	pz_modules_init();
 	pz_header_init();
-#if 0
-	ttk_show_window (pz_menu_init());
+#if 1
+	ttk_show_window (pz_menu_get());
 #else
 	pz_message ("Ok, I'm done. Bye.");
 	return 0;
