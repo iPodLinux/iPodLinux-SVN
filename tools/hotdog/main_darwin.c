@@ -80,8 +80,8 @@ int main(int argc, char *argv[]) {
 
 	obj.x = 10;
 	obj.y = 10;
-	obj.w = 50;
-	obj.h = 50;
+	obj.w = 100;
+	obj.h = 100;
 	obj.depth    = 1;
 	obj.type     = HD_TYPE_PRIMITIVE;
 	obj.sub.prim = &pri;
@@ -146,9 +146,13 @@ int main(int argc, char *argv[]) {
 
 		HD_Render(engine);
 
+		obj.x = (int32)(110.0 + 160.0 * cos(f/2));
+		obj.y = (int32)(70.0 + 150.0 * sin(f/2));
+
 		obj2.x = (int32)(30.0 + 20.0 * cos(f));
 		obj2.y = (int32)(30.0 + 20.0 * sin(f));
 
+		//obj3.x = 10.0 + 40.0 * sin(f/2.0);
 		obj3.w = 100.0 + 40.0 * sin(f);
 		obj3.h = 100.0 + 40.0 * cos(f);
 

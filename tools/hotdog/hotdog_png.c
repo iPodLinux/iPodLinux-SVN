@@ -35,41 +35,51 @@
 #include "hotdog_png.h"
 
 void HD_PNG_Render(hd_engine *eng,hd_object *obj) {
-	int32 fp_step_x,fp_step_y,fp_ix,fp_iy;
-	int32 x,y;
-	int32 startx,starty,endx,endy;
-	uint32 buffOff, imgOff;
-	
-	fp_step_x = (obj->sub.png->w << 16) / obj->w;
-	fp_step_y = (obj->sub.png->h << 16) / obj->h;
+  int32 fp_step_x,fp_step_y,fp_ix,fp_iy,fp_initial_ix,fp_initial_iy;
+  int32 x,y;
+  int32 startx,starty,endx,endy;
+  uint32 buffOff, imgOff;
+  
+  fp_step_x = (obj->sub.png->w << 16) / obj->w;
+  fp_step_y = (obj->sub.png->h << 16) / obj->h;
+  
+#if 1
+  if( (obj->x >= 0) && ((obj->x+obj->w) < eng->screen.width) &&
+      (obj->y >= 0) && ((obj->y+obj->h) < eng->screen.height) ) {
+    
+    startx = 0;
+    starty = 0;
+    endx   = obj->w;
+    endy   = obj->h;
 
-	if( (obj->x >= 0) && ((obj->x+obj->w) < eng->screen.width) &&
-		(obj->y >= 0) && ((obj->y+obj->h) < eng->screen.height) ) {
+    fp_initial_ix = 0;
+    fp_initial_iy = 0;
+  } else {
 
-		startx = obj->x;
-		starty = obj->y;
-		endx   = obj->x + obj->w;
-		endy   = obj->y + obj->h;
-	} else assert(0);
+    // Let the clipping commence
 
+    if( obj->x < 0 ) { startx = 0; fp_initial_ix = -(obj->x) * fp_step_x; }
 
-	buffOff = obj->y * eng->screen.width + obj->x;
-	imgOff  = 0;
-	
-	fp_ix = fp_iy = 0;
-	for(y=0;y<obj->h;y++) {
-		fp_ix = 0;
-		imgOff = (fp_iy>>16) * obj->sub.png->w;
-
-		for(x=0;x<obj->w;x++) {
-			
-			BLEND_ARGB8888_ON_ARGB8888( eng->buffer[ buffOff + x ], obj->sub.png->argb[ imgOff + (fp_ix>>16) ] );
-			
-			fp_ix += fp_step_x;
-		}
-		buffOff += eng->screen.width;
-		fp_iy += fp_step_y;
-	}
+  }
+#endif
+  
+  buffOff = obj->y * eng->screen.width + obj->x;
+  imgOff  = 0;
+  
+  fp_iy = fp_initial_iy;
+  for(y=starty;y<endy;y++) {
+    fp_ix = fp_initial_ix;
+    imgOff = (fp_iy>>16) * obj->sub.png->w;
+    
+    for(x=startx;x<endx;x++) {
+      
+      BLEND_ARGB8888_ON_ARGB8888( eng->buffer[ buffOff + x ], obj->sub.png->argb[ imgOff + (fp_ix>>16) ] );
+      
+      fp_ix += fp_step_x;
+    }
+    buffOff += eng->screen.width;
+    fp_iy += fp_step_y;
+  }
 }
 
 #if YOU_WANT_TO_UNDERSTAND_THE_OPTIMIZED_VERSION_ABOVE

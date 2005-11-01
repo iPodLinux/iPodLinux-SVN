@@ -30,13 +30,31 @@
 #include "hotdog.h"
 
 void HD_Primitive_Render(hd_engine *eng,hd_object *obj) {
-	int32 x,y;
+  int32 x,y;
+  int32 startx,starty,endx,endy;
 
-	for(y=obj->y;y<(obj->y+obj->h);y++) {
-		for(x=obj->x;x<(obj->x+obj->h);x++) {
+  if(  obj->x         <                 0  ) startx = 0; else startx = obj->x;
+  if( (obj->x+obj->w) > eng->screen.width  ) endx   = eng->screen.width; else endx = obj->x + obj->w;
+  if(  obj->y         <                 0  ) starty = 0; else starty = obj->y;
+  if( (obj->y+obj->h) > eng->screen.height ) endy   = eng->screen.height; else endy = obj->y + obj->h;
 
-			BLEND_ARGB8888_ON_ARGB8888( eng->buffer[ y * eng->screen.width + x ], obj->sub.prim->color );
 
-		}
-	}
+  for(y=starty;y<endy;y++) {
+    for(x=startx;x<endx;x++) {
+      
+      BLEND_ARGB8888_ON_ARGB8888( eng->buffer[ y * eng->screen.width + x ], obj->sub.prim->color );
+      
+    }
+  }
+
+#if 0
+  for(y=obj->y;y<(obj->y+obj->h);y++) {
+    for(x=obj->x;x<(obj->x+obj->h);x++) {
+      
+      BLEND_ARGB8888_ON_ARGB8888( eng->buffer[ y * eng->screen.width + x ], obj->sub.prim->color );
+      
+    }
+  }
+#endif
+
 }
