@@ -55,9 +55,16 @@
 #endif
 #include <ttk.h>
 
-/** Compat defs - legacy.c   XXX NOT DONE **/
+/** Compat defs - legacy.c **/
 #ifdef PZ_COMPAT
+#if !defined(PZ_MOD) && defined(LEGACY_DOT_C)
+#define NOWARN
+#else
+#undef NOWARN
+#endif
+#ifndef NOWARN
 #warning Legacy code alert... please fix ASAP.
+#endif
 #define HEADER_TOPLINE 19
 #define KEY_CLICK 1
 #define KEY_UNUSED 2
@@ -67,12 +74,13 @@ extern t_GR_SCREEN_INFO screen_info;
 extern long hw_version;
 t_GR_WINDOW_ID pz_old_window (int x, int y, int w, int h,
 			      void (*do_draw)(void), int (*keystroke)(t_GR_EVENT *event));
-#define pz_new_window(x,y,w,h,d,k) pz_old_window(x,y,w,h,d,k) /* hopefully no conflict with new_win(title,XYWH,x,y,w,h) */
+void pz_old_close_window (t_GR_WINDOW_ID win);
 void pz_old_event_handler (t_GR_EVENT *ev);
 void pz_draw_header(char *header);
 t_GR_GC_ID pz_get_gc(int copy);
 #endif
 TWindow *pz_mh_legacy (ttk_menu_item *); // calls the void(*)() in item->data
+TWidget *pz_new_legacy_widget (void (*do_draw)(), int (*do_keystroke)(t_GR_EVENT *));
 
 /** Module and .POD/.PCD functions - module.c   XXX MOST NOT DONE**/
 /* called from module */
@@ -378,5 +386,10 @@ void pz_uninit();
 
 /* MODULE METASETTINGS 100 - 110 */
 #define MODULE_LIST     (100)
+
+#if defined(PZ_COMPAT) && !defined(LEGACY_DOT_C)
+#define pz_new_window(x,y,w,h,d,k) pz_old_window(x,y,w,h,d,k) /* hopefully no conflict with new_win(title,XYWH,x,y,w,h) */
+#define pz_close_window(w) pz_old_close_window(w)
+#endif
 
 #endif
