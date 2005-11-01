@@ -344,6 +344,8 @@ int ttk_text_width (ttk_font fnt, const char *str)
 {
     int w = 0;
     const char *p;
+
+    if (!str) return 0;
     
     for (p = str; *p; p++) {
 	if (fnt.inf.fixed) w += fnt.inf.maxwidth;
