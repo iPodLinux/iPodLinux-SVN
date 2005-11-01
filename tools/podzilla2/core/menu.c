@@ -268,6 +268,15 @@ void pz_menu_add_legacy (const char *menupath, void (*handler)())
 }
 #endif
 
+void pz_menu_add_ttkh (const char *menupath, TWindow *(*handler)(ttk_menu_item *), void *data) 
+{
+    ttk_menu_item *item = resolve_menupath (menupath, LOC_END);
+    item->makesub = handler;
+    item->data = data;
+    item->flags = 0;
+    ttk_menu_item_updated (item->menu, item);
+}
+
 void pz_menu_add_action (const char *menupath, PzWindow *(*handler)()) 
 {
     ttk_menu_item *item = resolve_menupath (menupath, LOC_END);
