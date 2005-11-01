@@ -1,11 +1,30 @@
+ifeq ($(OSTYPE),)
+        OSTYPE := $(shell uname -s)
+endif
 
-all: hotdog
+ifeq ($(OSTYPE),Darwin)
+        CC = gcc
+        LD = ld
+        CFLAGS = -g -mcpu=750 -maltivec -mabi=altivec -fomit-frame-pointer -funroll-loops
+        LDFLAGS = -framework Foundation -framework Cocoa
+endif
+ifeq ($(OSTYPE),Linux)
+        CC = gcc
+        LD = ld
+        CFLAGS = -g -fomit-frame-pointer -funroll-loops
+        LDFLAGS = -lc
+endif
 
-hotdog: main_darwin.o hotdog.o hotdog_png.o hotdog_primitive.o
-	gcc -g -o $@ $^ -lSDL -lSDLmain -framework Foundation -framework Cocoa -L/opt/local/lib -lpng
+PROG=hotdog
+CFLAGS  +=`sdl-config --cflags` -g `pkg-config --cflags libpng`
+LDFLAGS +=`sdl-config --libs` `pkg-config --libs libpng`
+
+OBJS=  main_darwin.o hotdog.o hotdog_png.o hotdog_primitive.o
+
+all: $(PROG)
+
+$(PROG): $(OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:
-	rm -f *.o hotdog
-
-%.o:%.c
-	gcc -g -c $^ -o $@ -I/opt/local/include
+	$(RM) $(OBJS) $(PROG) *~

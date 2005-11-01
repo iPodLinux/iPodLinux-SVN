@@ -36,7 +36,7 @@
 #include "hotdog.h"
 #include "hotdog_png.h"
 
-#include "SDL/SDL.h"
+#include "SDL.h"
 
 #define WIDTH  320
 #define HEIGHT 240
@@ -104,8 +104,7 @@ int main(int argc, char *argv[]) {
 	obj3.h = 50;
 	obj3.depth    = 3;
 	obj3.type     = HD_TYPE_PNG;
-	//obj3.sub.png  = HD_PNG_Create("/Users/slowcoder/src/Edgebar2/data/skin002/images/MiniAlbum/folder.png");
-	obj3.sub.png  = HD_PNG_Create("/Users/slowcoder/src/Ktest/KApp/skin_720x576/images/photos.png");
+	obj3.sub.png  = HD_PNG_Create("50x50-32bit.png");
 
 	HD_Register(engine,&obj);
 	HD_Register(engine,&obj2);
