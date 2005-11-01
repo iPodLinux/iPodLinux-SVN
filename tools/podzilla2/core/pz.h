@@ -154,12 +154,22 @@ typedef TWidget PzWidget;
 
 
 
-/** Menu stuff - menu.c   XXX NOT DONE **/
+/** Menu stuff - menu.c **/
+#define PZ_MENU_DONOTHING  (TWindow *(*)())TTK_MENU_DONOTHING
+#define PZ_MENU_UPONE      (TWindow *(*)())TTK_MENU_UPONE
+#define PZ_MENU_UPALL      (TWindow *(*)())TTK_MENU_UPALL
+#define PZ_MENU_ALREADYDONE (TWindow *(*)())TTK_MENU_ALREADYDONE
+#define PZ_MENU_QUIT       (TWindow *(*)())TTK_MENU_QUIT
+#define PZ_MENU_REPLACE    (TWindow *(*)())TTK_MENU_REPLACE
+#define PZ_MENU_DESC_MAX   (TWindow *(*)())TTK_MENU_DESC_MAX
 
-extern TWindow *(*pz_new_menu_window)(ttk_menu_item *menu);
-TWindow *pz_default_new_menu_window (ttk_menu_item *menu);
+extern TWindow *(*pz_new_menu_window)(TWidget *menu_wid);
+TWindow *pz_default_new_menu_window (TWidget *menu_wid);
+ttk_menu_item *pz_get_menu_item (const char *path);
+TWindow *pz_mh_sub (ttk_menu_item *item);
 #ifndef PZ_MOD
-TWindow *pz_menu_init (void);
+void pz_menu_init (void);
+TWindow *pz_menu_get (void);
 #endif
 #ifdef PZ_COMPAT
 void pz_menu_add_legacy (const char *menupath, void (*handler)());
