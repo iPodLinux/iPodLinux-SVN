@@ -89,7 +89,7 @@ void HD_PNG_Render(hd_engine *eng,hd_object *obj) {
 	
   }
   
-  buffOff = obj->y * eng->screen.width;// + startx;
+  buffOff = starty * eng->screen.width;// + startx;
   imgOff  = 0;
   
   fp_iy = fp_initial_iy;
