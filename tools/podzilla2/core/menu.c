@@ -82,7 +82,7 @@ void pz_menu_init()
     // TZ, DST settings
     pz_menu_add_setting ("/Settings/Date & Time/Time Style", TIME_1224, pz_global_config, time1224_options);
     pz_menu_add_setting ("/Settings/Date & Time/Time Tick Noise", TIME_TICKER, pz_global_config, 0);
-    pz_menu_add_action ("/File Browser", pz_new_browser_window);
+    pz_menu_add_action ("/File Browser", nothing_error);
     pz_menu_add_action ("/Power/Quit Podzilla", quit_podzilla);
     pz_menu_add_action ("/Power/Reboot iPod/Cancel", PZ_MENU_UPONE);
     pz_menu_add_action ("/Power/Reboot iPod/Absolutely", reboot_ipod);
