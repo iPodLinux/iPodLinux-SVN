@@ -194,7 +194,9 @@ void pz_menu_sort (const char *menupath);
 void pz_menu_remove (const char *menupath);
 
 
-/** Widget/window/event stuff - gui.c    XXX NOT DONE **/
+/** Widget/window/event stuff and premade GUI stuff - gui.c **/
+
+TWindow *pz_create_stringview (const char *str, const char *title);
 
 #define PZ_EVENT_SCROLL       1
 #define PZ_EVENT_STAP         2
@@ -303,6 +305,16 @@ int pz_ipod_fw_is_connected(void);
 void pz_load_font (ttk_font *f, int setting);
 // menu handler, data = &font_to_set, cdata = setting_to_set:
 TWindow *pz_select_font (ttk_menu_item *item);
+
+
+/** File browser - browser.c **/
+TWindow *pz_default_new_browser_window (const char *path);
+extern TWindow *(*pz_new_browser_window)(const char *path);
+TWindow *pz_browser_open (const char *path);
+void pz_browser_add_handler (int (*pred)(const char *), TWindow *(*handler)());
+void pz_browser_remove_handler (int (*pred)(const char *));
+void pz_browser_add_action (int (*pred)(const char *), ttk_menu_item *action); // action->data will be set to file's full name
+void pz_browser_remove_action (int (*pred)(const char *));
 
 
 /** Other things - pz.c **/
