@@ -26,106 +26,19 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <sys/time.h>
-#ifdef IPOD
-#include <linux/vt.h>
-#endif
 #include <dirent.h>
 #include <string.h>
 #include <errno.h>
-
 #include "pz.h"
-
-#define FILE_TYPE_PROGRAM 0
-#define FILE_TYPE_DIRECTORY 1
-#define FILE_TYPE_OTHER 2
-
-typedef struct {
-    char *name;
-    char *full_name;
-    unsigned short type;
-    int dotdot;
-    TWidget *mlink;
-    ttk_menu_item *ilink;
-} Directory;
-
-#define _MAKEDIR Directory *dir = (Directory *)item->data
-
-static char *current_file;
-static char curdir[2048];
-static char curdir_hdr[40];
-
-static TWidget *browser_new_menu (const char *dir, int w, int h);
-
-void browser_make_short_dir() 
-{
-    if (strlen (curdir) > 20) {
-	char *lastpart = strrchr (curdir, '/');
-	if (!lastpart) {
-	    strncpy (curdir_hdr, curdir, 20);
-	    curdir_hdr[20] = 0;
-	} else {
-	    char *p = curdir;
-	    while (*p == '/') p++;
-
-	    curdir_hdr[0] = 0;
-
-	    do {
-		if (strlen (curdir_hdr) + strlen (lastpart) < 20) {
-		    char *q = p, *r = curdir_hdr + strlen (curdir_hdr);
-		    int n = 30;
-		    while (n && *q && (*q != '/')) {
-			*r++ = *q++;
-			n--;
-		    }
-		    *r = 0;
-		} else {
-		    strcpy (curdir_hdr + 20 - strlen (lastpart), "..");
-		    strcat (curdir_hdr, lastpart);
-		    break;
-		}
-	    } while ((p = strchr (p + 1, '/')) != 0);
-	}
-    }
-}
-
-static int browser_item_visible (ttk_menu_item *item) 
-{
-    _MAKEDIR;
-    if (!strcmp (dir->name, "."))
-	return 0;
-    if (dir->name[0] == '.' && !dir->dotdot && !pz_get_int_setting (pz_global_config, BROWSER_HIDDEN))
-	return 0;
-    return 1;
-}
-
-static int dir_cmp(const void *x, const void *y) 
-{
-    ttk_menu_item *A = *(ttk_menu_item **)x, *B = *(ttk_menu_item **)y;
-    Directory *a = (Directory *)A->data;
-    Directory *b = (Directory *)B->data;
-
-	if (a->type == FILE_TYPE_DIRECTORY &&
-		b->type != FILE_TYPE_DIRECTORY)
-		return -1;
-	if (a->type != FILE_TYPE_DIRECTORY &&
-		b->type == FILE_TYPE_DIRECTORY)
-		return 1;
-	
-	return strcasecmp(a->name, b->name);
-} 
 
 static TWindow *browser_pipe_exec (ttk_menu_item *item)
 {
 	int len;
 	char *buf = '\0';
-	char *execline;
+	char *execline = item->data;
 	char st_buf[512];
 	FILE *fp;
 	
-	len = strlen(curdir) + strlen(current_file) + 2;
-	execline = (char *)malloc(len * sizeof(char));
-	snprintf(execline, len, "%s/%s", curdir, current_file);
-
 	if((fp = popen(execline, "r")) == NULL) {
 		pz_perror(execline);
 		return TTK_MENU_UPONE;
@@ -222,7 +135,7 @@ typedef struct browser_action
 } browser_action;
 static browser_action *action_head;
 
-void pz_browser_add_handler (int (*pred)(const char *), TWindow *(*handler)()) 
+void pz_browser_set_handler (int (*pred)(const char *), TWindow *(*handler)()) 
 {
     browser_handler *cur = handler_head;
     if (!cur) {
@@ -301,41 +214,6 @@ TWindow *pz_browser_open (const char *path)
     return 0;
 }
 
-static TWindow *browser_mh (ttk_menu_item *item) 
-{
-    _MAKEDIR;
-    
-    if (dir->type == FILE_TYPE_DIRECTORY) {
-	if (dir->dotdot) {
-	    chdir ("..");
-	    getcwd (curdir, 2048);
-	    browser_make_short_dir();
-	    return TTK_MENU_UPONE;
-	} else {
-	    TWindow *ret = ttk_new_window();
-
-	    chdir (dir->full_name);
-	    getcwd (curdir, 2048);
-	    browser_make_short_dir();
-	    if (pz_get_int_setting (pz_global_config, BROWSER_PATH)) {
-		ttk_window_set_title (ret, curdir_hdr);
-	    } else {
-		ttk_window_set_title (ret, _("File Browser"));
-	    }
-	    return ttk_add_widget (ret, browser_new_menu (curdir, item->menuwidth, item->menuheight));
-	}
-    } else {
-	TWindow *ret = pz_browser_open (dir->full_name);
-	if (!ret && is_ascii_file (dir->full_name)) {
-	    ret = new_textview_window (dir->full_name);
-	}
-	if (!ret) {
-	    pz_error (_("No default action for this file type."));
-	    return TTK_MENU_DONOTHING;
-	}
-    }
-}
-
 static void rm_rf (const char *path) 
 {
     struct stat st;
@@ -363,16 +241,20 @@ static void rm_rf (const char *path)
 static TWindow *browser_aborted (ttk_menu_item *item) { return TTK_MENU_UPONE; }
 static TWindow *browser_do_delete (ttk_menu_item *item) 
 {
-    _MAKEDIR;
-    if (dir->type == FILE_TYPE_DIRECTORY) {
-	if (dir->full_name[0] && dir->full_name[1] && strchr (dir->full_name + 2, '/')) // not "" or "/" or a root dir
-	    rm_rf (dir->full_name);
+    struct stat st;
+    const char *filename = item->data;
+    if (stat (filename, &st) < 0) {
+	pz_perror (filename);
+	return TTK_MENU_UPONE;
+    }
+    if (S_ISDIR (st.st_mode)) {
+	if (filename[0] && filename[1] && strchr (filename + 2, '/')) // not "" or "/" or a root dir
+	    rm_rf (filename);
 	else
 	    pz_error ("Dangerous rm -rf aborted.\n");
     } else {
-	unlink (dir->full_name);
+	unlink (filename);
     }
-    ttk_menu_remove_by_ptr (dir->mlink, dir->ilink);
     return TTK_MENU_QUIT;
 }
 
@@ -418,175 +300,33 @@ static ttk_menu_item empty_menu[] = {
     /* files:*/ { N_("Delete"), { browser_delete }, 0, 0 }
 };
 
-static int action_maybequit (TWidget *this, int button, int time) 
+TWidget *pz_browser_get_actions (const char *path)
 {
-    if (button != TTK_BUTTON_MENU)
-	return ttk_menu_button (this, button, 0);
-    return TTK_EV_DONE;
-}
-
-static int browser_handle_action (TWidget *this, int button)
-{
-    browser_action *cur = action_head;
-
-    if (button != TTK_BUTTON_ACTION)
-	return 0;
-    
-    TWindow *popwin = ttk_new_window();
-    TWidget *popmenu = ttk_new_menu_widget (empty_menu, ttk_menufont, ttk_screen->w * 2 / 3, ttk_screen->h / 3);
-
-    Directory *dir = (Directory *) ttk_menu_get_selected_item (this) -> data;
+    struct stat st;
+    browser_action *cur;
+    TWidget *ret = ttk_new_menu_widget (empty_menu, ttk_menufont, ttk_screen->w - ttk_screen->wx,
+					ttk_screen->h - ttk_screen->wy);
+    // add default handlers XXX
     empty_menu[1].flags = empty_menu[2].flags = TTK_MENU_ICON_EXE;
     empty_menu[4].flags = 0;
-    empty_menu[1].data = empty_menu[2].data = empty_menu[3].data = empty_menu[4].data = dir;
-    current_file = dir->name;
-    switch (dir->type) {
-    case FILE_TYPE_DIRECTORY:
-	ttk_menu_append (popmenu, empty_menu + 1);
-	break;
-    case FILE_TYPE_PROGRAM:
-	ttk_menu_append (popmenu, empty_menu + 2);
-	ttk_menu_append (popmenu, empty_menu + 3);
-	break;
-    case FILE_TYPE_OTHER:
-	ttk_menu_append (popmenu, empty_menu + 3);
-	break;
+    empty_menu[1].data = empty_menu[2].data = empty_menu[3].data = empty_menu[4].data = (char *)path;
+    if (stat (path, &st) >= 0) {
+	if (st.st_mode & S_IFDIR) {
+	    ttk_menu_append (ret, empty_menu + 1);
+	} else if (st.st_mode & S_IXUSR) {
+	    ttk_menu_append (ret, empty_menu + 2);
+	    ttk_menu_append (ret, empty_menu + 3);
+	} else {
+	    ttk_menu_append (ret, empty_menu + 3);
+	}
     }
     while (cur) {
-	if (cur->pred && (*(cur->pred))(dir->full_name)) {
-	    // We can stick the filename into cur->action OK:
-	    // there will only ever be one instance of it active at once.
-	    // We can append it directly (instead of appending a copy) since
-	    // this menu is not auto-free (it was not created with a 0 mlist ptr).
-	    cur->action->data = dir->full_name;
-	    ttk_menu_append (popmenu, cur->action);
+	if (cur->pred && (*(cur->pred))(path)) {
+	    cur->action->data = (char *)path;
+	    ttk_menu_append (ret, cur->action);
 	}
 	cur = cur->next;
     }
-
-    popmenu->button = action_maybequit;
-    ttk_window_set_title (popwin, _("Select Action"));
-    ttk_add_widget (popwin, popmenu);
-    ttk_popup_window (popwin);
-    ttk_run();
-    ttk_free_window (popwin);
-    return 0;
-}
-
-static int browser_down (TWidget *this, int button) 
-{
-    if (button == TTK_BUTTON_MENU)
-	ttk_widget_set_timer (this, 1000);
-    else if (button != TTK_BUTTON_ACTION)
-	return ttk_menu_down (this, button);
-    return 0;
-}
-static int browser_quit (TWidget *this) 
-{
-    int r;
-    ttk_widget_set_timer (this, 0);
-    while (ttk_windows->w->focus->down == browser_down &&
-	   (r = ttk_hide_window (ttk_windows->w)) != -1)
-	ttk_click();
-
-    return 0;
-}
-static int browser_button (TWidget *this, int button, int time) 
-{
-    if (button == TTK_BUTTON_MENU) {
-	ttk_widget_set_timer (this, 0);
-	if (time > 1750)
-	    browser_quit (this);
-	return ttk_menu_button (this, button, time);
-    } else if (button == TTK_BUTTON_ACTION) {
-	return ttk_menu_down (this, button);
-    }
-    return 0;
-}
-
-static TWidget *browser_new_menu (const char *dirc, int w, int h)
-{
-    TWidget *ret = ttk_new_menu_widget (empty_menu, ttk_menufont, w, h);
-    ret->holdtime = 500;
-    ret->held = browser_handle_action;
-    ret->down = browser_down; // handles Menu holding, along with
-    ret->button = browser_button; // this and
-    ret->timer = browser_quit; // this
-
-    chdir (dirc);
-    
-    DIR *dp = opendir (dirc);
-    struct dirent *d;
-    while ((d = readdir (dp))) {
-	const char *name;
-	Directory *dir = calloc (1, sizeof(Directory));
-
-	if (!strcmp (d->d_name, "."))
-	    continue;
-	if (!strcmp (d->d_name, "..")) {
-	    name = _(".. [Parent Directory]");
-	    dir->dotdot = 1;
-	} else {
-	    name = d->d_name;
-	}
-
-	dir->name = malloc (strlen (name) + 1);
-	strcpy (dir->name, name);
-	dir->full_name = malloc (strlen (d->d_name) + strlen (dirc) + 2);
-	strcpy (dir->full_name, dirc);
-	if (dir->full_name[strlen (dir->full_name) - 1] != '/')
-	    strcat (dir->full_name, "/");
-	strcat (dir->full_name, d->d_name);
-	
-	ttk_menu_item *item = calloc (1, sizeof(struct ttk_menu_item));
-	item->name = dir->name;
-	item->makesub = browser_mh;
-	item->data = (void *)dir; dir->mlink = ret; dir->ilink = item;
-	item->visible = browser_item_visible;
-
-	struct stat st;
-	if (stat (dir->full_name, &st) < 0) {
-	    pz_perror (dir->full_name);
-	} else {
-	    if (S_ISDIR (st.st_mode)) {
-		dir->type = FILE_TYPE_DIRECTORY;
-		item->flags = TTK_MENU_ICON_SUB;
-	    } else if (st.st_mode & S_IXUSR) {
-		dir->type = FILE_TYPE_PROGRAM;
-		item->flags = TTK_MENU_ICON_EXE;
-	    } else {
-		dir->type = FILE_TYPE_OTHER;
-		item->flags = 0;
-	    }
-	    
-	    ttk_menu_append (ret, item);
-	}
-    }
-
-    closedir (dp);
-    ttk_menu_sort_my_way (ret, dir_cmp);
-
     return ret;
 }
 
-TWindow *pz_default_new_browser_window(const char *initial_path)
-{
-    TWindow *ret;
-
-    if (!initial_path) initial_path = "/";
-    chdir(initial_path);
-    getcwd(curdir, sizeof(curdir));
-    ret = ttk_new_window();
-
-    browser_make_short_dir();
-    if (pz_get_int_setting (pz_global_config, BROWSER_PATH)) {
-	ret->title = curdir_hdr;
-	ret->titlefree = 0;
-	ttk_dirty |= TTK_DIRTY_HEADER;
-    } else {
-	ttk_window_set_title (ret, _("File Browser"));
-    }
-    ttk_add_widget (ret, browser_new_menu (curdir, ret->w, ret->h));
-    return ret;
-}
-TWindow *(*pz_new_browser_window)(const char *path) = pz_default_new_browser_window;

@@ -307,11 +307,10 @@ void pz_load_font (ttk_font *f, int setting);
 TWindow *pz_select_font (ttk_menu_item *item);
 
 
-/** File browser - browser.c **/
-TWindow *pz_default_new_browser_window (const char *path);
-extern TWindow *(*pz_new_browser_window)(const char *path);
+/** File browser helper functions - browser.c **/
 TWindow *pz_browser_open (const char *path);
-void pz_browser_add_handler (int (*pred)(const char *), TWindow *(*handler)());
+TWidget *pz_browser_get_actions (const char *path); // returns a menu widget
+void pz_browser_set_handler (int (*pred)(const char *), TWindow *(*handler)());
 void pz_browser_remove_handler (int (*pred)(const char *));
 void pz_browser_add_action (int (*pred)(const char *), ttk_menu_item *action); // action->data will be set to file's full name
 void pz_browser_remove_action (int (*pred)(const char *));
