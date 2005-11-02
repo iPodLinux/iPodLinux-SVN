@@ -19,6 +19,14 @@
 #include "pz.h"
 #include <stdarg.h>
 
+TWindow *pz_create_stringview(const char *buf, const char *title)
+{
+    TWindow *ret = ttk_new_window();
+    ttk_add_widget (ret, ttk_new_textarea_widget (ret->w, ret->h, buf, ttk_textfont, ttk_text_height (ttk_textfont) + 2));
+    ttk_window_title (ret, title);
+    return ret;
+}
+
 PzWindow *pz_do_window (const char *name, int geometry,
 			void (*draw)(PzWidget *this, ttk_surface srf),
 			int (*event)(PzEvent *ev), int timer) 
