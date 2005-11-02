@@ -34,6 +34,7 @@
 #define HD_TYPE_PRIMITIVE 0x00
 #define HD_TYPE_PNG       0x01
 #define HD_TYPE_FONT      0x02
+#define HD_TYPE_CANVAS    0x03
 
 #define HD_PRIM_RECTANGLE 0x00
 
@@ -46,6 +47,11 @@ typedef struct {
   int32   w,h;
   uint32 *argb;
 } hd_font;
+
+typedef struct {
+	int32 w,h;
+	uint32 *argb;
+} hd_canvas;
 
 typedef struct {
 	int32 w,h;
@@ -62,6 +68,7 @@ typedef struct {
 	  hd_png       *png;
 	  hd_primitive *prim;
 	  hd_font      *font;
+	  hd_canvas    *canvas;
 	} sub;
 
 } hd_object;
@@ -78,6 +85,7 @@ typedef struct {
 		uint16 *framebuffer;
 	} screen;
 
+	uint32  currentTime;
 	uint32 *buffer;
 
 	hd_obj_list *list;

@@ -95,6 +95,9 @@ void HD_Render(hd_engine *eng) {
 			case( HD_TYPE_FONT ):
 				HD_Font_Render(eng,curr->obj);
 				break;
+			case( HD_TYPE_CANVAS ):
+				HD_Canvas_Render(eng,curr->obj);
+				break;
 			default:
 				break;
 		}
