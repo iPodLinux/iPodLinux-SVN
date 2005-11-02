@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
   uint32  done = 0;
 	uint16* pFB=0;
 	hd_engine *engine;
-	hd_object obj,obj2,obj3;
+	hd_object obj,obj2,obj3,obj4;
 	hd_primitive pri,pri2;
 	double f = 0.0;
 
@@ -105,10 +105,21 @@ int main(int argc, char *argv[]) {
 	obj3.type     = HD_TYPE_PNG;
 	obj3.sub.png  = HD_PNG_Create("50x50-32bit.png");
 
+	obj4.x = 130;
+	obj4.y = 70;
+	obj4.type = HD_TYPE_CANVAS;
+	obj4.sub.canvas = HD_Canvas_Create(128,128);
+	obj4.w = 128;
+	obj4.h = 128;
+
+	for(done=0;done<(128*128);done++) obj4.sub.canvas->argb[done] = 0xFF000000 | ((done<<4) & 0xFFFFFF);
+
 	HD_Register(engine,&obj);
 	HD_Register(engine,&obj2);
 	HD_Register(engine,&obj3);
-	
+	HD_Register(engine,&obj4);
+
+  done = 0;
   while(!done) {
     SDL_Event event;
 
