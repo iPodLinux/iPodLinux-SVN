@@ -5,7 +5,7 @@
 #include "hotdog.h"
 #include "hotdog_font.h"
 
-#include <freetype/ft2build.h>
+#include <ft2build.h>
 #include <freetype/freetype.h>
 
 static void HD_Font_RenderGlyph(hd_font *font, FT_Bitmap *ftmap, int32 x,int32 y, int32 w, int32 h ) {

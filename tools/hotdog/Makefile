@@ -16,7 +16,7 @@ ifeq ($(OSTYPE),Linux)
 endif
 
 PROG=hotdog
-CFLAGS  +=`sdl-config --cflags` -g `libpng-config --cflags`
+CFLAGS  +=`sdl-config --cflags` -g `libpng-config --cflags` `freetype-config --cflags`
 LDFLAGS +=`sdl-config --libs` `libpng-config --ldflags` -lfreetype
 
 OBJS=  main_darwin.o hotdog.o hotdog_png.o hotdog_primitive.o hotdog_font.o
