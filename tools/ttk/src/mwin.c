@@ -188,6 +188,27 @@ ttk_gc ttk_copy_gc (ttk_gc other)
 {
     return GrCopyGC (other);
 }
+ttk_color ttk_gc_get_foreground (ttk_gc gc) 
+{
+    GR_GC_INFO gi;
+    GrGetGCInfo (gc, &gi);
+    return gi.foreground;
+}
+ttk_color ttk_gc_get_background (ttk_gc gc) 
+{
+    GR_GC_INFO gi;
+    GrGetGCInfo (gc, &gi);
+    return gi.background;
+}
+ttk_font ttk_gc_get_font (ttk_gc gc) 
+{
+    ttk_font f;
+    GR_GC_INFO gi;
+    GrGetGCInfo (gc, &gi);
+    f.f = gi.font;
+    GrGetFontInfo (f.f, &f.inf);
+    return f;
+}
 void ttk_gc_set_foreground (ttk_gc gc, ttk_color fgcol) 
 {
     GrSetGCForeground (gc, fgcol);

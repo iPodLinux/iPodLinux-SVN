@@ -246,6 +246,9 @@ ttk_gc ttk_copy_gc (ttk_gc other)
     memcpy (ret, other, sizeof(struct _ttk_gc));
     return ret;
 }
+ttk_color ttk_gc_get_foreground (ttk_gc gc) { return gc->fg; }
+ttk_color ttk_gc_get_background (ttk_gc gc) { return gc->bg; }
+ttk_font ttk_gc_get_font (ttk_gc gc) { return gc->font; }
 void ttk_gc_set_foreground (ttk_gc gc, ttk_color fgcol) 
 {
     gc->fg = fgcol;

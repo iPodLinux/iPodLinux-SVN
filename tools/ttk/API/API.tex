@@ -914,6 +914,9 @@ anything with the same bit depth.
 \begin{verbatim}
 ttk_gc ttk_new_gc();
 ttk_gc ttk_copy_gc (ttk_gc other);
+ttk_color ttk_gc_get_foreground (ttk_gc gc);
+ttk_color ttk_gc_get_background (ttk_gc gc);
+ttk_font ttk_gc_get_font (ttk_gc gc);
 void ttk_gc_set_foreground (ttk_gc gc, ttk_color fgcol);
 void ttk_gc_set_background (ttk_gc gc, ttk_color bgcol);
 void ttk_gc_set_font (ttk_gc gc, ttk_font font);
@@ -928,6 +931,7 @@ These functions are used to create, destroy, and modify the properties of graphi
 \item[{\tt ttk_new_gc}] creates a new graphics context, with all values set to 0.
 \item[{\tt ttk_copy_gc}] creates a copy of \verb|other| that must be freed separately.
 \item[{\tt ttk_free_gc}] deallocates all memory associated with \verb|gc|.
+\item[{\tt ttk_gc_get_foreground}] and friends retrieve the relevant property of the GC.
 \item[{\tt ttk_gc_set_foreground}] sets the foreground color for drawing operations with \verb|gc|.
 \item[{\tt ttk_gc_set_background}] sets \verb|gc|'s background color, which is only used when drawing text,
   and only when the {\sf usebg} flag is set.
