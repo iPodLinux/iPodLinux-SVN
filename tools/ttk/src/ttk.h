@@ -258,6 +258,9 @@ void ttk_unmakecol_ex (ttk_color col, int *r, int *g, int *b, ttk_surface srf);
 
 ttk_gc ttk_new_gc();
 ttk_gc ttk_copy_gc (ttk_gc other);
+ttk_color ttk_gc_get_foreground (ttk_gc gc);
+ttk_color ttk_gc_get_background (ttk_gc gc);
+ttk_font ttk_gc_get_font (ttk_gc gc);
 void ttk_gc_set_foreground (ttk_gc gc, ttk_color fgcol);
 void ttk_gc_set_background (ttk_gc gc, ttk_color bgcol);
 void ttk_gc_set_font (ttk_gc gc, ttk_font font);
