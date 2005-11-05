@@ -78,6 +78,13 @@ void pz_old_close_window (t_GR_WINDOW_ID win);
 void pz_old_event_handler (t_GR_EVENT *ev);
 void pz_draw_header(char *header);
 t_GR_GC_ID pz_get_gc(int copy);
+void vector_render_string (t_GR_WINDOW_ID win, t_GR_GC_ID gc,
+			   const char *string, int kern, int scale, int x, int y);
+void vector_render_string_center (t_GR_WINDOW_ID win, t_GR_GC_ID gc,
+				  const char *string, int kern, int scale, int x, int y);
+void vector_render_string_right (t_GR_WINDOW_ID win, t_GR_GC_ID gc,
+				 const char *string, int kern, int scale, int x, int y);
+int vector_string_pixel_width (const char *string, int kern, int scale);
 #endif
 TWindow *pz_mh_legacy (ttk_menu_item *); // calls the void(*)() in item->data
 TWidget *pz_new_legacy_widget (void (*do_draw)(), int (*do_keystroke)(t_GR_EVENT *));
@@ -281,7 +288,7 @@ void pz_error (const char *fmt, ...);
 void pz_perror (const char *firstpart);
 
 
-/** Vector text - vector.c    XXX NOT DONE **/
+/** Vector text - vector.c **/
 void pz_vector_string (ttk_surface srf, const char *string, int x, int y, int cw, int ch, int kern, ttk_color col);
 void pz_vector_string_center (ttk_surface srf, const char *string, int x, int y, int cw, int ch, int kern, ttk_color col);
 int pz_vector_width (const char *string, int cw, int ch, int kern);

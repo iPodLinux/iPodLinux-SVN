@@ -219,3 +219,36 @@ t_GR_GC_ID pz_get_gc(int copy)
 {
     return (copy? t_GrCopyGC (pz_root_gc) : pz_root_gc);
 }
+
+void vector_render_string (t_GR_WINDOW_ID win, t_GR_GC_ID gc,
+			   const char *string, int kern, int scale, int x, int y) 
+{
+    int cw = scale * 5;
+    int ch = scale * 9;
+    
+    pz_vector_string (win->srf, string, x, y, cw, ch, kern, ttk_gc_get_foreground (gc));
+}
+void vector_render_string_center (t_GR_WINDOW_ID win, t_GR_GC_ID gc,
+				  const char *string, int kern, int scale, int x, int y) 
+{
+    int cw = scale * 5;
+    int ch = scale * 9;
+    
+    pz_vector_string_center (win->srf, string, x, y, cw, ch, kern, ttk_gc_get_foreground (gc));    
+}
+void vector_render_string_right (t_GR_WINDOW_ID win, t_GR_GC_ID gc,
+				 const char *string, int kern, int scale, int x, int y) 
+{
+    int cw = scale * 5;
+    int ch = scale * 9;
+    int w = pz_vector_width (string, cw, ch, kern);
+    
+    pz_vector_string (win->srf, string, x - w, y, cw, ch, kern, ttk_gc_get_foreground (gc));
+}
+int vector_string_pixel_width (const char *string, int kern, int scale) 
+{
+    int cw = scale * 5;
+    int ch = scale * 9;
+
+    return pz_vector_width (string, cw, ch, kern);
+}
