@@ -78,14 +78,14 @@ built-in.o: $(obj-y)
 	$(LD) -r -o built-in.o $(obj-y)
 
 $(obj-y): %.o: %.c
-	$(CC) -c -o $@ $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_BUILTIN_MODULE
+	$(CC) -c -o $@ $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_BUILTIN_MODULE -D__PZ_MODULE_NAME=\"$(MODULE)\"
 endif
 
 #####
 
 ifdef obj-m
 $(obj-m): %.o: %.c
-	$(CC) $(PIC) -c -o $@ $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags`
+	$(CC) $(PIC) -c -o $@ $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\"
 endif
 
 

@@ -40,6 +40,7 @@
 
 int __pz_builtin_number_of_init_functions;
 void (*__pz_builtin_init_functions[256])();
+const char *__pz_builtin_names[256];
 
 typedef struct _pz_Module
 {
@@ -58,7 +59,8 @@ typedef struct _pz_Module
     char *cfgpath;
 
     void *handle;
-    int to_load;
+    int to_load;       // positive - load from module. negative - initialize builtin. 0 - nothing.
+    void (*init)();
     void (*cleanup)();
 
     struct _pz_Module *next;
@@ -329,8 +331,8 @@ static int fix_dependencies (PzModule *mod, int initing)
 
 static void do_load (PzModule *mod) 
 {
-    char *fname = malloc (strlen (mod->mountpt) + strlen (mod->name) + 8);
-    mod->to_load = -1;
+    char *fname;
+    fname = malloc (strlen (mod->mountpt) + strlen (mod->name) + 8);
 #ifdef IPOD
     sprintf (fname, "%s/%s.o", mod->mountpt, mod->name);
     mod->handle = uCdl_open (fname);
@@ -348,14 +350,14 @@ static void do_load (PzModule *mod)
 #endif
     else {
 #ifdef IPOD
-	void (*initfn)() = uCdl_sym (mod->handle, "__init_module__");
-	if (!initfn) pz_warning ("Could not do modinit function for %s: %s", mod->name, uCdl_error());
+	mod->init = uCdl_sym (mod->handle, "__init_module__");
+	if (!mod->init) pz_warning ("Could not do modinit function for %s: %s", mod->name, uCdl_error());
 #else
-	void (*initfn)() = dlsym (mod->handle, "__init_module__");
-	if (!initfn) pz_warning ("Could not do modinit function for %s: %s", mod->name, dlerror());
+	mod->init = dlsym (mod->handle, "__init_module__");
+	if (!mod->init) pz_warning ("Could not do modinit function for %s: %s", mod->name, dlerror());
 #endif
 	else {
-	    (*initfn)();
+	    (*mod->init)();
 	}
     }
     mod->to_load = 0;
@@ -502,13 +504,30 @@ void pz_modules_init()
 	}
     }
 
+    // Check which ones are linked in
+    cur = module_head;
+    last = 0;
+    while (cur) {
+	for (i = 0; i < __pz_builtin_number_of_init_functions; i++) {
+	    if (!strcmp (__pz_builtin_names[i], cur->name)) {
+		cur->init = __pz_builtin_init_functions[i];
+		cur->to_load = -1;
+	    }
+	}
+	cur = cur->next;
+    }
+
     // XXX. For now, we load them in directory order. That will
     // wreak havoc with dependencies. davidc__ is working on a 
     // better solution.
     cur = module_head;
     while (cur) {
-	if (cur->to_load)
+	if (cur->to_load > 0) {
 	    do_load (cur);
+	} else if (cur->to_load < 0) {
+	    (*cur->init)();
+	    cur->to_load = 0;
+	}
 	cur = cur->next;
     }
 }
