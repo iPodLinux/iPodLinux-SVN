@@ -91,7 +91,7 @@ typedef struct handle
 struct handle *uCdl_loaded_modules = 0;
 
 static char errbuf[256];
-static const char *error = 0;
+static char *error = 0;
 
 // Used to determine the location of the text segment in memory.
 void uCdl_nothing() {};
@@ -100,7 +100,6 @@ static struct symbol *mysyms;
     
 // Used by modules to make sure everything is located correctly.
 const int uCdl_magic __attribute__ ((section (".text"))) = 0x12345678;
-
 
 /*! Initialize the uCdl library.
  * @param symfile the current running executable
@@ -176,7 +175,7 @@ int uCdl_init (const char *symfile)
     }
 
     fprintf (stderr, "I was loaded at 0x%08x.\n", offset);
-    
+
     return 1;
 }
 
