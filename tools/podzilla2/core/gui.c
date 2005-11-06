@@ -100,7 +100,7 @@ static int dispatch_event (TWidget *wid, int ev, int earg, int time)
 {
     PzEvent pev;
     int (*evh)(PzEvent*) = wid->data2;
-    
+    pev.wid = wid;
     pev.type = ev;
     pev.arg = earg;
     pev.time = time;
@@ -153,7 +153,7 @@ void pz_hide_window (PzWindow *win)
 void pz_close_window (PzWindow *win) 
 {
     ttk_hide_window (win);
-    ttk_free_window (win);
+    win->data = 0x12345678; // tell menu to free it
 }
 void pz_show_window (PzWindow *win) 
 {

@@ -234,6 +234,7 @@ TWindow *pz_create_stringview (const char *str, const char *title);
 
 typedef struct _pz_Event
 {
+    PzWidget *wid;
     int type;
     int arg;
     int time;
