@@ -38,6 +38,10 @@ ifndef IPOD
 finalmod = $(MODULE).so
 $(MODULE).so: $(obj-m)
 	$(CC) -shared -o $@ $<
+	rm -f $<
+ifeq ($(wildcard $(MODULE).so),$(MODULE).so)
+done = true
+endif
 else
 finalmod = $(MODULE).o
 # already will be made, don't need a rule
@@ -51,26 +55,30 @@ endif
 ifndef IPOD
 finalmod = $(MODULE).so
 $(MODULE).so: $(obj-m)
-	$(CC) -shared -o $@ $<
+	$(CC) -shared -o $@ $(obj-m)
 else
 finalmod = $(MODULE).o
 $(MODULE).o: $(obj-m)
-	$(LD) -r -o $@ $<
+	$(LD) -r -o $@ $(obj-m)
 endif
 
 endif
 endif
 
+ifeq ($(done),true)
+all:
+else
 #####
 all: $(obj-y) $(built-in) $(obj-m) $(finalmod)
 #####
+endif
 
 ifdef obj-y
 built-in.o: $(obj-y)
 	$(LD) -r -o built-in.o $(obj-y)
 
 $(obj-y): %.o: %.c
-	$(CC) -c -o $@ $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_BUILT_IN
+	$(CC) -c -o $@ $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_BUILTIN_MODULE
 endif
 
 #####
@@ -85,10 +93,24 @@ endif
 #####
 
 semiclean:
+ifdef IPOD
 ifeq ($(findstring $(MODULE).o,$(obj)),)
+	rm -f $(obj)
+endif
+else
 	rm -f $(obj)
 endif
 
 clean:
 	rm -f $(MODULE).o $(MODULE).so $(obj)
 
+distfiles:
+	@echo Module
+ifdef IPOD
+	@echo $(MODULE).o
+else
+	@echo $(MODULE).so
+endif
+	@for file in $(DATA); do \
+		echo $$file; \
+	done
