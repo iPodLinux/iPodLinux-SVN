@@ -9,4 +9,4 @@ int uCdl_init (const char *symfile);
 void *uCdl_open (const char *path);
 void *uCdl_sym (void *handle, const char *name);
 void uCdl_close (void *handle);
-
+const char *uCdl_error();

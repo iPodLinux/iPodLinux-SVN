@@ -35,6 +35,7 @@
 #include "flat.h"
 #include "elf.h"
 
+/* Comment out to enable copious debugging information: */
 #define printf(fmt,args...)
 
 // Symbols loaded from a .sym file
@@ -89,6 +90,8 @@ typedef struct handle
 
 struct handle *uCdl_loaded_modules = 0;
 
+static char errbuf[256];
+static const char *error = 0;
 
 // Used to determine the location of the text segment in memory.
 void uCdl_nothing() {};
@@ -162,8 +165,8 @@ int uCdl_init (const char *symfile)
 	cur->addr += offset;
 	if (!strcmp (cur->sym, "uCdl_magic")) {
 	    if (*(int *)cur->addr != 0x12345678) {
-		fprintf (stderr, "Error: incorrect offset computation:"
-				" *%p (%x) != *%p (%x)  offset %x\n", cur->addr,
+		sprintf (error = errbuf, "Error: incorrect offset computation:"
+				" *%p (%x) != *%p (%x)  offset %x", cur->addr,
 			       *(int *)cur->addr, &uCdl_magic, uCdl_magic,
 			       offset);
 		return 0;
@@ -189,34 +192,34 @@ void *uCdl_open (const char *path)
     int i;
     int fd = open (path, O_RDONLY | O_EXCL);
     if (fd == -1) {
-	fprintf (stderr, "Can't open %s: %s\n", path, strerror (errno));
+	sprintf (error = errbuf, "Can't open %s: %s", path, strerror (errno));
 	return 0;
     }
 
     read (fd, &eh, sizeof(Elf_Ehdr));
     if (!IS_ELF (eh)) {
-	fprintf (stderr, "%s: Not an ELF file (%x %x %x %x)\n", path, eh.e_ident[EI_MAG0],
+	sprintf (error = errbuf, "Not an ELF file (%x %x %x %x)", eh.e_ident[EI_MAG0],
 		 eh.e_ident[EI_MAG1], eh.e_ident[EI_MAG2], eh.e_ident[EI_MAG3]);
 	return 0;
     }
     if (eh.e_ident[EI_CLASS] != ELFCLASS32) {
-	fprintf (stderr, "%s: Not a 32-bit ELF file (%d)\n", path, eh.e_ident[EI_CLASS]);
+	sprintf (error = errbuf, "Not a 32-bit ELF file (%d)", eh.e_ident[EI_CLASS]);
 	return 0;
     }
     if (eh.e_ident[EI_DATA] != ELFDATA2LSB) {
-	fprintf (stderr, "%s: Not an LSB ELF file (%d)\n", path, eh.e_ident[EI_DATA]);
+	sprintf (error = errbuf, "Not an LSB ELF file (%d)", eh.e_ident[EI_DATA]);
 	return 0;
     }
     if (eh.e_type != ET_REL) {
-	fprintf (stderr, "%s: Not an ELF relocatable (%d)\n", path, eh.e_ident[EI_DATA]);
+	sprintf (error = errbuf, "Not an ELF relocatable (%d)", eh.e_ident[EI_DATA]);
 	return 0;
     }
     if (eh.e_machine != EM_ARM) {
-	fprintf (stderr, "%s: Not an ARM ELF file (%d)\n", path, eh.e_machine);
+	sprintf (error = errbuf, "Not an ARM ELF file (%d)", eh.e_machine);
 	return 0;
     }
     if (!eh.e_shoff) {
-	fprintf (stderr, "%s: No section header table\n", path);
+	error = "No section header table";
 	return 0;
     }
 
@@ -258,7 +261,7 @@ void *uCdl_open (const char *path)
 
     ret->loc = malloc (memsize);
     if (!ret->loc) {
-	fprintf (stderr, "Out of memory\n");
+	error = "Out of memory";
 	free (ret);
 	return 0;
     }
@@ -480,11 +483,11 @@ void *uCdl_open (const char *path)
 	    }
 
 	    if (defined == 0) {
-		fprintf (stderr, "%s: undefined symbol: %s\n", path, sym->name);
+		sprintf (error = errbuf, "%s: undefined symbol: %s", path, sym->name);
 		exit (1);
 	    }
 	    if (defined > 1) {
-		fprintf (stderr, "%s: multiple definition of %s (%d times)\n", path, sym->name, defined);
+		sprintf (error = errbuf, "%s: multiple definition of %s (%d times)", path, sym->name, defined);
 		exit (2);
 	    }
 
@@ -537,7 +540,7 @@ void *uCdl_open (const char *path)
 	    A = *addr32 & 0xffffff;
 	    break;
 	default:
-	    fprintf (stderr, "%s: unable to handle relocation extraction for type %d (probably bug)\n",
+	    sprintf (error = errbuf, "%s: unable to handle relocation extraction for type %d (probably bug)",
 		     path, rel->type & 0xff);
 	    exit (1);
 	}
@@ -555,7 +558,7 @@ void *uCdl_open (const char *path)
 	    val = S + A;
 	    break;
 	default:
-	    fprintf (stderr, "%s: unable to handle relocation calculation for type %d (probably bug)\n",
+	    sprintf (error = errbuf, "%s: unable to handle relocation calculation for type %d (probably bug)",
 		     path, rel->type & 0xff);
 	    exit (1);
 	}
@@ -596,7 +599,7 @@ void *uCdl_open (const char *path)
 	    *addr32 |= (val & 0xffffff);
 	    break;
 	default:
-	    fprintf (stderr, "%s: unable to handle relocation insertion for type %d (probably bug)\n",
+	    sprintf (error = errbuf, "%s: unable to handle relocation insertion for type %d (probably bug)",
 		     path, rel->type & 0xff);
 	    exit (1);
 	}
@@ -639,7 +642,7 @@ void *uCdl_sym (void *handle, const char *name)
 	    return sym->section->addr + sym->value;
 	}
     }
-    fprintf (stderr, "%p: unable to find symbol %s\n", handle, name);
+    sprintf (error = errbuf, "%p: unable to find symbol %s", handle, name);
     return 0;
 }
 
@@ -661,7 +664,7 @@ void uCdl_close (void *handle)
 	    prev = prev->next;
 	
 	if (!prev->next) { // off the end
-	    fprintf (stderr, "Warning: I don't think %%%p is loaded.\n", handle);
+	    sprintf (error = errbuf, "Warning: I don't think %%%p is loaded.", handle);
 	    prev = 0;
 	}
     }
@@ -688,13 +691,20 @@ void uCdl_close (void *handle)
     free (h);
 }
 
+const char *uCdl_error() 
+{
+    const char *ret = error;
+    error = 0;
+    return ret;
+}
+
 #ifdef TEST
 int main (int argc, char **argv) 
 {
     void *handle;
 
     if (argc < 3) {
-	fprintf (stderr, "usage: ucdl objfile\n");
+	fprintf (stderr, "usage: ucdl objfile");
 	return 1;
     }
     
