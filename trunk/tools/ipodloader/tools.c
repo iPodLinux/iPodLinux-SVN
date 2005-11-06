@@ -47,7 +47,7 @@ get_ipod_rev()
 	if (inl(0x2000) == (unsigned)"gfCS") {
 		rev = inl(0x2084) >> 16;
 	} else {
-		rev = inl(0x4084) >> 16;
+		rev = inl(0x405c) >> 16;
 	}
 
 	lcd_busy_mask = 0x8000;
