@@ -47,10 +47,12 @@ static void check_init()
 static TWindow *music_error() 
 {
     pz_error (_("No music module installed. Please do so, or you won't be able to play music."));
+    return TTK_MENU_DONOTHING;
 }
 static TWindow *nothing_error() 
 {
     pz_message (_("Nothing to see here, please move along..."));
+    return TTK_MENU_DONOTHING;
 }
 static TWindow *quit_podzilla() 
 {
@@ -180,6 +182,10 @@ ttk_menu_item *resolve_menupath (const char *path, int loc)
 	    item->flags = TTK_MENU_ICON_SUB;
 	    item->data = ttk_new_menu_widget (0, ttk_menufont, menu->w, menu->h);
 	    add_at_loc (menu, item, loc);
+	} else if (item->makesub != pz_mh_sub) {
+	    item->makesub = pz_mh_sub;
+	    item->flags = TTK_MENU_ICON_SUB;
+	    item->data = ttk_new_menu_widget (0, ttk_menufont, menu->w, menu->h);
 	}
 
 	p = strchr (p, '/');

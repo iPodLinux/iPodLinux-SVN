@@ -38,6 +38,9 @@
 #include <dlfcn.h>
 #endif
 
+int __pz_builtin_number_of_init_functions;
+void (*__pz_builtin_init_functions[256])();
+
 typedef struct _pz_Module
 {
     char *name;
@@ -56,6 +59,7 @@ typedef struct _pz_Module
 
     void *handle;
     int to_load;
+    void (*cleanup)();
 
     struct _pz_Module *next;
 } PzModule;
@@ -372,6 +376,7 @@ static void free_module (PzModule *mod)
     if (mod->podpath) free (mod->podpath);
     if (mod->mountpt) free (mod->mountpt);
     if (mod->cfgpath) free (mod->cfgpath);
+    if (mod->handle && mod->cleanup) (*mod->cleanup)();
 #ifdef IPOD
     if (mod->handle) uCdl_close (mod->handle);
 #else
@@ -508,3 +513,49 @@ void pz_modules_init()
     }
 }
 
+
+// Does not free, just calls cleanup functions.
+// Mainly useful on exit.
+void pz_modules_cleanup() 
+{
+    PzModule *cur = module_head;
+    while (cur) {
+	if (cur->handle && cur->cleanup) {
+	    (*cur->cleanup)();
+	    cur->cleanup = 0;
+	}
+	cur = cur->next;
+    }
+}
+
+
+PzModule *pz_register_module (const char *name, void (*cleanup)()) 
+{
+    PzModule *cur = module_head;
+    while (cur) {
+	if (!strcmp (cur->name, name))
+	    break;
+	cur = cur->next;
+    }
+    if (!cur) {
+	pz_error ("Module registered with invalid name <%s>.", name);
+	return 0;
+    }
+    cur->cleanup = cleanup;
+    return cur;
+}
+
+
+const char *pz_module_get_cfgpath (PzModule *mod, const char *file) 
+{
+    static char ret[256];
+    sprintf (ret, "%s/%s", mod->cfgpath, file);
+    return ret;
+}
+
+const char *pz_module_get_datapath (PzModule *mod, const char *file) 
+{
+    static char ret[256];
+    sprintf (ret, "%s/%s", mod->mountpt, file);
+    return ret;
+}

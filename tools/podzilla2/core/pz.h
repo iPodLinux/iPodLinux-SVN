@@ -90,15 +90,32 @@ TWindow *pz_mh_legacy (ttk_menu_item *); // calls the void(*)() in item->data
 TWidget *pz_new_legacy_widget (void (*do_draw)(), int (*do_keystroke)(t_GR_EVENT *));
 
 /** Module and .POD/.PCD functions - module.c   XXX MOST NOT DONE**/
-/* called from module */
 #ifndef NODEF_MODULE
 typedef struct _pz_Module PzModule;
 #endif
+
+/* called from module */
+#ifdef __PZ_BUILTIN_MOD
+extern void (*__pz_builtin_init_functions[])();
+extern int __pz_builtin_number_of_init_functions;
+#define PZ_MOD_INIT(fn) \
+    static void __init__ __attribute__((constructor)) () { \
+        __pz_builtin_init_functions[__pz_builtin_number_of_init_functions++] = fn; \
+    }
+#else
+#define PZ_MOD_INIT(fn) \
+    void __init_module__() { \
+        fn(); \
+    }
+#endif
+
 PzModule *pz_register_module (const char *name, void (*cleanup)());
-const char *pz_module_get_path (PzModule *mod, const char *filename);
+const char *pz_module_get_cfgpath (PzModule *mod, const char *file);
+const char *pz_module_get_datapath (PzModule *mod, const char *file);
 #ifndef PZ_MOD
 /* called from core */
 void pz_modules_init (void);
+void pz_modules_cleanup (void);
 PzModule *pz_load_module (const char *name);
 void pz_unload_module (PzModule *mod);
 void *pz_module_dlsym (PzModule *mod, const char *sym);

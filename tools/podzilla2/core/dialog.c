@@ -475,6 +475,7 @@ static void warn_or_err (const char *title, const char *fmt, va_list ap)
     char *str = malloc (1024);
     vsnprintf (str, 1024, fmt, ap);
     pz_do_dialog (title, str, _("Ok"), 0, 0, 0, 1);
+    fprintf (stderr, "%s: %s\n", title, str);
 }
 void pz_warning (const char *fmt, ...) 
 {
