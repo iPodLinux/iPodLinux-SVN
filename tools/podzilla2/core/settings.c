@@ -25,7 +25,7 @@
 
 typedef struct _pz_Config
 {
-    const char *filename;
+    char *filename;
     struct _pz_ConfItem *settings;
 } PzConfig;
 
@@ -308,7 +308,7 @@ PzConfig *pz_load_config(const char *settings_file)
 	PzConfig *ret = malloc (sizeof(PzConfig));
 	char buf[32];
 
-	ret->filename = settings_file;
+	ret->filename = strdup (settings_file);
 	ret->settings = 0;
 
 	if ((fp = fopen(settings_file, "r")) == NULL) {
@@ -431,6 +431,7 @@ void pz_blast_config (PzConfig *conf)
 void pz_free_config (PzConfig *conf) 
 {
 	free_all_settings (conf);
+	free (conf->filename);
 	free (conf);
 }
 

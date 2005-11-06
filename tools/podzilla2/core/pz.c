@@ -275,6 +275,7 @@ void pz_uninit()
 {
 	ttk_quit();
 	pz_touch_settings();
+	pz_modules_cleanup();
 }
 
 
