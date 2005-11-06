@@ -223,6 +223,23 @@ static void load_modinf (PzModule *mod)
 	mod->author = malloc (strlen (_("Anonymous")) + 1);
 	strcpy (mod->author, _("Anonymous"));
     }
+
+    // Get the config path, now that we know the name.
+#ifdef IPOD
+#define CONFDIR "/etc/podzilla"
+#else
+#define CONFDIR "config"
+#endif
+    mod->cfgpath = malloc (strlen (CONFDIR "/modules/") + strlen (mod->name) + 1);
+    sprintf (mod->cfgpath, "%s/modules/%s", CONFDIR, mod->name);
+    mkdir (CONFDIR, 0755);
+    mkdir (CONFDIR "/modules", 0755);
+    if (mkdir (mod->cfgpath, 0755) < 0 && errno != EEXIST) {
+	pz_warning ("Unable to create %s's config dir %s: %s", mod->name, mod->cfgpath,
+		    strerror (errno));
+    }
+
+    // XXX. Check signature here.
 }
 
 // Turns the depsstr into a list of deps. returns 0 for success, -1 for failure
@@ -306,6 +323,41 @@ static int fix_dependencies (PzModule *mod, int initing)
 }
 
 
+static void do_load (PzModule *mod) 
+{
+    char *fname = malloc (strlen (mod->mountpt) + strlen (mod->name) + 8);
+    mod->to_load = -1;
+#ifdef IPOD
+    sprintf (fname, "%s/%s.o", mod->mountpt, mod->name);
+    mod->handle = uCdl_open (fname);
+    free (fname);
+    if (!mod->handle) {
+	pz_error ("Could not load module %s: %s", mod->name, uCdl_error());
+    }
+#else
+    sprintf (fname, "%s/%s.so", mod->mountpt, mod->name);
+    mod->handle = dlopen (fname, RTLD_NOW | RTLD_GLOBAL);
+    free (fname);
+    if (!mod->handle) {
+	pz_error ("Could not load module %s: %s", mod->name, dlerror());
+    }
+#endif
+    else {
+#ifdef IPOD
+	void (*initfn)() = uCdl_sym (mod->handle, "__init_module__");
+	if (!initfn) pz_warning ("Could not do modinit function for %s: %s", mod->name, uCdl_error());
+#else
+	void (*initfn)() = dlsym (mod->handle, "__init_module__");
+	if (!initfn) pz_warning ("Could not do modinit function for %s: %s", mod->name, dlerror());
+#endif
+	else {
+	    (*initfn)();
+	}
+    }
+    mod->to_load = 0;
+}
+
+
 static void free_module (PzModule *mod) 
 {
     if (mod->name) free (mod->name);
@@ -380,6 +432,7 @@ void pz_modules_init()
 	nmods++;
 	if (nmods > 120) {
 	    pz_error (_("Too many modules (120+). Trim down your podzilla. Please. Modules after 120 will be ignored."));
+	    break;
 	}
 
 	if (module_head == 0) {
@@ -442,6 +495,16 @@ void pz_modules_init()
 	    last = cur;
 	    cur = cur->next;
 	}
+    }
+
+    // XXX. For now, we load them in directory order. That will
+    // wreak havoc with dependencies. davidc__ is working on a 
+    // better solution.
+    cur = module_head;
+    while (cur) {
+	if (cur->to_load)
+	    do_load (cur);
+	cur = cur->next;
     }
 }
 
