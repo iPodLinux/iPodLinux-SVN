@@ -966,10 +966,14 @@ void ttk_ellipse (ttk_surface srf, int x, int y, int rx, int ry, ttk_color col);
 void ttk_ellipse_gc (ttk_surface srf, ttk_gc gc, int x, int y, int rx, int ry);
 void ttk_fillellipse (ttk_surface srf, int x, int y, int rx, int ry, ttk_color col);
 void ttk_fillellipse_gc (ttk_surface srf, ttk_gc gc, int x, int y, int rx, int ry);
+
+void ttk_bitmap (ttk_surface srf, int x, int y, int w, int h, unsigned short *bits, ttk_color col);
+void ttk_bitmap_gc (ttk_surface srf, ttk_gc gc, int x, int y, int w, int h, unsigned short *bits);
 \end{verbatim}
 }
 
-These functions' functions are obvious from their names; only the non-obvious will be documented here.
+These functions' functions are, for the most part,
+obvious from their names; only the non-obvious will be documented here.
 
 \verb|ttk_*rect| use the coordinates of upper-left and bottom-right corners; \verb|ttk_*rect_gc| use
 the upper-left corner and width and height.
@@ -977,12 +981,31 @@ the upper-left corner and width and height.
 \verb|ttk_*poly| use separate arrays for X and Y coordinates; \verb|ttk_*poly_gc| use one array of
 \verb|ttk_point| structures.
 
+\verb|ttk_bitmap| draws an array of bits on the surface at the specified $(x,y)$. The bitmap format
+is an array of \verb|unsigned short|s, filled {\bf from MSB to LSB}; that is, the MSB of the first
+short will be at $(x,y)$. You should have a whole number of shorts per row; unused bits in the least-significant
+part of one at the end of a row should be set to 0.
+Bits set indicate pixels colored \verb|col|; bits cleared will not be
+drawn in any color. {\it You must specify a correct width and height.} If you do not, your image will
+look \ldots odd, very odd.
+
+As an example, here's a $3\times3$ ``ball'':
+\begin{verbatim}
+static unsigned short pong_ball[] = {
+    0x6000, // . X X .
+    0xf000, // X X X X
+    0xf000, // X X X X
+    0x6000, // . X X .
+    0       // not necessary
+};
+\end{verbatim}
+
 \subsection{Text and Font Functions}
 \begin{verbatim}
 ttk_fontinfo *ttk_get_fontinfo (const char *name, int size);
 ttk_font ttk_get_font (const char *name, int size);
 void ttk_done_fontinfo (ttk_fontinfo *fi);
-void ttk_done_font (ttk_font f);
+void ttk_done_kfont (ttk_font f);
 
 void ttk_text (ttk_surface srf, ttk_font fnt, int x, int y,
                ttk_color col, const char *str);

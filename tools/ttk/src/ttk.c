@@ -973,7 +973,7 @@ int ttk_hide_window (TWindow *win)
 	if (current) current = current->next;
     }
 
-    if (ttk_windows) {
+    if (ret && ttk_windows) {
 	TWindow *newwindow = ttk_windows->w;
 	
 	if (newwindow->w == win->w && newwindow->h == win->h &&

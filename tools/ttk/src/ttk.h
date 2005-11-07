@@ -289,6 +289,9 @@ void ttk_ellipse_gc (ttk_surface srf, ttk_gc gc, int x, int y, int rx, int ry);
 void ttk_fillellipse (ttk_surface srf, int x, int y, int rx, int ry, ttk_color col);
 void ttk_fillellipse_gc (ttk_surface srf, ttk_gc gc, int x, int y, int rx, int ry);
 
+void ttk_bitmap (ttk_surface srf, int x, int y, int w, int h, unsigned short *data, ttk_color col);
+void ttk_bitmap_gc (ttk_surface srf, ttk_gc gc, int x, int y, int w, int h, unsigned short *data);
+
 // Font funcs. Implemented in core TTK:
 ttk_fontinfo *ttk_get_fontinfo (const char *name, int size);
 ttk_font ttk_get_font (const char *name, int size);
