@@ -66,7 +66,7 @@ endif
 endif
 
 ifeq ($(done),true)
-all:
+all: $(obj-y) $(built-in) $(MODULE).so $(finalmod)
 else
 #####
 all: $(obj-y) $(built-in) $(obj-m) $(finalmod)
@@ -111,6 +111,8 @@ ifdef IPOD
 else
 	@echo $(MODULE).so
 endif
+ifdef DATA
 	@for file in $(DATA); do \
 		echo $$file; \
 	done
+endif
