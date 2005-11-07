@@ -343,6 +343,15 @@ void ttk_fillellipse_gc (ttk_surface srf, ttk_gc gc, int x, int y, int rx, int r
 {
     GrFillEllipse (srf, gc, x, y, rx, ry);
 }
+void ttk_bitmap (ttk_surface srf, int x, int y, int w, int h, unsigned short *imagebits, ttk_color col) 
+{
+    GrSetGCForeground (tmp_gc, col);
+    GrBitmap (srf, tmp_gc, x, y, w, h, imagebits);
+}
+void ttk_bitmap_gc (ttk_surface srf, ttk_gc gc, int x, int y, int w, int h, unsigned short *imagebits) 
+{
+    GrBitmap (srf, gc, x, y, w, h, imagebits);
+}
 
 
 void ttk_text (ttk_surface srf, ttk_font fnt, int x, int y, ttk_color col, const char *str) 

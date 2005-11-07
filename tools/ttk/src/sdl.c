@@ -1353,6 +1353,15 @@ static void draw_bitmap (ttk_surface srf, int x, int y, int width, int height,
     }
 }
 
+void ttk_bitmap (ttk_surface srf, int x, int y, int w, int h, unsigned short *imagebits, ttk_color col)
+{
+    draw_bitmap (srf, x, y, w, h, imagebits, col);
+}
+void ttk_bitmap_gc (ttk_surface srf, ttk_gc gc, int x, int y, int w, int h, unsigned short *imagebits) 
+{
+    draw_bitmap (srf, x, y, w, h, imagebits, gc->fg);
+}
+
 /** src/engine/devfont.c **/
 static void corefont_drawtext (Bitmap_Font *bf, ttk_surface srf, int x, int y,
 			       const void *text, int cc, ttk_color col)
