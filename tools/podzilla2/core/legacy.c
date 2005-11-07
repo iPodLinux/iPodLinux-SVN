@@ -252,3 +252,11 @@ int vector_string_pixel_width (const char *string, int kern, int scale)
 
     return pz_vector_width (string, cw, ch, kern);
 }
+
+#define t_GR_RGB(r,g,b) (((r)<<16)|((g)<<8)|(b))
+t_GR_COLOR appearance_get_color (const char *prop)
+{
+    int r, g, b;
+    ttk_unmakecol (ttk_ap_getx (prop) -> color, &r, &g, &b);
+    return t_GR_RGB (r, g, b);
+}

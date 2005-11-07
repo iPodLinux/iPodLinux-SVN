@@ -1,4 +1,4 @@
-SUBDIRS = mymodule
+SUBDIRS = mymodule pong
 
 all:
 	for dir in $(SUBDIRS); do \

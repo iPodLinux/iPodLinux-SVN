@@ -431,4 +431,55 @@ void pz_uninit();
 #define pz_close_window(w) pz_old_close_window(w)
 #endif
 
+/*********** Appearance legacy stuff *************/
+#ifdef PZ_COMPAT
+#define CS_BG		"window.bg"	/* standard background */
+#define CS_FG		"window.fg"	/* standard foreground (text) */
+
+#define CS_SELBG	"menu.selbg"	/* selected background */
+#define CS_SELBGBDR	"menu.selborder" /* selected background border */
+#define CS_SELFG	"menu.selfg"	/* selected foreground (text) */
+
+#define CS_ARROW0	"menu.selfg"	/* arrow > color 0 */
+#define CS_ARROW1	"menu.selbg"	/* arrow > color 1 */
+#define CS_ARROW2	"menu.selfg"	/* arrow > color 2 */
+#define CS_ARROW3	"menu.selbg"	/* arrow > color 3*/
+
+#define CS_TITLEBG	"header.bg"	/* titlebar background */
+#define CS_TITLEFG	"header.fg"	/* titlebar foreground */
+#define CS_TITLEACC	"notanyyet"	/* titlebar accent */
+#define CS_TITLELINE	"header.line"	/* titlebar separator line */
+
+/* UI Widgets */
+#define CS_SCRLBDR	"scroll.border"	/* scrollbar border */
+#define CS_SCRLCTNR	"scroll.bg"	/* scrollbar container */
+#define CS_SCRLKNOB	"scroll.bar"	/* scrollbar knob */
+
+#define CS_SLDRBDR	"slider.border"	/* slider border */
+#define CS_SLDRCTNR	"slider.bg"	/* slider container */
+#define CS_SLDRFILL	"slider.full"	/* slider filled */
+
+/* podzilla customized widgets */
+#define CS_BATTBDR	"battery.border"	/* battery icon border */
+#define CS_BATTCTNR	"battery.bg"	/* battery icon container */
+#define CS_BATTFILL	"battery.fill.normal"	/* battery icon filled (normal) */
+#define CS_BATTLOW	"battery.fill.low"	/* battery icon filled (low) */
+#define CS_BATTCHRG	"battery.fill.charge"	/* battery is charging */
+
+#define CS_HOLDBDR	"lock.border"	/* hold icon border */
+#define CS_HOLDFILL	"lock.fill"	/* hold icon fill */
+
+/* error/warning messages */
+#define CS_MESSAGEFG	"dialog.fg"	/* pz_message forground text */
+#define CS_MESSAGELINE	"dialog.line"	/* highlight line */
+#define CS_MESSAGEBG	"dialog.bg"	/* pz_message background */
+#define CS_ERRORBG	"error.bg"	/* pz_error background */
+
+/* load average display */
+#define CS_LOADBG	"loadavg.bg"	/* load average container */
+#define CS_LOADFG	"loadavg.fg"	/* load average meter */
+
+t_GR_COLOR appearance_get_color (const char *prop);
+#endif
+
 #endif
