@@ -346,7 +346,8 @@ int mp4_to_raw_aac(FILE *infile)
 	aacbuf = NULL;
 	aacbuf_len = 0;
 	
-	mp4ff_get_decoder_config(mp4file, track, &aacbuf, &aacbuf_len);
+	mp4ff_get_decoder_config(mp4file, track, &aacbuf,
+			(uint32_t)&aacbuf_len);
 	
 /* decoder config layout:
  *
@@ -419,7 +420,8 @@ int mp4_to_raw_aac(FILE *infile)
 	
 	for (sampleId = 0; sampleId < numSamples; sampleId++) {
 		int rc;
-		rc = mp4ff_read_sample(mp4file, track, sampleId, &aacbuf, &aacbuf_len);
+		rc = mp4ff_read_sample(mp4file, track, sampleId, &aacbuf,
+				(uint32_t)&aacbuf_len);
 		if (rc == 0) {
 			if (aacbuf)
 				free(aacbuf);
