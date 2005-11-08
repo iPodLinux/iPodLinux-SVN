@@ -41,7 +41,7 @@ static void populate_credits() {
 			"David Carne", "Nik Rolls", "Filippo Forlani", 
 			"Martin Kaltenbrunner", "Adam Johnston",
 		        "Matthew Westcott", "Nils Schneider", "Damien Marchal",
-			"Joshua Oreman",
+			"Joshua Oreman", "Brett Ryland",
 			0};
 	for (i = 0; cnames[i] != 0; i++)
 		len += strlen(cnames[i]) + 9;
@@ -98,7 +98,7 @@ static void populate_about() {
 
 	buf = malloc(sizeof(char) * (32 + strlen(PZ_VER) + strlen(kern) +
 				strlen(fstype) + strlen(gens[i])));
-	sprintf(buf, "%s\n\n%s\n%s  %s\n    Rev. 0x%05X", PZ_VER, kern,
+	sprintf(buf, "%s\n\n%s\n%s  %s\n    Rev. 0x%05lX", PZ_VER, kern,
 			fstype, gens[i], ipod_get_hw_version());
 }
 
