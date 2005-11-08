@@ -110,6 +110,13 @@ extern int __pz_builtin_number_of_init_functions;
         fn(); \
     }
 #endif
+#define PZ_SIMPLE_MOD(n,f,p) \
+    static void init_mod() \
+    { \
+        (void) pz_register_module (n, 0); \
+        pz_menu_add_legacy (p, f); \
+    } \
+    PZ_MOD_INIT(init_mod)
 
 PzModule *pz_register_module (const char *name, void (*cleanup)());
 const char *pz_module_get_cfgpath (PzModule *mod, const char *file);

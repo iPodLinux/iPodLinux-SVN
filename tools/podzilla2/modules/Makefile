@@ -9,8 +9,6 @@ all:
 	if find * -name built-in.o | grep '/built-in.o'; then \
 		rm -f built-in.o; \
 		find . -name built-in.o | xargs ld -r -o built-in.o; \
-	else \
-		gcc -c -o built-in.o -x c /dev/null; \
 	fi
 
 xpods:
@@ -26,5 +24,6 @@ clean:
 	for dir in $(SUBDIRS); do \
 		cd $$dir; \
 		make -f ../../module.mk clean; \
+		cd ..; \
 	done
 

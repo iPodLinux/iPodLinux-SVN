@@ -1,6 +1,7 @@
 ifdef IPOD
-CC ?= arm-elf-gcc
-LD ?= arm-elf-ld
+CROSS ?= arm-elf
+CC = $(CROSS)-gcc
+LD = $(CROSS)-ld
 MYCFLAGS = `ttk-config --ipod --sdl --cflags` -I../contrib/ucdl
 else
 CC ?= cc

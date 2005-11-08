@@ -18,7 +18,6 @@
 
 #include <time.h>
 #include <stdlib.h>
-#define PZ_MOD
 #define PZ_COMPAT
 #include "pz.h"
 
