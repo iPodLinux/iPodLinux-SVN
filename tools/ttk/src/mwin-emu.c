@@ -150,7 +150,7 @@ t_GR_WINDOW_ID t_GrGetFocus()
     return ttk_windows->w;
 }
 
-t_GR_WINDOW_ID t_GrNewPixmap (int w, int h, int _u)
+t_GR_WINDOW_ID t_GrNewPixmap (int w, int h, void *_u)
 {
     TWindow *ret = calloc (1, sizeof(TWindow));
     ret->srf = ttk_new_surface (w, h, ttk_screen->bpp);

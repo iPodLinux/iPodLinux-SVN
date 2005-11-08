@@ -874,7 +874,7 @@ void t_GrMoveWindow (t_GR_WINDOW_ID win, int x, int y);
 void t_GrClearWindow (t_GR_WINDOW_ID w, int _unused);
 void t_GrGetWindowInfo (t_GR_WINDOW_ID w, t_GR_WINDOW_INFO *inf);
 t_GR_WINDOW_ID t_GrGetFocus();
-t_GR_WINDOW_ID t_GrNewPixmap (int w, int h, int _unused1);
+t_GR_WINDOW_ID t_GrNewPixmap (int w, int h, void *_unused1);
 
 t_GR_GC_ID t_GrNewGC();
 t_GR_GC_ID t_GrCopyGC (t_GR_GC_ID other);
