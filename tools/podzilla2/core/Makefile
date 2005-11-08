@@ -16,14 +16,16 @@ HDRS= pz.h
 all: built-in.o
 
 built-in.o: $(OBJS)
-	$(LD) -r -o built-in.o $(OBJS)
+	@echo " LD      built-in.o"
+	@$(LD) -r -o built-in.o $(OBJS)
 
 $(OBJS): $(HDRS)
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(MYCFLAGS) -c -o $@ $<
+	@echo " CC     " $@
+	@$(CC) $(CFLAGS) $(MYCFLAGS) -c -o $@ $<
 
 clean:
-	rm -f *.o
+	@rm -f *.o
 
 .PHONY: clean all

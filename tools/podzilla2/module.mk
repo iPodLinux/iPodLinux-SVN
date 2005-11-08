@@ -38,9 +38,11 @@ ifndef IPOD
 finalmod = $(MODULE).so
 onlyso = true
 $(MODULE).so: $(MODULE).c
-	$(CC) $(PIC) -c -o $(MODULE).o $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD
-	$(CC) -shared -o $@ $(MODULE).o
-	rm -f $(MODULE).o
+	@echo " CC [M]  $(MODULE).o"
+	@$(CC) $(PIC) -c -o $(MODULE).o $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD
+	@echo " LDSO    $(MODULE).so"
+	@$(CC) -shared -o $@ $(MODULE).o
+	@rm -f $(MODULE).o
 else
 finalmod = $(MODULE).o
 # already will be made, don't need a rule
@@ -54,11 +56,13 @@ endif
 ifndef IPOD
 finalmod = $(MODULE).so
 $(MODULE).so: $(obj-m)
-	$(CC) -shared -o $@ $(obj-m)
+	@echo " LDSO    $(MODULE).so"
+	@$(CC) -shared -o $@ $(obj-m)
 else
 finalmod = $(MODULE).o
 $(MODULE).o: $(obj-m)
-	$(LD) -r -o $@ $(obj-m)
+	@echo " LD [M]  $(MODULE)"
+	@$(LD) -r -o $@ $(obj-m)
 endif
 
 endif
@@ -74,17 +78,20 @@ endif
 
 ifdef obj-y
 built-in.o: $(obj-y)
-	$(LD) -r -o built-in.o $(obj-y)
+	@echo " LD      $(MODULE)"
+	@$(LD) -r -o built-in.o $(obj-y)
 
 $(obj-y): %.o: %.c
-	$(CC) -c -o $@ $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_BUILTIN_MODULE -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD
+	@echo " CC     " $@
+	@$(CC) -c -o $@ $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_BUILTIN_MODULE -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD
 endif
 
 #####
 
 ifdef obj-m
 $(obj-m): %.o: %.c
-	$(CC) $(PIC) -c -o $@ $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD
+	@echo " CC [M] " $@
+	@$(CC) $(PIC) -c -o $@ $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD
 endif
 
 
@@ -94,14 +101,14 @@ endif
 semiclean:
 ifdef IPOD
 ifeq ($(findstring $(MODULE).o,$(obj)),)
-	rm -f $(obj)
+	@rm -f $(obj)
 endif
 else
-	rm -f $(obj)
+	@rm -f $(obj)
 endif
 
 clean:
-	rm -f $(MODULE).o $(MODULE).so $(obj)
+	@rm -f $(MODULE).o $(MODULE).so $(obj)
 
 distfiles:
 	@echo Module

@@ -7,19 +7,34 @@ CC ?= cc
 endif
 POD ?= ../../../podfile/pod # relative to two dirs down
 
-all: core modules xpods deskpods
-	$(CC) -o podzilla core/built-in.o $(wildcard modules/built-in.o) $(LIBS)
+all: checktarget core modules xpods pods
+	@echo " LD      podzilla"
+	@$(CC) -o podzilla core/built-in.o $(wildcard modules/built-in.o) $(LIBS)
+
+checktarget: .curtgt
+	@cmp .curtgt .target || make clean
+	@cp .curtgt .target
+
+.curtgt:
+ifdef IPOD
+	@echo "iPod" > .curtgt
+else
+	@echo "X11" > .curtgt
+endif
 
 core:
-	make -C core
+	@make -C core
 
 modules:
-	make -C modules
+	@make -C modules
 
 clean:
-	rm -f podzilla
-	make clean -C core
-	make clean -C modules
+	@echo " CLEAN   podzilla"
+	@rm -f podzilla
+	@echo " CLEAN   core"
+	@make clean -C core
+	@echo " CLEAN   modules"
+	@make clean -C modules
 
 dev-env:
 	mkdir -p config pods xpods
@@ -27,13 +42,15 @@ dev-env:
 	-ln -sf ../ttk/schemes
 
 xpods:
-	make xpods -C modules
+	@make xpods -C modules
 
+ifdef IPOD
 pods:
-	@for dir in xpods/*; do ( cd $$dir; echo -n "$$dir.. "; $(POD) -c ../../pods/`echo $$dir | sed 's|xpods/||'`.pod *; echo "done" ); done
+	@for dir in xpods/*; do ( cd $$dir; echo " MODPOST $$dir"; $(POD) -c ../../pods/`echo $$dir | sed 's|xpods/||'`.pod * ); done
+else
+# Just make dummy files
+pods:
+	@for dir in xpods/*; do echo " MODPOST $$dir"; touch `echo $$dir | sed 's|^x||;s|$$|.pod|'`; done
+endif
 
-# Just makes dummy files
-deskpods:
-	@for dir in xpods/*; do touch `echo $$dir | sed 's|^x||;s|$$|.pod|'`; done
-
-.PHONY: core modules clean pods xpods dev-env
+.PHONY: core modules clean pods xpods dev-env .curtgt

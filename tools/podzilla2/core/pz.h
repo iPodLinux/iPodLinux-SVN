@@ -110,6 +110,7 @@ extern int __pz_builtin_number_of_init_functions;
         fn(); \
     }
 #endif
+#ifdef PZ_COMPAT
 #define PZ_SIMPLE_MOD(n,f,p) \
     static void init_mod() \
     { \
@@ -117,6 +118,7 @@ extern int __pz_builtin_number_of_init_functions;
         pz_menu_add_legacy (p, f); \
     } \
     PZ_MOD_INIT(init_mod)
+#endif
 
 PzModule *pz_register_module (const char *name, void (*cleanup)());
 const char *pz_module_get_cfgpath (PzModule *mod, const char *file);
@@ -240,6 +242,34 @@ TWindow *pz_create_stringview (const char *str, const char *title);
 #define PZ_EVENT_FRAME        7
 #define PZ_EVENT_TIMER        8
 #define PZ_EVENT_DESTROY      9
+
+#define PZ_BUTTON_MENU        'm'
+#define PZ_BUTTON_PREVIOUS    'w'
+#define PZ_BUTTON_NEXT        'f'
+#define PZ_BUTTON_PLAY        'd'
+#define PZ_BUTTON_SCROLLLEFT  'l'
+#define PZ_BUTTON_SCROLLRIGHT 'r'
+#define PZ_BUTTON_HOLD        'h'
+#define PZ_BUTTON_ACTION      '\n'
+#ifdef PZ_COMPAT
+#define IPOD_BUTTON_ACTION		('\r')
+#define IPOD_BUTTON_MENU		('m')
+#define IPOD_BUTTON_REWIND		('w')
+#define IPOD_BUTTON_FORWARD		('f')
+#define IPOD_BUTTON_PLAY		('d')
+
+#define IPOD_SWITCH_HOLD		('h')
+
+#define IPOD_WHEEL_CLOCKWISE		('r')
+#define IPOD_WHEEL_ANTICLOCKWISE	('l')
+#define IPOD_WHEEL_COUNTERCLOCKWISE	('l')
+
+#define IPOD_REMOTE_PLAY		('1')
+#define IPOD_REMOTE_VOL_UP		('2')
+#define IPOD_REMOTE_VOL_DOWN		('3')
+#define IPOD_REMOTE_FORWARD		('4')
+#define IPOD_REMOTE_REWIND		('5')
+#endif
 
 typedef struct _pz_Event
 {
