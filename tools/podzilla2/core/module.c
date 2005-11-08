@@ -23,9 +23,11 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#ifdef linux
+#if defined(linux) || defined(IPOD)
 #include <sys/mount.h>
-#include <linux/loop.h>
+#include <linux/fs.h>
+#define LOOP_SET_FD     0x4C00
+#define LOOP_CLR_FD     0x4C01
 #else
 #ifdef MountPods
 #error can only mount pods under Linux

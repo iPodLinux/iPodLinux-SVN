@@ -36,12 +36,11 @@ endif
 ## Case for single-file
 ifndef IPOD
 finalmod = $(MODULE).so
-$(MODULE).so: $(obj-m)
-	$(CC) -shared -o $@ $<
-	rm -f $<
-ifeq ($(wildcard $(MODULE).so),$(MODULE).so)
-done = true
-endif
+onlyso = true
+$(MODULE).so: $(MODULE).c
+	$(CC) $(PIC) -c -o $(MODULE).o $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD
+	$(CC) -shared -o $@ $(MODULE).o
+	rm -f $(MODULE).o
 else
 finalmod = $(MODULE).o
 # already will be made, don't need a rule
@@ -65,8 +64,8 @@ endif
 endif
 endif
 
-ifeq ($(done),true)
-all: $(obj-y) $(built-in) $(MODULE).so $(finalmod)
+ifeq ($(onlyso),true)
+all: $(obj-y) $(built-in) $(finalmod)
 else
 #####
 all: $(obj-y) $(built-in) $(obj-m) $(finalmod)
@@ -78,14 +77,14 @@ built-in.o: $(obj-y)
 	$(LD) -r -o built-in.o $(obj-y)
 
 $(obj-y): %.o: %.c
-	$(CC) -c -o $@ $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_BUILTIN_MODULE -D__PZ_MODULE_NAME=\"$(MODULE)\"
+	$(CC) -c -o $@ $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_BUILTIN_MODULE -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD
 endif
 
 #####
 
 ifdef obj-m
 $(obj-m): %.o: %.c
-	$(CC) $(PIC) -c -o $@ $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\"
+	$(CC) $(PIC) -c -o $@ $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD
 endif
 
 
