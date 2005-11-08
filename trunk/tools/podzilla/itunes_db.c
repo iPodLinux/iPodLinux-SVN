@@ -132,7 +132,19 @@ static int artist_cmp(struct btree_head *a, struct btree_head *b)
 
 inline uint32_t sortkey_alpha(char *s)
 {
-	return (s[0] << 24) + (s[1] << 16) + (s[2] << 8) + s[3];
+	uint32_t key;
+
+	key = s[0] << 24;
+	if (s[0] == 0)
+		return key;
+	key += s[1] << 16;
+	if (s[1] == 0)
+		return key;
+	key += s[2] << 8;
+	if (s[2] == 0)
+		return key;
+	key += s[3];
+	return key;
 }
 
 inline void init_artist_sortkey(struct artist *a)
