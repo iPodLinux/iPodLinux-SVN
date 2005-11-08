@@ -3,7 +3,7 @@ SUBDIRS = mymodule pong wumpus
 all:
 	@for dir in $(SUBDIRS); do \
 		cd $$dir; \
-		make -f ../../module.mk; \
+		make -sf ../../module.mk; \
 		cd ..; \
 	done
 	@if find * -name built-in.o | grep '/built-in.o'; then \
@@ -15,7 +15,7 @@ all:
 xpods:
 	@for dir in $(SUBDIRS); do \
 		cd $$dir; \
-		echo " DIST    $$dir"; \
+		echo " XPOD    $$dir"; \
 		rm -rf ../../xpods/$$dir; \
 		mkdir -p ../../xpods/$$dir; \
 		make -sf ../../module.mk distfiles | fgrep -v 'make[' | xargs -iX cp X ../../xpods/$$dir; \
@@ -26,7 +26,7 @@ clean:
 	@for dir in $(SUBDIRS); do \
 		cd $$dir; \
 		echo " CLEAN   $$dir"; \
-		make -f ../../module.mk clean; \
+		make -sf ../../module.mk clean; \
 		cd ..; \
 	done
 

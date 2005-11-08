@@ -38,9 +38,8 @@ ifndef IPOD
 finalmod = $(MODULE).so
 onlyso = true
 $(MODULE).so: $(MODULE).c
-	@echo " CC [M]  $(MODULE).o"
+	@echo " CC [M]  $(MODULE).so"
 	@$(CC) $(PIC) -c -o $(MODULE).o $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD
-	@echo " LDSO    $(MODULE).so"
 	@$(CC) -shared -o $@ $(MODULE).o
 	@rm -f $(MODULE).o
 else
@@ -56,7 +55,7 @@ endif
 ifndef IPOD
 finalmod = $(MODULE).so
 $(MODULE).so: $(obj-m)
-	@echo " LDSO    $(MODULE).so"
+	@echo " LD [SO] $(MODULE).so"
 	@$(CC) -shared -o $@ $(obj-m)
 else
 finalmod = $(MODULE).o
