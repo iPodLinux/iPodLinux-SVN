@@ -58,11 +58,9 @@
 /** Compat defs - legacy.c **/
 #ifdef PZ_COMPAT
 #if !defined(PZ_MOD) && defined(LEGACY_DOT_C)
-#define NOWARN
-#else
-#undef NOWARN
+#undef LEGACY_WARN
 #endif
-#ifndef NOWARN
+#ifdef LEGACY_WARN
 #warning Legacy code alert... please fix ASAP.
 #endif
 #define HEADER_TOPLINE 19
