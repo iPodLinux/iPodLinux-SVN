@@ -401,16 +401,10 @@ void pz_modules_init()
 
     struct stat st;
     PzModule *last, *cur;
-    PzConfItem *modlist = pz_get_setting (pz_global_config, MODULE_LIST);
     int nmods = 0;
     struct dirent *d;
     DIR *dp;
     int i;
-
-    if (!modlist || (modlist->type != PZ_SETTING_SLIST)) {
-	pz_warning ("No modules selected. Podzilla will probably be very boring.");
-	return;
-    }
 
     dp = opendir (MODULEDIR);
     if (!dp) {
@@ -453,11 +447,12 @@ void pz_modules_init()
 	    cur = cur->next;
 	}
 	cur->podpath = podpath;
+	cur->to_load = 1;
     }
     closedir (dp);
 
     if (!module_head) {
-	pz_message_title (_("Warning"), _("No modules."));
+	pz_message_title (_("Warning"), _("No modules. Podzilla will probably be very boring."));
 	return;
     }
 
@@ -477,17 +472,10 @@ void pz_modules_init()
 	}
     }
 
-    // Load the module.inf, mark which ones have been selected by
-    // the user
+    // Load the module.inf's
     cur = module_head;
     while (cur) {
 	load_modinf (cur);
-	for (i = 0; i < modlist->nstrvals; i++) {
-	    if (!strcmp (cur->name, modlist->strvals[i])) {
-		cur->to_load = 1;
-		break;
-	    }
-	}
 	cur = cur->next;
     }
 
