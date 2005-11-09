@@ -491,9 +491,6 @@ void pz_uninit();
 #define SLIDE_TRANSIT	(49)
 #define MENU_FONT	(50)
 
-/* MODULE METASETTINGS 100 - 110 */
-#define MODULE_LIST     (100)
-
 #if defined(PZ_COMPAT) && !defined(LEGACY_DOT_C)
 #define pz_new_window(x,y,w,h,d,k) pz_old_window(x,y,w,h,d,k) /* hopefully no conflict with new_win(title,XYWH,x,y,w,h) */
 #define pz_close_window(w) pz_old_close_window(w)
