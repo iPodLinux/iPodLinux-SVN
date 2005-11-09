@@ -98,7 +98,7 @@ static void poddraw_save( void )
 	time_t t;
 	struct tm * current_time;
 
-	choice = DIALOG_MESSAGE_2( _("Save?"), _("Save this image?"), _("Yes"), _("No"));
+	choice = pz_dialog( _("Save?"), _("Save this image?"), 2, 0, _("Yes"), _("No"));
 	if( choice == 1 ) return;
 
 	if( !poddraw_buffer ) return;
@@ -126,7 +126,7 @@ static void poddraw_save( void )
 
 	fclose( fp );
 
-	choice = DIALOG_MESSAGE_T( "Save", "Saved.", "Ok", 3 );
+	pz_message_title (_("Save"), _("Saved."));
 }
 
 

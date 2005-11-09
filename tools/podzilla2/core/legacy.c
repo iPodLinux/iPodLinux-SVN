@@ -220,6 +220,16 @@ t_GR_GC_ID pz_get_gc(int copy)
     return (copy? t_GrCopyGC (pz_root_gc) : pz_root_gc);
 }
 
+void vector_render_char (t_GR_WINDOW_ID win, t_GR_GC_ID gc,
+			 char c, int scale, int x, int y) 
+{
+    char s[2] = { 0, 0 };
+    int cw = scale * 5;
+    int ch = scale * 9;
+    s[0] = c;
+    
+    pz_vector_string (win->srf, s, x, y, cw, ch, 0, ttk_gc_get_foreground (gc));
+}
 void vector_render_string (t_GR_WINDOW_ID win, t_GR_GC_ID gc,
 			   const char *string, int kern, int scale, int x, int y) 
 {

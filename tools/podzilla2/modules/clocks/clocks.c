@@ -568,7 +568,7 @@ static int Clocks_c12( int hours )
 /* adjust for 12/24 hour time */
 static int Clocks_convert_to_12( int hours )
 {
-	if( ipod_get_setting( TIME_1224 ))
+	if( pz_get_int_setting( pz_global_config, TIME_1224 ))
 		return( hours );
 	return( Clocks_c12( hours ));
 }
@@ -959,7 +959,7 @@ static void Clocks_draw( void )
 	if( lastt != t )
 	{
 	    lastt = t;
-	    if( ipod_get_setting( TIME_TICKER ))
+	    if( pz_get_int_setting( pz_global_config, TIME_TICKER ))
 		ipod_beep();
 	}
 
@@ -1252,11 +1252,11 @@ void new_clock_window(void)
 /* display the world clock */
 void new_world_clock_window(void)
 {
-	int locl_z_offs = clocks_tz_offsets[ ipod_get_setting( TIME_ZONE )];
-	int targ_z_offs = clocks_tz_offsets[ ipod_get_setting( TIME_WORLDTZ )];
+	int locl_z_offs = clocks_tz_offsets[ pz_get_int_setting( pz_global_config, TIME_ZONE )];
+	int targ_z_offs = clocks_tz_offsets[ pz_get_int_setting( pz_global_config, TIME_WORLDTZ )];
 
-	int locl_d_offs = clocks_dst_offsets[ ipod_get_setting( TIME_DST )];
-	int targ_d_offs = clocks_dst_offsets[ ipod_get_setting( TIME_WORLDDST )];
+	int locl_d_offs = clocks_dst_offsets[ pz_get_int_setting( pz_global_config, TIME_DST )];
+	int targ_d_offs = clocks_dst_offsets[ pz_get_int_setting( pz_global_config, TIME_WORLDDST )];
 
 	Clocks_style = Clocks_bak;
 	Clocks_set = 0;
@@ -1299,3 +1299,6 @@ void new_Set_DateTime_window( void )
 
 	new_Clocks_window_common();
 }
+
+static void init_clocks() { /* XXX fill in menu items */ }
+PZ_MOD_INIT (init_clocks)
