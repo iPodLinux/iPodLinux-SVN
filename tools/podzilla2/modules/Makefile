@@ -1,7 +1,8 @@
-SUBDIRS = mymodule pong wumpus
+SUBDIRS = mymodule pong wumpus calc calendar clocks cube dialer invaders ipobble \
+          lights mandelpod matrix minesweeper othello poddraw tictactoe tunnel
 
 all:
-	@for dir in $(SUBDIRS); do \
+	@set -e; for dir in $(SUBDIRS); do \
 		cd $$dir; \
 		make -sf ../../module.mk; \
 		cd ..; \
@@ -13,7 +14,7 @@ all:
 	fi
 
 xpods:
-	@for dir in $(SUBDIRS); do \
+	@set -e; for dir in $(SUBDIRS); do \
 		cd $$dir; \
 		echo " XPOD    $$dir"; \
 		rm -rf ../../xpods/$$dir; \
@@ -23,7 +24,7 @@ xpods:
 	done
 
 clean:
-	@for dir in $(SUBDIRS); do \
+	@set -e; for dir in $(SUBDIRS); do \
 		cd $$dir; \
 		echo " CLEAN   $$dir"; \
 		make -sf ../../module.mk clean; \
