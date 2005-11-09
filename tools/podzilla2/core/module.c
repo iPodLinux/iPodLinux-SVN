@@ -421,6 +421,7 @@ void pz_modules_init()
     while ((d = readdir (dp)) != 0) {
 	char *podpath;
 	if (d->d_name[0] == '.') continue;
+	if (strlen (d->d_name) < 4 || strcmp (d->d_name + strlen (d->d_name) - 4, ".pod") != 0) continue;
 	podpath = malloc (strlen (MODULEDIR) + strlen (d->d_name) + 1);
 	strcpy (podpath, MODULEDIR); // has trailing /
 	strcat (podpath, d->d_name);
