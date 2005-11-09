@@ -347,6 +347,10 @@ void pz_perror (const char *firstpart);
 void pz_vector_string (ttk_surface srf, const char *string, int x, int y, int cw, int ch, int kern, ttk_color col);
 void pz_vector_string_center (ttk_surface srf, const char *string, int x, int y, int cw, int ch, int kern, ttk_color col);
 int pz_vector_width (const char *string, int cw, int ch, int kern);
+#define VECTORFONT_SPECIAL_UP		(250)
+#define VECTORFONT_SPECIAL_LEFT		(251)
+#define VECTORFONT_SPECIAL_DOWN		(252)
+#define VECTORFONT_SPECIAL_RIGHT	(253)
 
 
 /** iPod stuff - ipod.c **/
@@ -367,6 +371,35 @@ int pz_ipod_fw_is_connected(void);
 void pz_load_font (ttk_font *f, int setting);
 // menu handler, data = &font_to_set, cdata = setting_to_set:
 TWindow *pz_select_font (ttk_menu_item *item);
+
+
+/** DSP functions - oss.c **/
+#define PZ_DSP_LINEIN 0
+#define PZ_DSP_LINEOUT 1
+#define PZ_DSP_MIC 2
+
+#define PZ_DSP_MAX_VOL 100	/* apparently this isn't obvious */
+
+typedef struct _dsp_st {
+	int dsp;	/* /dev/dsp file descriptor */
+	int mixer;	/* /dev/mixer file descriptor */
+	int volume;	/* pcm volume 0 - 100 (or DSP_MAX_VOL) */
+} pz_dsp_st;
+
+/* pcm volume changer: */
+int pz_dsp_vol_change(pz_dsp_st *oss, int delta);
+/* and for the lazy: */
+int pz_dsp_vol_up(pz_dsp_st *oss);
+int pz_dsp_vol_down(pz_dsp_st *oss);
+int pz_dsp_get_volume(pz_dsp_st *oss);
+/* set the dsp.. umm... fmt (whatever that is), channels and rate: */
+int pz_dsp_setup(pz_dsp_st *oss, int channels, int rate);
+/* dsp read and (blocking) write: */
+size_t pz_dsp_read(pz_dsp_st *oss, void *ptr, size_t size);
+void pz_dsp_write(pz_dsp_st *oss, void *ptr, size_t size);
+/* dsp open and close:  mode takes DSP_LINEIN, DSP_LINEOUT and DSP_MIC */
+int pz_dsp_open(pz_dsp_st *oss, int mode);
+void pz_dsp_close(pz_dsp_st *oss);
 
 
 /** File browser helper functions - browser.c **/
