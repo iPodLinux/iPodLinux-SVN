@@ -76,6 +76,8 @@ void pz_old_close_window (t_GR_WINDOW_ID win);
 void pz_old_event_handler (t_GR_EVENT *ev);
 void pz_draw_header(char *header);
 t_GR_GC_ID pz_get_gc(int copy);
+void vector_render_char (t_GR_WINDOW_ID win, t_GR_GC_ID gc,
+			 char ch, int scale, int x, int y);
 void vector_render_string (t_GR_WINDOW_ID win, t_GR_GC_ID gc,
 			   const char *string, int kern, int scale, int x, int y);
 void vector_render_string_center (t_GR_WINDOW_ID win, t_GR_GC_ID gc,
@@ -83,6 +85,7 @@ void vector_render_string_center (t_GR_WINDOW_ID win, t_GR_GC_ID gc,
 void vector_render_string_right (t_GR_WINDOW_ID win, t_GR_GC_ID gc,
 				 const char *string, int kern, int scale, int x, int y);
 int vector_string_pixel_width (const char *string, int kern, int scale);
+#define new_message_window pz_message
 #endif
 TWindow *pz_mh_legacy (ttk_menu_item *); // calls the void(*)() in item->data
 TWidget *pz_new_legacy_widget (void (*do_draw)(), int (*do_keystroke)(t_GR_EVENT *));

@@ -45,10 +45,8 @@ void pz_load_font (ttk_font *f, int setting)
 
     *f = ttk_get_font (file, size);
 
-#if 0
     if (setting == TEXT_FONT)
 	ttk_gc_set_font (pz_get_gc (0), *f);
-#endif
 }
 
 static void save_font (ttk_fontinfo *fi, int setting)
@@ -57,10 +55,9 @@ static void save_font (ttk_fontinfo *fi, int setting)
 
     snprintf(fontline, 127, "%s,%d", fi->name, fi->size);
     pz_set_string_setting(pz_global_config, setting, fontline);
-#if 0
+
     if (setting == TEXT_FONT)
 	ttk_gc_set_font (pz_get_gc (0), fi->f);
-#endif
 }
 
 struct font_data
