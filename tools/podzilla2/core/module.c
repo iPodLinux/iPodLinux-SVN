@@ -157,8 +157,17 @@ static int mount_pod (PzModule *mod)
 static void load_modinf (PzModule *mod) 
 {
     char buf[80];
+    FILE *fp;
+
+    if (!mod->podpath) { // static mod, no POD
+	// mod->name already set
+	mod->longname = strdup (mod->name);
+	mod->author = strdup ("Podzilla Team");
+	return;
+    }
+
     sprintf (buf, "%s/" MODULE_INF_FILE, mod->mountpt);
-    FILE *fp = fopen (buf, "r");
+    fp = fopen (buf, "r");
     if (!fp) {
 	pz_perror (buf);
 	return;
@@ -320,7 +329,10 @@ static int fix_dependencies (PzModule *mod, int initing)
 		    return -1;
 		}
 	    } else {
-		cur->to_load++;
+		if (cur->to_load >= 0)
+		    cur->to_load++;
+		else
+		    cur->to_load--;
 	    }
 	}
 
@@ -452,6 +464,42 @@ void pz_modules_init()
     }
     closedir (dp);
 
+    for (i = 0; i < __pz_builtin_number_of_init_functions; i++) {
+	int found = 0;
+	char *name = malloc (strlen (__pz_builtin_names[i]) + 5);
+
+	sprintf (name, "%s.pod", __pz_builtin_names[i]);
+	cur = module_head;
+	while (cur) {
+	    char *p = strrchr (cur->podpath, '/');
+	    if (!p) p = cur->podpath;
+	    else p++;
+
+	    if (!strcmp (p, name)) {
+		found = 1;
+		break;
+	    }
+	    cur = cur->next;
+	}
+	if (!found) {
+	    if (module_head) {
+		cur = module_head; while (cur->next) cur = cur->next;
+		cur->next = calloc (1, sizeof(PzModule));
+		cur = cur->next;
+	    } else {
+		cur = module_head = calloc (1, sizeof(PzModule));
+	    }
+
+	    cur->podpath = 0;
+	    cur->name = strdup (__pz_builtin_names[i]);
+	    cur->init = __pz_builtin_init_functions[i];
+	    cur->to_load = -1;
+	    cur->next = 0;
+	}
+
+	free (name);
+    }
+
     if (!module_head) {
 	pz_message_title (_("Warning"), _("No modules. Podzilla will probably be very boring."));
 	return;
@@ -461,7 +509,7 @@ void pz_modules_init()
     cur = module_head;
     last = 0;
     while (cur) {
-	if (mount_pod (cur) == -1) {
+	if (cur->podpath && mount_pod (cur) == -1) {
 	    if (last) last->next = cur->next;
 	    else module_head = cur->next;
 	    free (cur->podpath);
