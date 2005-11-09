@@ -841,6 +841,7 @@ static ssize_t ipodaudio_write(struct file *filp, const char *buf, size_t count,
 
 			if (ipod_hw_ver > 0x3) {
 				outl(inl(0x70002800) | 0x2, 0x70002800);
+				outl(inl(0x70002800) | 0x20000000, 0x70002800);
 			} else {
 				outl(inl(0xc000251c) | (1<<9), 0xc000251c);
 			}
