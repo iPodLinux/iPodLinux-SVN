@@ -64,4 +64,10 @@ pods:
 	@for dir in xpods/*; do echo " POD [D] $$dir"; touch `echo $$dir | sed 's|^x||;s|$$|.pod|'`; done
 endif
 
+ifdef SUBDIRS
+buildmod:
+	@for dir in $(SUBDIRS); do \
+	make -sC $$dir -f `pwd`/module.mk PZPATH=`pwd`; done
+endif
+
 .PHONY: core modules clean pods xpods dev-env .curtgt

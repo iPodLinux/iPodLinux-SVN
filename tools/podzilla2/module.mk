@@ -1,4 +1,4 @@
-PZPATH := $(dir $(filter %/module.mk,$(MAKEFILE_LIST)))
+PZPATH ?= ../..
 
 default: all
 
@@ -21,7 +21,13 @@ else
 CC ?= cc
 LD ?= ld
 TARGET = x11
-PIC = -fPIC
+ifeq ($(shell uname),Darwin)
+PIC = -dynamic
+MAKESO = ld -bundle /usr/lib/bundle1.o -flat_namespace -undefined suppress
+else
+PIC = -fPIC -DPIC
+MAKESO = cc -shared
+endif
 endif
 
 ifdef obj-y
@@ -39,8 +45,8 @@ finalmod = $(MODULE).so
 onlyso = true
 $(MODULE).so: $(MODULE).c
 	@echo " CC [M]  $(MODULE).so"
-	@$(CC) $(PIC) -c -o $(MODULE).o $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD
-	@$(CC) -shared -o $@ $(MODULE).o
+	@$(CC) $(CFLAGS) $(PIC) -c -o $(MODULE).o $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD
+	@$(MAKESO) -o $@ $(MODULE).o
 	@rm -f $(MODULE).o
 else
 finalmod = $(MODULE).o
@@ -56,7 +62,7 @@ ifndef IPOD
 finalmod = $(MODULE).so
 $(MODULE).so: $(obj-m)
 	@echo " LD [SO] $(MODULE).so"
-	@$(CC) -shared -o $@ $(obj-m)
+	@$(MAKESO) -o $@ $(obj-m)
 else
 finalmod = $(MODULE).o
 $(MODULE).o: $(obj-m)
@@ -82,7 +88,7 @@ built-in.o: $(obj-y)
 
 $(obj-y): %.o: %.c
 	@echo " CC     " $@
-	@$(CC) -c -o $@ $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_BUILTIN_MODULE -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD
+	@$(CC) $(CFLAGS) -c -o $@ $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_BUILTIN_MODULE -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD
 endif
 
 #####
@@ -90,7 +96,7 @@ endif
 ifdef obj-m
 $(obj-m): %.o: %.c
 	@echo " CC [M] " $@
-	@$(CC) $(PIC) -c -o $@ $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD
+	@$(CC) $(CFLAGS) $(PIC) -c -o $@ $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD
 endif
 
 
