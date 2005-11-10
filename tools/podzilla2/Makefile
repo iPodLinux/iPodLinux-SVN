@@ -2,7 +2,14 @@ ifdef IPOD
 LIBS += -Wl,-elf2flt `ttk-config --ipod --sdl --libs` contrib/ucdl/libuCdl.a -lintl
 CC = arm-elf-gcc
 else
-LIBS += `ttk-config --x11 --sdl --libs` -ldl $(shell gcc -o .conftest -lintl 2>/dev/null && rm -f .conftest && echo -- -lintl) -Wl,-E
+ifeq ($(shell uname),Darwin)
+EXPSYM =
+INTL = -lintl
+else
+EXPSYM = -Wl,-E
+INTL =
+endif
+LIBS += `ttk-config --x11 --sdl --libs` -L/usr/local/lib -L/sw/lib -ldl $(INTL) $(EXPSYM)
 CC ?= cc
 endif
 POD ?= ../../../podfile/pod # relative to two dirs down

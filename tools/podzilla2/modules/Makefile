@@ -1,6 +1,12 @@
 SUBDIRS = mymodule pong wumpus calc calendar clocks cube dialer invaders ipobble \
           lights mandelpod matrix minesweeper othello poddraw tictactoe tunnel
 
+ifeq ($(shell uname),Darwin)
+XARGS_I = -IX
+else
+XARGS_I = -iX
+endif
+
 all:
 	@set -e; for dir in $(SUBDIRS); do \
 		cd $$dir; \
@@ -19,7 +25,7 @@ xpods:
 		echo " XPOD    $$dir"; \
 		rm -rf ../../xpods/$$dir; \
 		mkdir -p ../../xpods/$$dir; \
-		make -sf ../../module.mk distfiles | fgrep -v 'make[' | xargs -iX cp X ../../xpods/$$dir; \
+		make -sf ../../module.mk distfiles | fgrep -v 'make[' | xargs $(XARGS_I) cp X ../../xpods/$$dir; \
 		cd ..; \
 	done
 
