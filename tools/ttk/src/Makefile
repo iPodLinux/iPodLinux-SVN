@@ -20,6 +20,9 @@ CC ?= gcc
 AR ?= ar
 RANLIB ?= ranlib
 MYCFLAGS += $(NATIVE_CFLAGS)
+ifdef SDL_FRAMEWORK
+MYCFLAGS += -framework SDL -framework SDL_image -I/Library/Frameworks/SDL.framework/Headers/ -I/Library/Frameworks/SDL_image.framework/Headers/
+endif
 endif
 
 ifdef SDL
