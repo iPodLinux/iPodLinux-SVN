@@ -70,10 +70,11 @@ ifndef NOX11
 	make -C build/x11-mwin MWIN=1 install
 endif
 endif
+	rm -rf $(PREFIX)/include/ttk
 	install -d $(PREFIX)/include/ttk
 	install -d $(PREFIX)/include/ttk/ttk
-	install -m 644 src/*.h $(PREFIX)/include/ttk/ttk/
-	install -m 644 src/all-ttk.h $(PREFIX)/include/ttk/ttk.h
+	install -m 644 src/include/*.h $(PREFIX)/include/ttk/ttk/
+	install -m 644 src/ttk.h $(PREFIX)/include/ttk/
 	sed 's:@PREFIX@:$(PREFIX):g' < ttk-config.tmp > ttk-config
 	install -m 755 ttk-config $(PREFIX)/bin/
 	cp -pR mwincludes sdlincludes $(PREFIX)/include/ttk/

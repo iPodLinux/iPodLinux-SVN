@@ -1,5 +1,4 @@
 #include "ttk.h"
-#include "icons.h"
 
 // Speaker icon (playing song)
 // . . . X . . X .

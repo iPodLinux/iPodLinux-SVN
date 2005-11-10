@@ -550,6 +550,7 @@
 #define GR_UPDATE_DESTROY       7
 #define GR_UPDATE_REPARENT      8
 
+#ifdef MWINCLUDECOLORS
 #undef WHITE
 #undef LTGRAY
 #undef GRAY
@@ -597,6 +598,7 @@
 #define LTRED           GR_RGB( 255, 0  , 0   )
 #define LTMAGENTA       GR_RGB( 255, 0  , 255 )
 #define YELLOW          GR_RGB( 255, 255, 0   )
+#endif
 
 #undef MWARC
 #undef MWOUTLINE

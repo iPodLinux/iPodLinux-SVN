@@ -1,6 +1,4 @@
 #include "ttk.h"
-#include "menu.h"
-#include "slider.h"
 #include <stdlib.h>
 
 #define _MAKETHIS slider_data *data = (slider_data *)this->data
