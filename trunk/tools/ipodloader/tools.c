@@ -75,6 +75,7 @@ get_ipod_rev()
 		lcd_width = IPOD_PHOTO_LCD_WIDTH;
 		lcd_height = IPOD_PHOTO_LCD_HEIGHT;
 		lcd_busy_mask = 0x80000000;
+		break;
 	case HW_REV_NANO:
 		lcd_width = IPOD_NANO_LCD_WIDTH;
 		lcd_height = IPOD_NANO_LCD_HEIGHT;
