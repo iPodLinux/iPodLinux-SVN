@@ -1,4 +1,4 @@
-ifeq ($(shell which ttk-config 2>/dev/null >/dev/null && echo yes),yes)
+\ifeq ($(shell which ttk-config 2>/dev/null >/dev/null && echo yes),yes)
 TTKCONF = ttk-config
 else
 ifdef TTKDIR
@@ -70,12 +70,14 @@ dev-env:
 xpods:
 	@echo
 	@echo "Building modules, stage 2."
+	@mkdir -p xpods
 	@make xpods -sC modules
 
 ifdef IPOD
 pods:
 	@echo
 	@echo "Building modules, stage 3 (iPod)."
+	@mkdir -p pods
 	@for dir in xpods/*; do ( cd $$dir; echo " POD     $$dir"; $(POD) -c ../../pods/`echo $$dir | sed 's|xpods/||'`.pod * ); done
 else
 # Just make dummy files
