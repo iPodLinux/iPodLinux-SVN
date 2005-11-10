@@ -1,5 +1,19 @@
 PZPATH ?= ../..
 
+ifeq ($(shell which ttk-config 2>/dev/null >/dev/null && echo yes),yes)
+TTKCONF = ttk-config
+else
+ifdef TTKDIR
+TTKCONF = $(TTKDIR)/ttk-config-here
+else
+ifneq ($(wildcard $(PZPATH)/../ttk),)
+TTKCONF = $(PZPATH)/../ttk/ttk-config-here
+else
+$(error Can't find TTK. Specify TTKDIR, put it in ../ttk, or install it.)
+endif
+endif
+endif
+
 default: all
 
 include Makefile
@@ -45,7 +59,7 @@ finalmod = $(MODULE).so
 onlyso = true
 $(MODULE).so: $(MODULE).c
 	@echo " CC [M]  $(MODULE).so"
-	@$(CC) $(CFLAGS) $(PIC) -c -o $(MODULE).o $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD
+	@$(CC) $(CFLAGS) $(PIC) -c -o $(MODULE).o $< -I$(PZPATH)/core `$(TTKCONF) --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD
 	@$(MAKESO) -o $@ $(MODULE).o
 	@rm -f $(MODULE).o
 else
@@ -88,7 +102,7 @@ built-in.o: $(obj-y)
 
 $(obj-y): %.o: %.c
 	@echo " CC     " $@
-	@$(CC) $(CFLAGS) -c -o $@ $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_BUILTIN_MODULE -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD
+	@$(CC) $(CFLAGS) -c -o $@ $< -I$(PZPATH)/core `$(TTKCONF) --$(TARGET) --sdl --cflags` -D__PZ_BUILTIN_MODULE -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD
 endif
 
 #####
@@ -96,7 +110,7 @@ endif
 ifdef obj-m
 $(obj-m): %.o: %.c
 	@echo " CC [M] " $@
-	@$(CC) $(CFLAGS) $(PIC) -c -o $@ $< -I$(PZPATH)/core `ttk-config --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD
+	@$(CC) $(CFLAGS) $(PIC) -c -o $@ $< -I$(PZPATH)/core `$(TTKCONF) --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD
 endif
 
 

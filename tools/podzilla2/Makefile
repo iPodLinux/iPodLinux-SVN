@@ -1,5 +1,19 @@
+ifeq ($(shell which ttk-config 2>/dev/null >/dev/null && echo yes),yes)
+TTKCONF = ttk-config
+else
+ifdef TTKDIR
+TTKCONF = $(TTKDIR)/ttk-config-here
+else
+ifneq ($(wildcard ../ttk/ttk-config-here),)
+TTKCONF = ../ttk/ttk-config-here
+else
+$(error Can't find TTK. Specify TTKDIR,  put it in ../ttk, or install it.)
+endif
+endif
+endif
+
 ifdef IPOD
-LIBS += -Wl,-elf2flt `ttk-config --ipod --sdl --libs` contrib/ucdl/libuCdl.a -lintl
+LIBS += -Wl,-elf2flt `$(TTKCONF) --ipod --sdl --libs` contrib/ucdl/libuCdl.a -lintl
 CC = arm-elf-gcc
 else
 ifeq ($(shell uname),Darwin)
@@ -9,7 +23,7 @@ else
 EXPSYM = -Wl,-E
 INTL =
 endif
-LIBS += `ttk-config --x11 --sdl --libs` -L/usr/local/lib -L/sw/lib -ldl $(INTL) $(EXPSYM)
+LIBS += `$(TTKCONF) --x11 --sdl --libs` -L/usr/local/lib -L/sw/lib -ldl $(INTL) $(EXPSYM)
 CC ?= cc
 endif
 POD ?= ../../../podfile/pod # relative to two dirs down
