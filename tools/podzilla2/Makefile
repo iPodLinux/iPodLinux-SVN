@@ -83,6 +83,7 @@ else
 # Just make dummy files
 pods:
 	@echo
+	@mkdir -p pods
 	@echo "Building modules, stage 3 (desktop)."
 	@for dir in xpods/*; do echo " POD [D] $$dir"; touch `echo $$dir | sed 's|^x||;s|$$|.pod|'`; done
 endif
