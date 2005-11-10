@@ -1,4 +1,4 @@
-\ifeq ($(shell which ttk-config 2>/dev/null >/dev/null && echo yes),yes)
+ifeq ($(shell which ttk-config 2>/dev/null >/dev/null && echo yes),yes)
 TTKCONF = ttk-config
 else
 ifdef TTKDIR
