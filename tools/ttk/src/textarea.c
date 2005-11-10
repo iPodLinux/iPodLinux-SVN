@@ -1,7 +1,4 @@
 #include "ttk.h"
-#include "menu.h"
-#include "textarea.h"
-#include "appearance.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

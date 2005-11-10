@@ -1,7 +1,4 @@
 #include "ttk.h"
-#include "menu.h"
-#include "slider.h"
-#include "textarea.h"
 #include <stdlib.h>
 
 char TEST_Instructions[] = "Lorem-ipsum-dolor-sit-amet,\nconsectetur-adipisicing-elit,\nsed-do-eiusmod-tempor-incididunt-ut-labore-et-dolore-magna-aliqua.\n\nReallyreallyreallyreallyreallylonglonglonglonglongwordwordwordwordwordwwwwwwwwwwwwwwwwwwwwwwthisthisthisthisthis mujunmdsvjsoidfhnvosfdnv.\n\nUt enim ad minim veniam,\nquis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\nDuis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\n\nExcepteur sint occaecat cupidatat non proident,\nsunt in culpa qui officia deserunt mollit anim id est laborum.";

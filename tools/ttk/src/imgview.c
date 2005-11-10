@@ -1,6 +1,4 @@
 #include "ttk.h"
-#include "menu.h"
-#include "imgview.h"
 #include <stdlib.h>
 
 #ifndef MIN

@@ -1,5 +1,4 @@
 #include "ttk.h"
-#include "mwin-emu.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
