@@ -4,14 +4,14 @@ HDR = ttk.h menu.h icons.h slider.h imgview.h textarea.h appearance.h mwin-emu.h
 EXAMPLES = exscroll exmenu eximage exti
 EXOBJS = exscroll.o exmenu.o eximage.o exti.o
 
-CFLAGS = -g -I. -Wall -Wno-unused -Wno-implicit -Wno-char-subscripts
+MYCFLAGS = -g -I. -Wall -Wno-unused -Wno-implicit -Wno-char-subscripts
 PREFIX ?= /usr
 ifdef IPOD
 CROSS ?= arm-uclinux-elf
 CC = $(CROSS)-gcc
 AR = $(CROSS)-ar
 RANLIB = $(CROSS)-ranlib
-CFLAGS += -DIPOD
+MYCFLAGS += -DIPOD
 E2F = -Wl,-elf2flt
 GS = -Wl,--start-group
 GE = -Wl,--end-group
@@ -19,7 +19,7 @@ else
 CC ?= gcc
 AR ?= ar
 RANLIB ?= ranlib
-CFLAGS += $(NATIVE_CFLAGS)
+MYCFLAGS += $(NATIVE_CFLAGS)
 endif
 
 ifdef SDL
@@ -48,13 +48,13 @@ endif
 ifdef PHOTO
 OBJS += SFont.o
 else
-CFLAGS += -DNO_SF
+MYCFLAGS += -DNO_SF
 endif
 
 ifdef TTF
 OBJS += SDL_ttf.o
 else
-CFLAGS += -DNO_TF
+MYCFLAGS += -DNO_TF
 endif
 
 ifdef IPOD
@@ -64,21 +64,21 @@ LIBSA =
 endif
 
 ifeq ($(GFXLIB),SDL)
-CFLAGS += -DSDL
+MYCFLAGS += -DSDL
 OBJS += sdl.o SDL_gfxPrimitives.o SDL_gfxPrimitives_Byte.o SDL_rotozoom.o
 HDR += SDL_gfxPrimitives.h SDL_rotozoom.h
 ifdef IPOD
-CFLAGS += -I../sdlincludes
+MYCFLAGS += -I../sdlincludes
 LIBSA += ../libs/SDL/*.a
 LIBS += -lpthread -lm
 else
-CFLAGS += -I/usr/include/SDL -I/usr/local/include/SDL `sdl-config --cflags`
+MYCFLAGS += -I/usr/include/SDL -I/usr/local/include/SDL `sdl-config --cflags`
 LIBS += `sdl-config --libs` -lSDL_image -lpng -ljpeg
 endif
 
 else
 ifeq ($(GFXLIB),mwin)
-CFLAGS += -DMWIN -I../mwincludes
+MYCFLAGS += -DMWIN -I../mwincludes
 OBJS += mwin.o
 ifdef IPOD
 LIBSA += ../libs/mwin/ipod/*.a
@@ -123,11 +123,11 @@ endif
 
 # Source:
 %.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) $(MYCFLAGS) -c -o $@ $<
 
 # Examples:
 %: %.o libttk.a
-	$(CC) $(CFLAGS) $(E2F) -o $@ $< $(GS) libttk.a -L/sw/lib -L/usr/local/lib $(LIBS) $(GE)
+	$(CC) $(CFLAGS) $(MYCFLAGS) $(E2F) -o $@ $< $(GS) libttk.a -L/sw/lib -L/usr/local/lib $(LIBS) $(GE)
 
 ifneq ($(LIBSA),)
 libttk.a: $(OBJS) $(LIBSA)
