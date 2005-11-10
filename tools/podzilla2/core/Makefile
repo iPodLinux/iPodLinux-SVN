@@ -1,12 +1,26 @@
+ifeq ($(shell which ttk-config 2>/dev/null >/dev/null && echo yes),yes)
+TTKCONF = ttk-config
+else
+ifdef TTKDIR
+TTKCONF = $(TTKDIR)/ttk-config-here
+else
+ifneq ($(wildcard ../../ttk/ttk-config-here),)
+TTKCONF = ../../ttk/ttk-config-here
+else
+$(error Can't find TTK. Specify TTKDIR,  put it in ../ttk, or install it)
+endif
+endif
+endif
+
 ifdef IPOD
 CROSS ?= arm-elf
 CC = $(CROSS)-gcc
 LD = $(CROSS)-ld
-MYCFLAGS = `ttk-config --ipod --sdl --cflags` -I../contrib/ucdl
+MYCFLAGS = `$(TTKCONF) --ipod --sdl --cflags` -I../contrib/ucdl
 else
 CC ?= cc
 LD ?= ld
-MYCFLAGS = `ttk-config --x11 --sdl --cflags`
+MYCFLAGS = `$(TTKCONF) --x11 --sdl --cflags`
 endif
 
 OBJS= pz.o module.o ipod.o dialog.o secrets.o header.o settings.o fonts.o \
