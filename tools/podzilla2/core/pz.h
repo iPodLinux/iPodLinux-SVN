@@ -415,6 +415,10 @@ void pz_browser_add_action (int (*pred)(const char *), ttk_menu_item *action); /
 void pz_browser_remove_action (int (*pred)(const char *));
 
 
+/** Appearance - appearance.c **/
+TWindow *pz_select_color_scheme();
+
+
 /** Other things - pz.c **/
 void pz_register_global_hold_button (char ch, int ms, void (*handler)());
 void pz_register_global_unused_button (char ch, void (*handler)(int, int)); // args = (button, time)

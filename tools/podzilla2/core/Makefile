@@ -7,7 +7,7 @@ else
 ifneq ($(wildcard ../../ttk/ttk-config-here),)
 TTKCONF = ../../ttk/ttk-config-here
 else
-$(error Can't find TTK. Specify TTKDIR,  put it in ../ttk, or install it)
+$(error Cannot find TTK. Specify TTKDIR,  put it in ../ttk, or install it)
 endif
 endif
 endif
@@ -24,7 +24,7 @@ MYCFLAGS = `$(TTKCONF) --x11 --sdl --cflags`
 endif
 
 OBJS= pz.o module.o ipod.o dialog.o secrets.o header.o settings.o fonts.o \
-      menu.o legacy.o gui.o browser.o vector.o oss.o
+      menu.o legacy.o gui.o browser.o vector.o oss.o appearance.o
 HDRS= pz.h
 
 all: built-in.o
