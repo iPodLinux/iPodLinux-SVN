@@ -80,7 +80,7 @@ sub parse_data($) {
 	}
     }
 
-    my($log) = join "; " => @log;
+    my($log) = join " " => @log;
     if (length $log >= 256) {
 	$log = substr $log, 0, 255;
     }
