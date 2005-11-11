@@ -786,7 +786,7 @@ ttk_fontinfo *ttk_get_fontlist()
 
 TWindow *ttk_new_window() 
 {
-    TWindow *ret = malloc (sizeof(TWindow));
+    TWindow *ret = calloc (1, sizeof(TWindow));
     ret->show_header = 1;
     ret->titlefree = 0;
     ret->widgets = 0;
@@ -884,14 +884,16 @@ void ttk_show_window (TWindow *win)
 	    int jump = win->w / ttk_transit_frames;
 	    
 	    for (i = 0; i < ttk_transit_frames; i++) {
-		ttk_blit_image_ex (oldwindow->srf, i * jump, 0, oldwindow->w - i*jump, oldwindow->h,
-				   ttk_screen->srf, ttk_screen->wx, ttk_screen->wy);
-		ttk_blit_image_ex (win->srf, 0, 0, i * jump, oldwindow->h,
-				   ttk_screen->srf, oldwindow->w - i*jump + ttk_screen->wx,
-				   ttk_screen->wy);
-		ttk_gfx_update (ttk_screen->srf);
+	    	ttk_ap_fillrect (ttk_screen->srf, ttk_ap_get ("window.bg"), ttk_screen->wx,
+	    	                 ttk_screen->wy, ttk_screen->w, ttk_screen->h);
+	    	ttk_blit_image_ex (oldwindow->srf, i * jump, 0, oldwindow->w - i*jump, oldwindow->h,
+	    	                   ttk_screen->srf, ttk_screen->wx, ttk_screen->wy);
+	    	ttk_blit_image_ex (win->srf, 0, 0, i * jump, oldwindow->h,
+	    	                   ttk_screen->srf, oldwindow->w - i*jump + ttk_screen->wx,
+	    	                   ttk_screen->wy);
+	    	ttk_gfx_update (ttk_screen->srf);
 #ifndef IPOD
-		ttk_delay (10);
+	    	ttk_delay (10);
 #endif
 	    }
 	    
@@ -983,14 +985,16 @@ int ttk_hide_window (TWindow *win)
 	    int jump = win->w / ttk_transit_frames;
 	    
 	    for (i = ttk_transit_frames - 1; i >= 0; i--) {
-		ttk_blit_image_ex (newwindow->srf, i * jump, 0, win->w - i*jump, win->h,
-				   ttk_screen->srf, ttk_screen->wx, ttk_screen->wy);
-		ttk_blit_image_ex (win->srf, 0, 0, i * jump, win->h,
-				   ttk_screen->srf, win->w - i*jump + ttk_screen->wx,
-				   ttk_screen->wy);
-		ttk_gfx_update (ttk_screen->srf);
+	    	ttk_ap_fillrect (ttk_screen->srf, ttk_ap_get ("window.bg"), ttk_screen->wx,
+	    	                 ttk_screen->wy, ttk_screen->w, ttk_screen->h);
+	    	ttk_blit_image_ex (newwindow->srf, i * jump, 0, win->w - i*jump, win->h,
+	    	                   ttk_screen->srf, ttk_screen->wx, ttk_screen->wy);
+	    	ttk_blit_image_ex (win->srf, 0, 0, i * jump, win->h,
+	    	                   ttk_screen->srf, win->w - i*jump + ttk_screen->wx,
+	    	                   ttk_screen->wy);
+	    	ttk_gfx_update (ttk_screen->srf);
 #ifndef IPOD
-		ttk_delay (10);
+	    	ttk_delay (10);
 #endif
 	    }
 	    
