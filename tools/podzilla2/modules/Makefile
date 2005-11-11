@@ -1,5 +1,7 @@
-SUBDIRS = mymodule pong wumpus calc calendar clocks cube dialer invaders ipobble \
-          lights mandelpod matrix minesweeper othello poddraw tictactoe tunnel
+SUBDIRS := $(shell for dir in */; do if test -f $$dir/Module; then echo $$dir; fi; done)
+
+#SUBDIRS = mymodule pong wumpus calc calendar clocks cube dialer invaders ipobble \
+#          lights mandelpod matrix minesweeper othello poddraw tictactoe tunnel
 
 ifeq ($(shell uname),Darwin)
 XARGS_I = -IX

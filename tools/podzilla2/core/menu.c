@@ -21,6 +21,7 @@
 
 static TWidget *root_menu;
 static int inited = 0;
+extern int pz_setting_debounce;
 
 // Structure:
 // [menu]
@@ -44,16 +45,6 @@ static void check_init()
     }
 }
 
-static TWindow *music_error() 
-{
-    pz_error (_("No music module installed. Please do so, or you won't be able to play music."));
-    return TTK_MENU_DONOTHING;
-}
-static TWindow *nothing_error() 
-{
-    pz_message (_("Nothing to see here, please move along..."));
-    return TTK_MENU_DONOTHING;
-}
 static TWindow *quit_podzilla() 
 {
     pz_uninit();
@@ -69,27 +60,180 @@ static TWindow *poweroff_ipod()
     pz_ipod_powerdown();
     return TTK_MENU_DONOTHING;
 }
+static TWindow *reset_settings() 
+{
+	pz_blast_config (pz_global_config);
+	return TTK_MENU_UPONE;
+}
 
 static const char *time1224_options[] = { N_("12-hour"), N_("24-hour"), 0 };
+
+static const char * clocks_timezones[] = {
+        "United Kingdom 0:00",
+        "France +1:00",
+        "Greece +2:00",
+        "Kenya +3:00",
+        "Iran +3:30",
+
+        "UAE +4:00",
+        "Afghanistan +4:30",
+        "Uzbekistan +5:00",
+        "IST India +5:30",
+        "Nepal +5:45",
+
+        "Sri Lanka +6:00",
+        "Myanmar +6:30",
+        "Thailand +7:00",
+        "AWST W. Australia +8:00",
+        "W. Australia +8:45",
+
+        "JST/KST Japan +9:00",
+        "ACST C. Australia +9:30",
+        "AEST E. Australia +10:00",
+        "New South Wales +10:30",
+        "Micronesia +11:00",
+
+        "Norfolk +11:30",
+        "Fiji +12:00",
+        "Chatham Islands +12:45",
+        "Tonga +13:00",
+        "Kiribati +14:00",
+
+        "UTC -12:00",
+        "Midway Atoll -11:00",
+        "HST Hawaii -10:00",
+        "Polynesia -9:30",
+        "AKST Alaska -9:00",
+
+        "PST US Pacific -8:00",
+        "MST US Moutain -7:00",
+        "CST US Central -6:00",
+        "EST US Eastern -5:00",
+        "AST Atlantic -4:00",
+
+        "NST Newfoundland -3:30",
+        "Brazil -3:00",
+        "Mid-Atlantic -2:00",
+        "Portugal -1:00",
+
+	0
+};
+
+static const char * clocks_dsts[] = {
+	"0:00",
+	"0:30",
+	"1:00",
+	0
+};
+
+static const char *backlight_options[] = {
+	N_("Off"), N_("1 sec"), N_("2 secs"), N_("5 secs"), N_("10 secs"),
+	N_("30 secs"), N_("1 min"), N_("On"), 0
+};
+
+static const char *sample_rates[] = {
+    "8 kHz", "32 kHz", "44.1 kHz", "88.2 kHz", "96 kHz", 0
+};
+
+static const char *shuffle_options[] = {
+    N_("Off"), N_("Songs"), 0
+};
+
+static const char *repeat_options[] = {
+    N_("Off"), N_("One"), N_("All"), 0
+};
+
+static const char *boolean_options[] = {
+    N_("Off"), N_("On"), 0
+};
+
+static const char * transit_options[] = { N_("Off"), N_("Slow"), N_("Fast"), 0 };
+
+static const char * appearance_decorations[] = { "Plain",
+		"Amiga 1.1", "Amiga 1.3",
+		"m:robe", 0 };
+
+
+static void slider_set_setting (int set, int val) 
+{
+	pz_ipod_set (set, val);
+}
+
+static TWindow *new_settings_slider_window (char *title, int setting,
+                                            int slider_min, int slider_max)
+{
+    int tval = pz_get_int_setting (pz_global_config, setting);
+    
+    TWindow *win = ttk_new_window();
+    TWidget *slider = ttk_new_slider_widget (0, 0, ttk_screen->w * 3 / 5, slider_min, slider_max, &tval, 0);
+    ttk_slider_set_callback (slider, slider_set_setting, setting);
+    ttk_window_set_title (win, title);
+    ttk_add_widget (win, slider);
+    ttk_set_popup (win);
+    return win;
+}
+
+static TWindow *set_contrast() 
+{
+	return new_settings_slider_window (_("Set Contrast"), CONTRAST, 64, 128);
+}
+static TWindow *set_wheeldebounce() 
+{
+	TWindow *ret;
+	pz_setting_debounce = 1;
+	ttk_set_scroll_multiplier (1, 1);
+	ret = new_settings_slider_window (_("Wheel Sensitivity"), WHEEL_DEBOUNCE, 0, 19);
+	ret->data = 0x12345678;
+	return ret;
+}
+
+static int settings_button (TWidget *this, int key, int time) 
+{
+	if (key == TTK_BUTTON_MENU)
+		pz_save_config (pz_global_config);
+	return ttk_menu_button (this, key, time);
+}
+
 void pz_menu_init()
 {
     check_init();
-    pz_menu_add_action ("/Music", music_error);
-    pz_menu_add_action ("/Extras", nothing_error);
-    pz_menu_add_action ("/Settings/About", nothing_error);
-    pz_menu_add_action ("/Settings/Credits", nothing_error);
-    pz_menu_add_action ("/Settings/Date & Time/Clock", nothing_error);
-    pz_menu_add_action ("/Settings/Date & Time/Set Time", nothing_error);
-    pz_menu_add_action ("/Settings/Date & Time/Set Time & Date", nothing_error);
-    // TZ, DST settings
+    pz_menu_add_stub ("/Music");
+    pz_menu_add_stub ("/Extras");
+    pz_menu_add_stub ("/Settings/About");
+    pz_menu_add_stub ("/Settings/Credits");
+    pz_menu_add_stub ("/Settings/Date & Time/Clock");
+    pz_menu_add_stub ("/Settings/Date & Time/Set Time");
+    pz_menu_add_stub ("/Settings/Date & Time/Set Time & Date");
+    pz_menu_add_setting ("/Settings/Date & Time/Time Zone", TIME_ZONE, pz_global_config, clocks_timezones);
+    pz_menu_add_setting ("/Settings/Date & Time/DST Offset", TIME_DST, pz_global_config, clocks_dsts);
     pz_menu_add_setting ("/Settings/Date & Time/Time Style", TIME_1224, pz_global_config, time1224_options);
     pz_menu_add_setting ("/Settings/Date & Time/Time Tick Noise", TIME_TICKER, pz_global_config, 0);
-    pz_menu_add_action ("/File Browser", nothing_error);
+    pz_menu_add_setting ("/Settings/Repeat", REPEAT, pz_global_config, repeat_options);
+    pz_menu_add_setting ("/Settings/Shuffle", SHUFFLE, pz_global_config, shuffle_options);
+    pz_menu_add_action ("/Settings/Contrast", set_contrast);
+    pz_menu_add_action ("/Settings/Wheel Sensitivity", set_wheeldebounce);
+    pz_menu_add_setting ("/Settings/Backlight Timer", BACKLIGHT_TIMER, pz_global_config, backlight_options);
+    pz_menu_add_setting ("/Settings/Clicker", CLICKER, pz_global_config, 0);
+    pz_menu_add_stub ("/Settings/Appearance/Color Scheme");
+    pz_menu_add_setting ("/Settings/Appearance/Decorations", DECORATIONS, pz_global_config, appearance_decorations);
+    pz_menu_add_setting ("/Settings/Appearance/Battery Digits", BATTERY_DIGITS, pz_global_config, 0);
+    pz_menu_add_setting ("/Settings/Appearance/Display Load Average", DISPLAY_LOAD, pz_global_config, 0);
+    pz_menu_add_setting ("/Settings/Appearance/Menu Transition", SLIDE_TRANSIT, pz_global_config, transit_options);
+    pz_menu_add_ttkh ("/Settings/Appearance/Menu Font", pz_select_font, &ttk_menufont)->cdata = MENU_FONT;
+    pz_menu_add_ttkh ("/Settings/Appearance/Text Font", pz_select_font, &ttk_textfont)->cdata = TEXT_FONT;
+    pz_menu_add_setting ("/Settings/Browser Path Display", BROWSER_PATH, pz_global_config, 0);
+    pz_menu_add_setting ("/Settings/Browser Show Hidden", BROWSER_HIDDEN, pz_global_config, 0);
+    pz_menu_add_action ("/Settings/Exit Without Saving", PZ_MENU_UPONE);
+    pz_menu_add_action ("/Settings/Reset All Settings/Cancel", PZ_MENU_UPONE);
+    pz_menu_add_action ("/Settings/Reset All Settings/Absolutely", reset_settings);
+    pz_menu_add_stub ("/File Browser");
     pz_menu_add_action ("/Power/Quit Podzilla", quit_podzilla);
     pz_menu_add_action ("/Power/Reboot iPod/Cancel", PZ_MENU_UPONE);
     pz_menu_add_action ("/Power/Reboot iPod/Absolutely", reboot_ipod);
     pz_menu_add_action ("/Power/Turn Off iPod/Cancel", PZ_MENU_UPONE);
     pz_menu_add_action ("/Power/Turn Off iPod/Absolutely", poweroff_ipod);
+
+    ((TWidget *)pz_get_menu_item ("/Settings")->data)->button = settings_button;
 }
 
 TWindow *pz_default_new_menu_window (TWidget *menu_wid) 
@@ -272,13 +416,14 @@ void pz_menu_add_legacy (const char *menupath, void (*handler)())
     ttk_menu_item_updated (item->menu, item);
 }
 
-void pz_menu_add_ttkh (const char *menupath, TWindow *(*handler)(ttk_menu_item *), void *data) 
+ttk_menu_item *pz_menu_add_ttkh (const char *menupath, TWindow *(*handler)(ttk_menu_item *), void *data) 
 {
     ttk_menu_item *item = resolve_menupath (menupath, LOC_END);
     item->makesub = handler;
     item->data = data;
     item->flags = 0;
     ttk_menu_item_updated (item->menu, item);
+return item;
 }
 
 void pz_menu_add_action (const char *menupath, PzWindow *(*handler)()) 
@@ -290,8 +435,21 @@ void pz_menu_add_action (const char *menupath, PzWindow *(*handler)())
     ttk_menu_item_updated (item->menu, item);
 }
 
+static int invisible() { return 0; }
+static TWindow *stub (ttk_menu_item *item) 
+{
+	pz_message ("Nothing to see here, please move along...");
+	return TTK_MENU_DONOTHING;
+}
+void pz_menu_add_stub (const char *menupath) 
+{
+	ttk_menu_item *item = resolve_menupath (menupath, LOC_END);
+	item->makesub = stub;
+	item->visible = invisible;
+	item->flags = 0;
+	ttk_menu_item_updated (item->menu, item);
+}
 
-static const char *boolean_options[] = { N_("Off"), N_("On"), 0 };
 
 void pz_menu_add_option (const char *menupath, const char **choices) 
 {
