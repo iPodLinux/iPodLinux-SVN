@@ -31,6 +31,10 @@
 #define IPOD_MINI_LCD_WIDTH	138
 #define IPOD_MINI_LCD_HEIGHT	110
 
+#define IPOD_NANO_LCD_WIDTH	176	
+#define IPOD_NANO_LCD_HEIGHT	132	
+
+
 #define IPOD_PP5002_RTC		0xcf001110
 #define IPOD_PP5002_LCD_BASE	0xc0001000
 #define IPOD_PP5020_RTC		0x60005010
@@ -45,19 +49,41 @@ static unsigned long lcd_busy_mask = 0x80000000;
 
 static unsigned long lcd_width = 220;
 static unsigned long lcd_height = 176;
-
+static unsigned int lcd_type = 0x0;
 extern int hw_version;
+extern unsigned int full_hw_version;
+
 
 static void video_setup_display(long hw_ver)
 {
+	int gpio_a01, gpio_a04;
 	switch (hw_ver)
 	{
+	case 0xc:
+		lcd_base = 0x70008a0c;
+		lcd_busy_mask = 0x80000000;
+		lcd_width = IPOD_NANO_LCD_WIDTH;
+		lcd_height = IPOD_NANO_LCD_HEIGHT;
+		ipod_rtc = IPOD_PP5020_RTC;
+		lcd_type = 2;
+		break;
 	case 6:	
 		lcd_base = 0x70008a0c;
 		lcd_busy_mask = 0x80000000;
 		lcd_width = 220;
 		lcd_height = 176;
 		ipod_rtc = IPOD_PP5020_RTC;
+		if (full_hw_version == 0x60000) {
+			lcd_type = 0;
+		} else {
+			gpio_a01 = (inl(0x6000D030) & 0x2) >> 1;
+			gpio_a04 = (inl(0x6000D030) & 0x10) >> 4;
+			if (((gpio_a01 << 1) | gpio_a04) == 0 || ((gpio_a01 < 1) | gpio_a04) == 2) {
+				lcd_type = 0;
+			} else {
+				lcd_type = 1;
+			}
+		}
 		break;
 	case 5:
 		lcd_base = IPOD_PP5020_LCD_BASE;
@@ -146,13 +172,28 @@ static void video_lcd_prepare_cmd(int cmd)
 	}
 }
 
-static void video_lcd_cmd_data(int cmd, int data)
+static void video_lcd_send_lo(int v)
 {
 	video_lcd_wait_write();
-	outl(cmd | 0x80000000, 0x70008a0c);
-
+	outl(v | 0x80000000, 0x70008A0C);
+}
+static void video_lcd_send_hi(int v)
+{
 	video_lcd_wait_write();
-	outl(data | 0x80000000, 0x70008a0c);
+	outl(v | 0x81000000, 0x70008A0C);
+}
+
+static void video_lcd_cmd_data(int cmd, int data)
+{
+	if (lcd_type == 0) {
+		video_lcd_send_lo(cmd);
+		video_lcd_send_lo(data);
+	} else {
+		video_lcd_send_lo(0x0);
+		video_lcd_send_lo(cmd);
+		video_lcd_send_hi((data >> 8) & 0xff);
+		video_lcd_send_hi(data & 0xff);
+	}
 }
 
 static inline void video_lcd_cmd_and_data(int cmd, int data_lo, int data_hi)
@@ -200,6 +241,8 @@ static void video_ipod_update_display(char * addr, int sx, int sy, int mx, int m
 
 static void video_ipod_update_photo(unsigned short * x, int sx, int sy, int mx, int my)
 {
+
+#if 0
 	int startY = sy;
 	int startX = sx;
 
@@ -275,6 +318,122 @@ static void video_ipod_update_photo(unsigned short * x, int sx, int sy, int mx, 
 
 		height = height - h;
 	}
+#else
+
+
+	int startx = sx; //sy * fontheight(p);
+	int starty = sy; //sx * fontwidth(p);
+	int height = (my - sy); // * fontheight(p);
+	int width = (mx - sx); // * fontwidth(p);
+	int rect1, rect2, rect3, rect4;
+
+	unsigned short *addr = x; //(unsigned short *)ipod_scr;
+	
+	/* calculate the drawing region */
+	if (hw_version != 0x6) {
+		rect1 = startx;			/* start horiz */
+		rect2 = starty;			/* start vert */
+		rect3 = (startx + width) - 1;	/* max horiz */
+		rect4 = (starty + height) - 1;	/* max vert */
+	} else {
+		rect1 = starty;			/* start vert */
+		rect2 = (lcd_width - 1) - startx;	/* start horiz */
+		rect3 = (starty + height) - 1;	/* end vert */
+		rect4 = (rect2 - width) + 1;		/* end horiz */
+	}
+
+	/* setup the drawing region */
+	if (lcd_type == 0) {
+		video_lcd_cmd_data(0x12, rect1 & 0xff);	/* start vert */
+		video_lcd_cmd_data(0x13, rect2 & 0xff);	/* start horiz */
+		video_lcd_cmd_data(0x15, rect3 & 0xff);	/* end vert */
+		video_lcd_cmd_data(0x16, rect4 & 0xff);	/* end horiz */
+	} else {
+		/* swap max horiz < start horiz */
+		if (rect3 < rect1) {
+			int t;
+			t = rect1;
+			rect1 = rect3;
+			rect3 = t;
+		}
+
+		/* swap max vert < start vert */
+		if (rect4 < rect2) {
+			int t;
+			t = rect2;
+			rect2 = rect4;
+			rect4 = t;
+		}
+
+		/* max horiz << 8 | start horiz */
+		video_lcd_cmd_data(0x44, (rect3 << 8) | rect1);
+		/* max vert << 8 | start vert */
+		video_lcd_cmd_data(0x45, (rect4 << 8) | rect2);
+
+		if (hw_version == 0x6) {
+			/* start vert = max vert */
+			rect2 = rect4;
+		}
+
+		/* position cursor (set AD0-AD15) */
+		/* start vert << 8 | start horiz */
+		video_lcd_cmd_data(0x21, (rect2 << 8) | rect1);
+
+		/* start drawing */
+		video_lcd_send_lo(0x0);
+		video_lcd_send_lo(0x22);
+	}
+
+	addr += startx * lcd_width + starty;
+
+	while (height > 0) {
+		int x, y;
+		int h, pixels_to_write;
+
+		pixels_to_write = (width * height) * 2;
+
+		/* calculate how much we can do in one go */
+		h = height;
+		if (pixels_to_write > 64000) {
+			h = (64000/2) / width;
+			pixels_to_write = (width * h) * 2;
+		}
+
+		outl(0x10000080, 0x70008a20);
+		outl((pixels_to_write - 1) | 0xc0010000, 0x70008a24);
+		outl(0x34000000, 0x70008a20);
+
+		/* for each row */
+		for (x = 0; x < h; x++) {
+			/* for each column */
+			for (y = 0; y < width; y += 2) {
+				unsigned two_pixels;
+
+				two_pixels = addr[0] | (addr[1] << 16);
+				addr += 2;
+
+				while ((inl(0x70008a20) & 0x1000000) == 0);
+				if (lcd_type != 0)
+				{
+					unsigned t = (two_pixels & ~0xFF0000) >> 8;
+					two_pixels = two_pixels & ~0xFF00;
+					two_pixels = t | (two_pixels << 8);
+				}
+				/* output 2 pixels */
+				outl(two_pixels, 0x70008b00);
+			}
+
+			//addr += lcd_width - width;
+		}
+
+		while ((inl(0x70008a20) & 0x4000000) == 0);
+
+		outl(0x0, 0x70008a24);
+
+		height = height - h;
+	}
+
+#endif
 }
 
 void
@@ -319,7 +478,7 @@ ipod_handle_video()
 			}
 
 			curframe = inl(VAR_VIDEO_FRAMES + curBuffer * sizeof(unsigned int) * FRAMES_PER_BUFFER + x * sizeof(unsigned int));	
-			if (hw_version==0x6) {	
+			if (hw_version==0x6 || hw_version==0xc) {	
 				video_ipod_update_photo((unsigned short *)curframe, 0, 0, frameWidth, frameHeight);
 			} else {
 				video_ipod_update_display((unsigned char *)curframe, 0,0, frameWidth, frameHeight);

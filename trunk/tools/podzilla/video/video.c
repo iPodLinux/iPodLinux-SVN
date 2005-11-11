@@ -82,6 +82,7 @@ static char * playlistFiles[250];  /* YES - this needs to be changed - aegray = 
 #endif
 
 
+unsigned int full_hw_version = 0;	
 static int audio_header_found = 0;
 static int video_status = VIDEO_CONTROL_MODE_RUNNING;
 static int video_useAudio = 0;
@@ -755,6 +756,13 @@ static int playVideo(char * filename)
 		video_useAudio = 1;
 		video_useKeys = 1;	
 		video_waitUsecPause = 15000;
+	} else if (hw_version==0xc) {
+		video_screenWidth=176;
+		video_screenHeight=132;
+		video_screenBPP=2;
+		video_useAudio=1;
+		video_useKeys=1;
+		video_waitUsecPause = 15000;
 	}
 
 	i = 0;
@@ -1057,6 +1065,11 @@ void new_video_window(char *filename)
 #ifndef IPOD
 	pz_error("No video support on the desktop.");
 #else /* IPOD */
+
+	if (full_hw_version==0)
+	{
+		full_hw_version = ipod_get_hw_version();
+	}
 	outl(1, VAR_VIDEO_ON);
 	init_variables();
 	video_status = VIDEO_CONTROL_MODE_STARTING; 
