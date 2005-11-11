@@ -214,7 +214,7 @@ void pz_menu_init()
     pz_menu_add_action ("/Settings/Wheel Sensitivity", set_wheeldebounce);
     pz_menu_add_setting ("/Settings/Backlight Timer", BACKLIGHT_TIMER, pz_global_config, backlight_options);
     pz_menu_add_setting ("/Settings/Clicker", CLICKER, pz_global_config, 0);
-    pz_menu_add_stub ("/Settings/Appearance/Color Scheme");
+    pz_menu_add_action ("/Settings/Appearance/Color Scheme", pz_select_color_scheme);
     pz_menu_add_setting ("/Settings/Appearance/Decorations", DECORATIONS, pz_global_config, appearance_decorations);
     pz_menu_add_setting ("/Settings/Appearance/Battery Digits", BATTERY_DIGITS, pz_global_config, 0);
     pz_menu_add_setting ("/Settings/Appearance/Display Load Average", DISPLAY_LOAD, pz_global_config, 0);

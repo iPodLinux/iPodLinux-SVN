@@ -9,7 +9,7 @@ else
 ifneq ($(wildcard $(PZPATH)/../ttk),)
 TTKCONF = $(PZPATH)/../ttk/ttk-config-here
 else
-$(error Can't find TTK. Specify TTKDIR, put it in ../ttk, or install it.)
+$(error Cannot find TTK. Specify TTKDIR, put it in ../ttk, or install it.)
 endif
 endif
 endif
