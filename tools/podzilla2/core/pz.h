@@ -218,7 +218,8 @@ TWindow *pz_menu_get (void);
 #ifdef PZ_COMPAT
 void pz_menu_add_legacy (const char *menupath, void (*handler)());
 #endif
-void pz_menu_add_ttkh (const char *menupath, TWindow *(*handler)(), void *data);
+ttk_menu_item *pz_menu_add_ttkh (const char *menupath, TWindow *(*handler)(), void *data);
+void pz_menu_add_stub (const char *menupath); // adds invisible stub to preserve order
 void pz_menu_add_after (const char *menupath, PzWindow *(*handler)(), const char *after);
 void pz_menu_add_top (const char *menupath, PzWindow *(*handler)());
 void pz_menu_add_action (const char *menupath, PzWindow *(*handler)());

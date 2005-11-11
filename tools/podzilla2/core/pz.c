@@ -335,7 +335,17 @@ main(int argc, char **argv)
 #else
 #define CONFIG_FILE "config/podzilla.conf"
 #endif
-	pz_ipod_fix_settings ((pz_global_config = pz_load_config (CONFIG_FILE)));
+	pz_global_config = pz_load_config (CONFIG_FILE);
+	/* Set some sensible defaults */
+#define SET(x) pz_get_setting(pz_global_config,x)
+	if (!SET(WHEEL_DEBOUNCE)) pz_ipod_set (WHEEL_DEBOUNCE, 10);
+	if (!SET(CONTRAST))       pz_ipod_set (CONTRAST, 96);
+	if (!SET(CLICKER))        pz_ipod_set (CLICKER, 1);
+	if (!SET(DSPFREQUENCY))   pz_ipod_set (DSPFREQUENCY, 0);
+	if (!SET(COLORSCHEME))    pz_ipod_set (COLORSCHEME, 0);
+	if (!SET(SLIDE_TRANSIT))  pz_ipod_set (SLIDE_TRANSIT, 1);
+	pz_save_config (pz_global_config);
+	pz_ipod_fix_settings (pz_global_config);
 	pz_load_font (&ttk_textfont, TEXT_FONT);
 	pz_load_font (&ttk_menufont, MENU_FONT);
 	pz_secrets_init();

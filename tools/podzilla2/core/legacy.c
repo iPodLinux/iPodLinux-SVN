@@ -270,3 +270,8 @@ t_GR_COLOR appearance_get_color (const char *prop)
     ttk_unmakecol (ttk_ap_getx (prop) -> color, &r, &g, &b);
     return t_GR_RGB (r, g, b);
 }
+
+void beep() 
+{
+	ttk_click();
+}
