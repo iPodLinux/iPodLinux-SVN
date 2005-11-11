@@ -37,8 +37,12 @@ int main (int argc, char **argv)
 	char md5[16];
 	FILE *pf = fopen ("iplsign.key", "r");
 	char buf[80];
-	fgets (buf, 80, pf);
-	fclose (pf);
+	int pa = 0;
+	if (pf) {
+		fgets (buf, 80, pf);
+		fclose (pf);
+		pa = 1;
+	}
 	pubkey = RSA_new();
 	privkey = RSA_new();
 	memset (pubkey, 8 * sizeof(BIGNUM*), 0);
@@ -62,6 +66,10 @@ int main (int argc, char **argv)
 	md5[0] &= 0xD;
 
 	if (!strcmp (argv[1], "sign")) {
+		if (!pa) {
+			fprintf (stderr, "No private key available.\n");
+			return 1;
+		}
 		unsigned char *sig = malloc (RSA_size (privkey));
 		int siglen, i;
 		siglen = RSA_private_encrypt (16, md5, sig, privkey, RSA_NO_PADDING);
