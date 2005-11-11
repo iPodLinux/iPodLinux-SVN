@@ -283,6 +283,22 @@ int
 main(int argc, char **argv)
 {
 	TWindow *first;
+
+	if (argc > 1) {
+		if (argv[1][0] == '-') {
+			if (!strcmp (argv[1], "-photo"))
+				ttk_set_emulation (220, 176, 16);
+			else if (!strcmp (argv[1], "-nano"))
+				ttk_set_emulation (176, 132, 16);
+			else if (!strcmp (argv[1], "-mini"))
+				ttk_set_emulation (138, 110, 2);
+			else if (!strcmp (argv[1], "-video"))
+				ttk_set_emulation (320, 240, 16);
+			else
+				fprintf (stderr, "Warning: Did not understand emulation mode.\n");
+		}
+	}
+
 	if ((first = ttk_init()) == 0) {
 		fprintf(stderr, _("ttk_init failed"));
 		exit(1);
