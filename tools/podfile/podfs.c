@@ -18,29 +18,37 @@
 
 #include <linux/module.h>
 #include <linux/types.h>
-#include <linux/pagemap.h>
 #include <linux/errno.h>
 #include <linux/slab.h>
 #include <linux/fs.h>
 #include <linux/init.h>
+#include <linux/blkdev.h>
+#include <linux/smp_lock.h>
+#include <linux/pagemap.h>
+#ifdef MODULE_2_6
 #include <linux/buffer_head.h>
+#endif
 #include <linux/vfs.h>
 #include <linux/string.h>
-#include <linux/blkdev.h>
 #include <linux/stat.h>
-#include <linux/smp_lock.h>
 
 #include <asm/semaphore.h>
 #include <asm/uaccess.h>
 
 #include "pod.h"
 
+#ifndef MODULE_2_6
+#define s_fs_info u.generic_sbp
+#endif
+
 static struct super_operations podfs_ops;
 static struct inode_operations podfs_dir_inode_operations;
 static struct file_operations podfs_directory_operations;
 static struct address_space_operations podfs_aops;
 
+#ifdef MODULE_2_6
 static struct timespec zerotime;
+#endif
 
 struct podfs_info 
 {
@@ -63,7 +71,11 @@ static int podfs_remount (struct super_block *s, int *flags, char *data)
     return 0;
 }
 
+#ifdef MODULE_2_6
 static int podfs_fill_super (struct super_block *s, void *data, int silent) 
+#else
+static struct super_block * podfs_read_super (struct super_block *s, void *data, int silent)
+#endif
 {
     struct buffer_head *bh;
     struct podfs_info *sbi;
@@ -74,12 +86,13 @@ static int podfs_fill_super (struct super_block *s, void *data, int silent)
 
     sbi = kmalloc (sizeof(struct podfs_info), GFP_KERNEL);
     if (!sbi)
-	return -ENOMEM;
+	return 0;
     memset (sbi, 0, sizeof(struct podfs_info));
     s->s_fs_info = sbi;
 
     /* No options. */
     
+    sb_set_blocksize (s, 4096);
     bh = sb_bread (s, 0);
     if (!bh) {
 	printk ("podfs: unable to read header\n");
@@ -89,8 +102,13 @@ static int podfs_fill_super (struct super_block *s, void *data, int silent)
     hdr = (Pod_header *)bh->b_data;
     if (memcmp (hdr->magic, PODMAGIC, 5) != 0) {
 	if (!silent)
+#ifdef MODULE_2_6
 	    printk ("VFS: Can't find a podfs filesystem on dev "
-		    "%s.\n", s->s_id);
+	            "%s.\n", s->s_id);
+#else
+		printk ("VFS: Can't find a podfs filesystem on dev "
+		        "%s.\n", kdevname(s->s_dev));
+#endif
 	goto out;
     }
 
@@ -128,7 +146,11 @@ static int podfs_fill_super (struct super_block *s, void *data, int silent)
     root->i_blocks = 1;
     root->i_blksize = s->s_blocksize;
     root->i_gid = 0;
+#ifdef MODULE_2_6
     root->i_mtime = root->i_atime = root->i_ctime = zerotime;
+#else
+    root->i_mtime = root->i_atime = root->i_ctime = 0;
+#endif
     root->i_nlink = 1;
     insert_inode_hash (root);
     root->i_op = &podfs_dir_inode_operations;
@@ -140,7 +162,11 @@ static int podfs_fill_super (struct super_block *s, void *data, int silent)
 	goto outiput;
     
     brelse (bh);
+#ifdef MODULE_2_6
     return 0;
+#else
+    return s;
+#endif
     
  outiput:
     iput (root);
@@ -149,11 +175,21 @@ static int podfs_fill_super (struct super_block *s, void *data, int silent)
  outnobh:
     kfree (sbi);
     s->s_fs_info = NULL;
+#ifdef MODULE_2_6
     return -EINVAL;
+#else
+    return 0;
+#endif
 }
 
+#ifdef MODULE_2_6
+#define STATFS kstatfs
+#else
+#define STATFS statfs
+#endif
+
 static int
-podfs_statfs (struct super_block *sb, struct kstatfs *buf) 
+podfs_statfs (struct super_block *sb, struct STATFS *buf) 
 {
     struct podfs_info *sbi = (struct podfs_info *)sb->s_fs_info;
 
@@ -245,9 +281,13 @@ podfs_readdir (struct file *filp, void *dirent, filldir_t filldir)
     return 0;
 }
 
+#ifdef MODULE_2_6
 static struct dentry * podfs_lookup (struct inode *dir, struct dentry *dentry, struct nameidata *nd)
+#else
+static struct dentry * podfs_lookup (struct inode *dir, struct dentry *dentry)
+#endif
 {
-    unsigned int offset = 0;
+	unsigned int offset = 0;
     struct super_block *sb = dir->i_sb;
     struct podfs_info *sbi = (struct podfs_info *)sb->s_fs_info;
 
@@ -279,7 +319,11 @@ static struct dentry * podfs_lookup (struct inode *dir, struct dentry *dentry, s
 	ino->i_blocks = (i.length - 1) / 512 + 1;
 	ino->i_blksize = sb->s_blocksize;
 	ino->i_gid = 0;
+#ifdef MODULE_2_6
 	ino->i_mtime = ino->i_atime = ino->i_ctime = zerotime;
+#else
+	ino->i_mtime = ino->i_atime = ino->i_ctime = 0;
+#endif
 	ino->i_ino = i.offset;
 	ino->i_nlink = 1;
 	insert_inode_hash (ino);
@@ -324,7 +368,11 @@ static int podfs_readpage (struct file *file, struct page *page)
 	SetPageError (page);
     }
     flush_dcache_page (page);
+#ifdef MODULE_2_6
     unlock_page (page);
+#else
+    UnlockPage (page);
+#endif
     kunmap (page);
     
  err_out:
@@ -356,11 +404,12 @@ static struct super_operations podfs_ops = {
     .statfs     = podfs_statfs,
 };
 
+#ifdef MODULE_2_6
 static struct super_block *podfs_get_sb (struct file_system_type *fs_type,
 					 int flags, const char *dev_name,
 					 void *data) 
 {
-    return get_sb_bdev (fs_type, flags, dev_name, data, podfs_fill_super);
+	return get_sb_bdev (fs_type, flags, dev_name, data, podfs_fill_super);
 }
 
 static struct file_system_type podfs_fs_type = {
@@ -370,6 +419,9 @@ static struct file_system_type podfs_fs_type = {
     .kill_sb  = kill_block_super,
     .fs_flags = FS_REQUIRES_DEV,
 };
+#else
+static DECLARE_FSTYPE_DEV(podfs_fs_type, "podfs", podfs_read_super);
+#endif
 
 static int __init init_podfs_fs (void) 
 {
@@ -389,3 +441,6 @@ static void __exit exit_podfs_fs (void)
 module_init (init_podfs_fs)
 module_exit (exit_podfs_fs)
 MODULE_LICENSE ("GPL");
+#ifndef MODULE_2_6
+EXPORT_NO_SYMBOLS;
+#endif
