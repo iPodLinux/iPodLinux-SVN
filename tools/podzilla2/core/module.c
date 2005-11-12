@@ -26,8 +26,6 @@
 #if defined(linux) || defined(IPOD)
 #include <sys/mount.h>
 #include <linux/fs.h>
-#define LOOP_SET_FD     0x4C00
-#define LOOP_CLR_FD     0x4C01
 #else
 #ifdef MountPods
 #error can only mount pods under Linux
@@ -59,6 +57,7 @@ typedef struct _pz_Module
     char *podpath;
     char *mountpt;
     char *cfgpath;
+	int mountnr;
 
     void *handle;
     int to_load;       // positive - load from module. negative - initialize builtin. 0 - nothing.
@@ -84,6 +83,7 @@ static PzModule *module_head;
 // sets mod->mountpt = 0 on failure, returns -1. 0 = success.
 static int mount_pod (PzModule *mod) 
 {
+	char mountline[256];
     char devstr[64];
     int devfd, podfd;
     struct stat st;
@@ -94,46 +94,24 @@ static int mount_pod (PzModule *mod)
 #ifdef IPOD
 #define PODDIR "/tmp/modules/"
 #else
-#define PODDIR "pods/"
+#define PODDIR "mpods/"
 #endif
+    mkdir (PODDIR, 0777);
     mod->mountpt = malloc (strlen (PODDIR) + 10);
-    sprintf (mod->mountpt, PODDIR "%d/", nextmount++);
-    
-    sprintf (devstr, "/dev/loop/%d", nextmount + 1); // yes, it starts from 2. that's intentional.
-    devfd = open (devstr, O_RDONLY);
-    if (devfd < 0) {
-	pz_perror (devstr);
-	free (mod->mountpt);
-	mod->mountpt = 0;
-	return -1;
-    }
-    podfd = open (mod->podpath, O_RDONLY);
-    if (podfd < 0) {
-	pz_perror (mod->podpath);
-	free (mod->mountpt);
-	mod->mountpt = 0;
-	close (devfd);
-	return -1;
-    }
-    
-    ioctl (devfd, LOOP_CLR_FD, 0);
-    if (ioctl (devfd, LOOP_SET_FD, podfd) < 0) {
-	pz_perror ("LOOP_SET_FD");
-	free (mod->mountpt);
-	mod->mountpt = 0;
-	close (podfd);
-	close (devfd);
-	return -1;
-    }
-    close (podfd);
-    close (devfd);
-    
+    sprintf (mod->mountpt, PODDIR "%d/", nextmount);
+    mkdir (mod->mountpt, 0777);
+
+    sprintf (mountline, "mount -t podfs -o loop %s %s", mod->podpath, mod->mountpt);
+    mod->mountnr = nextmount++;
+
     // mount it
-    if (mount (devstr, mod->mountpt, "podfs", MS_RDONLY, 0) < 0) {
-	pz_perror ("mount");
-	free (mod->mountpt);
-	mod->mountpt = 0;
-	return -1;
+    if (system (mountline) != 0) {
+    	strcat (mountline, " 2>mountpod.err >mountpod.err");
+    	system (mountline);
+    	pz_error ("mount: exit %d - some sort of error, check mountpod.err");
+    	free (mod->mountpt);
+    	mod->mountpt = 0;
+    	return -1;
     }
 #else
     mod->mountpt = malloc (strlen ("xpods/") + strlen (strrchr (mod->podpath, '/')) + 1);
@@ -389,6 +367,15 @@ static void free_module (PzModule *mod)
     if (mod->depsstr) free (mod->depsstr);
     if (mod->providesstr) free (mod->providesstr);
     
+#ifdef MountPods
+    if (mod->mountnr) {
+    	char buf[64];
+    	sprintf (buf, "umount " PODDIR "%d", mod->mountnr);
+    	system (buf);
+    	mod->mountnr = 0;
+    }
+#endif
+
     if (mod->podpath) free (mod->podpath);
     if (mod->mountpt) free (mod->mountpt);
     if (mod->cfgpath) free (mod->cfgpath);
@@ -505,6 +492,8 @@ void pz_modules_init()
 	return;
     }
 
+    pz_message ("mounting pods");
+
     // Mount 'em
     cur = module_head;
     last = 0;
@@ -521,12 +510,16 @@ void pz_modules_init()
 	}
     }
 
+    pz_message ("loading modinfs");
+
     // Load the module.inf's
     cur = module_head;
     while (cur) {
 	load_modinf (cur);
 	cur = cur->next;
     }
+
+    pz_message ("figuring deps");
 
     // Figure out the dependencies
     cur = module_head;
@@ -542,6 +535,8 @@ void pz_modules_init()
 	    cur = cur->next;
 	}
     }
+
+    pz_message ("checking linkedins");
 
     // Check which ones are linked in
     cur = module_head;
@@ -559,6 +554,9 @@ void pz_modules_init()
     // XXX. For now, we load them in directory order. That will
     // wreak havoc with dependencies. davidc__ is working on a 
     // better solution.
+
+    pz_message ("loading mods");
+
     cur = module_head;
     while (cur) {
 	if (cur->to_load > 0) {

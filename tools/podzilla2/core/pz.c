@@ -307,7 +307,10 @@ main(int argc, char **argv)
 	atexit (pz_uninit);
 
 #ifdef IPOD
-	uCdl_init (argv[0]);
+	if (uCdl_init ("/bin/podzilla") == 0) {
+		pz_error ("Unable to init uCdl.");
+		exit (0);
+	}
 #endif
 
 	ttk_set_global_event_handler (pz_event_handler);
