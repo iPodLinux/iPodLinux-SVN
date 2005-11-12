@@ -1,0 +1,25 @@
+uCdl v1.0
+=========
+
+This is a libdl-like library for uClinux. Read the header
+file to see the 4-function API.
+
+The only catch: uClinux uses BFLT binaries, which include no symbol
+table; as such, you have to make one yourself. After elf2flt, run
+
+  nm yourapp.gdb | grep ' T ' | symadd yourapp
+
+Example: copy modtest, modtest.sym, and testmod.o to your iPod.
+         Run modtest. You should see about seven P's and the text
+         "All tests passed." This tests access of variables and
+         functions across module boundaries.
+
+To compile, type `make'. You may or may not want to put symadd in
+your PATH.
+
+To link with it, put libuCdl.a and ucdl.h in your program directory and
+specify libuCdl.a on the link line.
+
+Enjoy. MIT license.
+
+-- Josh

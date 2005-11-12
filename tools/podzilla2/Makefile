@@ -7,14 +7,15 @@ else
 ifneq ($(wildcard ../ttk/ttk-config-here),)
 TTKCONF = ../ttk/ttk-config-here
 else
-$(error Can't find TTK. Specify TTKDIR,  put it in ../ttk, or install it.)
+$(error Cannot find TTK. Specify TTKDIR,  put it in ../ttk, or install it.)
 endif
 endif
 endif
 
 ifdef IPOD
 LIBS += -Wl,-elf2flt `$(TTKCONF) --ipod --sdl --libs` contrib/ucdl/libuCdl.a -lintl
-CC = arm-elf-gcc
+CROSS ?= arm-elf
+CC = $(CROSS)-gcc
 else
 ifeq ($(shell uname),Darwin)
 EXPSYM =
@@ -28,11 +29,15 @@ CC ?= cc
 endif
 POD ?= ../../../podfile/pod # relative to two dirs down
 
-all: checktarget core modules xpods pods
+all: checktarget core modules contrib xpods pods
 	@echo
 	@echo "Linking podzilla."
 	@echo " LD      podzilla"
 	@$(CC) -o podzilla core/built-in.o $(wildcard modules/built-in.o) $(LIBS)
+ifdef IPOD
+	@echo " SYMS    podzilla"
+	@$(CROSS)-nm podzilla.gdb | grep ' T ' | ./contrib/ucdl/symadd podzilla
+endif
 
 checktarget: .curtgt
 	@cmp .curtgt .target >/dev/null || ( echo "Cleaning because of target change."; make -s clean; echo )
@@ -94,4 +99,9 @@ buildmod:
 	make -sC $$dir -f `pwd`/module.mk PZPATH=`pwd`; done
 endif
 
-.PHONY: core modules clean pods xpods dev-env .curtgt
+contrib:
+ifdef IPOD
+	@make -sC contrib/ucdl
+endif
+
+.PHONY: core modules clean pods xpods dev-env contrib .curtgt
