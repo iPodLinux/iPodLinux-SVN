@@ -80,6 +80,7 @@ void create(int num, char **args)
 	u_int32_t type = 0;
 	u_int32_t *offsets;
 	u_int32_t headers_size = 0;
+        u_int32_t offset;
 	int i;
 
 	if ((fp = fopen(args[0], "wb")) == NULL) {
@@ -106,8 +107,8 @@ void create(int num, char **args)
 	}
 	for (i = 0; i < num; i++) {
 		FILE *nfp;
-		u_int32_t offset = ftell(fp);
 		u_int32_t length, pos, clen;
+		offset = ftell(fp);
 		if ((nfp = fopen(args[i], "rb")) == NULL) {
 			perror(args[i]);
 			exit(4);
@@ -137,6 +138,13 @@ void create(int num, char **args)
 		if (verbose)
 			printf("%s\n", args[i]);
 	}
+        /* Pad to multiple of block size (+1, but nobody cares about that) */
+        i = 0;
+        offset = ftell(fp);
+        if (offset % blocksize != 0) {
+            fseek(fp, blocksize - (offset % blocksize), SEEK_CUR);        
+            fwrite(&i, 1, 1, fp);
+        }
 	fseek(fp, 16, SEEK_SET);
 	write32(fp, headers_size);
 	fclose(fp);
