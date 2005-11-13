@@ -350,6 +350,9 @@ int ttk_menu_frame (TWidget *this)
 {   
     int oldflags;
     _MAKETHIS;
+
+    if (!data->menu || !data->items) return 0;
+
     ttk_menu_item *selected = data->menu[XIFromVI (this, data->top + data->sel)];
 
     data->ds++;
@@ -568,6 +571,8 @@ int ttk_menu_scroll (TWidget *this, int dir)
     sofar -= SPER*dir;
 #endif
 
+    if (!data->menu || !data->items) return 0;
+
     oldtop = data->top;
     oldsel = data->sel;
 
@@ -627,6 +632,11 @@ int ttk_menu_button (TWidget *this, int button, int time)
 {
     _MAKETHIS;
     
+    if (!data->menu || !data->items) {
+        ttk_hide_window (this->win);
+        return 0;
+    }
+
     if (button == TTK_BUTTON_MENU) {
 	if (data->closeable) {
 	    if (ttk_hide_window (this->win) == -1) {
@@ -645,6 +655,10 @@ int ttk_menu_down (TWidget *this, int button)
     ttk_menu_item *item = data->menu[XIFromVI (this, data->top + data->sel)];
     int ret = 0;
     TWindow *sub;
+
+    if (!data->menu || !data->items) {
+        return 0;
+    }
 
     switch (button) {
     case TTK_BUTTON_ACTION:
