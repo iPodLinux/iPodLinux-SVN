@@ -36,7 +36,7 @@ all: checktarget core modules contrib xpods pods
 	@$(CC) -o podzilla core/built-in.o $(wildcard modules/built-in.o) $(LIBS)
 ifdef IPOD
 	@echo " SYMS    podzilla"
-	@$(CROSS)-nm podzilla.gdb | grep ' T ' | ./contrib/ucdl/symadd podzilla
+	@$(CROSS)-nm podzilla.gdb | ./contrib/ucdl/symadd podzilla
 endif
 
 checktarget: .curtgt

@@ -402,10 +402,14 @@ void new_pong_window()
 }
 
 
+
 static void init_module() 
 {
+	pz_warning ("%d registering", __LINE__);
     (void) pz_register_module ("pong", 0);
+    pz_warning ("%d adding item", __LINE__);
     pz_menu_add_legacy ("/Extras/Games/Pong", new_pong_window);
+    pz_warning ("%d done", __LINE__);
 }
 
 PZ_MOD_INIT (init_module)
