@@ -320,17 +320,21 @@ static int fix_dependencies (PzModule *mod, int initing)
     return 0;
 }
 
-
 static void do_load (PzModule *mod) 
 {
     char *fname;
     fname = malloc (strlen (mod->mountpt) + strlen (mod->name) + 8);
 #ifdef IPOD
     sprintf (fname, "%s/%s.o", mod->mountpt, mod->name);
+    pz_warning ("%d", __LINE__);
     mod->handle = uCdl_open (fname);
+    pz_warning ("%d", __LINE__);
     free (fname);
+    pz_warning ("%d", __LINE__);
     if (!mod->handle) {
+    pz_warning ("%d", __LINE__);
 	pz_error ("Could not load module %s: %s", mod->name, uCdl_error());
+    pz_warning ("%d", __LINE__);
     }
 #else
     sprintf (fname, "%s/%s.so", mod->mountpt, mod->name);
@@ -341,18 +345,29 @@ static void do_load (PzModule *mod)
     }
 #endif
     else {
+    pz_warning ("%d", __LINE__);
 #ifdef IPOD
+    pz_warning ("%d", __LINE__);
 	mod->init = uCdl_sym (mod->handle, "__init_module__");
+    pz_warning ("%d", __LINE__);
 	if (!mod->init) pz_warning ("Could not do modinit function for %s: %s", mod->name, uCdl_error());
 #else
 	mod->init = dlsym (mod->handle, "__init_module__");
 	if (!mod->init) pz_warning ("Could not do modinit function for %s: %s", mod->name, dlerror());
 #endif
 	else {
+    pz_warning ("%d calling %p", __LINE__, mod->init);
+    FILE *fp = fopen ("mod.dat", "w");
+    fwrite (mod->init, 1024, 1, fp);
+    fclose (fp);
 	    (*mod->init)();
+    pz_warning ("%d", __LINE__);
 	}
+    pz_warning ("%d", __LINE__);
     }
+    pz_warning ("%d", __LINE__);
     mod->to_load = 0;
+    pz_warning ("%d done", __LINE__);
 }
 
 

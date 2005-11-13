@@ -50,22 +50,19 @@ PzConfig *pz_global_config;
 
 static void check_connection() 
 {
-    int temp;
-    
-    if (((temp = pz_ipod_usb_is_connected()) && !usb_connected) ||
-	((temp = pz_ipod_fw_is_connected()) && !fw_connected))
-    {
-	const char *title;
-	if (pz_ipod_usb_is_connected()) title = _("USB Connect");
-	else title = _("FireWire Connect");
+    int this_usb_conn = pz_ipod_usb_is_connected();
+    int this_fw_conn = pz_ipod_fw_is_connected();
 
-	if (pz_dialog (title, _("Go to disk mode?"), 2, 10, "No", "Yes") == 1) {
-	    pz_ipod_go_to_diskmode();
-	}
-    }
+    if (this_usb_conn && !usb_connected &&
+        pz_dialog (_("USB Connect"), _("Go to disk mode?"), 2, 10, "No", "Yes"))
+        pz_ipod_go_to_diskmode();
 
-    usb_connected = pz_ipod_usb_is_connected();
-    fw_connected = pz_ipod_fw_is_connected();
+    if (this_fw_conn && !fw_connected &&
+        pz_dialog (_("FireWire Connect"), _("Go to disk mode?"), 2, 10, "No", "Yes"))
+        pz_ipod_go_to_diskmode();
+
+    usb_connected = this_usb_conn;
+    fw_connected = this_fw_conn;
     connection_timer = ttk_create_timer (1000, check_connection);
 }
 
@@ -300,7 +297,7 @@ main(int argc, char **argv)
 	}
 
 	if ((first = ttk_init()) == 0) {
-		fprintf(stderr, _("ttk_init failed"));
+		fprintf(stderr, _("ttk_init failed\n"));
 		exit(1);
 	}
 	ttk_hide_window (first);
@@ -308,7 +305,8 @@ main(int argc, char **argv)
 
 #ifdef IPOD
 	if (uCdl_init ("/bin/podzilla") == 0) {
-		pz_error ("Unable to init uCdl.");
+		ttk_quit();
+		fprintf (stderr, _("uCdl_open failed: %s\n"), uCdl_error());
 		exit (0);
 	}
 #endif

@@ -36,13 +36,18 @@
 #include "elf.h"
 
 /* Comment out to enable copious debugging information: */
-#define printf(fmt,args...)
+#define printf(args...)
+
+#define SYM_TEXT 0
+#define SYM_DATA 1
+#define SYM_BSS  2
 
 // Symbols loaded from a .sym file
 typedef struct symbol
 {
     char *sym;
     unsigned int addr;
+	int whence;
     struct symbol *next;
 } symbol;
 
@@ -101,6 +106,9 @@ static struct symbol *mysyms;
 // Used by modules to make sure everything is located correctly.
 const int uCdl_magic __attribute__ ((section (".text"))) = 0x12345678;
 
+const int uCdl_datamagic = 0x12345678;
+int uCdl_bssmagic;
+
 /*! Initialize the uCdl library.
  * @param symfile the current running executable
  * including a symbol table.
@@ -109,10 +117,12 @@ const int uCdl_magic __attribute__ ((section (".text"))) = 0x12345678;
 int uCdl_init (const char *symfile) 
 {
     struct symbol *cur = mysyms;
-    unsigned int offset = 0;
+    unsigned int offset = 0, dataoff = 0, bssoff = 0;
     FILE *fp;
     struct flat_hdr header;
     long n_syms;
+
+    uCdl_bssmagic = 0x12345678;
 
     if ((fp = fopen(symfile, "r")) == NULL) {
     	return 0;
@@ -124,33 +134,33 @@ int uCdl_init (const char *symfile)
 
     fseek(fp, header.reloc_start + 4*header.reloc_count, SEEK_SET);
 
-    fprintf (dbgout, "%s:%d\n", __FILE__, __LINE__);
-
     fread(&n_syms, sizeof(long), 1, fp);
     n_syms = ntohl(n_syms);
-
-    fprintf (dbgout, "%s:%d\n", __FILE__, __LINE__);
 
     while (n_syms-- > 0) {
 	unsigned int pos, addr = 0;
 	char *sym;
 	int len = 0;
-
-    fprintf (dbgout, "%s:%d\n", __FILE__, __LINE__);
+	char whence;
 
 	fread(&addr, sizeof(unsigned int), 1, fp);
 	addr = ntohl(addr);
-    fprintf (dbgout, "%s:%d\n", __FILE__, __LINE__);
-
 	pos = ftell(fp);
 	while ((fgetc(fp)) != '\0')
 		len++;
 	fseek(fp, pos, SEEK_SET);
 	sym = malloc(sizeof(char) * (len + 1));
 	fread(sym, sizeof(char), len + 1, fp);
+	fread(&whence, sizeof(char), 1, fp);
 	
 	if (strcmp(sym, "uCdl_nothing") == 0) {
 	    offset = (unsigned int)&uCdl_nothing - addr;
+	}
+	if (strcmp(sym, "uCdl_datamagic") == 0) {
+		dataoff = (unsigned int)&uCdl_datamagic - addr;
+	}
+	if (strcmp(sym, "uCdl_bssmagic") == 0) {
+		bssoff = (unsigned int)&uCdl_bssmagic - addr;
 	}
 
 	if (cur == 0) {
@@ -162,6 +172,7 @@ int uCdl_init (const char *symfile)
 	
 	cur->sym = sym;
 	cur->addr = addr;
+	cur->whence = whence;
 	cur->next = 0;
     }
 
@@ -169,12 +180,27 @@ int uCdl_init (const char *symfile)
 
     cur = mysyms;
     while (cur) {
-	cur->addr += offset;
-	if (!strcmp (cur->sym, "uCdl_magic")) {
+    	switch (cur->whence) {
+    	case SYM_TEXT:
+    		cur->addr += offset;
+    		break;
+    	case SYM_DATA:
+    		cur->addr += dataoff;
+    		break;
+    	case SYM_BSS:
+    		cur->addr += bssoff;
+    		break;
+    	}
+	if (!strcmp (cur->sym, "uCdl_magic") || !strcmp (cur->sym, "uCdl_datamagic") ||
+	    !strcmp (cur->sym, "uCdl_bssmagic")) {
 	    if (*(int *)cur->addr != 0x12345678) {
-		sprintf (error = errbuf, "Error: incorrect offset computation:"
-				" *%p (%x) != *%p (%x)  offset %x", cur->addr,
-			       *(int *)cur->addr, &uCdl_magic, uCdl_magic,
+	    	const int *which;
+	    	if (!strcmp (cur->sym, "uCdl_datamagic")) which = &uCdl_datamagic;
+	    	if (!strcmp (cur->sym, "uCdl_bssmagic")) which = &uCdl_bssmagic;
+	    	if (!strcmp (cur->sym, "uCdl_magic")) which = &uCdl_magic;
+		sprintf (error = errbuf, "Error: incorrect offset computation (%s):"
+				" *%p (%x) != *%p (%x)  offset %x", cur->sym, cur->addr,
+			       *(int *)cur->addr, which, *which,
 			       offset);
 		return 0;
 	    }
@@ -200,6 +226,10 @@ void *uCdl_open (const char *path)
 	sprintf (error = errbuf, "Can't open %s: %s", path, strerror (errno));
 	return 0;
     }
+
+    FILE *dbg = fopen ("open.dbg", "w");
+#undef printf
+#define printf(args...) fprintf(dbg,args)
 
     read (fd, &eh, sizeof(Elf_Ehdr));
     if (!IS_ELF (eh)) {
@@ -230,7 +260,7 @@ void *uCdl_open (const char *path)
 
     int shnum = eh.e_shnum;
     int memsize = 0;
-    handle *ret = malloc (sizeof(handle));
+    handle *ret = calloc (1, sizeof(handle));
     ret->loc = ret->symbols = 0;
     ret->strtabs = calloc (eh.e_shnum, sizeof(char*));
     ret->shstrtabidx = eh.e_shstrndx;
@@ -293,8 +323,6 @@ void *uCdl_open (const char *path)
 	    sec->addr = ret->loc + lastoff;
 
 	    lastoff += sec->size;
-	    if (sec->alignment > 1)
-		lastoff = (lastoff + (1 << sec->alignment) - 2) & ~((1 << sec->alignment) - 1);
 
 	    read (fd, (char *)sec->addr, sec->size);
 	    break;
@@ -304,8 +332,6 @@ void *uCdl_open (const char *path)
 	    sec->addr = ret->loc + lastoff;
 
 	    lastoff += sec->size;
-	    if (sec->alignment > 1)
-		lastoff = (lastoff + (1 << sec->alignment) - 2) & ~((1 << sec->alignment) - 1);
 
 	    memset (sec->addr, 0, sec->size);
 	    break;
@@ -354,8 +380,10 @@ void *uCdl_open (const char *path)
 		for (i = 0; i < nent; i++) {
 		    if (sec->type == SHT_REL) {
 			read (fd, &r, sizeof(r));
+                        printf ("R: o=%x, sym=%d, t=%d, no addend\n", r.r_offset, r.r_info >> 8, r.r_info & 0xff);
 		    } else {
 			read (fd, &ra, sizeof(ra));
+                        printf ("R: o=%x, sym=%d, t=%d, a=%x\n", ra.r_offset, ra.r_info >> 8, ra.r_info & 0xff, ra.r_addend);
 		    }
 
 		    if (!((ret->sections + sec->info)->flags & SHF_ALLOC))
@@ -381,6 +409,8 @@ void *uCdl_open (const char *path)
 			rel->type = (r.r_info & 0xff) | RELOC_HAS_ADDEND;
 			rel->addend = ra.r_addend;
 		    }
+		    rel->next = 0;
+                    printf ("el o=%x, sym=%d, t=%x, a=%x, next=%p\n", rel->offset, rel->symbolidx, rel->type, rel->addend, rel->next);
 		}
 	    }
 	    break;
@@ -393,6 +423,9 @@ void *uCdl_open (const char *path)
     // Resolve names for sections
     for (sec = ret->sections, i = 0; i < ret->nsecs; i++, sec++) {
 	sec->name = ret->strtabs[ret->shstrtabidx] + sec->nameidx;
+        if (!strcmp (sec->name, ".rodata")) {
+            printf ("RO Data! (char *)%p = <%s>\n", sec->addr, (char *)sec->addr);
+        }
     }
 
     // Resolve names and sections for symbols
@@ -410,6 +443,7 @@ void *uCdl_open (const char *path)
     reloc *rel;
     for (rel = ret->relocs; rel; rel = rel->next) {
 	rel->symbol = ret->symbols + rel->symbolidx;
+        printf ("Rl o=%x, sym=%s, t=%x, a=%x, next=%p\n", rel->offset, rel->symbol->name, rel->type, rel->addend, rel->next);
     }
 
     // Print them all and return.
@@ -489,11 +523,11 @@ void *uCdl_open (const char *path)
 
 	    if (defined == 0) {
 		sprintf (error = errbuf, "%s: undefined symbol: %s", path, sym->name);
-		exit (1);
+		return 0;
 	    }
 	    if (defined > 1) {
 		sprintf (error = errbuf, "%s: multiple definition of %s (%d times)", path, sym->name, defined);
-		exit (2);
+		return 0;
 	    }
 
 	    printf ("%08x  %s\n", sym->value, sym->name);
@@ -522,6 +556,9 @@ void *uCdl_open (const char *path)
 		At |= 0xfc000000;
 	    }
 	    A = At;
+	    // :TRICKY: I have no idea why this works, but it
+	    // does. I was getting off-by-8 errors before.
+	    A += 8; 
 	    break;
 	case R_ARM_ABS32:
 	case R_ARM_REL32:
@@ -630,6 +667,10 @@ void *uCdl_open (const char *path)
 	while (curh->next) curh = curh->next;
 	curh->next = ret;
     }
+
+#undef printf
+#define printf(args...)
+    fclose (dbg);
     
     return (void *)ret;
 }
