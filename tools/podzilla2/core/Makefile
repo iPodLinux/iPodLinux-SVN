@@ -22,6 +22,7 @@ CC ?= cc
 LD ?= ld
 MYCFLAGS = `$(TTKCONF) --x11 --sdl --cflags`
 endif
+MYCFLAGS += -I/sw/include
 
 OBJS= pz.o module.o ipod.o dialog.o secrets.o header.o settings.o fonts.o \
       menu.o legacy.o gui.o browser.o vector.o oss.o appearance.o
