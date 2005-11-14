@@ -451,6 +451,7 @@ typedef struct TWidget
     int (*button) (struct TWidget *this, int button, int time);
     int (*down) (struct TWidget *this, int button);
     int (*held) (struct TWidget *this, int button);
+    int (*input) (struct TWidget *this, int ch);
     int (*frame) (struct TWidget *this);
     int (*timer) (struct TWidget *this);
     void (*destroy) (struct TWidget *this);
@@ -491,6 +492,8 @@ Returns a normal event code.
 button was pressed. Returns a normal event code.
 \item[{\sf held}] is the event handler for button held events. The second argument refers to which button
 was held. It should return a normal event code.
+\item[{\sf input}] is called whenever a character is input after \verb|ttk_input_start()| has been called.
+During this time, no other events will be passed to the widget until \verb|ttk_input_end()|.
 \item[{\sf frame} and {\sf timer}] are the two periodic event handlers discussed in Chapter 1. They
 should return \verb|TTK_EV_DONE| if \verb|ttk_run()| should return, and 0 otherwise.
 \item[{\sf destroy}] should free any widget-specific data in {\tt data}, including {\tt data} itself.
@@ -807,26 +810,16 @@ sequences.
 \begin{verbatim}
 void ttk_update_lcd (int xstart, int ystart, int xend, int yend,
                      unsigned char *data);
-void ttk_start_cop (void (*fn)());
-void ttk_stop_cop();
-void ttk_sleep_cop();
-void ttk_wake_cop();
 \end{verbatim}
 
 These functions let you do low-level hardware things with the iPod. Some of them do not
 work very well on X11.
-
-{\large\bfseries The COP functions---\verb|ttk_*_cop()|---are NOT IMPLEMENTED YET.}
 
 \begin{description}
 \item[{\tt ttk\_update\_lcd}] dumps a chunk of raw data to the iPod's LCD; the data should
 already be in the appropriate format for the iPod running. The \verb|data| block should be
 the size of the whole screen, but only the region from $(xstart,ystart)$ to $(xend,yend)$
 will be updated. This function does not work on X11.
-\item[{\tt ttk\_start\_cop}] starts the function \verb|fn| running on the iPod's COP (coprocessor).
-On X11 it emulates this with a second thread.
-\item[{\tt ttk\_stop\_cop}] stops whatever is currently executing on the COP.
-\item[{\tt ttk\_sleep\_cop}] puts the COP to sleep. {\tt ttk\_wake\_cop} wakes it back up.
 \end{description}
 
 \section{Appearance Functions}
