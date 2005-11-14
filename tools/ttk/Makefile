@@ -124,3 +124,5 @@ docs:
 	pdflatex API.tex && \
 	pdflatex API.tex && \
 	cd ..
+
+.PHONY: all build-dirs examples install docs dist
