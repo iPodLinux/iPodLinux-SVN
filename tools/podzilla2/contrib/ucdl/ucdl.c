@@ -556,9 +556,6 @@ void *uCdl_open (const char *path)
 		At |= 0xfc000000;
 	    }
 	    A = At;
-	    // :TRICKY: I have no idea why this works, but it
-	    // does. I was getting off-by-8 errors before.
-	    A += 8; 
 	    break;
 	case R_ARM_ABS32:
 	case R_ARM_REL32:
@@ -611,7 +608,7 @@ void *uCdl_open (const char *path)
 	    break;
 	case R_ARM_PC24:
 	    *addr32 &= ~0xffffff;
-	    *addr32 |= ((val & 0x3ffffff) >> 2);
+	    *addr32 |= ((val >> 2) & 0xffffff);
 	    break;
 	case R_ARM_ABS32:
 	case R_ARM_REL32:
