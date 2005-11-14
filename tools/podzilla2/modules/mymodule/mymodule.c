@@ -110,6 +110,10 @@ void init_mymodule()
 void __init_module__() 
 {
     pz_message ("Testing.");
+    pz_message ("Testing 2.");
+    pz_message ("Testing 3.");
+    pz_message ("Testing 4.");
+    pz_message ("Testing 5.");
     *(volatile unsigned int *)0x60006004 = *(volatile unsigned int *)0x60006004 | 0x4;
 #if 0
     char filename[6] = { 'i', 'n', 'i', '.', 'd', 0 };
