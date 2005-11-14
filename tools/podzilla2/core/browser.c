@@ -122,7 +122,7 @@ static TWindow *new_textview_window(char *filename)
 typedef struct browser_handler
 {
     int (*pred)(const char *);
-    TWindow *(*handler)();
+    TWindow *(*handler)(const char *);
     struct browser_handler *next;
 } browser_handler;
 static browser_handler *handler_head;
@@ -135,7 +135,8 @@ typedef struct browser_action
 } browser_action;
 static browser_action *action_head;
 
-void pz_browser_set_handler (int (*pred)(const char *), TWindow *(*handler)()) 
+void pz_browser_set_handler (int (*pred)(const char *),
+		TWindow *(*handler)(const char *)) 
 {
     browser_handler *cur = handler_head;
     if (!cur) {
@@ -205,10 +206,10 @@ void pz_browser_remove_action (int (*pred)(const char *))
 
 TWindow *pz_browser_open (const char *path) 
 {
-    browser_handler *cur;
+    browser_handler *cur = handler_head;
     while (cur) {
 	if (cur->pred && (*(cur->pred))(path))
-	    return (*(cur->handler))();
+	    return (*(cur->handler))(path);
 	cur = cur->next;
     }
     return 0;
