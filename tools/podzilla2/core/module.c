@@ -326,15 +326,10 @@ static void do_load (PzModule *mod)
     fname = malloc (strlen (mod->mountpt) + strlen (mod->name) + 8);
 #ifdef IPOD
     sprintf (fname, "%s/%s.o", mod->mountpt, mod->name);
-    pz_warning ("%d", __LINE__);
     mod->handle = uCdl_open (fname);
-    pz_warning ("%d", __LINE__);
     free (fname);
-    pz_warning ("%d", __LINE__);
     if (!mod->handle) {
-    pz_warning ("%d", __LINE__);
 	pz_error ("Could not load module %s: %s", mod->name, uCdl_error());
-    pz_warning ("%d", __LINE__);
     }
 #else
     sprintf (fname, "%s/%s.so", mod->mountpt, mod->name);
@@ -345,11 +340,8 @@ static void do_load (PzModule *mod)
     }
 #endif
     else {
-    pz_warning ("%d", __LINE__);
 #ifdef IPOD
-    pz_warning ("%d", __LINE__);
 	mod->init = uCdl_sym (mod->handle, "__init_module__");
-    pz_warning ("%d", __LINE__);
 	if (!mod->init) pz_warning ("Could not do modinit function for %s: %s", mod->name, uCdl_error());
 #else
 	mod->init = dlsym (mod->handle, "__init_module__");
@@ -361,11 +353,8 @@ static void do_load (PzModule *mod)
     fwrite (mod->init, 1024, 1, fp);
     fclose (fp);
 	    (*mod->init)();
-    pz_warning ("%d", __LINE__);
 	}
-    pz_warning ("%d", __LINE__);
     }
-    pz_warning ("%d", __LINE__);
     mod->to_load = 0;
     pz_warning ("%d done", __LINE__);
 }
@@ -507,8 +496,6 @@ void pz_modules_init()
 	return;
     }
 
-    pz_message ("mounting pods");
-
     // Mount 'em
     cur = module_head;
     last = 0;
@@ -524,8 +511,6 @@ void pz_modules_init()
 	    cur = cur->next;
 	}
     }
-
-    pz_message ("loading modinfs");
 
     // Load the module.inf's
     cur = module_head;
@@ -551,8 +536,6 @@ void pz_modules_init()
 	}
     }
 
-    pz_message ("checking linkedins");
-
     // Check which ones are linked in
     cur = module_head;
     last = 0;
@@ -569,8 +552,6 @@ void pz_modules_init()
     // XXX. For now, we load them in directory order. That will
     // wreak havoc with dependencies. davidc__ is working on a 
     // better solution.
-
-    pz_message ("loading mods");
 
     cur = module_head;
     while (cur) {

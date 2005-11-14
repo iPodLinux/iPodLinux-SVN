@@ -468,6 +468,9 @@ void pz_message_title (const char *title, const char *text)
 }
 void pz_message (const char *text) 
 {
+    FILE *fp = fopen ("msg.inf", "a");
+    fprintf (fp, "%%%p \"%s\" len %d\n", text, text, strlen (text));
+    fclose (fp);
     pz_do_dialog (_("Information"), text, _("Ok"), 0, 0, 0, 0);
 }
 static void warn_or_err (const char *title, const char *fmt, va_list ap)
