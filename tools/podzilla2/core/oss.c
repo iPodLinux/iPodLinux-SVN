@@ -92,14 +92,12 @@ int pz_dsp_setup(pz_dsp_st *oss, int channels, int rate)
 #endif
 }
 
+#ifdef __linux__
 static int pz_dsp_set_recsrc(pz_dsp_st *oss, int rec_src)
 {
-#ifdef __linux__
 	return ioctl(oss->mixer, SOUND_MIXER_WRITE_RECSRC, &rec_src);
-#else
-	return -1;
-#endif
 }
+#endif
 
 void pz_dsp_write(pz_dsp_st *oss, void *ptr, size_t size)
 {

@@ -16,6 +16,7 @@
  * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 #include <fcntl.h>
@@ -83,13 +84,13 @@ static PzModule *module_head;
 // sets mod->mountpt = 0 on failure, returns -1. 0 = success.
 static int mount_pod (PzModule *mod) 
 {
-	char mountline[256];
+    struct stat st;
+
+#ifdef MountPods
+    char mountline[256];
     char devstr[64];
     int devfd, podfd;
-    struct stat st;
     static int nextmount = 0;
-    
-#ifdef MountPods
 
 #ifdef IPOD
 #define PODDIR "/tmp/modules/"
@@ -249,7 +250,7 @@ static int fix_dependencies (PzModule *mod, int initing)
     PzModule **pdep;
     int ndeps = 0;
     
-    if (!str) return;
+    if (!str) return 0;
     
     if (strchr (str, ','))
 	separator = ',';
@@ -404,7 +405,9 @@ void pz_modules_init()
 #define MODULEDIR "pods/"
 #endif
 
+#ifdef MountPods
     struct stat st;
+#endif
     PzModule *last, *cur;
     int nmods = 0;
     struct dirent *d;

@@ -462,7 +462,7 @@ void pz_menu_add_option (const char *menupath, const char **choices)
 int pz_menu_get_option (const char *menupath) 
 {
     ttk_menu_item *item = resolve_menupath (menupath, NO_ADD);
-    if (!item) return;
+    if (!item) return 0;
     return item->choice;
 }
 
