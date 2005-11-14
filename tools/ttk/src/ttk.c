@@ -1646,7 +1646,7 @@ void ttk_input_size (int *w, int *h)
 }
 
 
-void ttk_input_char (char ch) 
+void ttk_input_char (int ch) 
 {
     if (!ttk_windows || !ttk_windows->w) return;
     

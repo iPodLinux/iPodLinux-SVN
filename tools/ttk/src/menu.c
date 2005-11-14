@@ -754,7 +754,13 @@ void ttk_menu_free (TWidget *this)
 		ttk_free_window (data->menu[i]->sub);
 	    if (data->itemsrf[i]) ttk_free_surface (data->itemsrf[i]);
 	    if (data->itemsrfI[i]) ttk_free_surface (data->itemsrfI[i]);
-	    if (data->free_everything) free (data->menu[i]);
+	    if (data->free_everything) {
+                if (data->menu[i]->free_data)
+                    free (data->menu[i]->data);
+                if (data->menu[i]->free_name)
+                    free (data->menu[i]->name);
+                free (data->menu[i]);
+            }
 	}
 	free (data->menu);
     }
