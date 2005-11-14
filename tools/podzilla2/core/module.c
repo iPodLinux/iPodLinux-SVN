@@ -348,10 +348,12 @@ static void do_load (PzModule *mod)
 	if (!mod->init) pz_warning ("Could not do modinit function for %s: %s", mod->name, dlerror());
 #endif
 	else {
+#ifdef IPOD
     pz_warning ("%d calling %p", __LINE__, mod->init);
     FILE *fp = fopen ("mod.dat", "w");
     fwrite (mod->init, 1024, 1, fp);
     fclose (fp);
+#endif
 	    (*mod->init)();
 	}
     }
@@ -518,8 +520,6 @@ void pz_modules_init()
 	load_modinf (cur);
 	cur = cur->next;
     }
-
-    pz_message ("figuring deps");
 
     // Figure out the dependencies
     cur = module_head;
