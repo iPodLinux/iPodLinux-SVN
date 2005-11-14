@@ -123,7 +123,7 @@ typedef struct TWindow
     /* private */ struct TWidget *input;
     /* private */ int show_header;
     /* private */ int epoch;
-    /* private */ char inbuf[32]; // circular buffer
+    /* private */ int inbuf[32]; // circular buffer
     /* private */ int inbuf_start, inbuf_end;
     /* private */ int onscreen;
     int data;
@@ -245,6 +245,12 @@ void ttk_destroy_timer (ttk_timer tim);
 void ttk_set_transition_frames (int frames);
 void ttk_set_clicker (void (*fn)());
 void ttk_set_scroll_multiplier (int num, int denom);
+
+int ttk_input_start (TWidget *inmethod);
+void ttk_input_move (int x, int y);
+void ttk_input_size (int *w, int *h);
+void ttk_input_char (int ch);
+void ttk_input_end();
 
 // -- Implemented by GFX driver --
 
