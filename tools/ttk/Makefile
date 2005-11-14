@@ -1,6 +1,6 @@
 PREFIX ?= /usr
 
-all: build/ipod-sdl
+all: build-dirs
 	@echo ">>> Building TTK..."
 ifndef NOSDL
 ifndef NOIPOD
@@ -42,14 +42,16 @@ endif
 	@echo "<<< Done."
 	@echo
 
-build/ipod-sdl:
-	@echo ">>> Making build directories..."
-	./make-build-dirs.sh
-	ln -s ../../fonts ../../schemes build/x11-mwin/
-	ln -s ../../fonts ../../schemes build/x11-sdl/
-	ln -s ../libs ../mwincludes ../sdlincludes build/
-	@echo "<<< Done."
-	@echo
+build-dirs:
+	@if ! test -d build; then \
+	echo ">>> Making build directories..."; \
+	./make-build-dirs.sh; \
+	ln -s ../../fonts ../../schemes build/x11-mwin/; \
+	ln -s ../../fonts ../../schemes build/x11-sdl/; \
+	ln -s ../libs ../mwincludes ../sdlincludes build/; \
+	echo "<<< Done."; \
+	echo; \
+	fi
 
 install: all
 	@echo ">>> Installing TTK..."
