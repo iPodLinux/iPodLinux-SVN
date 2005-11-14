@@ -222,8 +222,9 @@ void pz_vector_string (ttk_surface srf, const char *string, int x, int y, int cw
 	    x = sx;
 	    y += ch + (ch/4);
 	} else {
-	    if (lookup[*string])
-		render_polystruct (srf, lookup[*string], x, y, cw, ch, col);
+	    if (lookup[*(unsigned const char *)string])
+		render_polystruct (srf, lookup[*(unsigned const char *)string],
+				x, y, cw, ch, col);
 	    x += cw + (cw/8) + 1 + kern;
 	}
 	string++;

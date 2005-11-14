@@ -104,26 +104,26 @@ static int (*unused_handlers[128])(int, int);
 static int held_ignores[128]; // set a char to 1 = ignore its UP event once.
 static ttk_timer held_timers[128]; // the timers
 
-void pz_register_global_hold_button (char ch, int ms, void (*handler)()) 
+void pz_register_global_hold_button (unsigned char ch, int ms, void (*handler)()) 
 {
     held_times[ch] = ms;
     held_handlers[ch] = handler;
 }
-void pz_unregister_global_hold_button (char ch) 
+void pz_unregister_global_hold_button (unsigned char ch) 
 {
     held_times[ch] = 0; held_handlers[ch] = 0;
 }
 
-void pz_register_global_unused_handler (char ch, int (*handler)(int, int)) 
+void pz_register_global_unused_handler (unsigned char ch, int (*handler)(int, int)) 
 {
     unused_handlers[ch] = handler;
 }
-void pz_unregister_global_unused_handler (char ch) 
+void pz_unregister_global_unused_handler (unsigned char ch) 
 {
     unused_handlers[ch] = 0;
 }
 
-void pz_handled_hold (char ch) 
+void pz_handled_hold (unsigned char ch)
 {
     held_timers[ch] = 0;
     held_ignores[ch]++;
