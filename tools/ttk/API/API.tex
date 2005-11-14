@@ -1178,6 +1178,8 @@ typedef struct ttk_menu_item
     int (*choiceget)(struct ttk_menu_item *item, int cdata);
     int choice;
     int (*visible)(struct ttk_menu_item *item);
+    int free_name;
+    int free_data;
 
     /* readonly */ int menuwidth, menuheight;
 } ttk_menu_item;
@@ -1226,6 +1228,8 @@ as argument. It should return nonzero if the item is to be displayed. If it is s
 will always be displayed. Changes in displayedness may take about a second to show onscreen.
 \item[{\tt menuwidth} and {\tt menuheight}] contain the width and the height of the menu this item is in;
 this is used by the submenu handler function, among others.
+\item[{\tt free_name} and {\tt free_data}] indicate whether the name and the data fields should be respectively
+freed when the menu is.
 \end{description}
 
 \subsection{Flags}

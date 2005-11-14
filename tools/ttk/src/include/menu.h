@@ -43,6 +43,8 @@ typedef struct ttk_menu_item
     int (*choiceget)(struct ttk_menu_item *item, int cdata);
     int choice; // optional
     int (*visible)(struct ttk_menu_item *item);
+    int free_name;
+    int free_data; // if set, free(item->data) on destruction
 
     /* readonly */ int menuwidth, menuheight;
     /* private */ int nchoices;
