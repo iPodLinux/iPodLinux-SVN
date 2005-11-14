@@ -468,9 +468,11 @@ void pz_message_title (const char *title, const char *text)
 }
 void pz_message (const char *text) 
 {
+#ifdef IPOD
     FILE *fp = fopen ("msg.inf", "a");
-    fprintf (fp, "%%%p \"%s\" len %d\n", text, text, strlen (text));
+    fprintf (fp, "I- %%%p \"%s\" len %d\n", text, text, strlen (text));
     fclose (fp);
+#endif
     pz_do_dialog (_("Information"), text, _("Ok"), 0, 0, 0, 0);
 }
 static void warn_or_err (const char *title, const char *fmt, va_list ap)
@@ -482,10 +484,20 @@ static void warn_or_err (const char *title, const char *fmt, va_list ap)
 }
 void pz_warning (const char *fmt, ...) 
 {
+#ifdef IPOD
+    FILE *fp = fopen ("msg.inf", "a");
+    fprintf (fp, "W- %%%p \"%s\" len %d\n", fmt, fmt, strlen (fmt));
+    fclose (fp);
+#endif
     va_list ap;
     va_start (ap, fmt);
     warn_or_err (_("Warning"), fmt, ap);
     va_end (ap);
+#ifdef IPOD
+    fp = fopen ("msg.inf", "a");
+    fprintf (fp, "  done\n");
+    fclose (fp);
+#endif
 }
 void pz_error (const char *fmt, ...) 
 {

@@ -16,7 +16,7 @@ ifdef IPOD
 CROSS ?= arm-elf
 CC = $(CROSS)-gcc
 LD = $(CROSS)-ld
-MYCFLAGS = `$(TTKCONF) --ipod --sdl --cflags` -I../contrib/ucdl
+MYCFLAGS = `$(TTKCONF) --ipod --sdl --cflags` -I../contrib/ucdl -mapcs -mcpu=arm7tdmi
 else
 CC ?= cc
 LD ?= ld

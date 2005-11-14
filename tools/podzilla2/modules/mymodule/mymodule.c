@@ -107,9 +107,10 @@ void init_mymodule()
     printf ("Hi! MyModule loaded, action set.\n");
 }
 
+#ifdef IPOD
 void __init_module__() 
 {
-    pz_message ("Testing.");
+    pz_warning ("Testing %d.", 42);
     pz_message ("Testing 2.");
     pz_message ("Testing 3.");
     pz_message ("Testing 4.");
@@ -135,5 +136,6 @@ void __init_module__()
     pz_warning (msg);
 #endif
 }
-
-//PZ_MOD_INIT (init_mymodule)
+#else
+PZ_MOD_INIT (init_mymodule)
+#endif
