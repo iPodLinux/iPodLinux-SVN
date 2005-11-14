@@ -380,7 +380,7 @@ static wftable waveforms[] = {
 #include <stdlib.h>
 #define PZ_COMPAT
 #include "pz.h"
-#ifdef __linux__
+#ifndef __linux__
 #define pz_dsp_st int
 #endif
 

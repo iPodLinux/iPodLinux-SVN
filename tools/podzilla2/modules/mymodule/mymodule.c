@@ -79,7 +79,7 @@ PzWindow *new_mymodule_window()
     if (!fp) {
 	pz_warning ("Could not read from %s: %s.", pz_module_get_datapath (module, "message.txt"),
 		    strerror (errno));
-	text = strdup ("Hi! I forgot to supply a message!");
+	text = (char *)strdup ("Hi! I forgot to supply a message!");
     } else {
 	long len;
 	fseek (fp, 0, SEEK_END);
