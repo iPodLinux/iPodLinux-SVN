@@ -1,5 +1,7 @@
 PREFIX ?= /usr
 
+export MBD = yes
+
 all: build-dirs
 	@echo ">>> Building TTK..."
 ifndef NOSDL
