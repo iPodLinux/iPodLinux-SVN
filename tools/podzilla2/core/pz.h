@@ -415,6 +415,13 @@ void pz_browser_add_action (int (*pred)(const char *), ttk_menu_item *action); /
 void pz_browser_remove_action (int (*pred)(const char *));
 
 
+/** Text input functions - input.c **/
+void pz_register_input_method (TWidget *(*handler)());
+void pz_register_input_method_n (TWidget *(*handler)()); // _n = numeric
+int pz_start_input();
+int pz_start_input_n();
+
+
 /** Appearance - appearance.c **/
 TWindow *pz_select_color_scheme();
 
