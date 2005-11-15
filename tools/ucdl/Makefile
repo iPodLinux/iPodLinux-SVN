@@ -9,7 +9,7 @@ libuCdl.a: ucdl.o flat.o
 clean:
 	$(RM) *.o libuCdl.a modtest symadd modtest.gdb
 
-symadd:
+symadd: symadd.c flat.c
 	gcc -o symadd flat.c symadd.c
 
 modtest: symadd

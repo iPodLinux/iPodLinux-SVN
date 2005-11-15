@@ -70,26 +70,33 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Bad magic. %s is not a bFLT exec.\n", argv[2]);
 		return 2;
 	}
-	fseek(fp, header.reloc_start + 4*header.reloc_count, SEEK_SET);
-
-	while (fgets(line, 1023, symp)) n_syms++;
-	rewind(symp);
-	n_syms = htonl(n_syms);
-	fwrite(&n_syms, sizeof(long), 1, fp);
+	fseek(fp, header.reloc_start + 4*header.reloc_count + 4, SEEK_SET);
 
 	while (fgets(line, 1023, symp)) {
 		char offsets[9];
-		long offset;
+		char type;
+		unsigned int offset;
 		char sym[256]; /* overflow not unlikely */
-		sscanf(line, "%s T %s", &offsets, &sym);
+		sscanf(line, "%s %c %s", &offsets, &type, &sym);
+		if (type == 'T' || type == 'V' || type == 'W') type = 0;
+		if (type == 'D' || type == 'R' || type == 'G') type = 1;
+		if (type == 'B' || type == 'C' || type == 'S') type = 2;
+		if (type > 2)    continue;
 		offsets[8] = '\0';
 		offset = axtol(offsets);
 		offset = htonl(offset);
-		fwrite(&offset, sizeof(long), 1, fp);
+		fwrite(&offset, sizeof(unsigned int), 1, fp);
 		fwrite(&sym, sizeof(char), strlen(sym), fp);
 		fwrite("\0", sizeof(char), 1, fp);
+		fwrite(&type, sizeof(char), 1, fp);
+		n_syms++;
 	}
 	fclose(symp);
+
+	fseek(fp, header.reloc_start + 4*header.reloc_count, SEEK_SET);
+	n_syms = htonl(n_syms);
+	fwrite(&n_syms, sizeof(unsigned int), 1, fp);
+
 	fclose(fp);
 
 	return 0;

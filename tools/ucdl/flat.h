@@ -6,16 +6,16 @@
 
 struct flat_hdr {
 	char magic[4];
-	unsigned long rev;
-	unsigned long entry;
-	unsigned long data_start;
-	unsigned long data_end;
-	unsigned long bss_end;
-	unsigned long stack_size;
-	unsigned long reloc_start;
-	unsigned long reloc_count;
-	unsigned long flags;       
-	unsigned long filler[6];
+	unsigned int rev;
+	unsigned int entry;
+	unsigned int data_start;
+	unsigned int data_end;
+	unsigned int bss_end;
+	unsigned int stack_size;
+	unsigned int reloc_start;
+	unsigned int reloc_count;
+	unsigned int flags;       
+	unsigned int filler[6];
 };
 
 int flat_read_header(FILE *, struct flat_hdr *);
