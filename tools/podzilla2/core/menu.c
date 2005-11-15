@@ -474,7 +474,12 @@ void pz_menu_set_option (const char *menupath, int choice)
 }
 
 static void ch_set_setting (ttk_menu_item *item, int sid) 
-{ pz_set_int_setting (item->data, sid, item->choice); }
+{
+    if (item->data == pz_global_config)
+        pz_ipod_set (sid, item->choice);
+    else
+        pz_set_int_setting (item->data, sid, item->choice);
+}
 static int ch_get_setting (ttk_menu_item *item, int sid) 
 { return pz_get_int_setting (item->data, sid); }
 

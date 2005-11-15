@@ -24,6 +24,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <signal.h> /*d*/
 #include "pz.h"
 
 /* compat globals */
@@ -274,6 +275,7 @@ void pz_uninit()
 	pz_touch_settings();
 	pz_modules_cleanup();
 }
+
 
 
 int
