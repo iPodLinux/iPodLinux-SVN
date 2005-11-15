@@ -108,35 +108,4 @@ void init_mymodule()
     printf ("Hi! MyModule loaded, action set.\n");
 }
 
-#ifdef IPOD
-void __init_module__() 
-{
-    pz_warning ("Testing %d.", 42);
-    pz_message ("Testing 2.");
-    pz_message ("Testing 3.");
-    pz_message ("Testing 4.");
-    pz_message ("Testing 5.");
-    *(volatile unsigned int *)0x60006004 = *(volatile unsigned int *)0x60006004 | 0x4;
-#if 0
-    char filename[6] = { 'i', 'n', 'i', '.', 'd', 0 };
-    char mode[2] = { 'w', 0 };
-    void (*fn)() = __init_module__;
-    const char *msg = "Loaded.";
-    unsigned int mp = (unsigned int)msg;
-    int i;
-    sleep (5);
-    for (i = 32; i; i--, mp >>= 1) {
-        pz_ipod_set (BACKLIGHT, 1);
-        if (mp & 1)
-            sleep (1);
-        pz_ipod_set (BACKLIGHT, 0);
-        sleep (2);
-    }
-    pz_message ("Blah.");
-    printf (msg);
-    pz_warning (msg);
-#endif
-}
-#else
 PZ_MOD_INIT (init_mymodule)
-#endif
