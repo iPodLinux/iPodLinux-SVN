@@ -369,9 +369,12 @@ int ttk_run()
 	while (ctim) {
 	    if (tick > (ctim->started + ctim->delay)) {
 		ttk_timer next = ctim->next;
-		ctim->fn();
+                void (*fn)() = ctim->fn;
 		ttk_destroy_timer (ctim);
 		ctim = next;
+                // We delay the call of fn in case it itself
+                // calls ttk_run() (e.g. for a dialog).
+                fn();
 		continue;
 	    }
 	    ctim = ctim->next;
