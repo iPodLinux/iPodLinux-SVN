@@ -231,7 +231,7 @@ static void load_modinf (PzModule *mod)
     mkdir (CONFDIR, 0755);
     mkdir (CONFDIR "/modules", 0755);
     if (mkdir (mod->cfgpath, 0755) < 0 && errno != EEXIST) {
-	pz_warning ("Unable to create %s's config dir %s: %s", mod->name, mod->cfgpath,
+	pz_warning (_("Unable to create %s's config dir %s: %s"), mod->name, mod->cfgpath,
 		    strerror (errno));
     }
 
@@ -343,23 +343,16 @@ static void do_load (PzModule *mod)
     else {
 #ifdef IPOD
 	mod->init = uCdl_sym (mod->handle, "__init_module__");
-	if (!mod->init) pz_warning ("Could not do modinit function for %s: %s", mod->name, uCdl_error());
+	if (!mod->init) pz_warning (_("Could not do modinit function for %s: %s"), mod->name, uCdl_error());
 #else
 	mod->init = dlsym (mod->handle, "__init_module__");
-	if (!mod->init) pz_warning ("Could not do modinit function for %s: %s", mod->name, dlerror());
+	if (!mod->init) pz_warning (_("Could not do modinit function for %s: %s"), mod->name, dlerror());
 #endif
 	else {
-#ifdef IPOD
-    pz_warning ("%d calling %p", __LINE__, mod->init);
-    FILE *fp = fopen ("mod.dat", "w");
-    fwrite (mod->init, 1024, 1, fp);
-    fclose (fp);
-#endif
 	    (*mod->init)();
 	}
     }
     mod->to_load = 0;
-    pz_warning ("%d done", __LINE__);
 }
 
 

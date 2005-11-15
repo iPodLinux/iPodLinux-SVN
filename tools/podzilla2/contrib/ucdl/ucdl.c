@@ -227,10 +227,6 @@ void *uCdl_open (const char *path)
 	return 0;
     }
 
-    FILE *dbg = fopen ("open.dbg", "w");
-#undef printf
-#define printf(args...) fprintf(dbg,args)
-
     read (fd, &eh, sizeof(Elf_Ehdr));
     if (!IS_ELF (eh)) {
 	sprintf (error = errbuf, "Not an ELF file (%x %x %x %x)", eh.e_ident[EI_MAG0],
@@ -380,10 +376,8 @@ void *uCdl_open (const char *path)
 		for (i = 0; i < nent; i++) {
 		    if (sec->type == SHT_REL) {
 			read (fd, &r, sizeof(r));
-                        printf ("R: o=%x, sym=%d, t=%d, no addend\n", r.r_offset, r.r_info >> 8, r.r_info & 0xff);
 		    } else {
 			read (fd, &ra, sizeof(ra));
-                        printf ("R: o=%x, sym=%d, t=%d, a=%x\n", ra.r_offset, ra.r_info >> 8, ra.r_info & 0xff, ra.r_addend);
 		    }
 
 		    if (!((ret->sections + sec->info)->flags & SHF_ALLOC))
@@ -410,7 +404,6 @@ void *uCdl_open (const char *path)
 			rel->addend = ra.r_addend;
 		    }
 		    rel->next = 0;
-                    printf ("el o=%x, sym=%d, t=%x, a=%x, next=%p\n", rel->offset, rel->symbolidx, rel->type, rel->addend, rel->next);
 		}
 	    }
 	    break;
@@ -423,9 +416,6 @@ void *uCdl_open (const char *path)
     // Resolve names for sections
     for (sec = ret->sections, i = 0; i < ret->nsecs; i++, sec++) {
 	sec->name = ret->strtabs[ret->shstrtabidx] + sec->nameidx;
-        if (!strcmp (sec->name, ".rodata")) {
-            printf ("RO Data! (char *)%p = <%s>\n", sec->addr, (char *)sec->addr);
-        }
     }
 
     // Resolve names and sections for symbols
@@ -443,7 +433,6 @@ void *uCdl_open (const char *path)
     reloc *rel;
     for (rel = ret->relocs; rel; rel = rel->next) {
 	rel->symbol = ret->symbols + rel->symbolidx;
-        printf ("Rl o=%x, sym=%s, t=%x, a=%x, next=%p\n", rel->offset, rel->symbol->name, rel->type, rel->addend, rel->next);
     }
 
     // Print them all and return.
@@ -665,8 +654,6 @@ void *uCdl_open (const char *path)
 	curh->next = ret;
     }
 
-#undef printf
-#define printf(args...)
     fclose (dbg);
     
     return (void *)ret;
