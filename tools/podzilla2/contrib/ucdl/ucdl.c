@@ -654,8 +654,6 @@ void *uCdl_open (const char *path)
 	curh->next = ret;
     }
 
-    fclose (dbg);
-    
     return (void *)ret;
 }
 

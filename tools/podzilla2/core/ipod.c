@@ -495,7 +495,6 @@ static int usb_test_core(int arg0)
 }
 #endif
 
-
 int pz_ipod_usb_is_connected(void)
 {
 #ifdef IPOD
