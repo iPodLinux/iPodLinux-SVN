@@ -211,6 +211,12 @@ TWindow *ttk_init()
 	    ttk_screen->w = 220;
 	    ttk_screen->h = 176;
 	    ttk_screen->bpp = 16;
+        } else if (ver & TTK_POD_NANO) {
+            ttk_screen->w = 176;
+            ttk_screen->h = 132;
+        } else if (ver & TTK_POD_VIDEO) {
+            ttk_screen->w = 320;
+            ttk_screen->h = 240;
 	} else {
 	    fprintf (stderr, "Couldn't determine your iPod version (v=0%o)\n", ver);
 	    free (ttk_screen);
@@ -224,7 +230,12 @@ TWindow *ttk_init()
 
 	ttk_screen->wx = 0;
 	if (ttk_screen->bpp == 16) {
-	    ttk_screen->wy = 21; /* Photo: 22px header, 22px menu items */
+            if (ttk_screen->h == 176 || ttk_screen->h == 132)
+                ttk_screen->wy = 21; /* Photo & Nano: 22px header, 22px menu items */
+            else if (ttk_screen->h == 240)
+                ttk_screen->wy = 23; /* Video: 24px header, 24px menu items */
+            else
+                ttk_screen->wy = 22; /* sensible default for the unknown */
 	} else {
 	    ttk_screen->wy = 19; /* Reg/Mini: 20px header, 18px menu items */
 	}
@@ -721,21 +732,25 @@ static long iPod_GetGeneration()
     for (; isspace(cpuinfo[i]); i++);
     ptr = cpuinfo + i + 2;
     
-    return strtol(ptr, NULL, 10);
+    return strtol(ptr, NULL, 16);
 }
 
 static int ttk_get_podversion_raw() 
 {
 #ifdef IPOD
-    switch (iPod_GetGeneration() / 10000) {
-    case 0: return 0;
-    case 1: return TTK_POD_1G;
-    case 2: return TTK_POD_2G;
-    case 3: return TTK_POD_3G;
-    case 4: return TTK_POD_MINI_1G;
-    case 5: return TTK_POD_4G;
-    case 6: return TTK_POD_PHOTO;
-    case 7: return TTK_POD_MINI_2G;
+    static int ver;
+    if (!ver) ver = iPod_GetGeneration();
+    switch (ver >> 16) {
+    case 0x0: return 0;
+    case 0x1: return TTK_POD_1G;
+    case 0x2: return TTK_POD_2G;
+    case 0x3: return TTK_POD_3G;
+    case 0x4: return TTK_POD_MINI_1G;
+    case 0x5: return TTK_POD_4G;
+    case 0x6: return TTK_POD_PHOTO;
+    case 0x7: return TTK_POD_MINI_2G;
+    case 0xB: return TTK_POD_VIDEO;
+    case 0xC: return TTK_POD_NANO;
     default: return 0;
     }
 #else
