@@ -109,10 +109,13 @@ static int mount_pod (PzModule *mod)
     if (system (mountline) != 0) {
     	strcat (mountline, " 2>mountpod.err >mountpod.err");
     	system (mountline);
-    	pz_error ("mount: exit %d - some sort of error, check mountpod.err");
+    	pz_error ("Module %s (#%d): mount: exit %d - some sort of error, check mountpod.err",
+                  strrchr (mod->podpath, '/') + 1, mod->mountnr);
     	free (mod->mountpt);
     	mod->mountpt = 0;
     	return -1;
+    } else {
+        pz_warning ("Module %s (#%d) is mounted.\n", strrchr (mod->podpath, '/') + 1, mod->mountnr);
     }
 #else
     mod->mountpt = malloc (strlen ("xpods/") + strlen (strrchr (mod->podpath, '/')) + 1);
