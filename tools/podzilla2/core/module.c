@@ -114,8 +114,6 @@ static int mount_pod (PzModule *mod)
     	free (mod->mountpt);
     	mod->mountpt = 0;
     	return -1;
-    } else {
-        pz_warning ("Module %s (#%d) is mounted.\n", strrchr (mod->podpath, '/') + 1, mod->mountnr);
     }
 #else
     mod->mountpt = malloc (strlen ("xpods/") + strlen (strrchr (mod->podpath, '/')) + 1);
