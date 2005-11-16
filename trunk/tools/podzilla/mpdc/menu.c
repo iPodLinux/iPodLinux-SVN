@@ -825,7 +825,7 @@ static int mm_fill_albums(char * search, int searchTable)
 	char * album;
 	char is_albums = 0;
 
-	if (mpdc_tickle < 0)
+	if (mpdc_tickle() < 0)
 		return -1;
 	mpd_sendListCommand(mpdz, MPD_TABLE_ALBUM, search);
 	if (mpdz->error) {
@@ -841,9 +841,6 @@ static int mm_fill_albums(char * search, int searchTable)
 
 	mpd_finishCommand(mpdz);
 	if (mpdz->error) {
-		/* it errors out "connection closed" here sometimes, why
-		 * doesn't it do it before it starts listing artists? and why
-		 * doesn't mpdc_tickle() detect a closed connection? */
 		mpdc_tickle();
 		return -1;
 	}
