@@ -11,7 +11,10 @@
 #define TTK_POD_PHOTO     040
 #define TTK_POD_PP5020    070
 #define TTK_POD_MINI_2G   0100
-#define TTK_POD_PP5022    0700
+#define TTK_POD_MINI      0120
+#define TTK_POD_NANO      0200
+#define TTK_POD_VIDEO     0400
+#define TTK_POD_PP5022    0700 /* also includes 5021 */
 #define TTK_POD_PP502X    0770
 
 #define TTK_BUTTON_ACTION   '\n'
