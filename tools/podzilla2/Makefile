@@ -13,7 +13,7 @@ endif
 endif
 
 ifdef IPOD
-LIBS += -Wl,-elf2flt `$(TTKCONF) --ipod --sdl --libs` contrib/ucdl/libuCdl.a -lintl -mapcs
+LIBS += -Wl,-elf2flt -Wl,-whole-archive -lc `$(TTKCONF) --ipod --sdl --libs` contrib/ucdl/libuCdl.a -lintl -Wl,-no-whole-archive -mapcs
 CROSS ?= arm-elf
 CC = $(CROSS)-gcc
 else

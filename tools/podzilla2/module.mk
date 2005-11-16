@@ -67,7 +67,6 @@ $(MODULE).so: $(MODULE).c
 	@rm -f $(MODULE).o
 else
 finalmod = $(MODULE).o
-# already will be made, don't need a rule
 endif
 
 else
@@ -84,7 +83,7 @@ else
 finalmod = $(MODULE).o
 $(MODULE).o: $(obj-m)
 	@echo " LD [M]  $(MODULE)"
-	@$(LD) -r -o $@ $(obj-m)
+	@$(LD) -r -o $@ $(obj-m) $(MODLIBS)
 endif
 
 endif
