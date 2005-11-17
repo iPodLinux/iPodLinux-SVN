@@ -53,26 +53,21 @@ endif
 
 ifdef obj-m
 ifeq ($(words $(obj-m)),1)
-ifeq ($(findstring $(MODULE).o,$(obj-m)),)
-$(error If you have only one object file, it must be named after your module.)
-endif
 ## Case for single-file
 ifndef IPOD
 finalmod = $(MODULE).so
 onlyso = true
-$(MODULE).so: $(MODULE).c
-	@echo " CC [M]  $(MODULE).so"
-	@$(CC) $(CFLAGS) $(MYCFLAGS) $(PIC) -c -o $(MODULE).o $< -I$(PZPATH)/core `$(TTKCONF) --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD
-	@$(MAKESO) -o $@ $(MODULE).o
-	@rm -f $(MODULE).o
+$(MODULE).so: $(obj-m)
+	@$(MAKESO) -o $@ $(obj-m)
+	@-rm -f $(MODULE).o
 else
-finalmod = $(MODULE).o
+finalmod = $(MODULE).mod.o
+$(MODULE).mod.o: $(obj-m)
+	@cp $(obj-m) $(MODULE).mod.o
+	@cp $(MODULE).mod.o $(MODULE).o
 endif
 
 else
-ifneq ($(findstring $(MODULE).o,$(obj-m)),)
-$(error If you have multiple object files, you cannot have one named after your module.)
-endif
 ## Case for multi-file
 ifndef IPOD
 finalmod = $(MODULE).so
@@ -80,10 +75,11 @@ $(MODULE).so: $(obj-m)
 	@echo " LD [SO] $(MODULE).so"
 	@$(MAKESO) -o $@ $(obj-m)
 else
-finalmod = $(MODULE).o
-$(MODULE).o: $(obj-m)
+finalmod = $(MODULE).mod.o
+$(MODULE).mod.o: $(obj-m)
 	@echo " LD [M]  $(MODULE)"
 	@$(LD) -r -o $@ $(obj-m) $(MODLIBS)
+	@cp $(MODULE).mod.o $(MODULE).o
 endif
 
 endif
