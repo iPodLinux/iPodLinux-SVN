@@ -1640,6 +1640,7 @@ int ttk_input_start (TWidget *inmethod)
     inmethod->x = ttk_screen->w - inmethod->w - 1;
     inmethod->y = ttk_screen->h - inmethod->h - 1;
     
+    inmethod->win = ttk_windows->w;
     ttk_windows->w->input = inmethod;
     ttk_dirty |= TTK_DIRTY_WINDOWAREA | TTK_DIRTY_INPUT;
     return inmethod->h;
