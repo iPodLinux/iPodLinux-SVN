@@ -187,8 +187,8 @@ void pz_ipod_fix_setting (int setting, int value)
 
 void pz_ipod_set (int sid, int value) 
 {
-    pz_ipod_fix_setting (sid, value);
     pz_set_int_setting(pz_global_config, sid, value);
+    pz_ipod_fix_setting (sid, value);
 }
 
 static void fix_setting_fn (PzConfItem *ci) 
