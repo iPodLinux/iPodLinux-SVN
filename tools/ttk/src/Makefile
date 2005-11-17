@@ -48,12 +48,6 @@ endif
 endif
 endif
 
-ifdef PHOTO
-OBJS += SFont.o
-else
-MYCFLAGS += -DNO_SF
-endif
-
 ifdef TTF
 OBJS += SDL_ttf.o
 else
@@ -64,12 +58,13 @@ ifdef IPOD
 LIBSA = ../libs/common/*.a
 else
 LIBSA =
+LIBS += -L/sw/lib -L/usr/local/lib
 endif
 
 ifeq ($(GFXLIB),SDL)
 MYCFLAGS += -DSDL
-OBJS += sdl.o SDL_gfxPrimitives.o SDL_gfxPrimitives_Byte.o SDL_rotozoom.o
-HDR += SDL_gfxPrimitives.h SDL_rotozoom.h
+OBJS += sdl.o SDL_gfxPrimitives.o SDL_gfxPrimitives_Byte.o SDL_rotozoom.o SFont.o
+HDR += SDL_gfxPrimitives.h SDL_rotozoom.h SFont.h
 ifdef IPOD
 MYCFLAGS += -I../sdlincludes
 LIBSA += ../libs/SDL/*.a
@@ -84,9 +79,12 @@ ifeq ($(GFXLIB),mwin)
 MYCFLAGS += -DMWIN -I../mwincludes
 OBJS += mwin.o
 ifdef IPOD
-LIBSA += ../libs/mwin/ipod/*.a
+LIBSA += ../libs/mwin/*.a
 else
-LIBSA += ../libs/mwin/x11/$(shell uname -s)/*.a
+LIBSA += $(shell find ../microwindows* ../../microwindows* -name 'lib*.a' 2>/dev/null)
+ifeq ($(strip $(LIBSA)),)
+$(error Unable to find microwindows. Put it in ../microwindows-SOMETHING and make sure it is compiled.)
+endif
 LIBS += -L/usr/X11R6/lib -lX11 -lpng -ljpeg
 endif
 LIBS += -lm
@@ -130,7 +128,7 @@ endif
 
 # Examples:
 %: %.o libttk.a
-	$(CC) $(CFLAGS) $(MYCFLAGS) $(E2F) -o $@ $< $(GS) libttk.a -L/sw/lib -L/usr/local/lib $(LIBS) $(GE)
+	$(CC) $(CFLAGS) $(MYCFLAGS) $(E2F) -o $@ $< $(GS) libttk.a $(LIBS) $(GE)
 
 ifneq ($(LIBSA),)
 libttk.a: $(OBJS) $(LIBSA)

@@ -1211,7 +1211,7 @@ static void draw_sf (ttk_font *f, ttk_surface srf, int x, int y, ttk_color col, 
     Uint8 r, g, b;
     SDL_GetRGB (col, srf->format, &r, &g, &b);
 
-    if (!f->sf) return 0;
+    if (!f->sf) return;
 
     if ((r+g+b) > 600)
 	SFont_Write (srf, f->sfi, x, y, str);
@@ -1222,6 +1222,7 @@ static int width_sf (ttk_font *f, const char *str)
 {
     if (f->sf)
 	return SFont_TextWidth (f->sf, str);
+    return 0;
 }
 static void free_sf (ttk_font *f) 
 {
