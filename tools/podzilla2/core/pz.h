@@ -106,8 +106,13 @@ extern int __pz_builtin_number_of_init_functions;
         __pz_builtin_names[__pz_builtin_number_of_init_functions++] = __PZ_MODULE_NAME;
     }
 #else
+// The _init_module__ one is to make it transparent
+// on systems with leading underscores on C symbols.
 #define PZ_MOD_INIT(fn) \
     void __init_module__() { \
+        fn(); \
+    } \
+    void _init_module__() { \
         fn(); \
     }
 #endif
