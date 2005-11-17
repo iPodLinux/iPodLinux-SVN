@@ -73,8 +73,8 @@ struct _TTF_Font;
 typedef SDL_Surface *ttk_surface;
 typedef struct _ttk_font {
 #ifndef NO_SF
-    struct SFont_Font *sf; 
-    struct SFont_Font *sfi; // inverted
+    SFont_Font *sf; 
+    SFont_Font *sfi; // inverted
 #endif
     struct Bitmap_Font *bf;
 #ifndef NO_TF

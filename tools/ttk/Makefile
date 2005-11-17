@@ -12,7 +12,7 @@ ifndef NOX11
 	make -C build/x11-sdl SDL=1 all
 endif
 endif
-ifndef NOMWIN
+ifdef DOMWIN
 ifndef NOIPOD
 	make -C build/ipod-mwin IPOD=1 MWIN=1 all
 endif
@@ -33,7 +33,7 @@ ifndef NOX11
 	make -C build/x11-sdl SDL=1 examples
 endif
 endif
-ifndef NOMWIN
+ifdef DOMWIN
 ifndef NOIPOD
 	make -C build/ipod-mwin IPOD=1 MWIN=1 examples
 endif
@@ -66,7 +66,7 @@ ifndef NOX11
 	make -C build/x11-sdl SDL=1 install
 endif
 endif
-ifndef NOMWIN
+ifdef DOMWIN
 ifndef NOIPOD
 	make -C build/ipod-mwin IPOD=1 MWIN=1 install
 endif
