@@ -150,58 +150,57 @@ static void load_modinf (PzModule *mod)
     fp = fopen (buf, "r");
     if (!fp) {
 	pz_perror (buf);
-	return;
-    }
-
-    while (fgets (buf, 79, fp)) {
-	char *key, *value;
-
-	if (buf[strlen (buf) - 1] == '\n')
-	    buf[strlen (buf) - 1] = 0;
-	if (strchr (buf, '#'))
-	    *strchr (buf, '#') = 0;
-	if (strlen (buf) < 1)
-	    continue;
-	if (!strchr (buf, ':')) {
-	    pz_error (_("Line without colon in Module file for %s, ignored"), strrchr (mod->podpath, '/'));
-	    continue;
-	}
-
-	key = buf;
-	value = strchr (buf, ':') + 1;
-	while (isspace (*value)) value++;
-	while (isspace (*(value + strlen (value) - 1))) value[strlen (value) - 1] = 0;
-	*strchr (key, ':') = 0;
-
-	if (strcmp (key, "Module") == 0) {
-	    mod->name = malloc (strlen (value) + 1);
-	    strcpy (mod->name, value);
-	} else if (strcmp (key, "Display-name") == 0) {
-	    mod->longname = malloc (strlen (value) + 1);
-	    strcpy (mod->longname, value);
-	} else if (strcmp (key, "Author") == 0) {
-	    mod->author = malloc (strlen (value) + 1);
-	    strcpy (mod->author, value);
-	} else if (strcmp (key, "Signature") == 0) {
-	    mod->signature = malloc (strlen (value) + 1);
-	    strcpy (mod->signature, value);
-	} else if (strcmp (key, "Dependencies") == 0) {
-	    mod->depsstr = malloc (strlen (value) + 1);
-	    strcpy (mod->depsstr, value);
-	} else if (strcmp (key, "Provides") == 0) {
-	    mod->providesstr = malloc (strlen (value) + 1);
-	    strcpy (mod->providesstr, value);
-	} else if (strcmp (key, "Unstable") == 0) {
-	    // You can override "beta" with secret=testing but you can't
-	    // override other things, e.g. "alpha" or "does not work".
-	    if (strcmp (value, "beta") == 0 && !pz_has_secret ("testing"))
-		pz_warning (_("Module %s is in beta. Use at your own risk."), mod->name);
-	    else
-		pz_warning (_("Module %s is unstable: %s. Use at your own risk."), mod->name, value);
-	} else {
-	    pz_error (_("Unrecognized key <%s> in Module file for %s, ignored"), key,
-		      mod->name? mod->name : strrchr (mod->podpath, '/'));
-	}
+    } else {
+        while (fgets (buf, 79, fp)) {
+            char *key, *value;
+            
+            if (buf[strlen (buf) - 1] == '\n')
+                buf[strlen (buf) - 1] = 0;
+            if (strchr (buf, '#'))
+                *strchr (buf, '#') = 0;
+            if (strlen (buf) < 1)
+                continue;
+            if (!strchr (buf, ':')) {
+                pz_error (_("Line without colon in Module file for %s, ignored"), strrchr (mod->podpath, '/'));
+                continue;
+            }
+            
+            key = buf;
+            value = strchr (buf, ':') + 1;
+            while (isspace (*value)) value++;
+            while (isspace (*(value + strlen (value) - 1))) value[strlen (value) - 1] = 0;
+            *strchr (key, ':') = 0;
+            
+            if (strcmp (key, "Module") == 0) {
+                mod->name = malloc (strlen (value) + 1);
+                strcpy (mod->name, value);
+            } else if (strcmp (key, "Display-name") == 0) {
+                mod->longname = malloc (strlen (value) + 1);
+                strcpy (mod->longname, value);
+            } else if (strcmp (key, "Author") == 0) {
+                mod->author = malloc (strlen (value) + 1);
+                strcpy (mod->author, value);
+            } else if (strcmp (key, "Signature") == 0) {
+                mod->signature = malloc (strlen (value) + 1);
+                strcpy (mod->signature, value);
+            } else if (strcmp (key, "Dependencies") == 0) {
+                mod->depsstr = malloc (strlen (value) + 1);
+                strcpy (mod->depsstr, value);
+            } else if (strcmp (key, "Provides") == 0) {
+                mod->providesstr = malloc (strlen (value) + 1);
+                strcpy (mod->providesstr, value);
+            } else if (strcmp (key, "Unstable") == 0) {
+                // You can override "beta" with secret=testing but you can't
+                // override other things, e.g. "alpha" or "does not work".
+                if (strcmp (value, "beta") == 0 && !pz_has_secret ("testing"))
+                    pz_warning (_("Module %s is in beta. Use at your own risk."), mod->name);
+                else
+                    pz_warning (_("Module %s is unstable: %s. Use at your own risk."), mod->name, value);
+            } else {
+                pz_error (_("Unrecognized key <%s> in Module file for %s, ignored"), key,
+                          mod->name? mod->name : strrchr (mod->podpath, '/'));
+            }
+        }
     }
 
     if (!mod->name) {
