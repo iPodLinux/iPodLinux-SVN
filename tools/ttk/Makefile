@@ -90,8 +90,10 @@ clean:
 	@echo ">>> Cleaning..."
 	make -C build/ipod-sdl IPOD=1 SDL=1 clean
 	make -C build/x11-sdl SDL=1 clean
+ifdef DOMWIN
 	make -C build/ipod-mwin IPOD=1 MWIN=1 clean
 	make -C build/x11-mwin MWIN=1 clean
+endif
 	@echo "<<< Done."
 	@echo
 
