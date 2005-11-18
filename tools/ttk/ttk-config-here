@@ -30,7 +30,7 @@ while test $# -gt 0; do
 	--version) echo 1.3 ;;
 	--ipod) libdir=$prefix/build/ipod; target=ipod; ccflags="${ccflags} -DIPOD" ;;
 	--x11) libdir=$prefix/build/x11; target=x ;;
-	--sdl) libdir=$libdir-sdl; if test x$target = x; then usage; fi; libfile=ttk; if test x$target = xipod; then linkflags="${linkflags} -lm"; else linkflags="${linkflags} `sdl-config --libs` -lSDL_image"; fi; ccflags="${ccflags} -DSDL -DNO_SF -DNO_TF" ;;
+	--sdl) libdir=$libdir-sdl; if test x$target = x; then usage; fi; libfile=ttk; if test x$target = xipod; then linkflags="${linkflags} -lm"; else linkflags="${linkflags} `sdl-config --libs` -lSDL_image"; fi; ccflags="${ccflags} -DSDL -DNO_TF" ;;
 	--mwin) libdir=$libdir-mwin; if test x$target = x; then usage; fi; libfile=ttk; linkflags="${linkflags} -lm"; if test x$target = xx; then linkflags="${linkflags} -L/usr/X11R6/lib -lX11"; fi; ccflags="${ccflags} -DMWIN" ;;
 	--cflags) echo ${ccflags} -I${prefix}/src -I${prefix}/mwincludes -I${prefix}/sdlincludes -I/usr/local/include/SDL -I/sw/include/SDL ;;
 	--libs) if test x$libfile = x; then usage; fi; echo -L${libdir} -l${libfile} ${linkflags}; if test x$target = xx; then echo -L/sw/lib -L/usr/local/lib; fi ;;
