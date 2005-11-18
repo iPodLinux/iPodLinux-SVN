@@ -46,7 +46,7 @@ static int *length = NULL;                   /* Length of cols in each line */
 static int *spaces = NULL;                   /* spaces left to fill */
 static int *updates = NULL;                  /* What does this do again? :) */
 
-static int inverted = 0, running = 0, tmbeatcmp = 5, photo = 0;
+static int inverted = 0, running = 0, tmbeatcmp = 1, photo = 0;
 static int lines, cols;
 
 static void matrix_free_var(void)
@@ -400,7 +400,7 @@ void new_matrix_window( void )
 	GrSelectEvents( matrix_wid, GR_EVENT_MASK_TIMER|
 	GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_KEY_DOWN);
 
-    matrix_timer = GrCreateTimer(matrix_wid, 2);
+    matrix_timer = GrCreateTimer(matrix_wid, 20);
 
 	GrMapWindow(matrix_wid);
 

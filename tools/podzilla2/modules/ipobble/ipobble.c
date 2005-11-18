@@ -49,7 +49,7 @@ static GR_WINDOW_ID ipobble_wid;
 static GR_GC_ID ipobble_gc;
 static GR_TIMER_ID ipobble_timer_id;
 
-#define DELTA_TIME  10
+#define DELTA_TIME  20
 /* GAME VARIABLES AND DEFINITIONS */
 #define GAME_STATUS_PLAY (int)1
 #define GAME_STATUS_END	(int)0

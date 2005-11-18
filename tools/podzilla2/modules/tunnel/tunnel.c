@@ -70,7 +70,7 @@ static long int score = 0;
 static long int highScore = 0;
 static int chasmWidth = 25;
 static int ballRadius = 5;
-static int timerSpeed = 25;
+static int timerSpeed = 50;
 
 static int hold = 0;
 
