@@ -223,9 +223,6 @@ void pz_menu_init()
     pz_menu_add_ttkh ("/Settings/Appearance/Text Font", pz_select_font, &ttk_textfont)->cdata = TEXT_FONT;
     pz_menu_add_setting ("/Settings/Browser Path Display", BROWSER_PATH, pz_global_config, 0);
     pz_menu_add_setting ("/Settings/Browser Show Hidden", BROWSER_HIDDEN, pz_global_config, 0);
-    pz_menu_add_action ("/Settings/Exit Without Saving", PZ_MENU_UPONE);
-    pz_menu_add_action ("/Settings/Reset All Settings/Cancel", PZ_MENU_UPONE);
-    pz_menu_add_action ("/Settings/Reset All Settings/Absolutely", reset_settings);
     pz_menu_add_stub ("/File Browser");
     pz_menu_add_action ("/Power/Quit Podzilla", quit_podzilla);
     pz_menu_add_action ("/Power/Reboot iPod/Cancel", PZ_MENU_UPONE);
@@ -249,6 +246,10 @@ TWindow *(*pz_new_menu_window)(TWidget *) = pz_default_new_menu_window;
 
 TWindow *pz_menu_get() 
 {
+    // Want to add these at end so modules get stuff put in appropriate place...
+    pz_menu_add_action ("/Settings/Exit Without Saving", PZ_MENU_UPONE);
+    pz_menu_add_action ("/Settings/Reset All Settings/Cancel", PZ_MENU_UPONE);
+    pz_menu_add_action ("/Settings/Reset All Settings/Absolutely", reset_settings);
     return pz_new_menu_window (root_menu);
 }
 
@@ -322,6 +323,7 @@ ttk_menu_item *resolve_menupath (const char *path, int loc)
 	    item->name = malloc (len + 1);
 	    strncpy ((char *)item->name, p, len);
 	    ((char *)item->name)[len] = 0;
+            item->free_name = 1;
 	    item->makesub = pz_mh_sub;
 	    item->flags = TTK_MENU_ICON_SUB;
 	    item->data = ttk_new_menu_widget (0, ttk_menufont, menu->w, menu->h);
@@ -361,6 +363,8 @@ ttk_menu_item *resolve_menupath (const char *path, int loc)
     } else {
 	item->name = path;
     }
+    item->name = strdup (item->name);
+    item->free_name = 1;
     item->visible = 0; // always visible
     return item;
 }

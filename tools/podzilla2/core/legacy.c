@@ -217,7 +217,16 @@ void pz_old_close_window(t_GR_WINDOW_ID wid)
 
 t_GR_GC_ID pz_get_gc(int copy) 
 {
-    return (copy? t_GrCopyGC (pz_root_gc) : pz_root_gc);
+    t_GR_GC_ID gc;
+    
+    if (!copy) return pz_root_gc;
+    gc = ttk_new_gc();
+    ttk_gc_set_foreground (gc, ttk_makecol (0, 0, 0));
+    ttk_gc_set_background (gc, ttk_makecol (255, 255, 255));
+    ttk_gc_set_usebg (gc, 0);
+    ttk_gc_set_xormode (gc, 0);
+    ttk_gc_set_font (gc, ttk_textfont);
+    return gc;
 }
 
 void vector_render_char (t_GR_WINDOW_ID win, t_GR_GC_ID gc,

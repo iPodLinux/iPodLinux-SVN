@@ -59,7 +59,6 @@ finalmod = $(MODULE).so
 onlyso = true
 $(MODULE).so: $(obj-m)
 	@$(MAKESO) -o $@ $(obj-m)
-	@-rm -f $(MODULE).o
 else
 finalmod = $(MODULE).mod.o
 $(MODULE).mod.o: $(obj-m)
