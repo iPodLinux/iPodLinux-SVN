@@ -62,6 +62,7 @@ typedef struct _pz_Module
 
     void *handle;
     int to_load;       // positive - load from module. negative - initialize builtin. 0 - nothing.
+    int ordered;
     void (*init)();
     void (*cleanup)();
 
@@ -390,6 +391,39 @@ static void free_module (PzModule *mod)
 }
 
 
+struct dep
+{
+    PzModule *mod;
+    struct dep *next;
+} *load_order = 0;
+
+static void add_deps (PzModule *mod) 
+{
+    PzModule **pdep;
+    struct dep *cur;
+    int i;
+
+    if (mod->ordered) return;
+    mod->ordered = 1;
+
+    if (mod->deps) {
+        for (pdep = mod->deps; *pdep; pdep++) {
+            add_deps (*pdep);
+        }
+    }
+
+    if (load_order) {
+        cur = load_order;
+        while (cur->next) cur = cur->next;
+        cur->next = malloc (sizeof (struct dep));
+        cur = cur->next;
+    } else {
+        cur = load_order = malloc (sizeof (struct dep));
+    }
+    cur->mod = mod;
+    cur->next = 0;
+}
+
 void pz_modules_init() 
 {
 #ifdef IPOD
@@ -450,6 +484,7 @@ void pz_modules_init()
 	}
 	cur->podpath = podpath;
 	cur->to_load = 1;
+        cur->ordered = 0;
     }
     closedir (dp);
 
@@ -464,7 +499,7 @@ void pz_modules_init()
 	    if (!p) p = cur->podpath;
 	    else p++;
 
-	    if (!strcmp (p, name)) {
+	    if (!strncmp (p, name, strlen (name))) {
 		found = 1;
 		break;
 	    }
@@ -483,6 +518,7 @@ void pz_modules_init()
 	    cur->name = strdup (__pz_builtin_names[i]);
 	    cur->init = __pz_builtin_init_functions[i];
 	    cur->to_load = -1;
+            cur->ordered = 0;
 	    cur->next = 0;
 	}
 
@@ -540,24 +576,31 @@ void pz_modules_init()
 	    if (!strcmp (__pz_builtin_names[i], cur->name)) {
 		cur->init = __pz_builtin_init_functions[i];
 		cur->to_load = -1;
+                cur->ordered = 0;
 	    }
 	}
 	cur = cur->next;
     }
 
-    // XXX. For now, we load them in directory order. That will
-    // wreak havoc with dependencies. davidc__ is working on a 
+    // XXX. For now, we use a slow method for deps, and it'll crash
+    // for circular deps. davidc__ is working on a 
     // better solution.
-
     cur = module_head;
     while (cur) {
-	if (cur->to_load > 0) {
-	    do_load (cur);
-	} else if (cur->to_load < 0) {
-	    (*cur->init)();
-	    cur->to_load = 0;
+        add_deps (cur);
+        cur = cur->next;
+    }        
+
+    struct dep *c = load_order;
+    while (c) {
+        printf ("%s\n", c->mod->name);
+	if (c->mod->to_load > 0) {
+	    do_load (c->mod);
+	} else if (c->mod->to_load < 0) {
+	    (*c->mod->init)();
+	    c->mod->to_load = 0;
 	}
-	cur = cur->next;
+	c = c->next;        
     }
 }
 
