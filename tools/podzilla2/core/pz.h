@@ -433,9 +433,9 @@ TWindow *pz_select_color_scheme();
 
 /** Other things - pz.c **/
 void pz_register_global_hold_button (unsigned char ch, int ms, void (*handler)());
-void pz_register_global_unused_button (unsigned char ch, void (*handler)(int, int)); // args = (button, time)
+void pz_register_global_unused_handler (unsigned char ch, int (*handler)(int, int)); // args = (button, time)
 void pz_unregister_global_hold_button (unsigned char ch);
-void pz_unregister_global_unused_button (unsigned char ch);
+void pz_unregister_global_unused_handler (unsigned char ch);
 void pz_handled_hold (unsigned char ch); // call from the hold handler or all hell *WILL* break loose :-)
 #ifndef PZ_MOD
 void pz_uninit();
