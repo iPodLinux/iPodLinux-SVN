@@ -478,8 +478,6 @@ void *uCdl_open (const char *path)
 	    symbol *sy = mysyms;
 	    handle *curh = uCdl_loaded_modules;
 	    int defined = 0;
-            /*d*/ FILE *dfp = fopen ("symcheck.dbg", "a");
-            fprintf (dfp, "Checking for sym %s\n", sym->name);
 
 	    sym->sectionidx = 0; /* yes, I know it's the same thing. */
 	    sym->section = ret->sections /* + 0 */;
@@ -495,15 +493,11 @@ void *uCdl_open (const char *path)
 		sy = sy->next;
 	    }
 
-            fprintf (dfp, "%d definitions found in calling app\n", defined);
-            
 	    while (!defined && curh) {
 		esymbol *esy;
 		int i;
-                fprintf (dfp, "Module %p (%d syms)... ", curh, curh->nsyms);
 
 		for (esy = curh->symbols, i = 0; i < curh->nsyms; i++, esy++) {
-                    fprintf (dfp, "%s ", esy->name);
 		    if (!strcmp (esy->name, sym->name) && esy->binding == STB_GLOBAL) {
 			defined++;
 			sym->value = (unsigned int)esy->section->addr + esy->value;
@@ -512,11 +506,9 @@ void *uCdl_open (const char *path)
 			sym->binding = STB_GLOBAL;
 		    }
 		}
-                fprintf (dfp, "\n  %d defs found so far\n", defined);
 
 		curh = curh->next;
 	    }
-            fclose (dfp);
 
 	    if (defined == 0) {
 		sprintf (error = errbuf, "%s: undefined symbol: %s", path, sym->name);
