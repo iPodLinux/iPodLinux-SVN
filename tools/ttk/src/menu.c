@@ -187,7 +187,7 @@ void ttk_menu_item_updated (TWidget *this, ttk_menu_item *p)
 		break;
 	}
 	if (i < data->items)
-	    render (this, i, 1);
+	    render (this, VIFromXI (this, i), 1);
     }
 }
 

@@ -367,8 +367,8 @@ int ttk_run()
 		if (cur->v->dirty && win->show_header) {
 		    ttk_ap_fillrect (s->srf, ttk_ap_get ("header.bg"), cur->v->x, cur->v->y,
 				     cur->v->x + cur->v->w, cur->v->y + cur->v->h);
-		    cur->v->draw (cur->v, s->srf);
 		    cur->v->dirty = 0;
+		    cur->v->draw (cur->v, s->srf);
 		    ttk_dirty |= TTK_DIRTY_SCREEN;
 		}
 		cur = cur->next;
@@ -427,8 +427,8 @@ int ttk_run()
 	    else
 		ttk_fillrect (win->srf, 0, 0, win->w, win->h, ttk_makecol (CKEY));
 	    while (cur) {
-		cur->v->draw (cur->v, win->srf);
 		cur->v->dirty = 0;
+		cur->v->draw (cur->v, win->srf);
 		cur = cur->next;
 	    }
 	    
@@ -526,9 +526,9 @@ int ttk_run()
 		else
 		    ttk_fillrect (win->srf, cur->v->x, cur->v->y, cur->v->x + cur->v->w,
 				  cur->v->y + cur->v->h, ttk_makecol (CKEY));
+		cur->v->dirty = 0;
 		cur->v->draw (cur->v, win->srf);
 		ttk_dirty |= TTK_DIRTY_WINDOWAREA;
-		cur->v->dirty = 0;
 	    }
 
 	    cur = cur->next;
@@ -1106,7 +1106,8 @@ void ttk_move_window (TWindow *win, int offset, int whence)
 	cur->next->next = 0;
     }
 
-    ttk_windows->minimized = 0;
+    if (ttk_windows)
+        ttk_windows->minimized = 0;
     ttk_dirty |= TTK_FILTHY;
 }
 
