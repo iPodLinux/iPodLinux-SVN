@@ -503,6 +503,7 @@ int ttk_run()
 	    win->input->draw (win->input, s->srf);
 
 	    ttk_dirty &= ~TTK_DIRTY_INPUT;
+            ttk_dirty |= TTK_DIRTY_SCREEN;
 	}
 
 	/* check fps + draw individual dirties */
