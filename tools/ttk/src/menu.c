@@ -631,34 +631,15 @@ int ttk_menu_scroll (TWidget *this, int dir)
 int ttk_menu_button (TWidget *this, int button, int time)
 {
     _MAKETHIS;
+    ttk_menu_item *item;
+    TWindow *sub;
     
     if (!data->menu || !data->items) {
         ttk_hide_window (this->win);
         return 0;
     }
 
-    if (button == TTK_BUTTON_MENU) {
-	if (data->closeable) {
-	    if (ttk_hide_window (this->win) == -1) {
-		return TTK_EV_DONE;
-	    }
-	    return TTK_EV_CLICK;
-	}
-	return 0;
-    }
-    return TTK_EV_UNUSED;
-}
-
-int ttk_menu_down (TWidget *this, int button)
-{
-    _MAKETHIS;
-    ttk_menu_item *item = data->menu[XIFromVI (this, data->top + data->sel)];
-    int ret = 0;
-    TWindow *sub;
-
-    if (!data->menu || !data->items) {
-        return 0;
-    }
+    item = data->menu[XIFromVI (this, data->top + data->sel)];
 
     switch (button) {
     case TTK_BUTTON_ACTION:
@@ -725,16 +706,22 @@ int ttk_menu_down (TWidget *this, int button)
 	    ttk_show_window (item->sub);
 	    break;
 	}
-	// else mh said "close this menu"
+	return TTK_EV_CLICK;
+    case TTK_BUTTON_MENU:
 	if (data->closeable) {
 	    if (ttk_hide_window (this->win) == -1) {
 		return TTK_EV_DONE;
 	    }
+	    return TTK_EV_CLICK;
 	}
-	break;
+	return 0;
     }
+    return TTK_EV_UNUSED;
+}
 
-    return ret;
+int ttk_menu_down (TWidget *this, int button)
+{
+    return 0;
 }
 
 // When you free a menu, all the windows it spawned are also freed.
@@ -758,7 +745,7 @@ void ttk_menu_free (TWidget *this)
                 if (data->menu[i]->free_data)
                     free (data->menu[i]->data);
                 if (data->menu[i]->free_name)
-                    free (data->menu[i]->name);
+                    free ((char *)data->menu[i]->name);
                 free (data->menu[i]);
             }
 	}
