@@ -593,7 +593,6 @@ void pz_modules_init()
 
     struct dep *c = load_order;
     while (c) {
-        printf ("%s\n", c->mod->name);
 	if (c->mod->to_load > 0) {
 	    do_load (c->mod);
 	} else if (c->mod->to_load < 0) {
