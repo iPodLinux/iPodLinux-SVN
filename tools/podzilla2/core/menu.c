@@ -334,6 +334,7 @@ ttk_menu_item *resolve_menupath (const char *path, int loc)
 	    item->data = ttk_new_menu_widget (0, ttk_menufont, menu->w, menu->h);
 	}
 
+        item->visible = 0;
 	p = strchr (p, '/');
 	menu = item->data;
     }
