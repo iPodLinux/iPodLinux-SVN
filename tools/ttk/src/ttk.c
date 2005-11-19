@@ -360,8 +360,8 @@ int ttk_run()
 	if (ttk_header_widgets) {
 	    cur = ttk_header_widgets;
 	    while (cur) {
-		while (cur->v->timer && cur->v->timerdelay && (cur->v->timerlast + cur->v->timerdelay <= tick)) {
-		    cur->v->timerlast += cur->v->timerdelay;
+		if (cur->v->timer && cur->v->timerdelay && (cur->v->timerlast + cur->v->timerdelay <= tick)) {
+		    cur->v->timerlast = tick + 1;
 		    cur->v->timer (cur->v);
 		}
 		if (cur->v->dirty && win->show_header) {
@@ -470,8 +470,8 @@ int ttk_run()
 		eret |= win->input->frame (win->input);
 	    }
 
-	    while (win->input->timer && win->input->timerdelay && (win->input->timerlast + win->input->timerdelay <= tick)) {
-		win->input->timerlast += win->input->timerdelay;
+	    if (win->input->timer && win->input->timerdelay && (win->input->timerlast + win->input->timerdelay <= tick)) {
+		win->input->timerlast = tick + 1;
 		eret |= win->input->timer (win->input);
 	    }
 
@@ -514,8 +514,8 @@ int ttk_run()
 		eret |= cur->v->frame (cur->v);
 	    }
 	    
-	    while (cur->v->timer && cur->v->timerdelay && (cur->v->timerlast + cur->v->timerdelay <= tick)) {
-		cur->v->timerlast += cur->v->timerdelay;
+	    if (cur->v->timer && cur->v->timerdelay && (cur->v->timerlast + cur->v->timerdelay <= tick)) {
+		cur->v->timerlast = tick + 1;
 		eret |= cur->v->timer (cur->v);
 	    }
 
