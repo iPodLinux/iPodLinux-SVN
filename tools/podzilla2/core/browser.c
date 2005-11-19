@@ -304,7 +304,7 @@ static ttk_menu_item empty_menu[] = {
 TWidget *pz_browser_get_actions (const char *path)
 {
     struct stat st;
-    browser_action *cur;
+    browser_action *cur = action_head;
     TWidget *ret = ttk_new_menu_widget (empty_menu, ttk_menufont, ttk_screen->w - ttk_screen->wx,
 					ttk_screen->h - ttk_screen->wy);
     // add default handlers XXX

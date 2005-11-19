@@ -1,3 +1,4 @@
 Module: tidial
 Display-name: Scroll Through & Dial Type
 Author: Jonathan Bettencourt
+Dependencies: textinput
