@@ -97,19 +97,11 @@ int pz_legacy_down (TWidget *this, int button)
 }
 int pz_legacy_scroll (TWidget *this, int dir)
 {
-#ifdef IPOD
-#define SPER 4
-    static int sofar = 0;
-    sofar += dir;
-    if (sofar > -SPER && sofar < SPER) return 0;
-    dir = sofar / SPER;
-    sofar -= SPER*dir;
-#endif
-
     GR_EVENT ev;
     int key = 'r';
     int ret = 0;
     _MAKETHIS;
+    TTK_SCROLLMOD (dir, 4);
 
     if (dir < 0) {
 	key = 'l';
@@ -126,6 +118,7 @@ int pz_legacy_scroll (TWidget *this, int dir)
     this->dirty++;
     return ret;
 }
+
 int pz_legacy_timer (TWidget *this)
 {
     GR_EVENT ev;

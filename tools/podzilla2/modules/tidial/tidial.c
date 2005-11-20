@@ -86,6 +86,8 @@ void ti_dial_draw(TWidget * wid, ttk_surface srf)
 
 int ti_dial_scroll(TWidget * wid, int dir)
 {
+	TTK_SCROLLMOD (dir, 4);
+    
 	if (dir<0) {
 		if (ti_dial_cursormode) {
 			ttk_input_char(TTK_INPUT_LEFT);
