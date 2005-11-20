@@ -562,14 +562,7 @@ int ttk_menu_scroll (TWidget *this, int dir)
     _MAKETHIS;
     int oldtop, oldsel, lasttop = -1, lastsel = -1;
     int vitems = VIFromXI (this, data->items);
-#ifdef IPOD
-#define SPER 5
-    static int sofar;
-    sofar += dir;
-    if ((sofar > -SPER) && (sofar < SPER)) return 0;
-    dir = sofar / SPER;
-    sofar -= SPER*dir;
-#endif
+    TTK_SCROLLMOD (dir, 5);
 
     if (!data->menu || !data->items) return 0;
 

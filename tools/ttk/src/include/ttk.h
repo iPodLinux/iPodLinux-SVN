@@ -324,6 +324,16 @@ ttk_surface ttk_scale_surface (ttk_surface srf, float factor);
 void ttk_surface_get_dimen (ttk_surface srf, int *w, int *h);
 void ttk_free_surface (ttk_surface srf);
 
+#ifdef IPOD
+#define TTK_SCROLLMOD(dir,n) \
+  static int sofar = 0; \
+  sofar += dir; \
+  if (sofar > -n && sofar < n) return 0; \
+  dir = sofar / n; \
+  sofar -= dir * n;
+#else
+#define TTK_SCROLLMOD(dir,n)
+#endif
 
 // -- Colors --
 #undef WHITE
