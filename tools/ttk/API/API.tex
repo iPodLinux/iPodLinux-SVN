@@ -132,6 +132,17 @@ passed first to a {\sl global event handler}, which can be set by the applicatio
 may do whatever it wants, and returns a code indicating whether or not the event should be processed further.
 If not, it is thrown out, and the event will never make it to the widget.
 
+{\sf scroll} events are generated, by default, 96 to a full rotation of the wheel. This is quite
+a high speed, and it is certainly not expected that one ``step'' will move one item; instead,
+each widget is intended to put a line at the beginning of their scroll handler:
+\verb|TTK_SCROLLMOD(dir,|$N$\verb|)|. This will modulate the scrolling by $N$; for instance, if 
+$N = 5$, the widget will process 19--20 scroll events per rotation. (On the iPod, the \verb|SCROLLMOD|
+macro simply returns 0 from the handler if the event is not to be processed; it uses a static variable
+called \verb|sofar|, which it creates itself. On the desktop, it is ignored.) You can, of course,
+use another mechanism for processing scroll events; the slider widget modulates them itself so
+that one rotation covers the distance between the minimum and maximum values on the slider.
+The global {\sl wheel sensitivity} is independent of this scroll modulation.
+
 {\sf input} is also an immediate event, but it is rather different from the rest; see ``Text Input'' below.
 
 After immediate events get past the global event handler, they are dispatched to the focused widget
