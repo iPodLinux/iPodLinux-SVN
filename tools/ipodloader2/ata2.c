@@ -206,3 +206,14 @@ int ata_readblock(void *dst, uint32 sector) {
 
   return(0);
 }
+
+/*
+ * Replace this with COMMAND_READ_MULTIPLE for FAT32 speedups
+ */
+void ata_readblocks(void *dst,uint32 sector,uint32 count) {
+  uint32 i;
+
+  for(i=0;i<count;i++)
+    ata_readblock(dst + i*512,sector+i);
+
+}

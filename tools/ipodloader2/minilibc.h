@@ -1,6 +1,8 @@
 #ifndef _MINILIBC_H_
 #define _MINILIBC_H_
 
+#include "bootloader.h"
+
 /* Assume: width of stack == width of int. Don't use sizeof(char *) or
 other pointer because sizeof(char *)==4 for LARGE-model 16-bit code.
 Assume: width is a power of 2 */
@@ -30,7 +32,7 @@ WHEEE! At last; a valid use for the C comma operator! */
 (I _was_ using 'unsigned char *') */
 typedef void *mlc_va_list;
 
-typedef unsigned long size_t;
+//typedef unsigned long size_t;
 
 int mlc_sprintf(char *buf, const char *fmt, ...);
 int mlc_vprintf(const char *fmt, mlc_va_list args);
@@ -43,5 +45,7 @@ size_t mlc_strlen(const char *);
 int    mlc_strcmp(const char *s1,const char *s2);
 int    mlc_strncmp(const char *s1,const char *s2,size_t maxlen);
 char  *mlc_strncpy(char *dest,const char *src,size_t count);
+void  *mlc_memcpy(void *dest,const void *src,size_t n);
+char  *mlc_strchr(const char *s,int c);
 
 #endif

@@ -251,3 +251,11 @@ int blockdev_read(void *dst,uint32 sector) {
 
   return(drqByte);
 }
+
+void ata_readblocks(void *dst,uint32 sector,uint32 count) {
+  uint32 i;
+
+  for(i=0;i<count;i++)
+    blockdev_read(dst + i*512,sector+i);
+
+}
