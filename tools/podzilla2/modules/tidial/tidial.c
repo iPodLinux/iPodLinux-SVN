@@ -67,7 +67,7 @@ void ti_dial_draw(TWidget * wid, ttk_surface srf)
 	int sc, n, i, j, ty;
 	int m = (ti_dial_numeric?19:96);
 	char s[2];
-	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ttk_makecol(WHITE));
+	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
 	n = wid->w / CW;
 	sc = ti_dial_charlist_pos - n/2;
 	ty = 8 - ttk_text_height(ttk_menufont)/2;
@@ -77,9 +77,9 @@ void ti_dial_draw(TWidget * wid, ttk_surface srf)
 	{
 		s[0] = ti_dial_numeric?ti_dial_charlist_n[i]:ti_dial_charlist[i];
 		s[1] = 0;
-		ttk_text(srf, ttk_menufont, wid->x+j*CW+(10-ttk_text_width (ttk_menufont, s))/2, wid->y+ty, ttk_makecol(BLACK), s);
+		ttk_text(srf, ttk_menufont, wid->x+j*CW+(10-ttk_text_width (ttk_menufont, s))/2, wid->y+ty, ti_ap_get(1), s);
 		if (i == ti_dial_charlist_pos) {
-			ttk_rect(srf, wid->x+j*CW-1, wid->y, wid->x+j*CW+10, wid->y+15, ttk_makecol(BLACK));
+			ttk_rect(srf, wid->x+j*CW-1, wid->y, wid->x+j*CW+10, wid->y+15, ti_ap_get(1));
 		}
 	}
 }

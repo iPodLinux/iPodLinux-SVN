@@ -1,0 +1,4 @@
+Module: tiwheelboard
+Display-name: Wheelboard
+Author: Stefan Lange-Hegermann & Jonathan Bettencourt
+Dependencies: textinput

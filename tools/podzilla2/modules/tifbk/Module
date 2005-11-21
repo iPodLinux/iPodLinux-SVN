@@ -1,0 +1,4 @@
+Module: tifbk
+Display-name: Four-Button Keyboard
+Author: Jonathan Bettencourt
+Dependencies: textinput
