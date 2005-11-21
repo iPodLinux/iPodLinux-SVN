@@ -231,14 +231,16 @@ unsigned char ttk_icon_charging[] = { 8, 10,
     0, 0, 3, 1, 0, 0, 0, 0
 };
 
-void ttk_draw_icon (unsigned char *icon, ttk_surface srf, int sx, int sy, int inv) 
+void ttk_draw_icon (unsigned char *icon, ttk_surface srf, int sx, int sy, ttk_color col, int inv) 
 {
     int x, y;
     unsigned char *p = icon + 2;
-    int c[4] = { ttk_makecol_ex (255, 255, 255, srf),
-		 ttk_makecol_ex (160, 160, 160, srf),
-		 ttk_makecol_ex (80, 80, 80, srf),
-		 ttk_makecol_ex (0, 0, 0, srf) };
+    int r, g, b;
+    ttk_unmakecol_ex (col, &r, &g, &b, srf);
+    int c[4] = { ttk_makecol_ex (255 - r, 255 - g, 255 - b, srf),
+		 ttk_makecol_ex ((255-r)*2/3, (255-g)*2/3, (255-b)*2/3, srf),
+		 ttk_makecol_ex ((255-r)/3, (255-g)/3, (255-b)/3, srf),
+		 ttk_makecol_ex (r, g, b, srf) };
     
     if (inv) {
 	int tmp;

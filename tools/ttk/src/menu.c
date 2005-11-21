@@ -170,7 +170,9 @@ void ttk_menu_item_updated (TWidget *this, ttk_menu_item *p)
     
     p->textwidth = ttk_text_width (data->font, p->name) + 4;
     p->linewidth = (this->w - 10*data->scroll - 15*!!(p->flags & TTK_MENU_ICON));
-    
+    p->iconflash = 3;
+    p->textflash = 0;
+
     if (p->textwidth > p->linewidth) {
 	p->flags |= TTK_MENU_TEXT_SLEFT;
 	p->textofs = 0;
@@ -385,16 +387,29 @@ int ttk_menu_frame (TWidget *this)
 
     oldflags = selected->flags;
 
-    if ((data->ds % 20) >= 15) {
-	selected->flags |= TTK_MENU_ICON_FLASHOFF;
+    if ((data->ds % 20) >= 14) {
+        selected->iconflash = 3;
+    } else if ((data->ds % 20) >= 12) {
+        selected->iconflash = 2;
+    } else if ((data->ds % 20) >= 10) {
+        selected->iconflash = 1;
     } else {
-	selected->flags &= ~TTK_MENU_ICON_FLASHOFF;
+        selected->iconflash = 0;
     }
+
+    if ((data->ds % 2) == 0 && selected->textflash)
+        selected->textflash--;
 
     // Redraw every ~1s, in case menu items change visibility / fonts change
     if ((oldflags != selected->flags) || !(data->ds % 10)) this->dirty++;
 
     return 0;
+}
+
+
+void ttk_menu_flash (ttk_menu_item *item, int n) 
+{
+    item->textflash = 2*n;
 }
 
 
@@ -487,7 +502,7 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
 	if (data->menu[xi]->visible && !data->menu[xi]->visible (data->menu[xi]))
 	    continue;
 
-	if (vi == data->top + data->sel) {
+	if (vi == data->top + data->sel && !(data->menu[xi]->textflash % 2)) {
 	    if (!data->itemsrfI[xi]) {
 		fprintf (stderr, "Null pointer (I)\n");
 		abort();
@@ -518,16 +533,21 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
 		      y + ofs, col, data->menu[xi]->choices[data->menu[xi]->choice]);
 	}
 
-	if ((data->menu[xi]->flags & TTK_MENU_ICON) && (!(data->menu[xi]->flags & TTK_MENU_ICON_FLASHOFF) || (vi != data->top + data->sel))) {
+	if ((data->menu[xi]->flags & TTK_MENU_ICON) && data->menu[xi]->iconflash) {
+            ttk_color col =
+                (data->menu[xi]->iconflash == 3)? ttk_ap_getx ("menu.icon3")->color :
+                (data->menu[xi]->iconflash == 2)? ttk_ap_getx ("menu.icon2")->color :
+                (data->menu[xi]->iconflash == 1)? ttk_ap_getx ("menu.icon1")->color : ttk_makecol (BLACK);
+                
 	    switch (data->menu[xi]->flags & TTK_MENU_ICON) {
 	    case TTK_MENU_ICON_SUB:
-		ttk_draw_icon (ttk_icon_sub, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, (vi == data->top + data->sel));
+		ttk_draw_icon (ttk_icon_sub, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, col, (vi == data->top + data->sel));
 		break;
 	    case TTK_MENU_ICON_EXE:
-		ttk_draw_icon (ttk_icon_exe, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, (vi == data->top + data->sel));
+		ttk_draw_icon (ttk_icon_exe, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, col, (vi == data->top + data->sel));
 		break;
 	    case TTK_MENU_ICON_SND:
-		ttk_draw_icon (ttk_icon_spkr, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, (vi == data->top + data->sel));
+		ttk_draw_icon (ttk_icon_spkr, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, col, (vi == data->top + data->sel));
 		break;
 	    }
 	}
