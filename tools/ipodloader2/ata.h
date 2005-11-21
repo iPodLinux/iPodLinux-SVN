@@ -41,6 +41,7 @@ typedef struct {
 } blockdev_t;
 
 uint32 ata_init(uint32 base);
-int blockdev_read(void *dst,uint32 sector);
+int    blockdev_read(void *dst,uint32 sector);
+void   ata_readblocks(void *dst,uint32 sector,uint32 count);
 
 #endif

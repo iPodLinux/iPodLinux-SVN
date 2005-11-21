@@ -15,7 +15,7 @@ loader.bin: loader.elf
 	@echo "Converting $< to binary"
 	@$(OBJCOPY) -O binary $< $@
 
-loader.elf: startup.o loader.o fb.o ipodhw.o console.o minilibc.o ata2.o fat32.o
+loader.elf: startup.o loader.o fb.o ipodhw.o console.o minilibc.o ata2.o vfs.o fat32.o
 	@echo "Linking $@"
 	@$(CC) $(LDFLAGS) -o $@ $^
 

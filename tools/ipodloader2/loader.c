@@ -5,6 +5,7 @@
 #include "console.h"
 #include "minilibc.h"
 #include "ipodhw.h"
+#include "vfs.h"
 
 #define PP5020_IDE_PRIMARY_BASE    0xC30001E0
 #define PP5020_IDE_PRIMARY_CONTROL 0xC30003f8
@@ -44,7 +45,7 @@ void *loader(void) {
 
     ata_identify();
 
-    fat32_init();
+    vfs_init();
 
     console_puts("Done..\n");
     fb_bitblt(buff,0,0,220,176);
