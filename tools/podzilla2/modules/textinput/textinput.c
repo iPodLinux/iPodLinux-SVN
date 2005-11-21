@@ -38,6 +38,47 @@ static TWidget * (* ti_tim_ncreators[TI_MAX_TIMS])();
 
 /* API calls for TIM widgets */
 
+ttk_color ti_ap_get(int i)
+{
+	TApItem * tai;
+	switch (i) {
+	case 0:
+		tai = ttk_ap_get("input.bg");
+		if (!tai) { tai = ttk_ap_get("window.bg"); }
+		if (!tai) { return ttk_makecol(WHITE); }
+		return tai->color;
+		break;
+	case 1:
+		tai = ttk_ap_get("input.fg");
+		if (!tai) { tai = ttk_ap_get("window.fg"); }
+		if (!tai) { return ttk_makecol(BLACK); }
+		return tai->color;
+		break;
+	case 2:
+		tai = ttk_ap_get("input.selfg");
+		if (!tai) { return ttk_makecol(WHITE); }
+		return tai->color;
+		break;
+	case 3:
+		tai = ttk_ap_get("input.selbg");
+		if (!tai) { return ttk_makecol(DKGREY); }
+		return tai->color;
+		break;
+	case 4:
+		tai = ttk_ap_get("input.border");
+		if (!tai) { tai = ttk_ap_get("window.border"); }
+		if (!tai) { return ttk_makecol(GREY); }
+		return tai->color;
+		break;
+	case 5:
+		tai = ttk_ap_get("input.cursor");
+		if (!tai) { return ttk_makecol(GREY); }
+		return tai->color;
+		break;
+	}
+	return ttk_makecol(BLACK);
+}
+
 TWidget * ti_create_tim_widget(int ht, int wd)
 {
 	int sh, sw;
@@ -71,6 +112,7 @@ TWidget * ti_serial_create()
 {
 	TWidget * wid = ti_create_tim_widget(0, 0);
 	wid->rawkeys = 1;
+        wid->keyrepeat = 1;
 	wid->down = ti_serial_down;
 	return wid;
 }

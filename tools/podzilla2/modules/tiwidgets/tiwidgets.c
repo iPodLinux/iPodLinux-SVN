@@ -256,7 +256,7 @@ void ti_multiline_text(ttk_surface srf, ttk_font fnt, int x, int y, int w, int h
 	int screenlines = 0;
 	int coob = 0; /* Cursor Out Of Bounds, or iPodLinux dev; you decide */
 	int width, height;
-	ttk_color curcol = ttk_makecol(GREY);
+	ttk_color curcol = ti_ap_get(5);
 	height = ttk_text_height(fnt);
 	screenlines = h / height;
 
@@ -425,46 +425,68 @@ void ti_widget_destroy(TWidget * wid)
 
 void ti_widget_draw(TWidget * wid, ttk_surface srf)
 {
-	int sw;
+	int sw, cp, i;
 	char * tmp;
-	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w-1, wid->y+wid->h-1, ttk_makecol(WHITE));
+	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w-1, wid->y+wid->h-1, ti_ap_get(0));
 	
 	/* draw border */
-	ttk_rect(srf, wid->x, wid->y, wid->x+wid->w-1, wid->y+wid->h-1, ttk_makecol(GREY));
+	ttk_rect(srf, wid->x, wid->y, wid->x+wid->w-1, wid->y+wid->h-1, ti_ap_get(4));
+	
+	/* scroll horizontally if it doesn't fit */
+	sw = ((TiBuffer *)wid->data)->usize;
+	cp = ((TiBuffer *)wid->data)->cpos;
+	tmp = (char *)malloc(sw+1);
+	strcpy(tmp, ((TiBuffer *)wid->data)->text);
+	while (ttk_text_width(ttk_textfont, tmp) > (wid->w-10)) {
+		for (i=0; i<sw; i++) {
+			tmp[i] = tmp[i+1];
+		}
+		sw--;
+		cp--;
+	}
 	
 	/* draw text */
-	ttk_text(srf, ttk_textfont, wid->x+5, wid->y+5, ttk_makecol(BLACK), ((TiBuffer *)wid->data)->text);
+	ttk_text(srf, ttk_textfont, wid->x+5, wid->y+5, ti_ap_get(1), tmp);
 	
 	/* draw cursor */
-	sw = ((TiBuffer *)wid->data)->cpos;
-	tmp = (char *)malloc(sw+1);
-	strncpy(tmp, ((TiBuffer *)wid->data)->text, sw);
-	tmp[sw]=0;
+	tmp[cp]=0;
 	sw = ttk_text_width(ttk_textfont, tmp);
+	ttk_line(srf, wid->x+5+sw, wid->y+5, wid->x+5+sw, wid->y+5+ttk_text_height(ttk_textfont), ti_ap_get(5));
+	
 	free(tmp);
-	ttk_line(srf, wid->x+5+sw, wid->y+5, wid->x+5+sw, wid->y+5+ttk_text_height(ttk_textfont), ttk_makecol(GREY));
 }
 
 void ti_widget_draw_p(TWidget * wid, ttk_surface srf)
 {
-	int sw, i;
+	int sw, cp, i;
 	char * tmp;
-	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w-1, wid->y+wid->h-1, ttk_makecol(WHITE));
+	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w-1, wid->y+wid->h-1, ti_ap_get(0));
 	
 	/* draw border */
-	ttk_rect(srf, wid->x, wid->y, wid->x+wid->w-1, wid->y+wid->h-1, ttk_makecol(GREY));
+	ttk_rect(srf, wid->x, wid->y, wid->x+wid->w-1, wid->y+wid->h-1, ti_ap_get(4));
 	
-	tmp = (char *)malloc(((TiBuffer *)wid->data)->usize+1);
+	/* replace with stars */
+	sw = ((TiBuffer *)wid->data)->usize;
+	cp = ((TiBuffer *)wid->data)->cpos;
+	tmp = (char *)malloc(sw+1);
+	strcpy(tmp, ((TiBuffer *)wid->data)->text);
+	for (i=0; i<sw; i++) tmp[i]='*';
+	/* scroll horizontally if it doesn't fit */
+	while (ttk_text_width(ttk_textfont, tmp) > (wid->w-10)) {
+		for (i=0; i<sw; i++) {
+			tmp[i] = tmp[i+1];
+		}
+		sw--;
+		cp--;
+	}
 	
 	/* draw text */
-	for (i=0; i<(((TiBuffer *)wid->data)->usize); i++) tmp[i]='*';
-	tmp[((TiBuffer *)wid->data)->usize]=0;
-	ttk_text(srf, ttk_textfont, wid->x+5, wid->y+5, ttk_makecol(BLACK), tmp);
+	ttk_text(srf, ttk_textfont, wid->x+5, wid->y+5, ti_ap_get(1), tmp);
 	
 	/* draw cursor */
-	tmp[((TiBuffer *)wid->data)->cpos]=0;
+	tmp[cp]=0;
 	sw = ttk_text_width(ttk_textfont, tmp);
-	ttk_line(srf, wid->x+5+sw, wid->y+5, wid->x+5+sw, wid->y+5+ttk_text_height(ttk_textfont), ttk_makecol(GREY));
+	ttk_line(srf, wid->x+5+sw, wid->y+5, wid->x+5+sw, wid->y+5+ttk_text_height(ttk_textfont), ti_ap_get(5));
 	
 	free(tmp);
 }
@@ -472,13 +494,13 @@ void ti_widget_draw_p(TWidget * wid, ttk_surface srf)
 void ti_widget_draw_ml(TWidget * wid, ttk_surface srf)
 {
 	
-	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w-1, wid->y+wid->h-1, ttk_makecol(WHITE));
+	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w-1, wid->y+wid->h-1, ti_ap_get(0));
 	
 	/* draw border */
-	ttk_rect(srf, wid->x, wid->y, wid->x+wid->w-1, wid->y+wid->h-1, ttk_makecol(GREY));
+	ttk_rect(srf, wid->x, wid->y, wid->x+wid->w-1, wid->y+wid->h-1, ti_ap_get(4));
 	
 	ti_multiline_text(srf, ttk_textfont, wid->x+5, wid->y+5, wid->w-10, wid->h-10-(((TiBuffer *)wid->data)->idata[2]),
-		ttk_makecol(BLACK), ((TiBuffer *)wid->data)->text, ((TiBuffer *)wid->data)->cpos, 0, 0, 0, 0);
+		ti_ap_get(1), ((TiBuffer *)wid->data)->text, ((TiBuffer *)wid->data)->cpos, 0, 0, 0, 0);
 }
 
 /* Text Input Widgets */

@@ -1,0 +1,4 @@
+Module: ticursive
+Display-name: Cursive
+Author: Jonathan Bettencourt
+Dependencies: textinput
