@@ -19,6 +19,7 @@
           button.bg => gray, button.fg => black, button.border => black,
           button.sel.bg => dkgray, button.sel.fg => white, button.sel.border => black, button.sel.inner => gray +1
   scroll: box => black, bg => white +1, bar => dkgray +2
+   input: bg => white, fg => black, selbg => black, selfg => white, border => dkgray, cursor => black
 
     menu: bg => white, fg => black, choice => black, icon => black,
           selbg => black, selfg => white, selchoice => white, selicon => white
