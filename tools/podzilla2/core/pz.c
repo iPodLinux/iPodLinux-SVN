@@ -98,8 +98,28 @@ void backlight_toggle()
     pz_handled_hold ('m');
 }
 
-static int held_times[128] = { ['m'] = 500 }; // key => ms
-static void (*held_handlers[128])() = { ['m'] = backlight_toggle };
+static void slider_set_setting (int set, int val) 
+{
+    pz_ipod_set (set, val);
+}
+void contrast_fix() 
+{
+    int tval = pz_get_int_setting (pz_global_config, CONTRAST);
+    TWindow *win = ttk_new_window();
+    TWidget *slider = ttk_new_slider_widget (0, 0, ttk_screen->w * 3 / 5, 64, 128, &tval, 0);
+    ttk_slider_set_callback (slider, slider_set_setting, CONTRAST);
+    ttk_window_set_title (win, _("Set Contrast"));
+    ttk_add_widget (win, slider);
+    ttk_click();
+    usleep (500000);
+    ttk_click();
+    usleep (500000);
+    ttk_click();
+    ttk_popup_window (win);
+}
+
+static int held_times[128] = { ['m'] = 500, ['w'] = 5000 }; // key => ms
+static void (*held_handlers[128])() = { ['m'] = backlight_toggle, ['w'] = contrast_fix };
 static int (*unused_handlers[128])(int, int);
 
 static int held_ignores[128]; // set a char to 1 = ignore its UP event once.
