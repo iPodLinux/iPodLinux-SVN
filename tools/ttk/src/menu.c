@@ -677,10 +677,10 @@ int ttk_menu_button (TWidget *this, int button, int time)
 	}
 
 	if (item->sub == TTK_MENU_DONOTHING) {
-	    break;
+	    return 0;
 	} else if (item->sub == TTK_MENU_REPLACE) {
 	    ttk_hide_window (this->win);
-	    break;
+	    return TTK_EV_CLICK;
 	} else if (item->sub == TTK_MENU_UPONE) {
 	    // FALLTHRU to menu button handling
 	} else if (item->sub == TTK_MENU_UPALL) {
@@ -692,14 +692,13 @@ int ttk_menu_button (TWidget *this, int button, int time)
 	    if (r == -1)
 		return TTK_EV_DONE;
 
-	    break;
+	    return 0;
 	} else if (item->sub == TTK_MENU_QUIT) {
 	    return TTK_EV_DONE;
 	} else {
 	    ttk_show_window (item->sub);
-	    break;
+	    return TTK_EV_CLICK;
 	}
-	return TTK_EV_CLICK;
     case TTK_BUTTON_MENU:
 	if (data->closeable) {
 	    if (ttk_hide_window (this->win) == -1) {
