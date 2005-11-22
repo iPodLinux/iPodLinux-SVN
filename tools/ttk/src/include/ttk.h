@@ -55,6 +55,7 @@ typedef struct _ttk_timer
     struct _ttk_timer *next;
 } *ttk_timer;
 
+typedef unsigned short uc16;
 #ifdef SDL
 #include "SDL.h"
 #include "SDL_image.h"
@@ -81,7 +82,11 @@ typedef struct _ttk_font {
     struct _TTF_Font *tf;
 #endif
     void (*draw)(struct _ttk_font *, ttk_surface, int, int, ttk_color, const char *);
+    void (*draw_lat1)(struct _ttk_font *, ttk_surface, int, int, ttk_color, const char *);
+    void (*draw_uc16)(struct _ttk_font *, ttk_surface, int, int, ttk_color, const uc16 *);
     int (*width)(struct _ttk_font *, const char *);
+    int (*width_lat1)(struct _ttk_font *, const char *);
+    int (*width_uc16)(struct _ttk_font *, const uc16 *);
     void (*free)(struct _ttk_font *);
     int height;
     int ofs;
@@ -306,9 +311,13 @@ ttk_font ttk_get_font (const char *name, int size);
 void ttk_done_fontinfo (ttk_fontinfo *fi);
 void ttk_done_font (ttk_font f);
 // GFX driver:
-void ttk_text (ttk_surface srf, ttk_font fnt, int x, int y, ttk_color col, const char *str);
+void ttk_text (ttk_surface srf, ttk_font fnt, int x, int y, ttk_color col, const char *str); /* UTF-8 */
+void ttk_text_lat1 (ttk_surface srf, ttk_font fnt, int x, int y, ttk_color col, const char *str);
+void ttk_text_uc16 (ttk_surface srf, ttk_font fnt, int x, int y, ttk_color col, const uc16 *str);
 void ttk_text_gc (ttk_surface srf, ttk_gc gc, int x, int y, const char *str);
-int ttk_text_width (ttk_font fnt, const char *str);
+int ttk_text_width (ttk_font fnt, const char *str); /* UTF-8 */
+int ttk_text_width_lat1 (ttk_font fnt, const char *str);
+int ttk_text_width_uc16 (ttk_font fnt, const uc16 *str);
 int ttk_text_width_gc (ttk_gc gc, const char *str);
 int ttk_text_height (ttk_font fnt);
 int ttk_text_height_gc (ttk_gc gc);

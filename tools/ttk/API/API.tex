@@ -1013,10 +1013,16 @@ void ttk_done_kfont (ttk_font f);
 
 void ttk_text (ttk_surface srf, ttk_font fnt, int x, int y,
                ttk_color col, const char *str);
+void ttk_text_lat1 (ttk_surface srf, ttk_font fnt, int x, int y,
+                    ttk_color col, const char *str);
+void ttk_text_uc16 (ttk_surface srf, ttk_font fnt, int x, int y,
+                    ttk_color col, const uc16 *str);
 void ttk_text_gc (ttk_surface srf, ttk_gc gc, int x, int y,
                   const char *str);
 
 int ttk_text_width (ttk_font fnt, const char *str);
+int ttk_text_width_lat1 (ttk_font fnt, const char *str);
+int ttk_text_width_uc16 (ttk_font fnt, const uc16 *str);
 int ttk_text_width_gc (ttk_gc gc, const char *str);
 int ttk_text_height (ttk_font fnt);
 int ttk_text_height_gc (ttk_gc gc);
@@ -1034,15 +1040,18 @@ probably use this function.
 it is requested. This is rather a good idea, since fonts can take upwards of 600k of RAM. Reference-counting is
 employed; thus, you must call \verb|ttk_get_fontinfo()| and \verb|ttk_done_fontinfo()| an equal number of times.
 \item[{\tt ttk_done_font}] unloads the font \verb|f|; see the documentation for \verb|ttk_done_fontinfo()|.
-\item[{\tt ttk_text}] draws the string \verb|str| colored \verb|col| using font \verb|fnt| at $(x,y)$ on \verb|srf|.
+\item[{\tt ttk_text_*}] draw the string \verb|str| colored \verb|col| using font \verb|fnt| at $(x,y)$ on \verb|srf|.
 The $(x,y)$ coordinates refer to the {\bf top-left corner} of the text.
 \item[{\tt ttk_text_gc}] draws the string \verb|str| with its upper-left hand corner at $(x,y)$ on \verb|srf|,
 using information in \verb|srf|.
-\item[{\tt ttk_text_width}] returns the width of \verb|str| in the font \verb|fnt|; \verb|ttk_text_width_gc|
+\item[{\tt ttk_text_width_*}] return the width of \verb|str| in the font \verb|fnt|; \verb|ttk_text_width_gc|
 does the same thing for the font selected in the graphics context \verb|gc|.
 \item[{\tt ttk_text_height}] returns the height of one line of text in \verb|fnt|; \verb|ttk_text_height_gc|
 is the analagous graphics-context version. (All characters in TTK fonts are the same height.)
 \end{description}
+
+{\bf Character encoding is UTF-8 by default.} To draw Latin-1 text, call \verb|ttk_text_lat1|; to draw
+Unicode text, call \verb|ttk_text_uc16|. The \verb|uc16| type is equivalent to an \verb|unsigned short|.
 
 \section{Miscellaneous}
 This section contains all the functions that didn't fit anywhere else.
