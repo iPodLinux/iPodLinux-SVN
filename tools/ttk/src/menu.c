@@ -171,6 +171,8 @@ void ttk_menu_item_updated (TWidget *this, ttk_menu_item *p)
     p->textwidth = ttk_text_width (data->font, p->name) + 4;
     p->linewidth = (this->w - 10*data->scroll - 15*!!(p->flags & TTK_MENU_ICON));
     p->iconflash = 3;
+    p->flags |= TTK_MENU_ICON_FLASHOFF;
+    p->iftime = 10;
     p->textflash = 0;
 
     if (p->textwidth > p->linewidth) {
@@ -350,7 +352,7 @@ void ttk_menu_updated (TWidget *this)
 
 int ttk_menu_frame (TWidget *this) 
 {   
-    int oldflags;
+    int oldflags, oldflash;
     _MAKETHIS;
 
     if (!data->menu || !data->items) return 0;
@@ -386,22 +388,33 @@ int ttk_menu_frame (TWidget *this)
     }
 
     oldflags = selected->flags;
+    oldflash = (selected->textflash << 8) | selected->iconflash;
 
-    if ((data->ds % 20) >= 14) {
-        selected->iconflash = 3;
-    } else if ((data->ds % 20) >= 12) {
-        selected->iconflash = 2;
-    } else if ((data->ds % 20) >= 10) {
-        selected->iconflash = 1;
-    } else {
-        selected->iconflash = 0;
+    if (selected->iftime)
+        selected->iftime--;
+    if (!selected->iftime) {
+        if (selected->flags & TTK_MENU_ICON_FLASHOFF) {
+            selected->iconflash--;
+            selected->iftime =
+                (selected->iconflash == 0)? 9 :
+                (selected->iconflash == 1 || selected->iconflash == 2)? 1 : 20;
+            if (selected->iconflash == 0)
+                selected->flags &= ~TTK_MENU_ICON_FLASHOFF;
+        } else {
+            selected->iconflash++;
+            selected->iftime =
+                (selected->iconflash == 1 || selected->iconflash == 2)? 1 :
+                (selected->iconflash == 3)? 9 : 20;
+            if (selected->iconflash >= 3)
+                selected->flags |= TTK_MENU_ICON_FLASHOFF;
+        }
     }
 
     if ((data->ds % 2) == 0 && selected->textflash)
         selected->textflash--;
 
     // Redraw every ~1s, in case menu items change visibility / fonts change
-    if ((oldflags != selected->flags) || !(data->ds % 10)) this->dirty++;
+    if ((oldflags != selected->flags) || (oldflash != ((selected->textflash << 8) | selected->iconflash)) || !(data->ds % 10)) this->dirty++;
 
     return 0;
 }
@@ -498,6 +511,7 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
 	 data->menu[xi] && vi < MIN (data->top + data->visible, data->items);
 	 xi++, vi = VIFromXI (this, xi)) {
 	ttk_color col;
+        int selected = (vi == data->top + data->sel);
 
 	if (data->menu[xi]->visible && !data->menu[xi]->visible (data->menu[xi]))
 	    continue;
@@ -533,21 +547,22 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
 		      y + ofs, col, data->menu[xi]->choices[data->menu[xi]->choice]);
 	}
 
-	if ((data->menu[xi]->flags & TTK_MENU_ICON) && data->menu[xi]->iconflash) {
+	if ((data->menu[xi]->flags & TTK_MENU_ICON) && (!selected || data->menu[xi]->iconflash)) {
             ttk_color col =
+                (!selected)? ttk_ap_getx ("menu.icon")->color :
                 (data->menu[xi]->iconflash == 3)? ttk_ap_getx ("menu.icon3")->color :
                 (data->menu[xi]->iconflash == 2)? ttk_ap_getx ("menu.icon2")->color :
                 (data->menu[xi]->iconflash == 1)? ttk_ap_getx ("menu.icon1")->color : ttk_makecol (BLACK);
                 
 	    switch (data->menu[xi]->flags & TTK_MENU_ICON) {
 	    case TTK_MENU_ICON_SUB:
-		ttk_draw_icon (ttk_icon_sub, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, col, (vi == data->top + data->sel));
+		ttk_draw_icon (ttk_icon_sub, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, col, 0);
 		break;
 	    case TTK_MENU_ICON_EXE:
-		ttk_draw_icon (ttk_icon_exe, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, col, (vi == data->top + data->sel));
+		ttk_draw_icon (ttk_icon_exe, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, col, 0);
 		break;
 	    case TTK_MENU_ICON_SND:
-		ttk_draw_icon (ttk_icon_spkr, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, col, (vi == data->top + data->sel));
+		ttk_draw_icon (ttk_icon_spkr, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, col, 0);
 		break;
 	    }
 	}

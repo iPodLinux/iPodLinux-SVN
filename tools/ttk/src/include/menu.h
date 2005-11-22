@@ -23,10 +23,10 @@
 #define TTK_MENU_MADESUB  010  // if sub is set, set flag. if makesub is set, don't.
 
 /* private: */
+#define TTK_MENU_ICON_FLASHOFF  0100
 #define TTK_MENU_TEXT_SLEFT     0200
 #define TTK_MENU_TEXT_SRIGHT    0400
 #define TTK_MENU_TEXT_SCROLLING 0600
-#define TTK_MENU_FLASHOFF       01000
 
 typedef struct ttk_menu_item 
 {
@@ -51,7 +51,7 @@ typedef struct ttk_menu_item
     /* private */ int textofs, scrolldelay;
     /* private */ int textwidth, linewidth;
     /* private */ void *menudata;
-    /* private */ int iconflash, textflash;
+    /* private */ int iconflash, iftime, textflash;
     /* readonly */ TWidget *menu;
 } ttk_menu_item;
 
