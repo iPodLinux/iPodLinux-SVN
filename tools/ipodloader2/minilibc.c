@@ -52,7 +52,7 @@ mod:	N	near ptr				DONE
 
 #include "minilibc.h"
 
-#define NULL ((void*)0)
+//#define NULL ((void*)0)
 
 
 /* flags used in processing format string */
@@ -360,10 +360,10 @@ int mlc_printf(const char *fmt, ...) {
 *****************************************************************************/
 #endif
 
-#define MALLOC_NEXTBLOCK (*(volatile uint32*)(0x10000000))
+#define MALLOC_NEXTBLOCK (*(volatile uint32*)(0x10800000))
 
 void mlc_malloc_init(void) {
-  MALLOC_NEXTBLOCK = 0x10000004;
+  MALLOC_NEXTBLOCK = 0x10800004;
 }
 
 void *mlc_malloc(size_t size) {
@@ -435,8 +435,10 @@ void *mlc_memcpy(void *dest,const void *src,size_t n) {
 char *mlc_strchr(const char *s,int c) {
   char *ret;
 
-  ret = s;
-  while( *ret != c ) ret++;
+  ret = (char*)s;
+  while( (*ret != c) && (*ret != 0) ) ret++;
+
+  if( *ret == 0 ) return(NULL);
 
   return(ret);
 }

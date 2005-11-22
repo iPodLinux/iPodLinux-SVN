@@ -14,7 +14,7 @@ uint16 *buff;
 
 void *loader(void) {
     void *entry;
-    int i;
+    int i,fd;
     uint32 ret;
     uint8 *buffer;
 
@@ -46,11 +46,22 @@ void *loader(void) {
     ata_identify();
 
     vfs_init();
+    fd = vfs_open("NOTES      /KERNEL  BIN");
+    vfs_seek(fd,0,VFS_SEEK_END);
+    ret = vfs_tell(fd);
+    vfs_seek(fd,0,VFS_SEEK_SET);
 
-    console_puts("Done..\n");
+    mlc_printf("FD=%i (Len %u)\n",fd,ret);
+
+    console_puts("Trying to load kernel\n");
     fb_bitblt(buff,0,0,220,176);
-    for(;;);
+    //for(;;);
 
+    entry = (void*)0x10000000;
+    vfs_read( entry, ret, 1, fd );
+
+    mlc_printf("Trying to start.\n");
+    //for(;;);
 
     return entry;
 }
