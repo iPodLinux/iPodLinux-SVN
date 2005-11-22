@@ -38,11 +38,36 @@ uint8 clusterBuffer[8192];
  *
  */
 static uint32 fat32_findnextcluster(uint32 prev) {
-  //assert(0);
-  mlc_printf("fat32_findnextcluster()\n");
-  for(;;);
+  uint32 block,offset,ret,tmp;
+  uint8  tmpBuff[512];
 
-  return(0);
+  //printf("Finding cluster after %u ... ",prev);
+
+  // !!! Probably buggy here FIXME
+  // !!!  Make sure offset is calculated correctly. It should be
+  // !!!  a byte offset into the FAT table
+  // !!!  make sure we skip the "reserved sectors"
+  
+  //fat_begin_lba     = offset + fat.number_of_reserved_sectors;
+
+  offset = ((fat.offset+fat.number_of_reserved_sectors)*512) + prev * 4;
+  block  = offset / fat.bytes_per_sector;
+  offset = offset % fat.bytes_per_sector;
+  //printf("FNC  Block: %u  Offset: %u",block,offset);
+
+  ata_readblocks( tmpBuff, block, 1 );
+
+  ret = ((uint32*)tmpBuff)[offset/4];
+
+  // Little->Big
+  //tmp =  ret >> 16;
+  //ret = (ret << 16) + tmp;
+  //ret = (ret & 0xFFFF0000) | ( ((ret&0xFF)<<8) | ((ret&0xFF00)>>8) );
+  //ret = (ret & 0x0000FFFF) | ( ((ret&0xFF000000)>>8) | ((ret&0x00FF0000)<<8) );
+
+  //printf("... %u\n",ret);
+
+  return(ret);
 }
 
 //uint8 doOnce = 0;
@@ -78,7 +103,7 @@ static fat32_file *fat32_findfile(uint32 start, char *fname) {
 	  new_offset |= (buffer[j*32+0x1B]<<8) + buffer[j*32+0x1A]; 
 
 
-	  //printf("YYYAAEEE!!! ");
+	  //mlc_printf("YYYAAEEE!!! ");
 	  fileptr = (fat32_file*)mlc_malloc( sizeof(fat32_file) );
 	  fileptr->cluster  = new_offset;
 	  fileptr->opened   = 1;
@@ -89,13 +114,13 @@ static fat32_file *fat32_findfile(uint32 start, char *fname) {
 
 	  return(fileptr);
 	}
-	//printf("File: %s\n",&buffer[j*32]);
+	//mlc_printf("File: %s\n",&buffer[j*32]);
       } else if( buffer[j*32+0xB] & (1<<4)) { // Directory
 	if( mlc_strncmp( &buffer[j*32], fname, 8 ) == 0 ) {
 
 
-	  //printf("MATCH ");
-	  //printf("Dir : %11s\n",&buffer[j*32]);
+	  //mlc_printf("MATCH ");
+	  //mlc_printf("Dir : %11s\n",&buffer[j*32]);
 
 	  new_offset  = (buffer[j*32+0x15]<<8) + buffer[j*32+0x14]; 
 	  new_offset  = new_offset << 16;
@@ -104,7 +129,7 @@ static fat32_file *fat32_findfile(uint32 start, char *fname) {
 	  return( fat32_findfile( new_offset, next+1 ) );
 
 	} else {
-	  //printf("Dir : %11s\n",&buffer[j*32]);
+	  //mlc_printf("Dir : %11s\n",&buffer[j*32]);
 	}
       } else {
 	//printf("Unknown: %11s (0x%2X)\n",&buffer[j*32],buffer[j*32+0xB]);
@@ -126,10 +151,12 @@ int fat32_open(void *fsdata,char *fname) {
 
   file = fat32_findfile(fs->root_dir_first_cluster,fname);
 
+  if(file==NULL) mlc_printf("Couldnt find file\n");
+
   if(file != NULL) {
     if( fs->numHandles < MAX_HANDLES ) {
       fs->filehandles[fs->numHandles++] = file;
-    } else return(0);
+    } else return(-1);
   }
 
   return(0);
@@ -257,7 +284,7 @@ void fat32_newfs(uint32 offset) {
   //uint32 fat_begin_lba;
   //uint32 cluster_begin_lba;
   //uint32 rootdir_lba;
-  uint32 tmp;
+  //uint32 tmp;
 
   // Verify that this is a FAT32 partition
   ata_readblocks( buff, offset,1 );

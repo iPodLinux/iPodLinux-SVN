@@ -1,14 +1,2 @@
-Known:
-	We're executing in IRAM (0x80000000)
-	IRAM is 96KB
-	Framebuffer size: 77440 bytes (220*176*2)
-	Memory footprint: 89250 bytes
-	Stack position  : 96252 bytes into IRAM
-
-Figure out:
-	Where is SDRAM located?
-
 TODO:
-	Implement one-shot malloc() that handles SDRAM
-	Reduce BSS from 77528 bytes to <1KB
-	Compile with -fomit-frame-pointer
+	Figure out why kernel launching doesnt work.. It should be loaded okay
