@@ -55,13 +55,13 @@ ttk_color ti_ap_get(int i)
 		return tai->color;
 		break;
 	case 2:
-		tai = ttk_ap_get("input.selfg");
-		if (!tai) { return ttk_makecol(WHITE); }
+		tai = ttk_ap_get("input.selbg");
+		if (!tai) { return ttk_makecol(DKGREY); }
 		return tai->color;
 		break;
 	case 3:
-		tai = ttk_ap_get("input.selbg");
-		if (!tai) { return ttk_makecol(DKGREY); }
+		tai = ttk_ap_get("input.selfg");
+		if (!tai) { return ttk_makecol(WHITE); }
 		return tai->color;
 		break;
 	case 4:
