@@ -1285,6 +1285,27 @@ static void gen_gettextsize(Bitmap_Font *bf, const void *text, int cc,
     *pbase = bf->ascent;
 }
 
+static void gen16_gettextsize (Bitmap_Font *bf, const unsigned short *str, int cc,
+                               int *pwidth, int *pheight, int *pbase)
+{
+    unsigned int	c;
+    int			width;
+    
+    if(bf->width == NULL)
+	width = cc * bf->maxwidth;
+    else {
+	width = 0;
+	while(--cc >= 0) {
+	    c = *str++;
+	    if(c >= bf->firstchar && c < bf->firstchar+bf->size)
+		width += bf->width[c - bf->firstchar];
+	}
+    }
+    *pwidth = width;
+    *pheight = bf->height;
+    *pbase = bf->ascent;
+}
+
 static void
 gen_gettextbits(Bitmap_Font *bf, int ch, const unsigned short **retmap,
 	int *pwidth, int *pheight, int *pbase)
@@ -1373,10 +1394,8 @@ static void corefont_drawtext (Bitmap_Font *bf, ttk_surface srf, int x, int y,
     int bgstate;
     int clip;
     
-    gen_gettextsize (bf, str, cc, &width, &height, &base);
-    
     startx = x;
-    starty = y + base;
+    starty = y;
     bgstate = 0; //xxx
 
     while (--cc >= 0 && x < srf->w) {
@@ -1387,20 +1406,142 @@ static void corefont_drawtext (Bitmap_Font *bf, ttk_surface srf, int x, int y,
     }
 }
 
+static void corefont16_drawtext (Bitmap_Font *bf, ttk_surface srf, int x, int y,
+                                 const unsigned short *str, int cc, ttk_color col) 
+{
+    int width, height, base, startx, starty;
+    const unsigned short *bitmap;
+    int bgstate, clip;
+
+    startx = x;
+    starty = y;
+    bgstate = 0; //xxx
+
+    while (--cc >= 0 && x < srf->w) {
+        int ch = *str++;
+        gen_gettextbits (bf, ch, &bitmap, &width, &height, &base);
+        draw_bitmap (srf, x, y, width, height, bitmap, col);
+        x += width;
+    }
+}
+
 /**** end mwin copied stuff ****/
+
+static int IsASCII (const char *str) 
+{
+    const char *p = str;
+    while (*p) {
+        if (*p & 0x80) return 0;
+        p++;
+    }
+    return 1;
+}
+
+static char *Latin1ToUTF8 (const char *str) 
+{
+    const char *sp = str;
+    int len = 0;
+    char *dst, *dp;
+    while (*sp) {
+        if (*sp < 0x80) len++;
+        else            len += 2;
+        sp++;
+    }
+    dp = dst = malloc (len);
+    sp = str;
+    while (*sp) {
+        if (*sp < 0x80) *dp++ = *sp;
+        else {
+            *dp++ = 0xC0 + (*sp >> 6);
+            *dp++ = 0x80 + (*sp & 0x3f);
+        }
+        sp++;
+    }
+    *dp = 0;
+    return dst;
+}
+
+static int ConvertUTF8 (const unsigned char *src, unsigned short *dst)
+{
+    const unsigned char *sp = src;
+    unsigned short *dp = dst;
+    int len = 0;
+    while (*sp) {
+        *dp = 0;
+        if (*sp < 0x80) *dp = *sp++;
+        else if (*sp >= 0xC0 && *sp < 0xE0) {
+            *dp |= (*sp++ - 0xC0) << 6;  if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80);       if (!*sp) goto err;
+        }
+        else if (*sp >= 0xE0 && *sp < 0xF0) {
+            *dp |= (*sp++ - 0xE0) << 12; if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80) << 6;  if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80);       if (!*sp) goto err;
+        }
+        else if (*sp >= 0xF0 && *sp < 0xF8) {
+            *dp |= (*sp++ - 0xF0) << 18; if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80) << 12; if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80) << 6;  if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80);       if (!*sp) goto err;
+        }
+        else if (*sp >= 0xF8 && *sp < 0xFC) {
+            *dp |= (*sp++ - 0xF8) << 24; if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80) << 18; if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80) << 12; if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80) << 6;  if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80);       if (!*sp) goto err;
+        }
+        else if (*sp >= 0xFC && *sp < 0xFE) {
+            *dp |= (*sp++ - 0xF8) << 30; if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80) << 24; if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80) << 18; if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80) << 12; if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80) << 6;  if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80);       if (!*sp) goto err;
+        }
+        else goto err;
+        
+        dp++;
+        len++;
+        continue;
+        
+    err:
+        *dp++ = '?';
+        sp++;
+        len++;
+    }
+    *dp = 0;
+    return len;
+}
 
 static void draw_bf (ttk_font *f, ttk_surface srf, int x, int y, ttk_color col, const char *str)
 {
     const void *text = (const void *)str;
     int cc = strlen (str);
     if (!f->bf) return;
-    corefont_drawtext (f->bf, srf, x, y, text, cc, col);
+
+    if (IsASCII (str))
+        corefont_drawtext (f->bf, srf, x, y, text, cc, col);
+    else {
+        unsigned short *buf = malloc (strlen (str) * 2);
+        int len = ConvertUTF8 (str, buf);
+        corefont16_drawtext (f->bf, srf, x, y, buf, len, col);
+        free (buf);
+    }
 }
 static int width_bf (ttk_font *f, const char *str)
 {
     int width, height, base;
     if (!f->bf) return -1;
-    gen_gettextsize (f->bf, str, strlen (str), &width, &height, &base);
+
+    if (IsASCII (str))
+        gen_gettextsize (f->bf, str, strlen (str), &width, &height, &base);
+    else {
+        unsigned short *buf = malloc (strlen (str) * 2);
+        int len = ConvertUTF8 (str, buf);
+        gen16_gettextsize (f->bf, buf, len, &width, &height, &base);
+        free (buf);
+    }
     return width;
 }
 static void free_bf (ttk_font *f) 
