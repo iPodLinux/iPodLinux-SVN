@@ -1218,11 +1218,39 @@ static void draw_sf (ttk_font *f, ttk_surface srf, int x, int y, ttk_color col, 
     else
 	SFont_Write (srf, f->sf, x, y, str);
 }
+static void draw16_sf (ttk_font *f, ttk_surface srf, int x, int y, ttk_color col, const uc16 *str) 
+{
+    int len = 0;
+    const uc16 *sp = str;
+    char *dst, *dp;
+    while (*sp++) len++;
+    dp = dst = malloc (len);
+    sp = str;
+    while (*sp) *dp++ = (*sp++ & 0xff);
+    draw_sf (f, srf, x, y, col, dst);
+    free (dst);
+}
 static int width_sf (ttk_font *f, const char *str)
 {
     if (f->sf)
 	return SFont_TextWidth (f->sf, str);
     return 0;
+}
+static int width16_sf (ttk_font *f, ttk_surface srf, int x, int y, ttk_color col, const uc16 *str) 
+{
+    int len = 0;
+    const uc16 *sp = str;
+    char *dst, *dp;
+    int ret;
+    
+    while (*sp++) len++;
+    dp = dst = malloc (len);
+    sp = str;
+    while (*sp) *dp++ = (*sp++ & 0xff);
+    
+    ret = width_sf (f, dst);
+    free (dst);
+    return ret;
 }
 static void free_sf (ttk_font *f) 
 {
@@ -1233,27 +1261,44 @@ static void free_sf (ttk_font *f)
 #endif
 
 #ifndef NO_TF
-static void draw_tf (ttk_font *f, ttk_surface srf, int x, int y, ttk_color col, const char *str)
-{
-    SDL_Surface *textsrf;
-    SDL_Rect dr;
-    
-    if (ttk_screen->bpp == 2)
-	textsrf = TTF_RenderText_Solid (f->tf, str, col);
+#define TF_FUNC(name,type,func) \
+static void name ## _tf (ttk_font *f, ttk_surface srf, int x, int y, ttk_color col, const type *str) \
+{ \
+    SDL_Surface *textsrf; \
+    SDL_Rect dr; \
+    \
+    if (ttk_screen->bpp == 2) \
+	textsrf = TTF_Render ## func ## _Solid(f->tf, str, col);
 #if 0
     else if (ttk_last_gc->usebg)
-	textsrf = TTF_RenderText_Shaded (f->tf, str, col, ttk_last_gc->bg);
+	textsrf = TTF_Render ## func ## _Shaded(f->tf, str, col, ttk_last_gc->bg);
 #endif
     else
-	textsrf = TTF_RenderText_Blended (f->tf, str. col);
+	textsrf = TTF_Render ## func ## _Blended(f->tf, str. col);
 
     dr.x = x; dr.y = y;
     SDL_BlitSurface (textsrf, 0, srf, &dr);
 }
+TF_FUNC (draw, char, UTF8);
+TF_FUNC (lat1, char, Text);
+TF_FUNC (uc16, Uint16, UNICODE);
+
 static int width_tf (ttk_font *f, const char *str)
 {
     int w, h;
+    TTF_SizeUTF8 (f->tf, str, &w, &h);
+    return w;
+}
+static int widthL_tf (ttk_font *f, const char *str)
+{
+    int w, h;
     TTF_SizeText (f->tf, str, &w, &h);
+    return w;
+}
+static int widthU_tf (ttk_font *f, const uc16 *str)
+{
+    int w, h;
+    TTF_SizeUNICODE (f->tf, str, &w, &h);
     return w;
 }
 static void free_tf (ttk_font *f) 
@@ -1437,30 +1482,6 @@ static int IsASCII (const char *str)
     return 1;
 }
 
-static char *Latin1ToUTF8 (const char *str) 
-{
-    const char *sp = str;
-    int len = 0;
-    char *dst, *dp;
-    while (*sp) {
-        if (*sp < 0x80) len++;
-        else            len += 2;
-        sp++;
-    }
-    dp = dst = malloc (len);
-    sp = str;
-    while (*sp) {
-        if (*sp < 0x80) *dp++ = *sp;
-        else {
-            *dp++ = 0xC0 + (*sp >> 6);
-            *dp++ = 0x80 + (*sp & 0x3f);
-        }
-        sp++;
-    }
-    *dp = 0;
-    return dst;
-}
-
 static int ConvertUTF8 (const unsigned char *src, unsigned short *dst)
 {
     const unsigned char *sp = src;
@@ -1529,6 +1550,26 @@ static void draw_bf (ttk_font *f, ttk_surface srf, int x, int y, ttk_color col, 
         free (buf);
     }
 }
+
+static void lat1_bf (ttk_font *f, ttk_surface srf, int x, int y, ttk_color col, const char *str)
+{
+    const void *text = (const void *)str;
+    int cc = strlen (str);
+    if (!f->bf) return;
+
+    corefont_drawtext (f->bf, srf, x, y, text, strlen (str), col);
+}
+
+static void uc16_bf (ttk_font *f, ttk_surface srf, int x, int y, ttk_color col, const uc16 *str) 
+{
+    int cc = 0;
+    const uc16 *p = str;
+    if (!f->bf) return;
+
+    while (*p++) cc++;
+    corefont16_drawtext (f->bf, srf, x, y, str, cc, col);
+}
+
 static int width_bf (ttk_font *f, const char *str)
 {
     int width, height, base;
@@ -1544,6 +1585,25 @@ static int width_bf (ttk_font *f, const char *str)
     }
     return width;
 }
+static int widthL_bf (ttk_font *f, const char *str) 
+{
+    int width, height, base;
+    if (!f->bf) return -1;
+    gen_gettextsize (f->bf, str, strlen (str), &width, &height, &base);
+    return width;
+}
+static int widthU_bf (ttk_font *f, const uc16 *str) 
+{
+    int width, height, base;
+    int cc = 0;
+    const uc16 *p = str;
+    if (!f->bf) return -1;
+
+    while (*p++) cc++;
+    gen16_gettextsize (f->bf, str, cc, &width, &height, &base);
+    return width;
+}
+
 static void free_bf (ttk_font *f) 
 {
     if (f->bf->name)   free (f->bf->name);
@@ -1557,10 +1617,28 @@ void ttk_text (ttk_surface srf, ttk_font fnt, int x, int y, ttk_color col, const
 {
     fnt.draw (&fnt, srf, x, y + fnt.ofs, col, str);
 }
+void ttk_text_lat1 (ttk_surface srf, ttk_font fnt, int x, int y, ttk_color col, const char *str)
+{
+    fnt.draw_lat1 (&fnt, srf, x, y + fnt.ofs, col, str);
+}
+void ttk_text_uc16 (ttk_surface srf, ttk_font fnt, int x, int y, ttk_color col, const uc16 *str)
+{
+    fnt.draw_uc16 (&fnt, srf, x, y + fnt.ofs, col, str);
+}
 int ttk_text_width (ttk_font fnt, const char *str)
 {
     if (!str) return 0;
     return fnt.width (&fnt, str);
+}
+int ttk_text_width_lat1 (ttk_font fnt, const char *str)
+{
+    if (!str) return 0;
+    return fnt.width_lat1 (&fnt, str);
+}
+int ttk_text_width_uc16 (ttk_font fnt, const uc16 *str)
+{
+    if (!str) return 0;
+    return fnt.width_uc16 (&fnt, str);
 }
 int ttk_text_width_gc (ttk_gc gc, const char *str) 
 {
@@ -1588,8 +1666,8 @@ void ttk_load_font (ttk_fontinfo *fi, const char *fnbase, int size)
 	    strcpy (fname, fnbase);
 	    strcat (fname, "-i.png");
 	    fi->f.sfi = SFont_InitFont (IMG_Load (fname));
-	    fi->f.draw = draw_sf;
-	    fi->f.width = width_sf;
+	    fi->f.draw = fi->f.draw_lat1 = draw_sf; fi->f.draw_uc16 = draw16_sf;
+	    fi->f.width = fi->f.width_lat1 = width_sf; fi->f.width_uc16 = width16_sf;
 	    fi->f.free = free_sf;
 	    fi->f.height = SFont_TextHeight (fi->f.sf);
 	    return;
@@ -1602,7 +1680,11 @@ void ttk_load_font (ttk_fontinfo *fi, const char *fnbase, int size)
 	if (stat (fname, &st) >= 0) {
 	    fi->f.tf = TTF_OpenFont (fname, size);
 	    fi->f.draw = draw_tf;
+            fi->f.draw_lat1 = lat1_tf;
+            fi->f.draw_uc16 = uc16_tf;
 	    fi->f.width = width_tf;
+            fi->f.width_lat1 = widthL_tf;
+            fi->f.width_uc16 = widthU_tf;
 	    fi->f.free = free_tf;
 	    fi->f.height = TTF_FontHeight (fi->f.tf);
 	    return;
@@ -1616,7 +1698,11 @@ void ttk_load_font (ttk_fontinfo *fi, const char *fnbase, int size)
 	fi->f.bf = calloc (1, sizeof(Bitmap_Font));
 	load_fnt (fi->f.bf, fname);
 	fi->f.draw = draw_bf;
+        fi->f.draw_lat1 = lat1_bf;
+        fi->f.draw_uc16 = uc16_bf;
 	fi->f.width = width_bf;
+        fi->f.width_lat1 = widthL_bf;
+        fi->f.width_uc16 = widthU_bf;
 	fi->f.free = free_bf;
 	fi->f.height = fi->f.bf->height;
 	return;
@@ -1628,7 +1714,11 @@ void ttk_load_font (ttk_fontinfo *fi, const char *fnbase, int size)
 	fi->f.bf = calloc (1, sizeof(Bitmap_Font));
 	load_pcf (fi->f.bf, fname);
 	fi->f.draw = draw_bf;
+        fi->f.draw_lat1 = lat1_bf;
+        fi->f.draw_uc16 = uc16_bf;
 	fi->f.width = width_bf;
+        fi->f.width_lat1 = widthL_bf;
+        fi->f.width_uc16 = widthU_bf;
 	fi->f.free = free_bf;
 	fi->f.height = fi->f.bf->height;
 	return;
