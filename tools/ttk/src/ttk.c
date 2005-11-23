@@ -214,9 +214,11 @@ TWindow *ttk_init()
         } else if (ver & TTK_POD_NANO) {
             ttk_screen->w = 176;
             ttk_screen->h = 132;
+            ttk_screen->bpp = 16;
         } else if (ver & TTK_POD_VIDEO) {
             ttk_screen->w = 320;
             ttk_screen->h = 240;
+            ttk_screen->bpp = 16;
 	} else {
 	    fprintf (stderr, "Couldn't determine your iPod version (v=0%o)\n", ver);
 	    free (ttk_screen);
