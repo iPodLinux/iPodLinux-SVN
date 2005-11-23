@@ -1,5 +1,5 @@
 #include "bootloader.h"
-#include "ata.h"
+#include "ata2.h"
 #include "vfs.h"
 #include "fat32.h"
 #include "minilibc.h"

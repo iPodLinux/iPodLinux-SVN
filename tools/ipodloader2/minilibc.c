@@ -429,7 +429,19 @@ char  *mlc_strncpy(char *dest,const char *src,size_t count) {
 }
 
 void *mlc_memcpy(void *dest,const void *src,size_t n) {
-  return(NULL);
+  size_t i;
+  uint8 *d,*s;
+  
+  d = (uint8*)dest;
+  s = (uint8*)src;
+  for(i=0;i<n;i++) {
+    *d = *s;
+
+    d++;
+    s++;
+  }
+
+  return(dest);
 }
 
 char *mlc_strchr(const char *s,int c) {
