@@ -1,2 +1,32 @@
 TODO:
-	Figure out why kernel launching doesnt work.. It should be loaded okay
+* Make FAT32 use DOS-convention filenames instead of on-disk encoding
+* Reduce BSS segment size
+* Make PP5002 compatible, and support more LCDs
+* Implement firmware-on-a-file functionality (RetailOS,Diag,Diskmode)
+* Implement ext2 filesystem driver
+* Implement HFS+ filesystem driver
+* Implement menu system and configuration file
+
+
+Notes about TODOs:
+* Make FAT32 use DOS.....
+  Replace ' ' with 0x0, and do two strncmp() on each dirent, and
+  is should pretty much work already. Make case-insensitive for
+  niceness
+* Reduce BSS segment size
+  FAT32 has a "clusterBuffer" that should be mlc_malloc()'ed instead
+  Make mlc_malloc() allocate mem from MAX_MEM and down
+* Make PP5002 compatible
+  mlc_malloc() needs to be adjusted for the different RAM mapping
+  The entry-point is different from the PP502x's
+  Support more LCDs: 4G B&W, 4G Color, 4G Photo, Nano, 5G
+* Implement firmware-on-a-file...
+  Keep a copy of the firmware partition (stripped?) on a data-partition
+  and load the soso from here.
+  Thoughts: Is this a good idea? Will 5G work with this? Does it expect
+            rcsc to be on disk or in mem ?
+* Implement menu system..
+  Come up with a short and readable format for a menu.lst equivalent.
+  Maybe we can use the same format out-of-the box even?
+
+

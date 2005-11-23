@@ -26,7 +26,8 @@ typedef struct {
 
 fat_t fat;
 
-uint8 clusterBuffer[8192];
+//uint8 clusterBuffer[8192];
+uint8 *clusterBuffer = NULL;
 
 /*
  * This routine sucks, and would benefit greately from having
@@ -38,7 +39,7 @@ uint8 clusterBuffer[8192];
  *
  */
 static uint32 fat32_findnextcluster(uint32 prev) {
-  uint32 block,offset,ret,tmp;
+  uint32 block,offset,ret;
   uint8  tmpBuff[512];
 
   //printf("Finding cluster after %u ... ",prev);
@@ -97,7 +98,9 @@ static fat32_file *fat32_findfile(uint32 start, char *fname) {
 	return(NULL);
       } else if( ((buffer[j*32+0xB] & 0x1F) == 0) && (buffer[j*32] != 0xE5) ) { // Normal file
 
-	if( (mlc_strncmp( &buffer[j*32], fname, 8 ) == 0) && (next == NULL) ) {
+	if( (mlc_strncmp( &buffer[j*32], fname, mlc_strchr(fname,'.')-fname ) == 0) &&
+	    (mlc_strncmp( &buffer[j*32+8], mlc_strchr(fname,'.')+1, 3 ) == 0) &&
+	    (next == NULL) ) {
 	  new_offset  = (buffer[j*32+0x15]<<8) + buffer[j*32+0x14]; 
 	  new_offset  = new_offset << 16;
 	  new_offset |= (buffer[j*32+0x1B]<<8) + buffer[j*32+0x1A]; 
@@ -116,7 +119,7 @@ static fat32_file *fat32_findfile(uint32 start, char *fname) {
 	}
 	//mlc_printf("File: %s\n",&buffer[j*32]);
       } else if( buffer[j*32+0xB] & (1<<4)) { // Directory
-	if( mlc_strncmp( &buffer[j*32], fname, 8 ) == 0 ) {
+	if( mlc_strncmp( &buffer[j*32], fname, mlc_strchr(fname,'/')-fname ) == 0 ) {
 
 
 	  //mlc_printf("MATCH ");
@@ -306,6 +309,10 @@ void fat32_newfs(uint32 offset) {
   fat.root_dir_first_cluster     = (buff[0x2F] << 24) | (buff[0x2E] << 16) | (buff[0x2D] << 8) | buff[0x2C];
   
   fat.clustersize = fat.bytes_per_sector * fat.sectors_per_cluster;
+
+  if( clusterBuffer == NULL ) {
+    clusterBuffer = (uint8*)mlc_malloc( fat.clustersize );
+  }
 
   /*
   printf(" --[ FAT32 Data ]--\n");
