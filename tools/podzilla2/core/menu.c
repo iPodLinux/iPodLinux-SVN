@@ -68,7 +68,7 @@ static TWindow *reset_settings()
 
 static const char *time1224_options[] = { N_("12-hour"), N_("24-hour"), 0 };
 
-static const char * clocks_timezones[] = {
+const char * clocks_timezones[] = {
         "United Kingdom 0:00",
         "France +1:00",
         "Greece +2:00",
@@ -119,7 +119,7 @@ static const char * clocks_timezones[] = {
 	0
 };
 
-static const char * clocks_dsts[] = {
+const char * clocks_dsts[] = {
 	"0:00",
 	"0:30",
 	"1:00",
@@ -204,7 +204,7 @@ void pz_menu_init()
     pz_menu_add_stub ("/Settings/Date & Time/Clock");
     pz_menu_add_stub ("/Settings/Date & Time/Set Time");
     pz_menu_add_stub ("/Settings/Date & Time/Set Time & Date");
-    pz_menu_add_setting ("/Settings/Date & Time/Time Zone", TIME_ZONE, pz_global_config, clocks_timezones);
+    pz_menu_add_setting ("/Settings/Date & Time/TZ", TIME_ZONE, pz_global_config, clocks_timezones);
     pz_menu_add_setting ("/Settings/Date & Time/DST Offset", TIME_DST, pz_global_config, clocks_dsts);
     pz_menu_add_setting ("/Settings/Date & Time/Time Style", TIME_1224, pz_global_config, time1224_options);
     pz_menu_add_setting ("/Settings/Date & Time/Time Tick Noise", TIME_TICKER, pz_global_config, 0);

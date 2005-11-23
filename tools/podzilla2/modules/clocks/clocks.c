@@ -155,60 +155,6 @@ static int Clocks_set = 0;
 
 static int Clocks_offset = 0;		/* timezone offset for display */
 
-/* timezone information gleaned from:
-        http://en.wikipedia.org/wiki/Timezone
-*/
-char * clocks_timezones[] = {
-        "United Kingdom 0:00",
-        "France +1:00",
-        "Greece +2:00",
-        "Kenya +3:00",
-        "Iran +3:30",
-
-        "UAE +4:00",
-        "Afghanistan +4:30",
-        "Uzbekistan +5:00",
-        "IST India +5:30",
-        "Nepal +5:45",
-
-        "Sri Lanka +6:00",
-        "Myanmar +6:30",
-        "Thailand +7:00",
-        "AWST W. Australia +8:00",
-        "W. Australia +8:45",
-
-        "JST/KST Japan +9:00",
-        "ACST C. Australia +9:30",
-        "AEST E. Australia +10:00",
-        "New South Wales +10:30",
-        "Micronesia +11:00",
-
-        "Norfolk +11:30",
-        "Fiji +12:00",
-        "Chatham Islands +12:45",
-        "Tonga +13:00",
-        "Kiribati +14:00",
-
-        "UTC -12:00",
-        "Midway Atoll -11:00",
-        "HST Hawaii -10:00",
-        "Polynesia -9:30",
-        "AKST Alaska -9:00",
-
-        "PST US Pacific -8:00",
-        "MST US Moutain -7:00",
-        "CST US Central -6:00",
-        "EST US Eastern -5:00",
-        "AST Atlantic -4:00",
-
-        "NST Newfoundland -3:30",
-        "Brazil -3:00",
-        "Mid-Atlantic -2:00",
-        "Portugal -1:00",
-
-	0
-};
-
 static int clocks_tz_offsets[] = { /* minutes associated with the above */
            0,
           60,  120,  180,  210,  240,
@@ -219,13 +165,6 @@ static int clocks_tz_offsets[] = { /* minutes associated with the above */
         -720, -660, -600, -570, -540,
         -480, -420, -360, -300, -240,
         -210, -180, -120, -60
-};
-
-char * clocks_dsts[] = {
-	"0:00",
-	"0:30",
-	"1:00",
-	0
 };
 
 static int clocks_dst_offsets[] = {
@@ -1300,5 +1239,15 @@ void new_Set_DateTime_window( void )
 	new_Clocks_window_common();
 }
 
-static void init_clocks() { /* XXX fill in menu items */ }
+extern const char *clocks_timezones[], *clocks_dsts[];
+static void init_clocks() 
+{
+    pz_menu_add_legacy ("/Settings/Date & Time/Set Time", new_Set_Time_window);
+    pz_menu_add_legacy ("/Settings/Date & Time/Set Time & Date", new_Set_DateTime_window);
+    pz_menu_add_legacy ("/Settings/Date & Time/Clock", new_clock_window);
+    pz_menu_add_legacy ("/Extras/Clock/Local Clock", new_clock_window);
+    pz_menu_add_legacy ("/Extras/Clock/World Clock", new_world_clock_window);
+    pz_menu_add_setting ("/Extras/Clock/TZ", TIME_WORLDTZ, pz_global_config, clocks_timezones);
+    pz_menu_add_setting ("/Extras/Clock/DST", TIME_WORLDDST, pz_global_config, clocks_dsts);
+}
 PZ_MOD_INIT (init_clocks)
