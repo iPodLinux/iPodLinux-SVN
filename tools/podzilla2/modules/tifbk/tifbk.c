@@ -113,17 +113,17 @@ void ti_fbk_draw(TWidget * wid, ttk_surface srf)
 		mh = (m / 16777216);
 		if (ch != 0) {
 			if (ch < 33) {
-				x -= (ttk_text_width(ttk_menufont, ti_fbk_CtrlCharNames[ch])/2);
-				ttk_text(srf, ttk_menufont, x, y, ti_ap_get(1), ti_fbk_CtrlCharNames[ch]);
+				x -= (ttk_text_width_lat1(ttk_menufont, ti_fbk_CtrlCharNames[ch])/2);
+				ttk_text_lat1(srf, ttk_menufont, x, y, ti_ap_get(1), ti_fbk_CtrlCharNames[ch]);
 			} else {
 				cho[0]=ch;
 				cho[1]=0;
-				x -= (ttk_text_width(ttk_menufont, cho)/2);
-				ttk_text(srf, ttk_menufont, x, y, ti_ap_get(1), cho);
+				x -= (ttk_text_width_lat1(ttk_menufont, cho)/2);
+				ttk_text_lat1(srf, ttk_menufont, x, y, ti_ap_get(1), cho);
 			}
 		} else {
-			x -= (ttk_text_width(ttk_menufont, ti_fbk_ModeNames[mh])/2);
-			ttk_text(srf, ttk_menufont, x, y, ti_ap_get(1), ti_fbk_ModeNames[mh]);
+			x -= (ttk_text_width_lat1(ttk_menufont, ti_fbk_ModeNames[mh])/2);
+			ttk_text_lat1(srf, ttk_menufont, x, y, ti_ap_get(1), ti_fbk_ModeNames[mh]);
 		}
 		m = (m % 16777216)*256;
 		c = (c % 16777216)*256;

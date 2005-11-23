@@ -77,7 +77,7 @@ void ti_dial_draw(TWidget * wid, ttk_surface srf)
 	{
 		s[0] = ti_dial_numeric?ti_dial_charlist_n[i]:ti_dial_charlist[i];
 		s[1] = 0;
-		ttk_text(srf, ttk_menufont, wid->x+j*CW+(10-ttk_text_width (ttk_menufont, s))/2, wid->y+ty, ti_ap_get(1), s);
+		ttk_text_lat1(srf, ttk_menufont, wid->x+j*CW+(10-ttk_text_width_lat1(ttk_menufont, s))/2, wid->y+ty, ti_ap_get(1), s);
 		if (i == ti_dial_charlist_pos) {
 			ttk_rect(srf, wid->x+j*CW-1, wid->y, wid->x+j*CW+10, wid->y+15, ti_ap_get(1));
 		}

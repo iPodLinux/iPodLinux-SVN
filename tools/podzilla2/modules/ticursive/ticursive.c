@@ -27,64 +27,70 @@
 
 static PzModule * module;
 
-const char * ti_cursive_records[] = {
-	"l", "-", "_",
-	"ll", "l", "L",
-	"lll", "c", "C",
-	"llll", "o", "O",
-	"lllll", "0", ")",
-	"llllo", "q", "Q",
-	"llllr", "a", "A",
-	"lllo", "g", "G",
-	"llloo", "\\", "|",
-	"lllr", "u", "U",
-	"lllro", "b", "B",
-	"llo", "6", "^",
-	"lloo", "(", "[",
-	"llooo", "[", "{",
-	"llor", "4", "$",
-	"llorr", "9", "(",
-	"lo", "h", "H",
-	"lol", "w", "W",
-	"lolo", "=", "+",
-	"lorr", "5", "%",
-	"lor", "s", "S",
-	"loro", "8", "*",
-	"lro", "k", "K",
-	"lrrr", "n", "N",
-	"o", "x", "X",
-	"ol", "v", "V",
-	"oll", "\1", "\1",
-	"olll", "e", "E",
-	"oo", ".", ">",
-	"ooo", ":", "\"",
-	"ooor", ";", "\'",
-	"oor", ",", "<",
-	"or", "y", "Y",
-	"orr", "\2", "\2",
-	"orrr", "\x0A", "\x0A",
-	"r", "1", "!",
-	"ro", "t", "T",
-	"rol", "z", "Z",
-	"ror", "i", "I",
-	"rorr", "3", "#",
-	"rr", "r", "R",
-	"rrl", "~", "`",
-	"rro", "f", "F",
-	"rrol", "2", "@",
-	"rroo", ")", "]",
-	"rrooo", "]", "}",
-	"rror", "7", "&",
-	"rrr", "j", "J",
-	"rrrlo", "?", "/",
-	"rrro", "p", "P",
-	"rrroo", "/", "?",
-	"rrrr", "d", "D",
-	"rrrro", "m", "M"
+typedef struct ti_cursive_record_ {
+	unsigned char * seq;
+	unsigned char ch;
+	unsigned char sh;
+} ti_cursive_record;
+
+const ti_cursive_record ti_cursive_records[] = {
+	{ "l", '-', '_' },
+	{ "ll", 'l', 'L' },
+	{ "lll", 'c', 'C' },
+	{ "llll", 'o', 'O' },
+	{ "lllll", '0', ')' },
+	{ "llllo", 'q', 'Q' },
+	{ "llllr", 'a', 'A' },
+	{ "lllo", 'g', 'G' },
+	{ "llloo", '\\', '|' },
+	{ "lllr", 'u', 'U' },
+	{ "lllro", 'b', 'B' },
+	{ "llo", '6', '^' },
+	{ "lloo", '(', '[' },
+	{ "llooo", '[', '{' },
+	{ "llor", '4', '$' },
+	{ "llorr", '9', '(' },
+	{ "lo", 'h', 'H' },
+	{ "lol", 'w', 'W' },
+	{ "lolo", '=', '+' },
+	{ "lorr", '5', '%' },
+	{ "lor", 's', 'S' },
+	{ "loro", '8', '*' },
+	{ "lro", 'k', 'K' },
+	{ "lrrr", 'n', 'N' },
+	{ "o", 'x', 'X' },
+	{ "ol", 'v', 'V' },
+	{ "oll", TTK_INPUT_LEFT, TTK_INPUT_LEFT },
+	{ "olll", 'e', 'E' },
+	{ "oo", '.', '>' },
+	{ "ooo", ':', '\"' },
+	{ "ooor", ';', '\'' },
+	{ "oor", ',', '<' },
+	{ "or", 'y', 'Y' },
+	{ "orr", TTK_INPUT_RIGHT, TTK_INPUT_RIGHT },
+	{ "orrr", TTK_INPUT_ENTER, TTK_INPUT_ENTER },
+	{ "r", '1', '!' },
+	{ "ro", 't', 'T' },
+	{ "rol", 'z', 'Z' },
+	{ "ror", 'i', 'I' },
+	{ "rorr", '3', '#' },
+	{ "rr", 'r', 'R' },
+	{ "rrl", '~', '`' },
+	{ "rro", 'f', 'F' },
+	{ "rrol", '2', '@' },
+	{ "rroo", ')', ']' },
+	{ "rrooo", ']', '}' },
+	{ "rror", '7', '&' },
+	{ "rrr", 'j', 'J' },
+	{ "rrrlo", '?', '/' },
+	{ "rrro", 'p', 'P' },
+	{ "rrroo", '/', '?' },
+	{ "rrrr", 'd', 'D' },
+	{ "rrrro", 'm', 'M' }
 };
 const int ti_cursive_record_count = 51;
 
-static char ti_cursive_buffer[6];
+static unsigned char ti_cursive_buffer[6];
 static int ti_cursive_buffer_pos = 0;
 static int ti_cursive_shift = 0;
 
@@ -101,11 +107,11 @@ char ti_cursive_get_char(void)
 {
 	int i;
 	for (i=0; i<ti_cursive_record_count; i++) {
-		if (strcmp(ti_cursive_buffer, ti_cursive_records[i*3]) == 0) {
+		if (strcmp(ti_cursive_buffer, ti_cursive_records[i].seq) == 0) {
 			if (ti_cursive_shift != 0) {
-				return ti_cursive_records[i*3+2][0];
+				return ti_cursive_records[i].sh;
 			} else {
-				return ti_cursive_records[i*3+1][0];
+				return ti_cursive_records[i].ch;
 			}
 		}
 	}
@@ -114,7 +120,7 @@ char ti_cursive_get_char(void)
 
 void ti_cursive_push(void)
 {
-	char c;
+	unsigned char c;
 	c = ti_cursive_get_char();
 	if (c != 0) { ttk_input_char(c); }
 	ti_cursive_buffer[0] = 0;
@@ -123,48 +129,48 @@ void ti_cursive_push(void)
 
 void ti_cursive_draw(TWidget * wid, ttk_surface srf)
 {
-	char s[2];
+	unsigned char s[2];
 	int x, y, w;
 	x = wid->x;
 	w = wid->w;
 	y = wid->y + 8 - ttk_text_height(ttk_menufont)/2;
 	
 	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
-	ttk_text(srf, ttk_menufont, x+2, y, ti_ap_get(1), ti_cursive_buffer);
+	ttk_text_lat1(srf, ttk_menufont, x+2, y, ti_ap_get(1), ti_cursive_buffer);
 	s[0] = ti_cursive_get_char();
 	s[1] = 0;
 	if (s[0]>32) {
-		ttk_text(srf, ttk_menufont, x+w-40, y, ti_ap_get(1), s);
+		ttk_text_lat1(srf, ttk_menufont, x+w-40, y, ti_ap_get(1), s);
 	} else {
 		switch(s[0]) {
 		case 0:
 			break;
 		case 32:
-			ttk_text(srf, ttk_menufont, x+w-40, y, ti_ap_get(1), "space");
+			ttk_text_lat1(srf, ttk_menufont, x+w-40, y, ti_ap_get(1), "space");
 			break;
-		case 1:
-			ttk_text(srf, ttk_menufont, x+w-40, y, ti_ap_get(1), "left");
+		case TTK_INPUT_LEFT:
+			ttk_text_lat1(srf, ttk_menufont, x+w-40, y, ti_ap_get(1), "left");
 			break;
-		case 2:
-			ttk_text(srf, ttk_menufont, x+w-40, y, ti_ap_get(1), "right");
+		case TTK_INPUT_RIGHT:
+			ttk_text_lat1(srf, ttk_menufont, x+w-40, y, ti_ap_get(1), "right");
 			break;
-		case 8:
-			ttk_text(srf, ttk_menufont, x+w-40, y, ti_ap_get(1), "bksp");
+		case TTK_INPUT_BKSP:
+			ttk_text_lat1(srf, ttk_menufont, x+w-40, y, ti_ap_get(1), "bksp");
 			break;
 		case 127:
-			ttk_text(srf, ttk_menufont, x+w-40, y, ti_ap_get(1), "del");
+			ttk_text_lat1(srf, ttk_menufont, x+w-40, y, ti_ap_get(1), "del");
 			break;
 		case 10:
 		case 13:
-			ttk_text(srf, ttk_menufont, x+w-40, y, ti_ap_get(1), "nwln");
+			ttk_text_lat1(srf, ttk_menufont, x+w-40, y, ti_ap_get(1), "nwln");
 			break;
 		default:
-			ttk_text(srf, ttk_menufont, x+w-40, y, ti_ap_get(1), "??");
+			ttk_text_lat1(srf, ttk_menufont, x+w-40, y, ti_ap_get(1), "??");
 			break;
 		}
 	}
 	if (ti_cursive_shift != 0) {
-		ttk_text(srf, ttk_menufont, x+w/2, y, ti_ap_get(1), "2nd");
+		ttk_text_lat1(srf, ttk_menufont, x+w/2, y, ti_ap_get(1), "2nd");
 	}
 }
 
