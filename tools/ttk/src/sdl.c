@@ -1492,25 +1492,25 @@ static int ConvertUTF8 (const unsigned char *src, unsigned short *dst)
         if (*sp < 0x80) *dp = *sp++;
         else if (*sp >= 0xC0 && *sp < 0xE0) {
             *dp |= (*sp++ - 0xC0) << 6;  if (!*sp) goto err;
-            *dp |= (*sp++ - 0x80);       if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80);
         }
         else if (*sp >= 0xE0 && *sp < 0xF0) {
             *dp |= (*sp++ - 0xE0) << 12; if (!*sp) goto err;
             *dp |= (*sp++ - 0x80) << 6;  if (!*sp) goto err;
-            *dp |= (*sp++ - 0x80);       if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80);
         }
         else if (*sp >= 0xF0 && *sp < 0xF8) {
             *dp |= (*sp++ - 0xF0) << 18; if (!*sp) goto err;
             *dp |= (*sp++ - 0x80) << 12; if (!*sp) goto err;
             *dp |= (*sp++ - 0x80) << 6;  if (!*sp) goto err;
-            *dp |= (*sp++ - 0x80);       if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80);
         }
         else if (*sp >= 0xF8 && *sp < 0xFC) {
             *dp |= (*sp++ - 0xF8) << 24; if (!*sp) goto err;
             *dp |= (*sp++ - 0x80) << 18; if (!*sp) goto err;
             *dp |= (*sp++ - 0x80) << 12; if (!*sp) goto err;
             *dp |= (*sp++ - 0x80) << 6;  if (!*sp) goto err;
-            *dp |= (*sp++ - 0x80);       if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80);
         }
         else if (*sp >= 0xFC && *sp < 0xFE) {
             *dp |= (*sp++ - 0xF8) << 30; if (!*sp) goto err;
@@ -1518,7 +1518,7 @@ static int ConvertUTF8 (const unsigned char *src, unsigned short *dst)
             *dp |= (*sp++ - 0x80) << 18; if (!*sp) goto err;
             *dp |= (*sp++ - 0x80) << 12; if (!*sp) goto err;
             *dp |= (*sp++ - 0x80) << 6;  if (!*sp) goto err;
-            *dp |= (*sp++ - 0x80);       if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80);
         }
         else goto err;
         
