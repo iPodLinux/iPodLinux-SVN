@@ -26,17 +26,17 @@
 
 static PzModule * module;
 
-const char ti_wlb_lowercase[]=  "abcdefghijklmnopqrstuvwxyz";
-const char ti_wlb_uppercase[]=  "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-const char ti_wlb_numeric1[]=   "0123456789.,/!@#$%^&*()[]?";
-const char ti_wlb_numeric2[]=   "~`+-={}<>|:;\\\'\"_£¢´µÖ©¨ÁÀ¤";
-const char ti_wlb_accentlc[]=   "ˆ‡‰ŠŒ‹‘“’”•˜—™š¿›œŸ–Ø";
-const char ti_wlb_accentuc[]=   "Ëçå€Ìéƒæèíêëìñîï…¯Íôòó†„§";
-const char ti_wlb_numericmode[]="0123456789.-E01234567+-*/^";
-const char ti_wlb_cursormode[] ="Move         Cursor       ";
+const unsigned char ti_wlb_lowercase[]=  "abcdefghijklmnopqrstuvwxyz";
+const unsigned char ti_wlb_uppercase[]=  "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const unsigned char ti_wlb_numeric1[]=   "0123456789.,/!@#$%^&*()[]?";
+const unsigned char ti_wlb_numeric2[]=   "~`+-={}<>|:;\\\'\"_\xA3\xA2\xA5\xB5\xF7\xA9\xAE\xA1\xBF\xA7";
+const unsigned char ti_wlb_accentlc[]=   "\xE0\xE1\xE2\xE3\xE4\xE5\xE8\xE9\xEA\xEB\xEC\xED\xEE\xEF\xF2\xF3\xF4\xF5\xF6\xF8\xF9\xFA\xFB\xFC\xF1\xFF";
+const unsigned char ti_wlb_accentuc[]=   "\xC0\xC1\xC2\xC3\xC4\xC5\xC8\xC9\xCA\xCB\xCC\xCD\xCE\xCF\xD2\xD3\xD4\xD5\xD6\xD8\xD9\xDA\xDB\xDC\xD1\xDF";
+const unsigned char ti_wlb_numericmode[]="0123456789.-E01234567+-*/^";
+const unsigned char ti_wlb_cursormode[] ="Move         Cursor       ";
 static int ti_wlb_cset = 0;
 static int ti_wlb_numeric = 0;
-static char ti_wlb_charset[27];
+static unsigned char ti_wlb_charset[27];
 static int ti_wlb_startpos=0;
 static int ti_wlb_limit=13;
 static int ti_wlb_position=3;
@@ -139,7 +139,7 @@ void ti_wlb_draw(TWidget * wid, ttk_surface srf)
     
     strncpy(disp, &ti_wlb_charset[ti_wlb_startpos], ti_wlb_limit);
     disp[ti_wlb_limit]=0;
-    ttk_text(srf, ttk_menufont, wid->x+1, wid->y+8-ttk_text_height(ttk_menufont)/2, tcol, disp);
+    ttk_text_lat1(srf, ttk_menufont, wid->x+1, wid->y+8-ttk_text_height(ttk_menufont)/2, tcol, disp);
            
 	if (ti_wlb_position>5) {
     	ttk_fillrect(srf, wid->x+wid->w/2, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(2));
@@ -149,7 +149,7 @@ void ti_wlb_draw(TWidget * wid, ttk_surface srf)
     }
 	strncpy(disp, &ti_wlb_charset[ti_wlb_limit+ti_wlb_startpos], ti_wlb_limit);
     disp[ti_wlb_limit]=0;
-    ttk_text(srf, ttk_menufont, wid->x+wid->w/2+1, wid->y+8-ttk_text_height(ttk_menufont)/2, tcol, disp);
+    ttk_text_lat1(srf, ttk_menufont, wid->x+wid->w/2+1, wid->y+8-ttk_text_height(ttk_menufont)/2, tcol, disp);
     
     /* Position */
     ttk_line(srf, wid->x+wid->w/2, wid->y+0, wid->x+((ti_wlb_position*wid->w)/6), wid->y+0, ttk_makecol(GREY));
