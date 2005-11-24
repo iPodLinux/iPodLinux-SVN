@@ -98,7 +98,7 @@ static struct vector_polystruct V_digits[] = {
 static struct vector_polystruct V_alpha[] =
 {
     /* A */ {7, {PT14, PT3, PT1, PT5, PT16, PT6|SKIP, PT8}},
-    /* B */ {8, {PT0, PT2, PT5, PT7, PT10, PT16, PT14, PT0}},
+    /* B */ {10, {PT0, PT2, PT5, PT7, PT6, PT7, PT10, PT16, PT14, PT0}},
     /* C */ {4, {PT2, PT0, PT14, PT16}},
     /* D */ {7, {PT14, PT0, PT1, PT17, PT13, PT15, PT14}},
     /* E */ {6, {PT2, PT0, PT14, PT16, PT6|SKIP, PT7}},
