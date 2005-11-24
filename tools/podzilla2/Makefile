@@ -27,12 +27,12 @@ INTL = -lintl
 else
 EXPSYM = -Wl,-E
 INTL =
+LIBS += -L/sw/lib
 endif
-LIBS += `$(TTKCONF) --x11 --sdl --libs` -L/usr/local/lib -L/sw/lib -ldl $(INTL) $(EXPSYM)
+LIBS += `$(TTKCONF) --x11 --sdl --libs` -L/usr/local/lib -ldl $(INTL) $(EXPSYM)
 CC ?= cc
 endif
 POD ?= ../../../podfile/pod # relative to two dirs down
-LIBS += -L/sw/lib
 
 all: checktarget core modules contrib xpods pods
 	@echo

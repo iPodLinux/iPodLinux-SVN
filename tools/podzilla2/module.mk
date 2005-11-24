@@ -43,8 +43,8 @@ MAKESO = ld -bundle /usr/lib/bundle1.o -flat_namespace -undefined suppress
 else
 PIC = -fPIC -DPIC
 MAKESO = cc -shared
-MYCFLAGS = -DVERSION=\"$(VERSION)\"
 endif
+MYCFLAGS = -DVERSION=\"$(VERSION)\"
 endif
 
 ifdef obj-y
