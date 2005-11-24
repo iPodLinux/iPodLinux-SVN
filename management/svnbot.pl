@@ -6,8 +6,8 @@ use Data::Dumper;
 
 use POSIX qw/getpid setsid/;
 
-my($CHANNEL) = "#ipodlinux.dev";
-my($KEY)     = "rs232";
+my($CHANNEL) = "#ipodlinux";
+my($KEY)     = "";
 
 sub parse_data($) {
     my(@data) = split /\n/, $_[0];
@@ -61,9 +61,10 @@ sub parse_data($) {
 	my(@fileparts) = map { [ split m|/| ] } @files;
 	my($samelevels) = 0;
 	
-	while ((scalar grep { $_->[$samelevels] eq $fileparts[0]->[$samelevels] } @fileparts) == scalar @fileparts) {
+	while ((scalar grep { $_->[$samelevels] eq $fileparts[0]->[$samelevels] } @fileparts) == scalar @fileparts and $samelevels < 50) {
 	    $samelevels++;
 	}
+        $samelevels = 0 if $samelevels >= 50;
 	
 	my($firstpart) = ($files[0] =~ m|^((?:[^/]+/){$samelevels})|);
 	$firstpart = "" unless defined $firstpart;
@@ -174,7 +175,7 @@ $irc = new Net::IRC;
 $conn = $irc->newconn( Server   => 'irc.freenode.net',
 		       Port     => 6667,
 		       Nick     => 'iPL-SVN',
-		       Ircname  => 'iPodLinux SVN-tracking bot',
+		       Ircname  => 'https://OpenSVN.csie.org/traccgi/courtc/trac.cgi/timeline',
 		       Username => 'iplsvn');
 
 $conn->add_global_handler(376, \&on_connect);
