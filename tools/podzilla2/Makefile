@@ -1,3 +1,7 @@
+# The next line is for SVN. Change if you do a release!
+VERSION = SVN-$(strip $(subst $$,,$(subst Rev:,,$$Rev$$)))
+export VERSION
+
 ifeq ($(shell which ttk-config 2>/dev/null >/dev/null && echo yes),yes)
 TTKCONF = ttk-config
 else

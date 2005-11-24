@@ -129,14 +129,11 @@ extern int __pz_builtin_number_of_init_functions;
 PzModule *pz_register_module (const char *name, void (*cleanup)());
 const char *pz_module_get_cfgpath (PzModule *mod, const char *file);
 const char *pz_module_get_datapath (PzModule *mod, const char *file);
+void pz_module_iterate (void (*fn)(const char *name, const char *longname, const char *author));
 #ifndef PZ_MOD
 /* called from core */
 void pz_modules_init (void);
 void pz_modules_cleanup (void);
-PzModule *pz_load_module (const char *name);
-void pz_unload_module (PzModule *mod);
-void *pz_module_dlsym (PzModule *mod, const char *sym);
-int pz_module_check_signature (PzModule *mod);
 #endif
 
 /** Configuration stuff - settings.c **/

@@ -32,7 +32,7 @@ CC = $(CROSS)-gcc
 LD = $(CROSS)-ld
 TARGET = ipod
 PIC =
-MYCFLAGS = -mapcs -mcpu=arm7tdmi
+MYCFLAGS = -mapcs -mcpu=arm7tdmi -DVERSION=\"$(VERSION)\"
 else
 CC ?= cc
 LD ?= ld
@@ -43,7 +43,7 @@ MAKESO = ld -bundle /usr/lib/bundle1.o -flat_namespace -undefined suppress
 else
 PIC = -fPIC -DPIC
 MAKESO = cc -shared
-MYCFLAGS =
+MYCFLAGS = -DVERSION=\"$(VERSION)\"
 endif
 endif
 
@@ -107,7 +107,7 @@ endif
 ifdef obj-m
 $(obj-m): %.o: %.c
 	@echo " CC [M] " $@
-	@$(CC) $(CFLAGS) $(PIC) -c -o $@ $< -I$(PZPATH)/core `$(TTKCONF) --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD -I/sw/include -L/sw/lib
+	@$(CC) $(CFLAGS) $(MYCFLAGS) $(PIC) -c -o $@ $< -I$(PZPATH)/core `$(TTKCONF) --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD -I/sw/include -L/sw/lib
 endif
 
 

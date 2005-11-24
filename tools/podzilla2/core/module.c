@@ -665,3 +665,12 @@ const char *pz_module_get_datapath (PzModule *mod, const char *file)
     sprintf (ret, "%s/%s", mod->mountpt, file);
     return ret;
 }
+
+void pz_module_iterate (void (*fn)(const char *, const char *, const char *)) 
+{
+    PzModule *cur = module_head;
+    while (cur) {
+        (*fn)(cur->name, cur->longname, cur->author);
+        cur = cur->next;
+    }
+}

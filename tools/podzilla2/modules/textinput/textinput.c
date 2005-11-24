@@ -93,6 +93,16 @@ TWidget * ti_create_tim_widget(int ht, int wd)
 
 /* the built-in Serial TIM */
 
+int ti_serial_abort(TWidget * this, int ch) 
+{
+	if (ch == TTK_BUTTON_MENU) {
+		pz_warning (_("I'd suggest picking another text input method before you try that again."));
+		ttk_input_end();
+		return TTK_EV_CLICK;
+	}
+	return TTK_EV_UNUSED;
+}
+
 int ti_serial_down(TWidget * this, int ch)
 {
 	if (ch == 27) {
@@ -114,6 +124,8 @@ TWidget * ti_serial_create()
 	wid->rawkeys = 1;
         wid->keyrepeat = 1;
 	wid->down = ti_serial_down;
+        wid->held = ti_serial_abort;
+	wid->holdtime = 3000;
 	return wid;
 }
 
