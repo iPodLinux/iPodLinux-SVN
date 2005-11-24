@@ -16,11 +16,11 @@ ifdef IPOD
 CROSS ?= arm-elf
 CC = $(CROSS)-gcc
 LD = $(CROSS)-ld
-MYCFLAGS = `$(TTKCONF) --ipod --sdl --cflags` -I../contrib/ucdl -mapcs -mcpu=arm7tdmi
+MYCFLAGS = `$(TTKCONF) --ipod --sdl --cflags` -I../contrib/ucdl -mapcs -mcpu=arm7tdmi -DVERSION=\"$(VERSION)\"
 else
 CC ?= cc
 LD ?= ld
-MYCFLAGS = `$(TTKCONF) --x11 --sdl --cflags`
+MYCFLAGS = `$(TTKCONF) --x11 --sdl --cflags` -DVERSION=\"$(VERSION)\"
 endif
 MYCFLAGS += -I/sw/include
 
