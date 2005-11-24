@@ -3,7 +3,10 @@
 #include "pz.h"
 #include <stdio.h>
 #include <fcntl.h>
+#include <errno.h>
+#include <string.h>
 #include <sys/utsname.h>
+#include <sys/vfs.h>
 
 static PzModule *module;
 typedef struct about_stat
@@ -57,9 +60,10 @@ static about_stat *new_title (const char *title)
 
 static about_stat *new_subtitle (const char *subtitle) 
 {
-    about_stat *ret = new_kvstat ("");
+    about_stat *ret = new_stat();
     strcpy (ret->value, subtitle);
     ret->type = ABOUT_SUBTITLE;
+    about_textent += 2;
     return ret;
 }
 
@@ -114,6 +118,100 @@ static about_stat *new_kvstat_sysinfo (const char *key, const char *sikey)
     return ret;
 }
 
+// size in KB
+static char *humanize (unsigned long size) 
+{
+    static char buf[64];
+    if (size >= 1048576) {
+        sprintf (buf, "%d.%01d GB", size/1048576, size*10/1048576 % 10);
+    } else if (size >= 1024) {
+        sprintf (buf, "%d.%01d MB", size/1024, size*10/1024 % 10);
+    } else {
+        sprintf (buf, "%d kB", size);
+    }
+    return buf;
+}
+
+static void do_partition (const char *showdev, const char *mountpt, const char *fstype) 
+{
+    about_stat *cur;
+    struct statfs fs;
+
+    new_subtitle (showdev);
+
+    cur = new_kvstat (_("Filesystem"));
+    if (!strcmp (fstype, "vfat"))
+        strcpy (cur->value, _("FAT32 (WinPod)"));
+    else if (!strcmp (fstype, "fat"))
+        strcpy (cur->value, "FAT");
+    else if (!strcmp (fstype, "hfs"))
+        strcpy (cur->value, "HFS");
+    else if (!strcmp (fstype, "hfsplus"))
+        strcpy (cur->value, _("HFS+ (MacPod)"));
+    else if (!strcmp (fstype, "ext2"))
+        strcpy (cur->value, _("ext2 (Linux)"));
+    else if (!strcmp (fstype, "ext3"))
+        strcpy (cur->value, _("ext3 (Linux)"));
+    else
+        strcpy (cur->value, fstype);
+
+    if (statfs (mountpt, &fs) < 0) {
+        cur = new_kvstat (_("Error"));
+        strcpy (cur->value, strerror (errno));
+        return;
+    }
+
+    cur = new_kvstat (_("Capacity"));
+    strcpy (cur->value, humanize (fs.f_blocks * (fs.f_bsize/1024)));
+    cur = new_kvstat (_("Available"));
+    strcpy (cur->value, humanize (fs.f_bfree * (fs.f_bsize/1024)));
+}
+
+static void do_partitions() 
+{
+    FILE *fp = fopen ("/proc/mounts", "r");
+    char buf[128], showdev[128];
+    if (!fp) return;
+    
+    while (fgets (buf, 128, fp)) {
+        if (!strchr (buf, ' ')) continue;
+
+        char *mountpt = strchr (buf, ' ') + 1;
+        char *fstype = strchr (mountpt, ' ') + 1;
+
+        showdev[0] = 0;
+
+        if (!strncmp (buf, "/dev/ide/host", 13)) {
+            int h = -1, t = -1, p = -1;
+            sscanf (buf, "/dev/ide/host%d/bus0/target%d/lun0/part%d", &h, &t, &p);
+            if ((h == -1) || (t == -1) || (p == -1))
+                continue;
+            /* space is intentional . */
+            sprintf (buf, "/dev/hd%c%d ", 'a' + (h * 2) + t, p);
+        } else if (strncmp (buf, "/dev/hd", 7) != 0) {
+            continue;
+        }
+        *strchr (buf, ' ') = 0;
+        *strchr (mountpt, ' ') = 0;
+        *strchr (fstype, ' ') = 0;
+
+        if (!strcmp (buf, "/dev/hda2"))
+            strcpy (showdev, "Music");
+        if (!strcmp (buf, "/dev/hda3")) {
+            if (!strncmp (fstype, "hfs", 3))
+                strcpy (showdev, "Music + iPL");
+            else
+                strcpy (showdev, "iPodLinux");
+        }
+
+        if (!showdev[0])
+            strcpy (showdev, buf);
+
+        do_partition (showdev, mountpt, fstype);
+    }
+    fclose (fp);
+}
+
 static int number_of_modules = 0;
 static void count_modules (const char *name, const char *longname, const char *author) 
 {
@@ -158,6 +256,9 @@ static void populate_stats()
     new_kvstat_sysinfo (_("S/N"), "pszSerialNumber");
     new_kvstat_sysinfo (_("Model"), "ModelNumStr");
     new_kvstat_sysinfo (_("Apple FW Ver"), "buildID");
+
+    /***/ new_title ("Disk");
+    do_partitions();
 }
 
 typedef struct {
@@ -189,8 +290,8 @@ static void about_render (ttk_surface srf, int width)
             y += mfh;
             break;
         case ABOUT_SUBTITLE:
-            ttk_text (srf, ttk_textfont, 2, y, col, cur->value);
-            y += tfh;
+            ttk_text (srf, ttk_textfont, 0, y+(tfh*3/4), col, cur->value);
+            y += 2*tfh;
             break;
         case ABOUT_KV:
             ttk_text (srf, ttk_textfont, 5, y, col, cur->key);
