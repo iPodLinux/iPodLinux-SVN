@@ -58,7 +58,8 @@ typedef struct _pz_Module
     char *podpath;
     char *mountpt;
     char *cfgpath;
-	int mountnr;
+    int mountnr;
+    int extracted;
 
     void *handle;
     int to_load;       // positive - load from module. negative - initialize builtin. 0 - nothing.
@@ -429,12 +430,14 @@ void pz_modules_init()
 #ifdef IPOD
 #define MODULEDIR "/usr/share/podzilla/modules/"
 #else
+#ifdef MountPods
 #define MODULEDIR "pods/"
+#else
+#define MODULEDIR "xpods/"
+#endif
 #endif
 
-#ifdef MountPods
     struct stat st;
-#endif
     PzModule *last, *cur;
     int nmods = 0;
     struct dirent *d;
@@ -456,18 +459,25 @@ void pz_modules_init()
     while ((d = readdir (dp)) != 0) {
 	char *podpath;
 	if (d->d_name[0] == '.') continue;
-	if (strlen (d->d_name) < 4 || strcmp (d->d_name + strlen (d->d_name) - 4, ".pod") != 0) continue;
-	podpath = malloc (strlen (MODULEDIR) + strlen (d->d_name) + 1);
-	strcpy (podpath, MODULEDIR); // has trailing /
-	strcat (podpath, d->d_name);
+
+        podpath = malloc (strlen (MODULEDIR) + strlen (d->d_name) + 1);
+        strcpy (podpath, MODULEDIR);
+        strcat (podpath, d->d_name);
+        
+	if (strlen (d->d_name) < 4 || strcmp (d->d_name + strlen (d->d_name) - 4, ".pod") != 0) {
+            if (stat (podpath, &st) < 0 || !S_ISDIR (st.st_mode)) {
+                free (podpath);
+                continue;
+            }
+        }
+
 #ifdef MountPods
-	if (stat (podpath, &st) < 0 || !S_ISREG (st.st_mode)) {
+	if (stat (podpath, &st) < 0 || !S_ISREG (st.st_mode) && !S_ISDIR (st.st_mode)) {
 	    pz_perror (podpath);
 	    free (podpath);
 	    continue;
 	}
 #endif
-
 	nmods++;
 	if (nmods > 120) {
 	    pz_error (_("Too many modules (120+). Trim down your podzilla. Please. Modules after 120 will be ignored."));
@@ -483,6 +493,8 @@ void pz_modules_init()
 	    cur = cur->next;
 	}
 	cur->podpath = podpath;
+        if (stat (podpath, &st) >= 0 && S_ISDIR (st.st_mode))
+            cur->extracted = 1;
 	cur->to_load = 1;
         cur->ordered = 0;
     }
@@ -534,7 +546,11 @@ void pz_modules_init()
     cur = module_head;
     last = 0;
     while (cur) {
-	if (cur->podpath && mount_pod (cur) == -1) {
+        if (cur->podpath && cur->extracted) {
+            cur->mountpt = strdup (cur->podpath);
+            last = cur;
+            cur = cur->next;
+        } else if (cur->podpath && mount_pod (cur) == -1) {
 	    if (last) last->next = cur->next;
 	    else module_head = cur->next;
 	    free (cur->podpath);
