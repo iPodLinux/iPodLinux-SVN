@@ -175,7 +175,7 @@ $irc = new Net::IRC;
 $conn = $irc->newconn( Server   => 'irc.freenode.net',
 		       Port     => 6667,
 		       Nick     => 'iPL-SVN',
-		       Ircname  => 'https://OpenSVN.csie.org/traccgi/courtc/trac.cgi/timeline',
+		       Ircname  => 'SVN changes: http://tinyurl.com/cdcdj'
 		       Username => 'iplsvn');
 
 $conn->add_global_handler(376, \&on_connect);
