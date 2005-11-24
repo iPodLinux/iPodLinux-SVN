@@ -428,7 +428,7 @@ static void add_deps (PzModule *mod)
 void pz_modules_init() 
 {
 #ifdef IPOD
-#define MODULEDIR "/usr/share/podzilla/modules/"
+#define MODULEDIR "/usr/lib/"
 #else
 #ifdef MountPods
 #define MODULEDIR "pods/"
