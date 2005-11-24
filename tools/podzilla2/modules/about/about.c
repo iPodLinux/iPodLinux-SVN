@@ -5,8 +5,11 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/mount.h>
 #include <sys/utsname.h>
+#ifdef __linux__
 #include <sys/vfs.h>
+#endif
 
 static PzModule *module;
 typedef struct about_stat
