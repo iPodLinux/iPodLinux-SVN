@@ -7,6 +7,7 @@
 #include "minilibc.h"
 #include "ipodhw.h"
 #include "vfs.h"
+#include "menu.h"
 
 #define PP5020_IDE_PRIMARY_BASE    0xC30001E0
 #define PP5020_IDE_PRIMARY_CONTROL 0xC30003f8
@@ -15,7 +16,7 @@ uint16 *buff;
 
 void *loader(void) {
     void *entry;
-    int fd;
+    int fd,menuPos,done;
     uint32 ret;
     uint8 *buffer;
 
@@ -48,11 +49,13 @@ void *loader(void) {
 
     console_puts("iPL Bootloader 2.0\n");
 
-    for(;;) {
-      mlc_printf("%u ",keypad_getstate());
+    //return(
+
+    /*for(;;) {
+      mlc_printf("ScanCore: %u \r",keypad_getstate());
       fb_update(buff);
-      ipod_wait_usec(1000);
-    }
+      //ipod_wait_usec(1000);
+      }*/
 
     ret = ata_init(PP5020_IDE_PRIMARY_BASE);
     if( ret ) {
@@ -70,14 +73,42 @@ void *loader(void) {
 
     mlc_printf("FD=%i (Len %u)\n",fd,ret);
 
-    console_puts("Trying to load kernel\n");
-    fb_update(buff);
+    //console_puts("Trying to load kernel\n");
+    //fb_update(buff);
+
+
+    menu_init();
+    menu_additem("Retail OS");
+    menu_additem("uCLinux");
+
+    menuPos = 0;
+    done    = 0;
+    while(!done ) {
+      int key;
+
+      key = keypad_getstate();
+      if( key == 0x10 ) { // Up
+	menuPos = 0;
+      } else if( key == 0x8 ) { // Down
+	menuPos = 1;
+      } else if( key == 0x1 ) { // Center
+	done = 1;
+      }
+
+      menu_redraw(buff,menuPos);
+      fb_update(buff);
+    }
 
     entry = (void*)0x10000000;
-    vfs_read( entry, ret, 1, fd );
 
-    mlc_printf("Trying to start.\n");
-    fb_update(buff);
+    if( menuPos == 0 ) return( entry );
+    else {
+
+      vfs_read( entry, ret, 1, fd );
+      
+      mlc_printf("Trying to start.\n");
+      fb_update(buff);
+    }
 
     return entry;
 }

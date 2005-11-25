@@ -23,12 +23,17 @@ begin:
   outl(0x400A1F00, 0x7000C100);
   
   outl( inl(0x6000D024) | 0x10, 0x6000D024 );
-  
 
   return(button);
 }
 
 
 void keypad_init(void) {
+  // IAK
+  outl(0,0x7000C180);
 
+  outl( inl(0x7000C104) | 0xC0000000, 0x7000C104 );
+  outl(0x400A1F00, 0x7000C100);
+  
+  outl( inl(0x6000D024) | 0x10, 0x6000D024 );
 }
