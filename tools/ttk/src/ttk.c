@@ -147,8 +147,8 @@ ttk_fontinfo *ttk_get_fontinfo (const char *name, int size)
 		    bestmatch = current;
 		    bestmatchsize = current->size;
 		}
-		current = current->next;
 	    }
+            current = current->next;
 	}
     }
 
