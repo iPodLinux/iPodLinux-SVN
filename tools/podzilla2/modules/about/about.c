@@ -326,14 +326,14 @@ static void about_draw (TWidget *this, ttk_surface srf)
     if (data->scroll) {
 	ttk_ap_fillrect (srf, ttk_ap_get ("scroll.bg"), this->x + this->w - 10,
 			 this->y + ttk_ap_getx ("header.line") -> spacing,
-			 this->x + this->w - 1, this->y + this->h - 1);
+			 this->x + this->w, this->y + this->h);
 	ttk_ap_rect (srf, ttk_ap_get ("scroll.box"), this->x + this->w - 10,
 		     this->y + ttk_ap_getx ("header.line") -> spacing,
-		     this->x + this->w - 1, this->y + this->h - 1);
+		     this->x + this->w, this->y + this->h);
 	ttk_ap_fillrect (srf, ttk_ap_get ("scroll.bar"), this->x + this->w - 10,
 			 this->y + ttk_ap_getx ("header.line") -> spacing + data->spos,
-			 this->x + this->w - 1,
-			 this->y - ttk_ap_getx ("header.line") -> spacing + data->spos + data->sheight);
+			 this->x + this->w,
+			 this->y - ttk_ap_getx ("header.line") -> spacing + data->spos + data->sheight + 1);
     }
 }
 
