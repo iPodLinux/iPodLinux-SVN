@@ -15,7 +15,55 @@ static struct {
   uint16 *fb;
 } console;
 
+void console_blitchar(int x,int y,char ch) {
+  int r,c;
+
+  for(r=0;r<16;r++) {
+    for(c=0;c<8;c++) {
+      if( (uint8)font8x16[(uint8)ch][r] & (1<<(8-c)) ) {  /* Pixel set */
+	console.fb[(y+r)*console.dimensions.w+x+c] = 0xFFFF;
+      } else { /* Pixel clear */
+	console.fb[(y+r)*console.dimensions.w+x+c] = 0;
+      }
+    }
+  }
+}
+
 void console_putchar(char ch) {
+  int32 x,y;
+
+  x = console.cursor.x * VGA_FONT_WIDTH;
+  y = console.cursor.y * VGA_FONT_HEIGHT;
+
+  if(ch == '\n') { 
+    console.cursor.x = 0;
+    console.cursor.y++;
+    
+    /* Check if we need to scroll the display up */
+    if(console.cursor.y > (console.dimensions.h/VGA_FONT_HEIGHT) ) {
+      mlc_memcpy(console.fb,
+		 console.fb+(console.dimensions.w*VGA_FONT_HEIGHT*2),
+		 (console.dimensions.w*console.dimensions.h*2) - 
+		 (console.dimensions.w*VGA_FONT_HEIGHT*2) );
+    }
+    return;
+  }
+  if(ch == '\r') { console.cursor.x = 0; return; }
+
+  console_blitchar(x,y,ch);
+
+  if( console.cursor.x > (console.dimensions.w/VGA_FONT_WIDTH) ) {
+    console.cursor.x = 0; 
+    console.cursor.y++;
+  } else {
+    console.cursor.x += 1;
+  }
+
+  if(ch == '\n')
+    fb_update(console.fb);
+}
+
+void console_putcharX(char ch) {
   int32 r,c,x,y;
 
   x = console.cursor.x * VGA_FONT_WIDTH;
@@ -64,6 +112,14 @@ void console_putchar(char ch) {
 void console_puts(volatile char *str) {
   while(*str != 0) {
     console_putchar(*str);
+    str++;
+  }
+}
+
+void console_putsXY(int x,int y,volatile char *str) {
+  while(*str != 0) {
+    console_blitchar(x,y,*str);
+    x += VGA_FONT_WIDTH;
     str++;
   }
 }
