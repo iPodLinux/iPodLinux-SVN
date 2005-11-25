@@ -979,8 +979,8 @@ void ttk_bitmap_gc (ttk_surface srf, ttk_gc gc, int x, int y, int w, int h, unsi
 These functions' functions are, for the most part,
 obvious from their names; only the non-obvious will be documented here.
 
-\verb|ttk_*rect| use the coordinates of upper-left and bottom-right corners; \verb|ttk_*rect_gc| use
-the upper-left corner and width and height.
+\verb|ttk_*rect| use the coordinates of upper-left and one past the bottom-right corners; \verb|ttk_*rect_gc| use
+the upper-left corner and width and height. {\bf The point $(x^^S2, y^^S2)$ and the lines containing it are not drawn.}
 
 \verb|ttk_*poly| use separate arrays for X and Y coordinates; \verb|ttk_*poly_gc| use one array of
 \verb|ttk_point| structures.
@@ -993,7 +993,7 @@ Bits set indicate pixels colored \verb|col|; bits cleared will not be
 drawn in any color. {\it You must specify a correct width and height.} If you do not, your image will
 look \ldots odd, very odd.
 
-As an example, here's a $3\times3$ ``ball'':
+As an example, here's a $4\times4$ ``ball'':
 \begin{verbatim}
 static unsigned short pong_ball[] = {
     0x6000, // . X X .
