@@ -26,7 +26,8 @@ void console_putchar(char ch) {
     console.cursor.y++;
 
 #if 1
-    if(console.cursor.y > (console.dimensions.h/VGA_FONT_HEIGHT) ) { // Scrolling needed
+    /* Check if we need to scroll the display up */
+    if(console.cursor.y > (console.dimensions.h/VGA_FONT_HEIGHT) ) {
       mlc_memcpy(console.fb,
 		 console.fb+(console.dimensions.w*VGA_FONT_HEIGHT*2),
 		 (console.dimensions.w*console.dimensions.h*2) - 
@@ -37,13 +38,13 @@ void console_putchar(char ch) {
   }
   if(ch == '\r') { console.cursor.x = 0; return; }
 
-  // !!! Assumes RGB565
+  /* !!! Assumes RGB565 */
 
   for(r=0;r<16;r++) {
     for(c=0;c<8;c++) {
-      if( (uint8)font8x16[(uint8)ch][r] & (1<<(8-c)) ) {  // Pixel set
+      if( (uint8)font8x16[(uint8)ch][r] & (1<<(8-c)) ) {  /* Pixel set */
 	console.fb[(y+r)*console.dimensions.w+x+c] = 0xFFFF;
-      } else { // Pixel clear
+      } else { /* Pixel clear */
 	console.fb[(y+r)*console.dimensions.w+x+c] = 0;
       }
     }
@@ -58,9 +59,6 @@ void console_putchar(char ch) {
 
   if(ch == '\n')
     fb_update(console.fb);
-
-  //fb_update(console.fb);
-  //fb_bitblt(console.fb,0,0,220,176);
 }
 
 void console_puts(volatile char *str) {
@@ -74,14 +72,14 @@ void console_init(uint16 *fb,uint32 hw_ver) {
 
   switch(hw_ver>>16) {
   case 0x6:
-    console.dimensions.w = 220;// / VGA_FONT_WIDTH;
-    console.dimensions.h = 176;// / VGA_FONT_HEIGHT;
+    console.dimensions.w = 220;
+    console.dimensions.h = 176;
     console.cursor.x = 0;
     console.cursor.y = 0;
     break;
-  case 0xC: // 0xC doesnt work!?
-    console.dimensions.w = 176;// / VGA_FONT_WIDTH;
-    console.dimensions.h = 132;// / VGA_FONT_HEIGHT;
+  case 0xC:
+    console.dimensions.w = 176;
+    console.dimensions.h = 132;
     console.cursor.x = 0;
     console.cursor.y = 0;
     break;

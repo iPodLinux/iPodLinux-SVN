@@ -3,6 +3,7 @@
 #include "ata2.h"
 #include "fb.h"
 #include "console.h"
+#include "keypad.h"
 #include "minilibc.h"
 #include "ipodhw.h"
 #include "vfs.h"
@@ -18,7 +19,7 @@ void *loader(void) {
     uint32 ret;
     uint8 *buffer;
 
-    // Backlight ON
+    /* Backlight ON */
     switch( ipod_get_hwrev() >> 16 ) {
     case 0xc:
       /* set port B03 */
@@ -32,25 +33,26 @@ void *loader(void) {
       break;
     }
 
-    //for(;;);
+    keypad_init();
 
-    // Make sure malloc() is initialized
+    /* Make sure malloc() is initialized */
     mlc_malloc_init();
-    buff   = (uint16*)mlc_malloc( 320*240*2 ); // Room for the biggest display
+    buff   = (uint16*)mlc_malloc( 320*240*2 ); /* Room for the biggest display */
     buffer = (uint8 *)mlc_malloc( 512 );
 
-    //fb_init(0x60004);
     fb_init( ipod_get_hwrev() );
 
     fb_cls(buff,0x1F);
-    //for(i=0;i<(220*176);i++) buff[i] = 0x1F; // cls()
 
     console_init(buff, ipod_get_hwrev() );
 
     console_puts("iPL Bootloader 2.0\n");
 
-    //mlc_printf("hwVER: 0x%x\n",ipod_get_hwrev() );
-    //for(;;);
+    for(;;) {
+      mlc_printf("%u ",keypad_getstate());
+      fb_update(buff);
+      ipod_wait_usec(1000);
+    }
 
     ret = ata_init(PP5020_IDE_PRIMARY_BASE);
     if( ret ) {
@@ -62,8 +64,6 @@ void *loader(void) {
 
     vfs_init();
     fd = vfs_open("NOTES/KERNEL.BIN");
-    //fd = vfs_open("NOTES      /KERNEL  BIN");
-    //fd = vfs_open("NOTES      /DIAG    BIN");
     vfs_seek(fd,0,VFS_SEEK_END);
     ret = vfs_tell(fd);
     vfs_seek(fd,0,VFS_SEEK_SET);
@@ -72,14 +72,12 @@ void *loader(void) {
 
     console_puts("Trying to load kernel\n");
     fb_update(buff);
-    //for(;;);
 
     entry = (void*)0x10000000;
     vfs_read( entry, ret, 1, fd );
 
     mlc_printf("Trying to start.\n");
     fb_update(buff);
-    //for(;;);
 
     return entry;
 }

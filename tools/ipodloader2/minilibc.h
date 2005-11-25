@@ -13,6 +13,7 @@ Using & for division here, so STACK_WIDTH must be a power of 2. */
 #define	TYPE_WIDTH(TYPE)				\
 	((sizeof(TYPE) + STACK_WIDTH - 1) & ~(STACK_WIDTH - 1))
 
+
 /* point the va_list pointer to LASTARG,
 then advance beyond it to the first variable arg */
 #define	mlc_va_start(PTR, LASTARG)				\
@@ -24,15 +25,13 @@ then advance beyond it to the first variable arg */
 (evaluate to, actually) the previous value of the pointer.
 WHEEE! At last; a valid use for the C comma operator! */
 #define mlc_va_arg(PTR, TYPE)	(			\
-	(char *)(PTR) += TYPE_WIDTH(TYPE)		\
+	PTR += TYPE_WIDTH(TYPE)		\
 				,			\
 	*((TYPE *)((char *)(PTR) - TYPE_WIDTH(TYPE)))	\
 				)
 /* Every other compiler/libc seems to be using 'void *', so...
 (I _was_ using 'unsigned char *') */
 typedef void *mlc_va_list;
-
-//typedef unsigned long size_t;
 
 int mlc_sprintf(char *buf, const char *fmt, ...);
 int mlc_vprintf(const char *fmt, mlc_va_list args);
@@ -47,5 +46,6 @@ int    mlc_strncmp(const char *s1,const char *s2,size_t maxlen);
 char  *mlc_strncpy(char *dest,const char *src,size_t count);
 void  *mlc_memcpy(void *dest,const void *src,size_t n);
 char  *mlc_strchr(const char *s,int c);
+int    mlc_memcmp(const void *sv1,const void *sv2,size_t length);
 
 #endif

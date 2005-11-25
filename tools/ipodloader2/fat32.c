@@ -26,7 +26,6 @@ typedef struct {
 
 fat_t fat;
 
-//uint8 clusterBuffer[8192];
 uint8 *clusterBuffer = NULL;
 
 /*
@@ -42,36 +41,16 @@ static uint32 fat32_findnextcluster(uint32 prev) {
   uint32 block,offset,ret;
   uint8  tmpBuff[512];
 
-  //printf("Finding cluster after %u ... ",prev);
-
-  // !!! Probably buggy here FIXME
-  // !!!  Make sure offset is calculated correctly. It should be
-  // !!!  a byte offset into the FAT table
-  // !!!  make sure we skip the "reserved sectors"
-  
-  //fat_begin_lba     = offset + fat.number_of_reserved_sectors;
-
   offset = ((fat.offset+fat.number_of_reserved_sectors)*512) + prev * 4;
   block  = offset / fat.bytes_per_sector;
   offset = offset % fat.bytes_per_sector;
-  //printf("FNC  Block: %u  Offset: %u",block,offset);
 
   ata_readblocks( tmpBuff, block, 1 );
 
   ret = ((uint32*)tmpBuff)[offset/4];
 
-  // Little->Big
-  //tmp =  ret >> 16;
-  //ret = (ret << 16) + tmp;
-  //ret = (ret & 0xFFFF0000) | ( ((ret&0xFF)<<8) | ((ret&0xFF00)>>8) );
-  //ret = (ret & 0x0000FFFF) | ( ((ret&0xFF000000)>>8) | ((ret&0x00FF0000)<<8) );
-
-  //printf("... %u\n",ret);
-
   return(ret);
 }
-
-//uint8 doOnce = 0;
 
 static fat32_file *fat32_findfile(uint32 start, char *fname) {
   uint32 done,i,j,dir_lba,new_offset;

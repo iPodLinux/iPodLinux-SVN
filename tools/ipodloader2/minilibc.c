@@ -45,15 +45,10 @@ mod:	N	near ptr				DONE
 	l	long (32-bit) int			DONE
 	L	long long (64-bit) int			no
 *****************************************************************************/
-//#include <string.h> /* strlen() */
-//#include <stdio.h> /* stdout, putchar(), fputs() (but not printf() :) */
 
 #include "console.h"
 
 #include "minilibc.h"
-
-//#define NULL ((void*)0)
-
 
 /* flags used in processing format string */
 #define	PR_LJ	0x01	/* left justify */
@@ -185,7 +180,7 @@ int mlc_do_printf(const char *fmt, mlc_va_list args, fnptr_t fn, void *ptr)
 				radix = 8;
 /* load the value to be printed. l=long=32 bits: */
 DO_NUM:				if(flags & PR_32)
-					num = mlc_va_arg(args, unsigned long);
+                                  num = mlc_va_arg(args, unsigned long);
 /* h=short=16 bits (signed or unsigned) */
 				else if(flags & PR_16)
 				{
@@ -372,7 +367,7 @@ void *mlc_malloc(size_t size) {
   ret = (void*)MALLOC_NEXTBLOCK;
 
   MALLOC_NEXTBLOCK += size;
-  MALLOC_NEXTBLOCK = (MALLOC_NEXTBLOCK & ~4) + 4; // 4 byte alignment
+  MALLOC_NEXTBLOCK = (MALLOC_NEXTBLOCK & ~4) + 4; /* 4 byte alignment */
 
   return(ret);
 }
@@ -385,6 +380,27 @@ size_t mlc_strlen(const char *str) {
   }
 
   return(i);
+}
+
+int mlc_memcmp(const void *sv1,const void *sv2,size_t length) {
+  uint8 *s1,*s2;
+
+  s1 = (uint8*)sv1;
+  s2 = (uint8*)sv2;
+
+  while(length) {
+    if(*s1 != *s2)
+      return( (*s2 - *s1) );
+
+    length--;
+    s1++;
+    s2++;
+  }
+
+  if(!length)
+    return(0);
+  
+  return(-1);
 }
 
 int mlc_strncmp(const char *s1,const char *s2,size_t length) {
