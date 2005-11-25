@@ -119,16 +119,16 @@ uint32 ipod_get_hwrev(void) {
 }
 
 
-uint32 ipod_get_hwrevX(void) {
-  uint32 rev;
+/* get current usec counter */
+int timer_get_current() {
+  return inl(ipod_rtc_reg);
+}
 
-  //return(0xC0005);
-
-  if( inl(0x2000) == (uint32)"gfCS" ) {
-    rev = inl(0x2084);
+/* check if number of seconds has past */
+int timer_check(int clock_start, int usecs) {
+  if ((inl(ipod_rtc_reg) - clock_start) >= usecs) {
+    return 1;
   } else {
-    rev = inl(0x405C);
+    return 0;
   }
-
-  return(rev);
 }

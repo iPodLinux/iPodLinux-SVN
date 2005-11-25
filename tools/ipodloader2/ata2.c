@@ -101,7 +101,7 @@ uint32 ata_init(uint32 base) {
    * We do this by writing values to two GP registers, and expect
    * to be able to read them back
    */
-  pio_outbyte( REG_DEVICEHEAD, DEVICE_0 ); // Device 0
+  pio_outbyte( REG_DEVICEHEAD, DEVICE_0 ); /* Device 0 */
   ipod_wait_usec(500);
   pio_outbyte( REG_SECT_COUNT, 0x55 );
   pio_outbyte( REG_SECT      , 0xAA );
@@ -125,7 +125,6 @@ static void ata_transfer_block(void *ptr) {
   wordsRead = 0;
   while(wordsRead < 256) {
     dst[wordsRead] = pio_inword( REG_DATA );
-    //tmp = pio_inword( REG_DATA );
 
     wordsRead++;
   }
@@ -133,7 +132,6 @@ static void ata_transfer_block(void *ptr) {
 
 void ata_identify(void) {
   uint8  status,c;
-  //uint16 buff[256];
   uint16 *buff = (uint16*)0x11100000;
 
   pio_outbyte( REG_DEVICEHEAD, DEVICE_0 );
@@ -147,7 +145,7 @@ void ata_identify(void) {
   pio_outbyte( REG_COMMAND, COMMAND_IDENTIFY_DEVICE );
   DELAY400NS;
 
-  while( pio_inbyte( REG_ALTSTATUS) & STATUS_BSY ); // Spin until drive is not busy
+  while( pio_inbyte( REG_ALTSTATUS) & STATUS_BSY ); /* Spin until drive is not busy */
 
   status = pio_inbyte( REG_STATUS );
   if( status & STATUS_DRQ ) {
@@ -177,12 +175,10 @@ void ata_identify(void) {
 int ata_readblock(void *dst, uint32 sector) {
   uint8   status;
 
-  //sector++;
-
   pio_outbyte( REG_DEVICEHEAD, (1<<6) | DEVICE_0 | ((sector & 0xF000000) >> 24) );
   DELAY400NS;
   pio_outbyte( REG_FEATURES  , 0 );
-  pio_outbyte( REG_CONTROL   , CONTROL_NIEN | 0x08); // 8 = HD15
+  pio_outbyte( REG_CONTROL   , CONTROL_NIEN | 0x08); /* 8 = HD15 */
   pio_outbyte( REG_SECT_COUNT, 1 );
   pio_outbyte( REG_SECT      ,  sector & 0xFF );
   pio_outbyte( REG_CYL_LOW   , (sector & 0xFF00) >> 8 );
@@ -191,7 +187,7 @@ int ata_readblock(void *dst, uint32 sector) {
   pio_outbyte( REG_COMMAND, COMMAND_READ_SECTORS_VRFY );
   DELAY400NS;  DELAY400NS;
 
-  while( pio_inbyte( REG_ALTSTATUS) & STATUS_BSY ); // Spin until drive is not busy
+  while( pio_inbyte( REG_ALTSTATUS) & STATUS_BSY ); /* Spin until drive is not busy */
   DELAY400NS;  DELAY400NS;
 
   status = pio_inbyte( REG_STATUS );
@@ -214,6 +210,6 @@ void ata_readblocks(void *dst,uint32 sector,uint32 count) {
   uint32 i;
 
   for(i=0;i<count;i++)
-    ata_readblock(dst + i*512,sector+i);
+    ata_readblock((void*)((uint8*)dst + i*512),sector+i);
 
 }
