@@ -16,7 +16,7 @@ uint16 *buff;
 
 void *loader(void) {
     void *entry;
-    int fd,menuPos,done;
+    int fd,menuPos,done,redraw;
     uint32 ret;
     uint8 *buffer;
 
@@ -80,29 +80,48 @@ void *loader(void) {
     menu_init();
     menu_additem("Retail OS");
     menu_additem("uCLinux");
+    menu_additem("Disk mode");
 
     menuPos = 0;
     done    = 0;
+    redraw  = 1;
     while(!done ) {
       int key;
 
       key = keypad_getstate();
       if( key == 0x10 ) { // Up
-	menuPos = 0;
+	if(menuPos>0)
+	  menuPos--;
+	redraw = 1;
       } else if( key == 0x8 ) { // Down
-	menuPos = 1;
+	if(menuPos<2)
+	  menuPos++;
+	redraw = 1;
       } else if( key == 0x1 ) { // Center
 	done = 1;
       }
 
-      menu_redraw(buff,menuPos);
-      fb_update(buff);
+      if(redraw) {
+	menu_redraw(buff,menuPos);
+	fb_update(buff);
+	redraw = 0;
+      }
     }
 
     entry = (void*)0x10000000;
 
-    if( menuPos == 0 ) return( entry );
-    else {
+    if( menuPos == 0 ) return( entry ); // RetailOS
+    if( menuPos == 2 ) { // Diskmode
+      unsigned char * storage_ptr = (unsigned char *)0x40017F00;
+      char * diskmode = "diskmode\0";
+      char * hotstuff = "hotstuff\0";
+      
+      mlc_memcpy(storage_ptr, diskmode, 9);
+      storage_ptr = (unsigned char *)0x40017f08;
+      mlc_memcpy(storage_ptr, hotstuff, 9);
+      outl(1, 0x40017F10);
+      outl(inl(0x60006004) | 0x4, 0x60006004);
+    } else { // Linux kernel
 
       vfs_read( entry, ret, 1, fd );
       
