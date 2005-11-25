@@ -191,17 +191,17 @@ static void battery_draw (TWidget *this, ttk_surface srf)
     }
 
     ttk_draw_icon (ttk_icon_battery, srf, this->x, this->y, ttk_ap_getx ("battery.border")->color, 0);
-    ttk_ap_fillrect (srf, ttk_ap_get ("battery.bg"), this->x + 4, this->y + 1, this->x + 20, this->y + 8);
+    ttk_ap_fillrect (srf, ttk_ap_get ("battery.bg"), this->x + 4, this->y + 1, this->x + 21, this->y + 9);
 
     if (fill.type & TTK_AP_SPACING) {
 	fill.type &= ~TTK_AP_SPACING;
 	ttk_ap_fillrect (srf, &fill, this->x + 4 + fill.spacing, this->y + 1 + fill.spacing,
-			 this->x + 4 + fill.spacing + ((battery_fill * (16 - 2*fill.spacing) + battery_fill / 2) / 512),
-			 this->y + 8 - fill.spacing);
+			 this->x + 4 + fill.spacing + ((battery_fill * (17 - 2*fill.spacing) + battery_fill / 2) / 512),
+			 this->y + 9 - fill.spacing);
     } else {
 	ttk_ap_fillrect (srf, &fill, this->x + 4, this->y + 1,
-			 this->x + 4 + ((battery_fill * 16 + battery_fill / 2) / 512),
-			 this->y + 8);
+			 this->x + 4 + ((battery_fill * 17 + battery_fill / 2) / 512),
+			 this->y + 9);
     }
 
     if (battery_is_charging)
