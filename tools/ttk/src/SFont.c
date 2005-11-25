@@ -116,7 +116,7 @@ void SFont_Write(SDL_Surface *Surface, const SFont_Font *Font,
 	return;
 
     // these values won't change in the loop
-    srcrect.y = 1;
+    srcrect.y = 0;
     dstrect.y = y;
     srcrect.h = dstrect.h = Font->Surface->h - 1;
 
@@ -166,7 +166,7 @@ int SFont_TextWidth(const SFont_Font *Font, const char *text)
 
 int SFont_TextHeight(const SFont_Font* Font)
 {
-    return Font->Surface->h - 1;
+    return Font->Surface->h;
 }
 
 void SFont_WriteCenter(SDL_Surface *Surface, const SFont_Font *Font,
