@@ -522,8 +522,8 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
 		abort();
 	    }
 	    
-	    ttk_ap_fillrect (srf, ttk_ap_get ("menu.selbg"), this->x, y, this->x + this->w - 1 - 11*data->scroll,
-			     y + data->itemheight - 1);
+	    ttk_ap_fillrect (srf, ttk_ap_get ("menu.selbg"), this->x, y, this->x + this->w - 11*data->scroll,
+			     y + data->itemheight);
 	    ttk_blit_image_ex (data->itemsrfI[xi], data->menu[xi]->textofs, 0,
 			       data->menu[xi]->linewidth, data->itemheight,
 			       srf, this->x, y);
@@ -534,8 +534,8 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
 		abort();
 	    }
 
-	    ttk_ap_fillrect (srf, ttk_ap_get ("menu.bg"), this->x, y, this->x + this->w - 1 - 11*data->scroll,
-			     y + data->itemheight - 1);
+	    ttk_ap_fillrect (srf, ttk_ap_get ("menu.bg"), this->x, y, this->x + this->w - 11*data->scroll,
+			     y + data->itemheight);
 	    ttk_blit_image_ex (data->itemsrf[xi], 0, 0, data->menu[xi]->linewidth, data->itemheight,
 			       srf, this->x, y);
 	    col = ttk_ap_getx ("menu.fg") -> color;
@@ -580,13 +580,13 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
 
 	ttk_ap_fillrect (srf, ttk_ap_get ("scroll.bg"), this->x + this->w - 10,
 			 this->y + 2*ttk_ap_getx ("header.line") -> spacing,
-			 this->x + this->w - 1, this->y + this->h - 1);
+			 this->x + this->w, this->y + this->h);
 	ttk_ap_rect (srf, ttk_ap_get ("scroll.box"), this->x + this->w - 10,
 		     this->y + 2*ttk_ap_getx ("header.line") -> spacing,
-		     this->x + this->w - 1, this->y + this->h - 1);
+		     this->x + this->w, this->y + this->h);
 	ttk_ap_fillrect (srf, ttk_ap_get ("scroll.bar"), this->x + this->w - 10,
 			 this->y + 2*ttk_ap_getx ("header.line") -> spacing + spos + 1,
-			 this->x + this->w - 1,
+			 this->x + this->w,
 			 this->y + ttk_ap_getx ("header.line") -> spacing + spos + sheight + 1);
     }
 }

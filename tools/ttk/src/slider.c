@@ -42,10 +42,10 @@ TWidget *ttk_new_slider_widget (int x, int y, int w, int minval, int maxval, int
     data->empty = ttk_new_surface (220, 11, ttk_screen->bpp);
     data->full = ttk_new_surface (220, 11, ttk_screen->bpp);
     
-    ttk_ap_fillrect (data->empty, ttk_ap_get ("slider.bg"), 0, 0, 219, 10);
-    ttk_ap_fillrect (data->full, ttk_ap_get ("slider.full"), 0, 0, 219, 10);
-    ttk_ap_rect (data->empty, ttk_ap_get ("slider.border"), 0, 0, 219, 10);
-    ttk_ap_rect (data->full, ttk_ap_get ("slider.border"), 0, 0, 219, 10);
+    ttk_ap_fillrect (data->empty, ttk_ap_get ("slider.bg"), 0, 0, 220, 11);
+    ttk_ap_fillrect (data->full, ttk_ap_get ("slider.full"), 0, 0, 220, 11);
+    ttk_ap_rect (data->empty, ttk_ap_get ("slider.border"), 0, 0, 220, 11);
+    ttk_ap_rect (data->full, ttk_ap_get ("slider.border"), 0, 0, 220, 11);
 
     ret->dirty = 1;
     return ret;
@@ -76,10 +76,10 @@ void ttk_slider_draw (TWidget *this, ttk_surface srf)
     _MAKETHIS;
 
     if (data->epoch < ttk_epoch) {
-	ttk_ap_fillrect (data->empty, ttk_ap_get ("slider.bg"), 0, 0, 219, 10);
-	ttk_ap_fillrect (data->full, ttk_ap_get ("slider.full"), 0, 0, 219, 10);
-	ttk_ap_rect (data->empty, ttk_ap_get ("slider.border"), 0, 0, 219, 10);
-	ttk_ap_rect (data->full, ttk_ap_get ("slider.border"), 0, 0, 219, 10);
+	ttk_ap_fillrect (data->empty, ttk_ap_get ("slider.bg"), 0, 0, 220, 11);
+	ttk_ap_fillrect (data->full, ttk_ap_get ("slider.full"), 0, 0, 220, 11);
+	ttk_ap_rect (data->empty, ttk_ap_get ("slider.border"), 0, 0, 220, 11);
+	ttk_ap_rect (data->full, ttk_ap_get ("slider.border"), 0, 0, 220, 11);
     }
 
     if (data->label) {

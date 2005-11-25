@@ -1066,6 +1066,8 @@ int rectangleColor(SDL_Surface * dst, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2
     int result;
     Sint16 w, h, xtmp, ytmp;
 
+    x2--; y2--;
+
     /*
      * Swap x1, x2 if required 
      */
@@ -1243,6 +1245,8 @@ int boxColor(SDL_Surface * dst, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2, Uint
     Sint16 w, h, tmp;
     int result;
     Uint8 *colorptr;
+
+    x2--; y2--;
 
     /*
      * Get clipping boundary 

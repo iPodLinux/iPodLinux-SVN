@@ -326,9 +326,9 @@ void ttk_rect (ttk_surface srf, int x1, int y1, int x2, int y2, ttk_color col)
 void ttk_rect_gc (ttk_surface srf, ttk_gc gc, int x, int y, int w, int h)
 {
     if (ttk_screen->bpp == 2)
-	rectangleByte (srf, x, y, x+w-1, y+h-1, gc->fg);
+	rectangleByte (srf, x, y, x+w, y+h, gc->fg);
     else
-	rectangleColor (srf, x, y, x+w-1, y+h-1, fetchcolor (gc->fg));
+	rectangleColor (srf, x, y, x+w, y+h, fetchcolor (gc->fg));
 }
 void ttk_fillrect (ttk_surface srf, int x1, int y1, int x2, int y2, ttk_color col)
 {
@@ -340,7 +340,7 @@ void ttk_fillrect (ttk_surface srf, int x1, int y1, int x2, int y2, ttk_color co
 void ttk_fillrect_gc (ttk_surface srf, ttk_gc gc, int x, int y, int w, int h)
 {
     if (gc->xormode) {
-	int x1 = x, x2 = x + w - 1, y1 = y, y2 = y + h - 1;
+	int x1 = x, x2 = x + w, y1 = y, y2 = y + h;
 	
 	if (ttk_screen->bpp == 2) {
 	    Uint8 *startp = (Uint8 *)srf->pixels + y1*srf->pitch + x1; // start of this line
@@ -350,7 +350,7 @@ void ttk_fillrect_gc (ttk_surface srf, ttk_gc gc, int x, int y, int w, int h)
 	    
 	    while (endp <= Endp) {
 		p = startp;
-		while (p <= endp)
+		while (p < endp)
 		    *p++ ^= 0xff;
 		
 		startp += srf->pitch;
@@ -364,7 +364,7 @@ void ttk_fillrect_gc (ttk_surface srf, ttk_gc gc, int x, int y, int w, int h)
 	    
 	    while (endp <= Endp) {
 		p = startp;
-		while (p <= endp)
+		while (p < endp)
 		    *p++ ^= 0xffff;
 		
 		startp = (Uint16 *)((Uint8 *)startp + srf->pitch);
