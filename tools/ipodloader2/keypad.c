@@ -5,7 +5,7 @@ int keypad_getstate(void) {
   uint32 in,st,button;
 
 begin:
-  ipod_wait_usec(15*1000);
+  //ipod_wait_usec(15*1000);
 
   //if( !(inl(0x6000d030)&0x20) ) return 'h';
   
