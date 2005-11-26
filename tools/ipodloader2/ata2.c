@@ -72,10 +72,13 @@ volatile unsigned int pio_indword( unsigned int addr ) {
  pio_inbyte(REG_ALTSTATUS); pio_inbyte(REG_ALTSTATUS); \
 }
 
-uint32 ata_init(uint32 base) {
-  uint8 tmp[2];
+uint32 ata_init(void) {
+  uint8   tmp[2];
+  ipod_t *ipod;
 
-  pio_base_addr1 = base;
+  ipod = ipod_get_hwinfo();
+
+  pio_base_addr1 = ipod->ide_base;
   pio_base_addr2 = pio_base_addr1 + 0x200;
 
   pio_reg_addrs[ REG_DATA       ] = pio_base_addr1 + 0 * 4;
@@ -102,7 +105,7 @@ uint32 ata_init(uint32 base) {
    * to be able to read them back
    */
   pio_outbyte( REG_DEVICEHEAD, DEVICE_0 ); /* Device 0 */
-  ipod_wait_usec(500);
+  //ipod_wait_usec(500);
   pio_outbyte( REG_SECT_COUNT, 0x55 );
   pio_outbyte( REG_SECT      , 0xAA );
   pio_outbyte( REG_SECT_COUNT, 0xAA );

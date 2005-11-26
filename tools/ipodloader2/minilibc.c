@@ -47,7 +47,7 @@ mod:	N	near ptr				DONE
 *****************************************************************************/
 
 #include "console.h"
-
+#include "ipodhw.h"
 #include "minilibc.h"
 
 /* flags used in processing format string */
@@ -355,21 +355,29 @@ int mlc_printf(const char *fmt, ...) {
 *****************************************************************************/
 #endif
 
-#define MALLOC_NEXTBLOCK (*(volatile uint32*)(0x10800000))
+//#define MALLOC_NEXTBLOCK (*(volatile uint32*)(0x10800000))
+
+static volatile uint32 *malloc_nextblock;
 
 void mlc_malloc_init(void) {
-  MALLOC_NEXTBLOCK = 0x10800004;
+  ipod_t *ipod;
+
+  ipod = ipod_get_hwinfo();
+
+  malloc_nextblock = (uint32*)(ipod->mem_base + 0x800000);
+ *malloc_nextblock = (uint32)malloc_nextblock + 4;
 }
 
 void *mlc_malloc(size_t size) {
-  void *ret;
+  uint32 ret;
 
-  ret = (void*)MALLOC_NEXTBLOCK;
+  ret = *malloc_nextblock;
+  // !! FIXXXX!!
+  //ret = (ret & ~4) - 4; // 4byte aligned
 
-  MALLOC_NEXTBLOCK += size;
-  MALLOC_NEXTBLOCK = (MALLOC_NEXTBLOCK & ~4) + 4; /* 4 byte alignment */
+  *malloc_nextblock = (ret + (size & ~4)) + 4;
 
-  return(ret);
+  return( (void*)ret );
 }
 
 size_t mlc_strlen(const char *str) {

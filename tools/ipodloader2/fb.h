@@ -3,7 +3,7 @@
 
 #include "bootloader.h"
 
-void fb_init(int hw_ver);
+void fb_init(void);
 
 void fb_update(uint16 *x);
 void fb_cls(uint16 *x,uint16 val);
