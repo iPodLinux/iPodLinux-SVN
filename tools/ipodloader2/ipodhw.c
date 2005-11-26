@@ -155,6 +155,7 @@ static void lcd_cmd_and_data(int cmd, int data_lo, int data_hi) {
 
 
 static void ipod_set_backlight(int on) {
+
   if((ipod.hw_rev>>16) >= 0x4) {
     if ((ipod.hw_rev>>16) == 0x5 || (ipod.hw_rev>>16) == 0x6) {
       if (on) {

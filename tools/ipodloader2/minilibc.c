@@ -372,8 +372,6 @@ void *mlc_malloc(size_t size) {
   uint32 ret;
 
   ret = *malloc_nextblock;
-  // !! FIXXXX!!
-  //ret = (ret & ~4) - 4; // 4byte aligned
 
   *malloc_nextblock = (ret + (size & ~4)) + 4;
 

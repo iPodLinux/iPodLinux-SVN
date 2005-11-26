@@ -113,6 +113,7 @@ uint32 ata_init(void) {
    * to be able to read them back
    */
   pio_outbyte( REG_DEVICEHEAD, DEVICE_0 ); /* Device 0 */
+  DELAY400NS;
   //ipod_wait_usec(500);
   pio_outbyte( REG_SECT_COUNT, 0x55 );
   pio_outbyte( REG_SECT      , 0xAA );

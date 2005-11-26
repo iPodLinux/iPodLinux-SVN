@@ -37,6 +37,7 @@ uint8 *clusterBuffer = NULL;
  * Block-caching would help a lot as well
  *
  */
+uint32 xxi = 0;
 static uint32 fat32_findnextcluster(uint32 prev) {
   uint32 block,offset,ret;
   uint8  tmpBuff[512];
@@ -44,6 +45,7 @@ static uint32 fat32_findnextcluster(uint32 prev) {
   offset = ((fat.offset+fat.number_of_reserved_sectors)*512) + prev * 4;
   block  = offset / fat.bytes_per_sector;
   offset = offset % fat.bytes_per_sector;
+  //mlc_printf("FF %u/%u (%u)\n",block,offset,xxi++);
 
   ata_readblocks( tmpBuff, block, 1 );
 
@@ -162,6 +164,7 @@ size_t fat32_read(void *fsdata,void *ptr,size_t size,size_t nmemb,int fd) {
   clusterNum = fs->filehandles[fd]->position / (fs->sectors_per_cluster * fs->bytes_per_sector);
   //printf("FFWD %u clusters\n",clusterNum);
   cluster = fs->filehandles[fd]->cluster;
+
   for(i=0;i<clusterNum;i++) {
     cluster = fat32_findnextcluster( cluster );
   }

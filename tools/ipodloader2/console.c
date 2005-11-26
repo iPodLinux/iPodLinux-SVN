@@ -48,6 +48,7 @@ void console_putchar(char ch) {
 		 (console.dimensions.w*console.dimensions.h*2) - 
 		 (console.dimensions.w*VGA_FONT_HEIGHT*2) );
     }
+    fb_update(console.fb);
     return;
   }
   if(ch == '\r') { console.cursor.x = 0; return; }
@@ -61,8 +62,7 @@ void console_putchar(char ch) {
     console.cursor.x += 1;
   }
 
-  if(ch == '\n')
-    fb_update(console.fb);
+
 }
 
 void console_putcharX(char ch) {

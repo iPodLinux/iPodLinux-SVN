@@ -24,7 +24,7 @@ void *loader(void) {
 
     keypad_init();
 
-    framebuffer = (uint16*)mlc_malloc( ipod->lcd_width*ipod->lcd_height * 2 ); // !!! Allocates 16 times too much memory for 2BPP displays
+    framebuffer = (uint16*)mlc_malloc( 320*240 * 2 ); // Aw, chucks..  
 
     fb_init();
     fb_cls(framebuffer,0x1F);
@@ -86,6 +86,7 @@ void *loader(void) {
     }
 
     entry = (void*)ipod->mem_base;
+    //entry = (void*)0x10000000;
 
     if( menuPos == 0 ) return( entry ); // RetailOS
     if( menuPos == 2 ) { // Diskmode
@@ -99,9 +100,8 @@ void *loader(void) {
       outl(1, 0x40017F10);
       outl(inl(0x60006004) | 0x4, 0x60006004);
     } else { // Linux kernel
-
       vfs_read( entry, ret, 1, fd );
-      
+
       mlc_printf("Trying to start.\n");
       fb_update(framebuffer);
     }
