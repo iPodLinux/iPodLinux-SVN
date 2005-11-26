@@ -299,7 +299,7 @@ static int sort_compare (const void *a, const void *b)
 {
     ttk_menu_item *A = *(ttk_menu_item **)a, *B = *(ttk_menu_item **)b;
     
-    return strcmp (A->name, B->name);
+    return stricmp (A->name, B->name);
 }
 void ttk_menu_sort_my_way (TWidget *this, int (*cmp)(const void *, const void *))
 {
