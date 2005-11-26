@@ -374,8 +374,8 @@ int pz_ipod_fw_is_connected(void);
 
 
 /** Fonts - fonts.c **/
-void pz_load_font (ttk_font *f, int setting);
-// menu handler, data = &font_to_set, cdata = setting_to_set:
+void pz_load_font (ttk_font *f, const char *def, int setting, PzConfig *conf);
+// menu handler, data = &font_to_set, data2 = config, cdata = setting_to_set:
 TWindow *pz_select_font (ttk_menu_item *item);
 
 
