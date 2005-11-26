@@ -1,4 +1,4 @@
-SUBDIRS := $(shell for dir in */; do if test -f $$dir/Module; then echo $$dir; fi; done)
+SUBDIRS := $(shell for dir in */; do if test -f $$dir/Module; then echo $$dir | sed 's|/$$||'; fi; done)
 
 #SUBDIRS = mymodule pong wumpus calc calendar clocks cube dialer invaders ipobble \
 #          lights mandelpod matrix minesweeper othello poddraw tictactoe tunnel
@@ -12,6 +12,7 @@ endif
 all:
 	@set -e; for dir in $(SUBDIRS); do \
 		cd $$dir; \
+		make -sqf ../../module.mk || echo $$dir >> ../.mods; \
 		make -sf ../../module.mk; \
 		cd ..; \
 	done
@@ -22,7 +23,7 @@ all:
 	fi
 
 xpods:
-	@set -e; for dir in $(SUBDIRS); do \
+	@set -e; for dir in `cat .mods`; do \
 		cd $$dir; \
 		echo " XPOD    $$dir"; \
 		rm -rf ../../xpods/$$dir; \

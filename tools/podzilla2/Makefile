@@ -34,6 +34,8 @@ CC ?= cc
 endif
 POD ?= ../../../podfile/pod # relative to two dirs down
 
+all-msg: all .message
+
 all: checktarget core modules contrib xpods pods
 	@echo
 	@echo "Linking podzilla."
@@ -44,9 +46,36 @@ ifdef IPOD
 	@$(CROSS)-nm podzilla.gdb | ./contrib/ucdl/symadd podzilla
 endif
 
+.message:
+ifdef IPOD
+	@echo
+	@echo "-------------------------------------------------"
+	@echo "Podzilla and modules have been built. Do"
+	@echo "  cp podzilla <IPOD>/bin/podzilla"
+	@echo "  cp pods/* <IPOD>/usr/lib/"
+	@echo "to install it. If you don't want to use the PODs"
+	@echo "for some reason, directly copy the module dirs"
+	@echo "instead:"
+	@echo "  cp -R xpods/* <IPOD>/usr/lib/"
+	@echo "Enjoy."
+	@echo "-------------------------------------------------"
+else
+	@echo
+	@echo "-------------------------------------------------"
+	@echo "Podzilla and modules have been built. To run it, "
+	@echo "  ./podzilla"
+	@echo "or, for a different screen size,"
+	@echo "  ./podzilla [-nano | -mini | -photo | -video]"
+	@echo "Enjoy."
+	@echo "-------------------------------------------------"
+endif
+	@touch .message
+
 checktarget: .curtgt
+ifneq ($(wildcard .target),)
 	@cmp .curtgt .target >/dev/null || ( echo "Cleaning because of target change."; make -s clean; echo )
 	@cp .curtgt .target
+endif
 
 .curtgt:
 ifdef IPOD
@@ -62,15 +91,17 @@ core:
 modules:
 	@echo
 	@echo "Building modules, stage 1."
+	@true > modules/.mods
 	@make -sC modules
 
 clean:
-	@echo " CLEAN   podzilla"
+	@echo " CLEAN  podzilla"
 	@rm -f podzilla podzilla.gdb
-	@echo " CLEAN   core"
+	@echo " CLEAN  core"
 	@make clean -sC core
-	@echo " CLEAN   modules"
+	@echo " CLEAN  modules:"
 	@make clean -sC modules
+	@rm -f .message .target modules/.mods
 
 dev-env:
 	mkdir -p config pods xpods
@@ -88,14 +119,14 @@ pods:
 	@echo
 	@echo "Building modules, stage 3 (iPod)."
 	@mkdir -p pods
-	@for dir in xpods/*; do ( cd $$dir; echo " POD     $$dir"; $(POD) -c ../../pods/`echo $$dir | sed 's|xpods/||'`.pod * ); done
+	@for dir in `cat modules/.mods`; do ( cd xpods/$$d; echo " POD     $$d"; $(POD) -c ../../pods/$$d.pod * ); done
 else
 # Just make dummy files
 pods:
 	@echo
 	@mkdir -p pods
 	@echo "Building modules, stage 3 (desktop)."
-	@for dir in xpods/*; do echo " POD [D] $$dir"; touch `echo $$dir | sed 's|^x||;s|$$|.pod|'`; done
+	@for dir in `cat modules/.mods`; do echo " POD [D] $$dir"; touch pods/$$dir.pod; done
 endif
 
 ifdef SUBDIRS
