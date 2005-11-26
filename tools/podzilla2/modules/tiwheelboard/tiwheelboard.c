@@ -139,7 +139,7 @@ void ti_wlb_draw(TWidget * wid, ttk_surface srf)
     
     strncpy(disp, &ti_wlb_charset[ti_wlb_startpos], ti_wlb_limit);
     disp[ti_wlb_limit]=0;
-    ttk_text_lat1(srf, ttk_menufont, wid->x+1, wid->y+8-ttk_text_height(ttk_menufont)/2, tcol, disp);
+    ttk_text_lat1(srf, ttk_menufont, wid->x+1, wid->y, tcol, disp);
            
 	if (ti_wlb_position>5) {
     	ttk_fillrect(srf, wid->x+wid->w/2, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(2));
@@ -149,13 +149,13 @@ void ti_wlb_draw(TWidget * wid, ttk_surface srf)
     }
 	strncpy(disp, &ti_wlb_charset[ti_wlb_limit+ti_wlb_startpos], ti_wlb_limit);
     disp[ti_wlb_limit]=0;
-    ttk_text_lat1(srf, ttk_menufont, wid->x+wid->w/2+1, wid->y+8-ttk_text_height(ttk_menufont)/2, tcol, disp);
+    ttk_text_lat1(srf, ttk_menufont, wid->x+wid->w/2+1, wid->y, tcol, disp);
     
     /* Position */
-    ttk_line(srf, wid->x+wid->w/2, wid->y+0, wid->x+((ti_wlb_position*wid->w)/6), wid->y+0, ttk_makecol(GREY));
+    ttk_line(srf, wid->x+wid->w/2, wid->y, wid->x+((ti_wlb_position*wid->w)/6), wid->y, ttk_makecol(GREY));
     ttk_line(srf, wid->x+wid->w/2, wid->y+1, wid->x+((ti_wlb_position*wid->w)/6), wid->y+1, ttk_makecol(GREY));
-    ttk_line(srf, wid->x+wid->w/2, wid->y+14, wid->x+((ti_wlb_position*wid->w)/6), wid->y+14, ttk_makecol(GREY));
-    ttk_line(srf, wid->x+wid->w/2, wid->y+15, wid->x+((ti_wlb_position*wid->w)/6), wid->y+15, ttk_makecol(GREY));
+    ttk_line(srf, wid->x+wid->w/2, wid->y+wid->h-2, wid->x+((ti_wlb_position*wid->w)/6), wid->y+wid->h-2, ttk_makecol(GREY));
+    ttk_line(srf, wid->x+wid->w/2, wid->y+wid->h-1, wid->x+((ti_wlb_position*wid->w)/6), wid->y+wid->h-1, ttk_makecol(GREY));
 }
 
 int ti_wlb_down(TWidget * wid, int btn)
@@ -213,7 +213,7 @@ int ti_wlb_scroll(TWidget * wid, int dir)
 
 TWidget * ti_wlb_create(int n)
 {
-	TWidget * wid = ti_create_tim_widget(15, 0);
+	TWidget * wid = ti_create_tim_widget(-1, 0);
 	wid->draw = ti_wlb_draw;
 	wid->down = ti_wlb_down;
 	wid->scroll = ti_wlb_scroll;
@@ -235,7 +235,7 @@ TWidget * ti_wlb_ncreate()
 void ti_wlb_init()
 {
 	module = pz_register_module("tiwheelboard", 0);
-	ti_register(ti_wlb_screate, ti_wlb_ncreate, "Wheelboard", 6);
+	ti_register(ti_wlb_screate, ti_wlb_ncreate, _("Wheelboard"), 6);
 }
 
 PZ_MOD_INIT(ti_wlb_init)

@@ -70,7 +70,7 @@ void ti_dial_draw(TWidget * wid, ttk_surface srf)
 	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
 	n = wid->w / CW;
 	sc = ti_dial_charlist_pos - n/2;
-	ty = 8 - ttk_text_height(ttk_menufont)/2;
+	ty = 0;
 	if (sc < 0) { sc = 0; }
 	if (sc > (m-n) ) { sc = (m-n); }
 	for (i = sc, j = 0; ((i<m) && (j<n)); i++, j++)
@@ -79,7 +79,7 @@ void ti_dial_draw(TWidget * wid, ttk_surface srf)
 		s[1] = 0;
 		ttk_text_lat1(srf, ttk_menufont, wid->x+j*CW+(10-ttk_text_width_lat1(ttk_menufont, s))/2, wid->y+ty, ti_ap_get(1), s);
 		if (i == ti_dial_charlist_pos) {
-			ttk_rect(srf, wid->x+j*CW-1, wid->y, wid->x+j*CW+10, wid->y+15, ti_ap_get(1));
+			ttk_rect(srf, wid->x+j*CW, wid->y, wid->x+j*CW+CW, wid->y+wid->h, ti_ap_get(1));
 		}
 	}
 }
@@ -143,7 +143,7 @@ int ti_dial_down(TWidget * wid, int btn)
 
 TWidget * ti_dial_create(int n, int s)
 {
-	TWidget * wid = ti_create_tim_widget(15, 0);
+	TWidget * wid = ti_create_tim_widget(-1, 0);
 	wid->down = ti_dial_down;
 	wid->scroll = ti_dial_scroll;
 	wid->draw = ti_dial_draw;
@@ -176,8 +176,8 @@ TWidget * ti_dial_dtncreate()
 void ti_dial_init()
 {
 	module = pz_register_module("tidial", 0);
-	ti_register(ti_dial_stcreate, ti_dial_stncreate, "Scroll-Through", 2);
-	ti_register(ti_dial_dtcreate, ti_dial_dtncreate, "Dial Type", 8);
+	ti_register(ti_dial_stcreate, ti_dial_stncreate, _("Scroll-Through"), 2);
+	ti_register(ti_dial_dtcreate, ti_dial_dtncreate, _("Dial Type"), 8);
 }
 
 PZ_MOD_INIT(ti_dial_init)

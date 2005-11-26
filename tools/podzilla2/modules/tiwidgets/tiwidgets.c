@@ -397,13 +397,13 @@ int ti_widget_start(TWidget * wid)
 		ht = pz_start_input();
 	}
 	if (((TiBuffer *)wid->data)->idata[1]) {
-		ttk_input_move(wid->win->x+wid->x+1, wid->win->y+wid->y+wid->h-ht-2);
+		ttk_input_move(wid->win->x+wid->x+1, wid->win->y+wid->y+wid->h-ht-1);
 		((TiBuffer *)wid->data)->idata[2] = ht;
 	} else {
 		ttk_input_move(wid->win->x+wid->x+1, wid->win->y+wid->y+wid->h);
 		((TiBuffer *)wid->data)->idata[2] = 0;
 	}
-	wid->win->input->w = wid->w-3;
+	wid->win->input->w = wid->w-2;
 	return TTK_EV_CLICK;
 }
 
@@ -427,10 +427,10 @@ void ti_widget_draw(TWidget * wid, ttk_surface srf)
 {
 	int sw, cp, i;
 	char * tmp;
-	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w-1, wid->y+wid->h-1, ti_ap_get(0));
+	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
 	
 	/* draw border */
-	ttk_rect(srf, wid->x, wid->y, wid->x+wid->w-1, wid->y+wid->h-1, ti_ap_get(4));
+	ttk_rect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(4));
 	
 	/* scroll horizontally if it doesn't fit */
 	sw = ((TiBuffer *)wid->data)->usize;
@@ -460,10 +460,10 @@ void ti_widget_draw_p(TWidget * wid, ttk_surface srf)
 {
 	int sw, cp, i;
 	char * tmp;
-	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w-1, wid->y+wid->h-1, ti_ap_get(0));
+	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
 	
 	/* draw border */
-	ttk_rect(srf, wid->x, wid->y, wid->x+wid->w-1, wid->y+wid->h-1, ti_ap_get(4));
+	ttk_rect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(4));
 	
 	/* replace with stars */
 	sw = ((TiBuffer *)wid->data)->usize;
@@ -493,11 +493,10 @@ void ti_widget_draw_p(TWidget * wid, ttk_surface srf)
 
 void ti_widget_draw_ml(TWidget * wid, ttk_surface srf)
 {
-	
-	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w-1, wid->y+wid->h-1, ti_ap_get(0));
+	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
 	
 	/* draw border */
-	ttk_rect(srf, wid->x, wid->y, wid->x+wid->w-1, wid->y+wid->h-1, ti_ap_get(4));
+	ttk_rect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(4));
 	
 	ti_multiline_text(srf, ttk_textfont, wid->x+5, wid->y+5, wid->w-10, wid->h-10-(((TiBuffer *)wid->data)->idata[2]),
 		ti_ap_get(1), ((TiBuffer *)wid->data)->text, ((TiBuffer *)wid->data)->cpos, 0, 0, 0, 0);
@@ -560,7 +559,7 @@ PzWindow * new_standard_text_demo_window()
 {
 	PzWindow * ret;
 	TWidget * wid;
-	ret = pz_new_window("Text Input Demo", PZ_WINDOW_NORMAL);
+	ret = pz_new_window(_("Text Input Demo"), PZ_WINDOW_NORMAL);
 	wid = ti_new_standard_text_widget(10, 40, ret->w-20, 10+ttk_text_height(ttk_textfont), 0, "", ti_destructive_callback);
     ttk_add_widget(ret, wid);
     ret = pz_finish_window(ret);
@@ -572,7 +571,7 @@ PzWindow * new_numeric_text_demo_window()
 {
 	PzWindow * ret;
 	TWidget * wid;
-	ret = pz_new_window("Text Input Demo", PZ_WINDOW_NORMAL);
+	ret = pz_new_window(_("Text Input Demo"), PZ_WINDOW_NORMAL);
 	wid = ti_new_numeric_text_widget(10, 40, ret->w-20, 10+ttk_text_height(ttk_textfont), 0, "", ti_destructive_callback);
     ttk_add_widget(ret, wid);
     ret = pz_finish_window(ret);
@@ -584,7 +583,7 @@ PzWindow * new_password_text_demo_window()
 {
 	PzWindow * ret;
 	TWidget * wid;
-	ret = pz_new_window("Text Input Demo", PZ_WINDOW_NORMAL);
+	ret = pz_new_window(_("Text Input Demo"), PZ_WINDOW_NORMAL);
 	wid = ti_new_password_text_widget(10, 40, ret->w-20, 10+ttk_text_height(ttk_textfont), 0, "", ti_destructive_callback);
     ttk_add_widget(ret, wid);
     ret = pz_finish_window(ret);
@@ -596,7 +595,7 @@ PzWindow * new_multiline_text_demo_window()
 {
 	PzWindow * ret;
 	TWidget * wid;
-	ret = pz_new_window("Text Input Demo", PZ_WINDOW_NORMAL);
+	ret = pz_new_window(_("Text Input Demo"), PZ_WINDOW_NORMAL);
 	wid = ti_new_multiline_text_widget(10, 10, ret->w-20, ret->h-20, 1, "", ti_destructive_callback);
     ttk_add_widget(ret, wid);
     ret = pz_finish_window(ret);
