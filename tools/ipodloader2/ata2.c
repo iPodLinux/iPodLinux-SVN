@@ -93,12 +93,20 @@ uint32 ata_init(void) {
   pio_reg_addrs[ REG_DA         ] = pio_base_addr2 + 7 * 4;
 
 
-  outl(inl(0xc3000028) | (1 << 5), 0xc3000028);
-  outl(inl(0xc3000028) & ~0x10000000, 0xc3000028);
-  
-  outl(0x10, 0xc3000000);
-  outl(0x80002150, 0xc3000004);
-
+  if( (ipod->hw_rev >> 16) > 3 ) {
+    outl(inl(0xc3000028) | (1 << 5), 0xc3000028);
+    outl(inl(0xc3000028) & ~0x10000000, 0xc3000028);
+    
+    outl(0x10, 0xc3000000);
+    outl(0x80002150, 0xc3000004);
+  } else {
+    /* PP5002 */
+    outl(inl(0xc0003024) | (1 << 7), 0xc0003024);
+    outl(inl(0xc0003024) & ~(1<<2), 0xc0003024);
+    
+    outl(0x10, 0xc0003000);
+    outl(0x80002150, 0xc0003004);
+  }
 
   /* 1st things first, check if there is an ATA controller here
    * We do this by writing values to two GP registers, and expect
