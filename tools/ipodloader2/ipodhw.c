@@ -300,7 +300,7 @@ void ipod_init_hardware(void) {
     ipod.ide_control   = IPOD_PP5020_IDE_PRIMARY_CONTROL;
     ipod.mem_base      = 0x10000000;
     ipod.mem_size      = 0x2000000;
-  } else if( (ipod.hw_rev>>16) > 0x4 ) { // 3G / 2G / 1G
+  } else if( (ipod.hw_rev>>16) < 0x4 ) { // 3G / 2G / 1G
     ipod.lcd_base      = IPOD_PP5002_LCD_BASE;
     ipod.lcd_busy_mask = 0x8000;
     ipod.lcd_width     = 160;
