@@ -21,6 +21,10 @@
 #define IPOD_LCD_FORMAT_2BPP   0x00
 #define IPOD_LCD_FORMAT_RGB565 0x01
 
+#define IPOD_KEYPAD_UP   0x10
+#define IPOD_KEYPAD_DOWN 0x08
+#define IPOD_KEYPAD_OK   0x01
+
 typedef struct {
   uint32 hw_rev;
   uint32 lcd_base,lcd_height,lcd_width,lcd_type,lcd_busy_mask,lcd_format;
