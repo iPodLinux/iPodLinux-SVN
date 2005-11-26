@@ -13,7 +13,7 @@ endif
 endif
 
 ifdef IPOD
-CROSS ?= arm-elf
+CROSS ?= arm-uclinux-elf
 CC = $(CROSS)-gcc
 LD = $(CROSS)-ld
 MYCFLAGS = `$(TTKCONF) --ipod --sdl --cflags` -I../contrib/ucdl -mapcs -mcpu=arm7tdmi -DVERSION=\"$(VERSION)\"

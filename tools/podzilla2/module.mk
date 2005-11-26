@@ -27,7 +27,7 @@ $(error You must specify some object files.)
 endif
 
 ifdef IPOD
-CROSS ?= arm-elf
+CROSS ?= arm-uclinux-elf
 CC = $(CROSS)-gcc
 LD = $(CROSS)-ld
 TARGET = ipod
