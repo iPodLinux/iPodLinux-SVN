@@ -1236,7 +1236,7 @@ static int width_sf (ttk_font *f, const char *str)
 	return SFont_TextWidth (f->sf, str);
     return 0;
 }
-static int width16_sf (ttk_font *f, ttk_surface srf, int x, int y, ttk_color col, const uc16 *str) 
+static int width16_sf (ttk_font *f, const uc16 *str)
 {
     int len = 0;
     const uc16 *sp = str;

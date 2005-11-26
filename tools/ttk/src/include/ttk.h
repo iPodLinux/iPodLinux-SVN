@@ -59,8 +59,8 @@ typedef unsigned short uc16;
 #ifdef SDL
 #include "SDL.h"
 #include "SDL_image.h"
-#include "SDL_gfxPrimitives.h"
-#include "SDL_rotozoom.h"
+#include "ttk/SDL_gfxPrimitives.h"
+#include "ttk/SDL_rotozoom.h"
 typedef Uint32 ttk_color;
 #ifndef NO_TF
 #include "SDL_ttf.h"
