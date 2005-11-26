@@ -349,8 +349,8 @@ main(int argc, char **argv)
 	if (!SET(SLIDE_TRANSIT))  pz_ipod_set (SLIDE_TRANSIT, 1);
 	pz_save_config (pz_global_config);
 	pz_ipod_fix_settings (pz_global_config);
-	pz_load_font (&ttk_textfont, TEXT_FONT);
-	pz_load_font (&ttk_menufont, MENU_FONT);
+	pz_load_font (&ttk_textfont, "Espy Sans", TEXT_FONT, pz_global_config);
+	pz_load_font (&ttk_menufont, "Chicago",   MENU_FONT, pz_global_config);
 	pz_secrets_init();
 	pz_menu_init();
 	pz_modules_init();
