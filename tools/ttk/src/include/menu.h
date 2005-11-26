@@ -53,6 +53,7 @@ typedef struct ttk_menu_item
     /* private */ void *menudata;
     /* private */ int iconflash, iftime, textflash;
     /* readonly */ TWidget *menu;
+    void *data2;
 } ttk_menu_item;
 
 TWidget *ttk_new_menu_widget (ttk_menu_item *items, ttk_font font, int w, int h);
