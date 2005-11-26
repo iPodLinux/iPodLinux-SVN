@@ -24,9 +24,9 @@ void menu_redraw(uint16 *fb,uint32 selectedItem) {
 
   fb_cls(fb,0x1F << 11);
 
-  console_putsXY(0,100+selectedItem*16,"*");
+  console_putsXY(0,20+selectedItem*16,"*");
 
   for(i=0;i<menu.numItems;i++) {
-    console_putsXY(10,100+i*16,menu.string[i]);
+    console_putsXY(10,20+i*16,menu.string[i]);
   }
 }

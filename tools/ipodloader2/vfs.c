@@ -60,7 +60,7 @@ void vfs_init(void) {
 
     switch(type) {
     case 0x83:
-      ext2_newfs(offset);
+      //ext2_newfs(offset);
       break;
     case 0xB:
       fat32_newfs(offset);
