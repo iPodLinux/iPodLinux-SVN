@@ -279,15 +279,15 @@ static void lcd_cmd_and_data(int cmd, int data_lo, int data_hi) {
   lcd_send_data(data_lo, data_hi);
 }
 
-typedef struct {
-  union {
-   uint8 p1 : 2,
-	 p2 : 2,
-	 p3 : 2,	  
-	 p4 : 2;
-   uint8 aggregate;
-  } pix;
-} bpp_t;
+inline uint8 LUMA565(uint16 val) {
+  uint32 calc; 
+
+  calc  = (val>>11)<<3;
+  calc += ((val&(0x3F<<5))>>5)<<2;
+  calc += (val&(0x1F))<<3;
+
+  return(calc/3);
+}
 
 static void fb_2bpp_bitblt(uint16 *fb, int sx, int sy, int mx, int my) {
   int cursor_pos;
@@ -321,37 +321,20 @@ static void fb_2bpp_bitblt(uint16 *fb, int sx, int sy, int mx, int my) {
     // 160/8 -> 20 == loops 20 times
     // make sure we loop at least once
     for ( x = sx; x <= mx; x++ ) {
-      bpp_t pixels[2];
+      uint8 pix[2];
 
       /* RGB565 to 2BPP downsampling */
-
-      pixels[0].pix.p1 = ((fb[y*ipod->lcd_width+(x*8)]>>15)&1) +
-	                 ((fb[y*ipod->lcd_width+(x*8)]>>10)&1) +
-	                 ((fb[y*ipod->lcd_width+(x*8)]>>4)&1);
-      pixels[0].pix.p2 = ((fb[y*ipod->lcd_width+(x*8)+1]>>15)&1) +
-	                 ((fb[y*ipod->lcd_width+(x*8)+1]>>10)&1) +
-	                 ((fb[y*ipod->lcd_width+(x*8)+1]>>4)&1);
-      pixels[0].pix.p3 = ((fb[y*ipod->lcd_width+(x*8)+2]>>15)&1) +
-	                 ((fb[y*ipod->lcd_width+(x*8)+2]>>10)&1) +
-	                 ((fb[y*ipod->lcd_width+(x*8)+2]>>4)&1);
-      pixels[0].pix.p4 = ((fb[y*ipod->lcd_width+(x*8)+3]>>15)&1) +
-	                 ((fb[y*ipod->lcd_width+(x*8)+3]>>10)&1) +
-	                 ((fb[y*ipod->lcd_width+(x*8)+3]>>4)&1);
-      pixels[1].pix.p1 = ((fb[y*ipod->lcd_width+(x*8)+4]>>15)&1) +
-	                 ((fb[y*ipod->lcd_width+(x*8)+4]>>10)&1) +
-	                 ((fb[y*ipod->lcd_width+(x*8)+4]>>4)&1);
-      pixels[1].pix.p2 = ((fb[y*ipod->lcd_width+(x*8)+5]>>15)&1) +
-	                 ((fb[y*ipod->lcd_width+(x*8)+5]>>10)&1) +
-	                 ((fb[y*ipod->lcd_width+(x*8)+5]>>4)&1);
-      pixels[1].pix.p3 = ((fb[y*ipod->lcd_width+(x*8)+6]>>15)&1) +
-	                 ((fb[y*ipod->lcd_width+(x*8)+6]>>10)&1) +
-	                 ((fb[y*ipod->lcd_width+(x*8)+6]>>4)&1);
-      pixels[1].pix.p4 = ((fb[y*ipod->lcd_width+(x*8)+7]>>15)&1) +
-	                 ((fb[y*ipod->lcd_width+(x*8)+7]>>10)&1) +
-	                 ((fb[y*ipod->lcd_width+(x*8)+7]>>4)&1);
-
+      pix[0]  = (LUMA565( fb[y*ipod->lcd_width+x*8+0] ) >> 6) << 6;
+      pix[0] |= (LUMA565( fb[y*ipod->lcd_width+x*8+1] ) >> 6) << 4;
+      pix[0] |= (LUMA565( fb[y*ipod->lcd_width+x*8+2] ) >> 6) << 2;
+      pix[0] |= (LUMA565( fb[y*ipod->lcd_width+x*8+3] ) >> 6) << 0;
+      pix[1]  = (LUMA565( fb[y*ipod->lcd_width+x*8+4] ) >> 6) << 6;
+      pix[1] |= (LUMA565( fb[y*ipod->lcd_width+x*8+5] ) >> 6) << 4;
+      pix[1] |= (LUMA565( fb[y*ipod->lcd_width+x*8+6] ) >> 6) << 2;
+      pix[1] |= (LUMA565( fb[y*ipod->lcd_width+x*8+7] ) >> 6) << 0;
+      
       // display a character
-      lcd_send_data(pixels[1].pix.aggregate,pixels[0].pix.aggregate);
+      lcd_send_data(pix[0],pix[1]);
     }
     
     // update cursor pos counter
