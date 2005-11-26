@@ -347,50 +347,6 @@ void ti_multiline_text(ttk_surface srf, ttk_font fnt, int x, int y, int w, int h
 
 /* Text Input Widget Event Handlers */
 
-int ti_widget_input(TWidget * wid, int ch)
-{
-	int ht;
-	if (ch == TTK_INPUT_END) {
-		if (((TiBuffer *)wid->data)->callback) {
-			if (((TiBuffer *)wid->data)->callback(wid, ((TiBuffer *)wid->data)->text)) {
-				ht=pz_start_input();
-				ttk_input_move(wid->x+1, wid->y+wid->h-ht-1);
-				wid->win->input->w = wid->w-2;
-			}
-		}
-	} else {
-		ti_buffer_input(((TiBuffer *)wid->data), ch);
-		wid->dirty = 1;
-	}
-	return TTK_EV_CLICK;
-}
-
-int ti_widget_input_n(TWidget * wid, int ch)
-{
-	int ht;
-	if (ch == TTK_INPUT_END) {
-		if (((TiBuffer *)wid->data)->callback) {
-			if (((TiBuffer *)wid->data)->callback(wid, ((TiBuffer *)wid->data)->text)) {
-				ht=pz_start_input();
-				ttk_input_move(wid->x+1, wid->y+wid->h-ht-1);
-				wid->win->input->w = wid->w-2;
-			}
-		}
-	} else {
-		if (ch >= 32) {
-			if ((ch >= '0') && (ch <= '9')) {}
-			else if ((ch == '+') || (ch == '*') || (ch == '/') || (ch == '^')) {}
-			else if ((ch == '-') || (ch == '=')) { ch='-'; }
-			else if ((ch >= ' ') && (ch <= '?')) { ch='.'; }
-			else if ((ch == 'E') || (ch == '_')) { ch='e'; }
-			else { ch = ( '0' + ((ch-7)%10) ); }
-		}
-		ti_buffer_input(((TiBuffer *)wid->data), ch);
-		wid->dirty = 1;
-	}
-	return TTK_EV_CLICK;
-}
-
 int ti_widget_start(TWidget * wid)
 {
 	/* Start text input if it hasn't been started already. */
@@ -419,6 +375,62 @@ int ti_widget_start1(TWidget * wid, int x)
 int ti_widget_start2(TWidget * wid, int x, int y)
 {
 	return ti_widget_start(wid);
+}
+
+int ti_widget_input(TWidget * wid, int ch)
+{
+	int ht;
+	if (ch == TTK_INPUT_END | ch == TTK_INPUT_ENTER) {
+		if (((TiBuffer *)wid->data)->callback) {
+			if (((TiBuffer *)wid->data)->callback(wid, ((TiBuffer *)wid->data)->text)) {
+				ti_widget_start(wid);
+			}
+		}
+	} else {
+		ti_buffer_input(((TiBuffer *)wid->data), ch);
+		wid->dirty = 1;
+	}
+	return TTK_EV_CLICK;
+}
+
+int ti_widget_input_n(TWidget * wid, int ch)
+{
+	int ht;
+	if (ch == TTK_INPUT_END | ch == TTK_INPUT_ENTER) {
+		if (((TiBuffer *)wid->data)->callback) {
+			if (((TiBuffer *)wid->data)->callback(wid, ((TiBuffer *)wid->data)->text)) {
+				ti_widget_start(wid);
+			}
+		}
+	} else {
+		if (ch >= 32) {
+			if ((ch >= '0') && (ch <= '9')) {}
+			else if ((ch == '+') || (ch == '*') || (ch == '/') || (ch == '^')) {}
+			else if ((ch == '-') || (ch == '=')) { ch='-'; }
+			else if ((ch >= ' ') && (ch <= '?')) { ch='.'; }
+			else if ((ch == 'E') || (ch == '_')) { ch='e'; }
+			else { ch = ( '0' + ((ch-7)%10) ); }
+		}
+		ti_buffer_input(((TiBuffer *)wid->data), ch);
+		wid->dirty = 1;
+	}
+	return TTK_EV_CLICK;
+}
+
+int ti_widget_input_ml(TWidget * wid, int ch)
+{
+	int ht;
+	if (ch == TTK_INPUT_END) {
+		if (((TiBuffer *)wid->data)->callback) {
+			if (((TiBuffer *)wid->data)->callback(wid, ((TiBuffer *)wid->data)->text)) {
+				ti_widget_start(wid);
+			}
+		}
+	} else {
+		ti_buffer_input(((TiBuffer *)wid->data), ch);
+		wid->dirty = 1;
+	}
+	return TTK_EV_CLICK;
 }
 
 void ti_widget_destroy(TWidget * wid)
@@ -547,7 +559,7 @@ TWidget * ti_new_password_text_widget(int x, int y, int w, int h, int absheight,
 
 TWidget * ti_new_multiline_text_widget(int x, int y, int w, int h, int absheight, char * dt, int (*callback)(TWidget *, char *))
 {
-	return ti_new_text_widget(x, y, w, h, absheight, dt, callback, ti_widget_draw_ml, ti_widget_input, 0);
+	return ti_new_text_widget(x, y, w, h, absheight, dt, callback, ti_widget_draw_ml, ti_widget_input_ml, 0);
 }
 
 /* Text Input Demo */
@@ -564,10 +576,10 @@ PzWindow * new_standard_text_demo_window()
 	TWidget * wid;
 	ret = pz_new_window(_("Text Input Demo"), PZ_WINDOW_NORMAL);
 	wid = ti_new_standard_text_widget(10, 40, ret->w-20, 10+ttk_text_height(ttk_textfont), 0, "", ti_destructive_callback);
-    ttk_add_widget(ret, wid);
-    ret = pz_finish_window(ret);
-    //ti_widget_start(wid);
-    return ret;
+	ttk_add_widget(ret, wid);
+	ret = pz_finish_window(ret);
+	//ti_widget_start(wid);
+	return ret;
 }
 
 PzWindow * new_numeric_text_demo_window()
@@ -576,10 +588,10 @@ PzWindow * new_numeric_text_demo_window()
 	TWidget * wid;
 	ret = pz_new_window(_("Text Input Demo"), PZ_WINDOW_NORMAL);
 	wid = ti_new_numeric_text_widget(10, 40, ret->w-20, 10+ttk_text_height(ttk_textfont), 0, "", ti_destructive_callback);
-    ttk_add_widget(ret, wid);
-    ret = pz_finish_window(ret);
-    //ti_widget_start(wid);
-    return ret;
+	ttk_add_widget(ret, wid);
+	ret = pz_finish_window(ret);
+	//ti_widget_start(wid);
+	return ret;
 }
 
 PzWindow * new_password_text_demo_window()
@@ -588,10 +600,10 @@ PzWindow * new_password_text_demo_window()
 	TWidget * wid;
 	ret = pz_new_window(_("Text Input Demo"), PZ_WINDOW_NORMAL);
 	wid = ti_new_password_text_widget(10, 40, ret->w-20, 10+ttk_text_height(ttk_textfont), 0, "", ti_destructive_callback);
-    ttk_add_widget(ret, wid);
-    ret = pz_finish_window(ret);
-    //ti_widget_start(wid);
-    return ret;
+	ttk_add_widget(ret, wid);
+	ret = pz_finish_window(ret);
+	//ti_widget_start(wid);
+	return ret;
 }
 
 PzWindow * new_multiline_text_demo_window()
@@ -600,19 +612,19 @@ PzWindow * new_multiline_text_demo_window()
 	TWidget * wid;
 	ret = pz_new_window(_("Text Input Demo"), PZ_WINDOW_NORMAL);
 	wid = ti_new_multiline_text_widget(10, 10, ret->w-20, ret->h-20, 1, "", ti_destructive_callback);
-    ttk_add_widget(ret, wid);
-    ret = pz_finish_window(ret);
-    //ti_widget_start(wid);
-    return ret;
+	ttk_add_widget(ret, wid);
+	ret = pz_finish_window(ret);
+	//ti_widget_start(wid);
+	return ret;
 }
 
 void init_textinput_demos()
 {
 	module = pz_register_module ("tiwidgets", 0);
-    pz_menu_add_action ("/Extras/Stuff/Text Input Demo/Standard", new_standard_text_demo_window);
-    pz_menu_add_action ("/Extras/Stuff/Text Input Demo/Numeric", new_numeric_text_demo_window);
-    pz_menu_add_action ("/Extras/Stuff/Text Input Demo/Password", new_password_text_demo_window);
-    pz_menu_add_action ("/Extras/Stuff/Text Input Demo/Multiline", new_multiline_text_demo_window);
+	pz_menu_add_action ("/Extras/Stuff/Text Input Demo/Standard", new_standard_text_demo_window);
+	pz_menu_add_action ("/Extras/Stuff/Text Input Demo/Numeric", new_numeric_text_demo_window);
+	pz_menu_add_action ("/Extras/Stuff/Text Input Demo/Password", new_password_text_demo_window);
+	pz_menu_add_action ("/Extras/Stuff/Text Input Demo/Multiline", new_multiline_text_demo_window);
 }
 
 PZ_MOD_INIT(init_textinput_demos)
