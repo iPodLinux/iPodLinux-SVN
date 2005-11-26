@@ -72,10 +72,8 @@ endif
 	@touch .message
 
 checktarget: .curtgt
-ifneq ($(wildcard .target),)
-	@cmp .curtgt .target >/dev/null || ( echo "Cleaning because of target change."; make -s clean; echo )
+	@[ -f .target ] && cmp .curtgt .target >/dev/null || ( echo "Cleaning because of target change."; make -s clean; echo )
 	@cp .curtgt .target
-endif
 
 .curtgt:
 ifdef IPOD
@@ -119,7 +117,7 @@ pods:
 	@echo
 	@echo "Building modules, stage 3 (iPod)."
 	@mkdir -p pods
-	@for dir in `cat modules/.mods`; do ( cd xpods/$$d; echo " POD     $$d"; $(POD) -c ../../pods/$$d.pod * ); done
+	@for dir in `cat modules/.mods`; do ( cd xpods/$$dir; echo " POD     $$dir"; $(POD) -c ../../pods/$$dir.pod * ); done
 else
 # Just make dummy files
 pods:
