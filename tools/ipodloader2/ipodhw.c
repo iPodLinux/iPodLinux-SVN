@@ -173,7 +173,7 @@ static void ipod_set_backlight(int on) {
     } else if ((ipod.hw_rev>>16) == 0x04 || (ipod.hw_rev>>16) == 0x7) {
       /* set port B03 */
       outl(((0x100 | (on ? 1 : 0)) << 3), 0x6000d824);
-    } else if ((ipod.hw_rev>>16) == 0xc) {
+    } else if ( ((ipod.hw_rev>>16) == 0xc) || ((ipod.hw_rev>>16) == 0xb) ) {
       /* set port B03 */
       outl(((0x100 | (on ? 1 : 0)) << 3), 0x6000d824);
       /* set port L07 */

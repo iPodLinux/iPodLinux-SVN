@@ -24,7 +24,7 @@ void *loader(void) {
 
     keypad_init();
 
-    framebuffer = (uint16*)mlc_malloc( 320*240 * 2 ); // Aw, chucks..  
+    framebuffer = (uint16*)mlc_malloc( 320*340 * 2 ); // Aw, chucks..  
 
     fb_init();
     fb_cls(framebuffer,0x1F);
