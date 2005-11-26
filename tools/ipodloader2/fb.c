@@ -247,7 +247,7 @@ void lcd_5g_draw_2pixels(unsigned two_pixels, unsigned y) {
 /* send LCD command */
 static void lcd_prepare_cmd(int cmd) {
   lcd_wait_write();
-  if(ipod->hw_rev >= 70000) {
+  if(ipod->hw_rev >= 0x70000) {
     outl((inl(0x70003000) & ~0x1f00000) | 0x1700000, 0x70003000);
     outl(cmd | 0x740000, 0x70003008);
   }
@@ -261,7 +261,7 @@ static void lcd_prepare_cmd(int cmd) {
 /* send LCD data */
 static void lcd_send_data(int data_lo, int data_hi) {
   lcd_wait_write();
-  if(ipod->hw_rev >= 70000) {
+  if(ipod->hw_rev >= 0x70000) {
     outl((inl(0x70003000) & ~0x1f00000) | 0x1700000, 0x70003000);
     outl(data_hi | (data_lo << 8) | 0x760000, 0x70003008);
   }
@@ -325,30 +325,30 @@ static void fb_2bpp_bitblt(uint16 *fb, int sx, int sy, int mx, int my) {
 
       /* RGB565 to 2BPP downsampling */
 
-      pixels[0].pix.p1 = ((fb[y*ipod->lcd_width+x]>>15)&1) +
-	                 ((fb[y*ipod->lcd_width+x]>>10)&1) +
-	                 ((fb[y*ipod->lcd_width+x]>>4)&1);
-      pixels[0].pix.p2 = ((fb[y*ipod->lcd_width+x+1]>>15)&1) +
-	                 ((fb[y*ipod->lcd_width+x+1]>>10)&1) +
-	                 ((fb[y*ipod->lcd_width+x+1]>>4)&1);
-      pixels[0].pix.p3 = ((fb[y*ipod->lcd_width+x+2]>>15)&1) +
-	                 ((fb[y*ipod->lcd_width+x+2]>>10)&1) +
-	                 ((fb[y*ipod->lcd_width+x+2]>>4)&1);
-      pixels[0].pix.p4 = ((fb[y*ipod->lcd_width+x+3]>>15)&1) +
-	                 ((fb[y*ipod->lcd_width+x+3]>>10)&1) +
-	                 ((fb[y*ipod->lcd_width+x+3]>>4)&1);
-      pixels[1].pix.p1 = ((fb[y*ipod->lcd_width+x+4]>>15)&1) +
-	                 ((fb[y*ipod->lcd_width+x+4]>>10)&1) +
-	                 ((fb[y*ipod->lcd_width+x+4]>>4)&1);
-      pixels[1].pix.p2 = ((fb[y*ipod->lcd_width+x+5]>>15)&1) +
-	                 ((fb[y*ipod->lcd_width+x+5]>>10)&1) +
-	                 ((fb[y*ipod->lcd_width+x+5]>>4)&1);
-      pixels[1].pix.p3 = ((fb[y*ipod->lcd_width+x+6]>>15)&1) +
-	                 ((fb[y*ipod->lcd_width+x+6]>>10)&1) +
-	                 ((fb[y*ipod->lcd_width+x+6]>>4)&1);
-      pixels[1].pix.p4 = ((fb[y*ipod->lcd_width+x+7]>>15)&1) +
-	                 ((fb[y*ipod->lcd_width+x+7]>>10)&1) +
-	                 ((fb[y*ipod->lcd_width+x+7]>>4)&1);
+      pixels[0].pix.p1 = ((fb[y*ipod->lcd_width+(x*8)]>>15)&1) +
+	                 ((fb[y*ipod->lcd_width+(x*8)]>>10)&1) +
+	                 ((fb[y*ipod->lcd_width+(x*8)]>>4)&1);
+      pixels[0].pix.p2 = ((fb[y*ipod->lcd_width+(x*8)+1]>>15)&1) +
+	                 ((fb[y*ipod->lcd_width+(x*8)+1]>>10)&1) +
+	                 ((fb[y*ipod->lcd_width+(x*8)+1]>>4)&1);
+      pixels[0].pix.p3 = ((fb[y*ipod->lcd_width+(x*8)+2]>>15)&1) +
+	                 ((fb[y*ipod->lcd_width+(x*8)+2]>>10)&1) +
+	                 ((fb[y*ipod->lcd_width+(x*8)+2]>>4)&1);
+      pixels[0].pix.p4 = ((fb[y*ipod->lcd_width+(x*8)+3]>>15)&1) +
+	                 ((fb[y*ipod->lcd_width+(x*8)+3]>>10)&1) +
+	                 ((fb[y*ipod->lcd_width+(x*8)+3]>>4)&1);
+      pixels[1].pix.p1 = ((fb[y*ipod->lcd_width+(x*8)+4]>>15)&1) +
+	                 ((fb[y*ipod->lcd_width+(x*8)+4]>>10)&1) +
+	                 ((fb[y*ipod->lcd_width+(x*8)+4]>>4)&1);
+      pixels[1].pix.p2 = ((fb[y*ipod->lcd_width+(x*8)+5]>>15)&1) +
+	                 ((fb[y*ipod->lcd_width+(x*8)+5]>>10)&1) +
+	                 ((fb[y*ipod->lcd_width+(x*8)+5]>>4)&1);
+      pixels[1].pix.p3 = ((fb[y*ipod->lcd_width+(x*8)+6]>>15)&1) +
+	                 ((fb[y*ipod->lcd_width+(x*8)+6]>>10)&1) +
+	                 ((fb[y*ipod->lcd_width+(x*8)+6]>>4)&1);
+      pixels[1].pix.p4 = ((fb[y*ipod->lcd_width+(x*8)+7]>>15)&1) +
+	                 ((fb[y*ipod->lcd_width+(x*8)+7]>>10)&1) +
+	                 ((fb[y*ipod->lcd_width+(x*8)+7]>>4)&1);
 
       // display a character
       lcd_send_data(pixels[1].pix.aggregate,pixels[0].pix.aggregate);
