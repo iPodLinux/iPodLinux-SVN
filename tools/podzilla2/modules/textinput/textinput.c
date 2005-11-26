@@ -84,8 +84,8 @@ TWidget * ti_create_tim_widget(int ht, int wd)
 	int sh, sw;
 	TWidget * wid;
 	ttk_get_screensize(&sw, &sh, 0);
-	wid = ttk_new_widget( ((wd>0)?(sw-wd):(-wd)), sh-ht );
-	wid->h = ht;
+	wid = ttk_new_widget( ((wd>0)?(sw-wd):(-wd)), sh-((ht<0)?(ttk_text_height(ttk_menufont)*(-ht)+1):ht) );
+	wid->h = ((ht<0)?(ttk_text_height(ttk_menufont)*(-ht)+1):ht);
 	wid->w = ((wd>0)?(wd):(sw+wd));
 	wid->focusable = 1;
 	return wid;
@@ -95,7 +95,7 @@ TWidget * ti_create_tim_widget(int ht, int wd)
 
 int ti_serial_abort(TWidget * this, int ch) 
 {
-	if (ch == TTK_BUTTON_MENU) {
+	if (ch == TTK_BUTTON_ACTION) {
 		pz_warning (_("I'd suggest picking another text input method before you try that again."));
 		ttk_input_end();
 		return TTK_EV_CLICK;
@@ -122,9 +122,9 @@ TWidget * ti_serial_create()
 {
 	TWidget * wid = ti_create_tim_widget(0, 0);
 	wid->rawkeys = 1;
-        wid->keyrepeat = 1;
+	wid->keyrepeat = 1;
 	wid->down = ti_serial_down;
-        wid->held = ti_serial_abort;
+	wid->held = ti_serial_abort;
 	wid->holdtime = 3000;
 	return wid;
 }
@@ -145,11 +145,11 @@ TWidget * ti_serial_create()
  * 11 - Four-Button Keypad
  * 12 - Dasher
  * 13 - Speech Recognition
- * 14 - Reserved
+ * 14 - FreqMod's TIM (http://freqmod.dyndns.org/upload/ipnno.png)
  * 15 - Reserved
- * 16 - Reserved
- * 17 - Reserved
- * 18 - Reserved
+ * 16 - Unicode Hex Input
+ * 17 - Kana Palette
+ * 18 - Multilingual Wheelboard
  * 19 - Reserved
  * 20 - Reserved
  * 21 - Reserved
@@ -204,7 +204,7 @@ void ti_init()
 		ti_tim_ncreators[i]=0;
 	}
 	ti_selected_tim = pz_get_int_setting(ti_conf, TI_SETTING_SEL_TIM);
-	ti_register(ti_serial_create, ti_serial_create, "Serial", 0);
+	ti_register(ti_serial_create, ti_serial_create, _("Serial"), 0);
 }
 
 PZ_MOD_INIT(ti_init)

@@ -133,7 +133,7 @@ void ti_cursive_draw(TWidget * wid, ttk_surface srf)
 	int x, y, w;
 	x = wid->x;
 	w = wid->w;
-	y = wid->y + 8 - ttk_text_height(ttk_menufont)/2;
+	y = wid->y;
 	
 	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
 	ttk_text_lat1(srf, ttk_menufont, x+2, y, ti_ap_get(1), ti_cursive_buffer);
@@ -260,13 +260,14 @@ int ti_cursive_timer(TWidget * wid)
 
 TWidget * ti_cursive_create()
 {
-	TWidget * wid = ti_create_tim_widget(15, 0);
+	TWidget * wid = ti_create_tim_widget(-1, 0);
 	wid->draw = ti_cursive_draw;
 	wid->down = ti_cursive_down;
 	wid->button = ti_cursive_button;
 	wid->held = ti_cursive_held;
 	wid->scroll = ti_cursive_scroll;
 	wid->timer = ti_cursive_timer;
+	wid->holdtime = 500;
 	ti_cursive_reset();
 	return wid;
 }
@@ -274,7 +275,7 @@ TWidget * ti_cursive_create()
 void ti_cursive_init()
 {
 	module = pz_register_module("ticursive", 0);
-	ti_register(ti_cursive_create, ti_cursive_create, "Cursive", 5);
+	ti_register(ti_cursive_create, ti_cursive_create, _("Cursive"), 5);
 }
 
 PZ_MOD_INIT(ti_cursive_init)

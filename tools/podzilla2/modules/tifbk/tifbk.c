@@ -98,13 +98,13 @@ void ti_fbk_draw(TWidget * wid, ttk_surface srf)
 	for (i=0; i<4; i++) {
 		if (ttk_get_podversion() & TTK_POD_3G) {
 			x = cw*i + 1;
-			y = 8 - (ttk_text_height(ttk_menufont)/2);
+			y = 0;
 		} else {
 			switch (i) {
-			case 0: x =      1; y = 14 - (ttk_text_height(ttk_menufont)/2); break;
-			case 1: x = cw  +1; y =  7 - (ttk_text_height(ttk_menufont)/2); break;
-			case 2: x = cw  +1; y = 21 - (ttk_text_height(ttk_menufont)/2); break;
-			case 3: x = cw*2+1; y = 14 - (ttk_text_height(ttk_menufont)/2); break;
+			case 0: x =      1; y = (ttk_text_height(ttk_menufont)/2); break;
+			case 1: x = cw  +1; y = 0; break;
+			case 2: x = cw  +1; y = ttk_text_height(ttk_menufont); break;
+			case 3: x = cw*2+1; y = (ttk_text_height(ttk_menufont)/2); break;
 			}
 		}
 		x+=wid->x; y+=wid->y;
@@ -216,16 +216,16 @@ TWidget * ti_fbk_create(int n)
 {
 	TWidget * wid;
 	if (ttk_get_podversion() & TTK_POD_3G) {
-		wid = ti_create_tim_widget(15, 0);
+		wid = ti_create_tim_widget(-1, 0);
 	} else {
-		wid = ti_create_tim_widget(28, 0);
+		wid = ti_create_tim_widget(-2, 0);
 	}
 	wid->down = ti_fbk_down;
 	wid->button = ti_fbk_button;
 	wid->held = ti_fbk_held;
 	wid->scroll = ti_fbk_scroll;
 	wid->draw = ti_fbk_draw;
-        wid->holdtime = 500;
+	wid->holdtime = 500;
 	ti_fbk_numeric = n;
 	ti_fbk_SetMode(-1);
 	return wid;
@@ -244,7 +244,7 @@ TWidget * ti_fbk_ncreate()
 void ti_fbk_init()
 {
 	module = pz_register_module("tifbk", 0);
-	ti_register(ti_fbk_screate, ti_fbk_ncreate, "Four-Button Keyboard", 7);
+	ti_register(ti_fbk_screate, ti_fbk_ncreate, _("Four-Button Keyboard"), 7);
 }
 
 PZ_MOD_INIT(ti_fbk_init)
