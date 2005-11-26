@@ -26,6 +26,10 @@
 
 static PzModule * module;
 
+/* dependent on textinput module */
+extern ttk_color ti_ap_get(int);
+extern int ti_register(TWidget *(* cr)(), TWidget *(* ncr)(), char *, int);
+
 const unsigned char ti_wlb_lowercase[]=  "abcdefghijklmnopqrstuvwxyz";
 const unsigned char ti_wlb_uppercase[]=  "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const unsigned char ti_wlb_numeric1[]=   "0123456789.,/!@#$%^&*()[]?";

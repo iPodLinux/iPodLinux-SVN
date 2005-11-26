@@ -26,6 +26,10 @@
 #include "pz.h"
 #include <string.h>
 
+/* dependent on textinput module */
+extern ttk_color ti_ap_get(int);
+extern int ti_register(TWidget *(* cr)(), TWidget *(* ncr)(), char *, int);
+
 static PzModule * module;
 
 const char ti_dial_charlist[] = " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ=+?!@#$%^&*()[]{}_-<>~`\"\'1234567890\\/|:;.,M";
