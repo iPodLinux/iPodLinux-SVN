@@ -32,6 +32,7 @@ void *loader(void) {
     console_init(framebuffer);
     console_puts("iPL Bootloader 2.0\n");
     fb_update(framebuffer);
+    //for(;;);
 
     ret = ata_init();
     if( ret ) {
