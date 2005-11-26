@@ -38,12 +38,14 @@ int keypad_getstate(void) {
 
   if( (ipod->hw_rev>>16) < 4 ) {
     state = inb(0xCF000030);
-    if(     state & 0x10 ) return(IPOD_KEYPAD_UP);
-    else if(state & 0x04 ) return(IPOD_KEYPAD_DOWN);
+    if(     (state & 0x10) == 0) return(IPOD_KEYPAD_UP);
+    else if((state & 0x04) == 0) return(IPOD_KEYPAD_DOWN);
+    else if((state & 0x02) == 0) return(IPOD_KEYPAD_OK);
   } else {  // 0x4
     state = inb(0x6000d030);
-    if(     state & 0x02 ) return(IPOD_KEYPAD_UP);
-    else if(state & 0x04 ) return(IPOD_KEYPAD_DOWN);
+    if(     (state & 0x02) == 0) return(IPOD_KEYPAD_UP);
+    else if((state & 0x04) == 0) return(IPOD_KEYPAD_DOWN);
+    else if((state & 0x01) == 0) return(IPOD_KEYPAD_OK);
   }
   return(0);
 }
