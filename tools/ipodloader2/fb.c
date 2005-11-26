@@ -79,7 +79,7 @@ void lcd_5g_write(unsigned R0, unsigned R1, unsigned R2, unsigned R3) {
   outw(R0, LR);
   
   // data on short boundary and bytes to write > 16
-  if( ((R1 & 0x1) != 0) && (R2 >= 0x10))
+  if ((R1 & 0x1 != 0) && (R2 >= 0x10))
     { 
       R0 = R2 >> 31; //ASR
       R0 = R2 + R0 >> 30; //LSR
@@ -120,127 +120,131 @@ void lcd_5g_write(unsigned R0, unsigned R1, unsigned R2, unsigned R3) {
 
 void lcd_5g_read(R0, R1, R2, R3)
 {
-  unsigned R12, LR, R4, R5;
-  unsigned data[2];
-  unsigned outbuf;
-  outbuf = R1;
-  
-  LR = R3 &~1;
-  R12 = R1 & 0x3;
-  R12 = (R1 & 0x3) | (R3 & ~0x1);
-  if (R12 != 0)
-    return;
-  if (R3!=0)
-    {
-      LR = 0x30060000;
-      R3 = 0x30040000;
-      R12 = 0x30070000;
-    } else {
-      LR = 0x30020000;
-      R3 = 0x30000000;
-      R12 = 0x30030000;
-    }
-  R5 = R2 >> 2;
-  
-  
-  while (inw(LR) & 1 == 0);
-  outw(R1, LR);
-  R1 = R1 >> 16;
-  outw(R1, LR);
-  
+        unsigned R12, LR, R4, R5;
+        unsigned data[2];
+        unsigned outbuf;
+        outbuf = R1;
+         
+        LR = R3 &~1;
+        R12 = R1 & 0x3;
+        R12 = (R1 & 0x3) | (R3 & ~0x1);
+        if (R12 != 0)
+                return;
+        if (R3!=0)
+        {
+                LR = 0x30060000;
+                R3 = 0x30040000;
+                R12 = 0x30070000;
+        } else {
+                LR = 0x30020000;
+                R3 = 0x30000000;
+                R12 = 0x30030000;
+        }
+        R5 = R2 >> 2;
+
+
+        while (inw(LR) & 1 == 0);
+        outw(R1, LR);
+        R1 = R1 >> 16;
+        outw(R1, LR);
+
 #if 1
-  if (R0 & 1 != 0) // short boundary?
-    {
-      
-      char * ptr = outbuf;
-      R1 = &data; //SP;
-      R2 = 0;
-      while (R2 < R5)
-	{
-	  while (inw(R12) & 0x10 == 0);
+        if (R0 & 1 != 0) // short boundary?
+        {
+                
+                char * ptr = outbuf;
+                R1 = &data; //SP;
+                R2 = 0;
+                while (R2 < R5)
+                {
+                        while (inw(R12) & 0x10 == 0);
 
-	  
-	  R4 = inw(R3);
-	  *ptr = R4 & 0xF;
-	  *(ptr+1) = (R4 >> 8) & 0xF;
-	  ptr+=2;
-	  R4 = inw(R3);
-	  *ptr = R4 & 0xF;
-	  *(ptr+1) = (R4 >> 8) & 0xF;
-	  ptr+=2; 
-	  R2++;
-	  /*      R4 = inh(R3);
-		  data[0]= R4;
-		  R4 = inb(R1);
-		  outb(R4, R0);
-		  R4 = inb(R1+1);
-		  outb(R4, R0+1); 
-		  R4 = inh(R3);
-		  data[0] = R4;
-		  R4 = inb(R1);
-		  R2+=1;
-		  outb(R4, R0+0x2);
-		  R4 = inb(R1+1);
-		  outb(R4, R0+0x3);
-		  R0 += 4; */             
-	  
-	}
-    } else {
-      R1 = 0;
-      
-      while (R1 < R5)
-	{
-	  
-	  while (inw(R12) & 0x10 == 0);
-	  
-	  R2 = inw(R3);
-	  outw(R2, R0);
-	  R2 = inw(R3);
-	  outw(R2, R0+2);
-	  R0+=4;
-	  R1+=1;
-	}
-    }
+
+                        R4 = inw(R3);
+                        *ptr = R4 & 0xF;
+                        *(ptr+1) = (R4 >> 8) & 0xF;
+                        ptr+=2;
+                        R4 = inw(R3);
+                        *ptr = R4 & 0xF;
+                        *(ptr+1) = (R4 >> 8) & 0xF;
+                        ptr+=2; 
+                        R2++;
+                /*      R4 = inh(R3);
+                        data[0]= R4;
+                        R4 = inb(R1);
+                        outb(R4, R0);
+                        R4 = inb(R1+1);
+                        outb(R4, R0+1); 
+                        R4 = inh(R3);
+                        data[0] = R4;
+                        R4 = inb(R1);
+                        R2+=1;
+                        outb(R4, R0+0x2);
+                        R4 = inb(R1+1);
+                        outb(R4, R0+0x3);
+                        R0 += 4; */             
+
+                }
+        } else {
+                R1 = 0;
+                        
+                while (R1 < R5)
+                {
+
+                        while (inw(R12) & 0x10 == 0);
+
+                        R2 = inw(R3);
+                        outw(R2, R0);
+                        R2 = inw(R3);
+                        outw(R2, R0+2);
+                        R0+=4;
+                        R1+=1;
+                }
+        }
 #endif
-  R0 = inw(LR);
-  data[0] = R0;
-  R0 = 0;
+        R0 = inw(LR);
+        data[0] = R0;
+        R0 = 0;
+                
 }
 
+void lcd_5g_finishup()
+{
+        unsigned data[2]; 
+        outw(0x31, 0x30030000); 
+        lcd_5g_read(data, 0x1FC, 4, 0);
 
-void lcd_5g_finishup(void) {
-  unsigned data[2]; 
-  outw(0x31, 0x30030000); 
-  lcd_5g_read(data, 0x1FC, 4, 0);
-  
-  lcd_5g_read(&data[1], 0x1F8, 4, 0);
-  while( (data[1]==0xFFFA0005) || (data[1]==0xFFFF) ) {
-    lcd_5g_read(&data[1], 0x1F8, 4, 0);
-  }  
-  lcd_5g_read(data, 0x1FC, 4, 0);
+        lcd_5g_read(&data[1], 0x1F8, 4, 0);
+        while ((data[1]==0xFFFA0005) || (data[1]==0xFFFF))
+        {
+                lcd_5g_read(&data[1], 0x1F8, 4, 0);
+        }       
+        lcd_5g_read(data, 0x1FC, 4, 0);
 }
 
-
-void lcd_5g_setup_rect(unsigned cmd, unsigned start_horiz, unsigned start_vert,unsigned max_horiz, unsigned max_vert, unsigned count) {
+void lcd_5g_setup_rect(unsigned cmd, unsigned start_horiz, unsigned start_vert, 
+                unsigned max_horiz, unsigned max_vert, unsigned count)
+{
         
-  unsigned data[8] = {0xFFFA0005, cmd, start_horiz, start_vert, 
-		      max_horiz, max_vert, count, 0}; 
-  lcd_5g_write(0x1F8, &data, 4, 0);
-  lcd_5g_write(0xE0000, &data[1], 4, 0);
-  lcd_5g_write(0xE0004, &data[2], 4, 0);
-  lcd_5g_write(0xE0008, &data[3], 4, 0);
-  lcd_5g_write(0xE000C, &data[4], 4, 0);
-  lcd_5g_write(0xE0010, &data[5], 4, 0);
-  lcd_5g_write(0xE0014, &data[6], 4, 0);
-  lcd_5g_write(0xE0018, &data[6], 4, 0);
-  lcd_5g_write(0xE001C, &data[7], 4, 0);
+        unsigned data[8] = {0xFFFA0005, cmd, start_horiz, start_vert, 
+                                max_horiz, max_vert, count, 0}; 
+        lcd_5g_write(0x1F8, &data, 4, 0);
+        lcd_5g_write(0xE0000, &data[1], 4, 0);
+        lcd_5g_write(0xE0004, &data[2], 4, 0);
+        lcd_5g_write(0xE0008, &data[3], 4, 0);
+        lcd_5g_write(0xE000C, &data[4], 4, 0);
+        lcd_5g_write(0xE0010, &data[5], 4, 0);
+        lcd_5g_write(0xE0014, &data[6], 4, 0);
+        lcd_5g_write(0xE0018, &data[6], 4, 0);
+        lcd_5g_write(0xE001C, &data[7], 4, 0);
 }
 
-
-void lcd_5g_draw_2pixels(unsigned two_pixels, unsigned y) {
-  unsigned data[3] = {two_pixels, y, 0};
-  unsigned cmd = 0xE0020 + (y << 2);
-  lcd_5g_write(cmd, data, 4, 0); 
+void lcd_5g_draw_2pixels(unsigned two_pixels, unsigned y)
+{
+        unsigned data[3] = {two_pixels, y, 0};
+        unsigned cmd = 0xE0020 + (y << 2);
+        lcd_5g_write(cmd, data, 4, 0); 
+        
 }
 
 
@@ -341,7 +345,6 @@ static void fb_2bpp_bitblt(uint16 *fb, int sx, int sy, int mx, int my) {
     cursor_pos += 0x20;
   }
 }
-
 
 static void fb_565_bitblt(uint16 *x, int sx, int sy, int mx, int my) {
   int startx = sy;
@@ -472,7 +475,7 @@ static void fb_565_bitblt(uint16 *x, int sx, int sy, int mx, int my) {
     }
   }
 
-  if( ipod->lcd_type == 0xB )
+  if( ipod->lcd_type == 5 )
     lcd_5g_finishup();
 }
 
