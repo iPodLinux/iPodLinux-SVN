@@ -402,7 +402,6 @@ static void add_deps (PzModule *mod)
 {
     PzModule **pdep;
     struct dep *cur;
-    int i;
 
     if (mod->ordered) return;
     mod->ordered = 1;

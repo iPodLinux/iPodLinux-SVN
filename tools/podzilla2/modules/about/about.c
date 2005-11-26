@@ -126,11 +126,11 @@ static char *humanize (unsigned long size)
 {
     static char buf[64];
     if (size >= 1048576) {
-        sprintf (buf, "%d.%01d GB", size/1048576, size*10/1048576 % 10);
+        sprintf (buf, "%ld.%01ld GB", size/1048576, size*10/1048576 % 10);
     } else if (size >= 1024) {
-        sprintf (buf, "%d.%01d MB", size/1024, size*10/1024 % 10);
+        sprintf (buf, "%ld.%01ld MB", size/1024, size*10/1024 % 10);
     } else {
-        sprintf (buf, "%d kB", size);
+        sprintf (buf, "%ld kB", size);
     }
     return buf;
 }
@@ -254,7 +254,7 @@ static void populate_stats()
     }
 
     cur = new_kvstat (_("HW Version"));
-    sprintf (cur->value, "%05x", pz_ipod_get_hw_version());
+    sprintf (cur->value, "%05lx", pz_ipod_get_hw_version());
     
     new_kvstat_sysinfo (_("S/N"), "pszSerialNumber");
     new_kvstat_sysinfo (_("Model"), "ModelNumStr");

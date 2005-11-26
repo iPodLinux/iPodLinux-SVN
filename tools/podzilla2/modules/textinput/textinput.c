@@ -166,6 +166,7 @@ int ti_select(int id)
 	pz_register_input_method(ti_tim_creators[id]);
 	pz_register_input_method_n(ti_tim_ncreators[id]);
 	ti_selected_tim = id;
+	return 0;
 }
 
 TWindow * ti_ttkselect(ttk_menu_item * item)
@@ -184,6 +185,7 @@ int ti_register(TWidget * (* create)(), TWidget * (* ncreate)(), char * name, in
 	if (ti_selected_tim == id) {
 		ti_select(id);
 	}
+	return 0;
 }
 
 /* main text input module initialization */

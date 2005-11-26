@@ -18,6 +18,10 @@
 
 #include "pz.h"
 #include <string.h>
+#include <unistd.h>
+
+/* dependent on textinput module */
+extern ttk_color ti_ap_get(int);
 
 PzModule * module;
 
@@ -509,7 +513,6 @@ void ti_widget_draw_ml(TWidget * wid, ttk_surface srf)
 TWidget * ti_new_text_widget(int x, int y, int w, int h, int absheight, char * dt, int (*callback)(TWidget *, char *),
 	void (*draw)(TWidget *, ttk_surface), int (*input)(TWidget *, int), int numeric)
 {
-	int ht;
 	TWidget * wid = ttk_new_widget(x,y);
 	wid->h = h;
 	wid->w = w;

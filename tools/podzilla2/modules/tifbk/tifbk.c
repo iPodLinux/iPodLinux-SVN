@@ -26,6 +26,10 @@
 
 static PzModule * module;
 
+/* dependent on textinput module */
+extern ttk_color ti_ap_get(int);
+extern int ti_register(TWidget *(* cr)(), TWidget *(* ncr)(), char *, int);
+
 const unsigned long int ti_fbk_MSlongs[] = {
 	0x01020304, 0x05060708, 0x090A0B0C, 0x0D0E0F10, 0x11000012, 0x00000000, 0x00000000,
 	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
