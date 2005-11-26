@@ -9,61 +9,39 @@
 #include "vfs.h"
 #include "menu.h"
 
-#define PP5020_IDE_PRIMARY_BASE    0xC30001E0
-#define PP5020_IDE_PRIMARY_CONTROL 0xC30003f8
-
-uint16 *buff;
-
 void *loader(void) {
     void *entry;
     int fd,menuPos,done,redraw;
     uint32 ret;
-    uint8 *buffer;
+    uint16 *framebuffer;
+    ipod_t *ipod;
 
-    /* Backlight ON */
-    switch( ipod_get_hwrev() >> 16 ) {
-    case 0xc:
-      /* set port B03 */
-      outl(((0x100 | 1) << 3), 0x6000d824);
-      /* set port L07 */
-      outl(((0x100 | 1) << 7), 0x6000d12c);
-      break;
-    case 0x6:
-      outl(0x80000000 | (0xFF << 16),0x7000A010);
-      outl( ((0x100 | 1) << 3),0x6000D824 );
-      break;
-    }
-
-    keypad_init();
+    ipod_init_hardware();
+    ipod = ipod_get_hwinfo();
 
     /* Make sure malloc() is initialized */
     mlc_malloc_init();
-    buff   = (uint16*)mlc_malloc( 320*240*2 ); /* Room for the biggest display */
-    buffer = (uint8 *)mlc_malloc( 512 );
 
-    fb_init( ipod_get_hwrev() );
+    keypad_init();
 
-    fb_cls(buff,0x1F);
+    framebuffer = (uint16*)mlc_malloc( ipod->lcd_width*ipod->lcd_height * 2 ); // !!! Allocates 16 times too much memory for 2BPP displays
 
-    console_init(buff, ipod_get_hwrev() );
+    fb_init();
+    fb_cls(framebuffer,0x1F);
 
+    console_init(framebuffer);
     console_puts("iPL Bootloader 2.0\n");
+    fb_update(framebuffer);
 
-    //return(
-
-    /*for(;;) {
-      mlc_printf("ScanCore: %u \r",keypad_getstate());
-      fb_update(buff);
-      //ipod_wait_usec(1000);
-      }*/
-
-    ret = ata_init(PP5020_IDE_PRIMARY_BASE);
+    ret = ata_init();
     if( ret ) {
       mlc_printf("ATAinit: %i\n",ret);
+      fb_update(framebuffer);
       for(;;);
     }
 
     ata_identify();
+    fb_update(framebuffer);
 
     vfs_init();
     fd = vfs_open("NOTES/KERNEL.BIN");
@@ -72,10 +50,8 @@ void *loader(void) {
     vfs_seek(fd,0,VFS_SEEK_SET);
 
     mlc_printf("FD=%i (Len %u)\n",fd,ret);
-
-    //console_puts("Trying to load kernel\n");
-    //fb_update(buff);
-
+    fb_update(framebuffer);
+    //for(;;);
 
     menu_init();
     menu_additem("Retail OS");
@@ -102,13 +78,13 @@ void *loader(void) {
       }
 
       if(redraw) {
-	menu_redraw(buff,menuPos);
-	fb_update(buff);
+	menu_redraw(framebuffer,menuPos);
+	fb_update(framebuffer);
 	redraw = 0;
       }
     }
 
-    entry = (void*)0x10000000;
+    entry = (void*)ipod->mem_base;
 
     if( menuPos == 0 ) return( entry ); // RetailOS
     if( menuPos == 2 ) { // Diskmode
@@ -126,7 +102,7 @@ void *loader(void) {
       vfs_read( entry, ret, 1, fd );
       
       mlc_printf("Trying to start.\n");
-      fb_update(buff);
+      fb_update(framebuffer);
     }
 
     return entry;

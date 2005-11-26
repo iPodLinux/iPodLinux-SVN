@@ -2,6 +2,7 @@
 #include "fb.h"
 #include "console.h"
 #include "minilibc.h"
+#include "ipodhw.h"
 
 #include "vga_font.h"
 
@@ -13,6 +14,7 @@ static struct {
     uint32 w,h;
   } dimensions;
   uint16 *fb;
+  ipod_t *ipod;
 } console;
 
 void console_blitchar(int x,int y,char ch) {
@@ -124,21 +126,14 @@ void console_putsXY(int x,int y,volatile char *str) {
   }
 }
 
-void console_init(uint16 *fb,uint32 hw_ver) {
+void console_init(uint16 *fb) {
 
-  switch(hw_ver>>16) {
-  case 0x6:
-    console.dimensions.w = 220;
-    console.dimensions.h = 176;
-    console.cursor.x = 0;
-    console.cursor.y = 0;
-    break;
-  case 0xC:
-    console.dimensions.w = 176;
-    console.dimensions.h = 132;
-    console.cursor.x = 0;
-    console.cursor.y = 0;
-    break;
-  }
+  console.ipod = ipod_get_hwinfo();
+
+  console.cursor.x = 0;
+  console.cursor.y = 0;
+  console.dimensions.w = console.ipod->lcd_width;
+  console.dimensions.h = console.ipod->lcd_height;
+
   console.fb = fb;
 }

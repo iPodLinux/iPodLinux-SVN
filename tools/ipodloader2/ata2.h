@@ -3,7 +3,7 @@
 
 #include "bootloader.h"
 
-uint32 ata_init(uint32 base);
+uint32 ata_init(void);
 void   ata_identify(void);
 int    ata_readblock(void *dst, uint32 sector);
 void   ata_readblocks(void *dst,uint32 sector,uint32 count);
