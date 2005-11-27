@@ -276,12 +276,47 @@ void pz_uninit()
 	pz_modules_cleanup();
 }
 
+#ifdef IPOD
+void
+debug_handler (int sig) 
+{
+    unsigned long *FP;
+    int i;
+    FILE *f = fopen ("podzilla.oops", "w");
+
+    asm ("mov %0, r11" : "=r" (FP) : );
+
+    ttk_quit();
+    fprintf (stderr, "Fatal signal %d\n");
+    fprintf (stderr, "Trying to gather debug info. If this freezes, reboot.\n\n");
+
+    for (i = 0; i < 10; i++) {
+        unsigned long retaddr, off;
+        fprintf (stderr, "#%d  ", i);
+        retaddr = *(FP - 1);
+        fprintf (stderr, "%08x ", retaddr);
+        fprintf (stderr, "<%s+%x>\n", uCdl_resolve_addr (retaddr, &off), off);
+        fprintf (f, "#%d  %08x <%s+%x>\n", uCdl_resolve_addr (retaddr, &off), off);
+        FP = (unsigned long *) *(FP - 3);
+    }
+    fclose (f);
+
+    fprintf (stderr, "Nothing more to report.\n");
+    pz_touch_settings();
+    pz_modules_cleanup();
+    exit (1);
+}
+#endif
 
 
 int
 main(int argc, char **argv)
 {
 	TWindow *first;
+
+#ifdef IPOD
+        signal (SIGBUS, debug_handler);
+#endif
 
 	if (argc > 1) {
 		if (argv[1][0] == '-') {
