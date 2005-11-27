@@ -1,0 +1,908 @@
+\documentclass[12pt,letterpaper]{report}
+\setlength\pdfpagewidth{8.5in} \setlength\pdfpageheight{11in}
+\usepackage{verbatim} \usepackage[pdftex,colorlinks=true]{hyperref} \usepackage[pdftex]{color}
+\usepackage[pdftex]{graphicx} \usepackage{oldstyle}
+\title{Podzilla~2 Programmer's Reference}
+\author{Joshua Oreman}
+\setlength\parskip{1ex plus 1ex minus 0.5ex}
+\ifx\expandafter\csname oldstyle\endcsname\relax\let\oldstyle\small\fi
+\def\pz{{\footnotesize PZ}}
+\def\pzt{\pz\kern0.2em{\large\oldstyle2}}
+\let\ttt\tt
+\def\tt{\def\_{{\ttt\char`\_}}\ttt}
+\def\texttt#1{{\tt #1}}
+\catcode`\_=12
+\catcode`\^^S=8
+\def\returns{\hskip1em\relax{\bf Returns }}
+\def\<#1>{\leavevmode\hbox{$\langle${\sl#1\/}$\rangle$}}
+\begin{document}\maketitle
+\tableofcontents
+
+\chapter{Architecture}
+{\bf Podzilla~2 is a modular user interface for the iPod based on TTK.}
+
+\noindent You're probably reading this document because you want to write a module
+for Podzilla 2, which will be abbreviated \pzt\ in this manual. Fear not; it's not all that
+hard. You should be thoroughly familiar with
+TTK\footnote{API reference at http://www.get-linux.org/$\sim$oremanj/t/ttk-api.pdf.} and C
+programming in general, though, before you start. This chapter will cover the concepts used
+in the library, and how it integrates with TTK. The actual function call documentation will
+come later.
+
+\section{Structure}
+\pzt\ is mostly a collection of smaller APIs, each dedicated to handling one particular thing:
+modules, configuration, menu handling, nicer wrappers around the TTK GUI model, putting things
+in the header, dialog boxes, vector text, iPod hardware functions, font handling, DSP simplifying
+functions, adding actions for the file browser, handling text input, and hooking various global
+events --- in fact, that's the complete list (for now). In general, these APIs rarely interact
+with each other, and you can use as many or as few of their facilities as you wish.
+
+\section{Interaction with TTK}
+{\bf You never have to use \pzt\ wrappers when you want to call TTK directly.} Functions like
+\verb|pz_*_window| are provided as a {\it simplification}; you are free to use them or not,
+as you wish. This manual will generally give examples of the \pz\ calls, since it is assumed
+that the reader is already familiar with the TTK ones; but always remember the TTK calls will
+work just as well. A \verb|PzWindow| is a \verb|TWindow|, and a \verb|PzWidget| is a \verb|TWidget|;
+the synonyms have been introduced solely for consistency.
+
+\section{Modules}
+Modules are used to implement practically everything useful in \pzt; as such, their structure
+is highly flexible. Modules are {\it not} tied to one particular menu item or even one particular
+application; a loaded module is basically just an extension of the \pz\ core.
+
+Modules consist of three things: a {\sl module description file}, the {\sl code}, and optional {\sl data
+files}. The module description file, a simple ASCII text file named \verb|Module|, contains
+metadata about the module: name, author, dependencies, etc.; its format is as described in
+section \ref{moddesc}. The code is compiled into an object file for loading with the dynamic
+loader for iPodLinux (uCdl).
+The data files can be whatever you want.
+
+Every module must have a {\it unique} ``shortname'', which is the only one ever used programmatically.
+The shortname should be all lowercase letters, with no spaces. It is used in pathnames,
+function calls, etc. However, since shortnames aren't pretty, every module also defines a
+{\sl display name}, which will be the one used in the interface. Display names won't cause quite
+so much mayhem in the event of a clash, but you should still try to keep them unique. We eventually
+plan to set up a central database of what names are taken, to prevent clashing.
+
+All this is put into a \verb|pod| file, basically a type of archive formatted so it can be
+mounted like a filesystem. The creation of the \verb|pod| file is handled by the build system.
+That \verb|pod| file then goes into \verb|/usr/lib| on your iPod, or you can simply copy a directory
+with all the files in it.
+However the data is stored, the module sees it as a plain old file---no fancy calls are needed
+to read your data. {\bf Since all data can be easily handled inside the module's \verb|pod| file, there
+is no reason modules need to litter other parts of the filesystem with their data, and this
+is thus highly discouraged.}
+
+When a module is loaded, its init function is called. That's it. No other functions are ever
+directly called from the module, save those you set as handlers for something. If you want
+to create a menu item, your init function has to handle that; if you want to have a cleanup
+function called, your init function has to arrange for that; etc. You declare the name of
+your init function by writing \verb|PZ_MOD_INIT(name_of_init_function)| near the end of your
+file, outside any function. The init function takes no arguments and returns none; it can do
+whatever it wants.
+
+If you want to access data or configuration, you'll need to save a pointer to the \verb|PzModule|
+structure associated with your module; this is obtained by calling \verb|pz_register_module()|.
+If you want a cleanup function, you also pass it to \verb|pz_register_module()|. This module
+structure should probably be saved in a static global variable; it can be used later to get
+paths to your data and to your configuration area.
+
+A word about globals scoping: {\bf make all functions and global variables in your module
+\verb|static| unless you need them accessible by other modules.}
+uCdl has rather unique name resolution semantics: it searches first the \pz\ core, then each
+module loaded in turn, for any unresolved symbols. Once it finds one, it does not keep searching
+more modules; thus, you will only ever get ``multiply defined'' errors if the symbol is multiply
+defined in the {\it same module}. However, it is still advisable to avoid global namespace pollution,
+so make everything you can \verb|static|. Unlike the Linux kernel, we don't have a nice
+way of enforcing that by default.
+
+\section{Dealing with Legacy Applications}
+The porting of legacy applications from legacy podzilla is extraordinarily simple. First, add the
+line
+\begin{verbatim}
+#define PZ_COMPAT
+\end{verbatim}
+just before \verb|#include|ing \verb|"pz.h"|; second, add a module init function that calls
+\verb|pz_menu_add_legacy()|. To simplify this for the simple cases, you can just do
+\begin{verbatim}
+PZ_SIMPLE_MOD("thing", new_thing_window, "/Extras/Stuff/Thing")
+\end{verbatim}
+instead of
+\begin{verbatim}
+static void init_thing() {
+    pz_menu_add_legacy ("/Extras/Stuff/Thing", new_thing_window);
+}
+PZ_MOD_INIT(init_thing)
+\end{verbatim}
+
+\section{Configurations}
+{\bf Every module keeps its own configuration.} The previous podzilla settings system of
+ID $\to$ Value mappings has been kept, extended, and opened to modules. To set a setting
+for podzilla globally, you now do \verb|pz_set_TYPE_setting (pz_global_settings, setting_id, value)|,
+but you don't use the global settings file for module-specific configuration. Modules keep
+their own configurations, in a file in the directory \verb|/etc/podzilla/|\hskip0pt\verb|modules/NAME|. You
+get a path to this directory with \verb|pz_module_get_cfgpath()| and then use \verb|pz_load_config()|
+and friends to work with the configuration.
+
+Config files now support six types of settings.
+\begin{description}
+\item[Integer] settings are the most common, holding simply a 32-bit integer.
+\item[String] settings hold---you guessed it---a NUL-terminated string.
+\item[Float] settings hold a double-precision floating-point value.
+\item[Int list] settings hold a variable-length array of integers.
+\item[String list] settings hold a variable-length array of strings.
+\item[Blob] settings hold arbitrary binary data.
+\end{description}
+Each setting is uniquely identified with a {\sl setting ID}, which is just an integer that
+you'll probably want to \verb|#define| to something meaningful. Setting IDs must be unique
+between different settings; chaos will probably ensue if they are not.
+
+An external utility called \verb|pzconf| allows you to examine and modify the contents of
+\pzt\ configuration files. See its documentation for details.
+
+\section{Main Menu}
+\pzt\ handles items in the main menu with a directory structure. (The ``main menu'' consists
+of the actual top-level menu, plus all its children that are also unmodified menus, all their
+children, etc.) A menu item is identified by a string like \verb|/Extras/Games/MyGame|, which
+refers to ``MyGame'' in the ``Games'' menu of the ``Extras'' menu of the top-level menu.
+Whenever you add a menu item whose parents don't exist, they will be created. Basically, all
+you need to worry about is the leaf nodes; the submenus will sort themselves out.
+
+The podzilla menu handler takes no arguments and returns a \verb|PzWindow*|. You can add items with
+normal TTK handlers as well (which take an argument indicating the menu item that was
+selected)---\verb|pz_menu_add_ttkh()| will let you do that. You can also add items that change
+a setting or select from a list of choices. If you want your menu handler to do something
+other than return a window to be shown onscreen, you can return one of the \verb|TTK_MENU_*| directives
+from TTK.
+
+\section{GUI Simplification Layer}
+\pzt\ has a few functions to make TTK programming easier for very simple widgets.
+Remember, {\bf you don't have to use them if you don't want to}.
+\verb|pz_do_window()| is perhaps the simplest one---you provide a name, geometry, and
+draw and event handlers, and it returns a ready-made window, combining all the steps below.
+
+Otherwise, you call \verb|pz_new_window()| with arguments indicating the geometry of the
+window you want---\verb|PZ_WINDOW_NORMAL| for a fullscreen window with header,
+\verb|PZ_WINDOW_FULLSCREEN| for a really-fullscreen one without header, \verb|PZ_WINDOW_POPUP|
+for a centered window exactly big enough for what you put in it, and \verb|PZ_WINDOW_XYWH|
+to specify dimensions yourself. Then, you add widgets to it with \verb|pz_add_widget| or
+\verb|ttk_add_widget|; the ``widgets'' dealt with by \verb|pz_add_widget| are constructed
+simply by giving a draw callback and an event handler function. If you want a timer,
+you set that on the returned widget with \verb|pz_widget_set_timer|.
+
+Events, unlike in pure TTK, are handled with one handler function, as this is simpler in
+the simple case of not handling a lot of events. The event handler is passed a \verb|PzEvent|
+structure containing four things: \verb|wid| (a pointer to the widget that received the event);
+\verb|type| (one of the \verb|PZ_EVENT_*| constants); \verb|arg| (the button pressed, distance
+scrolled, etc.); and \verb|time| (valid for button-release events: the time the button had been
+pressed).
+
+When you are done with a window, you should call \verb|pz_hide_window()| or \verb|pz_close_window()|,
+depending on whether it should be cached for the next time it is selected from a menu.
+\verb|pz_hide_window()| will keep all data structures of the window allocated and simply hide
+it offscreen, whereas \verb|pz_close_window()| will cause everything to be freed and the window
+to be recreated anew next time it is selected.
+
+\section{Header Widgets}
+Many applications want to put status things in the header: number of lives left in Steroids,
+number of balls left in Pong, whatever. In addition, some modules might want to provide their
+own global header widgets, like MPD.
+
+Global widgets are ``packed'' in place, so you don't have to specify where to put them with $(x,y)$
+coordinates; you simply need to pass a widget and podzilla will do the rest. You have three
+options for how to place your widgets: put all the way to the left; packed to the left, but not past
+existing widgets packed left; or packed to the right, but not past existing widgets packed right.
+Because of the way in which packing is implemented, widgets placed all the way to the left
+must be so placed in a module init function; they cannot be added later. Widgets may be
+packed left and right at any time, however.
+
+Per application, you may override all the left widgets, all the right widgets, or both with
+a widget of your choosing. You call \verb|pz_header_set_local()| to set this up, and
+\verb|pz_header_unset_local()| to unset it just before closing your app's window.
+
+\section{Vector Text}
+Since many games and such need text at any number of sizes, and scalable fonts are impractical
+on the iPod, a vector text engine was developed. The text engine can print strings containing
+most ASCII characters, with the exception that lowercase characters are printed as capitals,
+with only straight lines; as such, they are feasible at absolutely any size.
+
+When drawing vector text, you need to specify a few parameters: \verb|cw|, \verb|ch|, and
+\verb|kern|. \verb|cw| and \verb|ch| control the size of each individual character:
+the characters will be \verb|cw| pixels wide and \verb|ch| pixels tall. (All characters
+are the same width and height; the legacy podzilla vectorfont code used a base size of
+$5\times9$.)
+
+\verb|kern| supplies a value by which to {\it change} the kerning of the characters.
+By default, characters are kerned by one pixel, plus one pixel per eight pixels of width.
+The \verb|kern| parameter is added to this default kerning, so it can extend or negate it.
+For instance, with small characters, $\verb|kern| = -2$ would cause the rightmost column
+of one to overlap with the leftmost column of the next.
+
+\section{File Handler Functions}
+In the old version of podzilla, every file type and the means to handle it had to be hardcoded
+into the file browser code. While that might work in a monolithic situation, it is certainly
+not feasible in the case of \pzt, where both every file type and the file browser might be
+modules! As such, \pzt\ has a few functions modules can use to let file browsers handle
+their types.
+
+Modules that handle a filetype may define one {\sl default action}, and zero or more {\sl
+alternate actions}. The default action is the one performed when the file is selected
+with the action button; alternate actions are displayed in a menu when the action button
+is held on a file. Setting a default action is relatively easy: simply specify a predicate
+to tell you whether the file satisfies the action, and a function to perform the action.
+
+Setting an alternate action, on the other hand, is a bit more involved. You need to
+create a {\it menu item} with its fields pre-filled out appropriately: name, flags,
+{\sf makesub}. When your menu handler for that action is called, the file name
+will be placed in the item's \verb|data| pointer.
+
+To perform the default action for a file, you simply call \verb|pz_browser_open(file)|.
+File browsers should hook this function for directories to open the browser to that
+directory.
+
+\section{Text Input}
+\pzt\ also provides a few facilities for text input, though admittedly not much.
+Text input methods are implemented as described in the TTK API. Modules implementing them
+should call \verb|pz_register_input_method()| with a function that will create a new
+TIM. Widgets that wish to use text input need simply call \verb|pz_start_input()|.
+This system does not natively support text input widgets, multiple text input modules
+loaded at once, etc.~but those things can be easily managed with modules. In fact, such
+modules have already been written.
+
+Two functions \verb|pz_register_input_method_n()| and \verb|pz_start_input_n()| act exactly
+as stated above, except that they are intended for use when only numeric input is desired.
+
+\section{Global Events}
+Modules that wish to trap the holding of a certain button call \verb|pz_register_|\hskip0pt\verb|global_hold_button()|;
+the handler for this event needs to call \verb|pz_handled_|\hskip0pt\verb|hold()|, or all hell will break loose. Similarly, modules can trap
+otherwise unused buttons for their own use with \verb|pz_register_global_unused_button()|.
+
+\section{Internationalization}
+All modules should use \verb|_("this is a string")| for strings visible to the user; this
+enables them to be localized for different languages. Since gettext does not handle
+multiple localization files very well, {\bf modules need not provide their own translations}.
+All translations for modules included in SVN, plus the core's, will be in one file.
+
+For adding menu items, {\it do not} use \verb|_()| for the menu path; these strings are
+translated in the menu widget itself, and are extracted specially.
+
+\chapter{Function Reference}
+Here's the documentation for all the functions in \pzt. If you aren't understanding
+some aspect of the bigger picture, look in the previous chapter.
+
+\section{Modules}
+\begin{verbatim}
+#define PZ_MOD_INIT(fn)
+PzModule *pz_register_module (const char *name, void (*cleanup)());
+const char *pz_module_get_cfgpath (PzModule *mod, const char *file);
+const char *pz_module_get_datapath (PzModule *mod, const char *file);
+void pz_module_iterate (void (*fn)(const char *name, const char *longname,
+                                   const char *author));
+\end{verbatim}
+\begin{description}
+\item[{\tt PZ_MOD_INIT}] declares the name of your module init function so that it is called
+properly when the module is loaded. Its internal details are rather scary and
+not for the faint of heart {\tt ;-)}
+\item[{\tt pz_register_module}] is used to do two things: (1)~it returns a
+\verb|PzModule*| used to access data and configuration; and (2)~it registers
+a cleanup function to be called just before podzilla exits. If you don't need
+the cleanup, pass \verb|NULL|; if you don't need the return value, ignore it.
+You don't have to call this function.
+\item[{\tt pz_module_get_cfgpath}] returns a path to the configuration file named
+\verb|file| for the module whose handle is in \verb|mod|. This file will be somewhere
+in the \verb|/etc/podzilla/modules| hierarchy, and can be written to.
+\item[{\tt pz_module_get_datapath}] returns a path to a data file that was bundled
+with the module; its arguments are the same as for \verb|pz_module_get_cfgpath()|.
+However, data files may {\it not} be written to.
+\item[{\tt pz_module_iterate}] is used to get information about loaded modules. It
+calls \verb|fn| for each module loaded, passing the shortname in \verb|name|, the
+display name in \verb|longname|, and the author in \verb|author|, all as marked in
+the \verb|Module| file.
+\end{description}
+
+\section{Configuration}
+Configuration items are stored internally as \verb|PzConfItem*|s, and sometimes these
+are returned. The structure is basically a fancy union, for the different types of item.
+
+\begin{verbatim}
+typedef struct _pz_ConfItem 
+{
+    unsigned int sid;
+
+#define PZ_SETTING_INT     1
+#define PZ_SETTING_STRING  2
+#define PZ_SETTING_FLOAT   3
+#define PZ_SETTING_ILIST   4
+#define PZ_SETTING_SLIST   5
+#define PZ_SETTING_BLOB    255
+    int type;
+
+    union 
+    {
+	int ival;
+	char *strval;
+	double fval;
+	struct { int *ivals; int nivals; };
+	struct { char **strvals; int nstrvals; };
+	struct { void *blobval; int bloblen; };
+    };
+    struct _pz_ConfItem *next;
+} PzConfItem;
+\end{verbatim}
+It should be used as follows.
+\begin{description}
+\item[{\tt sid}] indicates the setting ID of this setting; considering you just asked for it
+by ID, this may not be the most useful piece of information {\tt :-)}
+\item[{\tt type}] indicates the setting type, one of the \verb|PZ_SETTING_*| values.
+\item[Integer settings] use \verb|ival| to store the int.
+\item[String settings] use \verb|strval| to store the string.
+\item[Float settings] use \verb|fval| to store the double.
+\item[Intlist settings] use \verb|ivals| to store the integers, and \verb|nivals| indicates how
+many there are.
+\item[Stringlist settings] use \verb|strvals| as an array of strings, and \verb|nstrvals| tells you
+how many there are. Also, the pointer after the last in \verb|strvals| is \verb|NULL|.
+\item[Blob settings] use \verb|blobval| to store the data and \verb|bloblen| to store its length.
+\end{description}
+
+The functions for working with config files and settings are given below.
+
+{\footnotesize\begin{verbatim}
+PzConfig *pz_load_config (const char *filename);
+void pz_save_config (PzConfig *conf);
+void pz_blast_config (PzConfig *conf);
+void pz_free_config (PzConfig *conf);
+void pz_config_iterate (PzConfig *conf, void (*fn)(PzConfItem *));
+
+PzConfItem *pz_get_setting (PzConfig *conf, unsigned int sid);
+int pz_get_int_setting (PzConfig *conf, unsigned int sid);
+const char *pz_get_string_setting (PzConfig *conf, unsigned int sid);
+
+void pz_set_int_setting (PzConfig *conf, unsigned int sid, int val);
+void pz_set_string_setting (PzConfig *conf, unsigned int sid, const char *val);
+void pz_set_float_setting (PzConfig *conf, unsigned int sid, double val);
+void pz_set_ilist_setting (PzConfig *conf, unsigned int sid, int *vals, int nval);
+void pz_set_slist_setting (PzConfig *conf, unsigned int sid, char **vals, int nval);
+void pz_set_blob_setting (PzConfig *conf, unsigned int sid, void *val, int bytes);
+
+void pz_unset_setting (PzConfig *conf, unsigned int sid);
+\end{verbatim}
+}
+
+No matter what, when a setting is asked for and not found, 0 or \verb|NULL| will be returned.
+If you're setting the setting, you don't need to worry about its old value, type, or existence.
+
+\begin{description}
+\item[{\tt pz_load_config}] loads a configuration file from \verb|filename| and initializes a
+corresponding \verb|PzConfig*| (an opaque type). The filename is saved in the \verb|PzConfig|
+structure, so you need not save it yourself. If \verb|filename| does not exist, an empty
+configuration is returned.
+\item[{\tt pz_save_config}] saves the modified configuration \verb|conf| back to disk.
+\item[{\tt pz_blast_config}] unsets all settings and then saves \verb|conf|.
+\item[{\tt pz_free_config}] frees the in-memory data associated with \verb|conf|. It has
+no effect on the data on disk.
+\item[{\tt pz_config_iterate}] calls \verb|fn| for each setting in \verb|conf|.
+\vskip6pt
+\item[{\tt pz_get_setting}] returns the \verb|PzConfItem| associated with setting \verb|sid|,
+or \verb|NULL| if \verb|sid| is not set. If you don't want to worry about dereferencing a structure,
+and you're in a hurry, you probably want \ldots
+\item[{\tt pz_get_int_setting}] returns the integer value of setting \verb|sid|, assuming it is set
+and it is an integer. If not, returns 0.
+\item[{\tt pz_get_string_setting}] returns the string value of setting \verb|sid| if it is defined
+and a string, or \verb|NULL| if not.
+\vskip6pt
+\item[{\tt pz_set_int_setting}] sets the setting \verb|sid| to the integer value \verb|val| in
+the configuration \verb|conf|.
+\item[{\tt pz_set_string_setting}] sets \verb|sid| to the string value \verb|val| in \verb|conf|.
+\item[{\tt pz_set_float_setting}] sets \verb|sid| to the float value \verb|val| in \verb|conf|.
+\item[{\tt pz_set_ilist_setting}] sets \verb|sid| to the list of integers \verb|vals| with length \verb|nval|, in configuration \verb|conf|.
+\item[{\tt pz_set_slist_setting}] sets \verb|sid| to the list of strings \verb|vals| with length \verb|nval|, in configuration \verb|conf|.
+\item[{\tt pz_set_blob_setting}] sets \verb|sid| to the arbitrary binary data \verb|val|, \verb|bytes| bytes long.
+\vskip6pt
+\item[{\tt pz_unset_setting}] clears any value of the setting \verb|sid| as if it never had been set.
+\end{description}
+
+\section{Menu}
+\begin{verbatim}
+/* These have the same meaning as the TTK_MENU_* constants, except
+ * they can be passed to the pz_menu_add_* functions directly.
+ * They will not be documented individually.
+ */
+#define PZ_MENU_DONOTHING
+#define PZ_MENU_UPONE
+#define PZ_MENU_UPALL
+#define PZ_MENU_ALREADYDONE
+#define PZ_MENU_QUIT
+#define PZ_MENU_REPLACE
+#define PZ_MENU_DESC_MAX
+
+extern TWindow *(*pz_new_menu_window)(TWidget *menu_wid);
+ttk_menu_item *pz_get_menu_item (const char *path);
+TWindow *pz_mh_sub (ttk_menu_item *item);
+
+#ifdef PZ_COMPAT
+void pz_menu_add_legacy (const char *menupath, void (*handler)());
+#endif
+
+ttk_menu_item *pz_menu_add_ttkh (const char *menupath,
+                                 TWindow *(*handler)(), void *data);
+void pz_menu_add_stub (const char *menupath);
+void pz_menu_add_after (const char *menupath, PzWindow *(*handler)(),
+                        const char *after);
+void pz_menu_add_top (const char *menupath, PzWindow *(*handler)());
+void pz_menu_add_action (const char *menupath, PzWindow *(*handler)());
+void pz_menu_add_option (const char *menupath, const char **choices);
+int pz_menu_get_option (const char *menupath);
+void pz_menu_set_option (const char *menupath, int choice);
+void pz_menu_add_setting (const char *menupath, unsigned int sid,
+                          PzConfig *conf, const char **choices);
+void pz_menu_sort (const char *menupath);
+void pz_menu_remove (const char *menupath);
+\end{verbatim}
+
+\begin{description}
+\item[{\tt pz_new_menu_window}] is a function pointer to the function that will
+create the menu. By default, this is (surprise) \verb|pz_default_new_menu_window|.
+The function will receive a normal TTK menu widget and is responsible for extracting
+the items from it and displaying them however it sees fit. If it wants to change
+the behavior of submenus as well, it should compare {\sf makesub}s to \verb|pz_mh_sub|
+and insert its own submenu handling if they are equal.
+\item[{\tt pz_get_menu_item}] returns the menu item to which \verb|menupath| refers, or
+\verb|NULL| if it does not exist. This is useful for setting properties on the menu item
+that do not have an analogue in podzilla.
+\item[{\tt pz_mh_sub}] is the menu handler for podzilla menus, if you want it for comparison
+purposes.
+\item[{\tt pz_menu_add_legacy}] adds a menu item with a handler in the style of legacy podzilla.
+It should not be used in new code.
+\item[{\tt pz_menu_add_ttkh}] adds a menu item with a TTK-style menu handler, using the supplied
+data pointer.
+\item[{\tt pz_menu_add_stub}] adds an invisible do-nothing item at \verb|menupath| for the sole
+purpose of making a future addition at that spot not be tacked onto the end of the menu.
+\item[{\tt pz_menu_add_after}] adds a normal podzilla-style menu handler for \verb|menupath|.
+However, if an item called \verb|after| (not a menu path, just the item name) exists in
+the menu the handler is being added to, it will be added immediately after that item.
+(If not, the usual semantics of adding on the end are taken.)
+\item[{\tt pz_menu_add_top}] adds \verb|menupath| to the {\it top} of
+its parent menu, instead of the bottom.
+\item[{\tt pz_menu_add_action}] is the workhorse menu adder; it adds the normal podzilla-style
+menu handler to the menu at \verb|menupath|. If there is nothing at \verb|menupath|, the item is
+added to the bottom of its parent menu; otherwise, it replaces its namesake.
+\item[{\tt pz_menu_add_option}] adds an item that allows the user to pick among a set of choices.
+The \verb|choices| array should be terminated with a \verb|NULL| pointer.
+\item[{\tt pz_menu_get_option}] returns the option selected by the user for \verb|menupath|,
+as an index into \verb|choices|.
+\item[{\tt pz_menu_set_option}] sets the option for \verb|menupath| to the index \verb|choices|
+into the choices array.
+\item[{\tt pz_menu_add_setting}] adds an item that allows a user to pick among a set of choices,
+but instead of storing the choice it is used to modify setting \verb|sid| in configuration
+\verb|conf|. \verb|choices| and \verb|menupath| have the same semantics as for \verb|pz_menu_add_option()|.
+\item[{\tt pz_menu_sort}] sorts the menu pointed to by \verb|menupath| ASCIIbetically but case-insensitively.
+\item[{\tt pz_menu_remove}] removes the menu or menu item pointed to by \verb|menupath| from the menu.
+\end{description}
+
+\section{GUI}
+\begin{verbatim}
+#define PZ_EVENT_SCROLL       1
+#define PZ_EVENT_STAP         2
+#define PZ_EVENT_BUTTON_UP    3
+#define PZ_EVENT_BUTTON_DOWN  4
+#define PZ_EVENT_BUTTON_HELD  5
+#define PZ_EVENT_INPUT        6
+#define PZ_EVENT_FRAME        7
+#define PZ_EVENT_TIMER        8
+#define PZ_EVENT_DESTROY      9
+
+#define PZ_BUTTON_MENU        'm'
+#define PZ_BUTTON_PREVIOUS    'w'
+#define PZ_BUTTON_NEXT        'f'
+#define PZ_BUTTON_PLAY        'd'
+#define PZ_BUTTON_HOLD        'h'
+#define PZ_BUTTON_ACTION      '\n'
+
+/* This structure is pretty much self-explanatory.
+ * [wid] is the widget to which the event applies,
+ * [type] is one of the PZ_EVENT_* constants above,
+ * [arg] is the button pushed, distance sarolled, character
+ *       input, or location tapped, and
+ * [time] is the amount of time a just-released button had
+ *        been pressed.
+ */
+typedef struct _pz_Event
+{
+    PzWidget *wid;
+    int type;
+    int arg;
+    int time;
+} PzEvent;
+
+#define PZ_WINDOW_NORMAL      0
+#define PZ_WINDOW_FULLSCREEN  1
+#define PZ_WINDOW_POPUP       2
+#define PZ_WINDOW_XYWH        3
+
+PzWindow *pz_do_window (const char *name, int geometry,
+			void (*draw)(PzWidget *this, ttk_surface srf),
+			int (*event)(PzEvent *ev), int timer);
+
+PzWindow *pz_new_window (const char *name, int geometry, ...);
+PzWindow *pz_finish_window (PzWindow *win);
+
+PzWidget *pz_add_widget (PzWindow *win,
+                         void (*draw)(PzWidget *this, ttk_surface srf),
+			 int (*event)(PzEvent *ev));
+PzWidget *pz_new_widget (void (*draw)(PzWidget *this, ttk_surface srf),
+                         int (*event)(PzEvent *ev));
+void pz_resize_widget (PzWidget *wid, int w, int h);
+void pz_widget_set_timer (PzWidget *wid, int ms);
+
+void pz_hide_window (PzWindow *win);
+void pz_close_window (PzWindow *win);
+void pz_show_window (PzWindow *win);
+\end{verbatim}
+
+\begin{description}
+\item[{\tt pz_do_window}] is the simple function. It creates a window called \verb|name|
+and having geometry \verb|geometry| (one of \verb|PZ_WINDOW_|[\verb|NORMAL|, \verb|FULLSCREEN|, \verb|POPUP|]), then adds to it
+the widget defined by handlers {\sf draw} and {\sf event}, then sets the timer
+on that widget to tick every {\tt timer} milliseconds, then finalizes the window,
+then returns it. Whew.
+\item[{\tt pz_new_window}] creates a window having title \verb|name| and geometry \verb|geometry|.
+If \verb|geometry| is \verb|PZ_WINDOW_XYWH|, you must in addition specify four more arguments:
+the $(x,y)$ coordinates of the window's upper-left corner, and its width and height, in that order.
+\item[{\tt pz_finish_window}] finalizes a window after having added all widgets to it; this is only
+currently necessary for popup windows but should be used indiscriminately. \returns the window
+argument, so it's easy to use in a line like \verb|return pz_finish_window(ret);|
+\item[{\tt pz_add_widget}] adds the podzilla widget with handlers {\sf draw} and {\sf event}
+to the window \verb|win|. \returns the widget, so you can do more things with it once it's
+added (e.g.~set timers).
+\item[{\tt pz_new_widget}] creates a widget, like \verb|pz_add_widget()| but without adding it
+to any window. It can be later added with \verb|ttk_add_widget()|.
+\item[{\tt pz_resize_widget}] changes the size of \verb|widget| to $\verb|w|\times\verb|h|$.
+\item[{\tt pz_widget_set_timer}] is a synonym of the eponymous TTK function call: it sets
+the timer for \verb|wid| to tick every \verb|ms| milliseconds.
+\item[{\tt pz_hide_window}] gets \verb|win| offscreen but does not slate it to be freed; if it
+was the result of a menu item, the same window will pop up again without any initialization
+next time that item is selected.
+\item[{\tt pz_close_window}] hides \verb|win| and in addition sets a flag so that it will be
+freed and recreated from scratch next time its menu item is selected. (If the window was not
+the result of a menu item, and you need it freed {\it right now}, use \verb|ttk_free_window|.)
+\item[{\tt pz_show_window}] manually shows a previously hidden window.
+\end{description}
+
+\section{Header}
+\begin{verbatim}
+void pz_hwid_put_left (TWidget *wid);
+void pz_hwid_pack_left (TWidget *wid);
+void pz_hwid_pack_right (TWidget *wid);
+void pz_hwid_unpack (TWidget *wid);
+void pz_header_set_local (TWidget *left, TWidget *right);
+void pz_header_unset_local (void);
+\end{verbatim}
+
+\begin{description}
+\item[{\tt pz_hwid_put_left}] places \verb|wid| at the far left of the header, shoving
+any already-packed widgets to the side. Because of some implementation quirks, it can only
+be used in a module init function.
+\item[{\tt pz_hwid_pack_left}] packs \verb|wid| as far left as it can in the header, but without
+moving any already-packed widgets.
+\item[{\tt pz_hwid_pack_right}] packs \verb|wid| as far right as it can in the header without moving
+any already-packed widgets.
+\item[{\tt pz_hwid_unpack}] removes \verb|wid| from the header. Other widgets are not moved to fill
+the gap.
+\item[{\tt pz_header_set_local}] changes the header widgets for one particular application.
+If \verb|left| is not \verb|NULL|, all left-packed widgets are temporarily hidden and \verb|left|
+is shown in their stead; the same is true for \verb|right| and right-packed widgets.
+{\it Do not call \texttt{pz_header_set_local} twice} without an intervening \verb|pz_header_unset_local|;
+things Won't Work Right$^{\rm TM}$.
+\item[{\tt pz_header_unset_local}] restores the global header widgets to visibility and hides
+and frees any local header widgets that had been set.
+\end{description}
+
+\section{Dialogs}
+\begin{verbatim}
+extern int (*pz_do_dialog) (const char *title, const char *text,
+			    const char *b0, const char *b1, const char *b2,
+			    int timeout, int is_err);
+
+int pz_dialog (const char *title, const char *text,
+	       int nbuttons, int timeout, ...);
+int pz_errdialog (const char *title, const char *text,
+		  int nbuttons, int timeout, ...);
+void pz_message_title (const char *title, const char *text);
+void pz_message (const char *text);
+void pz_warning (const char *fmt, ...);
+void pz_error (const char *fmt, ...);
+void pz_perror (const char *firstpart);
+\end{verbatim}
+
+\begin{description}
+\item[{\tt pz_do_dialog}] is a function pointer you may redefine if you want to
+change the appearance of dialogs. It is passed a \verb|title|, the \verb|text|
+of the message, three buttons (\verb|b0| \verb|b1| \verb|b2|) some of which
+may be \verb|NULL|, a \verb|timeout| in seconds which may be 0 (no timeout), and
+a flag \verb|is_err| indicating whether the dialog is the result of an error.
+It should show the dialog, start a sub-\verb|ttk_run()|, and return the result.
+\item[{\tt pz_dialog}] is the function {\it you} should call to ask a question.
+The \verb|title| and \verb|text| have obvious meanings. The dialog will have
+\verb|nbuttons| buttons and, if $\verb|timeout| > 0$, will select the first
+button automatically after \verb|timeout| seconds. The buttons' names
+must be passed as \verb|nbuttons| arguments in the \verb|...|.
+\item[{\tt pz_errdialog}] works exactly like \verb|pz_dialog()|, except it treats
+the matter as an ``error''. This affects nothing but what color scheme properties
+are used to display the dialog.
+\item[{\tt pz_message_title}] displays a non-error dialog with the specified title and text, and
+one button ``Ok''.
+\item[{\tt pz_message}] displays the informational message \verb|text|. Use it to report
+non-problems.
+\item[{\tt pz_warning}] displays the ``Warning'' resulting from the provided \verb|printf()|
+format string. The dialog is displayed like an error; only the title differs. Use it to
+report recoverable problems.
+\item[{\tt pz_error}] displays the ``Error'' resulting from the provided \verb|printf()| format
+string. Use it to report errors that have consequences.
+\item[{\tt pz_perror}] shows an error message consisting of \verb|firstpart|, a colon, space,
+and the human-readable value of \verb|errno|. Use it to report errors opening a file or somesuch.
+\end{description}
+
+\section{Vectorfont}
+\begin{verbatim}
+void pz_vector_string (ttk_surface srf, const char *string, int x, int y,
+                       int cw, int ch, int kern, ttk_color col);
+void pz_vector_string_center (ttk_surface srf, const char *string, int x,
+                              int y, int cw, int ch, int kern, ttk_color col);
+int pz_vector_width (const char *string, int cw, int ch, int kern);
+\end{verbatim}
+\begin{description}
+\item[{\tt pz_vector_string}] draws the \verb|string| with color \verb|col| on \verb|srf| at $(x,y)$ using
+characters of size $\verb|cw|\times\verb|ch|$ and adjusting kerning by \verb|kern| pixels. (Whew.)
+\item[{\tt pz_vector_string_center}] works like \verb|pz_vector_string|, except that $(x,y)$ indicates
+the {\it center} of the string, rather than the top-left corner.
+\item[{\tt pz_vector_width}] returns the width of \verb|string| drawn with characters $\verb|cw|\times\verb|ch|$ and kerning adjustment of \verb|kern| pixels.
+\end{description}
+
+\section{iPod}
+\begin{verbatim}
+void pz_ipod_set (int sid, int value);
+void pz_ipod_fix_setting (int sid, int value);
+void pz_ipod_fix_settings (PzConfig *conf);
+int pz_ipod_get_battery_level(void);
+int pz_ipod_is_charging(void);
+long pz_ipod_get_hw_version(void);
+void pz_ipod_go_to_diskmode(void);
+void pz_ipod_reboot(void);
+void pz_ipod_powerdown(void);
+int pz_ipod_usb_is_connected(void);
+int pz_ipod_fw_is_connected(void);
+\end{verbatim}
+\begin{description}
+\item[{\tt pz_ipod_set}] sets $\verb|sid| = \verb|value|$ in the podzilla global configuration,
+and also sets it immediately for the iPod.
+\item[{\tt pz_ipod_fix_setting}] sets \verb|sid| to \verb|value| currently for the iPod, but without
+storing it in \verb|pz_global_config|.
+\item[{\tt pz_ipod_fix_settings}] does \verb|pz_ipod_fix_setting| for everything in \verb|conf|.
+\item[{\tt pz_ipod_get_battery_level}] returns the level (between 0--512) of the iPod's battery.
+\item[{\tt pz_ipod_is_charging}] returns 1 if the iPod is connected to power, 0 if not.
+\item[{\tt pz_ipod_get_hw_version}] returns the iPod's hardware version as a hex number.
+\item[{\tt pz_ipod_go_to_diskmode}] sends the iPod into diskmode immediately.
+\item[{\tt pz_ipod_reboot}] uninitializes podzilla, then reboots the iPod.
+\item[{\tt pz_ipod_powerdown}] uninitializes podzilla, then powers down the iPod. Press the action
+button to power it back up.
+\item[{\tt pz_ipod_usb_is_connected}] returns 1 if the iPod is connected to USB, 0 if not.
+\item[{\tt pz_ipod_fw_is_connected}] returns 1 if the iPod is connected to FireWire, 0 if not.
+\end{description}
+
+\section{Fonts}
+\begin{verbatim}
+void pz_load_font (ttk_font *f, const char *default,
+                   int setting, PzConfig *conf);
+TWindow *pz_select_font (ttk_menu_item *item);
+\end{verbatim}
+
+These functions let you work with fonts user-friendlily.
+To set the font, you put \verb|pz_select_font| as the menu handler
+for some menu item. In that menu item, set \verb|data| to be a
+{\it pointer} to the font to set, and \verb|cdata| the setting ID.
+If you're modifying something in a module-local configuration (as
+opposed to the global one), put the configuration in \verb|item->data2|.
+
+Then, to load it, call \verb|pz_load_font|. Pass a {\it pointer}
+to the \verb|ttk_font|, and a default value to use if the setting is not set;
+the setting, and the configuration to take it from. The setting is stored
+as a string, in the format \verb|Font Name,size|.
+
+\section{DSP}
+\begin{quote}\large\bf I know nothing about these functions. Thus, I can offer you nothing
+more than these prototypes and comments:\end{quote}
+\begin{verbatim}
+#define PZ_DSP_LINEIN 0
+#define PZ_DSP_LINEOUT 1
+#define PZ_DSP_MIC 2
+
+#define PZ_DSP_MAX_VOL 100	/* apparently this isn't obvious */
+
+typedef struct _dsp_st {
+	int dsp;	/* /dev/dsp file descriptor */
+	int mixer;	/* /dev/mixer file descriptor */
+	int volume;	/* pcm volume 0 - 100 (or DSP_MAX_VOL) */
+} pz_dsp_st;
+
+/* pcm volume changer: */
+int pz_dsp_vol_change(pz_dsp_st *oss, int delta);
+/* and for the lazy: */
+int pz_dsp_vol_up(pz_dsp_st *oss);
+int pz_dsp_vol_down(pz_dsp_st *oss);
+int pz_dsp_get_volume(pz_dsp_st *oss);
+/* set the dsp.. umm... fmt (whatever that is), channels and rate: */
+int pz_dsp_setup(pz_dsp_st *oss, int channels, int rate);
+/* dsp read and (blocking) write: */
+size_t pz_dsp_read(pz_dsp_st *oss, void *ptr, size_t size);
+void pz_dsp_write(pz_dsp_st *oss, void *ptr, size_t size);
+/* dsp open and close:  mode takes DSP_LINEIN, DSP_LINEOUT and DSP_MIC */
+int pz_dsp_open(pz_dsp_st *oss, int mode);
+void pz_dsp_close(pz_dsp_st *oss);
+\end{verbatim}
+
+\section{Files}
+\begin{verbatim}
+TWindow *pz_browser_open (const char *path);
+TWidget *pz_browser_get_actions (const char *path);
+void pz_browser_set_handler (int (*pred)(const char *),
+                             TWindow *(*handler)());
+void pz_browser_remove_handler (int (*pred)(const char *));
+void pz_browser_add_action (int (*pred)(const char *),
+                            ttk_menu_item *action);
+void pz_browser_remove_action (int (*pred)(const char *));
+\end{verbatim}
+
+All the handlers work with a {\sl predicate}; that is, a function that takes
+a filename and returns an \verb|int|: 1 if it matches, 0 if not. The function
+can examine the extension, open the file and check for a magic number, return
+1 every third call but not on Tuesdays, whatever \texttt{:-)}
+
+\begin{description}
+\item[{\tt pz_browser_open}] returns the window created by the default action for the file
+\verb|path|, or \verb|TTK_MENU_DONOTHING| if nothing matched.
+\item[{\tt pz_browser_get_actions}] returns a menu widget of alternate actions for \verb|path|;
+if you don't want them in a menu, you can extract the items and work with them.
+\item[{\tt pz_browser_set_handler}] sets the default handler for files matching {\sf pred} to
+be {\sf handler}. {\sf handler} should return a \verb|TWindow*| or one of the TTK menu directives.
+\item[{\tt pz_browser_remove_handler}] removes the default handler for files matching {\sf pred}.
+\item[{\tt pz_browser_add_action}] adds the alternate action represented by the menu item
+\verb|action| for files matching {\sf pred}.
+\item[{\tt pz_browser_remove_action}] removes the alternate action for files matching {\sf pred}.
+\end{description}
+
+\section{Input}
+\begin{verbatim}
+void pz_register_input_method (TWidget *(*handler)());
+void pz_register_input_method_n (TWidget *(*handler)());
+int pz_start_input();
+int pz_start_input_n();
+\end{verbatim}
+
+If you are a widget wanting text input, call \verb|pz_start_input()| (or \verb|pz_|\hskip0pt\verb|start_|\hskip0pt\verb|input_n()|
+if you want only numerical input). It returns the height of the TIM widget; you can then use
+TTK input calls to mess with it further.
+
+If you are a module providing text input, call \verb|pz_register_input_method()| and/or
+\verb|pz_register_input_method_n()|, passing a function that will return a viable TIM widget.
+
+\section{Global Events}
+\begin{verbatim}
+void pz_register_global_hold_button (unsigned char ch, int ms,
+                                     void (*handler)());
+void pz_register_global_unused_handler (unsigned char ch,
+                                        int (*handler)(int, int));
+void pz_unregister_global_hold_button (unsigned char ch);
+void pz_unregister_global_unused_handler (unsigned char ch);
+void pz_handled_hold (unsigned char ch);
+\end{verbatim}
+
+\verb|pz_register_global_hold_button()| sets up \verb|handler| to be called
+whenever button \verb|ch| is held down for \verb|ms| milliseconds. This handler
+{\bf must} call \verb|pz_handled_hold()| or Bad Things$^{\rm TM}$ will happen.
+You can unregister the hold handler with \verb|pz_unregister_global_hold_button()|.
+
+\verb|pz_register_global_unused_handler()| sets up \verb|handler| to be called
+whenever the button \verb|ch| is released and the event is not handled.
+\verb|pz_|\hskip0pt\verb|unregister_|\hskip0pt\verb|global_unused_handler()| removes this association.
+
+\chapter{\texttt{Module} Files and the Build System}
+Here you'll find out about all the non-coding stuff related to making a build of \pzt\ tick.
+
+\section{\texttt{Module} Files}\label{moddesc}
+\verb|Module| files are files containing metadata that is used in loading modules.
+The metadata is a separate file instead of being embedded in the module itself because it contains information
+that must be parsed before the module is even loaded---for instance, a module's dependencies
+must be loaded before the module itself.
+
+The format of the \verb|Module| file is one or more lines of the format \verb|Key: value|.
+Here's a complete example.
+\begin{verbatim}
+Module: tidial
+Display-name: Scroll Through & Dial Type
+Author: Jonathan Bettencourt
+Dependencies: textinput
+\end{verbatim}
+Comments are supported, as are blank lines, but lines consisting solely of spaces will not work.
+Case matters for the directives.
+
+Here are all the recognized directives:
+\begin{description}
+\item[Module:] The short name of the module. Remember, this should be all lowercase letters, and
+it must be {\it unique}.
+\item[Display-name:] The long/display name of the module.
+\item[Author:] The author; if this is omitted the author will be listed as ``Anonymous.''
+\item[Signature:] A signature for the past three fields, intended to be used in the future to verify
+uniqueness of name. Not implemented yet.
+\item[Dependencies:] A space-, comma-, semicolon-, or colon-separated list of module dependencies.
+Use commas unless you have a really good reason not to.
+\item[Provides:] Used by modules exporting an API; only one module of many that ``Provide'' the same thing
+may be loaded at once. Not implemented yet.
+\item[Unstable:] If the module is unstable, give a reason, e.g. ``does not work'' or ``crashes
+randomly.''
+\end{description}
+Any unrecognized directives will be warned about.
+
+\section{Build System}
+A module Makefile looks like this:
+\begin{verbatim}
+obj-m := mymodule.o
+MODULE = mymodule
+DATA = message.txt image.png
+\end{verbatim}
+
+The list of object files is specified by assigning to a variable called either
+\verb|obj-y| or \verb|obj-m|, depending on whether the module should be compiled in statically
+(\verb|y|) or made as a \verb|m|odule. (You could also, I guess, assign to \verb|obj-n| for
+things that should \verb|n|ot be compiled, but it's just as easy to simply leave out said objects.)
+If the module is in the podzilla source tree and connected to the configuration system, you
+should do something like
+\begin{verbatim}
+obj-$(CONFIG_MYMODULE) := mymodule.o
+\end{verbatim}
+\begin{comment}
+$ Let's appease XEmacs!
+\end{comment}
+Since the podzilla configuration system hasn't been implemented yet, I shouldn't be seeing
+any modules with Makefiles like this {\tt :-)}
+
+\subsection{Compiling it}
+To compile the module, you have two choices: place it in the podzilla tree, or compile it
+from outside. Which one you choose really doesn't matter.
+
+{\bf Compiling inside the \pz\ tree.} Copy a folder containing the stuff for your module
+into \<path to podzilla>\verb|/modules/|. {\sl The directory must have the same name
+as the module shortname.} Then, go to the root of the podzilla tree and type your normal
+\verb|make| command; everything should Just Work$^{\rm TM}$.
+
+{\bf Compiling outside the tree.} When in your module folder, type
+\begin{verbatim}
+make -C /path/to/podzilla/directory SUBDIRS=`pwd` [IPOD=1]
+\end{verbatim}
+and your module will be built (the output file will be called {\tt \$(MODULE).o} for the iPod or
+{\tt \$(MODULE).so} for the desktop). An {\tt xpod} folder and a {\tt pod} file will {\bf not} be
+created---you'll have to do that yourself.
+\vskip1cm
+{\centering\LARGE\sc That's all! Have fun!}
+
+\chapter{Acknowledgements}
+The new code in the \pzt\ core was written by Joshua Oreman, 
+Courtney Cavin, David Carne, Bernard Leach, Alastair Stuart,
+and Scott Yorgle---the iPodLinux development team.
+
+The \pzt\ modules were written by a variety of people, including
+Chris Allegretta,
+Jonathan Bettencourt,
+Filippo Forlani,
+Martin Kaltenbrunner,
+Stefan Lange-Hegermann,
+Goetz Minuth,
+Jeffrey Nelson,
+Damien Teney,
+David Weekly,
+and all the aforementioned developers for core. Thank you all.
+
+This API reference was typeset with \LaTeXe\ and is released freely for any use whatsoever. \pzt\ itself
+is licensed under the GNU General Public License; see the file \verb|COPYING| in the source
+distribution for details.
+
+\end{document}
