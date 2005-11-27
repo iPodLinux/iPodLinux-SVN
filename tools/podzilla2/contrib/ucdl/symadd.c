@@ -90,7 +90,7 @@ int main(int argc, char **argv)
 		fwrite(&offset, sizeof(unsigned int), 1, fp);
 		fwrite(&sym, sizeof(char), strlen(sym), fp);
 		fwrite("\0", sizeof(char), 1, fp);
-		fwrite(&type, sizeof(char), 1, fp);
+		fwrite(&t, sizeof(char), 1, fp);
 		n_syms++;
 	}
 	fclose(symp);
