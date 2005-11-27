@@ -58,7 +58,7 @@ ifndef IPOD
 finalmod = $(MODULE).so
 onlyso = true
 $(MODULE).so: $(obj-m)
-	@$(MAKESO) -o $@ $(obj-m)
+	@$(MAKESO) $(LDFLAGS) -o $@ $(obj-m)
 else
 finalmod = $(MODULE).mod.o
 $(MODULE).mod.o: $(obj-m)
@@ -72,7 +72,7 @@ ifndef IPOD
 finalmod = $(MODULE).so
 $(MODULE).so: $(obj-m)
 	@echo " LD [SO] $(MODULE).so"
-	@$(MAKESO) -o $@ $(obj-m)
+	@$(MAKESO) $(LDFLAGS) -o $@ $(obj-m)
 else
 finalmod = $(MODULE).mod.o
 $(MODULE).mod.o: $(obj-m)
