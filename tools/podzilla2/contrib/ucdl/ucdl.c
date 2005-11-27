@@ -47,7 +47,7 @@ typedef struct symbol
 {
     char *sym;
     unsigned int addr;
-	int whence;
+    int whence;
     struct symbol *next;
 } symbol;
 
@@ -723,6 +723,44 @@ const char *uCdl_error()
 {
     const char *ret = error;
     error = 0;
+    return ret;
+}
+
+const char *uCdl_resolve_addr (unsigned long addr, unsigned long *off) 
+{
+    unsigned long closest_off = 0xffffffff;
+    const char *ret = 0;
+    handle *curh = uCdl_loaded_modules;
+    symbol *sy = mysyms;
+    
+    while (sy) {
+        if ((addr >= sy->addr) && (addr - sy->addr < closest_off)) {
+            closest_off = addr - sy->addr;
+            ret = sy->sym;
+        }
+        sy = sy->next;
+    }
+
+    while (curh) {
+        esymbol *esy;
+        int i;
+        
+        for (esy = curh->symbols, i = 0; i < curh->nsyms; i++, esy++) {
+            unsigned long symaddr = (unsigned long)esy->section->addr + esy->value;
+            if ((addr >= symaddr) && (addr - symaddr < closest_off)) {
+                closest_off = addr - symaddr;
+                ret = esy->name;
+            }
+        }
+        
+        curh = curh->next;
+    }
+
+    if (!ret) {
+        ret = "ABS";
+        closest_off = addr;
+    }
+    if (off) *off = closest_off;
     return ret;
 }
 
