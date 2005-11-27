@@ -32,7 +32,7 @@ all: built-in.o
 
 built-in.o: $(OBJS)
 	@echo " LD      built-in.o"
-	@$(LD) -r -o built-in.o $(OBJS)
+	@$(LD) $(LDFLAGS) -r -o built-in.o $(OBJS)
 
 $(OBJS): $(HDRS)
 

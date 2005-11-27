@@ -296,7 +296,7 @@ debug_handler (int sig)
         retaddr = *(FP - 1);
         fprintf (stderr, "%08x ", retaddr);
         fprintf (stderr, "<%s+%x>\n", uCdl_resolve_addr (retaddr, &off), off);
-        fprintf (f, "#%d  %08x <%s+%x>\n", uCdl_resolve_addr (retaddr, &off), off);
+        fprintf (f, "#%d  %08x <%s+%x>\n", i, retaddr, uCdl_resolve_addr (retaddr, &off), off);
         FP = (unsigned long *) *(FP - 3);
     }
     fclose (f);
