@@ -74,14 +74,16 @@ int main(int argc, char **argv)
 
 	while (fgets(line, 1023, symp)) {
 		char offsets[9];
-		char type;
+		char type, t;
 		unsigned int offset;
 		char sym[256]; /* overflow not unlikely */
 		sscanf(line, "%s %c %s", &offsets, &type, &sym);
-		if (type == 'T' || type == 'V' || type == 'W') type = 0;
-		if (type == 'D' || type == 'R' || type == 'G') type = 1;
-		if (type == 'B' || type == 'C' || type == 'S') type = 2;
-		if (type > 2)    continue;
+                t = toupper (type);
+		if (t == 'T' || t == 'V' || t == 'W') t = 0;
+		if (t == 'D' || t == 'R' || t == 'G') t = 1;
+		if (t == 'B' || t == 'C' || t == 'S') t = 2;
+                if (islower (type)) t |= 4;
+		if (t >= 8)    continue;
 		offsets[8] = '\0';
 		offset = axtol(offsets);
 		offset = htonl(offset);

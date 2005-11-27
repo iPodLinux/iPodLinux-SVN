@@ -38,16 +38,17 @@
 /* Comment out to enable copious debugging information: */
 #define printf(args...)
 
-#define SYM_TEXT 0
-#define SYM_DATA 1
-#define SYM_BSS  2
+#define SYM_TEXT  0
+#define SYM_DATA  1
+#define SYM_BSS   2
+#define SYM_LOCAL 4
 
-// Symbols loaded from a .sym file
+// Symbols loaded from the calling app
 typedef struct symbol
 {
     char *sym;
     unsigned int addr;
-    int whence;
+    int whence, local;
     struct symbol *next;
 } symbol;
 
@@ -172,7 +173,8 @@ int uCdl_init (const char *symfile)
 	
 	cur->sym = sym;
 	cur->addr = addr;
-	cur->whence = whence;
+	cur->whence = whence & 3;
+        cur->local = !!(whence & SYM_LOCAL);
 	cur->next = 0;
     }
 
@@ -483,7 +485,7 @@ void *uCdl_open (const char *path)
 	    sym->section = ret->sections /* + 0 */;
 
 	    while (sy) {
-		if (!strcmp (sy->sym, sym->name)) {
+		if (!strcmp (sy->sym, sym->name) && !sy->local) {
 		    defined++;
 		    sym->value = sy->addr;
 		    sym->size = 0;
@@ -734,7 +736,7 @@ const char *uCdl_resolve_addr (unsigned long addr, unsigned long *off)
     symbol *sy = mysyms;
     
     while (sy) {
-        if ((addr >= sy->addr) && (addr - sy->addr < closest_off)) {
+        if ((addr >= sy->addr) && (addr - sy->addr < closest_off) && sy->sym[0] != '$') {
             closest_off = addr - sy->addr;
             ret = sy->sym;
         }
@@ -747,7 +749,7 @@ const char *uCdl_resolve_addr (unsigned long addr, unsigned long *off)
         
         for (esy = curh->symbols, i = 0; i < curh->nsyms; i++, esy++) {
             unsigned long symaddr = (unsigned long)esy->section->addr + esy->value;
-            if ((addr >= symaddr) && (addr - symaddr < closest_off)) {
+            if ((addr >= symaddr) && (addr - symaddr < closest_off) && esy->name[0] != '$') {
                 closest_off = addr - symaddr;
                 ret = esy->name;
             }
