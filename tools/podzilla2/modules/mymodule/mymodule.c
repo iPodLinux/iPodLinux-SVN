@@ -1,3 +1,5 @@
+/* Free for absolutely any use whatsoever. */
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
