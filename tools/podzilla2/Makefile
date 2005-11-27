@@ -2,6 +2,10 @@
 VERSION = SVN-$(strip $(subst $$,,$(subst Rev:,,$$Rev$$)))
 export VERSION
 
+ifdef SUBDIRS
+do-it: buildmod
+endif
+
 ifeq ($(shell which ttk-config 2>/dev/null >/dev/null && echo yes),yes)
 TTKCONF = ttk-config
 else
@@ -137,5 +141,9 @@ contrib:
 ifdef IPOD
 	@make -sC contrib/ucdl
 endif
+
+API.pdf: API.tex
+	pdflatex API.tex
+	pdflatex API.tex
 
 .PHONY: core modules clean pods xpods dev-env contrib .curtgt
