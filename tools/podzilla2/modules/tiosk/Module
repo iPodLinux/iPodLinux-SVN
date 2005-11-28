@@ -1,0 +1,4 @@
+Module: tiosk
+Display-name: On-Screen Keyboard
+Author: Jonathan Bettencourt
+Dependencies: textinput
