@@ -361,7 +361,7 @@ void ttk_free_surface (ttk_surface srf);
   dir = sofar / n; \
   sofar -= dir * n;
 #else
-#define TTK_SCROLLMOD(dir,n) 1;
+#define TTK_SCROLLMOD(dir,n)
 #endif
 
 // -- Colors --
