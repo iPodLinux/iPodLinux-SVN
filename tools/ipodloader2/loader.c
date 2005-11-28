@@ -66,15 +66,15 @@ void *loader(void) {
       int key;
 
       key = keypad_getstate();
-      if( key == 0x10 ) { // Up
+      if( key == IPOD_KEYPAD_UP ) {
 	if(menuPos>0)
 	  menuPos--;
 	redraw = 1;
-      } else if( key == 0x8 ) { // Down
+      } else if( key == IPOD_KEYPAD_DOWN ) {
 	if(menuPos<2)
 	  menuPos++;
 	redraw = 1;
-      } else if( key == 0x1 ) { // Center
+      } else if( key == IPOD_KEYPAD_OK ) {
 	done = 1;
       }
 
@@ -98,7 +98,11 @@ void *loader(void) {
       storage_ptr = (unsigned char *)0x40017f08;
       mlc_memcpy(storage_ptr, hotstuff, 9);
       outl(1, 0x40017F10);
-      outl(inl(0x60006004) | 0x4, 0x60006004);
+      if (ipod->hw_rev >= 0x40000) {
+	      outl(inl(0x60006004) | 0x4, 0x60006004);
+      } else {
+	      outl(inl(0xcf005030) | 0x4, 0xcf005030);
+      }
     } else { // Linux kernel
       vfs_read( entry, ret, 1, fd );
 
