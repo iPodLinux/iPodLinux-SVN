@@ -17,6 +17,7 @@
  */
 
 #include "pz.h"
+#include <ctype.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -379,8 +380,7 @@ int ti_widget_start2(TWidget * wid, int x, int y)
 
 int ti_widget_input(TWidget * wid, int ch)
 {
-	int ht;
-	if (ch == TTK_INPUT_END | ch == TTK_INPUT_ENTER) {
+	if (ch == TTK_INPUT_END || ch == TTK_INPUT_ENTER) {
 		if (((TiBuffer *)wid->data)->callback) {
 			if (((TiBuffer *)wid->data)->callback(wid, ((TiBuffer *)wid->data)->text)) {
 				ti_widget_start(wid);
@@ -395,8 +395,7 @@ int ti_widget_input(TWidget * wid, int ch)
 
 int ti_widget_input_n(TWidget * wid, int ch)
 {
-	int ht;
-	if (ch == TTK_INPUT_END | ch == TTK_INPUT_ENTER) {
+	if (ch == TTK_INPUT_END || ch == TTK_INPUT_ENTER) {
 		if (((TiBuffer *)wid->data)->callback) {
 			if (((TiBuffer *)wid->data)->callback(wid, ((TiBuffer *)wid->data)->text)) {
 				ti_widget_start(wid);
@@ -419,7 +418,6 @@ int ti_widget_input_n(TWidget * wid, int ch)
 
 int ti_widget_input_ml(TWidget * wid, int ch)
 {
-	int ht;
 	if (ch == TTK_INPUT_END) {
 		if (((TiBuffer *)wid->data)->callback) {
 			if (((TiBuffer *)wid->data)->callback(wid, ((TiBuffer *)wid->data)->text)) {
