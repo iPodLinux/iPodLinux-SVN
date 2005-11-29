@@ -1,0 +1,4 @@
+Module: timorse
+Display-name: Morse Code
+Author: Jonathan Bettencourt
+Dependencies: textinput
