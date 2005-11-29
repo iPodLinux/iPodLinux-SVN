@@ -283,7 +283,7 @@ TWidget * ti_morse_create()
 void ti_morse_init()
 {
 	module = pz_register_module("timorse", 0);
-	ti_register(ti_morse_create, ti_morse_create, "Morse Code", 4);
+	ti_register(ti_morse_create, ti_morse_create, _("Morse Code"), 4);
 }
 
 PZ_MOD_INIT(ti_morse_init)

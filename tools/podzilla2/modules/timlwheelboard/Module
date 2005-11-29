@@ -1,0 +1,4 @@
+Module: timlwheelboard
+Display-name: Multilingual Wheelboard
+Author: Jonathan Bettencourt & Stefan Lange-Hegermann
+Dependencies: textinput
