@@ -393,9 +393,9 @@ void ttk_fillrect_gc (ttk_surface srf, ttk_gc gc, int x, int y, int w, int h)
 	}
     } else {
 	if (ttk_screen->bpp == 2)
-	    boxByte (srf, x, y, x+w-1, y+h-1, gc->fg);
+	    boxByte (srf, x, y, x+w, y+h, gc->fg);
 	else
-	    boxColor (srf, x, y, x+w-1, y+h-1, fetchcolor (gc->fg));
+	    boxColor (srf, x, y, x+w, y+h, fetchcolor (gc->fg));
     }
 }
 
