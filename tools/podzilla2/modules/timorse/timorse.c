@@ -146,9 +146,9 @@ unsigned char ti_morse_decode(char * symbol)
 	int i = 0; /* I actually think this single line, which was uninitialized in the old version, was the whole reason it didn't work. :D */
 	while ((i < NUM_MORSE_SYMBOLS) && (!c)) {
 		if (!strcmp(symbol, ti_morse_table[i].symbol)) {
-		    c = ti_morse_table[i].character;
+			c = ti_morse_table[i].character;
 		} else {
-		    i++;
+			i++;
 		}
 	}
 	if (c && ti_morse_lowercase && ( ((c >= 'A') && (c <= 'Z')) || ((c >= 192) && (c < 224)) )) {

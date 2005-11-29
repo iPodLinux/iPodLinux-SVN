@@ -165,7 +165,7 @@ void ti_fbk_PushButton(int b)
 int ti_fbk_scroll(TWidget * wid, int dir)
 {
 	TTK_SCROLLMOD (dir, 4);
-    
+	
 	if (dir<0) {
 		ttk_input_char(TTK_INPUT_LEFT);
 	} else {

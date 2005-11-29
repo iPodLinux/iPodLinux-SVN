@@ -132,61 +132,61 @@ void ti_wlb_draw(TWidget * wid, ttk_surface srf)
 {
 	ttk_color tcol;
 	char disp[14];
-    ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
-    
-    if (ti_wlb_position<1) {
-    	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w/2, wid->y+wid->h, ti_ap_get(2));
-    	tcol = ti_ap_get(3);
-    } else {
-    	tcol = ti_ap_get(1);
-    }
-    
-    strncpy(disp, &ti_wlb_charset[ti_wlb_startpos], ti_wlb_limit);
-    disp[ti_wlb_limit]=0;
-    ttk_text_lat1(srf, ttk_menufont, wid->x+1, wid->y, tcol, disp);
-           
+	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
+	
+	if (ti_wlb_position<1) {
+		ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w/2, wid->y+wid->h, ti_ap_get(2));
+		tcol = ti_ap_get(3);
+	} else {
+		tcol = ti_ap_get(1);
+	}
+	
+	strncpy(disp, &ti_wlb_charset[ti_wlb_startpos], ti_wlb_limit);
+	disp[ti_wlb_limit]=0;
+	ttk_text_lat1(srf, ttk_menufont, wid->x+1, wid->y, tcol, disp);
+		   
 	if (ti_wlb_position>5) {
-    	ttk_fillrect(srf, wid->x+wid->w/2, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(2));
-    	tcol = ti_ap_get(3);
-    } else {
-    	tcol = ti_ap_get(1);
-    }
+		ttk_fillrect(srf, wid->x+wid->w/2, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(2));
+		tcol = ti_ap_get(3);
+	} else {
+		tcol = ti_ap_get(1);
+	}
 	strncpy(disp, &ti_wlb_charset[ti_wlb_limit+ti_wlb_startpos], ti_wlb_limit);
-    disp[ti_wlb_limit]=0;
-    ttk_text_lat1(srf, ttk_menufont, wid->x+wid->w/2+1, wid->y, tcol, disp);
-    
-    /* Position */
-    ttk_line(srf, wid->x+wid->w/2, wid->y, wid->x+((ti_wlb_position*wid->w)/6), wid->y, ttk_makecol(GREY));
-    ttk_line(srf, wid->x+wid->w/2, wid->y+1, wid->x+((ti_wlb_position*wid->w)/6), wid->y+1, ttk_makecol(GREY));
-    ttk_line(srf, wid->x+wid->w/2, wid->y+wid->h-2, wid->x+((ti_wlb_position*wid->w)/6), wid->y+wid->h-2, ttk_makecol(GREY));
-    ttk_line(srf, wid->x+wid->w/2, wid->y+wid->h-1, wid->x+((ti_wlb_position*wid->w)/6), wid->y+wid->h-1, ttk_makecol(GREY));
+	disp[ti_wlb_limit]=0;
+	ttk_text_lat1(srf, ttk_menufont, wid->x+wid->w/2+1, wid->y, tcol, disp);
+	
+	/* Position */
+	ttk_line(srf, wid->x+wid->w/2, wid->y, wid->x+((ti_wlb_position*wid->w)/6), wid->y, ttk_makecol(GREY));
+	ttk_line(srf, wid->x+wid->w/2, wid->y+1, wid->x+((ti_wlb_position*wid->w)/6), wid->y+1, ttk_makecol(GREY));
+	ttk_line(srf, wid->x+wid->w/2, wid->y+wid->h-2, wid->x+((ti_wlb_position*wid->w)/6), wid->y+wid->h-2, ttk_makecol(GREY));
+	ttk_line(srf, wid->x+wid->w/2, wid->y+wid->h-1, wid->x+((ti_wlb_position*wid->w)/6), wid->y+wid->h-1, ttk_makecol(GREY));
 }
 
 int ti_wlb_down(TWidget * wid, int btn)
 {
-    switch (btn)
-    {
-    case TTK_BUTTON_ACTION:
-    	ti_wlb_switch_cset();
-    	wid->dirty=1;
-        break;
-    case TTK_BUTTON_PLAY:
-    	ttk_input_char(TTK_INPUT_ENTER);
-        break;
-    case TTK_BUTTON_PREVIOUS:
-    	ttk_input_char(TTK_INPUT_BKSP);
-        break;
-    case TTK_BUTTON_NEXT:
-    	ttk_input_char(32);
-        break;
-    case TTK_BUTTON_MENU:
-    	ttk_input_end();
-        break;
-    default:
-    	return TTK_EV_UNUSED;
-        break;
-    }
-    return TTK_EV_CLICK;
+	switch (btn)
+	{
+	case TTK_BUTTON_ACTION:
+		ti_wlb_switch_cset();
+		wid->dirty=1;
+		break;
+	case TTK_BUTTON_PLAY:
+		ttk_input_char(TTK_INPUT_ENTER);
+		break;
+	case TTK_BUTTON_PREVIOUS:
+		ttk_input_char(TTK_INPUT_BKSP);
+		break;
+	case TTK_BUTTON_NEXT:
+		ttk_input_char(32);
+		break;
+	case TTK_BUTTON_MENU:
+		ttk_input_end();
+		break;
+	default:
+		return TTK_EV_UNUSED;
+		break;
+	}
+	return TTK_EV_CLICK;
 }
 
 int ti_wlb_scroll(TWidget * wid, int dir)
@@ -194,23 +194,23 @@ int ti_wlb_scroll(TWidget * wid, int dir)
 	TTK_SCROLLMOD (dir,4)
 	
 	if (dir<0) {
-    	if (ti_wlb_cset<0) {
-    		ttk_input_char(TTK_INPUT_LEFT);
-    	} else {
-        	if ((ti_wlb_position--)==0) {
-        		ti_wlb_advance_level(0);
-        	}
-        	wid->dirty=1;
-        }
+		if (ti_wlb_cset<0) {
+			ttk_input_char(TTK_INPUT_LEFT);
+		} else {
+			if ((ti_wlb_position--)==0) {
+				ti_wlb_advance_level(0);
+			}
+			wid->dirty=1;
+		}
 	} else {
-    	if (ti_wlb_cset<0) {
-    		ttk_input_char(TTK_INPUT_RIGHT);
-    	} else {
-        	if ((ti_wlb_position++)==6) {
-    			ti_wlb_advance_level(1);
-        	}
-    		wid->dirty=1;
-        }
+		if (ti_wlb_cset<0) {
+			ttk_input_char(TTK_INPUT_RIGHT);
+		} else {
+			if ((ti_wlb_position++)==6) {
+				ti_wlb_advance_level(1);
+			}
+			wid->dirty=1;
+		}
 	}
 	return TTK_EV_CLICK;
 }
