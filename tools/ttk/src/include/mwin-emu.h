@@ -75,7 +75,7 @@
 #define GrBitmap t_GrBitmap
 #define GrLoadImageFromFile t_GrLoadImageFromFile
 //#define GrDrawImageFromFile t_GrDrawImageFromFile
-#define GrDrawImageToFit t_GrLoadImageToFit
+#define GrDrawImageToFit t_GrDrawImageToFit
 #define GrFreeImage t_GrFreeImage
 #define GrText t_GrText
 
