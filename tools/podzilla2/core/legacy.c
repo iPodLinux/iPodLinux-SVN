@@ -176,15 +176,15 @@ t_GR_WINDOW_ID pz_old_window (int x, int y, int w, int h, void(*do_draw)(void), 
 {
     TWindow *ret = ttk_new_window();
     fprintf (stderr, "Legacy code alert!\n");
-    ttk_fillrect (ret->srf, 0, 0, ret->w, ret->h, ttk_makecol (255, 255, 255));
     ret->x = x;
     ret->y = y;
     if ((y == HEADER_TOPLINE) || (y == HEADER_TOPLINE + 1))
 	ret->y = ttk_screen->wy, ret->h = ttk_screen->h - ttk_screen->wy;
     else if (!y)
 	ret->show_header = 0;
-    ret->w = w;
-    ret->h = h;
+    ret->w = ttk_screen->w - x;
+    ret->h = ttk_screen->h - y + 2;
+    ttk_fillrect (ret->srf, 0, 0, ret->w, ret->h, ttk_makecol (255, 255, 255));
     ttk_add_widget (ret, pz_new_legacy_widget (do_draw, do_keystroke));
 
     pz_last_window = ret;
