@@ -298,7 +298,7 @@ void ttk_menu_insert (TWidget *this, ttk_menu_item *item, int xi)
     
     ttk_menu_item_updated (this, item);
     item->menudata = data;
-    if (data->items - data->top <= data->visible) {
+    if (VIFromXI (this, data->items) - data->top - 1 <= data->visible) {
 	render (this, data->top, data->visible);
     }    
 }
@@ -326,7 +326,7 @@ void ttk_menu_append (TWidget *this, ttk_menu_item *item)
     
     ttk_menu_item_updated (this, item);
     item->menudata = data;
-    if (data->items - data->top <= data->visible) {
+    if (VIFromXI (this, data->items) - data->top - 1 <= data->visible) {
 	render (this, data->top, data->visible);
     }
 }
