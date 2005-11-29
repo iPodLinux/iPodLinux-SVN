@@ -63,7 +63,7 @@
 #ifdef LEGACY_WARN
 #warning Legacy code alert... please fix ASAP.
 #endif
-#define HEADER_TOPLINE 19
+#define HEADER_TOPLINE (ttk_screen->wy)
 #define KEY_CLICK 1
 #define KEY_UNUSED 2
 #define EVENT_UNUSED 2

@@ -195,7 +195,8 @@ static void mines_init_vars(void)
 	state = INIT;
 	mf->sq_size = 12;
 	mf->width = mines_info.width / mf->sq_size;
-	mf->height = (mines_info.height / mf->sq_size) - 1;
+        /* Matter of taste: increase the spacing a little. */
+	mf->height = ((mines_info.height - 3) / mf->sq_size) - 1;
 	mf->sel_x = mf->width / 2;
 	mf->sel_y = mf->height / 2;
 	mf->x_offset = (mines_info.width -

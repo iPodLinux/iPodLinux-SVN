@@ -179,7 +179,7 @@ t_GR_WINDOW_ID pz_old_window (int x, int y, int w, int h, void(*do_draw)(void), 
     ret->x = x;
     ret->y = y;
     if ((y == HEADER_TOPLINE) || (y == HEADER_TOPLINE + 1))
-	ret->y = ttk_screen->wy, ret->h = ttk_screen->h - ttk_screen->wy;
+	ret->y = ttk_screen->wy;
     else if (!y)
 	ret->show_header = 0;
     ret->w = ttk_screen->w - x;

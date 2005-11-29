@@ -21,8 +21,8 @@
 #define PZ_COMPAT
 #include "pz.h"
 
-#define SCRW	ttk_windows->w->w
-#define SCRH	ttk_windows->w->h
+#define SCRW	screen_info.cols
+#define SCRH	(screen_info.rows - HEADER_TOPLINE)
 
 #define XLOWER	0
 #define XUPPER	SCRW
@@ -368,8 +368,6 @@ static int pong_do_keystroke(GR_EVENT * event)
 
 void new_pong_window()
 {
-	GrGetScreenInfo(&screen_info);
-
 	pong_gc_fg = pz_get_gc(1);
 	GrSetGCForeground(pong_gc_fg, appearance_get_color(CS_FG));
 
