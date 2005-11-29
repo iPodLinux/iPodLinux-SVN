@@ -112,6 +112,15 @@ void ti_mlwlb_load_all(void)
 	}
 }
 
+void ti_mlwlb_free_all(void)
+{
+	if (ti_mlwlb_langs) {
+		free(ti_mlwlb_langs);
+	}
+	ti_mlwlb_langs = 0;
+	ti_mlwlb_langcount = 0;
+}
+
 void ti_mlwlb_reset(void)
 {
 	ti_mlwlb_curcset = 0;
@@ -244,23 +253,24 @@ void ti_mlwlb_draw(TWidget * wid, ttk_surface srf)
     ttk_line(srf, wid->x+wid->w/2, wid->y+wid->h-1, wid->x+((ti_mlwlb_position*wid->w)/6), wid->y+wid->h-1, ttk_makecol(GREY));
 }
 
+int ti_mlwlb_held(TWidget * wid, int btn)
+{
+    if (btn == TTK_BUTTON_ACTION) {
+    	ti_mlwlb_switch_lset();
+    	wid->dirty=1;
+    	return TTK_EV_CLICK;
+    }
+    return TTK_EV_UNUSED;
+}
+
 int ti_mlwlb_button(TWidget * wid, int btn, int t)
 {
-    switch (btn)
-    {
-    case TTK_BUTTON_ACTION:
-    	if (t >= 500) {
-	    	ti_mlwlb_switch_lset();
-	    } else {
-	    	ti_mlwlb_switch_cset();
-	    }
+    if (btn == TTK_BUTTON_ACTION && t < 500) {
+	   	ti_mlwlb_switch_cset();
     	wid->dirty=1;
-        break;
-    default:
-    	return TTK_EV_UNUSED;
-        break;
-    }
-    return TTK_EV_CLICK;
+    	return TTK_EV_CLICK;
+	}
+    return TTK_EV_UNUSED;
 }
 
 int ti_mlwlb_down(TWidget * wid, int btn)
@@ -318,7 +328,9 @@ TWidget * ti_mlwlb_create(int n)
 	wid->draw = ti_mlwlb_draw;
 	wid->down = ti_mlwlb_down;
 	wid->button = ti_mlwlb_button;
+	wid->held = ti_mlwlb_held;
 	wid->scroll = ti_mlwlb_scroll;
+	wid->holdtime = 500;
 	ti_mlwlb_numeric = n;
 	ti_mlwlb_reset();
 	return wid;
@@ -336,7 +348,7 @@ TWidget * ti_mlwlb_ncreate()
 
 void ti_mlwlb_init()
 {
-	module = pz_register_module("timlwheelboard", 0);
+	module = pz_register_module("timlwheelboard", ti_mlwlb_free_all);
 	ti_register(ti_mlwlb_screate, ti_mlwlb_ncreate, _("Multilingual Wheelboard"), 18);
 	ti_mlwlb_load_all();
 }
