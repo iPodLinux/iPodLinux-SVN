@@ -298,7 +298,7 @@ void ttk_draw_window (TWindow *win)
     b.spacing = 0;
     b.type |= TTK_AP_SPACING;
     
-    if (win->x > s->wx || win->y > s->wy)
+    if (win->x > s->wx+2 || win->y > s->wy+2)
 	b.spacing = ttk_ap_getx ("window.border") -> spacing;
     bg = &b;
     
@@ -468,13 +468,13 @@ int ttk_run()
 	    b.spacing = 0;
 	    b.type |= TTK_AP_SPACING;
 	    
-	    if (win->x > s->wx || win->y > s->wy)
+	    if (win->x > s->wx+2 || win->y > s->wy+2)
 		b.spacing = ttk_ap_getx ("window.border") -> spacing;
 	    bg = &b;
 
 	    ttk_ap_fillrect (s->srf, bg, win->x, win->y, win->x + win->w, win->y + win->h);
 	    ttk_blit_image_ex (win->srf, 0, 0, win->w, win->h, s->srf, win->x, win->y);
-	    if (win->x > s->wx || win->y > s->wy) { // popup window
+	    if (win->x > s->wx+2 || win->y > s->wy+2) { // popup window
 		ttk_ap_rect (s->srf, ttk_ap_get ("window.border"), win->x, win->y,
 			     win->x + win->w, win->y + win->h);
 	    }
