@@ -76,7 +76,7 @@ endif
 	@touch .message
 
 checktarget: .curtgt
-	@[ -f .target ] && cmp .curtgt .target >/dev/null || ( echo "Cleaning because of target change."; make -s clean; echo )
+	@if [ -f .target ]; then cmp .curtgt .target >/dev/null || ( echo "Cleaning because of target change."; make -s clean; echo ); fi
 	@cp .curtgt .target
 
 .curtgt:
