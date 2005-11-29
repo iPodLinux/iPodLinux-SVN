@@ -349,24 +349,25 @@ ttk_menu_item *resolve_menupath (const char *path, int loc)
 	    item->flags = TTK_MENU_ICON_SUB;
 	    item->data = ttk_new_menu_widget (0, ttk_menufont, menu->w, menu->h);
 	}
-	add_at_loc (menu, item, loc);
+
+        if (strrchr (path, '/')) {
+            if (p && !p[1]) {
+                item->name = path + strlen (path);
+                while (item->name != path && item->name[0] != '/')
+                    item->name--;
+                if (item->name != path)
+                    item->name++;
+            } else {
+                item->name = strrchr (path, '/') + 1;
+            }
+        } else {
+            item->name = path;
+        }
+        item->name = strdup (item->name);
+        item->free_name = 1;
+        add_at_loc (menu, item, loc);
     }
-    if (strrchr (path, '/')) {
-	if (p && !p[1]) {
-	    item->name = path + strlen (path);
-	    while (item->name != path && item->name[0] != '/')
-		item->name--;
-	    if (item->name != path)
-		item->name++;
-	} else {
-	    item->name = strrchr (path, '/') + 1;
-	}
-    } else {
-	item->name = path;
-    }
-    item->name = strdup (item->name);
-    item->free_name = 1;
-    item->visible = 0; // always visible
+    item->visible = 0; // always visible 
     return item;
 }
 ttk_menu_item *pz_get_menu_item (const char *path) 
