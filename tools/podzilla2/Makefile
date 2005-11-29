@@ -65,13 +65,15 @@ ifdef IPOD
 	@echo "-------------------------------------------------"
 else
 	@echo
-	@echo "-------------------------------------------------"
-	@echo "Podzilla and modules have been built. To run it, "
+	@echo "---------------------------------------------------------------"
+	@echo "Podzilla and modules have been built. First, set up some stuff:"
+	@echo "  make dev-env    (assuming you have ttk in ../ttk)"
+	@echo "Then, to run it,"
 	@echo "  ./podzilla"
 	@echo "or, for a different screen size,"
 	@echo "  ./podzilla [-nano | -mini | -photo | -video]"
 	@echo "Enjoy."
-	@echo "-------------------------------------------------"
+	@echo "---------------------------------------------------------------"
 endif
 	@touch .message
 
