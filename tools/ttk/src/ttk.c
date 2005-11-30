@@ -911,6 +911,7 @@ void ttk_show_window (TWindow *win)
     if (!win->onscreen) {
 	TWindow *oldwindow = ttk_windows? ttk_windows->w : 0;
 	TWindowStack *next = ttk_windows;
+        TWidgetList *cur;
 	ttk_windows = malloc (sizeof(struct TWindowStack));
 	ttk_windows->w = win;
 	ttk_windows->minimized = 0;
@@ -924,6 +925,17 @@ void ttk_show_window (TWindow *win)
 	    int i;
 	    int jump = win->w / ttk_transit_frames;
 	    
+            // Render the stuff in the new window
+            cur = win->widgets;
+            while (cur) {
+                if (ttk_screen->bpp == 2)
+                    ttk_ap_fillrect (win->srf, ttk_ap_get ("window.bg"), 0, 0, win->w, win->h);
+                else
+                    ttk_fillrect (win->srf, 0, 0, win->w, win->h, ttk_makecol (CKEY));
+                cur->v->draw (cur->v, win->srf);
+                cur = cur->next;
+            }
+
 	    for (i = 0; i < ttk_transit_frames; i++) {
 	    	ttk_ap_fillrect (ttk_screen->srf, ttk_ap_get ("window.bg"), ttk_screen->wx,
 	    	                 ttk_screen->wy, ttk_screen->w, ttk_screen->h);
