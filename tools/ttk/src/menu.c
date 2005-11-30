@@ -44,6 +44,7 @@ typedef struct _menu_data
     int closeable;
     int epoch;
     int free_everything;
+    int i18nable;
 } menu_data;
 
 // Note:
@@ -97,6 +98,8 @@ static void render (TWidget *this, int first, int n)
     _MAKETHIS;
     int wid = this->w - 10*data->scroll;
 
+    printf ("Render %%%p from %d for %d; t/s/i/v = %d/%d/%d/%d\n", this, first, n, data->top, data->sel, data->items, data->visible);
+
     if (!data->itemsrf)  data->itemsrf  = calloc (data->allocation, sizeof(ttk_surface));
     if (!data->itemsrfI) data->itemsrfI = calloc (data->allocation, sizeof(ttk_surface));
 
@@ -118,7 +121,10 @@ static void render (TWidget *this, int first, int n)
 					    data->itemheight, ttk_screen->bpp);
 	ttk_fillrect (data->itemsrf[xi], 0, 0, data->menu[xi]->textwidth + 6, data->itemheight,
 		      ttk_ap_getx ("menu.bg") -> color);
-	ttk_text (data->itemsrf[xi], data->font, 3, ofs, ttk_ap_getx ("menu.fg") -> color, gettext (data->menu[xi]->name));
+        if (data->i18nable)
+            ttk_text (data->itemsrf[xi], data->font, 3, ofs, ttk_ap_getx ("menu.fg") -> color, gettext (data->menu[xi]->name));
+        else
+            ttk_text (data->itemsrf[xi], data->font, 3, ofs, ttk_ap_getx ("menu.fg") -> color, data->menu[xi]->name);
 
 	// Selected
 	if (data->itemsrfI[xi]) ttk_free_surface (data->itemsrfI[xi]);
@@ -126,7 +132,10 @@ static void render (TWidget *this, int first, int n)
 					     data->itemheight, ttk_screen->bpp);
 	ttk_fillrect (data->itemsrfI[xi], 0, 0, data->menu[xi]->textwidth + 6, data->itemheight,
 		      ttk_ap_getx ("menu.selbg") -> color);
-	ttk_text (data->itemsrfI[xi], data->font, 3, ofs, ttk_ap_getx ("menu.selfg") -> color, gettext (data->menu[xi]->name));
+        if (data->i18nable)
+            ttk_text (data->itemsrfI[xi], data->font, 3, ofs, ttk_ap_getx ("menu.selfg") -> color, gettext (data->menu[xi]->name));
+        else
+            ttk_text (data->itemsrfI[xi], data->font, 3, ofs, ttk_ap_getx ("menu.selfg") -> color, data->menu[xi]->name);
     }
 }
 
@@ -188,7 +197,11 @@ void ttk_menu_item_updated (TWidget *this, ttk_menu_item *p)
     p->menuwidth = this->w;
     p->menuheight = this->h;
     
-    p->textwidth = ttk_text_width (data->font, gettext (p->name)) + 4;
+    if (data->i18nable)
+        p->textwidth = ttk_text_width (data->font, gettext (p->name)) + 4;
+    else
+        p->textwidth = ttk_text_width (data->font, p->name) + 4;
+    
     p->linewidth = (this->w - 10*data->scroll - 15*!!(p->flags & TTK_MENU_ICON));
     p->iconflash = 3;
     p->flags |= TTK_MENU_ICON_FLASHOFF;
@@ -331,11 +344,16 @@ void ttk_menu_append (TWidget *this, ttk_menu_item *item)
     }
 }
 
-static int sort_compare (const void *a, const void *b) 
+static int sort_compare_i18n (const void *a, const void *b) 
 {
     ttk_menu_item *A = *(ttk_menu_item **)a, *B = *(ttk_menu_item **)b;
     
     return strcasecmp (gettext (A->name), gettext (B->name));
+}
+static int sort_compare (const void *a, const void *b) 
+{
+    ttk_menu_item *A = *(ttk_menu_item **)a, *B = *(ttk_menu_item **)b;
+    return strcasecmp (A->name, B->name);
 }
 void ttk_menu_sort_my_way (TWidget *this, int (*cmp)(const void *, const void *))
 {
@@ -346,7 +364,11 @@ void ttk_menu_sort_my_way (TWidget *this, int (*cmp)(const void *, const void *)
 }
 void ttk_menu_sort (TWidget *this) 
 {
-    ttk_menu_sort_my_way (this, sort_compare);
+    _MAKETHIS;
+    if (data->i18nable)
+        ttk_menu_sort_my_way (this, sort_compare_i18n);
+    else
+        ttk_menu_sort_my_way (this, sort_compare);
 }
 
 void ttk_menu_updated (TWidget *this)
@@ -486,7 +508,7 @@ TWidget *ttk_new_menu_widget (ttk_menu_item *items, ttk_font font, int w, int h)
     data->mlist = items;
     data->menu = 0;
     data->font = font;
-    data->closeable = 1;
+    data->closeable = data->i18nable = 1;
     data->epoch = ttk_epoch;
     data->free_everything = !items;
 
@@ -503,6 +525,11 @@ void ttk_menu_set_closeable (TWidget *this, int closeable)
 {
     _MAKETHIS;
     data->closeable = closeable;
+}
+void ttk_menu_set_i18nable (TWidget *this, int i18nable) 
+{
+    _MAKETHIS;
+    data->i18nable = i18nable;
 }
 
 void ttk_menu_draw (TWidget *this, ttk_surface srf)
