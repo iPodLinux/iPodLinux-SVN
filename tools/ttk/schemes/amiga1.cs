@@ -1,7 +1,7 @@
+\name Amiga 1.x
 # Amiga 1.x color scheme
 #  brought in from pz0 by bleullama
 #  originally created by bleullama
-\name Amiga 1.x
 
 \def blue   #0055AA
 \def black  #000022
