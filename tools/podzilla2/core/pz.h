@@ -130,6 +130,7 @@ PzModule *pz_register_module (const char *name, void (*cleanup)());
 const char *pz_module_get_cfgpath (PzModule *mod, const char *file);
 const char *pz_module_get_datapath (PzModule *mod, const char *file);
 void pz_module_iterate (void (*fn)(const char *name, const char *longname, const char *author));
+void *pz_module_softdep (const char *modname, const char *symname);
 #ifndef PZ_MOD
 /* called from core */
 void pz_modules_init (void);

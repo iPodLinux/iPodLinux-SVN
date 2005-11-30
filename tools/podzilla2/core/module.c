@@ -36,6 +36,7 @@
 #ifdef IPOD
 #include "ucdl.h"
 #else
+#define _GNU_SOURCE /* for RTLD_DEFAULT */
 #include <dlfcn.h>
 #endif
 
@@ -672,4 +673,29 @@ void pz_module_iterate (void (*fn)(const char *, const char *, const char *))
         (*fn)(cur->name, cur->longname, cur->author);
         cur = cur->next;
     }
+}
+
+void *pz_module_softdep (const char *modname, const char *symname) 
+{
+    PzModule *cur = module_head;
+    while (cur) {
+        if (!strcmp (modname, cur->name)) {
+#ifndef IPOD
+            void *ret = dlsym (cur->handle, symname);
+            if (!ret) {
+                // Some versions of OS X have symbols that start
+                // with underscores...
+                char *_symname = malloc (strlen (symname) + 2);
+                sprintf (_symname, "_%s", symname);
+                ret = dlsym (cur->handle, _symname);
+                free (_symname);
+            }
+            return ret;
+#else
+            return uCdl_sym (cur->handle, symname);
+#endif
+        }
+        cur = cur->next;
+    }
+    return 0;
 }

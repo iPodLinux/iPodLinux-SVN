@@ -96,6 +96,13 @@ defined in the {\it same module}. However, it is still advisable to avoid global
 so make everything you can \verb|static|. Unlike the Linux kernel, we don't have a nice
 way of enforcing that by default.
 
+Modules can depend on other modules unconditionally by listing them in the {\tt Dependencies:} line
+in the \verb|Module| file, and use these modules' symbols just by prototyping them. Also, you
+can depend {\it conditionally} on another module's symbols---for instance, not failing to load if that
+module doesn't exist---with a call to \verb|pz_module_softdep()|. You pass the module and the symbol
+you're looking for; it returns the symbol (function, variable) if it finds it, or \verb|NULL| if
+it doesn't (or the module's not loaded).
+
 \section{Dealing with Legacy Applications}
 The porting of legacy applications from legacy podzilla is extraordinarily simple. First, add the
 line
@@ -278,6 +285,7 @@ const char *pz_module_get_cfgpath (PzModule *mod, const char *file);
 const char *pz_module_get_datapath (PzModule *mod, const char *file);
 void pz_module_iterate (void (*fn)(const char *name, const char *longname,
                                    const char *author));
+void *pz_module_softdep (const char *module, const char *symbol);
 \end{verbatim}
 \begin{description}
 \item[{\tt PZ_MOD_INIT}] declares the name of your module init function so that it is called
@@ -298,6 +306,13 @@ However, data files may {\it not} be written to.
 calls \verb|fn| for each module loaded, passing the shortname in \verb|name|, the
 display name in \verb|longname|, and the author in \verb|author|, all as marked in
 the \verb|Module| file.
+\item[{\tt pz_module_softdep}] is used to depend, maybe conditionally, on a function
+or variable in another module without failing to load in the absence of that module.
+\verb|module| is the shortname of the module you're looking for, and \verb|symbol|
+is the name of the symbol ({\it without} a leading underscore, even on OS X).
+\returns the address of the function or variable if it is found and its module is loaded, or
+\verb|NULL| if not. You'll probably want to put the returned value into a pointer you save
+(and check for \verb|NULL| before using).
 \end{description}
 
 \section{Configuration}
