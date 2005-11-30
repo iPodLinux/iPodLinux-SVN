@@ -391,7 +391,7 @@ static void lcd_bcm_write32(unsigned address, unsigned value) {
 	outw((address >> 16), 0x30010000);
 
 	/* wait for it to be write ready */
-	while (inw(0x30030000) & 0x2 == 0);
+	while ((inw(0x30030000) & 0x2) == 0);
 
 	/* write out the value low 16, high 16 */
 	outw(value, 0x30000000);
@@ -411,14 +411,14 @@ static void lcd_bcm_setup_rect(unsigned cmd, unsigned start_horiz, unsigned star
 }
 
 static unsigned lcd_bcm_read32(unsigned address) {
-	while (inw(0x30020000) & 1 == 0);
+	while ((inw(0x30020000) & 1) == 0);
 
 	/* write out destination address as two 16bit values */
 	outw(address, 0x30020000);
 	outw((address >> 16), 0x30020000);
 
 	/* wait for it to be read ready */
-	while (inw(0x30030000) & 0x10 == 0);
+	while ((inw(0x30030000) & 0x10) == 0);
 
 	/* read the value */
 	return inw(0x30000000) | inw(0x30000000) << 16;
