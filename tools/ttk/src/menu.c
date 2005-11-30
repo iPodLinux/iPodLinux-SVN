@@ -98,8 +98,6 @@ static void render (TWidget *this, int first, int n)
     _MAKETHIS;
     int wid = this->w - 10*data->scroll;
 
-    printf ("Render %%%p from %d for %d; t/s/i/v = %d/%d/%d/%d\n", this, first, n, data->top, data->sel, data->items, data->visible);
-
     if (!data->itemsrf)  data->itemsrf  = calloc (data->allocation, sizeof(ttk_surface));
     if (!data->itemsrfI) data->itemsrfI = calloc (data->allocation, sizeof(ttk_surface));
 
