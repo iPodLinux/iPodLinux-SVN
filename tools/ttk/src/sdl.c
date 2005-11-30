@@ -1797,9 +1797,9 @@ ttk_surface ttk_new_surface (int w, int h, int bpp)
     if (BPP == 8) {
 	Rmask = Gmask = Bmask = 0;
     } else if (BPP == 16) {
-	Rmask = 0x001F;
-	Gmask = 0x07E0;
-	Bmask = 0xF800;
+        Rmask = ttk_screen->srf->format->Rmask;
+        Gmask = ttk_screen->srf->format->Gmask;
+        Bmask = ttk_screen->srf->format->Bmask;
     } else if (BPP == 24) {
 	BPP = 32;
 	Rmask = 0x0000FF;
