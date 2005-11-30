@@ -614,16 +614,17 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
                 (data->menu[xi]->iconflash == 3)? ttk_ap_getx ("menu.icon3")->color :
                 (data->menu[xi]->iconflash == 2)? ttk_ap_getx ("menu.icon2")->color :
                 (data->menu[xi]->iconflash == 1)? ttk_ap_getx ("menu.icon1")->color : ttk_makecol (BLACK);
+            ttk_color bgcol = (selected? ttk_ap_getx ("menu.selbg")->color : ttk_ap_getx ("menu.bg")->color);
                 
 	    switch (data->menu[xi]->flags & TTK_MENU_ICON) {
 	    case TTK_MENU_ICON_SUB:
-		ttk_draw_icon (ttk_icon_sub, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, col, 0);
+		ttk_draw_icon (ttk_icon_sub, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, col, bgcol);
 		break;
 	    case TTK_MENU_ICON_EXE:
-		ttk_draw_icon (ttk_icon_exe, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, col, 0);
+		ttk_draw_icon (ttk_icon_exe, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, col, bgcol);
 		break;
 	    case TTK_MENU_ICON_SND:
-		ttk_draw_icon (ttk_icon_spkr, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, col, 0);
+		ttk_draw_icon (ttk_icon_spkr, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, col, bgcol);
 		break;
 	    }
 	}

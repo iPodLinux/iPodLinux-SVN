@@ -251,23 +251,18 @@ unsigned char ttk_icon_charging[] = { 8, 10,
     0, 0, 3, 1, 0, 0, 0, 0
 };
 
-void ttk_draw_icon (unsigned char *icon, ttk_surface srf, int sx, int sy, ttk_color col, int inv) 
+void ttk_draw_icon (unsigned char *icon, ttk_surface srf, int sx, int sy, ttk_color fgcol, ttk_color bgcol) 
 {
     int x, y;
     unsigned char *p = icon + 2;
-    int r, g, b;
-    ttk_unmakecol_ex (col, &r, &g, &b, srf);
-    int c[4] = { ttk_makecol_ex (255 - r, 255 - g, 255 - b, srf),
-		 ttk_makecol_ex ((255-r)*2/3, (255-g)*2/3, (255-b)*2/3, srf),
-		 ttk_makecol_ex ((255-r)/3, (255-g)/3, (255-b)/3, srf),
-		 ttk_makecol_ex (r, g, b, srf) };
+    int fr, fg, fb, br, bg, bb;
+    ttk_unmakecol_ex (fgcol, &fr, &fg, &fb, srf);
+    ttk_unmakecol_ex (bgcol, &br, &bg, &bb, srf);
+    int c[4] = { ttk_makecol_ex (br, bg, bb, srf),
+		 ttk_makecol_ex (br*2/3+fr/3, bg*2/3+fg/3, bb*2/3+fb/3, srf),
+		 ttk_makecol_ex (fr*2/3+br/3, fg*2/3+bg/3, fb*2/3+bb/3, srf),
+		 ttk_makecol_ex (fr, fg, fb, srf) };
     
-    if (inv) {
-	int tmp;
-	tmp = c[3], c[3] = c[0], c[0] = tmp;
-	tmp = c[2], c[2] = c[1], c[1] = tmp;
-    }
-
     for (y = 0; y < icon[1]; y++) {
 	for (x = 0; x < icon[0]; x++) {
 	    if (*p)
