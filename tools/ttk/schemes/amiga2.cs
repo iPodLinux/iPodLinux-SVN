@@ -1,3 +1,6 @@
+# Amiga 2.x color scheme
+#  brought in from pz0 by bleullama
+#  originally created by bleullama
 \name Amiga 2.x
 
 \def gray   #aaaaaa
@@ -20,12 +23,12 @@
   dialog: bg => blue, fg => black, line => gray,
           title.fg => black,
           button.bg => blue, button.fg => black, button.border => white,
-	  button.sel.bg => black, button.sel.fg => white, button.sel.border => wblack, button.sel.inner => white +1
+	  button.sel.bg => black, button.sel.fg => white, button.sel.border => black, button.sel.inner => white +1
 
   error:  bg => blue, fg => black, line => white,
           title.fg => black,
           button.bg => blue, button.fg => black, button.border => white,
-	  button.sel.bg => black, button.sel.fg => white, button.sel.border => wblack, button.sel.inner => white +1
+	  button.sel.bg => black, button.sel.fg => white, button.sel.border => black, button.sel.inner => white +1
 
   scroll: box => blue, bg => black +1, bar => white +2
 

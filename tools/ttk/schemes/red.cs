@@ -1,4 +1,8 @@
+# Gameboy color scheme
+#  brought in from pz0 by bleullama
+#  originally conceived for the m-robe color scheme by Stuart Clark (Decipher)
 \name Red
+
 \def black #000000
 \def red   #ff0000
 \def ltred #aa0000
