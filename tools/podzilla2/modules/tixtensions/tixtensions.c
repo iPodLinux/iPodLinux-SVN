@@ -217,9 +217,13 @@ void tix_run_draw(TWidget * wid, ttk_surface srf)
 
 int tix_run_callback(TWidget * wid, char * fn)
 {
+	TWindow * w;
 	pz_close_window(wid->win);
 	if (fn[0]) {
-		ttk_show_window(pz_browser_open(fn));
+		w = pz_browser_open(fn);
+		if (w) {
+			ttk_show_window(w);
+		}
 	}
 	return 0;
 }
