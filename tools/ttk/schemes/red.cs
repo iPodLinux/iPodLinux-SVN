@@ -28,10 +28,10 @@
 
   scroll: box => red, bg => black +1, bar => ltred +2
 
-   input: bg => black, fg => red, selbg => ltred, selfg => black, border => dkred, cursor => dkred
+   input: bg => black, fg => red, selbg => red, selfg => black, border => dkred, cursor => red
 
 
-    menu: bg => black, fg => red, choice => red, icon => black,
+    menu: bg => black, fg => red, choice => red, icon => red,
           selbg => red, selfg => black,
 	  selchoice => dkred, selicon => black
 
