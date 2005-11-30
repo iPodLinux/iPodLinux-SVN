@@ -118,7 +118,7 @@ static void render (TWidget *this, int first, int n)
 					    data->itemheight, ttk_screen->bpp);
 	ttk_fillrect (data->itemsrf[xi], 0, 0, data->menu[xi]->textwidth + 6, data->itemheight,
 		      ttk_ap_getx ("menu.bg") -> color);
-	ttk_text (data->itemsrf[xi], data->font, 3, ofs, ttk_ap_getx ("menu.fg") -> color, data->menu[xi]->name);
+	ttk_text (data->itemsrf[xi], data->font, 3, ofs, ttk_ap_getx ("menu.fg") -> color, gettext (data->menu[xi]->name));
 
 	// Selected
 	if (data->itemsrfI[xi]) ttk_free_surface (data->itemsrfI[xi]);
@@ -126,7 +126,7 @@ static void render (TWidget *this, int first, int n)
 					     data->itemheight, ttk_screen->bpp);
 	ttk_fillrect (data->itemsrfI[xi], 0, 0, data->menu[xi]->textwidth + 6, data->itemheight,
 		      ttk_ap_getx ("menu.selbg") -> color);
-	ttk_text (data->itemsrfI[xi], data->font, 3, ofs, ttk_ap_getx ("menu.selfg") -> color, data->menu[xi]->name);
+	ttk_text (data->itemsrfI[xi], data->font, 3, ofs, ttk_ap_getx ("menu.selfg") -> color, gettext (data->menu[xi]->name));
     }
 }
 
@@ -188,7 +188,7 @@ void ttk_menu_item_updated (TWidget *this, ttk_menu_item *p)
     p->menuwidth = this->w;
     p->menuheight = this->h;
     
-    p->textwidth = ttk_text_width (data->font, p->name) + 4;
+    p->textwidth = ttk_text_width (data->font, gettext (p->name)) + 4;
     p->linewidth = (this->w - 10*data->scroll - 15*!!(p->flags & TTK_MENU_ICON));
     p->iconflash = 3;
     p->flags |= TTK_MENU_ICON_FLASHOFF;
@@ -335,7 +335,7 @@ static int sort_compare (const void *a, const void *b)
 {
     ttk_menu_item *A = *(ttk_menu_item **)a, *B = *(ttk_menu_item **)b;
     
-    return strcasecmp (A->name, B->name);
+    return strcasecmp (gettext (A->name), gettext (B->name));
 }
 void ttk_menu_sort_my_way (TWidget *this, int (*cmp)(const void *, const void *))
 {
@@ -824,7 +824,7 @@ TWindow *ttk_mh_sub (ttk_menu_item *item)
 
     ttk_add_widget (ret, ttk_new_menu_widget (item->data, ttk_menufont,
 					      item->menuwidth, item->menuheight));
-    ttk_window_title (ret, item->name);
+    ttk_window_title (ret, gettext (item->name));
     ret->widgets->v->draw (ret->widgets->v, ret->srf);
     return ret;
 }
