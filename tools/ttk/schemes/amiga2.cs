@@ -1,7 +1,7 @@
+\name Amiga 2.x
 # Amiga 2.x color scheme
 #  brought in from pz0 by bleullama
 #  originally created by bleullama
-\name Amiga 2.x
 
 \def gray   #aaaaaa
 \def white  #ffffff

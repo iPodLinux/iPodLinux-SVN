@@ -1,6 +1,6 @@
+\name Gameboy greens
 # Gameboy color scheme
 #  colors picked by bleullama, based on the standard grayscale color scheme
-\name Gameboy greens
 
 \def white  #a8a87d
 \def gray   #7d7d52
