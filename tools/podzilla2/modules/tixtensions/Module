@@ -1,0 +1,4 @@
+Module: tixtensions
+Display-name: Text Input Extensions
+Author: Jonathan Bettencourt
+Dependencies: textinput,tiwidgets
