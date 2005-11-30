@@ -54,200 +54,6 @@ static void lcd_cmd_data(int cmd, int data) {
   }
 }
 
-void lcd_5g_write(unsigned R0, unsigned R1, unsigned R2, unsigned R3) {
-  unsigned LR, R12, R4, R5;
-  unsigned data[4] = {R3, R4, LR, 0};     
-  R5 = R3;
-  LR = R3 &~ 0x1; //clear bit 1 of r3
-  R12 = (R0 & 0x3) | (R3 & ~0x1);  
-  if (R12!=0)
-    return;
-  if (R3!=0)
-    {
-      LR = 0x30050000;
-      R3 = 0x30040000;
-      R12 = 0x30070000;
-    } else {
-      LR = 0x30010000;
-      R12 = 0x30030000;
-      R3 = 0x30000000;
-    }
-  
-  R4 = R2 >> 2;
-  outw(R0, LR);
-  R0 = R0 >> 16;
-  outw(R0, LR);
-  
-  // data on short boundary and bytes to write > 16
-  if ((R1 & 0x1 != 0) && (R2 >= 0x10))
-    { 
-      R0 = R2 >> 31; //ASR
-      R0 = R2 + R0 >> 30; //LSR
-      R2 = R0 >> 2; // ASR 
-      while (R2 > 0)
-	{
-	  while (inw(R12) & 0x2 == 0);
-	  R0 = inw(R1);
-	  outw(R0, R3);
-	  R0 = R1 + 2;
-	  R1 = inw(R1+2);
-	  outw(R1, R3);
-	  R1 = R0 + 2;
-	  R2--;
-	}
-    } else {
-      char R9, R10;
-      char * ptr1;    
-      R2 = 0;
-      ptr1 = R1;      
-      while (R2 < R4)
-	{
-	  
-	  R5 = *ptr1 | (*(ptr1+1)  << 8);
-	  ptr1 += 2;      
-	  while (inw(R12) & 0x2 == 0);
-	  
-	  outw(R5, R3);
-	  R5 = *ptr1 | (*(ptr1+1)  << 8);
-	  ptr1 += 2;      
-	  
-	  outw(R5, R3);
-	  R1 = R1 + 4;
-	  R2 = R2 + 1;
-	}               
-    } 
-}
-
-void lcd_5g_read(R0, R1, R2, R3)
-{
-        unsigned R12, LR, R4, R5;
-        unsigned data[2];
-        unsigned outbuf;
-        outbuf = R1;
-         
-        LR = R3 &~1;
-        R12 = R1 & 0x3;
-        R12 = (R1 & 0x3) | (R3 & ~0x1);
-        if (R12 != 0)
-                return;
-        if (R3!=0)
-        {
-                LR = 0x30060000;
-                R3 = 0x30040000;
-                R12 = 0x30070000;
-        } else {
-                LR = 0x30020000;
-                R3 = 0x30000000;
-                R12 = 0x30030000;
-        }
-        R5 = R2 >> 2;
-
-
-        while (inw(LR) & 1 == 0);
-        outw(R1, LR);
-        R1 = R1 >> 16;
-        outw(R1, LR);
-
-#if 1
-        if (R0 & 1 != 0) // short boundary?
-        {
-                
-                char * ptr = outbuf;
-                R1 = &data; //SP;
-                R2 = 0;
-                while (R2 < R5)
-                {
-                        while (inw(R12) & 0x10 == 0);
-
-
-                        R4 = inw(R3);
-                        *ptr = R4 & 0xF;
-                        *(ptr+1) = (R4 >> 8) & 0xF;
-                        ptr+=2;
-                        R4 = inw(R3);
-                        *ptr = R4 & 0xF;
-                        *(ptr+1) = (R4 >> 8) & 0xF;
-                        ptr+=2; 
-                        R2++;
-                /*      R4 = inh(R3);
-                        data[0]= R4;
-                        R4 = inb(R1);
-                        outb(R4, R0);
-                        R4 = inb(R1+1);
-                        outb(R4, R0+1); 
-                        R4 = inh(R3);
-                        data[0] = R4;
-                        R4 = inb(R1);
-                        R2+=1;
-                        outb(R4, R0+0x2);
-                        R4 = inb(R1+1);
-                        outb(R4, R0+0x3);
-                        R0 += 4; */             
-
-                }
-        } else {
-                R1 = 0;
-                        
-                while (R1 < R5)
-                {
-
-                        while (inw(R12) & 0x10 == 0);
-
-                        R2 = inw(R3);
-                        outw(R2, R0);
-                        R2 = inw(R3);
-                        outw(R2, R0+2);
-                        R0+=4;
-                        R1+=1;
-                }
-        }
-#endif
-        R0 = inw(LR);
-        data[0] = R0;
-        R0 = 0;
-                
-}
-
-void lcd_5g_finishup()
-{
-        unsigned data[2]; 
-        outw(0x31, 0x30030000); 
-        lcd_5g_read(data, 0x1FC, 4, 0);
-
-        lcd_5g_read(&data[1], 0x1F8, 4, 0);
-        while ((data[1]==0xFFFA0005) || (data[1]==0xFFFF))
-        {
-                lcd_5g_read(&data[1], 0x1F8, 4, 0);
-        }       
-        lcd_5g_read(data, 0x1FC, 4, 0);
-}
-
-void lcd_5g_setup_rect(unsigned cmd, unsigned start_horiz, unsigned start_vert, 
-                unsigned max_horiz, unsigned max_vert, unsigned count)
-{
-        
-        unsigned data[8] = {0xFFFA0005, cmd, start_horiz, start_vert, 
-                                max_horiz, max_vert, count, 0}; 
-        lcd_5g_write(0x1F8, &data, 4, 0);
-        lcd_5g_write(0xE0000, &data[1], 4, 0);
-        lcd_5g_write(0xE0004, &data[2], 4, 0);
-        lcd_5g_write(0xE0008, &data[3], 4, 0);
-        lcd_5g_write(0xE000C, &data[4], 4, 0);
-        lcd_5g_write(0xE0010, &data[5], 4, 0);
-        lcd_5g_write(0xE0014, &data[6], 4, 0);
-        lcd_5g_write(0xE0018, &data[6], 4, 0);
-        lcd_5g_write(0xE001C, &data[7], 4, 0);
-}
-
-void lcd_5g_draw_2pixels(unsigned two_pixels, unsigned y)
-{
-        unsigned data[3] = {two_pixels, y, 0};
-        unsigned cmd = 0xE0020 + (y << 2);
-        lcd_5g_write(cmd, data, 4, 0); 
-        
-}
-
-
 /* send LCD command */
 static void lcd_prepare_cmd(int cmd) {
   lcd_wait_write();
@@ -281,6 +87,59 @@ static void lcd_cmd_and_data(int cmd, int data_lo, int data_hi) {
   lcd_prepare_cmd(cmd);
 
   lcd_send_data(data_lo, data_hi);
+}
+
+static void lcd_bcm_write32(unsigned address, unsigned value) {
+	/* write out destination address as two 16bit values */
+	outw(address, 0x30010000);
+	outw((address >> 16), 0x30010000);
+
+	/* wait for it to be write ready */
+	while ((inw(0x30030000) & 0x2) == 0);
+
+	/* write out the value low 16, high 16 */
+	outw(value, 0x30000000);
+	outw((value >> 16), 0x30000000);
+}
+
+static void lcd_bcm_setup_rect(unsigned cmd, unsigned start_horiz, unsigned start_vert, unsigned max_horiz, unsigned max_vert, unsigned count) {
+	lcd_bcm_write32(0x1F8, 0xFFFA0005);
+	lcd_bcm_write32(0xE0000, cmd);
+	lcd_bcm_write32(0xE0004, start_horiz);
+	lcd_bcm_write32(0xE0008, start_vert);
+	lcd_bcm_write32(0xE000C, max_horiz);
+	lcd_bcm_write32(0xE0010, max_vert);
+	lcd_bcm_write32(0xE0014, count);
+	lcd_bcm_write32(0xE0018, count);
+	lcd_bcm_write32(0xE001C, 0);
+}
+
+static unsigned lcd_bcm_read32(unsigned address) {
+	while ((inw(0x30020000) & 1) == 0);
+
+	/* write out destination address as two 16bit values */
+	outw(address, 0x30020000);
+	outw((address >> 16), 0x30020000);
+
+	/* wait for it to be read ready */
+	while ((inw(0x30030000) & 0x10) == 0);
+
+	/* read the value */
+	return inw(0x30000000) | inw(0x30000000) << 16;
+}
+
+static void lcd_bcm_finishup(void) {
+	unsigned data; 
+
+	outw(0x31, 0x30030000); 
+
+	lcd_bcm_read32(0x1FC);
+
+	do {
+		data = lcd_bcm_read32(0x1F8);
+	} while (data == 0xFFFA0005 || data == 0xFFFF);
+
+	lcd_bcm_read32(0x1FC);
 }
 
 inline uint8 LUMA565(uint16 val) {
@@ -409,9 +268,8 @@ static void fb_565_bitblt(uint16 *x, int sx, int sy, int mx, int my) {
     lcd_send_lo(0x0);
     lcd_send_lo(0x22);
   } else { // 5G
-    unsigned count;
-    count = (width * height) << 1;
-    lcd_5g_setup_rect(0x34, rect1, rect2, rect3, rect4, count);
+    unsigned count = (width * height) << 1;
+    lcd_bcm_setup_rect(0x34, rect1, rect2, rect3, rect4, count);
   }
   
   addr += startx * (ipod->lcd_width*2) + starty;
@@ -455,16 +313,16 @@ static void fb_565_bitblt(uint16 *x, int sx, int sy, int mx, int my) {
 	  /* output 2 pixels */
 	  outl(two_pixels, 0x70008b00);
 	} else {
-	  lcd_5g_draw_2pixels(two_pixels,curpixel);
-
-	  curpixel++;
+          /* output 2 pixels */
+          lcd_bcm_write32(0xE0020 + (curpixel << 2), two_pixels);
+          curpixel++;	
 	}
       }
       
       addr += ipod->lcd_width - width;
     }
 
-    if( ipod->lcd_type != 0xB ) {
+    if (ipod->lcd_type != 5) {
       while ((inl(0x70008a20) & 0x4000000) == 0);
       
       outl(0x0, 0x70008a24);
@@ -475,8 +333,9 @@ static void fb_565_bitblt(uint16 *x, int sx, int sy, int mx, int my) {
     }
   }
 
-  if( ipod->lcd_type == 5 )
-    lcd_5g_finishup();
+  if (ipod->lcd_type == 5) {
+    lcd_bcm_finishup();
+  }
 }
 
 void fb_update(uint16 *x) {
