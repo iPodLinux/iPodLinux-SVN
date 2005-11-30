@@ -1033,10 +1033,21 @@ int ttk_hide_window (TWindow *win)
 	
 	if (newwindow->w == win->w && newwindow->h == win->h &&
 	    newwindow->x == ttk_screen->wx && newwindow->y == ttk_screen->wy) {
-	    
+ 	    
 	    int i;
 	    int jump = win->w / ttk_transit_frames;
-	    
+
+	    // Render stuff in the new window
+            TWidgetList *cur = win->widgets;
+            while (cur) {
+                if (ttk_screen->bpp == 2)
+                    ttk_ap_fillrect (win->srf, ttk_ap_get ("window.bg"), 0, 0, win->w, win->h);
+                else
+                    ttk_fillrect (win->srf, 0, 0, win->w, win->h, ttk_makecol (CKEY));
+                cur->v->draw (cur->v, win->srf);
+                cur = cur->next;
+            }
+
 	    for (i = ttk_transit_frames - 1; i >= 0; i--) {
 	    	ttk_ap_fillrect (ttk_screen->srf, ttk_ap_get ("window.bg"), ttk_screen->wx,
 	    	                 ttk_screen->wy, ttk_screen->w, ttk_screen->h);
