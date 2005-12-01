@@ -87,12 +87,8 @@ static PzModule *module_head;
 // sets mod->mountpt = 0 on failure, returns -1. 0 = success.
 static int mount_pod (PzModule *mod) 
 {
-    struct stat st;
-
 #ifdef MountPods
     char mountline[256];
-    char devstr[64];
-    int devfd, podfd;
     static int nextmount = 0;
 
 #ifdef IPOD
@@ -119,6 +115,8 @@ static int mount_pod (PzModule *mod)
     	return -1;
     }
 #else
+    struct stat st;
+
     mod->mountpt = malloc (strlen ("xpods/") + strlen (strrchr (mod->podpath, '/')) + 1);
     sprintf (mod->mountpt, "xpods/%s", strrchr (mod->podpath, '/') + 1);
     if (strrchr (mod->mountpt, '.'))
@@ -472,7 +470,7 @@ void pz_modules_init()
         }
 
 #ifdef MountPods
-	if (stat (podpath, &st) < 0 || !S_ISREG (st.st_mode) && !S_ISDIR (st.st_mode)) {
+	if (stat (podpath, &st) < 0 || (!S_ISREG (st.st_mode) && !S_ISDIR (st.st_mode))) {
 	    pz_perror (podpath);
 	    free (podpath);
 	    continue;

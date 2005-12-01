@@ -470,7 +470,7 @@ void pz_message (const char *text)
 {
 #ifdef IPOD
     FILE *fp = fopen ("msg.inf", "a");
-    fprintf (fp, "I- %%%p \"%s\" len %d\n", text, text, strlen (text));
+    fprintf (fp, "I- %%%p \"%s\" len %ld\n", text, text, strlen (text));
     fclose (fp);
 #endif
     pz_do_dialog (_("Information"), text, _("Ok"), 0, 0, 0, 0);
@@ -486,7 +486,7 @@ void pz_warning (const char *fmt, ...)
 {
 #ifdef IPOD
     FILE *fp = fopen ("msg.inf", "a");
-    fprintf (fp, "W- %%%p \"%s\" len %d\n", fmt, fmt, strlen (fmt));
+    fprintf (fp, "W- %%%p \"%s\" len %ld\n", fmt, fmt, strlen (fmt));
     fclose (fp);
 #endif
     va_list ap;
