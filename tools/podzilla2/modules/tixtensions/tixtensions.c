@@ -68,7 +68,7 @@ PzWindow * tix_paste_handler(ttk_menu_item * item)
 		if (tix_file_clipboard_copy) {
 			
 			if (! (buf = (char *)malloc(TIX_FILE_BUFFER_SIZE)) ) {
-				printf("malloc for file copy failed\n");
+				pz_error("malloc for file copy failed\n");
 				return TTK_MENU_UPONE;
 			}
 			fin = fopen(tix_file_clipboard, "rb");
@@ -77,7 +77,7 @@ PzWindow * tix_paste_handler(ttk_menu_item * item)
 				fwrite(buf, 1, buflen, fout);
 			}
 			if (!feof(fin)) {
-				perror("Fwrite call returned error in file copy");
+				pz_perror("Fwrite call returned error in file copy");
 			}
 			if (fin) fclose(fin);
 			if (fout) fclose(fout);
@@ -85,7 +85,7 @@ PzWindow * tix_paste_handler(ttk_menu_item * item)
 			
 		} else {
 			if (rename(tix_file_clipboard, fn)) {
-				perror("Rename call returned error");
+				pz_perror("Rename call returned error");
 			}
 			free(tix_file_clipboard);
 			free(tix_file_clipboard_name);
@@ -155,7 +155,7 @@ PzWindow * new_mkdir_window(ttk_menu_item * item)
 	wid2->draw = tix_mkdir_draw;
 	ttk_add_widget(ret, wid2);
 	ret = pz_finish_window(ret);
-	//ti_widget_start(wid);
+	ti_widget_start(wid);
 	return ret;
 }
 
@@ -194,7 +194,7 @@ PzWindow * new_rename_window(ttk_menu_item * item)
 	wid2->draw = tix_rename_draw;
 	ttk_add_widget(ret, wid2);
 	ret = pz_finish_window(ret);
-	//ti_widget_start(wid);
+	ti_widget_start(wid);
 	return ret;
 }
 
@@ -204,13 +204,13 @@ void tix_run_draw(TWidget * wid, ttk_surface srf)
 {
 	ttk_fillrect(srf, wid->x, wid->y, wid->w, wid->h, ttk_ap_getx("window.bg")->color);
 	if (ttk_screen->w < 160) {
-		ti_multiline_text(srf, ttk_menufont, wid->x, wid->y, wid->w, wid->h, ttk_ap_getx("window.fg")->color,
+		ti_multiline_text(srf, ttk_textfont, wid->x, wid->y, wid->w, wid->h, ttk_ap_getx("window.fg")->color,
 			_("Type the name of a file to open."), -1, 0, 0, 0, 0);
 	} else if (ttk_screen->w < 200) {
-		ti_multiline_text(srf, ttk_menufont, wid->x, wid->y, wid->w, wid->h, ttk_ap_getx("window.fg")->color,
+		ti_multiline_text(srf, ttk_textfont, wid->x, wid->y, wid->w, wid->h, ttk_ap_getx("window.fg")->color,
 			_("Type the name of a program, folder, or document to open."), -1, 0, 0, 0, 0);
 	} else {
-		ti_multiline_text(srf, ttk_menufont, wid->x, wid->y, wid->w, wid->h, ttk_ap_getx("window.fg")->color,
+		ti_multiline_text(srf, ttk_textfont, wid->x, wid->y, wid->w, wid->h, ttk_ap_getx("window.fg")->color,
 			_("Type the name of a program, folder, or document, and podzilla will open it for you."), -1, 0, 0, 0, 0);
 	}
 }
@@ -234,15 +234,15 @@ PzWindow * new_run_window()
 	TWidget * wid;
 	TWidget * wid2;
 	ret = pz_new_window(_("Run..."), PZ_WINDOW_NORMAL);
-	wid = ti_new_standard_text_widget(10, 10+ttk_text_height(ttk_textfont)*((ttk_screen->w < 160 || ttk_screen->w >= 320)?3:4), ret->w-20, 10+ttk_text_height(ttk_textfont), 0, "", tix_run_callback);
+	wid = ti_new_standard_text_widget(10, 10+ttk_text_height(ttk_textfont)*((ttk_screen->w < 160 || ttk_screen->w >= 320)?2:3), ret->w-20, 10+ttk_text_height(ttk_textfont), 0, "", tix_run_callback);
 	ttk_add_widget(ret, wid);
-	wid2 = ttk_new_widget(10, 10);
+	wid2 = ttk_new_widget(10, 5);
 	wid2->w = ret->w-20;
 	wid2->h = ttk_text_height(ttk_menufont)*((ttk_screen->w < 160 || ttk_screen->w >= 320)?2:3);
 	wid2->draw = tix_run_draw;
 	ttk_add_widget(ret, wid2);
 	ret = pz_finish_window(ret);
-	//ti_widget_start(wid);
+	ti_widget_start(wid);
 	return ret;
 }
 

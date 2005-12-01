@@ -353,15 +353,15 @@ int ti_widget_start(TWidget * wid)
 	/* Start text input if it hasn't been started already. */
 	int ht;
 	if (((TiBuffer *)wid->data)->idata[0]) {
-		ht = pz_start_input_n();
+		ht = pz_start_input_n_for (wid->win);
 	} else {
-		ht = pz_start_input();
+		ht = pz_start_input_for (wid->win);
 	}
 	if (((TiBuffer *)wid->data)->idata[1]) {
-		ttk_input_move(wid->win->x+wid->x+1, wid->win->y+wid->y+wid->h-ht-1);
+		ttk_input_move_for(wid->win, wid->win->x+wid->x+1, wid->win->y+wid->y+wid->h-ht-1);
 		((TiBuffer *)wid->data)->idata[2] = ht;
 	} else {
-		ttk_input_move(wid->win->x+wid->x+1, wid->win->y+wid->y+wid->h);
+		ttk_input_move_for(wid->win, wid->win->x+wid->x+1, wid->win->y+wid->y+wid->h);
 		((TiBuffer *)wid->data)->idata[2] = 0;
 	}
 	wid->win->input->w = wid->w-2;
@@ -576,7 +576,7 @@ PzWindow * new_standard_text_demo_window()
 	wid = ti_new_standard_text_widget(10, 40, ret->w-20, 10+ttk_text_height(ttk_textfont), 0, "", ti_destructive_callback);
 	ttk_add_widget(ret, wid);
 	ret = pz_finish_window(ret);
-	//ti_widget_start(wid);
+	ti_widget_start(wid);
 	return ret;
 }
 
@@ -588,7 +588,7 @@ PzWindow * new_numeric_text_demo_window()
 	wid = ti_new_numeric_text_widget(10, 40, ret->w-20, 10+ttk_text_height(ttk_textfont), 0, "", ti_destructive_callback);
 	ttk_add_widget(ret, wid);
 	ret = pz_finish_window(ret);
-	//ti_widget_start(wid);
+	ti_widget_start(wid);
 	return ret;
 }
 
@@ -600,7 +600,7 @@ PzWindow * new_password_text_demo_window()
 	wid = ti_new_password_text_widget(10, 40, ret->w-20, 10+ttk_text_height(ttk_textfont), 0, "", ti_destructive_callback);
 	ttk_add_widget(ret, wid);
 	ret = pz_finish_window(ret);
-	//ti_widget_start(wid);
+	ti_widget_start(wid);
 	return ret;
 }
 
@@ -612,7 +612,7 @@ PzWindow * new_multiline_text_demo_window()
 	wid = ti_new_multiline_text_widget(10, 10, ret->w-20, ret->h-20, 1, "", ti_destructive_callback);
 	ttk_add_widget(ret, wid);
 	ret = pz_finish_window(ret);
-	//ti_widget_start(wid);
+	ti_widget_start(wid);
 	return ret;
 }
 
