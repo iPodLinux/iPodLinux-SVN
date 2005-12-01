@@ -3193,7 +3193,7 @@ int filledTrigonRGBA(SDL_Surface * dst, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 
 
 /* ---- Polygon */
 
-int polygonColor(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n, Uint32 color)
+int __polyColor(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n, Uint32 color, int connect_last)
 {
     int result;
     int i;
@@ -3225,9 +3225,21 @@ int polygonColor(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n,
 	x2++;
 	y2++;
     }
-    result |= lineColor(dst, *x1, *y1, *vx, *vy, color);
+
+    if( connect_last )
+	result |= lineColor(dst, *x1, *y1, *vx, *vy, color);
 
     return (result);
+}
+
+int polygonColor(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n, Uint32 color)
+{
+    return __polyColor( dst, vx, vy, n, color, 1 );
+}
+
+int polylineColor(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n, Uint32 color)
+{
+    return __polyColor( dst, vx, vy, n, color, 0 );
 }
 
 int polygonRGBA(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
@@ -3238,9 +3250,17 @@ int polygonRGBA(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n, 
     return (polygonColor(dst, vx, vy, n, ((Uint32) r << 24) | ((Uint32) g << 16) | ((Uint32) b << 8) | (Uint32) a));
 }
 
+int polylineRGBA(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
+{
+    /*
+     * Draw 
+     */
+    return (polylineColor(dst, vx, vy, n, ((Uint32) r << 24) | ((Uint32) g << 16) | ((Uint32) b << 8) | (Uint32) a));
+}
+
 /* ---- AA-Polygon */
 
-int aapolygonColor(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n, Uint32 color)
+int __aapolyColor(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n, Uint32 color, int connect_last)
 {
     int result;
     int i;
@@ -3272,9 +3292,21 @@ int aapolygonColor(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int 
 	x2++;
 	y2++;
     }
-    result |= aalineColorInt(dst, *x1, *y1, *vx, *vy, color, 0);
+
+    if( connect_last )
+	result |= aalineColorInt(dst, *x1, *y1, *vx, *vy, color, 0);
 
     return (result);
+}
+
+int aapolygonColor(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n, Uint32 color)
+{
+    return __aapolyColor( dst, vx, vy, n, color, 1 );
+}
+
+int aapolylineColor(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n, Uint32 color)
+{
+    return __aapolyColor( dst, vx, vy, n, color, 0 );
 }
 
 int aapolygonRGBA(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
@@ -3283,6 +3315,14 @@ int aapolygonRGBA(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n
      * Draw 
      */
     return (aapolygonColor(dst, vx, vy, n, ((Uint32) r << 24) | ((Uint32) g << 16) | ((Uint32) b << 8) | (Uint32) a));
+}
+
+int aapolylineRGBA(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
+{
+    /*
+     * Draw 
+     */
+    return (aapolylineColor(dst, vx, vy, n, ((Uint32) r << 24) | ((Uint32) g << 16) | ((Uint32) b << 8) | (Uint32) a));
 }
 
 /* ---- Filled Polygon */

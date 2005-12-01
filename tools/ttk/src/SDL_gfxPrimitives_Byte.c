@@ -1587,7 +1587,7 @@ int filledTrigonByte(SDL_Surface * dst, Sint16 x1, Sint16 y1, Sint16 x2, Sint16 
 
 /* ---- Polygon */
 
-int polygonByte(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n, Uint32 color)
+int __polyByte(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n, Uint32 color, int connect_ends)
 {
     int result;
     int i;
@@ -1619,16 +1619,32 @@ int polygonByte(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n, 
 	x2++;
 	y2++;
     }
-    result |= lineByte(dst, *x1, *y1, *vx, *vy, color);
+    if( connect_ends )
+	result |= lineByte(dst, *x1, *y1, *vx, *vy, color);
 
     return (result);
+}
+
+int polylineByte(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n, Uint32 color)
+{
+    return __polyByte( dst, vx, vy, n, color, 0 );
+}
+
+int polygonByte(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n, Uint32 color)
+{
+    return __polyByte( dst, vx, vy, n, color, 1 );
 }
 
 /* ---- AA-Polygon */
 
 int aapolygonByte(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n, Uint32 color)
 {
-    return polygonByte (dst, vx, vy, n, color);
+    return __polyByte (dst, vx, vy, n, color, 1);
+}
+
+int aapolylineByte(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n, Uint32 color)
+{
+    return __polyByte (dst, vx, vy, n, color, 0);
 }
 
 /* ---- Filled Polygon */

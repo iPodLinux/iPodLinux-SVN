@@ -182,6 +182,20 @@ extern "C" {
     DLLINTERFACE int aapolygonRGBA(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy,
 				   int n, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 
+/* Polyline */
+
+    DLLINTERFACE int polylineColor(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n, Uint32 color);
+    DLLINTERFACE int polylineByte(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n, Uint32 color);
+    DLLINTERFACE int polylineRGBA(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy,
+				 int n, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
+
+/* AA-Polyline */
+
+    DLLINTERFACE int aapolylineColor(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n, Uint32 color);
+    DLLINTERFACE int aapolylineByte(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n, Uint32 color);
+    DLLINTERFACE int aapolylineRGBA(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy,
+				   int n, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
+
 /* Filled Polygon */
 
     DLLINTERFACE int filledPolygonColor(SDL_Surface * dst, const Sint16 * vx, const Sint16 * vy, int n, Uint32 color);
