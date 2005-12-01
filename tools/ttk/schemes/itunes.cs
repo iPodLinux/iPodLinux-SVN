@@ -38,9 +38,17 @@
 #\def aquascrbar  #7abaff
 #\def aquacrsr    #808080
 
+# gradient for "apple", pulled from Stuart Clark (Decipher)'s gradient patch
+\def graptop    #E7EFFD
+\def grapmid    #B5CED7
+\def grapbot    #B5CDE7
+
 #TTK appearance only gives me 10 /defs - feh!
 
   header: bg => metalbg, fg => metalfg, line => #666666 -1, accent => #d6d6d6
+	  gradient.top => graptop,
+	  gradient.middle => grapmid,
+	  gradient.bottom => grapbot
  battery: border => metalfg, bg => metalbg, fill.normal => metalfg +1, fill.low => metalwid +1, fill.charge => metalfg +1
     lock: border => metalwid, fill => metalwid
  loadavg: bg => metalbg, fg => metalwid, spike => metalfg

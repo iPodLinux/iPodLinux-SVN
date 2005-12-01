@@ -11,8 +11,8 @@
 
   header: bg => white, fg => blue, line => blue -1, accent => blue
 	  gradient.top => white,
-	  gradient.middle => blue,
-	  gradient.bottom => black
+	  gradient.middle => orange,
+	  gradient.bottom => white
 
  battery: border => black, bg => white, fill.normal => blue +1, 
 		fill.low => orange +1, fill.charge => orange +1

@@ -3,8 +3,12 @@
 \def white  #ffffff
 \def gray   #a0a0a0
 \def dkgray #505050
+\def red    #ff0000
 
   header: bg => white, fg => black, line => black -1, accent => gray
+	  gradient.top => white,
+	  gradient.middle => white,
+	  gradient.bottom => dkgray
  battery: border => black, bg => white, fill.normal => black +1, fill.low => dkgray +1, fill.charge => black +1
     lock: border => black, fill => black
  loadavg: bg => gray, fg => dkgray, spike => black
