@@ -1,0 +1,4 @@
+Module: tikeypad
+Display-name: Telephone & Four-Button Keypad
+Author: Jonathan Bettencourt
+Dependencies: textinput
