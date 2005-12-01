@@ -13,7 +13,8 @@
   header: bg => black, fg => red, line => red -1, accent => red
 	  gradient.top => dkred,
 	  gradient.middle => blue,
-	  gradient.bottom => ltred
+	  gradient.bottom => ltred,
+	  gradient.bar => black
 
  battery: border => red, bg => black, fill.normal => red +1, 
 		fill.low => orange +1, fill.charge => orange +1
