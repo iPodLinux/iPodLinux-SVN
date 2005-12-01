@@ -58,6 +58,7 @@
    input: bg => aquabg, fg => aquafg, selbg => aquadbtn, selfg => aquafg, border => aquawinbdr, cursor => #808080
 
     menu: bg => #e7edf6, fg => #000000, choice => #000000, icon => #000000,
-          selbg => #3b79da, selfg => #ffffff, selchoice => #ffffff, icon1 => #28503c, icon2 => #50a078, icon3 => #ffffff
+          selbg => #3b79da, selfg => #ffffff, selchoice => #ffffff,
+          icon0 => #3b79da, icon1 => #28503c, icon2 => #50a078, icon3 => #ffffff
   slider: border => #282828, bg => #e8ebd2, full => #acb098
 textarea: bg => #ffffff, fg => #000000
