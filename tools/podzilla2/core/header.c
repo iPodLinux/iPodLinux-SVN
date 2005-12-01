@@ -549,9 +549,10 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 			     (ttk_screen->w - width) / 2, 0,
 			     (ttk_screen->w + width) / 2, ttk_screen->wy - 2);
 	}
-    } else if(  (decorations == PZ_DEC_BIGRADIENT) ||
-		(decorations == PZ_DEC_TRIGRADIENT) ||
-		(decorations == PZ_DEC_HALFGRADIENT) ){
+    } else if(  (decorations == PZ_DEC_BIGRAD) ||
+		(decorations == PZ_DEC_TRIGRAD) ||
+		(decorations == PZ_DEC_BIGRADBAR) ||
+		(decorations == PZ_DEC_TRIGRADBAR) ){
 	int y;
 
 	if( decoration_colors_dirty )
@@ -566,7 +567,8 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 		ttk_unmakecol_ex( ttk_ap_getx( "header.gradient.bottom" )->color,
 						&rb, &gb, &bb, srf);
 
-		if( decorations == PZ_DEC_TRIGRADIENT )
+		if( (decorations == PZ_DEC_TRIGRAD)
+		    || (decorations == PZ_DEC_TRIGRADBAR ))
 		{
 		    ttk_unmakecol_ex( ttk_ap_getx( "header.gradient.middle" )->color,
 						&rm, &gm, &bm, srf);
@@ -612,9 +614,26 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 	}
 
 	/* fill the top if it's a half-gradient */
-	if( decorations == PZ_DEC_HALFGRADIENT )
-		ttk_ap_fillrect (srf, ttk_ap_get ("header.gradient.bar"),
-				0, 1, this->w, y/2 );
+	if( (    (decorations == PZ_DEC_BIGRADBAR)
+	      || (decorations == PZ_DEC_TRIGRADBAR)
+	    ) && ttk_ap_get( "header.gradient.bar" ) )
+	{
+	    int spacing =  ttk_ap_get( "header.gradient.bar" )->spacing;
+
+	    if( spacing > 0 )
+		    ttk_fillrect( srf, 
+			    0, 
+			    ttk_ap_get( "header.gradient.bar" )->spacing,
+			    this->w, this->h>>1, 
+			    ttk_ap_get ("header.gradient.bar")->color );
+	    if( spacing < 0 ) {
+		    spacing *= -1;
+		    ttk_fillrect( srf, 
+			    0, (this->h>>1) - spacing,
+			    this->w, (this->h>>1) + spacing, 
+			    ttk_ap_get ("header.gradient.bar")->color );
+	    }
+	}
     }    
 }
 
