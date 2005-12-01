@@ -7,7 +7,8 @@
   header: bg => white, fg => black, line => black -1, accent => gray
 	  gradient.top => dkgray,
 	  gradient.middle => white,
-	  gradient.bottom => white
+	  gradient.bottom => white,
+	  gradient.bar => gray
  battery: border => black, bg => white, fill.normal => black +1, fill.low => dkgray +1, fill.charge => black +1
     lock: border => black, fill => black
  loadavg: bg => gray, fg => dkgray, spike => black

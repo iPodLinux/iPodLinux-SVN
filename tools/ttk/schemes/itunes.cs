@@ -48,7 +48,8 @@
   header: bg => metalbg, fg => metalfg, line => #666666 -1, accent => #d6d6d6
 	  gradient.top => graptop,
 	  gradient.middle => grapmid,
-	  gradient.bottom => grapbot
+	  gradient.bottom => grapbot,
+	  gradient.bar => graptop
  battery: border => metalfg, bg => metalbg, fill.normal => metalfg +1, fill.low => metalwid +1, fill.charge => metalfg +1
     lock: border => metalwid, fill => metalwid
  loadavg: bg => metalbg, fg => metalwid, spike => metalfg
