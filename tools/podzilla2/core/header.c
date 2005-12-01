@@ -559,7 +559,6 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 		int rt, gt, bt;
 		int rm, gm, bm;
 		int rb, gb, bb;
-		int bigrad = 0;
 		int h2 = this->h/2;
 
 		ttk_unmakecol_ex( ttk_ap_getx( "header.gradient.top" )->color,
