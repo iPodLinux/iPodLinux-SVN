@@ -426,6 +426,8 @@ void pz_register_input_method (TWidget *(*handler)());
 void pz_register_input_method_n (TWidget *(*handler)()); // _n = numeric
 int pz_start_input();
 int pz_start_input_n();
+int pz_start_input_for (TWindow *win);
+int pz_start_input_n_for (TWindow *win);
 
 
 /** Appearance - appearance.c **/

@@ -49,3 +49,5 @@ void pz_register_input_method (TWidget *(*h)()) { handler = h; }
 void pz_register_input_method_n (TWidget *(*h)()) { handler_n = h; }
 int pz_start_input() { return ttk_input_start (handler()); }
 int pz_start_input_n() { return ttk_input_start (handler_n()); }
+int pz_start_input_for (TWindow *win) { return ttk_input_start_for (win, handler()); }
+int pz_start_input_n_for (TWindow *win) { return ttk_input_start_for (win, handler_n()); }
