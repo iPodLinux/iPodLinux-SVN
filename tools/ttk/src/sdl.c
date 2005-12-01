@@ -429,6 +429,38 @@ void ttk_poly_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v)
     free (vx);
     free (vy);
 }
+
+void ttk_polyline (ttk_surface srf, int nv, short *vx, short *vy, ttk_color col)
+{
+    if (ttk_screen->bpp == 2)
+	polylineByte (srf, (Sint16 *)vx, (Sint16 *)vy, nv, col);
+    else
+	polylineColor (srf, (Sint16 *)vx, (Sint16 *)vy, nv, fetchcolor (col));
+}
+void ttk_polyline_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v) 
+{
+    int i;
+    short *vx = malloc (n*sizeof(short)), *vy = malloc (n*sizeof(short));
+    if (!vx || !vy) {
+	fprintf (stderr, "Out of memory\n");
+	ttk_quit();
+	exit (1);
+    }
+
+    for (i = 0; i < n; i++) {
+	vx[i] = v[i].x;
+	vy[i] = v[i].y;
+    }
+    
+    if (ttk_screen->bpp == 2)
+	polylineByte (srf, vx, vy, n, gc->fg);
+    else
+	polylineColor (srf, vx, vy, n, fetchcolor (gc->fg));
+    
+    free (vx);
+    free (vy);
+}
+
 void ttk_fillpoly (ttk_surface srf, int nv, short *vx, short *vy, ttk_color col)
 {
     if (ttk_screen->bpp == 2)

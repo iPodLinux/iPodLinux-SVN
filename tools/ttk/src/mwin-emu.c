@@ -236,7 +236,7 @@ void t_GrPoint (t_GR_DRAW_ID dst, t_GR_GC_ID gc, int x, int y) { ttk_pixel_gc (d
 void t_GrLine (t_GR_DRAW_ID dst, t_GR_GC_ID gc, int x1, int y1, int x2, int y2) { ttk_line_gc (dst->srf, gc, x1, y1, x2, y2); }
 void t_GrRect (t_GR_DRAW_ID dst, t_GR_GC_ID gc, int x, int y, int w, int h) { ttk_rect_gc (dst->srf, gc, x, y, w, h); }
 void t_GrFillRect (t_GR_DRAW_ID dst, t_GR_GC_ID gc, int x, int y, int w, int h) { ttk_fillrect_gc (dst->srf, gc, x, y, w, h); }
-void t_GrPoly (t_GR_DRAW_ID dst, t_GR_GC_ID gc, int n, t_GR_POINT *v) { ttk_poly_gc (dst->srf, gc, n, v); }
+void t_GrPoly (t_GR_DRAW_ID dst, t_GR_GC_ID gc, int n, t_GR_POINT *v) { ttk_polyline_gc (dst->srf, gc, n, v); }
 void t_GrFillPoly (t_GR_DRAW_ID dst, t_GR_GC_ID gc, int n, t_GR_POINT *v) { ttk_fillpoly_gc (dst->srf, gc, n, v); }
 void t_GrEllipse (t_GR_DRAW_ID dst, t_GR_GC_ID gc, int x, int y, int rx, int ry) { ttk_ellipse_gc (dst->srf, gc, x, y, rx, ry); }
 void t_GrFillEllipse (t_GR_DRAW_ID dst, t_GR_GC_ID gc, int x, int y, int rx, int ry) { ttk_fillellipse_gc (dst->srf, gc, x, y, rx, ry); }
