@@ -454,10 +454,18 @@ void pz_header_unset_local()
     local--;
 }
 
-static int decorations;
+static int decorations;			/* which decoration set to use */
+static int decoration_colors_dirty = 0; /* have the colors changed on us? */
 void pz_header_set_decorations (int decor) 
 {
-    decorations = decor;
+	if( decorations != decor )  decoration_colors_dirty++;
+	decorations = decor;
+}
+
+static ttk_color gradcol[32];           /* gradient color buffer */
+void pz_header_colors_dirty( void )
+{
+	decoration_colors_dirty++;
 }
 
 /** Decorations: **/
@@ -465,6 +473,7 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 {
     int width = ttk_text_width (ttk_menufont, ttk_windows->w->title);
 
+    /* draw the decorations */
     if (decorations == PZ_DEC_AMIGA13 || decorations == PZ_DEC_AMIGA11) {
 	/* drag bars */
 	if (decorations == PZ_DEC_AMIGA13) {
@@ -498,6 +507,7 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 			     (ttk_screen->w - width) / 2 - 4, 0,
 			     (ttk_screen->w + width) / 2 + 4, ttk_screen->wy - 2);
 	}
+
     } else if (decorations == PZ_DEC_MROBE) {
 	// . X X X .
 	// X X X X X
@@ -534,63 +544,72 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 			     (ttk_screen->w - width) / 2, 0,
 			     (ttk_screen->w + width) / 2, ttk_screen->wy - 2);
 	}
-    } else if(
-		(decorations == PZ_DEC_BIGRADIENT) ||
+    } else if(  (decorations == PZ_DEC_BIGRADIENT) ||
 		(decorations == PZ_DEC_TRIGRADIENT) ||
-		(decorations == PZ_DEC_HALFGRADIENT) 
-	     ){
-	int rt, gt, bt;
-	int rm, gm, bm;
-	int rb, gb, bb;
+		(decorations == PZ_DEC_HALFGRADIENT) ){
 	int y;
-	int bigrad = 0;
-	int h2 = this->h/2;
-	ttk_color c;
 
-	ttk_unmakecol_ex( ttk_ap_getx( "header.gradient.top" )->color,
-					&rt, &gt, &bt, srf);
-	ttk_unmakecol_ex( ttk_ap_getx( "header.gradient.bottom" )->color,
-					&rb, &gb, &bb, srf);
-
-	if( decorations == PZ_DEC_TRIGRADIENT )
+	if( decoration_colors_dirty )
 	{
-	    ttk_unmakecol_ex( ttk_ap_getx( "header.gradient.middle" )->color,
-					&rm, &gm, &bm, srf);
-	} else {
-	    rm = ( rb + rt ) >> 1;
-	    gm = ( gb + gt ) >> 1;
-	    bm = ( bb + bt ) >> 1;
+		int rt, gt, bt;
+		int rm, gm, bm;
+		int rb, gb, bb;
+		int bigrad = 0;
+		int h2 = this->h/2;
+
+		ttk_unmakecol_ex( ttk_ap_getx( "header.gradient.top" )->color,
+						&rt, &gt, &bt, srf);
+		ttk_unmakecol_ex( ttk_ap_getx( "header.gradient.bottom" )->color,
+						&rb, &gb, &bb, srf);
+
+		if( decorations == PZ_DEC_TRIGRADIENT )
+		{
+		    ttk_unmakecol_ex( ttk_ap_getx( "header.gradient.middle" )->color,
+						&rm, &gm, &bm, srf);
+		} else {
+		    rm = ( rb + rt ) >> 1;
+		    gm = ( gb + gt ) >> 1;
+		    bm = ( bb + bt ) >> 1;
+		}
+
+		ttk_unmakecol_ex( ttk_ap_getx( "header.gradient.top" )->color,
+						&rt, &gt, &bt, srf);
+
+		/* that is; when the color scheme is changed, compute an array
+		    of 22 or however many lines it is... */
+		for( y=0 ; y<this->h ; y++ )
+		{
+			if( y<h2 ) {
+			    int h2my = h2-y;
+			    gradcol[y] = ttk_makecol_ex( 
+					(rm * y)/h2 + (rt * (h2my)/h2),
+					(gm * y)/h2 + (gt * (h2my)/h2),
+					(bm * y)/h2 + (bt * (h2my)/h2),
+					srf );
+			} else {
+			    int yy = y-h2;
+			    int h2my = h2-yy;
+			    gradcol[y] = ttk_makecol_ex( 
+					(rb * yy)/h2 + (rm * (h2my)/h2),
+					(gb * yy)/h2 + (gm * (h2my)/h2),
+					(bb * yy)/h2 + (bm * (h2my)/h2),
+					srf );
+			}
+		}
+
+		/* and clear the flag... */
+		decoration_colors_dirty = 0;
 	}
 
-	ttk_unmakecol_ex( ttk_ap_getx( "header.gradient.top" )->color,
-					&rt, &gt, &bt, srf);
-
-	/* perhaps these should be precomputed to save rendering time? */
-	/* that is; when the color scheme is changed, compute an array
-	    of 22 or however many lines it is... */
+	/* draw the gradient to the header... */
 	for( y=0 ; y<this->h ; y++ )
 	{
-		if( y<h2 ) {
-		    int h2my = h2-y;
-		    c = ttk_makecol_ex( 
-				(rm * y)/h2 + (rt * (h2my)/h2),
-				(gm * y)/h2 + (gt * (h2my)/h2),
-				(bm * y)/h2 + (bt * (h2my)/h2),
-				srf );
-		} else {
-		    int yy = y-h2;
-		    int h2my = h2-yy;
-		    c = ttk_makecol_ex( 
-				(rb * yy)/h2 + (rm * (h2my)/h2),
-				(gb * yy)/h2 + (gm * (h2my)/h2),
-				(bb * yy)/h2 + (bm * (h2my)/h2),
-				srf );
-		}
-		ttk_line( srf, 0, y, this->w, y, c );
+	    ttk_line( srf, 0, y, this->w, y, gradcol[y] );
 	}
 
+	/* fill the top if it's a half-gradient */
 	if( decorations == PZ_DEC_HALFGRADIENT )
-		ttk_ap_fillrect (srf, ttk_ap_get ("header.gradient.middle"),
+		ttk_ap_fillrect (srf, ttk_ap_get ("header.gradient.bar"),
 				0, 1, this->w, y/2 );
     }    
 }

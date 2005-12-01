@@ -326,6 +326,7 @@ void pz_header_fix_hold (void);
 #define PZ_DEC_TRIGRADIENT  (5)
 #define PZ_DEC_HALFGRADIENT (6)
 void pz_header_set_decorations (int decor);
+void pz_header_colors_dirty( void );
 
 void pz_hwid_put_left (TWidget *wid); // puts wid as leftmost of left widgets, has to be called from mod init
 void pz_hwid_pack_left (TWidget *wid); // puts wid as rightmost of left widgets
