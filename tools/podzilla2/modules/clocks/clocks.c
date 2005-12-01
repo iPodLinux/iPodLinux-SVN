@@ -1057,9 +1057,9 @@ static void Clocks_hold_release( void )
 {
 	/* we leave bufwid at the full size, no reason to change it */
 	GrResizeWindow( Clocks_wid, screen_info.cols, 
-			screen_info.rows - (HEADER_TOPLINE +1 ));
-	GrMoveWindow( Clocks_wid, 0, HEADER_TOPLINE + 1 );
-	Clocks_height = (screen_info.rows - (HEADER_TOPLINE + 1));
+			screen_info.rows - (ttk_screen->wy +1 ));
+	GrMoveWindow( Clocks_wid, 0, ttk_screen->wy + 1 );
+	Clocks_height = (screen_info.rows - (ttk_screen->wy + 1));
 }
 
 
@@ -1156,9 +1156,9 @@ static void new_Clocks_window_common(void)
         GrSetGCUseBackground(Clocks_gc, GR_FALSE);
         GrSetGCForeground(Clocks_gc, BLACK);
 
-	Clocks_height = (screen_info.rows - (HEADER_TOPLINE + 1));
+	Clocks_height = (screen_info.rows - (ttk_screen->wy + 1));
 
-	Clocks_wid = pz_new_window( 0, HEADER_TOPLINE + 1,
+	Clocks_wid = pz_new_window( 0, ttk_screen->wy + 1,
 		    screen_info.cols, Clocks_height,
 		    Clocks_do_draw, Clocks_handle_event );
 
