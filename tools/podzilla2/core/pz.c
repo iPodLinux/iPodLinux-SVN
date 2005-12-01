@@ -27,6 +27,14 @@
 #include <signal.h> /*d*/
 #include "pz.h"
 
+void ____Spurious_references_to_otherwise_unreferenced_symbols() 
+{
+    TWidget *(*tnivw)(int,int,ttk_surface) = ttk_new_imgview_widget;
+    /* Add anything else *in TTK only* that's unrefed and
+     * needed by a module.
+     */
+}
+
 /* compat globals */
 t_GR_SCREEN_INFO screen_info;
 long hw_version;
