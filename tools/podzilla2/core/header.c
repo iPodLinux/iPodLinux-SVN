@@ -26,7 +26,7 @@
 #include "pz.h"
 
 
-static int make_dirty (TWidget *this) { this->dirty++; return 0; }
+static int make_dirty (TWidget *this) { this->dirty++; ttk_dirty |= TTK_DIRTY_HEADER; return 0; }
 
 /** Battery charge: **/
 static void battery_draw_digit (ttk_surface srf, int x, int y, int w, int h, ttk_color col, char digit) 
