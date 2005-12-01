@@ -219,17 +219,17 @@ void pz_menu_init (void);
 TWindow *pz_menu_get (void);
 #endif
 #ifdef PZ_COMPAT
-void pz_menu_add_legacy (const char *menupath, void (*handler)());
+ttk_menu_item *pz_menu_add_legacy (const char *menupath, void (*handler)());
 #endif
 ttk_menu_item *pz_menu_add_ttkh (const char *menupath, TWindow *(*handler)(), void *data);
-void pz_menu_add_stub (const char *menupath); // adds invisible stub to preserve order
-void pz_menu_add_after (const char *menupath, PzWindow *(*handler)(), const char *after);
-void pz_menu_add_top (const char *menupath, PzWindow *(*handler)());
-void pz_menu_add_action (const char *menupath, PzWindow *(*handler)());
-void pz_menu_add_option (const char *menupath, const char **choices);
+ttk_menu_item *pz_menu_add_stub (const char *menupath); // adds invisible stub to preserve order
+ttk_menu_item *pz_menu_add_after (const char *menupath, PzWindow *(*handler)(), const char *after);
+ttk_menu_item *pz_menu_add_top (const char *menupath, PzWindow *(*handler)());
+ttk_menu_item *pz_menu_add_action (const char *menupath, PzWindow *(*handler)());
+ttk_menu_item *pz_menu_add_option (const char *menupath, const char **choices);
 int pz_menu_get_option (const char *menupath);
 void pz_menu_set_option (const char *menupath, int choice);
-void pz_menu_add_setting (const char *menupath, unsigned int sid, PzConfig *conf, const char **choices);
+ttk_menu_item *pz_menu_add_setting (const char *menupath, unsigned int sid, PzConfig *conf, const char **choices);
 void pz_menu_sort (const char *menupath);
 void pz_menu_remove (const char *menupath);
 

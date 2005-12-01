@@ -376,7 +376,7 @@ ttk_menu_item *pz_get_menu_item (const char *path)
     return resolve_menupath (path, LOC_END);
 }
 
-void pz_menu_add_after (const char *menupath, PzWindow *(*handler)(), const char *after) 
+ttk_menu_item *pz_menu_add_after (const char *menupath, PzWindow *(*handler)(), const char *after) 
 {
     int i;
     ttk_menu_item *item;
@@ -403,24 +403,27 @@ void pz_menu_add_after (const char *menupath, PzWindow *(*handler)(), const char
     item->data = handler;
     item->flags = 0;
     ttk_menu_item_updated (item->menu, item);
+    return item;
 }
 
-void pz_menu_add_top (const char *menupath, PzWindow *(*handler)()) 
+ttk_menu_item *pz_menu_add_top (const char *menupath, PzWindow *(*handler)()) 
 {
     ttk_menu_item *item = resolve_menupath (menupath, LOC_START);
     item->makesub = mh_pz;
     item->data = handler;
     item->flags = 0;
     ttk_menu_item_updated (item->menu, item);
+    return item;
 }
 
-void pz_menu_add_legacy (const char *menupath, void (*handler)()) 
+ttk_menu_item *pz_menu_add_legacy (const char *menupath, void (*handler)()) 
 {
     ttk_menu_item *item = resolve_menupath (menupath, LOC_END);
     item->makesub = pz_mh_legacy;
     item->data = handler;
     item->flags = 0;
     ttk_menu_item_updated (item->menu, item);
+    return item;
 }
 
 ttk_menu_item *pz_menu_add_ttkh (const char *menupath, TWindow *(*handler)(ttk_menu_item *), void *data) 
@@ -430,16 +433,17 @@ ttk_menu_item *pz_menu_add_ttkh (const char *menupath, TWindow *(*handler)(ttk_m
     item->data = data;
     item->flags = 0;
     ttk_menu_item_updated (item->menu, item);
-return item;
+    return item;
 }
 
-void pz_menu_add_action (const char *menupath, PzWindow *(*handler)()) 
+ttk_menu_item *pz_menu_add_action (const char *menupath, PzWindow *(*handler)()) 
 {
     ttk_menu_item *item = resolve_menupath (menupath, LOC_END);
     item->makesub = mh_pz;
     item->data = handler;
     item->flags = 0;
     ttk_menu_item_updated (item->menu, item);
+    return item;
 }
 
 static int invisible() { return 0; }
@@ -448,22 +452,24 @@ static TWindow *stub (ttk_menu_item *item)
 	pz_message ("Nothing to see here, please move along...");
 	return TTK_MENU_DONOTHING;
 }
-void pz_menu_add_stub (const char *menupath) 
+ttk_menu_item *pz_menu_add_stub (const char *menupath) 
 {
 	ttk_menu_item *item = resolve_menupath (menupath, LOC_END);
 	item->makesub = stub;
 	item->visible = invisible;
 	item->flags = 0;
 	ttk_menu_item_updated (item->menu, item);
+	return item;
 }
 
 
-void pz_menu_add_option (const char *menupath, const char **choices) 
+ttk_menu_item *pz_menu_add_option (const char *menupath, const char **choices) 
 {
     ttk_menu_item *item = resolve_menupath (menupath, LOC_END);
     if (!choices) choices = boolean_options;
     item->choices = choices;
     ttk_menu_item_updated (item->menu, item);
+    return item;
 }
 
 int pz_menu_get_option (const char *menupath) 
@@ -490,7 +496,7 @@ static void ch_set_setting (ttk_menu_item *item, int sid)
 static int ch_get_setting (ttk_menu_item *item, int sid) 
 { return pz_get_int_setting (item->data, sid); }
 
-void pz_menu_add_setting (const char *menupath, unsigned int sid, PzConfig *conf, const char **choices) 
+ttk_menu_item *pz_menu_add_setting (const char *menupath, unsigned int sid, PzConfig *conf, const char **choices) 
 {
     ttk_menu_item *item = resolve_menupath (menupath, LOC_END);
     if (!choices) choices = boolean_options;
@@ -500,6 +506,7 @@ void pz_menu_add_setting (const char *menupath, unsigned int sid, PzConfig *conf
     item->cdata = sid;
     item->data = conf;
     ttk_menu_item_updated (item->menu, item);
+    return item;
 }
 
 void pz_menu_sort (const char *menupath)
