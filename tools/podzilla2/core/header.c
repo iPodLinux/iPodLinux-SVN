@@ -190,7 +190,7 @@ static void battery_draw (TWidget *this, ttk_surface srf)
 	memcpy (&fill, ttk_ap_getx ("battery.fill.normal"), sizeof(TApItem));
     }
 
-    ttk_draw_icon (ttk_icon_battery, srf, this->x, this->y, ttk_ap_getx ("battery.border")->color, fill.color);
+    ttk_draw_icon (ttk_icon_battery, srf, this->x, this->y, ttk_ap_getx ("battery.border")->color, ttk_ap_getx ("header.bg")->color);
     ttk_ap_fillrect (srf, ttk_ap_get ("battery.bg"), this->x + 4, this->y + 1, this->x + 21, this->y + 9);
 
     if (fill.type & TTK_AP_SPACING) {
@@ -205,7 +205,7 @@ static void battery_draw (TWidget *this, ttk_surface srf)
     }
 
     if (battery_is_charging)
-	ttk_draw_icon (ttk_icon_charging, srf, this->x, this->y, ttk_ap_getx ("battery.border")->color, fill.color);
+	ttk_draw_icon (ttk_icon_charging, srf, this->x, this->y, ttk_ap_getx ("battery.border")->color, ttk_ap_getx ("header.bg")->color);
 }
 
 static TWidget *new_battery_indicator() 
