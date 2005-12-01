@@ -98,11 +98,13 @@ void *loader(void) {
       storage_ptr = (unsigned char *)0x40017f08;
       mlc_memcpy(storage_ptr, hotstuff, 9);
       outl(1, 0x40017F10);
+
       if (ipod->hw_rev >= 0x40000) {
 	      outl(inl(0x60006004) | 0x4, 0x60006004);
       } else {
 	      outl(inl(0xcf005030) | 0x4, 0xcf005030);
       }
+
     } else { // Linux kernel
       vfs_read( entry, ret, 1, fd );
 
