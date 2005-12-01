@@ -36,8 +36,8 @@
 
 
     menu: bg => black, fg => red, choice => red, icon => red,
-          selbg => red, selfg => black,
-	  selchoice => dkred, selicon => black
+          selbg => red, selfg => black, selchoice => dkred,
+          icon0 => red, icon1 => ltred, icon2 => dkred, icon3 => black
 
   slider: border => red, bg => black, full => black
 

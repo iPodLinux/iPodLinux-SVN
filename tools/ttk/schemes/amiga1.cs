@@ -37,7 +37,7 @@
 
     menu: bg => blue, fg => white, choice => white, icon => orange,
           selbg => orange, selfg => black,
-	  selchoice => white, selicon => black
+	  selchoice => white, icon0 => orange, icon1 => #003973, icon2 => #001d3b, icon3 => black
 
   slider: border => white, bg => black, full => orange
 
