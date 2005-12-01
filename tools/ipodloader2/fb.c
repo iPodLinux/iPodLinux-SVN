@@ -348,7 +348,7 @@ void fb_update(uint16 *x) {
 void fb_cls(uint16 *x,uint16 val) {
   uint32 i;
 
-  for(i=0;i<(ipod->lcd_width*ipod->lcd_height*2);i++) {
+  for(i=0;i<(ipod->lcd_width*ipod->lcd_height);i++) {
     x[i] = val;
   }
 }
