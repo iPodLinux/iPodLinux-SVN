@@ -13,7 +13,7 @@
  *	Binary - Binary Watch clock
  *	Digital Bedside clock
  *
- *   $Id: clocks.c,v 1.12 2005/08/02 21:14:22 courtc Exp $
+ *   $Id$
  *
  */
 
@@ -32,71 +32,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
- */
-
-
-/*
- * $Id: clocks.c,v 1.12 2005/08/02 21:14:22 courtc Exp $
- *
- * $Log: clocks.c,v $
- * Revision 1.12  2005/08/02 21:14:22  courtc
- * added more i18n
- *
- * Revision 1.11  2005/06/20 13:48:01  yorgle
- * Cleaned up event stuff to use the new #defines
- *
- * Revision 1.10  2005/05/31 16:02:22  yorgle
- * Cleaned up some colors.  Why didn't anyone tell me this looked like crap? ;)
- *
- * Revision 1.9  2005/05/30 02:00:33  yorgle
- * Clockzilla strikes again!
- * Added another face (a "watch" face, based on the "OVERSIZED" face), which displays the day of week and day of month, much like many watches do.
- * Converted over the vector text display to use strftime() instead of a char[][].
- * removed the months[] array.
- * This should work better for non-english based systems, I hope.
- *
- * Revision 1.8  2005/05/26 05:30:30  yorgle
- * Sproing tweaks.  Hopefully, sproingy hands should look a little better on 'photo
- * The table may need to be tweaked.
- *
- * Revision 1.7  2005/05/26 04:27:00  yorgle
- * Timezone arrays moved into clocks.c from menu.c
- * DST arrays added
- * World clock complete and hooked in.  (ipodlinux.org/WorldClock for info)
- * Added WORLD DST into the settings array
- * Re-ordered the time-based settings items
- *
- *
- * 2005-05-25 - switched to cvs log above...
- *
- * 2005-05-24 - Sproingy seconds hand for analog clocks
- *
- * 2005-05-08 - Added TIME_TICKER, TIME_1224 settings
- *
- * 2005-05-01 - Cleaned up Digital clock look (for monochrome ipods)
- *		Oversized clock added
- *
- * 2005-04-27 - Analog clock visual enhancements
- *		Binary clock bugfix (0..23 doesn't fit in 4 bits)
- *
- * 2005-04-26 - Time and Date setting added (Scott Lawrence)
- *		it's not perfect, but it's good enough for now.
- *
- * 2005-04-17 - Binary clock face added  (Scott Lawrence)
- *
- * 2005-04-16 - BCD clock face added  (Scott Lawrence)
- *
- * 2005-04-15 - integration (Scott Lawrence)
- *		- added hold switch sensing for full-screen view
- *		- added in my old vectorfont clock (2005-02)
- *		- action button toggles face style
- *
- * 2005-04-13 - initial Analog version  (Scott Lawrence)
- *		- basic version done.
- *		- deco, normal look
- *		- ready for time adjustment code (get/set time)
- *		- (update changed from 16ms to 1000ms)
- *		- (courtc's titlebar update fix)
  */
 
 #include <stdio.h>
@@ -1057,9 +992,9 @@ static void Clocks_hold_release( void )
 {
 	/* we leave bufwid at the full size, no reason to change it */
 	GrResizeWindow( Clocks_wid, screen_info.cols, 
-			screen_info.rows - (ttk_screen->wy +1 ));
-	GrMoveWindow( Clocks_wid, 0, ttk_screen->wy + 1 );
-	Clocks_height = (screen_info.rows - (ttk_screen->wy + 1));
+			screen_info.rows - ttk_screen->wy);
+	GrMoveWindow( Clocks_wid, 0, ttk_screen->wy );
+	Clocks_height = (screen_info.rows - ttk_screen->wy);
 }
 
 
