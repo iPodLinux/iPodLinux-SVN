@@ -39,9 +39,10 @@
 #\def aquacrsr    #808080
 
 # gradient for "apple", pulled from Stuart Clark (Decipher)'s gradient patch
-\def graptop    #E7EFFD
+\def grapbot    #E7EFFD
 \def grapmid    #B5CED7
-\def grapbot    #B5CDE7
+\def graptop    #B5CDE7
+\def grapbar    #d5dbfb
 \def red        #ff0000
 \def blue       #0088ff
 
@@ -51,7 +52,7 @@
 	  gradient.top => graptop,
 	  gradient.middle => grapmid,
 	  gradient.bottom => grapbot,
-	  gradient.bar => graptop
+	  gradient.bar => grapbar
  battery: border => metalfg, bg => grapmid, fill.normal => metalfg +1, fill.low => metalwid +1, fill.charge => metalfg +1,
 	  bg.low => red, bg.charging => blue
     lock: border => metalwid, fill => metalwid
