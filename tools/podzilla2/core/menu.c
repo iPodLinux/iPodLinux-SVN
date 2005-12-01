@@ -152,7 +152,7 @@ static const char * transit_options[] = { N_("Off"), N_("Slow"), N_("Fast"), 0 }
 static const char * appearance_decorations[] = { "Plain",
 		"Amiga 1.1", "Amiga 1.3",
 		"m:robe",
-		"Gradient", "Tri-Gradient", 0 };
+		"Gradient", "Tri-Gradient", "Half-Gradient", 0 };
 
 
 static void slider_set_setting (int set, int val) 

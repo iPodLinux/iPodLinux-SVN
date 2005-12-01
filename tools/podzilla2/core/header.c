@@ -536,12 +536,14 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 	}
     } else if(
 		(decorations == PZ_DEC_BIGRADIENT) ||
-		(decorations == PZ_DEC_TRIGRADIENT) 
+		(decorations == PZ_DEC_TRIGRADIENT) ||
+		(decorations == PZ_DEC_HALFGRADIENT) 
 	     ){
 	int rt, gt, bt;
 	int rm, gm, bm;
 	int rb, gb, bb;
 	int y;
+	int bigrad = 0;
 	int h2 = this->h/2;
 	ttk_color c;
 
@@ -586,6 +588,10 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 		}
 		ttk_line( srf, 0, y, this->w, y, c );
 	}
+
+	if( decorations == PZ_DEC_HALFGRADIENT )
+		ttk_ap_fillrect (srf, ttk_ap_get ("header.gradient.middle"),
+				0, 1, this->w, y/2 );
     }    
 }
 
