@@ -157,6 +157,7 @@ static void battery_draw_digit (ttk_surface srf, int x, int y, int w, int h, ttk
 
 static void battery_draw (TWidget *this, ttk_surface srf) 
 {
+    TApItem *ap;
     char buf[32];
     int battery_fill, battery_is_charging;
 
@@ -184,14 +185,18 @@ static void battery_draw (TWidget *this, ttk_surface srf)
     TApItem fill;
     if (battery_is_charging) {
 	memcpy (&fill, ttk_ap_getx ("battery.fill.charge"), sizeof(TApItem));
+	ap = ttk_ap_get( "battery.bg.charging" );
     } else if (battery_fill < 64) {
 	memcpy (&fill, ttk_ap_getx ("battery.fill.low"), sizeof(TApItem));
+	ap = ttk_ap_get( "battery.bg.low" );
     } else {
 	memcpy (&fill, ttk_ap_getx ("battery.fill.normal"), sizeof(TApItem));
+	ap = ttk_ap_get( "battery.bg" );
     }
 
+    /* fill the container... */
+    ttk_ap_fillrect (srf, ap, this->x + 4, this->y + 1, this->x + 22, this->y + 9);
     ttk_draw_icon (ttk_icon_battery, srf, this->x, this->y, ttk_ap_getx ("battery.border")->color, ttk_ap_getx ("header.bg")->color);
-    ttk_ap_fillrect (srf, ttk_ap_get ("battery.bg"), this->x + 4, this->y + 1, this->x + 21, this->y + 9);
 
     if (fill.type & TTK_AP_SPACING) {
 	fill.type &= ~TTK_AP_SPACING;
