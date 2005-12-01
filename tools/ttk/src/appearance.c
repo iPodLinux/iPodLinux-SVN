@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define NUM_DEFS	(16)
 static TApItem *ap_head;
 
 static int hex2nyb (char c) 
@@ -41,7 +42,7 @@ void ttk_ap_load (const char *filename)
     struct {
 	char *key;
 	char *value;
-    } defines[10];
+    } defines[NUM_DEFS];
     int nextdef = 0;
     int i;
     TApItem *c;
@@ -78,7 +79,7 @@ void ttk_ap_load (const char *filename)
 		    fprintf (stderr, "Syntax error. Format: \\def key value.\n");
 		    return;
 		}
-		if (nextdef >= 10) {
+		if (nextdef >= NUM_DEFS) {
 		    fprintf (stderr, "Too many \\def initions\n");
 		    return;
 		}
