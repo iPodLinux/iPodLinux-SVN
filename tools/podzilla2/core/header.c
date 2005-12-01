@@ -534,6 +534,58 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 			     (ttk_screen->w - width) / 2, 0,
 			     (ttk_screen->w + width) / 2, ttk_screen->wy - 2);
 	}
+    } else if(
+		(decorations == PZ_DEC_BIGRADIENT) ||
+		(decorations == PZ_DEC_TRIGRADIENT) 
+	     ){
+	int rt, gt, bt;
+	int rm, gm, bm;
+	int rb, gb, bb;
+	int y;
+	int h2 = this->h/2;
+	ttk_color c;
+
+	ttk_unmakecol_ex( ttk_ap_getx( "header.gradient.top" )->color,
+					&rt, &gt, &bt, srf);
+	ttk_unmakecol_ex( ttk_ap_getx( "header.gradient.bottom" )->color,
+					&rb, &gb, &bb, srf);
+
+	if( decorations == PZ_DEC_TRIGRADIENT )
+	{
+	    ttk_unmakecol_ex( ttk_ap_getx( "header.gradient.middle" )->color,
+					&rm, &gm, &bm, srf);
+	} else {
+	    rm = ( rb + rt ) >> 1;
+	    gm = ( gb + gt ) >> 1;
+	    bm = ( bb + bt ) >> 1;
+	}
+
+	ttk_unmakecol_ex( ttk_ap_getx( "header.gradient.top" )->color,
+					&rt, &gt, &bt, srf);
+
+	/* perhaps these should be precomputed to save rendering time? */
+	/* that is; when the color scheme is changed, compute an array
+	    of 22 or however many lines it is... */
+	for( y=0 ; y<this->h ; y++ )
+	{
+		if( y<h2 ) {
+		    int h2my = h2-y;
+		    c = ttk_makecol_ex( 
+				(rm * y)/h2 + (rt * (h2my)/h2),
+				(gm * y)/h2 + (gt * (h2my)/h2),
+				(bm * y)/h2 + (bt * (h2my)/h2),
+				srf );
+		} else {
+		    int yy = y-h2;
+		    int h2my = h2-yy;
+		    c = ttk_makecol_ex( 
+				(rb * yy)/h2 + (rm * (h2my)/h2),
+				(gb * yy)/h2 + (gm * (h2my)/h2),
+				(bb * yy)/h2 + (bm * (h2my)/h2),
+				srf );
+		}
+		ttk_line( srf, 0, y, this->w, y, c );
+	}
     }    
 }
 
