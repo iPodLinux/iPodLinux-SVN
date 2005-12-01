@@ -26,10 +26,13 @@
 #include <fcntl.h>
 #include <signal.h> /*d*/
 #include "pz.h"
+#ifdef IPOD
+#include "ucdl.h"
+#endif
 
 void ____Spurious_references_to_otherwise_unreferenced_symbols() 
 {
-    TWidget *(*tnivw)(int,int,ttk_surface) = ttk_new_imgview_widget;
+    TWidget *(*tnivw)(int,int,ttk_surface) = ttk_new_imgview_widget; (void) tnivw;
     /* Add anything else *in TTK only* that's unrefed and
      * needed by a module.
      */
@@ -295,16 +298,16 @@ debug_handler (int sig)
     asm ("mov %0, r11" : "=r" (FP) : );
 
     ttk_quit();
-    fprintf (stderr, "Fatal signal %d\n");
+    fprintf (stderr, "Fatal signal %d\n", sig);
     fprintf (stderr, "Trying to gather debug info. If this freezes, reboot.\n\n");
 
     for (i = 0; i < 10; i++) {
         unsigned long retaddr, off;
         fprintf (stderr, "#%d  ", i);
         retaddr = *(FP - 1);
-        fprintf (stderr, "%08x ", retaddr);
-        fprintf (stderr, "<%s+%x>\n", uCdl_resolve_addr (retaddr, &off), off);
-        fprintf (f, "#%d  %08x <%s+%x>\n", i, retaddr, uCdl_resolve_addr (retaddr, &off), off);
+        fprintf (stderr, "%08lx ", retaddr);
+        fprintf (stderr, "<%s+%lx>\n", uCdl_resolve_addr (retaddr, &off), off);
+        fprintf (f, "#%d  %08lx <%s+%lx>\n", i, retaddr, uCdl_resolve_addr (retaddr, &off), off);
         FP = (unsigned long *) *(FP - 3);
     }
     fclose (f);
