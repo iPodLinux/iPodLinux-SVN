@@ -322,9 +322,10 @@ void pz_header_fix_hold (void);
 #define PZ_DEC_AMIGA11      (1)
 #define PZ_DEC_AMIGA13      (2)
 #define PZ_DEC_MROBE        (3)
-#define PZ_DEC_BIGRADIENT   (4)
-#define PZ_DEC_TRIGRADIENT  (5)
-#define PZ_DEC_HALFGRADIENT (6)
+#define PZ_DEC_BIGRAD       (4)
+#define PZ_DEC_TRIGRAD      (5)
+#define PZ_DEC_BIGRADBAR    (6)
+#define PZ_DEC_TRIGRADBAR   (7)
 void pz_header_set_decorations (int decor);
 void pz_header_colors_dirty( void );
 
