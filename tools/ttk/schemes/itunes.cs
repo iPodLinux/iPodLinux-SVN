@@ -42,6 +42,8 @@
 \def graptop    #E7EFFD
 \def grapmid    #B5CED7
 \def grapbot    #B5CDE7
+\def red        #ff0000
+\def blue       #0088ff
 
 #TTK appearance only gives me 10 /defs - feh!
 
@@ -50,7 +52,8 @@
 	  gradient.middle => grapmid,
 	  gradient.bottom => grapbot,
 	  gradient.bar => graptop
- battery: border => metalfg, bg => metalbg, fill.normal => metalfg +1, fill.low => metalwid +1, fill.charge => metalfg +1
+ battery: border => metalfg, bg => grapmid, fill.normal => metalfg +1, fill.low => metalwid +1, fill.charge => metalfg +1,
+	  bg.low => red, bg.charging => blue
     lock: border => metalwid, fill => metalwid
  loadavg: bg => metalbg, fg => metalwid, spike => metalfg
 
