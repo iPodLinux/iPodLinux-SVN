@@ -4,7 +4,7 @@
 \usepackage[pdftex]{graphicx}
 \title{TTK, An iPod GUI Library}
 \author{Joshua Oreman}
-\date{Sunday, October 9, 2005}
+\date{Sunday, December 1, 2005}
 \setlength\parskip{1ex plus 1ex minus 0.5ex}
 \def\pz{\texttt{podzilla}}
 \let\ttt\tt
@@ -993,8 +993,11 @@ obvious from their names; only the non-obvious will be documented here.
 \verb|ttk_*rect| use the coordinates of upper-left and one past the bottom-right corners; \verb|ttk_*rect_gc| use
 the upper-left corner and width and height. {\bf The point $(x^^S2, y^^S2)$ and the lines containing it are not drawn.}
 
-\verb|ttk_*poly| use separate arrays for X and Y coordinates; \verb|ttk_*poly_gc| use one array of
-\verb|ttk_point| structures.
+\verb|ttk_*poly| use separate arrays for X and Y coordinates;
+\verb|ttk_*poly_gc| use one array of \verb|ttk_point| structures.
+The poly (polyline) functions do not connect the first point to the
+final point; that is to say that they can create open polyline
+graphics as well as closed polygon graphics.
 
 \verb|ttk_bitmap| draws an array of bits on the surface at the specified $(x,y)$. The bitmap format
 is an array of \verb|unsigned short|s, filled {\bf from MSB to LSB}; that is, the MSB of the first
