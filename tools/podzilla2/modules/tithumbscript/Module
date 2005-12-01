@@ -1,0 +1,4 @@
+Module: tithumbscript
+Display-name: Thumbscript
+Author: Jonathan Bettencourt
+Dependencies: textinput
