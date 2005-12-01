@@ -274,6 +274,10 @@ void ttk_set_transition_frames (int frames);
 void ttk_set_clicker (void (*fn)());
 void ttk_set_scroll_multiplier (int num, int denom);
 
+int ttk_input_start_for (TWindow *win, TWidget *inmethod);
+void ttk_input_move_for (TWindow *win, int x, int y);
+void ttk_input_size_for (TWindow *win, int *w, int *h);
+
 int ttk_input_start (TWidget *inmethod);
 void ttk_input_move (int x, int y);
 void ttk_input_size (int *w, int *h);

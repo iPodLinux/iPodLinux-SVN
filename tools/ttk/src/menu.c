@@ -613,7 +613,8 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
                 (!selected)? ttk_ap_getx ("menu.icon")->color :
                 (data->menu[xi]->iconflash == 3)? ttk_ap_getx ("menu.icon3")->color :
                 (data->menu[xi]->iconflash == 2)? ttk_ap_getx ("menu.icon2")->color :
-                (data->menu[xi]->iconflash == 1)? ttk_ap_getx ("menu.icon1")->color : ttk_makecol (BLACK);
+                (data->menu[xi]->iconflash == 1)? ttk_ap_getx ("menu.icon1")->color :
+                ttk_ap_getx ("menu.icon0")->color;
             ttk_color bgcol = (selected? ttk_ap_getx ("menu.selbg")->color : ttk_ap_getx ("menu.bg")->color);
                 
 	    switch (data->menu[xi]->flags & TTK_MENU_ICON) {

@@ -198,6 +198,10 @@ causes an {\sf input} event to be delivered to the widget that originally starte
 To end text input, either the text input method or the calling widget may call \verb|ttk_input_end()|,
 which also frees the input method structure.
 
+These functions are intended to be called on a window that is already shown onscreen. If you
+want to prepare text input for a window that isn't shown yet, you can use the functions like
+\verb|ttk_input_start_for(win,meth)| that let you specify the window.
+
 Different text input methods vary in the amount of screen space they need. Something like a Morse code
 input might need only a single status line at the bottom, whereas an on-screen keyboard might need
 much more space. As such, \verb|ttk_input_start()| will return the {\em height} of the text input method's
@@ -772,6 +776,10 @@ void ttk_set_global_event_handler (int (*fn)(int ev, int earg, int time));
 void ttk_set_global_unused_handler (int (*fn)(int ev, int earg, int time));
 int ttk_button_pressed (int button);
 
+int ttk_input_start_for (TWindow *win, TWidget *method);
+void ttk_input_move_for (TWindow *win, int x, int y);
+void ttk_input_size_for (TWindow *win, int *w, int *h);
+
 int ttk_input_start (TWidget *method);
 void ttk_input_move (int x, int y);
 void ttk_input_size (int *w, int *h);
@@ -811,6 +819,9 @@ in use to be at $(x,y)$. If text input is not started, this does nothing.
 \item[{\tt ttk_input_size}] places the width of the current input widget in \verb|*w|,
 and the height in \verb|*h|, if text input is started. If either pointer is NULL,
 it will be ignored.
+\item[{\tt ttk_input_*_for}] are variants of the past three functions that allow
+you to specify what window to work with, instead of assuming the top window currently
+shown. This lets you e.g.~set up a window for TI before showing it.
 \item[{\tt ttk_input_char}] queues \verb|ch| to be sent to the focused widget's
 {\sf input} event handler. This may be called multiple-times for multiletter
 sequences.
