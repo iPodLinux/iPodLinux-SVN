@@ -316,6 +316,23 @@ debug_handler (int sig)
 }
 #endif
 
+void
+usage( char * exename )
+{
+	fprintf( stderr, "Usage: %s [options...]\n", exename );
+	fprintf( stderr, "Options:\n" );
+	fprintf( stderr, "  -nano     simulate iPod Nano\n" );
+	fprintf( stderr, "  -mini     simulate iPod Mini\n" );
+	fprintf( stderr, "  -photo    simulate iPod Photo/4g Color\n" );
+	fprintf( stderr, "  -video    simulate iPod Video/5g\n" );
+	fprintf( stderr, "\n" );
+	fprintf( stderr, "  -2  W H   use a screen W by H, 2bpp\n" );
+	fprintf( stderr, "  -16 W H   use a screen W by H, 16bpp\n" );
+	fprintf( stderr, "\n" );
+
+	fprintf( stderr, "default resolution and color are for 1g-4g mono iPod\n" );
+}
+
 
 int
 main(int argc, char **argv)
@@ -336,8 +353,24 @@ main(int argc, char **argv)
 				ttk_set_emulation (138, 110, 2);
 			else if (!strcmp (argv[1], "-video"))
 				ttk_set_emulation (320, 240, 16);
-			else
-				fprintf (stderr, "Warning: Did not understand emulation mode.\n");
+			else if (!strcmp (argv[1], "-2")) {
+				if( argc != 4 ) {
+					usage( argv[0] );
+					exit( -2 );
+				}
+				ttk_set_emulation ( atoi( argv[2] ),
+						    atoi( argv[3] ), 2 );
+			} else if (!strcmp (argv[1], "-16")) {
+				if( argc != 4 ) {
+					usage( argv[0] );
+					exit( -2 );
+				}
+				ttk_set_emulation ( atoi( argv[2] ),
+						    atoi( argv[3] ), 16 );
+			} else {
+				usage( argv[0] );
+				exit( -1 );
+			}
 		}
 	}
 
