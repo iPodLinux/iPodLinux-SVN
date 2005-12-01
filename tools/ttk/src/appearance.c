@@ -310,7 +310,6 @@ void ttk_ap_dorect (ttk_surface srf, TApItem *ap, int x1, int y1, int x2, int y2
     ttk_surface img;
     int iscol = 1;
     int tmp;
-    int dospc = 1;
 
     if (!ap) return; // not an error
     
@@ -320,13 +319,6 @@ void ttk_ap_dorect (ttk_surface srf, TApItem *ap, int x1, int y1, int x2, int y2
     }
     if (x1 > x2) tmp = x1, x1 = x2, x2 = tmp;
     if (y1 > y2) tmp = y1, y1 = y2, y2 = tmp;
-
-    if (ap->type & TTK_AP_SPACING) {
-	if ((x1 + ap->spacing) > (x2 - ap->spacing))
-	    dospc = 0;
-	if ((y1 + ap->spacing) > (y2 - ap->spacing))
-	    dospc = 0;
-    }
 
     if (ap->type & TTK_AP_IMAGE)
 	img = ap->img;
@@ -340,11 +332,25 @@ void ttk_ap_dorect (ttk_surface srf, TApItem *ap, int x1, int y1, int x2, int y2
     else
 	col = ttk_makecol_ex (BLACK, srf);
 
-    if (ap->type & TTK_AP_SPACING && dospc) {
+    if (ap->type & TTK_AP_SPACING) {
+        int ox1 = x1, ox2 = x2, oy1 = y1, oy2 = y2;
 	x1 += ap->spacing;
 	y1 += ap->spacing;
 	x2 -= ap->spacing;
 	y2 -= ap->spacing;
+        if (x1 >= x2 || y1 >= y2) {
+            if ((ox2 - ox1) > (oy2 - oy1)) {
+                x1 = ox1 + ap->spacing;
+                x2 = ox2 - ap->spacing;
+                y1 = oy1 + ap->spacing;
+                y2 = y1 + 1;
+            } else {
+                x1 = ox1 + ap->spacing;
+                x2 = x1 + 1;
+                y1 = oy1 + ap->spacing;
+                y2 = oy2 - ap->spacing;
+            }
+        }
     }
     
     if (img)
