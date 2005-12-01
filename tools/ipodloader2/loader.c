@@ -45,14 +45,17 @@ void *loader(void) {
     fb_update(framebuffer);
 
     vfs_init();
-    fd = vfs_open("NOTES/KERNEL.BIN");
+
+    //fd = vfs_open("(hd0,1)/NOTES/KERNEL.BIN");
+    fd = vfs_open("(hd0,2)/kernel.ext");
+    //for(;;);
+
     vfs_seek(fd,0,VFS_SEEK_END);
     ret = vfs_tell(fd);
     vfs_seek(fd,0,VFS_SEEK_SET);
 
     mlc_printf("FD=%i (Len %u)\n",fd,ret);
     fb_update(framebuffer);
-    //for(;;);
 
     menu_init();
     menu_additem("Retail OS");

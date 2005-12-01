@@ -12,6 +12,7 @@ typedef struct {
   size_t (*read)(void *fsdata,void *ptr,size_t size,size_t nmemb,int fd);
 
   void *fsdata;
+  uint8 partnum;
 } filesystem;
 
 void vfs_init(void);

@@ -66,7 +66,7 @@ static fat32_file *fat32_findfile(uint32 start, char *fname) {
 
   next = mlc_strchr( fname,'/' );
 
-  //printf("--->findfile (LBA=%u,str=%s)<--\n",dir_lba,fname);
+  //mlc_printf("--->findfile (LBA=%u,str=%s)<--\n",dir_lba,fname);
   // Find-in-dir
   done = 0;
   for(i=0;i<fat.sectors_per_cluster;i++) {
@@ -131,7 +131,7 @@ int fat32_open(void *fsdata,char *fname) {
 
   fs = (fat_t*)fsdata;
 
-  //printf("FAT32_Open(%s)\n",fname);
+  //mlc_printf("FAT32_Open(%s)\n",fname);
 
   file = fat32_findfile(fs->root_dir_first_cluster,fname);
 
@@ -264,7 +264,7 @@ int fat32_seek(void *fsdata,int fd,long offset,int whence) {
 }
 
 
-void fat32_newfs(uint32 offset) {
+void fat32_newfs(uint8 part,uint32 offset) {
   uint8 buff[512];
   //uint32 fat_begin_lba;
   //uint32 cluster_begin_lba;
@@ -322,7 +322,7 @@ void fat32_newfs(uint32 offset) {
   myfs.seek   = fat32_seek;
   myfs.read   = fat32_read;
   myfs.fsdata = (void*)&fat;
-
+  myfs.partnum = part;
 
   vfs_registerfs( &myfs);
 }
