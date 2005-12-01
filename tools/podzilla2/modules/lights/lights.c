@@ -325,7 +325,7 @@ static void lights_do_draw( void )
 	/* copy the buffer into place */
 	GrCopyArea( lights_wid, lights_gc, 0, 0,
 		    lights_screen_info.cols, 
-		    (screen_info.rows - (HEADER_TOPLINE + 1)),
+		    (screen_info.rows - ttk_screen->wy),
 		    lights_bufwid, 0, 0, MWROP_SRCCOPY);
 
 	if( !lights_won && lights_litcount==0 )
@@ -379,6 +379,10 @@ void lights_release_hold( void )
 void lights_animate( void )
 {
 	int x,y,z;
+
+	if(   (lights_mode == LIGHTS_MODE_MERLIN)
+	   || (lights_sel == 3) )
+		return;
 
 	/* do a vertical light chasing like thing */
 	for( z=0 ; z<lights_count ; z++ ) {
@@ -485,9 +489,9 @@ void new_lights_window(void)
         GrSetGCUseBackground(lights_gc, GR_FALSE);
         GrSetGCForeground(lights_gc, BLACK);
 
-	lights_height = (lights_screen_info.rows - (HEADER_TOPLINE + 1));
+	lights_height = (lights_screen_info.rows - ttk_screen->wy);
 
-	lights_wid = pz_new_window( 0, HEADER_TOPLINE + 1,
+	lights_wid = pz_new_window( 0, ttk_screen->wy,
 		    screen_info.cols, lights_height,
 		    lights_do_draw, lights_handle_event );
 
@@ -513,7 +517,7 @@ static void lights_common_start( int mode, char * hdr )
 {
     lights_hold_engaged = 0;
     GrGetScreenInfo(&lights_screen_info);
-    lights_height = (lights_screen_info.rows - (HEADER_TOPLINE + 1));
+    lights_height = (lights_screen_info.rows - ttk_screen->wy);
 
     lights_mode  = mode;
     lights_max   = lights_count * lights_count;
