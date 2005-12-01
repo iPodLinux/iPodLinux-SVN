@@ -10,6 +10,6 @@ typedef struct {
   uint32 position;
 } fat32_file;
 
-void fat32_newfs(uint32 offset);
+void fat32_newfs(uint8 part,uint32 offset);
 
 #endif

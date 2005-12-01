@@ -91,11 +91,12 @@ typedef struct _group_desc {
 
 typedef struct {
   inode_t inode;
+  uint32  inodeNum;
   uint32  length;
   uint32  opened;
   uint32  position;
 } ext2_file;
 
-void ext2_newfs(uint32 offset);
+void ext2_newfs(uint8 part,uint32 offset);
 
 #endif

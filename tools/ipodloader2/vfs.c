@@ -12,28 +12,66 @@ uint32 maxfs;
 
 typedef struct {
   uint32 fs;
-  uint32 fd;
+  int    fd;
 } vfs_handle_t;
 
-vfs_handle_t vfs_handle[20]; /* Hardlimit of 20 open files */
+vfs_handle_t vfs_handle[MAX_FILES]; /* Hardlimit of 20 open files */
+uint32 maxHandle;
 
 int vfs_open(char *fname) {
-  return( fs[0]->open(fs[0]->fsdata,fname) );
+  uint8 part;
+  int   i;
+
+  // (hd0,0)/ == 8 chars
+  if( mlc_strncmp(fname,"(hd0,",5) != 0 ) return(-1);
+  part = fname[5] - '0'; // atoi, the old-fashioned way
+
+  //mlc_printf("open: %u\n",part);
+
+  i = 0;
+  while( (vfs_handle[i].fd != -1) && (i<MAX_FILES) ) i++;
+  
+  vfs_handle[i].fs = part;
+  vfs_handle[i].fd = fs[part]->open(fs[part]->fsdata,fname+8);
+
+  if( vfs_handle[i].fd != -1 )
+    return(i);
+
+  return(-1);
 }
 int vfs_seek(int fd,long offset,int whence) {
-  return( fs[0]->seek(fs[0]->fsdata,fd,offset,whence) );
+  uint32 part;
+  
+  if(vfs_handle[fd].fd == -1) return(-1);
+
+  part = vfs_handle[fd].fs;
+
+  return( fs[part]->seek( fs[part]->fsdata,vfs_handle[fd].fd,offset,whence) );
 }
+
 long vfs_tell(int fd) {
-  return( fs[0]->tell(fs[0]->fsdata,fd) );
+  uint32 part;
+  
+  if(vfs_handle[fd].fd == -1) return(-1);
+
+  part = vfs_handle[fd].fs;
+
+  return( fs[part]->tell( fs[part]->fsdata,vfs_handle[fd].fd) );
 }
 size_t vfs_read(void *ptr,size_t size, size_t nmemb,int fd) {
-  return( fs[0]->read(fs[0]->fsdata,ptr,size,nmemb,fd) );
+  uint32 part;
+  
+  if(vfs_handle[fd].fd == -1) return(-1);
+
+  part = vfs_handle[fd].fs;
+
+  return( fs[part]->read( fs[part]->fsdata,ptr,size,nmemb,vfs_handle[fd].fd) );
 }
 
 void vfs_registerfs( filesystem *newfs ) {
-  fs[maxfs] = newfs;
+  //mlc_printf("regFS: %u\n",newfs->partnum);
 
-  maxfs++;
+  fs[newfs->partnum] = newfs;
 }
 
 void vfs_init(void) {
@@ -43,6 +81,8 @@ void vfs_init(void) {
   maxfs = 0;
 
   ata_readblocks( buff, 0, 1 );
+
+  for(i=0;i<MAX_FILES;i++) vfs_handle[i].fd = -1;
 
   if( (buff[510] != 0x55) || (buff[511] != 0xAA) ) {
     mlc_printf("Invalid MBR\n");
@@ -60,10 +100,10 @@ void vfs_init(void) {
 
     switch(type) {
     case 0x83:
-      //ext2_newfs(offset);
+      ext2_newfs(i,offset);
       break;
     case 0xB:
-      fat32_newfs(offset);
+      fat32_newfs(i,offset);
       break;
     default:
       /* printf("  Unsupported..\n"); */
