@@ -9,12 +9,14 @@
 \def ltred #aa0000
 \def dkred #550000
 \def orange #ff5500
+\def yellow #ffff00
+\def white #ffffff
 
-  header: bg => black, fg => red, line => red -1, accent => red
-	  gradient.top => dkred,
-	  gradient.middle => blue,
-	  gradient.bottom => ltred,
-	  gradient.bar => dkred -2 
+  header: bg => dkred, fg => black, line => red -1, accent => red
+	  gradient.top => red,
+	  gradient.middle => yellow,
+	  gradient.bottom => red,
+	  gradient.bar => white -1 
 
  battery: border => red, bg => black, fill.normal => red +1, 
 		fill.low => orange +1, fill.charge => orange +1,
