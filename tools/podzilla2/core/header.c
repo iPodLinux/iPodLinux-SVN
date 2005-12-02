@@ -619,11 +619,14 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 	    ) && ttk_ap_get( "header.gradient.bar" ) )
 	{
 	    int spacing =  ttk_ap_get( "header.gradient.bar" )->spacing;
+	    int h2 = this->h>>1;
+
+	    /* spacing seems like it gets corrupted? this patches it. */
+	    if( ( spacing < (h2*-1)) || ( spacing > h2) ) spacing = 0;
 
 	    if( spacing > 0 )
 		    ttk_fillrect( srf, 
-			    0, 
-			    ttk_ap_get( "header.gradient.bar" )->spacing,
+			    0, spacing,
 			    this->w, this->h>>1, 
 			    ttk_ap_get ("header.gradient.bar")->color );
 	    if( spacing < 0 ) {
