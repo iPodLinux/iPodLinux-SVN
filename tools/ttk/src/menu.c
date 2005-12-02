@@ -212,7 +212,7 @@ void ttk_menu_item_updated (TWidget *this, ttk_menu_item *p)
 	p->scrolldelay = 10;
     }
 
-    if (data->items > data->visible) {
+    if (VIFromXI (this, data->items) > data->visible) {
 	data->scroll = 1;
     }
 
@@ -381,7 +381,7 @@ void ttk_menu_updated (TWidget *this)
     while (p && p->name) { p++; data->items++; }
     data->allocation = data->items + 50;
 
-    data->scroll = (data->items > data->visible);
+    data->scroll = (VIFromXI (this, data->items) > data->visible);
 
     if (data->menu) free (data->menu);
     data->menu = malloc (sizeof(void*) * data->allocation);
@@ -548,7 +548,7 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
 	    ttk_menu_item_updated (this, data->menu[i]);
 	render (this, data->top, data->visible);
 	data->epoch = ttk_epoch;
-	data->scroll = (data->items > data->visible);
+	data->scroll = (VIFromXI (this, data->items) > data->visible);
     }
     
     if (!data->items) {

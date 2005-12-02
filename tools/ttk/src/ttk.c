@@ -333,7 +333,7 @@ int ttk_run()
     static int initd = 0;
     int local, global;
     static int sofar = 0;
-    int time = 0;
+    int time = 0, hs;
     ttk_timer ctim;
     TWidget *pf;
 
@@ -615,13 +615,14 @@ int ttk_run()
 	case TTK_BUTTON_UP:
 	    time = tick - ttk_button_presstime[earg];
 	    pf = ttk_button_pressedfor[earg];
+            hs = ttk_button_holdsent[earg];
 	    
 	    // Need to be before, in case button() launches its own ttk_run().
 	    ttk_button_presstime[earg] = 0;
 	    ttk_button_holdsent[earg] = 0;
 	    ttk_button_pressedfor[earg] = 0;
 	    
-	    if (evtarget == pf && local)
+	    if (evtarget == pf && local && !hs)
 		eret |= evtarget->button (evtarget, earg, time);
 	    break;
 	case TTK_SCROLL:
