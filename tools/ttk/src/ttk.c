@@ -700,6 +700,9 @@ int ttk_run()
 		ttk_dirty &= ~TTK_DIRTY_SCREEN;
 	    }
 	}
+#ifndef IPOD
+	ttk_delay(30);
+#endif
     }
 }
 
