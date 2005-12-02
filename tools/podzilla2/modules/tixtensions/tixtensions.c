@@ -37,6 +37,7 @@ static ttk_menu_item tix_paste_menuitem;
 
 extern TWidget * ti_new_standard_text_widget(int x, int y, int w, int h, int absheight, char * dt, int (*callback)(TWidget *, char *));
 extern void ti_multiline_text(ttk_surface srf, ttk_font fnt, int x, int y, int w, int h, ttk_color col, const char *t, int cursorpos, int scroll, int * lc, int * sl, int * cb);
+extern int ti_widget_start(TWidget * wid);
 
 /* ===== COMMON ===== */
 
