@@ -1,0 +1,4 @@
+Module: tiunihex
+Display-name: Unicode Hex Input
+Author: Jonathan Bettencourt
+Dependencies: textinput
