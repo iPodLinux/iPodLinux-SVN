@@ -38,21 +38,21 @@ typedef struct _Entry {
 
 static PzModule *module;
 
-TWindow *open_directory(const char *filename);
+static TWindow *open_directory(const char *filename);
 
-TWindow *previous_directory(ttk_menu_item *item)
+static TWindow *previous_directory(ttk_menu_item *item)
 {
 	chdir((char *)item->menu->data2); /* last working directory */
 	free(item->menu->data2);
 	return TTK_MENU_UPONE;
 }
 
-TWindow *handle_file(ttk_menu_item *item)
+static TWindow *handle_file(ttk_menu_item *item)
 {
 	return pz_browser_open(item->name);
 }
 
-TWindow *list_actions(const char *path)
+static TWindow *list_actions(const char *path)
 {
 	TWindow *ret;
 	TWidget *menu;
@@ -84,7 +84,7 @@ static int entry_cmp(const void *x, const void *y)
 	return strcasecmp(a->name, b->name);
 }
 
-int button_handler(TWidget *this, int button, int time)
+static int button_handler(TWidget *this, int button, int time)
 {
 	if (button == TTK_BUTTON_MENU) {
 		chdir((char *)this->data2); /* last working directory */
@@ -93,7 +93,7 @@ int button_handler(TWidget *this, int button, int time)
 	return ttk_menu_button(this, button, time);
 }
 
-int held_handler(TWidget *this, int button)
+static int held_handler(TWidget *this, int button)
 {
 	ttk_menu_item *item;
 
@@ -107,7 +107,7 @@ int held_handler(TWidget *this, int button)
 	return 0;
 }
 
-int check_hidden(ttk_menu_item *item)
+static int check_hidden(ttk_menu_item *item)
 {
 	if (!pz_get_int_setting(pz_global_config, BROWSER_HIDDEN)) {
 		if (item->name[0] == '.') {
@@ -117,7 +117,7 @@ int check_hidden(ttk_menu_item *item)
 	return 1;
 }
 
-TWidget *read_directory(const char *dirname)
+static TWidget *read_directory(const char *dirname)
 {
 	TWidget *ret;
 	DIR *dir;
@@ -171,7 +171,7 @@ TWidget *read_directory(const char *dirname)
 	return ret;
 }
 
-TWindow *open_directory(const char *filename)
+static TWindow *open_directory(const char *filename)
 {
 	TWindow *ret;
 	TWidget *menu;
@@ -198,7 +198,7 @@ PzWindow *new_browser_window()
 	return open_directory("/");
 }
 
-void cleanup_browser()
+static void cleanup_browser()
 {
 	pz_browser_remove_handler(is_dir);
 }
