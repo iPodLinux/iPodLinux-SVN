@@ -1,3 +1,12 @@
+/*
+ * Basic ATA2 driver for the ipodlinux bootloader
+ * 
+ * Supports:
+ *  PIO (Polling)
+ *  Multiple block reads
+ *
+ * Author: James Jacobsson ( slowcoder@mac.com )
+ */
 #include "bootloader.h"
 #include "console.h"
 #include "ipodhw.h"
@@ -15,7 +24,6 @@
 #define REG_COMMAND    0x7
 #define REG_CONTROL    0x8
 #define REG_ALTSTATUS  0x8 
-
 
 #define REG_DA         0x9
 
@@ -41,6 +49,12 @@
 
 unsigned int pio_base_addr1,pio_base_addr2;
 unsigned int pio_reg_addrs[10];
+
+#define CACHE_NUMBLOCKS 16
+static uint8  *cachedata;
+static uint32 *cacheaddr;
+static uint32 *cachetick;
+static uint32  cacheticks;
 
 static struct {
   uint16 chs[3];
@@ -73,7 +87,7 @@ volatile unsigned int pio_indword( unsigned int addr ) {
 }
 
 uint32 ata_init(void) {
-  uint8   tmp[2];
+  uint8   tmp[2],i;
   ipod_t *ipod;
 
   ipod = ipod_get_hwinfo();
@@ -81,6 +95,10 @@ uint32 ata_init(void) {
   pio_base_addr1 = ipod->ide_base;
   pio_base_addr2 = pio_base_addr1 + 0x200;
 
+  /*
+   * Sets up a number of "shortcuts" for us to use via the pio_ macros
+   * Note: The PP chips have their IO regs 4 byte aligned
+   */
   pio_reg_addrs[ REG_DATA       ] = pio_base_addr1 + 0 * 4;
   pio_reg_addrs[ REG_FEATURES   ] = pio_base_addr1 + 1 * 4;
   pio_reg_addrs[ REG_SECT_COUNT ] = pio_base_addr1 + 2 * 4;
@@ -92,8 +110,11 @@ uint32 ata_init(void) {
   pio_reg_addrs[ REG_CONTROL    ] = pio_base_addr2 + 6 * 4;
   pio_reg_addrs[ REG_DA         ] = pio_base_addr2 + 7 * 4;
 
-
+  /*
+   * Black magic
+   */
   if( (ipod->hw_rev >> 16) > 3 ) {
+    /* PP502x */
     outl(inl(0xc3000028) | (1 << 5), 0xc3000028);
     outl(inl(0xc3000028) & ~0x10000000, 0xc3000028);
     
@@ -114,7 +135,6 @@ uint32 ata_init(void) {
    */
   pio_outbyte( REG_DEVICEHEAD, DEVICE_0 ); /* Device 0 */
   DELAY400NS;
-  //ipod_wait_usec(500);
   pio_outbyte( REG_SECT_COUNT, 0x55 );
   pio_outbyte( REG_SECT      , 0xAA );
   pio_outbyte( REG_SECT_COUNT, 0xAA );
@@ -125,9 +145,27 @@ uint32 ata_init(void) {
   tmp[1] = pio_inbyte( REG_SECT );
   if( (tmp[0] != 0x55) || (tmp[1] != 0xAA) ) return(1);
 
+  /*
+   * Okay, we're sure there's an ATA2 controller and device, so
+   * lets set up the caching
+   */
+  cachedata  = (uint8 *)mlc_malloc(CACHE_NUMBLOCKS * 512);
+  cacheaddr  = (uint32*)mlc_malloc(CACHE_NUMBLOCKS * sizeof(uint32));
+  cachetick  = (uint32*)mlc_malloc(CACHE_NUMBLOCKS * sizeof(uint32));
+  cacheticks = 0;
+  
+  for(i=0;i<CACHE_NUMBLOCKS;i++) {
+    cachetick[i] =  0;  /* Time is zero */
+    cacheaddr[i] = -1;  /* Invalid sector number */
+  }
+
   return(0);
 }
 
+/*
+ * Copies one block of data (512bytes) from the device
+ * to host memory
+ */
 static void ata_transfer_block(void *ptr) {
   uint32  wordsRead;
   uint16 *dst;
@@ -142,9 +180,12 @@ static void ata_transfer_block(void *ptr) {
   }
 }
 
+/*
+ * Does some extended identification of the ATA device
+ */
 void ata_identify(void) {
   uint8  status,c;
-  uint16 *buff = (uint16*)0x11100000;
+  uint16 *buff = (uint16*)0x11100000; // !!! Not.. very.. nice...
 
   pio_outbyte( REG_DEVICEHEAD, DEVICE_0 );
   pio_outbyte( REG_FEATURES  , 0 );
@@ -184,8 +225,32 @@ void ata_identify(void) {
   }
 }
 
+/*
+ * Sets up the transfer of one block of data
+ */
 int ata_readblock(void *dst, uint32 sector) {
-  uint8   status;
+  uint8   status,i,cacheindex;
+
+  /*
+   * Check if we have this block in cache first
+   */
+  for(i=0;i<CACHE_NUMBLOCKS;i++) {
+    if( cacheaddr[i] == sector ) {
+      mlc_memcpy(dst,cachedata + 512*i,512);  /* We did.. No need to bother the ATA controller */
+      cacheticks++;
+      cachetick[i] = cacheticks;
+      return(0);
+    }
+  }
+  /*
+   * Okay, it wasnt in cache.. We need to figure out which block
+   * to replace in the cache.  Lets use a simple LRU
+   */
+  cacheindex = 0;
+  for(i=0;i<CACHE_NUMBLOCKS;i++) {
+    if( cachetick[i] < cachetick[cacheindex] ) cacheindex = i;
+  }
+  cachetick[cacheindex] = cacheticks;
 
   pio_outbyte( REG_DEVICEHEAD, (1<<6) | DEVICE_0 | ((sector & 0xF000000) >> 24) );
   DELAY400NS;
@@ -204,13 +269,23 @@ int ata_readblock(void *dst, uint32 sector) {
 
   status = pio_inbyte( REG_STATUS );
   if( (status & (STATUS_BSY | STATUS_DRQ)) == STATUS_DRQ) {
-    ata_transfer_block(dst);
+    //ata_transfer_block(dst);
+    cacheaddr[cacheindex] = sector;
+    ata_transfer_block(cachedata + cacheindex * 512);
   }  else {
     mlc_printf("IO Error\n");
     status = pio_inbyte( REG_ERROR );
     mlc_printf("Error reg: %u\n",status);
     for(;;);
   }
+
+  /*
+   * We've read a block. Lets make sure it's getting cached as well
+   */
+  mlc_memcpy(dst,cachedata + cacheindex*512,512);
+
+  cacheticks++;
+  //if( cacheindex >= (CACHE_NUMBLOCKS-1) ) cacheindex = 0;
 
   return(0);
 }
