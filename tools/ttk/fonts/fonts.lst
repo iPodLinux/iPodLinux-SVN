@@ -1,6 +1,7 @@
 # Note: Make sure the fonts you want are all in /usr/share/fonts,
 # not their subfolders. Remove the fonts that you don't want from
 # this list.
+[Aiken14] (Aiken) <14>
 [Apple_II_40_Column] (Apple II 40 Column) <9>
 [Apple_II_80_Column] (Apple II 80 Column) <18>
 [CFuturo-15] (C-Futuro) <15>
@@ -28,4 +29,3 @@
 [Sempach-12] (Sempach II) <12>
 [Some_Acronym] (Some Acronym) <9>
 [Twiggy] (Twiggy) <12>
-[Tahoma12] (Tahoma) <12>
