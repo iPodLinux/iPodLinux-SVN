@@ -12,5 +12,5 @@ void uCdl_close (void *handle);
 const char *uCdl_error();
 
 /* Debugging facilities: */
-const char *uCdl_resolve_addr (unsigned long addr, unsigned long *offset);
+const char *uCdl_resolve_addr (unsigned long addr, unsigned long *offset, const char **module);
 

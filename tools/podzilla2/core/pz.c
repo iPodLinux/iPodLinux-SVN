@@ -292,6 +292,7 @@ void
 debug_handler (int sig) 
 {
     unsigned long *FP;
+    const char *modfile;
     int i;
     FILE *f = fopen ("podzilla.oops", "w");
 
@@ -306,8 +307,8 @@ debug_handler (int sig)
         fprintf (stderr, "#%d  ", i);
         retaddr = *(FP - 1);
         fprintf (stderr, "%08lx ", retaddr);
-        fprintf (stderr, "<%s+%lx>\n", uCdl_resolve_addr (retaddr, &off), off);
-        fprintf (f, "#%d  %08lx <%s+%lx>\n", i, retaddr, uCdl_resolve_addr (retaddr, &off), off);
+        fprintf (stderr, "<%s+%lx> from %s\n", uCdl_resolve_addr (retaddr, &off, &modfile), off, modfile);
+        fprintf (f, "#%d  %08lx <%s+%lx> from %s\n", i, retaddr, uCdl_resolve_addr (retaddr, &off, &modfile), off, modfile);
         FP = (unsigned long *) *(FP - 3);
     }
     fclose (f);

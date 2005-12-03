@@ -92,6 +92,7 @@ typedef struct handle
     int nsecs, nsyms, shstrtabidx, symstrtabidx;
     char **strtabs;
     void *loc;
+    const char *filename;
     struct handle *next;
 } handle;
 
@@ -261,6 +262,7 @@ void *uCdl_open (const char *path)
     int memsize = 0;
     handle *ret = calloc (1, sizeof(handle));
     ret->loc = ret->symbols = 0;
+    ret->filename = path;
     ret->strtabs = calloc (eh.e_shnum, sizeof(char*));
     ret->shstrtabidx = eh.e_shstrndx;
     ret->sections = malloc (sizeof(section) * eh.e_shnum);
@@ -729,7 +731,7 @@ const char *uCdl_error()
     return ret;
 }
 
-const char *uCdl_resolve_addr (unsigned long addr, unsigned long *off) 
+const char *uCdl_resolve_addr (unsigned long addr, unsigned long *off, const char **modname) 
 {
     unsigned long closest_off = 0xffffffff;
     const char *ret = 0;
@@ -740,6 +742,7 @@ const char *uCdl_resolve_addr (unsigned long addr, unsigned long *off)
         if ((addr >= sy->addr) && (addr - sy->addr < closest_off) && sy->sym[0] != '$') {
             closest_off = addr - sy->addr;
             ret = sy->sym;
+            if (modname) *modname = "<core>";
         }
         sy = sy->next;
     }
@@ -753,6 +756,7 @@ const char *uCdl_resolve_addr (unsigned long addr, unsigned long *off)
             if ((addr >= symaddr) && (addr - symaddr < closest_off) && esy->name[0] != '$') {
                 closest_off = addr - symaddr;
                 ret = esy->name;
+                if (modname) *modname = curh->filename;
             }
         }
         

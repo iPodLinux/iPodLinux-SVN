@@ -63,7 +63,6 @@ else
 finalmod = $(MODULE).mod.o
 $(MODULE).mod.o: $(obj-m)
 	@cp $(obj-m) $(MODULE).mod.o
-	@cp $(MODULE).mod.o $(MODULE).o
 endif
 
 else
@@ -77,8 +76,8 @@ else
 finalmod = $(MODULE).mod.o
 $(MODULE).mod.o: $(obj-m)
 	@echo " LD [M]  $(MODULE)"
+	@echo $(LD) -r -o $@ $(obj-m) $(MODLIBS)
 	@$(LD) -r -o $@ $(obj-m) $(MODLIBS)
-	@cp $(MODULE).mod.o $(MODULE).o
 endif
 
 endif
@@ -115,21 +114,15 @@ endif
 #####
 
 semiclean:
-ifdef IPOD
-ifeq ($(findstring $(MODULE).o,$(obj)),)
 	@rm -f $(obj)
-endif
-else
-	@rm -f $(obj)
-endif
 
 clean:
-	@rm -f $(MODULE).o $(MODULE).so $(obj)
+	@rm -f $(MODULE).mod.o $(MODULE).so $(obj)
 
 distfiles:
 	@echo Module
 ifdef IPOD
-	@echo $(MODULE).o
+	@echo $(MODULE).mod.o
 else
 	@echo $(MODULE).so
 endif
