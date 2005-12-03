@@ -638,7 +638,7 @@ int ttk_run()
 	if (evtarget) {
 	    // held
 	    for (p = keys; *p; p++) {
-		if (ttk_button_presstime[*p] && (tick - ttk_button_presstime[*p] >= evtarget->holdtime) && !ttk_button_holdsent[*p]) {
+		if (ttk_button_presstime[*p] && (tick - ttk_button_presstime[*p] >= evtarget->holdtime) && !ttk_button_holdsent[*p] && (evtarget->held != ttk_widget_noaction_1)) {
 		    eret |= evtarget->held (evtarget, *p);
 		    ttk_button_holdsent[*p] = 1;
 		}
