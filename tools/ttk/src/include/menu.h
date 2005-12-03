@@ -87,6 +87,7 @@ void ttk_menu_insert (TWidget *_this, ttk_menu_item *item, int pos);
 void ttk_menu_remove (TWidget *_this, int pos);
 void ttk_menu_remove_by_ptr (TWidget *_this, ttk_menu_item *item);
 void ttk_menu_remove_by_name (TWidget *_this, const char *name);
+void ttk_menu_clear (TWidget *_this);
 void ttk_menu_item_updated (TWidget *, ttk_menu_item *); // call whenever you edit that item
 void ttk_menu_updated (TWidget *_this); // call whenever you edit the item list somehow;
                                        // FORGETS ABOUT ALL ADDED ITEMS!
