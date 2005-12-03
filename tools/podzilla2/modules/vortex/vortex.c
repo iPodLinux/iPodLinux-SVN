@@ -106,7 +106,7 @@ PzWindow *new_vortex_window()
     srand( time( NULL ));
     Vortex_Console_Init();
 
-    window = pz_new_window( "vortex", PZ_WINDOW_NORMAL );
+    window = pz_new_window( "Vortex", PZ_WINDOW_NORMAL );
     widget = pz_add_widget( window, draw_vortex, event_vortex );
     pz_widget_set_timer( widget, 40 );
 
@@ -117,8 +117,11 @@ PzWindow *new_vortex_window()
 
 void init_vortex() 
 {
+    /* internal module name */
     module = pz_register_module ("vortex", cleanup_vortex);
-    pz_menu_add_action ("/Extras/Games/Vortex", new_vortex_window);
+
+    /* menu item display name */
+    pz_menu_add_action ("/Extras/Games/Vortex WIP", new_vortex_window);
 }
 
 PZ_MOD_INIT (init_vortex)
