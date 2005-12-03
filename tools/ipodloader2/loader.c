@@ -24,7 +24,7 @@ void *loader(void) {
 
     keypad_init();
 
-    framebuffer = (uint16*)mlc_malloc( 320*340 * 2 ); // Aw, chucks..  
+    framebuffer = (uint16*)mlc_malloc( 320*240 * 2 ); // Aw, chucks..  
 
     fb_init();
     fb_cls(framebuffer,0x1F);
@@ -43,11 +43,15 @@ void *loader(void) {
 
     ata_identify();
     fb_update(framebuffer);
-
     vfs_init();
 
     //fd = vfs_open("(hd0,1)/NOTES/KERNEL.BIN");
     fd = vfs_open("(hd0,2)/kernel.ext");
+    if(fd == -1) {
+      mlc_printf("Unable to open kernel\n",ret);
+      fb_update(framebuffer);
+      for(;;);
+    }
     //for(;;);
 
     vfs_seek(fd,0,VFS_SEEK_END);
