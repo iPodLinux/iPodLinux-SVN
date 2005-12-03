@@ -549,9 +549,10 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
 	    ttk_menu_item_updated (this, data->menu[i]);
 	render (this, data->top, data->visible);
 	data->epoch = ttk_epoch;
-	data->scroll = (VIFromXI (this, data->items) > data->visible);
     }
+    data->scroll = (VIFromXI (this, data->items) > data->visible);
     
+
     if (!data->items) {
 	ttk_text (srf, data->font, 40, 20, ttk_makecol (BLACK), "No Items.");
 	ttk_text (srf, ttk_textfont, 40, 50, ttk_makecol (BLACK), "Press a button.");
@@ -858,8 +859,8 @@ void ttk_menu_clear (TWidget *this)
             if (data->menu[i]->sub && data->menu[i]->sub < TTK_MENU_DESC_MAX) {
                 ttk_free_window (data->menu[i]->sub);
             }
-            if (data->itemsrf[i]) ttk_free_surface (data->itemsrf[i]);
-            if (data->itemsrfI[i]) ttk_free_surface (data->itemsrf[i]);
+            if (data->itemsrf[i]) { ttk_free_surface (data->itemsrf[i]); data->itemsrf[i] = 0; }
+            if (data->itemsrfI[i]) { ttk_free_surface (data->itemsrf[i]); data->itemsrfI[i] = 0; }
             if (data->free_everything && data->menu[i]->free_data) free (data->menu[i]->data);
             if (data->free_everything && data->menu[i]->free_name) free ((char *)data->menu[i]->name);
             free (data->menu[i]);
@@ -868,6 +869,7 @@ void ttk_menu_clear (TWidget *this)
     }
     data->items = 0;
     data->sel = data->top = 0;
+    this->dirty++;
 }
 
 TWindow *ttk_mh_sub (ttk_menu_item *item) 
