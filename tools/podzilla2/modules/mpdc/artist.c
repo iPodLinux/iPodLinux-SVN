@@ -68,7 +68,7 @@ static TWindow *open_artist(ttk_menu_item *item)
 	TWindow *ret;
 	if (mpdc_tickle() < 0)
 		return TTK_MENU_DONOTHING;
-	current_song.artist = (char *)item->data=="" ? NULL:(char *)item->data;
+	current_song.artist = ((char *)item->data)[0]? (char *)item->data:NULL;
 	ret = pz_new_window(_("Albums"), PZ_WINDOW_NORMAL);
 	ttk_add_widget(ret, populate_albums((char *)item->data));
 	return pz_finish_window(ret);
