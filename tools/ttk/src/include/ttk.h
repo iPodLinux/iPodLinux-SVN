@@ -359,11 +359,13 @@ void ttk_free_surface (ttk_surface srf);
 
 #ifdef IPOD
 #define TTK_SCROLLMOD(dir,n) \
-  static int sofar = 0; \
-  sofar += dir; \
-  if (sofar > -n && sofar < n) return 0; \
-  dir = sofar / n; \
-  sofar -= dir * n;
+  do { \
+    static int sofar = 0; \
+    sofar += dir; \
+    if (sofar > -n && sofar < n) return 0; \
+    dir = sofar / n; \
+    sofar -= dir * n; \
+  } while (0)
 #else
 #define TTK_SCROLLMOD(dir,n)
 #endif
