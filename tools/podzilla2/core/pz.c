@@ -291,19 +291,31 @@ void pz_uninit()
 void
 debug_handler (int sig) 
 {
-    unsigned long *FP;
-    const char *modfile;
+    unsigned long PC, *FP;
+    unsigned long retaddr, off;
+    const char *modfile = "Unknown";
     int i;
     FILE *f = fopen ("podzilla.oops", "w");
 
     asm ("mov %0, r11" : "=r" (FP) : );
 
+    /* arm_fp field of struct sigcontext is 0x3c bytes
+     * above our FP. The regs are in order, so PC is
+     * 0x10 bytes above FP.
+     */
+    PC = *(unsigned long  *)((char *)FP + 0x4c);
+    FP = *(unsigned long **)((char *)FP + 0x3c);
+    fprintf (f, "FP = 0x%lx\n", (unsigned long)FP);
+
     ttk_quit();
     fprintf (stderr, "Fatal signal %d\n", sig);
     fprintf (stderr, "Trying to gather debug info. If this freezes, reboot.\n\n");
 
-    for (i = 0; i < 10; i++) {
-        unsigned long retaddr, off;
+    const char *func = uCdl_resolve_addr (PC, &off, &modfile);
+    fprintf (stderr, "#0  %08lx <%s+%lx> from %s\n", PC, func, off, modfile);
+    fprintf (f, "#0  %08lx <%s+%lx> from %s\n", PC, func, off, modfile);
+
+    for (i = 1; i < 10; i++) {
         fprintf (stderr, "#%d  ", i);
         retaddr = *(FP - 1);
         fprintf (stderr, "%08lx ", retaddr);
