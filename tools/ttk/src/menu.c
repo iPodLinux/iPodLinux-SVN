@@ -304,12 +304,13 @@ void ttk_menu_insert (TWidget *this, ttk_menu_item *item, int xi)
     memmove (data->menu + xi + 1, data->menu + xi, sizeof(void*) * (data->items - xi));
     if (data->itemsrf) memmove (data->itemsrf + xi + 1, data->itemsrf + xi, sizeof(ttk_surface) * (data->items - xi));
     if (data->itemsrfI) memmove (data->itemsrfI + xi + 1, data->itemsrfI + xi, sizeof (ttk_surface) * (data->items - xi));
+    data->itemsrf[xi] = data->itemsrfI[xi] = 0;
     data->menu[xi] = item;
     data->items++;
     
     ttk_menu_item_updated (this, item);
     item->menudata = data;
-    if (VIFromXI (this, data->items) - data->top - 1 <= data->visible) {
+    if (VIFromXI (this, xi) - data->top - 1 <= data->visible) {
 	render (this, data->top, data->visible);
     }    
 }
@@ -384,7 +385,7 @@ void ttk_menu_updated (TWidget *this)
     data->scroll = (VIFromXI (this, data->items) > data->visible);
 
     if (data->menu) free (data->menu);
-    data->menu = malloc (sizeof(void*) * data->allocation);
+    data->menu = calloc (data->allocation, sizeof(void*));
 
     p = data->mlist;
     q = data->menu;
