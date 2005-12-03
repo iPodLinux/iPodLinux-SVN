@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
 #include "pz.h"
 #include "console.h"
 
@@ -100,7 +101,6 @@ int event_vortex (PzEvent *ev)
 PzWindow *new_vortex_window()
 {
 	PzWindow *window;
-	FILE *fp;
 	
 	//fp = fopen (pz_module_get_datapath (module, "message.txt"), "r");
 

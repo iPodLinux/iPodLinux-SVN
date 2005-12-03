@@ -39,5 +39,6 @@ void Vortex_Console_HiddenStatic( int hidden );
 void Vortex_Console_Render( ttk_surface srf, ttk_color col );
 
 /* "accessors" for various statistics */
-int Vortex_Console_CountZoom( void );
-int Vortex_Console_CountStatic( void );
+int Vortex_Console_GetZoomCount( void );
+int Vortex_Console_GetStaticCount( void );
+
