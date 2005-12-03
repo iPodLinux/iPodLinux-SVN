@@ -578,6 +578,9 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
 	if (data->menu[xi]->visible && !data->menu[xi]->visible (data->menu[xi]))
 	    continue;
 
+        if (data->menu[xi]->predraw)
+            data->menu[xi]->predraw (data->menu[xi]);
+
 	if (vi == data->top + data->sel && !(data->menu[xi]->textflash % 2)) {
 	    if (!data->itemsrfI[xi]) {
 		fprintf (stderr, "Null pointer (I)\n");

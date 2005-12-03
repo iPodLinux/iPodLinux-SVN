@@ -70,6 +70,7 @@ typedef struct ttk_menu_item
     /* private */ int iconflash, iftime, textflash;
     /* readonly */ TWidget *menu;
     void *data2;
+    void (*predraw)(struct ttk_menu_item *item);
 } ttk_menu_item;
 
 TWidget *ttk_new_menu_widget (ttk_menu_item *items, ttk_font font, int w, int h);
