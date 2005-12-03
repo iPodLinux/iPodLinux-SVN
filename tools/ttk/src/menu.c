@@ -554,8 +554,10 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
     
 
     if (!data->items) {
-	ttk_text (srf, data->font, 40, 20, ttk_makecol (BLACK), "No Items.");
-	ttk_text (srf, ttk_textfont, 40, 50, ttk_makecol (BLACK), "Press a button.");
+	char *header = "No Items.";
+	char *sub = "Press a button.";
+	ttk_text (srf, data->font, (this->w - ttk_text_width(data->font, header)) / 2, 20, ttk_makecol (BLACK), header);
+	ttk_text (srf, ttk_textfont, (this->w - ttk_text_width(ttk_textfont, sub)) / 2, 50, ttk_makecol (BLACK), sub);
 	return;
     }
 
