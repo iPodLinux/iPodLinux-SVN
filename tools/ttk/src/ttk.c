@@ -639,8 +639,11 @@ int ttk_run()
 	    // held
 	    for (p = keys; *p; p++) {
 		if (ttk_button_presstime[*p] && (tick - ttk_button_presstime[*p] >= evtarget->holdtime) && !ttk_button_holdsent[*p] && (evtarget->held != ttk_widget_noaction_1)) {
-		    eret |= evtarget->held (evtarget, *p);
-		    ttk_button_holdsent[*p] = 1;
+                    int er = evtarget->held (evtarget, *p);
+                    if (!(er & TTK_EV_UNUSED)) {
+                        eret |= er;
+                        ttk_button_holdsent[*p] = 1;
+                    }
 		}
 
 		// If user pushes a button on clickwheel, it'll also register as a tap.
