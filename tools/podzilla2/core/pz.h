@@ -252,8 +252,6 @@ TWindow *pz_create_stringview (const char *str, const char *title);
 #define PZ_BUTTON_PREVIOUS    'w'
 #define PZ_BUTTON_NEXT        'f'
 #define PZ_BUTTON_PLAY        'd'
-#define PZ_BUTTON_SCROLLLEFT  'l'
-#define PZ_BUTTON_SCROLLRIGHT 'r'
 #define PZ_BUTTON_HOLD        'h'
 #define PZ_BUTTON_ACTION      '\n'
 #ifdef PZ_COMPAT
