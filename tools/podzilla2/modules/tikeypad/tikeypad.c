@@ -308,7 +308,7 @@ int ti_keypad_held(TWidget * wid, int btn)
 
 int ti_keypad_scroll(TWidget * wid, int dir)
 {
-	TTK_SCROLLMOD (dir,4)
+	TTK_SCROLLMOD (dir,4);
 	
 	if (dir<0) {
 		ttk_input_char(TTK_INPUT_LEFT);

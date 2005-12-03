@@ -191,7 +191,7 @@ int ti_wlb_down(TWidget * wid, int btn)
 
 int ti_wlb_scroll(TWidget * wid, int dir)
 {
-	TTK_SCROLLMOD (dir,4)
+	TTK_SCROLLMOD (dir,4);
 	
 	if (dir<0) {
 		if (ti_wlb_cset<0) {
