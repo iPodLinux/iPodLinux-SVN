@@ -327,7 +327,7 @@ static void do_load (PzModule *mod)
     char *fname;
     fname = malloc (strlen (mod->mountpt) + strlen (mod->name) + 8);
 #ifdef IPOD
-    sprintf (fname, "%s/%s.o", mod->mountpt, mod->name);
+    sprintf (fname, "%s/%s.mod.o", mod->mountpt, mod->name);
     mod->handle = uCdl_open (fname);
     free (fname);
     if (!mod->handle) {
