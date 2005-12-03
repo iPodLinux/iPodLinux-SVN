@@ -834,7 +834,7 @@ static void Clocks_draw( void )
 	{
 	    lastt = t;
 	    if( pz_get_int_setting( pz_global_config, TIME_TICKER ))
-		ipod_beep();
+		ttk_click();
 	}
 
         /* copy the buffer into place */
