@@ -849,6 +849,27 @@ void ttk_menu_free (TWidget *this)
     free (data);
 }
 
+void ttk_menu_clear (TWidget *this) 
+{
+    int i;
+    _MAKETHIS;
+    if (data->menu) {
+        for (i = 0; data->menu[i]; i++) {
+            if (data->menu[i]->sub && data->menu[i]->sub < TTK_MENU_DESC_MAX) {
+                ttk_free_window (data->menu[i]->sub);
+            }
+            if (data->itemsrf[i]) ttk_free_surface (data->itemsrf[i]);
+            if (data->itemsrfI[i]) ttk_free_surface (data->itemsrf[i]);
+            if (data->free_everything && data->menu[i]->free_data) free (data->menu[i]->data);
+            if (data->free_everything && data->menu[i]->free_name) free ((char *)data->menu[i]->name);
+            free (data->menu[i]);
+            data->menu[i] = 0;
+        }
+    }
+    data->items = 0;
+    data->sel = data->top = 0;
+}
+
 TWindow *ttk_mh_sub (ttk_menu_item *item) 
 {
     TWindow *ret = ttk_new_window();
