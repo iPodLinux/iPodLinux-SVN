@@ -139,10 +139,10 @@ TWidget *populate_songs(char *search)
 	if (mpdc_tickle() < 0)
 		return NULL;
 
-	if (search == NULL || (search == "" && !current_song.artist)) {
+	if (search == NULL || (!search[0] && !current_song.artist)) {
 		mpd_sendListallInfoCommand(mpdz, "");
 	}
-	else if (search == "" && current_song.artist) {
+	else if (!search[0] && current_song.artist) {
 		mpd_sendFindCommand(mpdz, MPD_TABLE_ARTIST,current_song.artist);
 	}
 	else {
