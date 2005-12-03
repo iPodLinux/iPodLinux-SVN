@@ -60,16 +60,18 @@ int event_vortex (PzEvent *ev)
 {
     switch (ev->type) {
     case PZ_EVENT_SCROLL:
-	TTK_SCROLLMOD( ev->arg, 4 );
+	{
+		TTK_SCROLLMOD( ev->arg, 4 );
 
-	if( ev->arg > 0 ) {
-		Vortex_Console_AddItem( "LEFT", 
-				Vortex_Rand(4)-2, Vortex_Rand(4)-2, 
-				VORTEX_STYLE_NORMAL );
-	} else {
-		Vortex_Console_AddItem( "RIGHT", 
-				Vortex_Rand(4)-2, Vortex_Rand(4)-2, 
-				VORTEX_STYLE_NORMAL );
+		if( ev->arg > 0 ) {
+			Vortex_Console_AddItem( "LEFT", 
+					Vortex_Rand(4)-2, Vortex_Rand(4)-2, 
+					VORTEX_STYLE_NORMAL );
+		} else {
+			Vortex_Console_AddItem( "RIGHT", 
+					Vortex_Rand(4)-2, Vortex_Rand(4)-2, 
+					VORTEX_STYLE_NORMAL );
+		}
 	}
 	break;
 
