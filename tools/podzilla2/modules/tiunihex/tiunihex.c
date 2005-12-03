@@ -59,7 +59,7 @@ void ti_unihex_draw(TWidget * wid, ttk_surface srf)
 
 int ti_unihex_scroll(TWidget * wid, int dir)
 {
-	TTK_SCROLLMOD (dir, 4)
+	TTK_SCROLLMOD (dir, 4);
 	
 	if (ti_unihex_numeric) {
 		if (dir<0) {

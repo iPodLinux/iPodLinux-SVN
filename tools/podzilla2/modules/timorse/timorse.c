@@ -230,7 +230,7 @@ int ti_morse_up(TWidget * wid, int btn, int t)
 
 int ti_morse_scroll(TWidget * wid, int dir)
 {
-	TTK_SCROLLMOD (dir,4)
+	TTK_SCROLLMOD (dir,4);
 	
 	ttk_widget_set_timer(wid, 0);
 	ti_morse_sym[0] = 0;

@@ -204,7 +204,7 @@ int ti_cursive_down(TWidget * wid, int btn)
 
 int ti_cursive_scroll(TWidget * wid, int dir)
 {
-	TTK_SCROLLMOD (dir,24) /* DO NOT change this value! */
+	TTK_SCROLLMOD (dir,24); /* DO NOT change this value! */
 	
 	ttk_widget_set_timer(wid, 0);
 	if (dir<0) {

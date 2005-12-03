@@ -312,7 +312,7 @@ int ti_osk_down(TWidget * wid, int ch)
 
 int ti_osk_scroll(TWidget * wid, int dir)
 {
-	TTK_SCROLLMOD (dir,4)
+	TTK_SCROLLMOD (dir,4);
 	
 	if (dir<0) {
 		ti_osk_current_key--;
