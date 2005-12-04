@@ -167,9 +167,9 @@ int uCdl_init (const char *symfile)
 	}
 
 	if (cur == 0) {
-	    cur = mysyms = malloc(sizeof(struct symbol));
+	    cur = mysyms = calloc(1, sizeof(struct symbol));
 	} else {
-	    cur->next = malloc(sizeof(struct symbol));
+	    cur->next = calloc(1, sizeof(struct symbol));
 	    cur = cur->next;
 	}
 	
@@ -265,7 +265,7 @@ void *uCdl_open (const char *path)
     ret->filename = path;
     ret->strtabs = calloc (eh.e_shnum, sizeof(char*));
     ret->shstrtabidx = eh.e_shstrndx;
-    ret->sections = malloc (sizeof(section) * eh.e_shnum);
+    ret->sections = calloc (eh.e_shnum, sizeof(section));
     
     for (i = 0; i < eh.e_shnum; i++) ret->strtabs[i] = 0;
 
@@ -301,6 +301,7 @@ void *uCdl_open (const char *path)
 	free (ret);
 	return 0;
     }
+    memset (ret->loc, memsize, 42);
 
     unsigned int lastoff = 0;
 
@@ -344,7 +345,7 @@ void *uCdl_open (const char *path)
 	case SHT_SYMTAB:
 	    ret->nsyms = sec->size / sec->entsize;
 	    ret->symstrtabidx = sec->linkidx;
-	    ret->symbols = malloc (sec->size / sec->entsize * sizeof(esymbol));
+	    ret->symbols = calloc (sec->size / sec->entsize, sizeof(esymbol));
 	    {
 		Elf_Sym st;
 		esymbol *sym = ret->symbols;
@@ -389,9 +390,9 @@ void *uCdl_open (const char *path)
 			continue;
 
 		    if (!rel) {
-			rel = ret->relocs = malloc (sizeof(reloc));
+			rel = ret->relocs = calloc (1, sizeof(reloc));
 		    } else {
-			rel->next = malloc (sizeof(reloc));
+			rel->next = calloc (1, sizeof(reloc));
 			rel = rel->next;
 		    }
 
@@ -405,7 +406,7 @@ void *uCdl_open (const char *path)
 		    } else {
 			rel->offset = ra.r_offset;
 			rel->symbolidx = ra.r_info >> 8;
-			rel->type = (r.r_info & 0xff) | RELOC_HAS_ADDEND;
+			rel->type = (ra.r_info & 0xff) | RELOC_HAS_ADDEND;
 			rel->addend = ra.r_addend;
 		    }
 		    rel->next = 0;

@@ -62,7 +62,7 @@ $(MODULE).so: $(obj-m)
 else
 finalmod = $(MODULE).mod.o
 $(MODULE).mod.o: $(obj-m)
-	@cp $(obj-m) $(MODULE).mod.o
+	@$(LD) -r -d -o $(MODULE).mod.o $(obj-m)
 endif
 
 else
@@ -76,8 +76,7 @@ else
 finalmod = $(MODULE).mod.o
 $(MODULE).mod.o: $(obj-m)
 	@echo " LD [M]  $(MODULE)"
-	@echo $(LD) -r -o $@ $(obj-m) $(MODLIBS)
-	@$(LD) -r -o $@ $(obj-m) $(MODLIBS)
+	@$(LD) -r -d -o $@ $(obj-m) $(MODLIBS)
 endif
 
 endif
