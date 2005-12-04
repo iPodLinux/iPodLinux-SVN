@@ -22,43 +22,6 @@
 extern mpd_Song current_song;
 extern void clear_current_song();
 
-static void menu_add(char *filename)
-{
-	typedef struct _mm_list {
-		char *filename;
-		struct _mm_list *next;
-	} mm_list;
-
-	static mm_list *head = NULL;
-	mm_list *n, *p;
-
-	if (filename) {
-		n = malloc(sizeof(mm_list));
-		n->filename = strdup(filename);
-		n->next = NULL;
-
-		if ((p = head) != NULL) {
-			while (p->next != NULL)
-				p = p->next;
-			p->next = n;
-		}
-		else
-			head = n;
-	}
-	else {
-		p = head;
-		while (p) {
-			n = p;
-			mpd_sendAddCommand(mpdz, p->filename);
-			mpd_finishCommand(mpdz);
-			p = p->next;
-			free(n->filename);
-			free(n);
-		}
-		head = NULL;
-	}
-}
-
 static int track_cmp(const void *x, const void *y) 
 {
 	int a = (int)(*(ttk_menu_item **)x)->cdata;
@@ -69,6 +32,9 @@ static int track_cmp(const void *x, const void *y)
 static void queue_song(ttk_menu_item *item)
 {
 	mpd_InfoEntity entity;
+
+	if (mpdc_tickle() < 0)
+		return;
 	mpd_sendSearchCommand(mpdz, (int)item->data, item->name);
 
 	if (mpdz->error) {
@@ -89,12 +55,12 @@ static void queue_song(ttk_menu_item *item)
 		found &= ((song->title ? (strcmp(item->name, song->title)==0) :
 				0) || strcmp(item->name, song->file)==0);
 		if (found && song->file) {
-			menu_add(song->file);
+			mpd_finishCommand(mpdz);
+			mpd_sendAddCommand(mpdz, song->file);
 			break;
 		}
 	}
 	mpd_finishCommand(mpdz);
-	menu_add(NULL);
 }
 
 static int song_held_handler(TWidget *this, int button)
