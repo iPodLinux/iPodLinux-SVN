@@ -21,6 +21,9 @@
 #ifndef _ALL_TTK_H_
 #define _ALL_TTK_H_
 
+#define TTK_API_VERSION  0x10000
+#define TTK_VERSION_CHECK() ttk_version_check(TTK_API_VERSION)
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <ttk/ttk.h>

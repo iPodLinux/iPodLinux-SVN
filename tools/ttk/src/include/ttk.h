@@ -224,6 +224,8 @@ extern int ttk_epoch;
 
 //--//
 
+int ttk_version_check (int yourver);
+
 TWindow *ttk_init();
 int ttk_run();
 void ttk_quit();
