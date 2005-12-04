@@ -377,6 +377,8 @@ main(int argc, char **argv)
 {
 	TWindow *first;
 
+        TTK_VERSION_CHECK();
+
 #ifdef IPOD
         signal (SIGBUS, debug_handler);
 #endif

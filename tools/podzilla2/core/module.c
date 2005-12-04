@@ -68,6 +68,8 @@ typedef struct _pz_Module
     void (*init)();
     void (*cleanup)();
 
+    int to_free;
+
     struct _pz_Module *next;
 } PzModule;
 
@@ -332,6 +334,7 @@ static void do_load (PzModule *mod)
     free (fname);
     if (!mod->handle) {
 	pz_error ("Could not load module %s: %s", mod->name, uCdl_error());
+        mod->to_load = 0;
     }
 #else
     sprintf (fname, "%s/%s.so", mod->mountpt, mod->name);
@@ -339,9 +342,14 @@ static void do_load (PzModule *mod)
     free (fname);
     if (!mod->handle) {
 	pz_error ("Could not load module %s: %s", mod->name, dlerror());
+        mod->to_load = 0;
     }
 #endif
-    else {
+}
+
+static void do_init (PzModule *mod) 
+{
+    if (mod->to_load > 0) {
 #ifdef IPOD
 	mod->init = uCdl_sym (mod->handle, "__init_module__");
 	if (!mod->init) pz_warning (_("Could not do modinit function for %s: %s"), mod->name, uCdl_error());
@@ -352,6 +360,8 @@ static void do_load (PzModule *mod)
 	else {
 	    (*mod->init)();
 	}
+    } else if (mod->to_load < 0) {
+        (*mod->init)();
     }
     mod->to_load = 0;
 }
@@ -422,6 +432,9 @@ static void add_deps (PzModule *mod)
     cur->mod = mod;
     cur->next = 0;
 }
+
+// for use by check_version, which is called from module init funcs
+PzModule *current_module;
 
 void pz_modules_init() 
 {
@@ -609,11 +622,30 @@ void pz_modules_init()
     while (c) {
 	if (c->mod->to_load > 0) {
 	    do_load (c->mod);
-	} else if (c->mod->to_load < 0) {
-	    (*c->mod->init)();
-	    c->mod->to_load = 0;
 	}
 	c = c->next;        
+    }
+    c = load_order;
+    while (c) {
+        current_module = c->mod;
+        do_init (c->mod);
+        c = c->next;
+    }
+
+    // Any modules with unrecoverable errors on loading set mod->to_free.
+    // Oblige them.
+    cur = module_head;
+    last = 0;
+    while (cur) {
+        if (cur->to_free) {
+	    if (last) last->next = cur->next;
+	    else module_head = cur->next;
+            free_module (cur);
+	    cur = last? last->next : module_head;
+	} else {
+	    last = cur;
+	    cur = cur->next;
+        }
     }
 }
 
@@ -695,5 +727,35 @@ void *pz_module_softdep (const char *modname, const char *symname)
         }
         cur = cur->next;
     }
+    return 0;
+}
+
+int _pz_mod_check_version (int otherver) 
+{
+    int myver = PZ_API_VERSION;
+    PzModule *module = current_module;
+
+    /* version completely equal - OK */
+    if (myver == otherver)
+        return 1;
+
+    /* version less - some stuff may be missing, won't work */
+    if (myver < otherver) {
+        pz_error ("Module %s compiled for a newer version of podzilla. Please upgrade.",
+                  module->name);
+        goto remove;
+    }
+    /* minor version more - only stuff added, OK */
+    if (((myver & ~0xff) == (otherver & ~0xff)) && ((myver & 0xff) >= (otherver & 0xff))) {
+        pz_warning ("Module %s compiled for a slightly older version of podzilla. "
+                    "It will still probably work, but you should upgrade the module soon.",
+                    module->name);
+        return 1;
+    }
+    /* major version more - won't work */
+    pz_error ("Module %s compiled for a significantly older version of podzilla; "
+              "it will not work. Please upgrade the module.", module->name);
+ remove:
+    module->to_free = 1;
     return 0;
 }
