@@ -57,8 +57,10 @@ static int artist_held_handler(TWidget *this, int button)
 	ttk_menu_item *item;
 	if (button == TTK_BUTTON_ACTION) {
 		item = ttk_menu_get_selected_item(this);
-		ttk_menu_flash(item, 1);
-		queue_artist(item);
+		if (((char *)item->data)[0]) {
+			ttk_menu_flash(item, 1);
+			queue_artist(item);
+		}
 	}
 	return 0;
 }
