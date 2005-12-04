@@ -289,6 +289,28 @@ void pz_uninit()
 
 #ifdef IPOD
 void
+decode_instr (FILE *f, unsigned long *iaddr)
+{
+    unsigned long instr = *iaddr;
+    fprintf (f, "% 8lx:\t%08lx\t", (unsigned long)iaddr, instr);
+    if ((instr & 0xff000000) == 0xeb000000) {
+        unsigned long field = instr & 0xffffff;
+        fprintf (f, "bl\tf=%lx", field);
+        unsigned long uoffs = field << 2;
+        if (uoffs & (1 << 25)) uoffs |= 0xfc000000;
+        long offs = uoffs;
+        fprintf (f, "  o=%lx", offs);
+        unsigned long addr = (unsigned long)iaddr + 8 + offs;
+        fprintf (f, "  a=%08lx", addr);
+        const char *modfile, *symname;
+        symname = uCdl_resolve_addr (addr, &offs, &modfile);
+        fprintf (f, " <%s+%lx> from %s\n", symname, offs, modfile);
+    } else {
+        fprintf (f, "???\n");
+    }
+}
+
+void
 debug_handler (int sig) 
 {
     unsigned long PC, *FP;
@@ -314,6 +336,7 @@ debug_handler (int sig)
     const char *func = uCdl_resolve_addr (PC, &off, &modfile);
     fprintf (stderr, "#0  %08lx <%s+%lx> from %s\n", PC, func, off, modfile);
     fprintf (f, "#0  %08lx <%s+%lx> from %s\n", PC, func, off, modfile);
+    decode_instr (f, (unsigned long *)PC - 3);
 
     for (i = 1; i < 10; i++) {
         fprintf (stderr, "#%d  ", i);
@@ -321,6 +344,7 @@ debug_handler (int sig)
         fprintf (stderr, "%08lx ", retaddr);
         fprintf (stderr, "<%s+%lx> from %s\n", uCdl_resolve_addr (retaddr, &off, &modfile), off, modfile);
         fprintf (f, "#%d  %08lx <%s+%lx> from %s\n", i, retaddr, uCdl_resolve_addr (retaddr, &off, &modfile), off, modfile);
+        decode_instr (f, (unsigned long *)retaddr - 1);
         FP = (unsigned long *) *(FP - 3);
     }
     fclose (f);
