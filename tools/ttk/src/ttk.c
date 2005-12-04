@@ -64,6 +64,35 @@ void ttk_widget_noaction_0 (TWidget *w) {}
 #define SCHEMESDIR "schemes"
 #endif
 
+int ttk_version_check (int otherver) 
+{
+    int myver = TTK_API_VERSION;
+    /* version completely equal - OK */
+    if (myver == otherver)
+        return 1;
+
+    /* version less - some stuff may be missing, won't work */
+    if (myver < otherver) {
+        fprintf (stderr, "Error: I was compiled with TTK headers version %x but "
+                 "linked with library version %x.\n", otherver, myver);
+        return 0;
+    }
+    /* minor version more - only stuff added, OK */
+    if (((myver & ~0xff) == (otherver & ~0xff)) && ((myver & 0xff) >= (otherver & 0xff))) {
+        fprintf (stderr, "Warning: I was compiled with TTK headers version %x but "
+                 "linked with library version %x.\n         "
+                 "This will probably be OK, but you should soon recompile this "
+                 "program completely to fix the problem.\n", otherver, myver);
+        return 1;
+    }
+    /* major version more - won't work */
+    fprintf (stderr, "Error: I was compiled with TTK headers version %x but "
+             "linked with library version %x.\n       "
+             "There have been major changes between those versions, so you must "
+             "recompile this program.\n", otherver, myver);
+    return 0;
+}
+
 static void ttk_parse_fonts_list() 
 {
     char buf[128];
