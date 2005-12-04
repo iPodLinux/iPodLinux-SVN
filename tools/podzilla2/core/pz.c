@@ -334,25 +334,23 @@ debug_handler (int sig)
     fprintf (stderr, "Trying to gather debug info. If this freezes, reboot.\n\n");
 
     const char *func = uCdl_resolve_addr (PC, &off, &modfile);
-    fprintf (stderr, "#0  %08lx <%s+%lx> from %s\n", PC, func, off, modfile);
     fprintf (f, "#0  %08lx <%s+%lx> from %s\n", PC, func, off, modfile);
     decode_instr (f, (unsigned long *)PC - 3);
 
     for (i = 1; i < 10; i++) {
-        fprintf (stderr, "#%d  ", i);
         retaddr = *(FP - 1);
-        fprintf (stderr, "%08lx ", retaddr);
-        fprintf (stderr, "<%s+%lx> from %s\n", uCdl_resolve_addr (retaddr, &off, &modfile), off, modfile);
         fprintf (f, "#%d  %08lx <%s+%lx> from %s\n", i, retaddr, uCdl_resolve_addr (retaddr, &off, &modfile), off, modfile);
         decode_instr (f, (unsigned long *)retaddr - 1);
         FP = (unsigned long *) *(FP - 3);
     }
     fclose (f);
 
-    fprintf (stderr, "Nothing more to report.\n");
+    fprintf (stderr, "Saved: podzilla.oops\n");
     pz_touch_settings();
     pz_modules_cleanup();
-    exit (1);
+    fprintf (stderr, "Letting original sig go - expect crash\n");
+    signal (sig, SIG_DFL);
+    return;
 }
 #endif
 
