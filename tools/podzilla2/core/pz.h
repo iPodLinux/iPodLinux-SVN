@@ -55,6 +55,8 @@
 #endif
 #include <ttk.h>
 
+#define PZ_API_VERSION  0x10000
+
 /** Compat defs - legacy.c **/
 #ifdef PZ_COMPAT
 #if !defined(PZ_MOD) && defined(LEGACY_DOT_C)
@@ -96,6 +98,7 @@ typedef struct _pz_Module PzModule;
 #endif
 
 /* called from module */
+extern int _pz_mod_check_version (int ver); /* DO NOT call directly */
 #ifdef __PZ_BUILTIN_MOD
 extern void (*__pz_builtin_init_functions[])();
 extern const char *__pz_builtin_names[];
@@ -103,17 +106,17 @@ extern int __pz_builtin_number_of_init_functions;
 #define PZ_MOD_INIT(fn) \
     static void __init__ __attribute__((constructor)) () { \
         __pz_builtin_init_functions[__pz_builtin_number_of_init_functions] = fn; \
-        __pz_builtin_names[__pz_builtin_number_of_init_functions++] = __PZ_MODULE_NAME;
+        __pz_builtin_names[__pz_builtin_number_of_init_functions++] = __PZ_MODULE_NAME; \
     }
 #else
 // The _init_module__ one is to make it transparent
 // on systems with leading underscores on C symbols.
 #define PZ_MOD_INIT(fn) \
     void __init_module__() { \
-        fn(); \
+        if (_pz_mod_check_version(PZ_API_VERSION)) fn(); \
     } \
     void _init_module__() { \
-        fn(); \
+        if (_pz_mod_check_version(PZ_API_VERSION)) fn(); \
     }
 #endif
 #ifdef PZ_COMPAT
