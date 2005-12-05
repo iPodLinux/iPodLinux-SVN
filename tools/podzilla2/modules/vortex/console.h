@@ -42,3 +42,5 @@ void Vortex_Console_Render( ttk_surface srf, ttk_color col );
 int Vortex_Console_GetZoomCount( void );
 int Vortex_Console_GetStaticCount( void );
 
+/* wipe active text */
+void Vortex_Console_WipeAllText( void );
