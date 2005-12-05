@@ -185,7 +185,7 @@ static void ata_transfer_block(void *ptr) {
  */
 void ata_identify(void) {
   uint8  status,c;
-  uint16 *buff = (uint16*)0x11100000; // !!! Not.. very.. nice...
+  uint16 *buff = (uint16*)0x11100000; /* !!! Not.. very.. nice... */
 
   pio_outbyte( REG_DEVICEHEAD, DEVICE_0 );
   pio_outbyte( REG_FEATURES  , 0 );
@@ -269,7 +269,7 @@ int ata_readblock(void *dst, uint32 sector) {
 
   status = pio_inbyte( REG_STATUS );
   if( (status & (STATUS_BSY | STATUS_DRQ)) == STATUS_DRQ) {
-    //ata_transfer_block(dst);
+    /*ata_transfer_block(dst);*/
     cacheaddr[cacheindex] = sector;
     ata_transfer_block(cachedata + cacheindex * 512);
   }  else {
@@ -285,7 +285,6 @@ int ata_readblock(void *dst, uint32 sector) {
   mlc_memcpy(dst,cachedata + cacheindex*512,512);
 
   cacheticks++;
-  //if( cacheindex >= (CACHE_NUMBLOCKS-1) ) cacheindex = 0;
 
   return(0);
 }

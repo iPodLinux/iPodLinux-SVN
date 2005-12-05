@@ -225,7 +225,7 @@ ipod_t *ipod_get_hwinfo(void) {
 void ipod_init_hardware(void) {
   ipod_set_sysinfo();
 
-  if( (ipod.hw_rev>>16) == 0xC ) { // Nano
+  if( (ipod.hw_rev>>16) == 0xC ) { /* Nano */
     ipod.lcd_base      = 0x70008A0C;
     ipod.lcd_busy_mask = 0x80000000;
     ipod.lcd_width     = 176;
@@ -237,7 +237,7 @@ void ipod_init_hardware(void) {
     ipod.ide_control   = IPOD_PP5020_IDE_PRIMARY_CONTROL;
     ipod.mem_base      = 0x10000000;
     ipod.mem_size      = 0x2000000;
-  } else if( (ipod.hw_rev >> 16) == 0xB ) { // 5th Gen  (Video)
+  } else if( (ipod.hw_rev >> 16) == 0xB ) { /* 5th Gen  (Video) */
     ipod.lcd_base      = 0x70008A0C;
     ipod.lcd_busy_mask = 0x80000000;
     ipod.lcd_width     = 320;
@@ -248,8 +248,8 @@ void ipod_init_hardware(void) {
     ipod.ide_base      = IPOD_PP5020_IDE_PRIMARY_BASE;
     ipod.ide_control   = IPOD_PP5020_IDE_PRIMARY_CONTROL;
     ipod.mem_base      = 0x10000000;
-    ipod.mem_size      = 0x2000000;  // 0x4000000 for 60GB model.. Maybe a check?
-  } else if( (ipod.hw_rev>>16) == 0x6 ) { // Photo / Color
+    ipod.mem_size      = 0x2000000;  /* 0x4000000 for 60GB model.. Maybe a check? */
+  } else if( (ipod.hw_rev>>16) == 0x6 ) { /* Photo / Color */
     ipod.lcd_base      = 0x70008A0C;
     ipod.lcd_busy_mask = 0x80000000;
     ipod.lcd_width     = 220;
@@ -262,7 +262,7 @@ void ipod_init_hardware(void) {
     ipod.mem_size      = 0x2000000;
 
     if(ipod.hw_rev == 0x60000) ipod.lcd_type = 0;
-    else { // Detect the LCD type
+    else { /* Detect the LCD type */
       int gpio_a01, gpio_a04;
 	    
       /* A01 */
@@ -276,7 +276,7 @@ void ipod_init_hardware(void) {
         ipod.lcd_type = 1;
       }
     }
-  } else if( (ipod.hw_rev>>16) == 0x5 ) { // 4G
+  } else if( (ipod.hw_rev>>16) == 0x5 ) { /* 4G */
     ipod.lcd_base      = IPOD_PP5020_LCD_BASE;
     ipod.lcd_busy_mask = 0x8000;
     ipod.lcd_width     = 160;
@@ -289,7 +289,7 @@ void ipod_init_hardware(void) {
     ipod.mem_base      = 0x10000000;
     ipod.mem_size      = 0x2000000;
   } else if( ((ipod.hw_rev>>16) == 0x4) || 
-	     ((ipod.hw_rev>>16) == 0x7) ) { // Mini / Mini 2G
+	     ((ipod.hw_rev>>16) == 0x7) ) { /* Mini / Mini 2G */
     ipod.lcd_base      = IPOD_PP5020_LCD_BASE;
     ipod.lcd_busy_mask = 0x8000;
     ipod.lcd_width     = 138;
@@ -301,7 +301,7 @@ void ipod_init_hardware(void) {
     ipod.ide_control   = IPOD_PP5020_IDE_PRIMARY_CONTROL;
     ipod.mem_base      = 0x10000000;
     ipod.mem_size      = 0x2000000;
-  } else if( (ipod.hw_rev>>16) < 0x4 ) { // 3G / 2G / 1G
+  } else if( (ipod.hw_rev>>16) < 0x4 ) { /* 3G / 2G / 1G */
     ipod.lcd_base      = IPOD_PP5002_LCD_BASE;
     ipod.lcd_busy_mask = 0x8000;
     ipod.lcd_width     = 160;
@@ -318,6 +318,3 @@ void ipod_init_hardware(void) {
   ipod_set_backlight(1);
 }
 
-/*uint32 ipod_get_hwrev(void) {
-  return(ipod.hw_rev);
-  }*/

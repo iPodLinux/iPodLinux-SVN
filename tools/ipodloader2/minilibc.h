@@ -25,7 +25,7 @@ then advance beyond it to the first variable arg */
 (evaluate to, actually) the previous value of the pointer.
 WHEEE! At last; a valid use for the C comma operator! */
 #define mlc_va_arg(PTR, TYPE)	(			\
-	PTR += TYPE_WIDTH(TYPE)		\
+	PTR = (uint8*)PTR + TYPE_WIDTH(TYPE)		\
 				,			\
 	*((TYPE *)((char *)(PTR) - TYPE_WIDTH(TYPE)))	\
 				)

@@ -2,6 +2,7 @@
 #include "console.h"
 #include "fb.h"
 #include "menu.h"
+#include "minilibc.h"
 
 #define MAX_ITEMS 4
 
@@ -17,6 +18,16 @@ void menu_init(void) {
 void menu_additem(char *text) {
   if(menu.numItems < MAX_ITEMS)
     menu.string[menu.numItems++] = text;
+}
+
+void menu_drawprogress(uint16 *fb,uint8 completed) {
+  static char tmpBuff[40];
+  fb_cls(fb,0x1F << 11);
+
+  mlc_sprintf(tmpBuff,"%u",completed);
+
+  console_putsXY(1,1,tmpBuff);
+  fb_update(fb);
 }
 
 void menu_redraw(uint16 *fb,uint32 selectedItem) {
