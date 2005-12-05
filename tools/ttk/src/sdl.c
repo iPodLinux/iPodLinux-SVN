@@ -1852,8 +1852,7 @@ ttk_surface ttk_new_surface (int w, int h, int bpp)
 	palettize (ret);
 	SDL_FillRect (ret, 0, 0); // 0 = white
     } else {
-	SDL_FillRect (ret, 0, ttk_makecol_ex (CKEY, ret));
-	SDL_SetColorKey (ret, SDL_SRCCOLORKEY, ttk_makecol_ex (CKEY, ret));
+	SDL_FillRect (ret, 0, ttk_makecol_ex (WHITE, ret));
     }
     return ret;
 }

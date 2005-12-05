@@ -473,10 +473,8 @@ int ttk_run()
 
 	if (win->dirty) {
 	    cur = win->widgets;
-	    if (ttk_screen->bpp == 2)
-		ttk_ap_fillrect (win->srf, ttk_ap_get ("window.bg"), 0, 0, win->w, win->h);
-	    else
-		ttk_fillrect (win->srf, 0, 0, win->w, win->h, ttk_makecol (CKEY));
+            ttk_ap_fillrect (win->srf, ttk_ap_get ("window.bg"), 0, 0, win->w, win->h);
+
 	    while (cur) {
 		cur->v->dirty = 0;
 		cur->v->draw (cur->v, win->srf);
@@ -571,12 +569,8 @@ int ttk_run()
 	    }
 
 	    if (cur->v->dirty) {
-		if (ttk_screen->bpp == 2)
-		    ttk_ap_fillrect (win->srf, ttk_ap_get ("window.bg"), cur->v->x, cur->v->y,
-				     cur->v->x + cur->v->w, cur->v->y + cur->v->h);
-		else
-		    ttk_fillrect (win->srf, cur->v->x, cur->v->y, cur->v->x + cur->v->w,
-				  cur->v->y + cur->v->h, ttk_makecol (CKEY));
+                ttk_ap_fillrect (win->srf, ttk_ap_get ("window.bg"), cur->v->x, cur->v->y,
+                                 cur->v->x + cur->v->w, cur->v->y + cur->v->h);
 		cur->v->dirty = 0;
 		cur->v->draw (cur->v, win->srf);
 		ttk_dirty |= TTK_DIRTY_WINDOWAREA;
@@ -887,10 +881,7 @@ TWindow *ttk_new_window()
 	ret->title = "TTK";
     }
 
-    if (ttk_screen->bpp == 2)
-	ttk_ap_fillrect (ret->srf, ttk_ap_get ("window.bg"), 0, 0, ret->w, ret->h);
-    else
-	ttk_fillrect (ret->srf, 0, 0, ret->w, ret->h, ttk_makecol (CKEY));
+    ttk_ap_fillrect (ret->srf, ttk_ap_get ("window.bg"), 0, 0, ret->w, ret->h);
 
     return ret;
 }
@@ -964,10 +955,7 @@ void ttk_show_window (TWindow *win)
             // Render the stuff in the new window
             cur = win->widgets;
             while (cur) {
-                if (ttk_screen->bpp == 2)
-                    ttk_ap_fillrect (win->srf, ttk_ap_get ("window.bg"), 0, 0, win->w, win->h);
-                else
-                    ttk_fillrect (win->srf, 0, 0, win->w, win->h, ttk_makecol (CKEY));
+                ttk_ap_fillrect (win->srf, ttk_ap_get ("window.bg"), 0, 0, win->w, win->h);
                 cur->v->draw (cur->v, win->srf);
                 cur = cur->next;
             }
@@ -1078,10 +1066,7 @@ int ttk_hide_window (TWindow *win)
 	    // Render stuff in the new window
             TWidgetList *cur = win->widgets;
             while (cur) {
-                if (ttk_screen->bpp == 2)
-                    ttk_ap_fillrect (win->srf, ttk_ap_get ("window.bg"), 0, 0, win->w, win->h);
-                else
-                    ttk_fillrect (win->srf, 0, 0, win->w, win->h, ttk_makecol (CKEY));
+                ttk_ap_fillrect (win->srf, ttk_ap_get ("window.bg"), 0, 0, win->w, win->h);
                 cur->v->draw (cur->v, win->srf);
                 cur = cur->next;
             }
