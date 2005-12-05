@@ -322,11 +322,15 @@ void ttk_fillrect_gc (ttk_surface srf, ttk_gc gc, int x, int y, int w, int h);
 
 void ttk_poly (ttk_surface srf, int nv, short *vx, short *vy, ttk_color col);
 void ttk_poly_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v);
+void ttk_aapoly (ttk_surface srf, int nv, short *vx, short *vy, ttk_color col);
+void ttk_aapoly_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v);
 void ttk_fillpoly (ttk_surface srf, int nv, short *vx, short *vy, ttk_color col);
 void ttk_fillpoly_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v);
 
 void ttk_ellipse (ttk_surface srf, int x, int y, int rx, int ry, ttk_color col);
 void ttk_ellipse_gc (ttk_surface srf, ttk_gc gc, int x, int y, int rx, int ry);
+void ttk_aaellipse (ttk_surface srf, int x, int y, int rx, int ry, ttk_color col);
+void ttk_aaellipse_gc (ttk_surface srf, ttk_gc gc, int x, int y, int rx, int ry);
 void ttk_fillellipse (ttk_surface srf, int x, int y, int rx, int ry, ttk_color col);
 void ttk_fillellipse_gc (ttk_surface srf, ttk_gc gc, int x, int y, int rx, int ry);
 

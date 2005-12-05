@@ -444,6 +444,37 @@ void ttk_poly_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v)
     free (vy);
 }
 
+void ttk_aapoly (ttk_surface srf, int nv, short *vx, short *vy, ttk_color col)
+{
+    if (ttk_screen->bpp == 2)
+	aapolygonByte (srf, (Sint16 *)vx, (Sint16 *)vy, nv, col);
+    else
+	aapolygonColor (srf, (Sint16 *)vx, (Sint16 *)vy, nv, fetchcolor (col));
+}
+void ttk_aapoly_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v) 
+{
+    int i;
+    short *vx = malloc (n*sizeof(short)), *vy = malloc (n*sizeof(short));
+    if (!vx || !vy) {
+	fprintf (stderr, "Out of memory\n");
+	ttk_quit();
+	exit (1);
+    }
+
+    for (i = 0; i < n; i++) {
+	vx[i] = v[i].x;
+	vy[i] = v[i].y;
+    }
+    
+    if (ttk_screen->bpp == 2)
+	aapolygonByte (srf, vx, vy, n, gc->fg);
+    else
+	aapolygonColor (srf, vx, vy, n, fetchcolor (gc->fg));
+    
+    free (vx);
+    free (vy);
+}
+
 void ttk_polyline (ttk_surface srf, int nv, short *vx, short *vy, ttk_color col)
 {
     if (ttk_screen->bpp == 2)
@@ -534,6 +565,36 @@ void ttk_ellipse_gc (ttk_surface srf, ttk_gc gc, int x, int y, int rx, int ry)
 	    ellipseColor (srf, x, y, rx, ry, fetchcolor (gc->fg));
     }
 }
+
+void ttk_aaellipse (ttk_surface srf, int x, int y, int rx, int ry, ttk_color col)
+{
+    if (rx == ry) {
+	if (ttk_screen->bpp == 2)
+	    aacircleByte (srf, x, y, rx, col);
+	else
+	    aacircleColor (srf, x, y, rx, fetchcolor (col));
+    } else {
+	if (ttk_screen->bpp == 2)
+	    aaellipseByte (srf, x, y, rx, ry, col);
+	else
+	    aaellipseColor (srf, x, y, rx, ry, fetchcolor (col));
+    }
+}
+void ttk_aaellipse_gc (ttk_surface srf, ttk_gc gc, int x, int y, int rx, int ry) 
+{
+    if (rx == ry) {
+	if (ttk_screen->bpp == 2)
+	    aacircleByte (srf, x, y, rx, gc->fg);
+	else
+	    aacircleColor (srf, x, y, rx, fetchcolor (gc->fg));
+    } else {
+	if (ttk_screen->bpp == 2)
+	    aaellipseByte (srf, x, y, rx, ry, gc->fg);
+	else
+	    aaellipseColor (srf, x, y, rx, ry, fetchcolor (gc->fg));
+    }
+}
+
 void ttk_fillellipse (ttk_surface srf, int x, int y, int rx, int ry, ttk_color col)
 {
     if (rx == ry) {

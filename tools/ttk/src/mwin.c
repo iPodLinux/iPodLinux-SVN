@@ -329,6 +329,14 @@ void ttk_poly_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v)
 {
     GrPoly (srf, gc, n, v);
 }
+void ttk_aapoly (ttk_surface srf, int nv, short *vx, short *vy, ttk_color col) 
+{
+    ttk_poly (srf, nv, vx, vy, col);
+}
+void ttk_aapoly_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v) 
+{
+    ttk_poly_gc (srf, gc, n, v);
+}
 void ttk_fillpoly (ttk_surface srf, int nv, short *vx, short *vy, ttk_color col) 
 {
     int i;
@@ -362,6 +370,14 @@ void ttk_ellipse (ttk_surface srf, int x, int y, int rx, int ry, ttk_color col)
 void ttk_ellipse_gc (ttk_surface srf, ttk_gc gc, int x, int y, int rx, int ry) 
 {
     GrEllipse (srf, gc, x, y, rx, ry);
+}
+void ttk_aaellipse (ttk_surface srf, int x, int y, int rx, int ry, ttk_color col) 
+{
+    ttk_ellipse (srf, tmp_gc, x, y, rx, ry, col);
+}
+void ttk_aaellipse_gc (ttk_surface srf, ttk_gc gc, int x, int y, int rx, int ry) 
+{
+    ttk_ellipse_gc (srf, gc, x, y, rx, ry);
 }
 void ttk_fillellipse (ttk_surface srf, int x, int y, int rx, int ry, ttk_color col) 
 {
