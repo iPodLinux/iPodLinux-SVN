@@ -62,11 +62,11 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 	char * word;
 	char * credit;
 
-	ttk_fillrect( srf, 0, 0, ttk_screen->w, ttk_screen->h, vglob.col.bg );
+	ttk_fillrect( srf, 0, 0, ttk_screen->w, ttk_screen->h, vglob.color.bg );
 
 	switch( vglob.state ) {
 	case VORTEX_STATE_STARTUP:
-		Vortex_Console_Render( srf, vglob.col.con );
+		Vortex_Console_Render( srf );
 		if( Vortex_Console_GetZoomCount() == 0 )
 			Vortex_ChangeToState( VORTEX_STATE_LEVELSEL );
 		break;
@@ -82,14 +82,14 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 
 		pz_vector_string_center( srf, word,
 			    (ttk_screen->w - ttk_screen->wx)>>1, 20,
-			    10, 18, 1, vglob.col.select );
+			    10, 18, 1, vglob.color.select );
 
 
 		/* level number */
 		snprintf( buf, 15, "%d", vglob.startLevel );
 		pz_vector_string_center( srf, buf,
 			    (ttk_screen->w - ttk_screen->wx)>>1, 50,
-			    10, 18, 1, vglob.col.level );
+			    10, 18, 1, vglob.color.level );
 
 		/* display some props to the masters */
 		switch((vglob.timer>>4) & 0x03 ) {
@@ -102,19 +102,28 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 		pz_vector_string_center( srf, credit,
 			    (ttk_screen->w - ttk_screen->wx)>>1, 
 			    (ttk_screen->h - ttk_screen->wy)-10, 
-			    5, 9, 1, vglob.col.credits );
+			    5, 9, 1, vglob.color.credits );
 		break;
 
 	case VORTEX_STATE_GAME:
 		/* do game stuff in here */
-		Vortex_Console_Render( srf, vglob.col.con );
+		Vortex_Console_Render( srf );
 		pz_vector_string_center( srf, "[menu] to exit.",
                             (ttk_screen->w - ttk_screen->wx)>>1, 10,
-                            5, 9, 1, vglob.col.credits );
+                            5, 9, 1, vglob.color.credits );
 
-		pz_vector_string_center( srf, "unimplemented",
-                            (ttk_screen->w - ttk_screen->wx)>>1, 30,
-                            5, 9, 1, vglob.col.bonus );
+
+		/* plop down the score */
+		snprintf( buf, 15, "%04d", vglob.score );
+		pz_vector_string( srf, buf,
+                            (ttk_screen->w - ttk_screen->wx) -
+			     pz_vector_width( buf, 5, 9, 1 ), 1,
+                            5, 9, 1, vglob.color.score );
+
+		/* and lives left */
+		snprintf( buf, 15, "%d", vglob.lives );
+		pz_vector_string( srf, buf, 0, 1,
+                            5, 9, 1, vglob.color.baseind );
 		break;
 
 	case VORTEX_STATE_DEATH:
@@ -158,11 +167,13 @@ int event_vortex (PzEvent *ev)
 			if( ev->arg > 0 ) {
 				Vortex_Console_AddItem( "BURRITO", 
 					    Vortex_Rand(4)-2, Vortex_Rand(4)-2, 
-					    VORTEX_STYLE_NORMAL );
+					    VORTEX_STYLE_NORMAL,
+					    vglob.color.con );
 			} else {
 				Vortex_Console_AddItem( "MONTANA", 
 					    Vortex_Rand(4)-2, Vortex_Rand(4)-2, 
-					    VORTEX_STYLE_NORMAL );
+					    VORTEX_STYLE_NORMAL,
+					    vglob.color.bonus );
 			}
 		}
 		break;
@@ -204,6 +215,8 @@ static void Vortex_Initialize( void )
 	vglob.level = 0;
 	vglob.startLevel = 0;
 	vglob.timer = 0;
+	vglob.score = 0;
+	vglob.lives = 3;
 }
 
 PzWindow *new_vortex_window()
@@ -219,7 +232,8 @@ PzWindow *new_vortex_window()
 
 	Vortex_Initialize( );
 	Vortex_Console_HiddenStatic( 1 );
-	Vortex_Console_AddItem( "VORTEX", 0, 0, VORTEX_STYLE_NORMAL );
+	Vortex_Console_AddItem( "VORTEX", 0, 0, 
+				VORTEX_STYLE_NORMAL, vglob.color.title );
 
 	return pz_finish_window( vglob.window );
 }
@@ -237,40 +251,42 @@ void init_vortex()
 	/* setup colors */
 	if( ttk_screen->bpp >= 16 ) {
 		/* full color! */
-		vglob.col.bg       = ttk_makecol(   0,   0,   0 );
-		vglob.col.select   = ttk_makecol( 255, 255,   0 );
-		vglob.col.level    = ttk_makecol(   0, 255,   0 );
-		vglob.col.credits  = ttk_makecol(   0,   0, 255 );
-		vglob.col.con      = ttk_makecol( 255, 255,   0 );
-		vglob.col.bonus    = ttk_makecol( 255,   0,   0 );
-		vglob.col.web_top  = ttk_makecol(   0,   0, 255 );
-		vglob.col.web_mid  = ttk_makecol(   0,   0, 160 );
-		vglob.col.web_bot  = ttk_makecol(   0,   0,  80 );
-		vglob.col.baseind  = ttk_makecol(   0, 255,   0 );
-		vglob.col.score    = ttk_makecol(   0, 255, 255 );
-		vglob.col.player   = ttk_makecol( 255, 255,   0 );
-		vglob.col.bolts    = ttk_makecol( 200, 200, 200 );
-		vglob.col.super    = ttk_makecol(   0, 255, 255 );
-		vglob.col.flippers = ttk_makecol( 255,   0,   0 );
-		vglob.col.stars    = ttk_makecol( 180, 210, 190 );
+		vglob.color.bg       = ttk_makecol(   0,   0,   0 );
+		vglob.color.title    = ttk_makecol( 200, 200, 255 );
+		vglob.color.select   = ttk_makecol( 255, 255,   0 );
+		vglob.color.level    = ttk_makecol(   0, 255,   0 );
+		vglob.color.credits  = ttk_makecol(   0,   0, 255 );
+		vglob.color.con      = ttk_makecol( 255, 255,   0 );
+		vglob.color.bonus    = ttk_makecol( 255,   0,   0 );
+		vglob.color.web_top  = ttk_makecol(   0,   0, 255 );
+		vglob.color.web_mid  = ttk_makecol(   0,   0, 160 );
+		vglob.color.web_bot  = ttk_makecol(   0,   0,  80 );
+		vglob.color.baseind  = ttk_makecol(   0, 255,   0 );
+		vglob.color.score    = ttk_makecol(   0, 255, 255 );
+		vglob.color.player   = ttk_makecol( 255, 255,   0 );
+		vglob.color.bolts    = ttk_makecol( 200, 200, 200 );
+		vglob.color.super    = ttk_makecol(   0, 255, 255 );
+		vglob.color.flippers = ttk_makecol( 255,   0,   0 );
+		vglob.color.stars    = ttk_makecol( 180, 210, 190 );
 	} else {
 		/* monochrome iPod */
-		vglob.col.bg       = ttk_makecol( WHITE );
-		vglob.col.select   = ttk_makecol( BLACK );
-		vglob.col.level    = ttk_makecol( DKGREY );
-		vglob.col.credits  = ttk_makecol( GREY );
-		vglob.col.con      = ttk_makecol( BLACK );
-		vglob.col.bonus    = ttk_makecol( DKGREY );
-		vglob.col.web_top  = ttk_makecol( BLACK );
-		vglob.col.web_mid  = ttk_makecol( DKGREY );
-		vglob.col.web_bot  = ttk_makecol( GREY );
-		vglob.col.baseind  = ttk_makecol( BLACK );
-		vglob.col.score    = ttk_makecol( BLACK );
-		vglob.col.player   = ttk_makecol( DKGREY );
-		vglob.col.bolts    = ttk_makecol( BLACK );
-		vglob.col.super    = ttk_makecol( DKGREY );
-		vglob.col.flippers = ttk_makecol( BLACK );
-		vglob.col.stars    = ttk_makecol( GREY );
+		vglob.color.bg       = ttk_makecol( WHITE );
+		vglob.color.title    = ttk_makecol( BLACK );
+		vglob.color.select   = ttk_makecol( BLACK );
+		vglob.color.level    = ttk_makecol( DKGREY );
+		vglob.color.credits  = ttk_makecol( GREY );
+		vglob.color.con      = ttk_makecol( BLACK );
+		vglob.color.bonus    = ttk_makecol( DKGREY );
+		vglob.color.web_top  = ttk_makecol( BLACK );
+		vglob.color.web_mid  = ttk_makecol( DKGREY );
+		vglob.color.web_bot  = ttk_makecol( GREY );
+		vglob.color.baseind  = ttk_makecol( BLACK );
+		vglob.color.score    = ttk_makecol( BLACK );
+		vglob.color.player   = ttk_makecol( DKGREY );
+		vglob.color.bolts    = ttk_makecol( BLACK );
+		vglob.color.super    = ttk_makecol( DKGREY );
+		vglob.color.flippers = ttk_makecol( BLACK );
+		vglob.color.stars    = ttk_makecol( GREY );
 	}
 }
 

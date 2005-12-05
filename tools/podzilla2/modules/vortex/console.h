@@ -27,7 +27,8 @@ void Vortex_Console_Init( void );
 /* add a message with a set x/y stepping and text style */
 #define VORTEX_STYLE_NORMAL	(0)
 #define VORTEX_STYLE_BOLD	(1)
-void Vortex_Console_AddItem( char * text, int xs, int ys, int style );
+void Vortex_Console_AddItem( char * text, int xs, int ys,
+			     int style, ttk_color col );
 
 /* time passes */
 void Vortex_Console_Tick( void );
@@ -36,7 +37,7 @@ void Vortex_Console_Tick( void );
 void Vortex_Console_HiddenStatic( int hidden );
 
 /* draw the console to the wid/gc */
-void Vortex_Console_Render( ttk_surface srf, ttk_color col );
+void Vortex_Console_Render( ttk_surface srf );
 
 /* "accessors" for various statistics */
 int Vortex_Console_GetZoomCount( void );
