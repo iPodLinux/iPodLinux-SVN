@@ -62,9 +62,11 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 	char * word;
 	char * credit;
 
+	ttk_fillrect( srf, 0, 0, ttk_screen->w, ttk_screen->h, vglob.col.bg );
+
 	switch( vglob.state ) {
 	case VORTEX_STATE_STARTUP:
-		Vortex_Console_Render( srf, ttk_makecol( BLACK ));
+		Vortex_Console_Render( srf, vglob.col.con );
 		if( Vortex_Console_GetZoomCount() == 0 )
 			Vortex_ChangeToState( VORTEX_STATE_LEVELSEL );
 		break;
@@ -80,14 +82,14 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 
 		pz_vector_string_center( srf, word,
 			    (ttk_screen->w - ttk_screen->wx)>>1, 20,
-			    10, 18, 1, ttk_makecol( BLACK ));
+			    10, 18, 1, vglob.col.select );
 
 
 		/* level number */
 		snprintf( buf, 15, "%d", vglob.startLevel );
 		pz_vector_string_center( srf, buf,
 			    (ttk_screen->w - ttk_screen->wx)>>1, 50,
-			    10, 18, 1, ttk_makecol( BLACK ));
+			    10, 18, 1, vglob.col.level );
 
 		/* display some props to the masters */
 		switch((vglob.timer>>4) & 0x03 ) {
@@ -100,19 +102,19 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 		pz_vector_string_center( srf, credit,
 			    (ttk_screen->w - ttk_screen->wx)>>1, 
 			    (ttk_screen->h - ttk_screen->wy)-10, 
-			    5, 9, 1, ttk_makecol( BLACK ));
+			    5, 9, 1, vglob.col.credits );
 		break;
 
 	case VORTEX_STATE_GAME:
 		/* do game stuff in here */
-		Vortex_Console_Render( srf, ttk_makecol( BLACK ));
+		Vortex_Console_Render( srf, vglob.col.con );
 		pz_vector_string_center( srf, "[menu] to exit.",
                             (ttk_screen->w - ttk_screen->wx)>>1, 10,
-                            5, 9, 1, ttk_makecol( BLACK ));
+                            5, 9, 1, vglob.col.credits );
 
 		pz_vector_string_center( srf, "unimplemented",
                             (ttk_screen->w - ttk_screen->wx)>>1, 30,
-                            5, 9, 1, ttk_makecol( BLACK ));
+                            5, 9, 1, vglob.col.bonus );
 		break;
 
 	case VORTEX_STATE_DEATH:
@@ -231,6 +233,45 @@ void init_vortex()
 	pz_menu_add_action ("/Extras/Games/Vortex WIP", new_vortex_window);
 
 	Vortex_Initialize();
+
+	/* setup colors */
+	if( ttk_screen->bpp >= 16 ) {
+		/* full color! */
+		vglob.col.bg       = ttk_makecol(   0,   0,   0 );
+		vglob.col.select   = ttk_makecol( 255, 255,   0 );
+		vglob.col.level    = ttk_makecol(   0, 255,   0 );
+		vglob.col.credits  = ttk_makecol(   0,   0, 255 );
+		vglob.col.con      = ttk_makecol( 255, 255,   0 );
+		vglob.col.bonus    = ttk_makecol( 255,   0,   0 );
+		vglob.col.web_top  = ttk_makecol(   0,   0, 255 );
+		vglob.col.web_mid  = ttk_makecol(   0,   0, 160 );
+		vglob.col.web_bot  = ttk_makecol(   0,   0,  80 );
+		vglob.col.baseind  = ttk_makecol(   0, 255,   0 );
+		vglob.col.score    = ttk_makecol(   0, 255, 255 );
+		vglob.col.player   = ttk_makecol( 255, 255,   0 );
+		vglob.col.bolts    = ttk_makecol( 200, 200, 200 );
+		vglob.col.super    = ttk_makecol(   0, 255, 255 );
+		vglob.col.flippers = ttk_makecol( 255,   0,   0 );
+		vglob.col.stars    = ttk_makecol( 180, 210, 190 );
+	} else {
+		/* monochrome iPod */
+		vglob.col.bg       = ttk_makecol( WHITE );
+		vglob.col.select   = ttk_makecol( BLACK );
+		vglob.col.level    = ttk_makecol( DKGREY );
+		vglob.col.credits  = ttk_makecol( GREY );
+		vglob.col.con      = ttk_makecol( BLACK );
+		vglob.col.bonus    = ttk_makecol( DKGREY );
+		vglob.col.web_top  = ttk_makecol( BLACK );
+		vglob.col.web_mid  = ttk_makecol( DKGREY );
+		vglob.col.web_bot  = ttk_makecol( GREY );
+		vglob.col.baseind  = ttk_makecol( BLACK );
+		vglob.col.score    = ttk_makecol( BLACK );
+		vglob.col.player   = ttk_makecol( DKGREY );
+		vglob.col.bolts    = ttk_makecol( BLACK );
+		vglob.col.super    = ttk_makecol( DKGREY );
+		vglob.col.flippers = ttk_makecol( BLACK );
+		vglob.col.stars    = ttk_makecol( GREY );
+	}
 }
 
 PZ_MOD_INIT (init_vortex)

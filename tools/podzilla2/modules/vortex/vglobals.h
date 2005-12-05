@@ -31,17 +31,41 @@
 #define VORTEX_STATE_DEATH	(3)	/* user is dying. */
 #define VORTEX_STATE_DEAD	(4)	/* user has died.  bummer */
 
-typedef struct vortex_globals {
-    /* pz meta stuff */
-    PzModule * module;
-    PzWindow * window;
-    PzWidget * widget;
 
-    /* gameplay stuff */
-    int state;
-    int level;
-    int startLevel;
-    int timer;
+/* colors for rendering */
+typedef struct _vortex_colors {
+	ttk_color bg;		// background
+	ttk_color select;	// SELECT START LEVEL
+	ttk_color level;	// selected level
+	ttk_color credits;	// THANKS TO...
+	ttk_color con;		// console text 
+	ttk_color bonus;	// console bonus text
+	ttk_color web_top;	// closest portion of web
+	ttk_color web_mid;	// arms of the web
+	ttk_color web_bot;	// furthest portion of the web
+	ttk_color baseind;	// base icon indicators (lives left)
+	ttk_color score;	// current score
+	ttk_color player;	// player character
+	ttk_color bolts;	// player's bolts
+	ttk_color super;	// superzapper color
+	ttk_color flippers;	// enemy characters
+	ttk_color stars;	// background starfield color
+} vortex_colors;
+
+
+typedef struct vortex_globals {
+	/* pz meta stuff */
+	PzModule * module;
+	PzWindow * window;
+	PzWidget * widget;
+
+	/* gameplay stuff */
+	int state;
+	int level;
+	int startLevel;
+	int timer;
+
+	vortex_colors col;
 
 } vortex_globals;
 
