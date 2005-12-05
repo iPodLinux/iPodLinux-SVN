@@ -45,7 +45,6 @@ static uint32 fat32_findnextcluster(uint32 prev) {
   offset = ((fat.offset+fat.number_of_reserved_sectors)*512) + prev * 4;
   block  = offset / fat.bytes_per_sector;
   offset = offset % fat.bytes_per_sector;
-  //mlc_printf("FF %u/%u (%u)\n",block,offset,xxi++);
 
   ata_readblocks( tmpBuff, block, 1 );
 
@@ -60,34 +59,28 @@ static fat32_file *fat32_findfile(uint32 start, char *fname) {
   char *next;
   fat32_file *fileptr;
 
-  // "start" is in clusters, so lets translate to LBA
+  /* "start" is in clusters, so lets translate to LBA */
   dir_lba  = fat.offset + fat.number_of_reserved_sectors + (fat.number_of_fats * fat.sectors_per_fat);
   dir_lba += (start - 2) * fat.sectors_per_cluster;
 
   next = mlc_strchr( fname,'/' );
 
-  //mlc_printf("--->findfile (LBA=%u,str=%s)<--\n",dir_lba,fname);
-  // Find-in-dir
   done = 0;
   for(i=0;i<fat.sectors_per_cluster;i++) {
-    //printf("  Reading block %u\n",dir_lba);
     ata_readblocks( buffer, dir_lba+i,1 );
     
-    for(j=0;j<16;j++) { // 16 dirents per sector
-      if(        buffer[j*32] == 0) { // EndOfDir
-	//printf("--->end of findfile<--\n");
+    for(j=0;j<16;j++) { /* 16 dirents per sector */
+      if(        buffer[j*32] == 0) { /* EndOfDir */
 	return(NULL);
-      } else if( ((buffer[j*32+0xB] & 0x1F) == 0) && (buffer[j*32] != 0xE5) ) { // Normal file
+      } else if( ((buffer[j*32+0xB] & 0x1F) == 0) && (buffer[j*32] != 0xE5) ) { /* Normal file */
 
-	if( (mlc_strncmp( &buffer[j*32], fname, mlc_strchr(fname,'.')-fname ) == 0) &&
-	    (mlc_strncmp( &buffer[j*32+8], mlc_strchr(fname,'.')+1, 3 ) == 0) &&
+	if( (mlc_strncmp( (char*)&buffer[j*32], fname, mlc_strchr(fname,'.')-fname ) == 0) &&
+	    (mlc_strncmp( (char*)&buffer[j*32+8], mlc_strchr(fname,'.')+1, 3 ) == 0) &&
 	    (next == NULL) ) {
 	  new_offset  = (buffer[j*32+0x15]<<8) + buffer[j*32+0x14]; 
 	  new_offset  = new_offset << 16;
 	  new_offset |= (buffer[j*32+0x1B]<<8) + buffer[j*32+0x1A]; 
 
-
-	  //mlc_printf("YYYAAEEE!!! ");
 	  fileptr = (fat32_file*)mlc_malloc( sizeof(fat32_file) );
 	  fileptr->cluster  = new_offset;
 	  fileptr->opened   = 1;
@@ -98,13 +91,8 @@ static fat32_file *fat32_findfile(uint32 start, char *fname) {
 
 	  return(fileptr);
 	}
-	//mlc_printf("File: %s\n",&buffer[j*32]);
-      } else if( buffer[j*32+0xB] & (1<<4)) { // Directory
-	if( mlc_strncmp( &buffer[j*32], fname, mlc_strchr(fname,'/')-fname ) == 0 ) {
-
-
-	  //mlc_printf("MATCH ");
-	  //mlc_printf("Dir : %11s\n",&buffer[j*32]);
+      } else if( buffer[j*32+0xB] & (1<<4)) { /* Directory */
+	if( mlc_strncmp( (char*)&buffer[j*32], fname, mlc_strchr(fname,'/')-fname ) == 0 ) {
 
 	  new_offset  = (buffer[j*32+0x15]<<8) + buffer[j*32+0x14]; 
 	  new_offset  = new_offset << 16;
@@ -113,15 +101,12 @@ static fat32_file *fat32_findfile(uint32 start, char *fname) {
 	  return( fat32_findfile( new_offset, next+1 ) );
 
 	} else {
-	  //mlc_printf("Dir : %11s\n",&buffer[j*32]);
 	}
       } else {
-	//printf("Unknown: %11s (0x%2X)\n",&buffer[j*32],buffer[j*32+0xB]);
       }
     }
   }
 
-  //printf("--->end of findfile<--\n");
   return(NULL);
 }
 
@@ -130,8 +115,6 @@ int fat32_open(void *fsdata,char *fname) {
   fat32_file *file;
 
   fs = (fat_t*)fsdata;
-
-  //mlc_printf("FAT32_Open(%s)\n",fname);
 
   file = fat32_findfile(fs->root_dir_first_cluster,fname);
 
@@ -159,66 +142,58 @@ size_t fat32_read(void *fsdata,void *ptr,size_t size,size_t nmemb,int fd) {
     toRead = fs->filehandles[fd]->length + fs->filehandles[fd]->position;
   }
 
-  // FFWD to the cluster we're positioned at
-  // !!! Huge speedup if we cache this for each file
+  /*
+   * FFWD to the cluster we're positioned at
+   * !!! Huge speedup if we cache this for each file
+   */
   clusterNum = fs->filehandles[fd]->position / (fs->sectors_per_cluster * fs->bytes_per_sector);
-  //printf("FFWD %u clusters\n",clusterNum);
   cluster = fs->filehandles[fd]->cluster;
 
   for(i=0;i<clusterNum;i++) {
     cluster = fat32_findnextcluster( cluster );
   }
   
-  // "cluster" should now point to the cluster where our fileposition is within
   offsetInCluster = fs->filehandles[fd]->position % (fs->sectors_per_cluster * fs->bytes_per_sector);
 
-  //printf("OFfset in cluster: %u\n",offsetInCluster);
-
-  // Calculate LBA for the cluster
+  /* Calculate LBA for the cluster */
   lba  = fs->offset + fs->number_of_reserved_sectors + (fs->number_of_fats * fs->sectors_per_fat);
   lba += (cluster - 2) * fs->sectors_per_cluster;
 
   toReadInCluster = (fs->sectors_per_cluster * fs->bytes_per_sector) - offsetInCluster;
 
-  //printf("Reading %u blocks\n",toReadInCluster / fs->bytes_per_sector );
   ata_readblocks( clusterBuffer, lba, toReadInCluster / fs->bytes_per_sector );
 
-  //printf("ToRead: %u\n",toRead);
   if( toReadInCluster > toRead ) toReadInCluster = toRead; 
 
-  //printf("Copying %u bytes\n",toReadInCluster);
-  mlc_memcpy( ptr + read, clusterBuffer + offsetInCluster, toReadInCluster );
+  mlc_memcpy( (uint8*)ptr + read, clusterBuffer + offsetInCluster, toReadInCluster );
 
   read += toReadInCluster;
 
-  //return(0);
-
-  //printf("Read=%u\n",read);
-  //printf("rem =%u\n",((toRead / fs->clustersize)*fs->clustersize) );
-
-  // Loops through all complete clusters
+  /* Loops through all complete clusters */
   while(read < ((toRead / fs->clustersize)*fs->clustersize) ) {
     cluster = fat32_findnextcluster( cluster );
     lba  = fs->offset + fs->number_of_reserved_sectors + (fs->number_of_fats * fs->sectors_per_fat);
     lba += (cluster - 2) * fs->sectors_per_cluster;
     ata_readblocks( clusterBuffer, lba, fs->sectors_per_cluster );
 
-    mlc_memcpy( ptr + read, clusterBuffer,fs->clustersize );
+    mlc_memcpy( (uint8*)ptr + read, clusterBuffer,fs->clustersize );
 
     read += fs->clustersize;
   }
 
-  // And the final bytes in the last cluster of the file
+  /* And the final bytes in the last cluster of the file */
   if( read < toRead ) {
     cluster = fat32_findnextcluster( cluster );
     lba  = fs->offset + fs->number_of_reserved_sectors + (fs->number_of_fats * fs->sectors_per_fat);
     lba += (cluster - 2) * fs->sectors_per_cluster;
     ata_readblocks( clusterBuffer, lba, fs->sectors_per_cluster );
     
-    mlc_memcpy( ptr + read, clusterBuffer,toRead - read );
+    mlc_memcpy( (uint8*)ptr + read, clusterBuffer,toRead - read );
 
     read = toRead;
   }
+
+  fs->filehandles[fd]->position += toRead;
 
   return(read / size);
 }
@@ -258,7 +233,6 @@ int fat32_seek(void *fsdata,int fd,long offset,int whence) {
     for(;;);
     return(-1);
   }
-  //printf("fat32_seek()\n");
 
   return(0);
 }
@@ -266,19 +240,15 @@ int fat32_seek(void *fsdata,int fd,long offset,int whence) {
 
 void fat32_newfs(uint8 part,uint32 offset) {
   uint8 buff[512];
-  //uint32 fat_begin_lba;
-  //uint32 cluster_begin_lba;
-  //uint32 rootdir_lba;
-  //uint32 tmp;
 
-  // Verify that this is a FAT32 partition
+  /* Verify that this is a FAT32 partition */
   ata_readblocks( buff, offset,1 );
   if( (buff[510] != 0x55) || (buff[511] != 0xAA) ) {
     mlc_printf("Not valid FAT32 superblock\n");
     return;
   }
 
-  // Clear all filehandles
+  /* Clear all filehandles */
   fat.numHandles = 0;
 
   fat.offset =  offset;
@@ -295,27 +265,6 @@ void fat32_newfs(uint8 part,uint32 offset) {
   if( clusterBuffer == NULL ) {
     clusterBuffer = (uint8*)mlc_malloc( fat.clustersize );
   }
-
-  /*
-  printf(" --[ FAT32 Data ]--\n");
-  printf("BPB_BytsPerSec: %u\n",fat.bytes_per_sector);
-  printf("BPB_SecPerClus: %u\n",fat.sectors_per_cluster);
-  printf("BPB_RsvdSecCnt: 0x%x\n",fat.number_of_reserved_sectors);
-  printf("BPB_NumFATs   : %u\n",fat.number_of_fats);
-  printf("BPB_FATSz32   : %u\n",fat.sectors_per_fat);
-  printf("BPB_RootClus  : 0x%x\n",fat.root_dir_first_cluster);
-  
-  fat_begin_lba     = offset + fat.number_of_reserved_sectors;
-  cluster_begin_lba = fat_begin_lba + (fat.number_of_fats * fat.sectors_per_fat);
-  rootdir_lba  = cluster_begin_lba + (fat.root_dir_first_cluster - 2) * fat.sectors_per_cluster;
-  
-  printf("RootDir LBA: %u\n",rootdir_lba);
-  */
-  //tmp = fat32_findfile(fat.root_dir_first_cluster,"NOTES      /HELLO      ");
-
-
-  //printf("Found file at cluster %u\n",tmp);
-
 
   myfs.open   = fat32_open;
   myfs.tell   = fat32_tell;

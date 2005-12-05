@@ -22,11 +22,9 @@ int vfs_open(char *fname) {
   uint8 part;
   int   i;
 
-  // (hd0,0)/ == 8 chars
+  /* (hd0,0)/ == 8 chars */
   if( mlc_strncmp(fname,"(hd0,",5) != 0 ) return(-1);
-  part = fname[5] - '0'; // atoi, the old-fashioned way
-
-  //mlc_printf("open: %u\n",part);
+  part = fname[5] - '0'; /* atoi, the old-fashioned way */
 
   i = 0;
   while( (vfs_handle[i].fd != -1) && (i<MAX_FILES) ) i++;
@@ -69,7 +67,6 @@ size_t vfs_read(void *ptr,size_t size, size_t nmemb,int fd) {
 }
 
 void vfs_registerfs( filesystem *newfs ) {
-  //mlc_printf("regFS: %u\n",newfs->partnum);
 
   fs[newfs->partnum] = newfs;
 }

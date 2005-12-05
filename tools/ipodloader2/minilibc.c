@@ -314,8 +314,7 @@ int mlc_vsprintf(char *buf, const char *fmt, mlc_va_list args)
 }
 /*****************************************************************************
 *****************************************************************************/
-int mlc_sprintf(char *buf, const char *fmt, ...)
-{
+int mlc_sprintf(char *buf, const char *fmt, ...) {
 	mlc_va_list args;
 	int rv;
 
@@ -354,8 +353,6 @@ int mlc_printf(const char *fmt, ...) {
 /*****************************************************************************
 *****************************************************************************/
 #endif
-
-//#define MALLOC_NEXTBLOCK (*(volatile uint32*)(0x10800000))
 
 static volatile uint32 *malloc_nextblock;
 

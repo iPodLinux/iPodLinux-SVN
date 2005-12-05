@@ -1,5 +1,5 @@
 CC      = arm-elf-gcc
-CFLAGS  = -O2 -Wall -ffreestanding -nostdinc -fomit-frame-pointer
+CFLAGS  = -O2 -Wall -pedantic -std=c99 -ffreestanding -nostdinc -fomit-frame-pointer
 LDFLAGS = -Wl,-Tarm_elf_40.x -nostartfiles -fomit-frame-pointer
 OBJCOPY = arm-elf-objcopy
 
@@ -15,7 +15,7 @@ loader.bin: loader.elf
 	@echo "Converting $< to binary"
 	@$(OBJCOPY) -O binary $< $@
 
-loader.elf: startup.o loader.o fb.o ipodhw.o console.o minilibc.o ata2.o vfs.o fat32.o keypad.o ext2.o menu.o
+loader.elf: startup.o loader.o fb.o ipodhw.o console.o minilibc.o ata2.o vfs.o fat32.o ext2.o keypad.o menu.o config.o
 	@echo "Linking $@"
 	@$(CC) $(LDFLAGS) -o $@ $^
 

@@ -142,7 +142,7 @@ static void lcd_bcm_finishup(void) {
 	lcd_bcm_read32(0x1FC);
 }
 
-inline uint8 LUMA565(uint16 val) {
+uint8 LUMA565(uint16 val) {
   uint32 calc; 
 
   calc  = (val>>11)<<3;
@@ -156,33 +156,24 @@ static void fb_2bpp_bitblt(uint16 *fb, int sx, int sy, int mx, int my) {
   int cursor_pos;
   int y;
   
-  //ADDR8   addr = psd->addr;
-  
-  /* only update the ipod if we are writing to the screen */
-  //if (!(psd->flags & PSF_SCREEN)) return;
-  
-  //assert (addr != 0);
-  
   sx >>= 3;
-  //mx = (mx+7)>>3;
   mx >>= 3;
   
   cursor_pos = sx + (sy << 5);
   
   for ( y = sy; y <= my; y++ ) {
-    //ADDR8 img_data;
     int x;
     
-    // move the cursor
+    /* move the cursor */
     lcd_cmd_and_data(0x11, cursor_pos >> 8, cursor_pos & 0xff);
     
-    // setup for printing
+    /* setup for printing */
     lcd_prepare_cmd(0x12);
     
-    //img_data = addr + (sx<<1) + (y * psd->linelen);
-    
-    // 160/8 -> 20 == loops 20 times
-    // make sure we loop at least once
+    /*
+     * 160/8 -> 20 == loops 20 times
+     * make sure we loop at least once
+     */
     for ( x = sx; x <= mx; x++ ) {
       uint8 pix[2];
 
@@ -196,11 +187,11 @@ static void fb_2bpp_bitblt(uint16 *fb, int sx, int sy, int mx, int my) {
       pix[1] |= (LUMA565( fb[y*ipod->lcd_width+x*8+6] ) >> 6) << 2;
       pix[1] |= (LUMA565( fb[y*ipod->lcd_width+x*8+7] ) >> 6) << 0;
       
-      // display a character
+      /* display a character */
       lcd_send_data(pix[0],pix[1]);
     }
     
-    // update cursor pos counter
+    /* update cursor pos counter */
     cursor_pos += 0x20;
   }
 }
@@ -267,7 +258,7 @@ static void fb_565_bitblt(uint16 *x, int sx, int sy, int mx, int my) {
     /* start drawing */
     lcd_send_lo(0x0);
     lcd_send_lo(0x22);
-  } else { // 5G
+  } else { /* 5G */
     unsigned count = (width * height) << 1;
     lcd_bcm_setup_rect(0x34, rect1, rect2, rect3, rect4, count);
   }
