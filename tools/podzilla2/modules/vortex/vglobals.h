@@ -24,6 +24,7 @@
 #ifndef __VORTEX_GLOBALS_H__
 #define __VORTEX_GLOBALS_H__
 
+#define VORTEX_STATE_UNDEFINED	(-1)	/* nothing. */
 #define VORTEX_STATE_STARTUP	(0)	/* intro animation */
 #define VORTEX_STATE_LEVELSEL	(1)	/* user selecting a stage */
 #define VORTEX_STATE_GAME	(2)	/* user playing a stage */
