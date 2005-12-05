@@ -183,12 +183,13 @@ static void init_values() {
 	}
 }
 
+int xpie[] = {  0,  3, 6,  3, 0, -3, -6, -3 }; 
+int ypie[] = { -6, -3, 0,  3, 6,  3,  0, -3 }; 
+
 // create the circular status animation
 static void create_status() {
 
 	int i;
-	int xpie[] = {  0,  3, 6,  3, 0, -3, -6, -3 }; 
-	int ypie[] = { -6, -3, 0,  3, 6,  3,  0, -3 }; 
 
 	// we need 16 frames
 	GrSetGCForeground (mandel_gc, appearance_get_color( CS_TITLEBG ));
@@ -302,6 +303,8 @@ static void pause_drawing() {
 
 }
 
+extern void pz_event_handler( GR_EVENT * );
+
 // check for events & delete the event queue
 static void check_event() {
 		if (GrPeekEvent(&break_event)) { 
@@ -362,7 +365,7 @@ static void zoom_in() {
 	current_depth++;
 	if (current_depth>max_depth) {
 		current_depth=max_depth;
-		beep();
+		ttk_click();
 		return;
 	}
 	if (current_depth%2) iterations=iterations*2;
