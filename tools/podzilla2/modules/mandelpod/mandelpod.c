@@ -117,9 +117,9 @@ void new_mandel_window(void)
 	mandel_gc = pz_get_gc(1);
 		
 	// create the main window
-	mandel_wid = pz_new_window (0, 21,
-				screen_info.cols, screen_info.rows - (HEADER_TOPLINE+1),
-				draw_header, handle_event);
+	mandel_wid = pz_new_window (0, ttk_screen->wy,
+			    screen_info.cols, screen_info.rows - ttk_screen->wy,
+			    draw_header, handle_event);
 #ifdef MANDELPOD_STATUS
 	// create the status window
 	status_wid = pz_new_window (22, 4, 12, 12, draw_idle_status, handle_event);
@@ -157,7 +157,7 @@ static void init_values() {
 	
 	int i;
 	screen_width=screen_info.cols;
-	screen_height=screen_info.rows - (HEADER_TOPLINE + 1);
+	screen_height=screen_info.rows - ttk_screen->wy;
 	
 	selection_width = screen_width/selection_size;
 	selection_height = screen_height/selection_size;
