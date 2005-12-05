@@ -335,6 +335,20 @@ void ttk_line_gc (ttk_surface srf, ttk_gc gc, int x1, int y1, int x2, int y2)
     else
 	lineColor (srf, x1, y1, x2, y2, fetchcolor (gc->fg));
 }
+void ttk_aaline (ttk_surface srf, int x1, int y1, int x2, int y2, ttk_color col)
+{
+    if (ttk_screen->bpp == 2)
+	aalineByte (srf, x1, y1, x2, y2, col);
+    else
+	aalineColor (srf, x1, y1, x2, y2, fetchcolor (col));
+}
+void ttk_aaline_gc (ttk_surface srf, ttk_gc gc, int x1, int y1, int x2, int y2)
+{
+    if (ttk_screen->bpp == 2)
+	aalineByte (srf, x1, y1, x2, y2, gc->fg);
+    else
+	aalineColor (srf, x1, y1, x2, y2, fetchcolor (gc->fg));
+}
 
 void ttk_rect (ttk_surface srf, int x1, int y1, int x2, int y2, ttk_color col)
 {

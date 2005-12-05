@@ -277,6 +277,15 @@ void ttk_line_gc (ttk_surface srf, ttk_gc gc, int x1, int y1, int x2, int y2)
     GrLine (srf, gc, x1, y1, x2, y2);
 }
 
+void ttk_aaline (ttk_surface srf, int x1, int y1, int x2, int y2, ttk_color col)
+{
+    ttk_line (srf, x1, y1, x2, y2, col);
+}
+void ttk_aaline_gc (ttk_surface srf, ttk_gc gc, int x1, int y1, int x2, int y2)
+{
+    ttk_line_gc (srf, gc, x1, y1, x2, y2);
+}
+
 void ttk_rect (ttk_surface srf, int x1, int y1, int x2, int y2, ttk_color col) 
 {
     GrSetGCForeground (tmp_gc, col);
