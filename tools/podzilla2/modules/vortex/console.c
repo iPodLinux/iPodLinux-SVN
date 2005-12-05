@@ -41,16 +41,17 @@
 #define VORTEX_CONSOLE_CAROUSEL	(30)	/* logans run reference */
 
 typedef struct vortex_console {
-	int	state;		/* state - see above */
-	int	scale;		/* if state is ZOOM, this is the size */
-	int 	xc;		/* x center */
-	int 	yc;		/* y center */
-	int 	xs;		/* x step */
-	int 	ys;		/* y step */
-	int 	style;		/* text rendering style */
-	int 	itemNumber;	/* if state is STATIC, this is log position */
-	int	age;		/* how old it is */
-	char 	buf[VORTEX_CONSOLE_BUFSIZE];	/* text */
+	int		state;		/* state - see above */
+	int		scale;		/* if state is ZOOM, this is the size */
+	int 		xc;		/* x center */
+	int 		yc;		/* y center */
+	int 		xs;		/* x step */
+	int 		ys;		/* y step */
+	int 		style;		/* text rendering style */
+	int 		itemNumber;	/* if state is STATIC; log position */
+	int		age;		/* how old it is */
+	char 		buf[VORTEX_CONSOLE_BUFSIZE];	/* text */
+	ttk_color	color;		/* color to render this item */
 } vortex_console;
 
 static vortex_console consolebuf[VORTEX_NCONSOLE_ITEMS];
@@ -70,6 +71,8 @@ void Vortex_Console_Init( void )
 
 		consolebuf[x].itemNumber = 0;
 		consolebuf[x].buf[0] = '\0';
+
+		consolebuf[x].color = ttk_makecol( BLACK );
 	}
 	static_is_hidden = 0;
 }
@@ -124,7 +127,8 @@ static int Vortex_Console_FindOrClearSpace( void )
 
 
 /* add a message with a set x/y stepping and text style */
-void Vortex_Console_AddItem( char * text, int xs, int ys, int style )
+void Vortex_Console_AddItem( char * text, int xs, int ys,
+				int style, ttk_color color )
 {
 	int pos = Vortex_Console_FindOrClearSpace();
 	consolebuf[pos].state = VORTEX_CONSOLE_ZOOM;
@@ -137,6 +141,7 @@ void Vortex_Console_AddItem( char * text, int xs, int ys, int style )
 	consolebuf[pos].xs = xs;
 	consolebuf[pos].ys = ys;
 	consolebuf[pos].style = style;
+	consolebuf[pos].color = color;
 
 	snprintf( consolebuf[pos].buf, VORTEX_CONSOLE_BUFSIZE-1, "%s", text );
 	consolebuf[pos].buf[VORTEX_CONSOLE_BUFSIZE-1] = '\0'; //just in case 
@@ -191,7 +196,7 @@ void Vortex_Console_HiddenStatic( int hidden )
 }
 
 /* draw the console to the wid/gc */
-void Vortex_Console_Render( ttk_surface srf, ttk_color col )
+void Vortex_Console_Render( ttk_surface srf )
 {
 	int x;
 	int ypos;
@@ -206,7 +211,7 @@ void Vortex_Console_Render( ttk_surface srf, ttk_color col )
 				consolebuf[x].yc,
 				consolebuf[x].scale, 
 				consolebuf[x].scale<<1, 
-				1, col );
+				1, consolebuf[x].color );
 
 			if( consolebuf[x].style == VORTEX_STYLE_BOLD ) {
 				pz_vector_string_center( srf,
@@ -215,7 +220,7 @@ void Vortex_Console_Render( ttk_surface srf, ttk_color col )
 					consolebuf[x].yc+1,
 					consolebuf[x].scale, 
 					consolebuf[x].scale<<1, 
-					1, col );
+					1, consolebuf[x].color );
 			}
 		}
 
@@ -226,7 +231,8 @@ void Vortex_Console_Render( ttk_surface srf, ttk_color col )
 				    - (10*(consolebuf[x].itemNumber+1)) - 1;
 			    if( ypos > 16 ) {
 				    pz_vector_string( srf, consolebuf[x].buf,
-					    1, ypos, 5, 9, 1, col );
+					    1, ypos, 5, 9, 1,
+					    consolebuf[x].color );
 			    }
 		    }
 		}

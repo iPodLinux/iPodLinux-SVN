@@ -35,6 +35,7 @@
 /* colors for rendering */
 typedef struct _vortex_colors {
 	ttk_color bg;		// background
+	ttk_color title;	// VORTEX
 	ttk_color select;	// SELECT START LEVEL
 	ttk_color level;	// selected level
 	ttk_color credits;	// THANKS TO...
@@ -65,7 +66,10 @@ typedef struct vortex_globals {
 	int startLevel;
 	int timer;
 
-	vortex_colors col;
+	int score;
+	int lives;
+
+	vortex_colors color;
 
 } vortex_globals;
 
