@@ -1,5 +1,5 @@
 /*
- * Vortex
+ * Vortex - A "Tempest"/"Tempest 2000" style game.
  *  
  * Copyright (C) 2005 Scott Lawrence
  *
@@ -17,6 +17,19 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
+ */
+
+/*
+ * Game play, design, and in-game elements are based on the games:
+ *	"Tempest" (c)1980 Atari
+ *	"Tempest 2000", (c)1994,1996 Atari/Llamasoft
+ *
+ *  Mad props to 
+ *	Dave Theurer for designing the awesome "Tempest"
+ *	Jeff Minter for designing the awesome "Tempest 2000"
+ *
+ *  This version was written and vaguely designed by 
+ *	Scott Lawrence yorgle@gmail.com
  */
 
 #include <stdio.h>
@@ -47,6 +60,7 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 {
 	char buf[16];
 	char * word;
+	char * credit;
 
 	switch( vglob.state ) {
 	case VORTEX_STATE_STARTUP:
@@ -63,14 +77,30 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 		case 2: word = "LEVEL";  break;
 		case 3: word = "";       break;
 		}
+
 		pz_vector_string_center( srf, word,
-			    (ttk_screen->w - ttk_screen->wx)>>1, 30,
+			    (ttk_screen->w - ttk_screen->wx)>>1, 20,
 			    10, 18, 1, ttk_makecol( BLACK ));
 
+
+		/* level number */
 		snprintf( buf, 15, "%d", vglob.startLevel );
 		pz_vector_string_center( srf, buf,
-			    (ttk_screen->w - ttk_screen->wx)>>1, 60,
+			    (ttk_screen->w - ttk_screen->wx)>>1, 50,
 			    10, 18, 1, ttk_makecol( BLACK ));
+
+		/* display some props to the masters */
+		switch((vglob.timer>>4) & 0x03 ) {
+		case 0: credit = "THANKS TO";    break;
+		case 1: credit = "DAVE THEURER"; break;
+		case 2: credit = "JEFF MINTER";  break;
+		case 3: credit = "";             break;
+		}
+
+		pz_vector_string_center( srf, credit,
+			    (ttk_screen->w - ttk_screen->wx)>>1, 
+			    (ttk_screen->h - ttk_screen->wy)-10, 
+			    5, 9, 1, ttk_makecol( BLACK ));
 		break;
 
 	case VORTEX_STATE_GAME:
