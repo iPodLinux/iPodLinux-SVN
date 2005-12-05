@@ -89,6 +89,14 @@ int Vortex_Console_GetStaticCount( void )
 	return c;
 }
 
+void Vortex_Console_WipeAllText( void )
+{
+	int x;
+	for( x=0 ; x<VORTEX_NCONSOLE_ITEMS; x++ )
+		consolebuf[x].state = VORTEX_CONSOLE_INACTIVE;
+}
+
+
 /* find a free entry in the array, or clear one out */
 static int Vortex_Console_FindOrClearSpace( void )
 {
