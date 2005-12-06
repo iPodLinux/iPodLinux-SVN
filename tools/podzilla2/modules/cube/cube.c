@@ -36,6 +36,11 @@
 
 #include "pz.h"
 
+#define LINES 0
+#define AALINES 1
+#define SOLID 2
+
+
 static PzModule *module;
 
 static int dist=70;
@@ -52,7 +57,7 @@ static int	t_disp=0;
 static char	t_buffer[48];
 static char t_ax[3][4] = {"[x]", "y", "z"};
 static char	xy_or_z = 'x';
-static int	solid=1;
+static int	solid=SOLID;
 static int zoom_out=0;
 static int zoom_in=0;
 static int paused=0;
@@ -244,12 +249,6 @@ void cube_init(void)
 	sommet[7].x =  dist;  sommet[7].y =	 dist;	sommet[7].z =  dist;
 }
 
-static void cube_draw_line(ttk_surface srf, int a, int b)
-{
-	ttk_line(srf, point2D[a].x, point2D[a].y, point2D[b].x, point2D[b].y,
-			ttk_makecol(BLACK));
-}
-
 static int compfunc(const void * a, const void * b)
 {
 	return ((zsort *)b)->avg - ((zsort *)a)->avg;
@@ -297,7 +296,7 @@ static void cube_draw(PzWidget *wid, ttk_surface srf)
 		{0,5}, {1,4}, {2,7}, {3,6}
 	};
 	
-	if (solid) {
+	if (solid == SOLID) {
 		for (i = 0; i < 6; i++) {
 			z_avgs_f[i].place = i;
 		}
@@ -345,8 +344,15 @@ static void cube_draw(PzWidget *wid, ttk_surface srf)
 					yfaces[z_avgs_f[i].place], colour);
 		}
 	} else {
+#define cube_draw_line(a,b,c,d) \
+	local_line(a, point2D[b].x, point2D[b].y, \
+			point2D[c].x, point2D[c].y, d)
+		ttk_color col = ttk_ap_getx("window.fg")->color;
+		void (* local_line)(ttk_surface, int, int, int, int, ttk_color);
+		local_line = (solid == AALINES) ? ttk_aaline : ttk_line;
+
 		for (i = 0; i < 12; i++) {
-			cube_draw_line(srf, lines[i].v1, lines[i].v2);
+			cube_draw_line(srf, lines[i].v1, lines[i].v2, col);
 		}
 	}
 	
@@ -422,8 +428,24 @@ static int cube_handle_event(PzEvent *e)
 			}
 			break;
 		case PZ_BUTTON_PLAY:
-			if (t_disp) { t_disp=0; } else { t_disp=1; }
-			if (solid) { solid=0; } else { solid=1; }
+			switch (solid) {
+			case SOLID:
+				solid = LINES;
+				t_disp = 1;
+				break;
+			case LINES:
+				if (ttk_screen->bpp >= 16) {
+					solid = AALINES;
+				} else {
+					solid = SOLID;
+					t_disp = 0;
+				}
+				break;
+			case AALINES:
+				solid = SOLID;
+				t_disp = 0;
+				break;
+			}
 			break;
 		case PZ_BUTTON_NEXT:
 			zoom_in = 1;
@@ -481,13 +503,13 @@ PzWindow *new_cube_window( void )
 	PzWidget *wid;
 
 	if (ttk_screen->w == 220) {
-		photo = 1;
 		if (!z_off) z_off = 400;
 	} else if (ttk_screen->w == 138) {
 		if (!z_off) z_off = 800;
 	} else {
 		if (!z_off) z_off = 600;
 	}
+	photo = (ttk_screen->bpp >= 16); /* for any color ipod */
 
 	ret = pz_new_window(_("Cube"), PZ_WINDOW_NORMAL);
 	wid = pz_add_widget(ret, cube_draw, cube_handle_event);
