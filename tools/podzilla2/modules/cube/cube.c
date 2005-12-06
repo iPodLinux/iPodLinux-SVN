@@ -10,6 +10,7 @@
 * Copyright (C) 2002 Damien Teney
 * modified to use int instead of float math by Andreas Zwirtes
 * ported to iPod Linux/podzilla and solid rendering by Alastair S (coob)
+* ported to TTK/pz2 by Courtney Cavin
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -33,13 +34,9 @@
 #include <unistd.h>
 #include <string.h>
 
-#define PZ_COMPAT
 #include "pz.h"
 
-static GR_WINDOW_ID		cube_wid;
-static GR_GC_ID			cube_gc;
-static GR_TIMER_ID		cube_timer;
-static GR_WINDOW_ID		temp_pixmap;
+static PzModule *module;
 
 static int dist=70;
 
@@ -247,9 +244,10 @@ void cube_init(void)
 	sommet[7].x =  dist;  sommet[7].y =	 dist;	sommet[7].z =  dist;
 }
 
-static void cube_draw_line(int a, int b)
+static void cube_draw_line(ttk_surface srf, int a, int b)
 {
-	GrLine(temp_pixmap, cube_gc, point2D[a].x, point2D[a].y, point2D[b].x, point2D[b].y);
+	ttk_line(srf, point2D[a].x, point2D[a].y, point2D[b].x, point2D[b].y,
+			ttk_makecol(BLACK));
 }
 
 static int compfunc(const void * a, const void * b)
@@ -269,53 +267,28 @@ static void cube_zoom_in( void )
 		z_off-=20;
 }
 
-static void cube_draw(void)
+#define p2d point2D
+
+static void cube_draw(PzWidget *wid, ttk_surface srf)
 {
 	int i;
-	GR_COLOR colour; // limey alert!
-	GR_POINT faces[6][5] = {
-		{
-			{point2D[0].x, point2D[0].y},
-			{point2D[1].x, point2D[1].y},
-			{point2D[2].x, point2D[2].y},
-			{point2D[3].x, point2D[3].y},
-			{point2D[0].x, point2D[0].y},
-		},
-		{
-			{point2D[4].x, point2D[4].y},
-			{point2D[5].x, point2D[5].y},
-			{point2D[6].x, point2D[6].y},
-			{point2D[7].x, point2D[7].y},
-			{point2D[4].x, point2D[4].y},
-		},
-		{
-			{point2D[0].x, point2D[0].y},
-			{point2D[5].x, point2D[5].y},
-			{point2D[6].x, point2D[6].y},
-			{point2D[3].x, point2D[3].y},
-			{point2D[0].x, point2D[0].y},
-		},
-		{
-			{point2D[1].x, point2D[1].y},
-			{point2D[4].x, point2D[4].y},
-			{point2D[7].x, point2D[7].y},
-			{point2D[2].x, point2D[2].y},
-			{point2D[1].x, point2D[1].y},
-		},
-		{
-			{point2D[2].x, point2D[2].y},
-			{point2D[3].x, point2D[3].y},
-			{point2D[6].x, point2D[6].y},
-			{point2D[7].x, point2D[7].y},
-			{point2D[2].x, point2D[2].y},
-		},
-		{
-			{point2D[0].x, point2D[0].y},
-			{point2D[1].x, point2D[1].y},
-			{point2D[4].x, point2D[4].y},
-			{point2D[5].x, point2D[5].y},
-			{point2D[0].x, point2D[0].y}
-		}
+	ttk_color colour; // limey alert!
+	
+	short xfaces[6][5] = {
+		{p2d[0].x, p2d[1].x, p2d[2].x, p2d[3].x, p2d[0].x},
+		{p2d[4].x, p2d[5].x, p2d[6].x, p2d[7].x, p2d[4].x},
+		{p2d[0].x, p2d[5].x, p2d[6].x, p2d[3].x, p2d[0].x},
+		{p2d[1].x, p2d[4].x, p2d[7].x, p2d[2].x, p2d[1].x},
+		{p2d[2].x, p2d[3].x, p2d[6].x, p2d[7].x, p2d[2].x},
+		{p2d[0].x, p2d[1].x, p2d[4].x, p2d[5].x, p2d[0].x},
+	};
+	short yfaces[6][5] = {
+		{p2d[0].y, p2d[1].y, p2d[2].y, p2d[3].y, p2d[0].y},
+		{p2d[4].y, p2d[5].y, p2d[6].y, p2d[7].y, p2d[4].y},
+		{p2d[0].y, p2d[5].y, p2d[6].y, p2d[3].y, p2d[0].y},
+		{p2d[1].y, p2d[4].y, p2d[7].y, p2d[2].y, p2d[1].y},
+		{p2d[2].y, p2d[3].y, p2d[6].y, p2d[7].y, p2d[2].y},
+		{p2d[0].y, p2d[1].y, p2d[4].y, p2d[5].y, p2d[0].y},
 	};
 	zsort z_avgs_f[6];
 	line_2D lines[12] = {
@@ -343,77 +316,63 @@ static void cube_draw(void)
 		qsort(z_avgs_f, 6, sizeof(zsort), compfunc);
 		for (i = 3; i < 6; i++) { /* we can only see the front 3 faces... */
 			switch(z_avgs_f[i].place) {
-				case 0:
-					colour = (photo==0) ? LTGRAY : RED;
-					break;
-				case 1:
-					colour = (photo==0) ? LTGRAY : GREEN;
-					break;
-				case 2:
-					colour = (photo==0) ? GRAY : BLUE;
-					break;
-				case 3:
-					colour = (photo==0) ? GRAY : YELLOW;
-					break;
-				case 4:
-					colour = (photo==0) ? BLACK : MAGENTA;
-					break;
-				case 5:
-					colour = (photo==0) ? BLACK : CYAN;
-					break;
+			case 0:
+				colour = (photo==0) ? ttk_makecol(GREY) :
+					ttk_makecol(255, 0, 0);
+				break;
+			case 1:
+				colour = (photo==0) ? ttk_makecol(GREY) :
+					ttk_makecol(0, 255, 0);
+				break;
+			case 2:
+				colour = (photo==0) ? ttk_makecol(DKGREY) :
+					ttk_makecol(0, 0, 255);
+				break;
+			case 3:
+				colour = (photo==0) ? ttk_makecol(DKGREY) :
+					ttk_makecol(255, 255, 0);
+				break;
+			case 4:
+				colour = (photo==0) ? ttk_makecol(BLACK) :
+					ttk_makecol(255, 0, 255);
+				break;
+			case 5:
+				colour = (photo==0) ? ttk_makecol(BLACK) :
+					ttk_makecol(0, 255, 255);
+				break;
 			}
-			GrSetGCForeground(cube_gc, colour);
-			GrFillPoly(temp_pixmap, cube_gc, 5, faces[z_avgs_f[i].place]);
+			ttk_fillpoly (srf, 5, xfaces[z_avgs_f[i].place],
+					yfaces[z_avgs_f[i].place], colour);
 		}
 	} else {
-		/* polygons not used so hidden lines can be gray in future
-		 *  - once i work out how to do it, possibly with GrRegion stuff */
-		GrSetGCForeground(cube_gc, BLACK);
 		for (i = 0; i < 12; i++) {
-			cube_draw_line(lines[i].v1, lines[i].v2);
+			cube_draw_line(srf, lines[i].v1, lines[i].v2);
 		}
 	}
 	
 	if (t_disp) {
-		GrSetGCForeground(cube_gc, WHITE);
-		GrFillRect(temp_pixmap, cube_gc,
-			0, screen_info.rows-(HEADER_TOPLINE + 1)-14, screen_info.cols, 14);
-		GrSetGCForeground(cube_gc, BLACK);
-		GrLine(temp_pixmap, cube_gc,
-			0, screen_info.rows-(HEADER_TOPLINE + 1)-14,
-			screen_info.cols, screen_info.rows-(HEADER_TOPLINE + 1)-14);
+		int h = ttk_text_height(ttk_textfont);
+		ttk_fillrect(srf, 0, wid->h - (h + 4), wid->w, wid->h,
+				ttk_ap_getx("window.bg")->color);
+		ttk_line(srf, 0, wid->h - (h + 4), wid->w, wid->h - (h + 4),
+			ttk_ap_getx("window.fg")->color);
 		snprintf(t_buffer, 48, "%s:%d %s:%d %s:%d  |  d:%d ",
 			t_ax[0], xs, t_ax[1], ys, t_ax[2], zs, z_off/10);
-		GrText(temp_pixmap, cube_gc, 2,
-			screen_info.rows-(HEADER_TOPLINE + 1)-2, t_buffer, -1, GR_TFASCII);
+		ttk_text(srf, ttk_textfont, 2, wid->h - (h + 2),
+				ttk_ap_getx("window.fg")->color, t_buffer);
 	}
-	GrCopyArea(cube_wid, cube_gc, 0, 0,
-		screen_info.cols, (screen_info.rows - (HEADER_TOPLINE + 1)),
-		temp_pixmap, 0, 0, MWROP_SRCCOPY);
 }
 
-static void cube_clear_screen( void )
+static int cube_loop(struct TWidget *this)
 {
-	GrSetGCForeground(cube_gc, WHITE);
-	GrFillRect(temp_pixmap, cube_gc,
-		0, 0, screen_info.cols, (screen_info.rows - (HEADER_TOPLINE + 1)));
-}
-
-static void cube_do_draw( void )
-{
-	pz_draw_header(_("Cube"));
-}
-
-static void cube_loop( void )
-{
-	cube_clear_screen();
+	if (paused)
+		return 0;
 	cube_rotate(xa,ya,za);
 	if (zoom_out)
 		cube_zoom_out();
 	if (zoom_in)
 		cube_zoom_in();
 	cube_viewport();
-	cube_draw();
 	xa+=xs;
 	if (xa>359)
 		xa-=360;
@@ -429,148 +388,125 @@ static void cube_loop( void )
 		za-=360;
 	if (za<0)
 		za+=360;
+	this->dirty = 1;
+	return 0;
 }
 
-static int cube_handle_event(GR_EVENT * event)
+#define NMIN(x,y) if (x < y) x = y
+#define NMAX(x,y) if (x > y) x = y
+#define BOUNDS(x,y,z) NMIN(x,y);  NMAX(x,z)
+
+static int cube_handle_event(PzEvent *e)
 {
 	int ret = 0;
-	switch( event->type )
-	{
-		case( GR_EVENT_TYPE_TIMER ):
-			if (!paused) cube_loop();
-			break;
-		case( GR_EVENT_TYPE_KEY_DOWN ):
-			switch( event->keystroke.ch )
-			{
-				case '\r':
-				case '\n': /* action */
-					switch( xy_or_z ) {
-						case 'x':
-							xy_or_z ='y';
-							strncpy(t_ax[0], "x", 4);
-							strncpy(t_ax[1], "[y]", 4);
-							break;
-						case 'y':
-							xy_or_z ='z';
-							strncpy(t_ax[1], "y", 4);
-							strncpy(t_ax[2], "[z]", 4);
-							break;
-						case 'z':
-							xy_or_z ='x';
-							strncpy(t_ax[2], "z", 4);
-							strncpy(t_ax[0], "[x]", 4);
-							break;
-					}
-					ret |= KEY_CLICK;
-					break;
-				case 'p': /* play/pause */
-				case 'd': /*or this */
-					if (t_disp) { t_disp=0; } else { t_disp=1; }
-					if (solid) { solid=0; } else { solid=1; }
-					break;
-				case 'f': /* >>| */
-					zoom_in = 1;
-					break;
-				case 'w': /* |<< */
-					zoom_out = 1;
-					break;
-				case 'l': /* CCW spin */
-					switch( xy_or_z )
-					{
-						case 'x':
-							xs-=1;
-							if (xs<-10) { xs=-10;}
-							break;
-						case 'y':
-							ys-=1;
-							if (ys<-10) { ys=-10;}
-							break;
-						case 'z':
-							zs-=1;
-							if (zs<-10) { zs=-10;}
-							break;
-					}
-					break;
-				case 'r': /* CW spin */
-					switch( xy_or_z )
-					{
-						case 'x':
-							xs+=1;
-							if (xs>10) { xs=10;}
-							break;
-						case 'y':
-							ys+=1;
-							if (ys>10) { ys=10;}
-							break;
-						case 'z':
-							zs+=1;
-							if (zs>10) { zs=10;}
-							break;
-					}
-					break;
-				case 'h': /* hold */
-					paused=1;
-					break;
-				case 'm':
-					GrDestroyTimer( cube_timer );
-					GrDestroyGC( cube_gc );
-					pz_close_window( cube_wid );
-					ret |= KEY_CLICK;
-					break;
+	switch( e->type ) {
+	case PZ_EVENT_BUTTON_DOWN:
+		switch( e->arg ) {
+		case PZ_BUTTON_ACTION:
+			switch( xy_or_z ) {
+			case 'x':
+				xy_or_z ='y';
+				strncpy(t_ax[0], "x", 4);
+				strncpy(t_ax[1], "[y]", 4);
+				break;
+			case 'y':
+				xy_or_z ='z';
+				strncpy(t_ax[1], "y", 4);
+				strncpy(t_ax[2], "[z]", 4);
+				break;
+			case 'z':
+				xy_or_z ='x';
+				strncpy(t_ax[2], "z", 4);
+				strncpy(t_ax[0], "[x]", 4);
+				break;
 			}
 			break;
-		case( GR_EVENT_TYPE_KEY_UP ):
-			switch( event->keystroke.ch )
-			{
-				case 'f': /* >>| */
-					zoom_in = 0;
-					break;
-				case 'w': /* |<< */
-					zoom_out = 0;
-					break;
-				case 'h': /* hold */
-					paused = 0;
-					break;
-			}
+		case PZ_BUTTON_PLAY:
+			if (t_disp) { t_disp=0; } else { t_disp=1; }
+			if (solid) { solid=0; } else { solid=1; }
 			break;
+		case PZ_BUTTON_NEXT:
+			zoom_in = 1;
+			break;
+		case PZ_BUTTON_PREVIOUS:
+			zoom_out = 1;
+			break;
+		case PZ_BUTTON_HOLD:
+			paused = 1;
+			break;
+		case PZ_BUTTON_MENU:
+			pz_close_window( e->wid->win );
+			break;
+		}
+		break;
+	case PZ_EVENT_SCROLL:
+		switch( xy_or_z ) {
+		case 'x':
+			xs+=e->arg;
+			BOUNDS(xs, -10, 10);
+			break;
+		case 'y':
+			ys+=e->arg;
+			BOUNDS(ys, -10, 10);
+			break;
+		case 'z':
+			zs+=e->arg;
+			BOUNDS(zs, -10, 10);
+			break;
+		}
+		break;
+	case PZ_EVENT_BUTTON_UP:
+		switch( e->arg ) {
+		case PZ_BUTTON_NEXT:
+			zoom_in = 0;
+			break;
+		case PZ_BUTTON_PREVIOUS:
+			zoom_out = 0;
+			break;
+		case PZ_BUTTON_HOLD:
+			paused = 0;
+			break;
+		}
+		break;
+	default:
+		ret |= TTK_EV_UNUSED;
+		break;
 	}
 	return ret;
 }
 
-void new_cube_window( void )
+PzWindow *new_cube_window( void )
 {
-	if (screen_info.cols==220) {
+	PzWindow *ret;
+	PzWidget *wid;
+
+	if (ttk_screen->w == 220) {
 		photo = 1;
 		if (!z_off) z_off = 400;
-	} else if (screen_info.cols==138) {
+	} else if (ttk_screen->w == 138) {
 		if (!z_off) z_off = 800;
 	} else {
 		if (!z_off) z_off = 600;
 	}
 
-	cube_gc = pz_get_gc(1);
-	GrSetGCUseBackground(cube_gc, GR_FALSE);
-	GrSetGCForeground(cube_gc, BLACK);
+	ret = pz_new_window(_("Cube"), PZ_WINDOW_NORMAL);
+	wid = pz_add_widget(ret, cube_draw, cube_handle_event);
 
-	cube_wid = pz_new_window(0, HEADER_TOPLINE + 1, 
-	screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), 
-	cube_do_draw, cube_handle_event);
+	ttk_widget_set_timer(wid, 100); /* ms */
+	wid->timer = cube_loop;
 
-	GrSelectEvents( cube_wid, GR_EVENT_MASK_TIMER|
-	GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_KEY_DOWN);
+	x_off = ttk_screen->w/2;
+	y_off = (ttk_screen->h - ttk_screen->wy)/2;
 
-    cube_timer = GrCreateTimer( cube_wid, 100 );
-
-	GrMapWindow( cube_wid );
-
-	x_off = screen_info.cols/2;
-	y_off = (screen_info.rows - (HEADER_TOPLINE + 1))/2;
-
-	temp_pixmap = GrNewPixmap(screen_info.cols,
-								(screen_info.rows - (HEADER_TOPLINE + 1)),
-						 		NULL);
-	
 	cube_init();	
+
+	return pz_finish_window(ret);
 }
 
-PZ_SIMPLE_MOD ("cube", new_cube_window, "/Extras/Stuff/Cube")
+static void init_cube( void )
+{
+	module = pz_register_module("cube", NULL);
+	pz_menu_add_action("/Extras/Stuff/Cube", new_cube_window);
+}
+
+PZ_MOD_INIT(init_cube)
