@@ -24,7 +24,7 @@ void menu_drawprogress(uint16 *fb,uint8 completed) {
   static char tmpBuff[40];
   fb_cls(fb,0x1F << 11);
 
-  mlc_sprintf(tmpBuff,"%u",completed);
+  mlc_sprintf(tmpBuff,"%u%% done",(completed*100)/256);
 
   console_putsXY(1,1,tmpBuff);
   fb_update(fb);
