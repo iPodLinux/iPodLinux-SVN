@@ -68,9 +68,10 @@ static void *loader_startImage(ipod_t *ipod,char *image) {
       read = fsize;
     }
 
-    mlc_printf("Read: %u\r",read);
+    //mlc_printf("Read: %u\r",read);
+    //fb_update(framebuffer);
+    menu_drawprogress(framebuffer,(read * 255) / fsize);
     fb_update(framebuffer);
-    //menu_drawprogress(framebuffer,(read * 255) / fsize);
   }
   //for(;;);
 

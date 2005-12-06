@@ -2,6 +2,7 @@
 #include "ata2.h"
 #include "fat32.h"
 #include "ext2.h"
+#include "fwfs.h"
 #include "vfs.h"
 #include "minilibc.h"
 
@@ -96,6 +97,9 @@ void vfs_init(void) {
     offset = (buff[446 + (i*16) + 11]<<24) | (buff[446 + (i*16) + 10]<<16) | (buff[446 + (i*16) + 9]<<8) | (buff[446 + (i*16) + 8]);
 
     switch(type) {
+    case 0x00:
+      fwfs_newfs(i,offset);
+      break;
     case 0x83:
       ext2_newfs(i,offset);
       break;

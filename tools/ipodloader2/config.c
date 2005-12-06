@@ -14,7 +14,7 @@ void      config_init(void) {
 
   config.image[0].type  = CONFIG_IMAGE_BINARY;
   config.image[0].title = "RetailOS";
-  config.image[0].path  = "(hd0,0)osos";
+  config.image[0].path  = "(hd0,0)/osos";
 
   config.image[1].type  = CONFIG_IMAGE_BINARY;
   config.image[1].title = "uClinux";
