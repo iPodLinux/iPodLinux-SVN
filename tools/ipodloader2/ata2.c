@@ -185,7 +185,7 @@ static void ata_transfer_block(void *ptr) {
  */
 void ata_identify(void) {
   uint8  status,c;
-  uint16 *buff = (uint16*)0x11100000; /* !!! Not.. very.. nice... */
+  uint16 *buff = (uint16*)mlc_malloc(512);
 
   pio_outbyte( REG_DEVICEHEAD, DEVICE_0 );
   pio_outbyte( REG_FEATURES  , 0 );
