@@ -92,30 +92,20 @@ static int x_off;
 static int y_off;
 static int z_off = 0;
 
-/* Precalculated sine and cosine * 10000 (four digit fixed point math) */
-static int sin_table[91] = 
+/* Precalculated sine and cosine * 16384 (fixed point 18.14) */
+static const short sin_table[91] =
 {
-	0, 174, 348, 523, 697,
-	871,1045,1218,1391,1564,
-	1736,1908,2079,2249,2419,
-	2588,2756,2923,3090,3255,
-	3420,3583,3746,3907,4067,
-	4226,4383,4539,4694,4848,
-	5000,5150,5299,5446,5591,
-	5735,5877,6018,6156,6293,
-	6427,6560,6691,6819,6946,
-	7071,7193,7313,7431,7547,
-	7660,7771,7880,7986,8090,
-	8191,8290,8386,8480,8571,
-	8660,8746,8829,8910,8987,
-	9063,9135,9205,9271,9335,
-	9396,9455,9510,9563,9612,
-	9659,9702,9743,9781,9816,
-	9848,9876,9902,9925,9945,
-	9961,9975,9986,9993,9998,
-	10000
+            0,   285,   571,   857,  1142,  1427,  1712,  1996,  2280,  2563,
+	 2845,  3126,  3406,  3685,  3963,  4240,  4516,  4790,  5062,  5334,
+	 5603,  5871,  6137,  6401,  6663,  6924,  7182,  7438,  7691,  7943,
+	 8191,  8438,  8682,  8923,  9161,  9397,  9630,  9860, 10086, 10310,
+	10531, 10748, 10963, 11173, 11381, 11585, 11785, 11982, 12175, 12365,
+	12550, 12732, 12910, 13084, 13254, 13420, 13582, 13740, 13894, 14043,
+	14188, 14329, 14466, 14598, 14725, 14848, 14967, 15081, 15190, 15295,
+	15395, 15491, 15582, 15668, 15749, 15825, 15897, 15964, 16025, 16082,
+	16135, 16182, 16224, 16261, 16294, 16321, 16344, 16361, 16374, 16381,
+	16384
 };
-
 
 static long fisin(int val)
 {
@@ -196,17 +186,17 @@ static void cube_rotate(int xa, int ya, int za)
 	cza=ficos(za);
 
 	/* calculate overall translation matrix */
-	matrice[0][0] = cza*cya/10000L;
-	matrice[1][0] = sza*cya/10000L;
+	matrice[0][0] = (cza * cya) >> 14;
+	matrice[1][0] = (sza * cya) >> 14;
 	matrice[2][0] = -sya;
 
-	matrice[0][1] = cza*sya/10000L*sxa/10000L - sza*cxa/10000L;
-	matrice[1][1] = sza*sya/10000L*sxa/10000L + cxa*cza/10000L;
-	matrice[2][1] = sxa*cya/10000L;
+	matrice[0][1] = (((cza * sya) >> 14) * sxa - sza * cxa) >> 14;
+	matrice[1][1] = (((sza * sya) >> 14) * sxa + cxa * cza) >> 14;
+	matrice[2][1] = (sxa * cya) >> 14;
 
-	matrice[0][2] = cza*sya/10000L*cxa/10000L + sza*sxa/10000L;
-	matrice[1][2] = sza*sya/10000L*cxa/10000L - cza*sxa/10000L;
-	matrice[2][2] = cxa*cya/10000L;
+	matrice[0][2] = (((cza * sya) >> 14) * cxa + sza * sxa) >> 14;
+	matrice[1][2] = (((sza * sya) >> 14) * cxa - cza * sxa) >> 14;
+	matrice[2][2] = (cxa * cya) >> 14;
 
 	/* apply translation matrix to all points */
 	for(i=0;i<nb_points;i++)
@@ -229,10 +219,10 @@ static void cube_viewport(void)
 	/* Do viewport transformation for all points */
 	for(i=0;i<nb_points;i++)
 	{
-		point2D[i].x=(((point3D[i].x)<<8)/10000L)/
-			(point3D[i].z/10000L+z_off)+x_off;
-		point2D[i].y=(((point3D[i].y)<<8)/10000L)/
-			(point3D[i].z/10000L+z_off)+y_off;
+		point2D[i].x=(point3D[i].x << 8) /
+			(point3D[i].z + (z_off << 14)) + x_off;
+		point2D[i].y = (point3D[i].y << 8) /
+			(point3D[i].z + (z_off << 14)) + y_off;
 	}
 }
 
@@ -271,6 +261,7 @@ static void cube_zoom_in( void )
 static void cube_draw(PzWidget *wid, ttk_surface srf)
 {
 	int i;
+	ttk_color col = ttk_ap_getx("window.fg")->color;
 	ttk_color colour; // limey alert!
 	
 	short xfaces[6][5] = {
@@ -296,7 +287,8 @@ static void cube_draw(PzWidget *wid, ttk_surface srf)
 		{0,5}, {1,4}, {2,7}, {3,6}
 	};
 	
-	if (solid == SOLID) {
+	switch (solid) {
+	case SOLID:
 		for (i = 0; i < 6; i++) {
 			z_avgs_f[i].place = i;
 		}
@@ -343,17 +335,23 @@ static void cube_draw(PzWidget *wid, ttk_surface srf)
 			ttk_fillpoly (srf, 5, xfaces[z_avgs_f[i].place],
 					yfaces[z_avgs_f[i].place], colour);
 		}
-	} else {
-#define cube_draw_line(a,b,c,d) \
-	local_line(a, point2D[b].x, point2D[b].y, \
-			point2D[c].x, point2D[c].y, d)
-		ttk_color col = ttk_ap_getx("window.fg")->color;
-		void (* local_line)(ttk_surface, int, int, int, int, ttk_color);
-		local_line = (solid == AALINES) ? ttk_aaline : ttk_line;
-
+		break;
+	case LINES:
 		for (i = 0; i < 12; i++) {
-			cube_draw_line(srf, lines[i].v1, lines[i].v2, col);
+			ttk_line(srf, point2D[lines[i].v1].x,
+				      point2D[lines[i].v1].y,
+				      point2D[lines[i].v2].x,
+				      point2D[lines[i].v2].y, col);
 		}
+		break;
+	case AALINES:
+		for (i = 0; i < 12; i++) {
+			ttk_aaline(srf, point2D[lines[i].v1].x,
+					point2D[lines[i].v1].y,
+					point2D[lines[i].v2].x,
+					point2D[lines[i].v2].y, col);
+		}
+		break;
 	}
 	
 	if (t_disp) {
