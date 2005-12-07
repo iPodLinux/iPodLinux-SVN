@@ -36,9 +36,10 @@
 
 #include "pz.h"
 
-#define LINES 0
-#define AALINES 1
-#define SOLID 2
+#define LINES 1
+#define AALINES 2
+#define SOLID 4
+#define HIDDEN 8
 
 
 static PzModule *module;
@@ -63,6 +64,11 @@ static int zoom_in=0;
 static int paused=0;
 static int photo=0;
 
+typedef struct {
+       int place;
+       long avg;
+} zsort;
+
 struct point_3D {
 	long x, y, z;
 };
@@ -71,14 +77,22 @@ struct point_2D {
 	long x, y;
 };
 
-typedef struct {
-	int place;
-	long avg;
-} zsort;
-
-typedef struct {
+struct line {
 	int v1, v2;
-} line_2D;
+};
+
+static const struct line lines[12] =
+{
+	{0,1},{1,2},{2,3},{3,0},
+	{4,5},{5,6},{6,7},{7,4},
+	{0,5},{1,4},{2,7},{3,6}
+};
+
+static const int points[6][4] = {
+	{0,1,2,3}, {4,5,6,7},
+	{0,5,6,3}, {1,4,7,2},
+	{2,3,6,7}, {0,1,4,5}
+};
 
 static struct point_3D sommet[8];
 static struct point_3D point3D[8];
@@ -88,6 +102,7 @@ static long matrice[3][3];
 
 static int nb_points = 8;
 
+static zsort z_avgs_f[6];
 static int x_off;
 static int y_off;
 static int z_off = 0;
@@ -226,24 +241,6 @@ static void cube_viewport(void)
 	}
 }
 
-void cube_init(void)
-{
-	/* Original 3D-position of cube's corners */
-	sommet[0].x = -dist;  sommet[0].y = -dist;	sommet[0].z = -dist;
-	sommet[1].x =  dist;  sommet[1].y = -dist;	sommet[1].z = -dist;
-	sommet[2].x =  dist;  sommet[2].y =	 dist;	sommet[2].z = -dist;
-	sommet[3].x = -dist;  sommet[3].y =	 dist;	sommet[3].z = -dist;
-	sommet[4].x =  dist;  sommet[4].y = -dist;	sommet[4].z =  dist;
-	sommet[5].x = -dist;  sommet[5].y = -dist;	sommet[5].z =  dist;
-	sommet[6].x = -dist;  sommet[6].y =	 dist;	sommet[6].z =  dist;
-	sommet[7].x =  dist;  sommet[7].y =	 dist;	sommet[7].z =  dist;
-}
-
-static int compfunc(const void * a, const void * b)
-{
-	return ((zsort *)b)->avg - ((zsort *)a)->avg;
-}
-
 static void cube_zoom_out( void )
 {
 	if (z_off < 2000)
@@ -256,102 +253,83 @@ static void cube_zoom_in( void )
 		z_off-=20;
 }
 
-#define p2d point2D
+static int z_cmp(const void *a, const void *b)
+{
+	return ((zsort *)b)->avg - ((zsort *)a)->avg;
+}
 
 static void cube_draw(PzWidget *wid, ttk_surface srf)
 {
-	int i;
+	int i, j;
 	ttk_color col = ttk_ap_getx("window.fg")->color;
-	ttk_color colour; // limey alert!
-	
+	int colors[] = {
+		0xff0000, 0x00ff00, 0x0000ff,
+		0xffff00, 0xff00ff, 0x00ffff,
+		0xa0a0a0, 0xa0a0a0, 0x505050,
+		0x505050, 0x000000, 0x000000
+	};
+#define FACE(a,b) point2D[points[a][b]]
+#define XFACES(a) \
+	FACE(a,0).x, FACE(a,1).x, FACE(a,2).x, FACE(a,3).x, FACE(a,0).x
+#define YFACES(a) \
+	FACE(a,0).y, FACE(a,1).y, FACE(a,2).y, FACE(a,3).y, FACE(a,0).y
 	short xfaces[6][5] = {
-		{p2d[0].x, p2d[1].x, p2d[2].x, p2d[3].x, p2d[0].x},
-		{p2d[4].x, p2d[5].x, p2d[6].x, p2d[7].x, p2d[4].x},
-		{p2d[0].x, p2d[5].x, p2d[6].x, p2d[3].x, p2d[0].x},
-		{p2d[1].x, p2d[4].x, p2d[7].x, p2d[2].x, p2d[1].x},
-		{p2d[2].x, p2d[3].x, p2d[6].x, p2d[7].x, p2d[2].x},
-		{p2d[0].x, p2d[1].x, p2d[4].x, p2d[5].x, p2d[0].x},
+		{XFACES(0)}, {XFACES(1)}, {XFACES(2)},
+		{XFACES(3)}, {XFACES(4)}, {XFACES(5)}
 	};
 	short yfaces[6][5] = {
-		{p2d[0].y, p2d[1].y, p2d[2].y, p2d[3].y, p2d[0].y},
-		{p2d[4].y, p2d[5].y, p2d[6].y, p2d[7].y, p2d[4].y},
-		{p2d[0].y, p2d[5].y, p2d[6].y, p2d[3].y, p2d[0].y},
-		{p2d[1].y, p2d[4].y, p2d[7].y, p2d[2].y, p2d[1].y},
-		{p2d[2].y, p2d[3].y, p2d[6].y, p2d[7].y, p2d[2].y},
-		{p2d[0].y, p2d[1].y, p2d[4].y, p2d[5].y, p2d[0].y},
+		{YFACES(0)}, {YFACES(1)}, {YFACES(2)},
+		{YFACES(3)}, {YFACES(4)}, {YFACES(5)}
 	};
-	zsort z_avgs_f[6];
-	line_2D lines[12] = {
-		{0,1}, {1,2}, {2,3}, {3,0},
-		{4,5}, {5,6}, {6,7}, {7,4},
-		{0,5}, {1,4}, {2,7}, {3,6}
-	};
-	
-	switch (solid) {
-	case SOLID:
+
+#define ZFACE(a,b) point3D[points[a][b]].z
+#define ZAVG(a) ((ZFACE(a,0) + ZFACE(a,1) + ZFACE(a,2) + ZFACE(a,3)) / 4)
+	if (solid & SOLID) {
 		for (i = 0; i < 6; i++) {
 			z_avgs_f[i].place = i;
 		}
-		z_avgs_f[0].avg =
-			(point3D[0].z + point3D[1].z + point3D[2].z + point3D[3].z)/4;
-		z_avgs_f[1].avg =
-			(point3D[4].z + point3D[5].z + point3D[6].z + point3D[7].z)/4;
-		z_avgs_f[2].avg =
-			(point3D[0].z + point3D[5].z + point3D[6].z + point3D[3].z)/4;
-		z_avgs_f[3].avg =
-			(point3D[1].z + point3D[4].z + point3D[7].z + point3D[2].z)/4;
-		z_avgs_f[4].avg =
-			(point3D[2].z + point3D[3].z + point3D[6].z + point3D[7].z)/4;
-		z_avgs_f[5].avg =
-			(point3D[0].z + point3D[1].z + point3D[4].z + point3D[5].z)/4;
-		qsort(z_avgs_f, 6, sizeof(zsort), compfunc);
-		for (i = 3; i < 6; i++) { /* we can only see the front 3 faces... */
-			switch(z_avgs_f[i].place) {
-			case 0:
-				colour = (photo==0) ? ttk_makecol(GREY) :
-					ttk_makecol(255, 0, 0);
-				break;
-			case 1:
-				colour = (photo==0) ? ttk_makecol(GREY) :
-					ttk_makecol(0, 255, 0);
-				break;
-			case 2:
-				colour = (photo==0) ? ttk_makecol(DKGREY) :
-					ttk_makecol(0, 0, 255);
-				break;
-			case 3:
-				colour = (photo==0) ? ttk_makecol(DKGREY) :
-					ttk_makecol(255, 255, 0);
-				break;
-			case 4:
-				colour = (photo==0) ? ttk_makecol(BLACK) :
-					ttk_makecol(255, 0, 255);
-				break;
-			case 5:
-				colour = (photo==0) ? ttk_makecol(BLACK) :
-					ttk_makecol(0, 255, 255);
-				break;
-			}
-			ttk_fillpoly (srf, 5, xfaces[z_avgs_f[i].place],
-					yfaces[z_avgs_f[i].place], colour);
+		z_avgs_f[0].avg = ZAVG(0);
+		z_avgs_f[1].avg = ZAVG(1);
+		z_avgs_f[2].avg = ZAVG(2);
+		z_avgs_f[3].avg = ZAVG(3);
+		z_avgs_f[4].avg = ZAVG(4);
+		z_avgs_f[5].avg = ZAVG(5);
+		qsort(z_avgs_f, 6, sizeof(zsort), z_cmp);
+		for (i = 3; i < 6; i++) {
+			j = colors[z_avgs_f[i].place + (photo ? 0 : 6)];
+			ttk_fillpoly(srf, 5, xfaces[z_avgs_f[i].place],
+					yfaces[z_avgs_f[i].place],
+					ttk_makecol((j&0xff0000) >> 16,
+						(j&0xff00) >> 8, j&0xff));
 		}
-		break;
-	case LINES:
+	}
+	if (solid & LINES) {
 		for (i = 0; i < 12; i++) {
 			ttk_line(srf, point2D[lines[i].v1].x,
 				      point2D[lines[i].v1].y,
 				      point2D[lines[i].v2].x,
 				      point2D[lines[i].v2].y, col);
 		}
-		break;
-	case AALINES:
+	}
+	if (solid & AALINES) {
+		if (!(solid & SOLID)) {
+			for (i = 0; i < 6; i++) {
+				z_avgs_f[i].place = i;
+			}
+			z_avgs_f[0].avg = ZAVG(0);
+			z_avgs_f[1].avg = ZAVG(1);
+			z_avgs_f[2].avg = ZAVG(2);
+			z_avgs_f[3].avg = ZAVG(3);
+			z_avgs_f[4].avg = ZAVG(4);
+			z_avgs_f[5].avg = ZAVG(5);
+			qsort(z_avgs_f, 6, sizeof(zsort), z_cmp);
+		}
 		for (i = 0; i < 12; i++) {
 			ttk_aaline(srf, point2D[lines[i].v1].x,
 					point2D[lines[i].v1].y,
 					point2D[lines[i].v2].x,
 					point2D[lines[i].v2].y, col);
 		}
-		break;
 	}
 	
 	if (t_disp) {
@@ -426,20 +404,23 @@ static int cube_handle_event(PzEvent *e)
 			}
 			break;
 		case PZ_BUTTON_PLAY:
-			switch (solid) {
-			case SOLID:
-				solid = LINES;
-				t_disp = 1;
-				break;
-			case LINES:
+			if (solid == SOLID) {
 				if (ttk_screen->bpp >= 16) {
-					solid = AALINES;
+					solid = SOLID | AALINES;
 				} else {
-					solid = SOLID;
-					t_disp = 0;
+					solid = LINES;
+					t_disp = 1;
 				}
-				break;
-			case AALINES:
+			}
+			else if (solid == LINES) {
+				solid = SOLID;
+				t_disp = 0;
+			}
+			else if (solid == (AALINES | SOLID)) {
+				solid = AALINES;
+				t_disp = 1;
+			}
+			else if (solid == AALINES) {
 				solid = SOLID;
 				t_disp = 0;
 				break;
@@ -495,6 +476,20 @@ static int cube_handle_event(PzEvent *e)
 	return ret;
 }
 
+static void cube_init(void)
+{
+       /* Original 3D-position of cube's corners */
+       sommet[0].x = -dist;  sommet[0].y = -dist;      sommet[0].z = -dist;
+       sommet[1].x =  dist;  sommet[1].y = -dist;      sommet[1].z = -dist;
+       sommet[2].x =  dist;  sommet[2].y =      dist;  sommet[2].z = -dist;
+       sommet[3].x = -dist;  sommet[3].y =      dist;  sommet[3].z = -dist;
+       sommet[4].x =  dist;  sommet[4].y = -dist;      sommet[4].z =  dist;
+       sommet[5].x = -dist;  sommet[5].y = -dist;      sommet[5].z =  dist;
+       sommet[6].x = -dist;  sommet[6].y =      dist;  sommet[6].z =  dist;
+       sommet[7].x =  dist;  sommet[7].y =      dist;  sommet[7].z =  dist;
+}
+
+
 PzWindow *new_cube_window( void )
 {
 	PzWindow *ret;
@@ -518,7 +513,7 @@ PzWindow *new_cube_window( void )
 	x_off = ttk_screen->w/2;
 	y_off = (ttk_screen->h - ttk_screen->wy)/2;
 
-	cube_init();	
+	cube_init();
 
 	return pz_finish_window(ret);
 }
