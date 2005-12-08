@@ -64,6 +64,7 @@ int main(int argc, char *argv[]) {
 
 	hd_engine *engine;
 	hd_object bg, lbat, rbat, ball;
+	/* hd_object lscore; */
 	
 	if( SDL_Init(SDL_INIT_VIDEO) < 0 ) {
 		fprintf(stderr,"Unable to init SDL: %s\n",SDL_GetError());
@@ -113,11 +114,26 @@ int main(int argc, char *argv[]) {
 	ball.type = HD_TYPE_PNG;
 	ball.sub.png = HD_PNG_Create("ball.png");
 
+/*
+	lscore.y = 2;
+	lscore.h = 40;
+	lscore.depth = 2;
+	lscore.type = HD_TYPE_FONT;
+	lscore.sub.font  = HD_Font_Create("../font.ttf", lscore.h, "0");
+	lscore.w = lscore.sub.font->w;
+	lscore.x = (WIDTH/3)-(lscore.w/2);
+	for(done=0;done<(lscore.h*lscore.w);done++)
+		lscore.sub.font->argb[done] &|= 0x0000FF00;
+*/
+
 	HD_Register(engine,&bg);
 	HD_Register(engine,&lbat);
+/*
+	HD_Register(engine,&lscore);
+*/
 	HD_Register(engine,&rbat);
 	HD_Register(engine,&ball);
-	
+
 	done = 0;
 	while(!done) {
 		SDL_Event event;
@@ -262,10 +278,12 @@ int main(int argc, char *argv[]) {
 		break;
 		case GOVER:
 		if (comppoint == 10) {
-			printf("Winner!");
+			printf("You lose!\n");
 		} else if (userpoint == 10) {
-			printf("You win!");
+			printf("You win!\n");
 		}
+		state = RBEGIN;
+		comppoint = userpoint = 0;
 		break;
 		}
 
