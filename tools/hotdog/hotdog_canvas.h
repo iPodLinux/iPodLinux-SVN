@@ -3,8 +3,8 @@
 
 #include "hotdog.h"
 
-hd_canvas *HD_Canvas_Create(uint32 width,uint32 height);
-void       HD_Canvas_Destroy(hd_canvas *canvas);
+hd_object *HD_Canvas_Create(uint32 width,uint32 height);
+void       HD_Canvas_Destroy(hd_object *obj);
 void       HD_Canvas_Render(hd_engine *eng,hd_object *obj);
 
 #endif
