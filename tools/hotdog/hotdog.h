@@ -28,38 +28,46 @@
 #ifndef _HOTDOG_H_
 #define _HOTDOG_H_
 
-#include "main.h"
-
-
 #define HD_TYPE_PRIMITIVE 0x00
 #define HD_TYPE_PNG       0x01
 #define HD_TYPE_FONT      0x02
 #define HD_TYPE_CANVAS    0x03
+#define HD_TYPE_USERDEF   0x100
 
 #define HD_PRIM_RECTANGLE 0x00
 
-typedef struct {
+typedef unsigned int   uint32;
+typedef   signed int    int32;
+typedef unsigned short uint16;
+typedef   signed short  int16;
+typedef unsigned char  uint8;
+typedef   signed char   int8;
+
+typedef struct hd_primitive {
 	uint32 type;
 	uint32 color; // ARGB
 } hd_primitive;
 
-typedef struct {
+typedef struct hd_font {
   int32   w,h;
   uint32 *argb;
 } hd_font;
 
-typedef struct {
+typedef struct hd_canvas {
 	int32 w,h;
 	uint32 *argb;
 } hd_canvas;
 
-typedef struct {
+typedef struct hd_png {
 	int32 w,h;
 
 	uint32 *argb;
 } hd_png;
 
-typedef struct {
+struct hd_engine;
+struct hd_object;
+
+typedef struct hd_object {
 	 int32 x,y,w,h,depth;
 	uint8  opacity;
 	uint32 type;
@@ -69,8 +77,15 @@ typedef struct {
 	  hd_primitive *prim;
 	  hd_font      *font;
 	  hd_canvas    *canvas;
+            void       *data;
 	} sub;
 
+    struct hd_engine *eng;
+
+    void (*render)(struct hd_engine *eng, struct hd_object *obj);
+    void (*destroy)(struct hd_object *obj);
+
+    /* private */ int lx, ly, lw, lh;
 } hd_object;
 
 typedef struct hd_obj_list {
@@ -79,10 +94,12 @@ typedef struct hd_obj_list {
 	struct hd_obj_list *next;
 } hd_obj_list;
 
-typedef struct {
+typedef struct hd_engine {
 	struct {
 		int32  width,height;
 		uint16 *framebuffer;
+                uint8  *fb2bpp;
+            void (*update)(struct hd_engine *, int, int, int, int);
 	} screen;
 
 	uint32  currentTime;
@@ -104,8 +121,10 @@ typedef struct {
 
 
 
-hd_engine *HD_Initialize(uint32 width,uint32 height,uint16 *framebuffer);
-uint8 HD_Register(hd_engine *eng,hd_object *obj);
+hd_engine *HD_Initialize(uint32 width,uint32 height,uint8 bpp, void *framebuffer, void (*update)(struct hd_engine*, int, int, int, int));
+void HD_Register(hd_engine *eng,hd_object *obj);
 void HD_Render(hd_engine *eng);
-
+void HD_Destroy(hd_object *obj);
+void HD_ScaleBlendClip (uint32 *sbuf, int sw, int sh, uint32 *dbuf, int dtw, int dth,
+                        int dx, int dy, int dw, int dh);
 #endif

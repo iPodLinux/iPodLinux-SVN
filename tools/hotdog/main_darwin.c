@@ -32,18 +32,15 @@
 #include <assert.h>
 #include <math.h>
 
-#include "main.h"
 #include "hotdog.h"
 #include "hotdog_png.h"
-#include "hotdog_font.h"
 
 #include "SDL.h"
 
-#define WIDTH  320
-#define HEIGHT 240
+#define WIDTH  220
+#define HEIGHT 176
 
 SDL_Surface *screen;
-uint16      *renderBuffer;
 
 uint32 GetTimeMillis(void) {
   uint32 millis;
@@ -53,12 +50,16 @@ uint32 GetTimeMillis(void) {
   return(millis);
 }
 
+static void update (hd_engine *eng, int x, int y, int w, int h) 
+{
+    SDL_UpdateRect (SDL_GetVideoSurface(), x, y, w, h);
+}
+
 int main(int argc, char *argv[]) {
   uint32  done = 0;
 	uint16* pFB=0;
 	hd_engine *engine;
-	hd_object obj,obj2,obj3,obj4;
-	hd_primitive pri,pri2;
+	hd_object *obj[5];
 	double f = 0.0;
 
   if( SDL_Init(SDL_INIT_VIDEO) < 0 ) {
@@ -73,53 +74,45 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
   
-  renderBuffer = (uint16 *)malloc(WIDTH*HEIGHT*2);
-  assert(renderBuffer != NULL);
+	engine = HD_Initialize(WIDTH,HEIGHT,16, screen->pixels, update);
 
-	engine = HD_Initialize(WIDTH,HEIGHT,screen->pixels);
+        obj[4]    = HD_PNG_Create ("bg.png");
+        obj[4]->x = 0;
+        obj[4]->y = 0;
+        obj[4]->w = 220;
+        obj[4]->h = 176;
 
-	obj.x = 10;
-	obj.y = 10;
-	obj.w = 100;
-	obj.h = 100;
-	obj.depth    = 1;
-	obj.type     = HD_TYPE_PRIMITIVE;
-	obj.sub.prim = &pri;
-	obj.opacity  = 0xFF;
-	pri.type  = HD_PRIM_RECTANGLE;
-	pri.color = 0x80800000;
+        obj[0]    = HD_PNG_Create ("photos.png");
+        obj[0]->x = 0;
+        obj[0]->y = 0;
+        obj[0]->w = 75;
+        obj[0]->h = 150;
 
-	obj2.x = 30;
-	obj2.y = 30;
-	obj2.h = 40;
-	obj2.depth    = 2;
-	obj2.type     = HD_TYPE_FONT;
-	obj2.sub.font = HD_Font_Create("font.ttf",obj2.h,"Hello");
-	obj2.w = obj2.sub.font->w; // Use the width extracted by the font-engine as to not scale the text
+        obj[1]    = HD_PNG_Create ("music.png");
+        obj[1]->x = 0;
+        obj[1]->y = 0;
+        obj[1]->w = 75;
+        obj[1]->h = 150;
 
-	obj3.x = 240;
-	obj3.y = -19;
-	obj3.w = 75;
-	obj3.h = 75;
-	obj3.depth    = 3;
-	obj3.type     = HD_TYPE_PNG;
-	obj3.sub.png  = HD_PNG_Create("50x50-32bit.png");
+        obj[2]    = HD_PNG_Create ("dvd.png");
+        obj[2]->x = 0;
+        obj[2]->y = 0;
+        obj[2]->w = 75;
+        obj[2]->h = 150;
 
-	obj4.x = 130;
-	obj4.y = 70;
-	obj4.type = HD_TYPE_CANVAS;
-	obj4.sub.canvas = HD_Canvas_Create(128,128);
-	obj4.w = 128;
-	obj4.h = 128;
+        obj[3]    = HD_PNG_Create ("movies.png");
+        obj[3]->x = 0;
+        obj[3]->y = 0;
+        obj[3]->w = 75;
+        obj[3]->h = 150;
 
-	for(done=0;done<(128*128);done++) obj4.sub.canvas->argb[done] = 0xFF000000 | ((done<<4) & 0xFFFFFF);
+	HD_Register(engine,obj[4]);
+	HD_Register(engine,obj[0]);
+	HD_Register(engine,obj[1]);
+	HD_Register(engine,obj[2]);
+	HD_Register(engine,obj[3]);
 
-	HD_Register(engine,&obj);
-	HD_Register(engine,&obj2);
-	HD_Register(engine,&obj3);
-	HD_Register(engine,&obj4);
-
-  done = 0;
+	
   while(!done) {
     SDL_Event event;
 
@@ -157,24 +150,28 @@ int main(int argc, char *argv[]) {
 
 		HD_Render(engine);
 
-		obj.x = (int32)(110.0 + 160.0 * cos(f/2));
-		obj.y = (int32)(70.0 + 150.0 * sin(f/2));
-
-		obj2.x = (int32)(30.0 + 50.0 * cos(f));
-		obj2.y = (int32)(30.0 + 50.0 * sin(f));
-
-		obj3.x = (int32)(130.0 + 140.0 * cos(f/4.0));
-		obj3.y = (int32)(90.0 + 100.0 * sin(f/4.0));
-		//obj3.w = 100.0 + 40.0 * sin(f);
-		//obj3.h = 100.0 + 40.0 * cos(f);
-
-		f = (double)GetTimeMillis() / 400.0;
+		obj[0]->x = 80.0 + 50.0 * cos(f);
+		obj[0]->y = 50.0 + 40.0 * sin(f);
+		obj[0]->w = 60.0 + 10.0 * sin(f);
+		obj[0]->h = obj[0]->w * 2;
+		obj[1]->x = 80.0 + 50.0 * cos(f+M_PI);
+		obj[1]->y = 50.0 + 40.0 * sin(f+M_PI);
+		obj[1]->w = 60.0 + 10.0 * sin(f+M_PI);
+		obj[1]->h = obj[1]->w * 2;
+		obj[2]->x = 80.0 + 50.0 * cos(f+(M_PI/2));
+		obj[2]->y = 50.0 + 40.0 * sin(f+(M_PI/2));
+		obj[2]->w = 60.0 + 10.0 * sin(f+(M_PI/2));
+		obj[2]->h = obj[2]->w * 2;
+		obj[3]->x = 80.0 + 50.0 * cos(f-(M_PI/2));
+		obj[3]->y = 50.0 + 40.0 * sin(f-(M_PI/2));
+		obj[3]->w = 60.0 + 10.0 * sin(f-(M_PI/2));
+		obj[3]->h = obj[3]->w * 2;
+		
+		f = (double)GetTimeMillis() / 500.0;
 
 
     if( SDL_MUSTLOCK(screen) ) 
       SDL_UnlockSurface(screen);
-
-    SDL_UpdateRect(screen,0,0,0,0);
   }
 
   return(0);
