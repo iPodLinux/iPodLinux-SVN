@@ -1,0 +1,4 @@
+Module: podwrite
+Display-name: PodWrite
+Author: Jonathan Bettencourt
+Dependencies: textinput,tiwidgets
