@@ -160,7 +160,6 @@ int mpdc_tickle()
 	return (mpdz == NULL) ? -1 : err;
 }
 
-#if 0
 static int icon_timer(struct TWidget *this)
 {
 	int state;
@@ -200,7 +199,6 @@ static TWidget *mpdc_icon()
 
 	return ret;
 }
-#endif
 
 static int playing_visible(ttk_menu_item *item)
 {
@@ -258,9 +256,7 @@ static void init_mpdc()
 	pz_menu_add_action("/Now Playing", mpd_currently_playing);
 	pz_get_menu_item("/Now Playing")->visible = playing_visible;
 
-#if 0
 	ttk_add_header_widget(mpdc_icon());
-#endif
 }
 
 PZ_MOD_INIT(init_mpdc)
