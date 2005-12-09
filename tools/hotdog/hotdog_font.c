@@ -32,8 +32,7 @@ hd_object *HD_Font_Create(char *font,uint32 height,char *text) {
   int        error;
   int32      xsize,n,x;
 
-  ret = (hd_object *)malloc( sizeof(hd_object) );
-  assert(ret != NULL);
+  ret = HD_New_Object();
   ret->type = HD_TYPE_FONT;
   ret->sub.font = fsub = (hd_font *)malloc( sizeof(hd_font) );
   assert(font != NULL);

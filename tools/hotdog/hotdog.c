@@ -351,3 +351,16 @@ void HD_Destroy (hd_object *obj)
         }
     }
 }
+
+hd_object *HD_New_Object() 
+{
+    static int lz = 0;
+    hd_object *ret = calloc (1, sizeof(hd_object));
+    assert (ret != NULL);
+    ret->x = ret->y = 0;
+    ret->w = ret->h = -1;
+    ret->z = lz++;
+    ret->type = 0;
+    ret->lx = ret->ly = ret->lw = ret->lh = -1;
+    return ret;
+}

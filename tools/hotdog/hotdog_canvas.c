@@ -8,8 +8,7 @@
 hd_object *HD_Canvas_Create(uint32 width,uint32 height) {
   hd_object *ret;
 
-  ret = (hd_object *)malloc( sizeof(hd_object) );
-  assert(ret != NULL);
+  ret = HD_New_Object();
   ret->type = HD_TYPE_CANVAS;
   ret->sub.canvas = (hd_canvas *)malloc( sizeof(hd_canvas) );
   assert(ret->sub.canvas != NULL);

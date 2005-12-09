@@ -158,7 +158,7 @@ hd_object *HD_PNG_Create(char *fname) {
 		return(NULL);
 	}
 	
-        ret = (hd_object *)malloc (sizeof(hd_object));
+        ret = HD_New_Object();
         ret->type = HD_TYPE_PNG;
         ret->sub.png = png = (hd_png *)malloc (sizeof(hd_png));
 	
