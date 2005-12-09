@@ -44,6 +44,7 @@ typedef struct _vortex_colors {
 	ttk_color web_top;	// closest portion of web
 	ttk_color web_mid;	// arms of the web
 	ttk_color web_bot;	// furthest portion of the web
+	ttk_color web_top_sel;	// current PC position
 	ttk_color web_top_dot;	// top vector simulation dots
 	ttk_color web_bot_dot;	// bottom vector simulation dots
 	ttk_color baseind;	// base icon indicators (lives left)
@@ -71,6 +72,12 @@ typedef struct vortex_globals {
 
 	int score;
 	int lives;
+
+	int wPosMajor;
+	int wPosMinor;
+
+	int pcxC, pcyC;
+	int pcx1, pcy1, pcx2, pcy2;
 
 	vortex_colors color;
 } vortex_globals;

@@ -58,7 +58,6 @@ void Vortex_ChangeToState( int st )
 	vglob.state = st;
 }
 
-
 void Vortex_DrawWeb( ttk_surface srf )
 {
 	LEVELDATA * lv = &vortex_levels[ vglob.currentLevel ];
@@ -104,6 +103,31 @@ void Vortex_DrawWeb( ttk_surface srf )
 	/* draw the top vector simulation dots */
 	for( p=0 ; p<16 ; p++ )
 	    ttk_pixel( srf, lv->fx[p], lv->fy[p], vglob.color.web_top_dot );
+}
+
+void Vortex_DrawPlayer( ttk_surface srf )
+{
+	LEVELDATA * lv = &vortex_levels[ vglob.currentLevel ];
+	int p2 = vglob.wPosMajor +1;
+
+	if( p2 > 15 ) p2 = 0;
+
+	/* draw the claw */
+	ttk_aaline( srf, lv->fx[vglob.wPosMajor], lv->fy[vglob.wPosMajor],
+		       vglob.pcx1, vglob.pcy1,
+		       vglob.color.player );
+
+	ttk_aaline( srf, vglob.pcx1, vglob.pcy1,
+		       lv->fx[p2], lv->fy[p2],
+		       vglob.color.player );
+
+	ttk_aaline( srf, lv->fx[p2], lv->fy[p2],
+		       vglob.pcx2, vglob.pcy2,
+		       vglob.color.player );
+
+	ttk_aaline( srf, vglob.pcx2, vglob.pcy2,
+		       lv->fx[vglob.wPosMajor], lv->fy[vglob.wPosMajor],
+		       vglob.color.player );
 }
 
 
@@ -192,6 +216,9 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 		/* draw the playfield */
 		Vortex_DrawWeb( srf );
 
+		/* draw the player */
+		Vortex_DrawPlayer( srf );
+
 		/* draw any console text over all of that */
 		Vortex_Console_Render( srf );
 
@@ -222,6 +249,76 @@ void cleanup_vortex()
 {
 }
 
+#define MINOR_MAX (0)
+
+int Vortex_clawCompute( void )
+{
+	LEVELDATA * lv = &vortex_levels[ vglob.currentLevel ];
+	int wxC = ttk_screen->w>>1;   /* web X center */
+	int wyC = lv->y3d;            /* web Y center */
+
+	int p2 = vglob.wPosMajor +1;  /* second point in the selected field */
+	if( p2 > 15 ) p2 = 0;	      /* adjust for wraparound */
+
+	/* store aside the centerpoint of the field edge */
+	vglob.pcxC = (lv->fx[ vglob.wPosMajor ] + lv->fx[ p2 ]) >> 1;
+	vglob.pcyC = (lv->fy[ vglob.wPosMajor ] + lv->fy[ p2 ]) >> 1;
+
+	/* compute the two center points of the claw (extrapolation) */
+	vglob.pcx1 = wxC + (((vglob.pcxC - wxC) * 150)>>7);
+	vglob.pcy1 = wyC + (((vglob.pcyC - wyC) * 150)>>7);
+
+	vglob.pcx2 = wxC + (((vglob.pcxC - wxC) * 140)>>7);
+	vglob.pcy2 = wyC + (((vglob.pcyC - wyC) * 140)>>7);
+}
+
+int Vortex_incPosition( int steps )
+{
+	if( steps > 1 ) Vortex_incPosition( steps-1 );
+
+	if( vglob.wPosMinor < MINOR_MAX ) {
+		vglob.wPosMinor++;
+		Vortex_clawCompute();
+		return;
+	}
+
+	if( vglob.wPosMajor < 14 ) {
+		vglob.wPosMajor++;
+		vglob.wPosMinor = 0;
+		Vortex_clawCompute();
+		return;
+	}
+
+	if( vortex_levels[ vglob.currentLevel ].flags & LF_CLOSEDWEB ) {
+		vglob.wPosMajor = 0;
+		vglob.wPosMinor = 0;
+		Vortex_clawCompute();
+	}
+}
+
+int Vortex_decPosition( int steps )
+{
+	if( steps > 1 ) Vortex_incPosition( steps-1 );
+
+	if( vglob.wPosMinor > 0 ) {
+		vglob.wPosMinor--;
+		Vortex_clawCompute();
+		return;
+	}
+
+	if( vglob.wPosMajor > 0 ) {
+		vglob.wPosMajor--;
+		vglob.wPosMinor = MINOR_MAX;
+		Vortex_clawCompute();
+		return;
+	}
+
+	if( vortex_levels[ vglob.currentLevel ].flags & LF_CLOSEDWEB ) {
+		vglob.wPosMajor = 15;
+		vglob.wPosMinor = MINOR_MAX;
+		Vortex_clawCompute();
+	}
+}
 
 int event_vortex (PzEvent *ev) 
 {
@@ -242,19 +339,11 @@ int event_vortex (PzEvent *ev)
 		}
 
 		if( vglob.state == VORTEX_STATE_GAME ) {
-			TTK_SCROLLMOD( ev->arg, 3 );
+			TTK_SCROLLMOD( ev->arg, 1 );
 			if( ev->arg > 0 ) {
-				Vortex_Console_AddItem( "BURRITO", 
-					    Vortex_Rand(4)-2, 
-					    Vortex_Rand(4)-2, 
-					    VORTEX_STYLE_NORMAL,
-					    vglob.color.con );
+				Vortex_decPosition( ev->arg );
 			} else {
-				Vortex_Console_AddItem( "CHIMICHANGA", 
-					    Vortex_Rand(4)-2, 
-					    Vortex_Rand(4)-2, 
-					    VORTEX_STYLE_NORMAL,
-					    vglob.color.bonus );
+				Vortex_incPosition( ev->arg * -1 );
 			}
 
 			/* change the level for now too... */
@@ -275,8 +364,10 @@ int event_vortex (PzEvent *ev)
 			break;
 
 		case( PZ_BUTTON_ACTION ):
-			if( vglob.state == VORTEX_STATE_LEVELSEL )
+			if( vglob.state == VORTEX_STATE_LEVELSEL ) {
 				Vortex_ChangeToState( VORTEX_STATE_GAME );
+				Vortex_clawCompute();
+		    }
 			break;
 
 		default:
@@ -291,8 +382,8 @@ int event_vortex (PzEvent *ev)
 	case PZ_EVENT_TIMER:
 		if( (vglob.state == VORTEX_STATE_STARTUP) &&
 		    (++startcount < 3 ) )
-			Vortex_Console_AddItem( "BURRITO", 0, 0, 
-				VORTEX_STYLE_BOLD, vglob.color.title );
+			Vortex_Console_AddItem( "VORTEX", 0, 0, 
+				VORTEX_STYLE_NORMAL, vglob.color.title );
 
 		Vortex_Console_Tick();
 		vglob.timer++;
@@ -314,6 +405,9 @@ static void Vortex_Initialize( void )
 	vglob.score = 0;
 	vglob.lives = 3;
 
+	vglob.wPosMajor = 0;
+	vglob.wPosMinor = 0;
+
 	startcount = 0;
 }
 
@@ -330,7 +424,7 @@ PzWindow *new_vortex_window()
 
 	Vortex_Initialize( );
 	Vortex_Console_HiddenStatic( 1 );
-	Vortex_Console_AddItem( "BURRITO", 0, 0, 
+	Vortex_Console_AddItem( "VORTEX", 0, 0, 
 				VORTEX_STYLE_BOLD, vglob.color.title );
 
 	return pz_finish_window( vglob.window );
@@ -344,7 +438,7 @@ void init_vortex()
 	vglob.module = pz_register_module ("vortex", cleanup_vortex);
 
 	/* menu item display name */
-	pz_menu_add_action ("/Extras/Games/The Burrito Game", new_vortex_window);
+	pz_menu_add_action ("/Extras/Games/Vortex", new_vortex_window);
 
 	Vortex_Initialize();
 
@@ -352,7 +446,7 @@ void init_vortex()
 	if( ttk_screen->bpp >= 16 ) {
 		/* full color! */
 		vglob.color.bg          = ttk_makecol(   0,   0,   0 );
-		vglob.color.title       = ttk_makecol( 200, 200, 255 );
+		vglob.color.title       = ttk_makecol( 128, 255, 255 );
 		vglob.color.select      = ttk_makecol( 255, 255,   0 );
 		vglob.color.level       = ttk_makecol(   0, 255,   0 );
 		vglob.color.credits     = ttk_makecol(   0,   0, 255 );
@@ -361,12 +455,13 @@ void init_vortex()
 		vglob.color.web_top     = ttk_makecol(   0, 128, 255 );
 		vglob.color.web_mid     = ttk_makecol(   0,   0, 255 );
 		vglob.color.web_bot     = ttk_makecol(   0,   0, 128 );
+		vglob.color.web_top_sel = ttk_makecol( 128, 255, 255 );
 		vglob.color.web_top_dot = ttk_makecol( 128, 255, 255 );
 		vglob.color.web_bot_dot = ttk_makecol(   0, 128, 255 );
 		vglob.color.baseind     = ttk_makecol(   0, 255,   0 );
 		vglob.color.score       = ttk_makecol(   0, 255, 255 );
 		vglob.color.player      = ttk_makecol( 255, 255,   0 );
-		vglob.color.bolts       = ttk_makecol( 200, 200, 200 );
+		vglob.color.bolts       = ttk_makecol( 255, 255, 255 );
 		vglob.color.super       = ttk_makecol(   0, 255, 255 );
 		vglob.color.flippers    = ttk_makecol( 255,   0,   0 );
 		vglob.color.stars       = ttk_makecol( 180, 210, 190 );
@@ -382,6 +477,7 @@ void init_vortex()
 		vglob.color.web_top     = ttk_makecol( BLACK );
 		vglob.color.web_mid     = ttk_makecol( DKGREY );
 		vglob.color.web_bot     = ttk_makecol( GREY );
+		vglob.color.web_top_sel = ttk_makecol( GREY );
 		vglob.color.web_top_dot = ttk_makecol( BLACK );
 		vglob.color.web_bot_dot = ttk_makecol( GREY );
 		vglob.color.baseind     = ttk_makecol( BLACK );
@@ -396,7 +492,7 @@ void init_vortex()
 	/* precompute all of the web scaling... */
 	/* convert from rom coordinates to screen coordinates */
 
-	/* first, flip all of the Y pixels. */
+	/* flip all of the Y pixels. */
 	for( p=0 ; p<NLEVELS ; p++ )
 	{
 		/* web pixels... */
