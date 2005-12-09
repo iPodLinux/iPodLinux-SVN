@@ -160,7 +160,7 @@ static struct vector_polystruct V_punctuation[] =
 static struct vector_polystruct V_specials[] =
 {
     /* ^ */ {4, {PT14, PT12, PT16, PT14}},
-    /* < */ {4, {PT5, PT34, PT13, PT3}},
+    /* < */ {4, {PT5, PT34, PT13, PT5}},
     /* v */ {4, {PT0, PT2, PT4, PT0}},
     /* > */ {4, {PT3, PT34, PT11, PT3}},
 };
