@@ -68,7 +68,7 @@ struct hd_engine;
 struct hd_object;
 
 typedef struct hd_object {
-	 int32 x,y,w,h,depth;
+	 int32 x,y,w,h,z;
 	uint8  opacity;
 	uint32 type;
 
@@ -127,4 +127,5 @@ void HD_Render(hd_engine *eng);
 void HD_Destroy(hd_object *obj);
 void HD_ScaleBlendClip (uint32 *sbuf, int sw, int sh, uint32 *dbuf, int dtw, int dth,
                         int dx, int dy, int dw, int dh);
+hd_object *HD_New_Object();
 #endif
