@@ -62,11 +62,6 @@ void Vortex_DrawWeb( ttk_surface srf )
 {
 	LEVELDATA * lv = &vortex_levels[ vglob.currentLevel ];
 	int p;
-	int l;
-
-/*
-	printf( "drawing level %d\n", vglob.currentLevel );
-*/
 
 	/* draw the back */
 	for( p=0 ; p<15 ; p++ )
@@ -251,7 +246,7 @@ void cleanup_vortex()
 
 #define MINOR_MAX (0)
 
-int Vortex_clawCompute( void )
+void Vortex_clawCompute( void )
 {
 	LEVELDATA * lv = &vortex_levels[ vglob.currentLevel ];
 	int wxC = ttk_screen->w>>1;   /* web X center */
@@ -272,7 +267,7 @@ int Vortex_clawCompute( void )
 	vglob.pcy2 = wyC + (((vglob.pcyC - wyC) * 140)>>7);
 }
 
-int Vortex_incPosition( int steps )
+void Vortex_incPosition( int steps )
 {
 	if( steps > 1 ) Vortex_incPosition( steps-1 );
 
@@ -296,7 +291,7 @@ int Vortex_incPosition( int steps )
 	}
 }
 
-int Vortex_decPosition( int steps )
+void Vortex_decPosition( int steps )
 {
 	if( steps > 1 ) Vortex_incPosition( steps-1 );
 
