@@ -76,26 +76,34 @@ void Vortex_DrawWeb( ttk_surface srf )
 				vglob.color.web_bot );
 
 	if( vortex_levels[ vglob.currentLevel ].flags & LF_CLOSEDWEB )
-	    ttk_aaline( srf,	(lv->rx[0]), (lv->ry[0]),
-				(lv->rx[15]), (lv->ry[15]),
+	    ttk_aaline( srf,	lv->rx[0], lv->ry[0],
+				lv->rx[15], lv->ry[15],
 				vglob.color.web_bot );
 
 	/* draw the arms */
 	for( p=0 ; p<16 ; p++ )
-	    ttk_aaline( srf,	(lv->fx[p]), (lv->fy[p]),
-				(lv->rx[p]), (lv->ry[p]),
+	    ttk_aaline( srf,	lv->fx[p], lv->fy[p],
+				lv->rx[p], lv->ry[p],
 				vglob.color.web_mid );
+
+	/* draw the vector simulation dots */
+	for( p=0 ; p<16 ; p++ )
+	    ttk_pixel( srf, lv->rx[p], lv->ry[p], vglob.color.web_bot_dot );
 
 	/* draw the front */
 	for( p=0 ; p<15 ; p++ )
-	    ttk_aaline( srf,	(lv->fx[p]), (lv->fy[p]),
-				(lv->fx[p+1]), (lv->fy[p+1]),
+	    ttk_aaline( srf,	lv->fx[p], lv->fy[p],
+				lv->fx[p+1], lv->fy[p+1],
 				vglob.color.web_top );
 
 	if( vortex_levels[ vglob.currentLevel ].flags & LF_CLOSEDWEB )
-	    ttk_aaline( srf,	(lv->fx[0]), (lv->fy[0]),
-				(lv->fx[15]), (lv->fy[15]),
+	    ttk_aaline( srf,	lv->fx[0], lv->fy[0],
+				lv->fx[15], lv->fy[15],
 				vglob.color.web_top );
+
+	/* draw the top vector simulation dots */
+	for( p=0 ; p<16 ; p++ )
+	    ttk_pixel( srf, lv->fx[p], lv->fy[p], vglob.color.web_top_dot );
 }
 
 
@@ -343,42 +351,46 @@ void init_vortex()
 	/* setup colors */
 	if( ttk_screen->bpp >= 16 ) {
 		/* full color! */
-		vglob.color.bg       = ttk_makecol(   0,   0,   0 );
-		vglob.color.title    = ttk_makecol( 200, 200, 255 );
-		vglob.color.select   = ttk_makecol( 255, 255,   0 );
-		vglob.color.level    = ttk_makecol(   0, 255,   0 );
-		vglob.color.credits  = ttk_makecol(   0,   0, 255 );
-		vglob.color.con      = ttk_makecol( 255, 255,   0 );
-		vglob.color.bonus    = ttk_makecol( 255,   0,   0 );
-		vglob.color.web_top  = ttk_makecol(   0, 128, 255 );
-		vglob.color.web_mid  = ttk_makecol(   0,   0, 255 );
-		vglob.color.web_bot  = ttk_makecol(   0,   0, 128 );
-		vglob.color.baseind  = ttk_makecol(   0, 255,   0 );
-		vglob.color.score    = ttk_makecol(   0, 255, 255 );
-		vglob.color.player   = ttk_makecol( 255, 255,   0 );
-		vglob.color.bolts    = ttk_makecol( 200, 200, 200 );
-		vglob.color.super    = ttk_makecol(   0, 255, 255 );
-		vglob.color.flippers = ttk_makecol( 255,   0,   0 );
-		vglob.color.stars    = ttk_makecol( 180, 210, 190 );
+		vglob.color.bg          = ttk_makecol(   0,   0,   0 );
+		vglob.color.title       = ttk_makecol( 200, 200, 255 );
+		vglob.color.select      = ttk_makecol( 255, 255,   0 );
+		vglob.color.level       = ttk_makecol(   0, 255,   0 );
+		vglob.color.credits     = ttk_makecol(   0,   0, 255 );
+		vglob.color.con         = ttk_makecol( 255, 255,   0 );
+		vglob.color.bonus       = ttk_makecol( 255,   0,   0 );
+		vglob.color.web_top     = ttk_makecol(   0, 128, 255 );
+		vglob.color.web_mid     = ttk_makecol(   0,   0, 255 );
+		vglob.color.web_bot     = ttk_makecol(   0,   0, 128 );
+		vglob.color.web_top_dot = ttk_makecol( 128, 255, 255 );
+		vglob.color.web_bot_dot = ttk_makecol(   0, 128, 255 );
+		vglob.color.baseind     = ttk_makecol(   0, 255,   0 );
+		vglob.color.score       = ttk_makecol(   0, 255, 255 );
+		vglob.color.player      = ttk_makecol( 255, 255,   0 );
+		vglob.color.bolts       = ttk_makecol( 200, 200, 200 );
+		vglob.color.super       = ttk_makecol(   0, 255, 255 );
+		vglob.color.flippers    = ttk_makecol( 255,   0,   0 );
+		vglob.color.stars       = ttk_makecol( 180, 210, 190 );
 	} else {
 		/* monochrome iPod */
-		vglob.color.bg       = ttk_makecol( WHITE );
-		vglob.color.title    = ttk_makecol( BLACK );
-		vglob.color.select   = ttk_makecol( BLACK );
-		vglob.color.level    = ttk_makecol( DKGREY );
-		vglob.color.credits  = ttk_makecol( GREY );
-		vglob.color.con      = ttk_makecol( BLACK );
-		vglob.color.bonus    = ttk_makecol( DKGREY );
-		vglob.color.web_top  = ttk_makecol( BLACK );
-		vglob.color.web_mid  = ttk_makecol( DKGREY );
-		vglob.color.web_bot  = ttk_makecol( GREY );
-		vglob.color.baseind  = ttk_makecol( BLACK );
-		vglob.color.score    = ttk_makecol( BLACK );
-		vglob.color.player   = ttk_makecol( DKGREY );
-		vglob.color.bolts    = ttk_makecol( BLACK );
-		vglob.color.super    = ttk_makecol( DKGREY );
-		vglob.color.flippers = ttk_makecol( BLACK );
-		vglob.color.stars    = ttk_makecol( GREY );
+		vglob.color.bg          = ttk_makecol( WHITE );
+		vglob.color.title       = ttk_makecol( BLACK );
+		vglob.color.select      = ttk_makecol( BLACK );
+		vglob.color.level       = ttk_makecol( DKGREY );
+		vglob.color.credits     = ttk_makecol( GREY );
+		vglob.color.con         = ttk_makecol( BLACK );
+		vglob.color.bonus       = ttk_makecol( DKGREY );
+		vglob.color.web_top     = ttk_makecol( BLACK );
+		vglob.color.web_mid     = ttk_makecol( DKGREY );
+		vglob.color.web_bot     = ttk_makecol( GREY );
+		vglob.color.web_top_dot = ttk_makecol( BLACK );
+		vglob.color.web_bot_dot = ttk_makecol( GREY );
+		vglob.color.baseind     = ttk_makecol( BLACK );
+		vglob.color.score       = ttk_makecol( BLACK );
+		vglob.color.player      = ttk_makecol( DKGREY );
+		vglob.color.bolts       = ttk_makecol( BLACK );
+		vglob.color.super       = ttk_makecol( DKGREY );
+		vglob.color.flippers    = ttk_makecol( BLACK );
+		vglob.color.stars       = ttk_makecol( GREY );
 	}
 
 	/* precompute all of the web scaling... */
