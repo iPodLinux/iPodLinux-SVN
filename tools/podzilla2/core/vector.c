@@ -23,6 +23,7 @@
 #include <string.h>	/* for strlen */
 #include "pz.h"
 
+
 /** The points are specified as follows: 0xXXYY
  * XX and YY indicate where the point is. The values
  * are 00 for the top / left or ff for the bottom / right.
@@ -90,7 +91,7 @@ static struct vector_polystruct V_digits[] = {
     /* 5 */ {6, {PT2, PT0, PT6, PT8, PT16, PT14}},
     /* 6 */ {5, {PT0, PT14, PT16, PT8, PT6}},
     /* 7 */ {3, {PT0, PT2, PT16}},
-    /* 8 */ {7, {PT8, PT2, PT0, PT6, PT8, PT16, PT14}},
+    /* 8 */ {8, {PT8, PT2, PT0, PT6, PT8, PT16, PT14, PT6}},
     /* 9 */ {5, {PT8, PT6, PT0, PT2, PT16}},
 };
 
@@ -129,7 +130,7 @@ static struct vector_polystruct V_alpha[] =
 static struct vector_polystruct V_punctuation[] =
 {
     /* ! */ {8, {PT9, PT1, PT2, PT9, PT26|SKIP, PT29, PT30, PT26}},
-    /* : */ {10, {PT1, 0xb02a, PT4, 0x402a, PT1, PT9|SKIP, PT25, PT15, PT24, PT9}},
+    /* : */ {10, {PT1, 0xc02a, PT4, 0x402a, PT1,  PT9|SKIP, 0xc0d6, PT15, 0x40d6, PT9}},
     /* / */ {2, {PT14, PT2}},
     /* \ */ {2, {PT16, PT0}},
     /* _ */ {2, {PT14, PT16}},
@@ -150,8 +151,8 @@ static struct vector_polystruct V_punctuation[] =
     /* $ */ {8, {PT17, PT18, PT6, PT8, PT13, PT11, PT1|SKIP, PT15}},
     /* ^ */ {3, {PT3, PT1, PT5}},
     /* * */ {4, {0xb056, 0x40aa, 0x4056|SKIP, 0xb0aa}},
-    /* ; */ {13, {PT1, 0xb02a, PT4, 0x402a, PT1,  0xb0aa|SKIP, PT7, 0x4080, 0x40aa, PT9, PT29, PT25, 0xb0aa}},
-    /* ? */ {9, {PT18, PT1, PT17, PT4, PT34,  PT12|SKIP, PT29, PT30, PT12}},
+    /* ; */ {11, {PT1, 0xc02a, PT4, 0x402a, PT1,  PT9|SKIP, 0xc0d6, PT15, 0x40ff, 0x40d6, PT9}},
+    /* ? */ {9, {PT18, PT1, PT17, PT34, PT9,  PT12|SKIP, PT29, PT30, PT12}},
     /* = */ {4, {PT3, PT5,  PT19|SKIP, PT10}},
 };
 
