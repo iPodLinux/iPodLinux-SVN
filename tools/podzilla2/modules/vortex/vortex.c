@@ -98,6 +98,28 @@ void Vortex_DrawWeb( ttk_surface srf )
 				vglob.color.web_top );
 }
 
+
+void Vortex_OutlinedTextCenter( ttk_surface srf, const char *string, 
+			int x, int y, int cw, int ch, int kern, 
+			ttk_color col, ttk_color olc )
+{
+	/* first the outline */
+	/* cardinals */
+	pz_vector_string_center( srf, string, x+1, y, cw, ch, kern, olc );
+	pz_vector_string_center( srf, string, x-1, y, cw, ch, kern, olc );
+	pz_vector_string_center( srf, string, x, y-1, cw, ch, kern, olc );
+	pz_vector_string_center( srf, string, x, y+1, cw, ch, kern, olc );
+	/* diagonals */
+	pz_vector_string_center( srf, string, x+1, y-1, cw, ch, kern, olc );
+	pz_vector_string_center( srf, string, x+1, y+1, cw, ch, kern, olc );
+	pz_vector_string_center( srf, string, x-1, y-1, cw, ch, kern, olc );
+	pz_vector_string_center( srf, string, x-1, y+1, cw, ch, kern, olc );
+
+	/* now the fg color */
+	pz_vector_string_center( srf, string, x, y, cw, ch, kern, col );
+}
+
+
 void draw_vortex (PzWidget *widget, ttk_surface srf) 
 {
 	char buf[16];
@@ -124,9 +146,9 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 		case 3: word = "";       break;
 		}
 
-		pz_vector_string_center( srf, word,
+		Vortex_OutlinedTextCenter( srf, word,
 			    (ttk_screen->w - ttk_screen->wx)>>1, 20,
-			    10, 18, 1, vglob.color.select );
+			    10, 18, 1, vglob.color.select, vglob.color.bg );
 
 		/* level number */
 		snprintf( buf, 15, "%c %d %c", 
@@ -135,9 +157,9 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 			vglob.startLevel,
 			(vglob.startLevel<=(NLEVELS-2))?
 					VECTORFONT_SPECIAL_RIGHT:' ');
-		pz_vector_string_center( srf, buf,
+		Vortex_OutlinedTextCenter( srf, buf,
 			    (ttk_screen->w - ttk_screen->wx)>>1, 50,
-			    10, 18, 1, vglob.color.level );
+			    10, 18, 1, vglob.color.level, vglob.color.bg );
 
 		/* display some props to the masters */
 		switch((vglob.timer>>4) & 0x03 ) {
@@ -146,16 +168,15 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 		case 2: credit = "JEFF MINTER";  break;
 		case 3: credit = "";             break;
 		}
-
-		pz_vector_string_center( srf, credit,
+		Vortex_OutlinedTextCenter( srf, credit, 
 			    (ttk_screen->w - ttk_screen->wx)>>1, 
 			    (ttk_screen->h - ttk_screen->wy)-10, 
-			    5, 9, 1, vglob.color.credits );
+			    5, 9, 1, vglob.color.credits,
+			    vglob.color.bg );
 		break;
 
 	case VORTEX_STATE_GAME:
 		/* do game stuff in here */
-		Vortex_Console_Render( srf );
 		pz_vector_string_center( srf, "[menu] to exit.",
                             (ttk_screen->w - ttk_screen->wx)>>1, 10,
                             5, 9, 1, vglob.color.credits );
@@ -163,16 +184,19 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 		/* draw the playfield */
 		Vortex_DrawWeb( srf );
 
+		/* draw any console text over all of that */
+		Vortex_Console_Render( srf );
+
 		/* plop down the score */
 		snprintf( buf, 15, "%04d", vglob.score );
 		pz_vector_string( srf, buf,
                             (ttk_screen->w - ttk_screen->wx) -
-			     pz_vector_width( buf, 5, 9, 1 ), 1,
+			     pz_vector_width( buf, 5, 9, 1 ) -1, 1,
                             5, 9, 1, vglob.color.score );
 
 		/* and lives left */
 		snprintf( buf, 15, "%d", vglob.lives );
-		pz_vector_string( srf, buf, 0, 1,
+		pz_vector_string( srf, buf, 1, 1,
                             5, 9, 1, vglob.color.baseind );
 		break;
 
@@ -183,11 +207,8 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 		break;
 
 	}
-/*
-	printf( "%d %d\n", Vortex_Console_GetZoomCount(),
-				Vortex_Console_GetStaticCount() );
-*/
 }
+
 
 void cleanup_vortex() 
 {
@@ -216,12 +237,14 @@ int event_vortex (PzEvent *ev)
 			TTK_SCROLLMOD( ev->arg, 3 );
 			if( ev->arg > 0 ) {
 				Vortex_Console_AddItem( "BURRITO", 
-					    Vortex_Rand(4)-2, Vortex_Rand(4)-2, 
+					    Vortex_Rand(4)-2, 
+					    Vortex_Rand(4)-2, 
 					    VORTEX_STYLE_NORMAL,
 					    vglob.color.con );
 			} else {
-				Vortex_Console_AddItem( "MONTANA", 
-					    Vortex_Rand(4)-2, Vortex_Rand(4)-2, 
+				Vortex_Console_AddItem( "CHIMICHANGA", 
+					    Vortex_Rand(4)-2, 
+					    Vortex_Rand(4)-2, 
 					    VORTEX_STYLE_NORMAL,
 					    vglob.color.bonus );
 			}
@@ -260,7 +283,7 @@ int event_vortex (PzEvent *ev)
 	case PZ_EVENT_TIMER:
 		if( (vglob.state == VORTEX_STATE_STARTUP) &&
 		    (++startcount < 3 ) )
-			Vortex_Console_AddItem( "VORTEX", 0, 0, 
+			Vortex_Console_AddItem( "BURRITO", 0, 0, 
 				VORTEX_STYLE_BOLD, vglob.color.title );
 
 		Vortex_Console_Tick();
@@ -299,7 +322,7 @@ PzWindow *new_vortex_window()
 
 	Vortex_Initialize( );
 	Vortex_Console_HiddenStatic( 1 );
-	Vortex_Console_AddItem( "VORTEX", 0, 0, 
+	Vortex_Console_AddItem( "BURRITO", 0, 0, 
 				VORTEX_STYLE_BOLD, vglob.color.title );
 
 	return pz_finish_window( vglob.window );
@@ -313,7 +336,7 @@ void init_vortex()
 	vglob.module = pz_register_module ("vortex", cleanup_vortex);
 
 	/* menu item display name */
-	pz_menu_add_action ("/Extras/Games/Vortex WIP", new_vortex_window);
+	pz_menu_add_action ("/Extras/Games/The Burrito Game", new_vortex_window);
 
 	Vortex_Initialize();
 
