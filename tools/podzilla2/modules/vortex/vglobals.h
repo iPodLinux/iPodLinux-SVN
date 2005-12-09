@@ -64,13 +64,17 @@ typedef struct vortex_globals {
 	int state;
 	int level;
 	int startLevel;
+	int currentLevel;
 	int timer;
 
 	int score;
 	int lives;
 
 	vortex_colors color;
-
 } vortex_globals;
+
+#define MIN(A,B) (((A)>(B))?(B):(A))
+#define MAX(A,B) (((A)<(B))?(B):(A))
+
 
 #endif

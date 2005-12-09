@@ -19,6 +19,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
+ * based on information from here:
+ *  http://www.ionpool.net/arcade/tempest_code_project/TempEd/technical/technical.html
  */
 
 #ifndef __VORTEX_LEVELS_H__
@@ -31,17 +33,22 @@
 typedef struct {
 	uchar order;            /* remap above */
 
-	uchar x[16];            /* all x ordinates */
-	uchar y[16];            /* all y ordinates */
+	int x[16];              /* all x ordinates */
+	int y[16];              /* all y ordinates */
 
 	uchar angle[16];        /* all sector angles */
 
-	uchar scale;            /* scale */
+	int   scale;            /* scale */
 	int   fscale;           /* flipper scale */
-	uchar y3d;              /* 3d y offset */
+	int   y3d;              /* 3d y offset */
 	int   y2d;              /* 2d offset */
 
 	char  flags;            /* flags for the level (use LF_* below) */
+
+	int fx[16];		/* front x values */
+	int fy[16];		/* front y values */
+	int rx[16];		/* rear x values */
+	int ry[16];		/* rear y values */
 } LEVELDATA;
 
 /* flags for the above */

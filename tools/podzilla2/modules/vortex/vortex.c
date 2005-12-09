@@ -42,6 +42,8 @@
 #include "levels.h"
 
 static vortex_globals vglob;
+static int startcount;
+#define VPADDING (10)
 
 int Vortex_Rand( int max )
 {
@@ -54,6 +56,46 @@ void Vortex_ChangeToState( int st )
 	Vortex_Console_HiddenStatic( 0 );
 	vglob.timer = 0;
 	vglob.state = st;
+}
+
+
+void Vortex_DrawWeb( ttk_surface srf )
+{
+	LEVELDATA * lv = &vortex_levels[ vglob.currentLevel ];
+	int p;
+	int l;
+
+/*
+	printf( "drawing level %d\n", vglob.currentLevel );
+*/
+
+	/* draw the back */
+	for( p=0 ; p<15 ; p++ )
+	    ttk_aaline( srf,	lv->rx[p], lv->ry[p],
+				lv->rx[p+1], lv->ry[p+1],
+				vglob.color.web_bot );
+
+	if( vortex_levels[ vglob.currentLevel ].flags & LF_CLOSEDWEB )
+	    ttk_aaline( srf,	(lv->rx[0]), (lv->ry[0]),
+				(lv->rx[15]), (lv->ry[15]),
+				vglob.color.web_bot );
+
+	/* draw the arms */
+	for( p=0 ; p<16 ; p++ )
+	    ttk_aaline( srf,	(lv->fx[p]), (lv->fy[p]),
+				(lv->rx[p]), (lv->ry[p]),
+				vglob.color.web_mid );
+
+	/* draw the front */
+	for( p=0 ; p<15 ; p++ )
+	    ttk_aaline( srf,	(lv->fx[p]), (lv->fy[p]),
+				(lv->fx[p+1]), (lv->fy[p+1]),
+				vglob.color.web_top );
+
+	if( vortex_levels[ vglob.currentLevel ].flags & LF_CLOSEDWEB )
+	    ttk_aaline( srf,	(lv->fx[0]), (lv->fy[0]),
+				(lv->fx[15]), (lv->fy[15]),
+				vglob.color.web_top );
 }
 
 void draw_vortex (PzWidget *widget, ttk_surface srf) 
@@ -72,6 +114,8 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 		break;
 
 	case VORTEX_STATE_LEVELSEL:
+		Vortex_DrawWeb( srf );
+
 		/* let the user select what level to start on */
 		switch((vglob.timer>>3) & 0x03 ) {
 		case 0: word = "SELECT"; break;
@@ -84,9 +128,13 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 			    (ttk_screen->w - ttk_screen->wx)>>1, 20,
 			    10, 18, 1, vglob.color.select );
 
-
 		/* level number */
-		snprintf( buf, 15, "%d", vglob.startLevel );
+		snprintf( buf, 15, "%c %d %c", 
+			(vglob.startLevel>0)?
+					VECTORFONT_SPECIAL_LEFT:' ',
+			vglob.startLevel,
+			(vglob.startLevel<=(NLEVELS-2))?
+					VECTORFONT_SPECIAL_RIGHT:' ');
 		pz_vector_string_center( srf, buf,
 			    (ttk_screen->w - ttk_screen->wx)>>1, 50,
 			    10, 18, 1, vglob.color.level );
@@ -112,6 +160,8 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
                             (ttk_screen->w - ttk_screen->wx)>>1, 10,
                             5, 9, 1, vglob.color.credits );
 
+		/* draw the playfield */
+		Vortex_DrawWeb( srf );
 
 		/* plop down the score */
 		snprintf( buf, 15, "%04d", vglob.score );
@@ -134,7 +184,6 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 
 	}
 /*
-	//ttk_line (srf, vglob.widget->x + 5, 10, vglob.widget->x + vglob.widget->w - 5, 10, ttk_makecol (DKGREY));
 	printf( "%d %d\n", Vortex_Console_GetZoomCount(),
 				Vortex_Console_GetStaticCount() );
 */
@@ -158,8 +207,9 @@ int event_vortex (PzEvent *ev)
 			/* and clip */
 			if( vglob.startLevel < 0 ) 
 				vglob.startLevel = 0;
-			if( vglob.startLevel > NLEVELS ) 
-				vglob.startLevel = NLEVELS;
+			if( vglob.startLevel >= (NLEVELS-1) ) 
+				vglob.startLevel = NLEVELS-1;
+			vglob.currentLevel = vglob.startLevel;
 		}
 
 		if( vglob.state == VORTEX_STATE_GAME ) {
@@ -175,6 +225,15 @@ int event_vortex (PzEvent *ev)
 					    VORTEX_STYLE_NORMAL,
 					    vglob.color.bonus );
 			}
+
+			/* change the level for now too... */
+/*
+			vglob.currentLevel += ev->arg;
+			if( vglob.currentLevel < 0 ) 
+				vglob.currentLevel = 0;
+			if( vglob.currentLevel >= (NLEVELS-1) ) 
+				vglob.currentLevel = NLEVELS-1;
+*/
 		}
 		break;
 
@@ -199,6 +258,11 @@ int event_vortex (PzEvent *ev)
 		break;
 
 	case PZ_EVENT_TIMER:
+		if( (vglob.state == VORTEX_STATE_STARTUP) &&
+		    (++startcount < 3 ) )
+			Vortex_Console_AddItem( "VORTEX", 0, 0, 
+				VORTEX_STYLE_BOLD, vglob.color.title );
+
 		Vortex_Console_Tick();
 		vglob.timer++;
 		ev->wid->dirty = 1;
@@ -214,9 +278,12 @@ static void Vortex_Initialize( void )
 	vglob.state = VORTEX_STATE_STARTUP;
 	vglob.level = 0;
 	vglob.startLevel = 0;
+	vglob.currentLevel = 0;
 	vglob.timer = 0;
 	vglob.score = 0;
 	vglob.lives = 3;
+
+	startcount = 0;
 }
 
 PzWindow *new_vortex_window()
@@ -233,13 +300,15 @@ PzWindow *new_vortex_window()
 	Vortex_Initialize( );
 	Vortex_Console_HiddenStatic( 1 );
 	Vortex_Console_AddItem( "VORTEX", 0, 0, 
-				VORTEX_STYLE_NORMAL, vglob.color.title );
+				VORTEX_STYLE_BOLD, vglob.color.title );
 
 	return pz_finish_window( vglob.window );
 }
 
 void init_vortex() 
 {
+	int p,q;
+
 	/* internal module name */
 	vglob.module = pz_register_module ("vortex", cleanup_vortex);
 
@@ -258,9 +327,9 @@ void init_vortex()
 		vglob.color.credits  = ttk_makecol(   0,   0, 255 );
 		vglob.color.con      = ttk_makecol( 255, 255,   0 );
 		vglob.color.bonus    = ttk_makecol( 255,   0,   0 );
-		vglob.color.web_top  = ttk_makecol(   0,   0, 255 );
-		vglob.color.web_mid  = ttk_makecol(   0,   0, 160 );
-		vglob.color.web_bot  = ttk_makecol(   0,   0,  80 );
+		vglob.color.web_top  = ttk_makecol(   0, 128, 255 );
+		vglob.color.web_mid  = ttk_makecol(   0,   0, 255 );
+		vglob.color.web_bot  = ttk_makecol(   0,   0, 128 );
 		vglob.color.baseind  = ttk_makecol(   0, 255,   0 );
 		vglob.color.score    = ttk_makecol(   0, 255, 255 );
 		vglob.color.player   = ttk_makecol( 255, 255,   0 );
@@ -287,6 +356,66 @@ void init_vortex()
 		vglob.color.super    = ttk_makecol( DKGREY );
 		vglob.color.flippers = ttk_makecol( BLACK );
 		vglob.color.stars    = ttk_makecol( GREY );
+	}
+
+	/* precompute all of the web scaling... */
+	/* convert from rom coordinates to screen coordinates */
+
+	/* first, flip all of the Y pixels. */
+	for( p=0 ; p<NLEVELS ; p++ )
+	{
+		/* web pixels... */
+	    	for( q=0 ; q<16 ; q++ )
+			vortex_levels[p].y[q] = 256 - vortex_levels[p].y[q];
+
+		/* flip y3d */
+		vortex_levels[p].y3d = 256 - vortex_levels[p].y3d;
+
+		/* and scale y3d while we're at it... */
+		vortex_levels[p].y3d = 
+			    ( vortex_levels[p].y3d
+			    * (ttk_screen->h-VPADDING-ttk_screen->wy) ) >> 8;
+		vortex_levels[p].y3d = vortex_levels[p].y3d
+			    - ((ttk_screen->h-VPADDING-ttk_screen->wy)>>1)
+			    + (ttk_screen->h>>1);
+	}
+
+
+	/* now, compute the front pixels (fx, fy) */
+	for( p=0 ; p<NLEVELS ; p++ ) {
+	    	for( q=0 ; q<16 ; q++ ) {
+			/* scale */
+			vortex_levels[p].fx[q] = 
+			    ( vortex_levels[p].x[q] 
+			    * (ttk_screen->h-VPADDING-ttk_screen->wy) ) >> 8;
+			vortex_levels[p].fy[q] = 
+			    ( vortex_levels[p].y[q] 
+			    * (ttk_screen->h-VPADDING-ttk_screen->wy) ) >> 8;
+
+			/* and translate */
+			vortex_levels[p].fx[q] = vortex_levels[p].fx[q] 
+			    - ((ttk_screen->h-VPADDING/2-ttk_screen->wy)>>1)
+			    + (ttk_screen->w>>1);
+			vortex_levels[p].fy[q] = vortex_levels[p].fy[q] 
+			    - ((ttk_screen->h-VPADDING/2-ttk_screen->wy)>>1)
+			    + ((ttk_screen->h-VPADDING)>>1);
+		}
+	}
+
+	/* and finally, compute the rear pixels (rx, ry) */ 
+	for( p=0 ; p<NLEVELS ; p++ ) {
+	    	for( q=0 ; q<16 ; q++ ) {
+			/* swipe the results from above and scale them*/
+			vortex_levels[p].rx[q] = 
+			    (   (vortex_levels[p].fx[q]) 
+			      + ((ttk_screen->w>>1)*3)
+			    )>>2;
+
+			vortex_levels[p].ry[q] = 
+			    (   (vortex_levels[p].fy[q]) 
+			      + (vortex_levels[p].y3d *3)
+			    )>>2;
+		}
 	}
 }
 
