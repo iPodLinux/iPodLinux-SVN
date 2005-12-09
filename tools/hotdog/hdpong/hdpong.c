@@ -56,6 +56,11 @@ static inline int constrain(int min, int max, int val)
 	return (val);
 }
 
+static void update (hd_engine *eng, int x, int y, int w, int h) 
+{
+    SDL_UpdateRect (SDL_GetVideoSurface(), x, y, w, h);
+}
+
 int main(int argc, char *argv[]) {
 	int done = 0;
 	int batmv = 0;
@@ -63,7 +68,7 @@ int main(int argc, char *argv[]) {
 	struct velocity vball, vlbat, vrbat;
 
 	hd_engine *engine;
-	hd_object bg, lbat, rbat, ball;
+	hd_object *bg, *lbat, *rbat, *ball;
 	/* hd_object lscore; */
 	
 	if( SDL_Init(SDL_INIT_VIDEO) < 0 ) {
@@ -81,38 +86,38 @@ int main(int argc, char *argv[]) {
 	renderBuffer = (uint16 *)malloc(WIDTH*HEIGHT*2);
 	assert(renderBuffer != NULL);
 
-	engine = HD_Initialize(WIDTH,HEIGHT,screen->pixels);
+	engine = HD_Initialize(WIDTH,HEIGHT,16,screen->pixels,update);
 	
-	bg.x = 0;
-	bg.y = 0;
-	bg.w = WIDTH;
-	bg.h = HEIGHT;
-	bg.depth = 1;
-	bg.type = HD_TYPE_PNG;
-	bg.sub.png = HD_PNG_Create("bg.png");
+	bg = HD_PNG_Create("bg.png");
+	bg->x = 0;
+	bg->y = 0;
+	bg->w = WIDTH;
+	bg->h = HEIGHT;
+	bg->depth = 1;
+	bg->type = HD_TYPE_PNG;
 	
-	lbat.x = 0;
-	lbat.y = 0;
-	lbat.w = BATW;
-	lbat.h = BATH;
-	lbat.depth = 2;
-	lbat.type = HD_TYPE_PNG;
-	lbat.sub.png = HD_PNG_Create("bat.png");	
+	lbat = HD_PNG_Create("bat.png");
+	lbat->x = 0;
+	lbat->y = 0;
+	lbat->w = BATW;
+	lbat->h = BATH;
+	lbat->depth = 2;
+	lbat->type = HD_TYPE_PNG;
 	
-	rbat.x = WIDTH-BATW;
-	rbat.y = HEIGHT/2-BATH/2;
-	rbat.w = BATW;
-	rbat.h = BATH;
-	rbat.depth = 2;
-	rbat.type = HD_TYPE_PNG;
-	rbat.sub.png = HD_PNG_Create("bat.png");
+	rbat = HD_PNG_Create("bat.png");
+	rbat->x = WIDTH-BATW;
+	rbat->y = HEIGHT/2-BATH/2;
+	rbat->w = BATW;
+	rbat->h = BATH;
+	rbat->depth = 2;
+	rbat->type = HD_TYPE_PNG;
 
-	ball.x = WIDTH/2-BALLR;
-	ball.y = HEIGHT/2-BALLR;
-	ball.w = ball.h = BALLD;
-	ball.depth = 3;
-	ball.type = HD_TYPE_PNG;
-	ball.sub.png = HD_PNG_Create("ball.png");
+	ball = HD_PNG_Create("ball.png");
+	ball->x = WIDTH/2-BALLR;
+	ball->y = HEIGHT/2-BALLR;
+	ball->w = ball->h = BALLD;
+	ball->depth = 3;
+	ball->type = HD_TYPE_PNG;
 
 /*
 	lscore.y = 2;
@@ -126,13 +131,13 @@ int main(int argc, char *argv[]) {
 		lscore.sub.font->argb[done] &|= 0x0000FF00;
 */
 
-	HD_Register(engine,&bg);
-	HD_Register(engine,&lbat);
+	HD_Register(engine,bg);
+	HD_Register(engine,lbat);
 /*
 	HD_Register(engine,&lscore);
 */
-	HD_Register(engine,&rbat);
-	HD_Register(engine,&ball);
+	HD_Register(engine,rbat);
+	HD_Register(engine,ball);
 
 	done = 0;
 	while(!done) {
@@ -185,22 +190,22 @@ int main(int argc, char *argv[]) {
 		switch(state) {
 		case RBEGIN:
 		/* initals for the round */
-		ball.x = WIDTH/2-BALLR;
-		ball.y = HEIGHT/2-BALLR;
+		ball->x = WIDTH/2-BALLR;
+		ball->y = HEIGHT/2-BALLR;
 		vball.x = (turn == 1) ? -60 : 60;
 		vball.y = 72;
 		
-		lbat.y = rbat.y = HEIGHT/2-BATH/2;
+		lbat->y = rbat->y = HEIGHT/2-BATH/2;
 		vlbat.y = vrbat.y = 0;
 		
 		turn = 0;
 		break;
 		case INGAME:
-		if (ball.x > (BATW/2) && ball.x + BALLR <= WIDTH - (BATW/2)) {
+		if (ball->x > (BATW/2) && ball->x + BALLR <= WIDTH - (BATW/2)) {
 			/* update ball position */
-			ball.x += vball.x / rev_timestep;
-			ball.y += vball.y / rev_timestep;
-			ball.y = constrain(0, HEIGHT-BALLD, ball.y);
+			ball->x += vball.x / rev_timestep;
+			ball->y += vball.y / rev_timestep;
+			ball->y = constrain(0, HEIGHT-BALLD, ball->y);
 			
 			if (++inc > 128) {
 				rev_timestep -= 1;
@@ -210,61 +215,61 @@ int main(int argc, char *argv[]) {
 			}
 			
 			/* check for playable walls */
-			if ((ball.y <= 0 && vball.y < 0)
-					|| (ball.y+BALLD >= HEIGHT && vball.y > 0))
+			if ((ball->y <= 0 && vball.y < 0)
+					|| (ball->y+BALLD >= HEIGHT && vball.y > 0))
 				vball.y *= -1;
 	
 			/* check for interaction with player paddle ( two ifs ) */
-			if (vball.x < 0 && ball.x >= BATW/2
-					&& ball.x <= BATW &&
-					ball.y <= lbat.y + BATH &&
-					ball.y + BALLD >= lbat.y) {
-				vlbat.y = ball.y + BALLR - vlbat.y;
+			if (vball.x < 0 && ball->x >= BATW/2
+					&& ball->x <= BATW &&
+					ball->y <= lbat->y + BATH &&
+					ball->y + BALLD >= lbat->y) {
+				vlbat.y = ball->y + BALLR - vlbat.y;
 				if (vball.y < 0)
 					vball.y += (vlbat.y - 6) / 3;
 				vball.x *= -1;
 			}
-			else if (vball.x > 0 && ball.x + BALLD <= WIDTH - BATW/2
-					&& ball.x + BALLD >= WIDTH - BATW &&
-					ball.y <= rbat.y + BATH &&
-					ball.y + BALLD >= rbat.y) {
-				vrbat.y = ball.y + BALLR - rbat.y;
+			else if (vball.x > 0 && ball->x + BALLD <= WIDTH - BATW/2
+					&& ball->x + BALLD >= WIDTH - BATW &&
+					ball->y <= rbat->y + BATH &&
+					ball->y + BALLD >= rbat->y) {
+				vrbat.y = ball->y + BALLR - rbat->y;
 				if(vball.y < 0)
 					vball.y += (vrbat.y - 6) / 3;
 				vball.x *= -1;
 			}
 	
 			/* lbat player AI (not really, just follows the ball) */
-			if (ball.x < WIDTH / 2 && vball.x < 0) {
-				mv_amount = ball.y + BALLR - (lbat.y + BATH/2);
+			if (ball->x < WIDTH / 2 && vball.x < 0) {
+				mv_amount = ball->y + BALLR - (lbat->y + BATH/2);
 				mv_amount = (mv_amount > 0) ?
 					((mv_amount > 6) ? 6 : mv_amount) :
 					((mv_amount < -6) ? -6 : mv_amount);
 			}
 			else {
-				mv_amount = (HEIGHT/2) - (lbat.y - BATH/2);
+				mv_amount = (HEIGHT/2) - (lbat->y - BATH/2);
 				mv_amount = (mv_amount > 0) ?
 					((mv_amount > 3) ? 3 : 1) :
 					((mv_amount < -3) ? -3 : mv_amount);
 			}
 			
 			if (mv_amount != 0) {
-				lbat.y += mv_amount;
-				lbat.y = constrain(0, HEIGHT-BATH, lbat.y);
+				lbat->y += mv_amount;
+				lbat->y = constrain(0, HEIGHT-BATH, lbat->y);
 			}
 			
 			/* update rbat position */
 			if (batmv != 0) {
-				rbat.y += batmv * BATMV;
-				rbat.y = constrain(0, HEIGHT-BATH, rbat.y);
+				rbat->y += batmv * BATMV;
+				rbat->y = constrain(0, HEIGHT-BATH, rbat->y);
 			}
 		} else {
-			if(ball.x < BATW/2) {
+			if(ball->x < BATW/2) {
 				userpoint++;
 				inc += 32;
 				turn = 2;
 			}
-			else if(ball.x + BALLD > WIDTH - (BALLD)) {
+			else if(ball->x + BALLD > WIDTH - (BALLD)) {
 				comppoint++;
 				rev_timestep += 2;
 				turn = 1;
@@ -294,8 +299,6 @@ int main(int argc, char *argv[]) {
 
 		if( SDL_MUSTLOCK(screen) ) 
 			SDL_UnlockSurface(screen);
-
-		SDL_UpdateRect(screen,0,0,0,0);
 		usleep(10000);
 	}
 
