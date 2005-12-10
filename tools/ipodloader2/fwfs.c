@@ -38,7 +38,7 @@ int fwfs_open(void *fsdata,char *fname) {
 	fs->filehandle[fs->numHandles].length    = fs->image[i].len;
 	fs->filehandle[fs->numHandles].devOffset = fs->image[i].devOffset;
 
-	mlc_printf("Found the file\n");
+	//mlc_printf("Found the file\n");
 	//for(;;);
 
 	fs->numHandles++;
@@ -143,7 +143,7 @@ void fwfs_newfs(uint8 part,uint32 offset) {
   /* copy the firmware header */
   mlc_memcpy(&fwfs.head, buff + 0x100, sizeof(fwfs_header_t));
 
-  mlc_printf("\nversion = %d\n", (int)fwfs.head.version);
+  //mlc_printf("\nversion = %d\n", (int)fwfs.head.version);
 
   if (fwfs.head.version == 1) {
 	  fwfs.head.bl_table = 0x4000;
@@ -155,7 +155,7 @@ void fwfs_newfs(uint8 part,uint32 offset) {
  	block += 1;
   }
 
-  mlc_printf("\nblock = %d\n", (int)block);
+  //mlc_printf("\nblock = %d\n", (int)block);
 
   fwfs.filehandle = (fwfs_file*)mlc_malloc( sizeof(fwfs_file) * MAX_HANDLES );
 
@@ -185,7 +185,7 @@ void fwfs_newfs(uint8 part,uint32 offset) {
   myfs.fsdata  = (void*)&fwfs;
   myfs.partnum = part;
 
-  mlc_printf("Registering..\n");
+  //mlc_printf("Registering..\n");
 
   vfs_registerfs( &myfs);
 }

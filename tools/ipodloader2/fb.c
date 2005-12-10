@@ -295,7 +295,9 @@ static void fb_565_bitblt(uint16 *x, int sx, int sy, int mx, int my) {
       for (y = 0; y < width; y += 2) {
 	unsigned two_pixels;
 	
-	two_pixels = addr[0] | (addr[1] << 16);
+	two_pixels = ( ((addr[0]&0xFF)<<8) | ((addr[0]&0xFF00)>>8) ) | 
+                     ((((addr[1]&0xFF)<<8) | ((addr[1]&0xFF00)>>8) )<<16);
+
 	addr += 2;
 	
 	if( ipod->lcd_type != 5 ) {
@@ -347,5 +349,18 @@ void fb_cls(uint16 *x,uint16 val) {
 void fb_init(void) {
 
   ipod = ipod_get_hwinfo();
+
+#if YOU_WANT_TO_SCREW_UP_THE_COLORS_IN_RETAILOS
+  if( ((ipod->hw_rev>>16) == 0x6) && (ipod->lcd_type == 0) ) {
+    lcd_cmd_data(0xef,0x0);
+    lcd_cmd_data(0x1,0x0);
+    lcd_cmd_data(0x80,0x1);
+    lcd_cmd_data(0x10,0x8);
+    lcd_cmd_data(0x18,0x6);
+    lcd_cmd_data(0x7e,0x4);
+    lcd_cmd_data(0x7e,0x5);
+    lcd_cmd_data(0x7f,0x1);
+  }
+#endif
 
 }
