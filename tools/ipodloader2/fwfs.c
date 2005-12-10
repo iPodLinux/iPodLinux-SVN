@@ -5,6 +5,7 @@
 #include "minilibc.h"
 
 #define MAX_HANDLES 10
+#define MAX_IMAGES 10
 
 static filesystem myfs;
 
@@ -13,6 +14,8 @@ typedef struct {
   uint32 images;
 
   uint32 numHandles;
+
+  fwfs_header_t head;
 
   fwfs_file *filehandle;
 
@@ -27,7 +30,7 @@ int fwfs_open(void *fsdata,char *fname) {
 
   fs = (fwfs_t*)fsdata;
 
-  for(i=0;i<16;i++) {
+  for(i=0;i<MAX_IMAGES;i++) {
     if( mlc_strncmp( (char*)&fs->image[i].type, fname, 4 ) == 0 ) { /* Found image */
 
       if( fs->numHandles < MAX_HANDLES ) {
@@ -35,7 +38,7 @@ int fwfs_open(void *fsdata,char *fname) {
 	fs->filehandle[fs->numHandles].length    = fs->image[i].len;
 	fs->filehandle[fs->numHandles].devOffset = fs->image[i].devOffset;
 
-	//mlc_printf("Found the file\n");
+	mlc_printf("Found the file\n");
 	//for(;;);
 
 	fs->numHandles++;
@@ -48,14 +51,17 @@ int fwfs_open(void *fsdata,char *fname) {
 
 size_t fwfs_read(void *fsdata,void *ptr,size_t size,size_t nmemb,int fd) {
   fwfs_t *fs;
-  uint8   buff[512];
+  static uint8   buff[512];
   uint32  block,off,read,toRead;
 
   fs = (fwfs_t*)fsdata;
 
   read   = 0;
   toRead = size * nmemb;
-  off    = fs->filehandle[fd].devOffset + fs->filehandle[fd].position + (fs->offset * 512) + 512;
+  off    = fs->filehandle[fd].devOffset + fs->filehandle[fd].position + (fs->offset * 512);
+  if (fs->head.version == 3) {
+	  off += 512;
+  }
 
   block  = off / 512;
   off    = off % 512;
@@ -126,7 +132,6 @@ int fwfs_seek(void *fsdata,int fd,long offset,int whence) {
 void fwfs_newfs(uint8 part,uint32 offset) {
   uint32 block,i;
   static uint8  buff[512]; /* !!! Move from BSS */
-  fwfs_header_t *head;
 
   /* Verify that this is indeed a firmware partition */
   ata_readblocks( buff, offset,1 );
@@ -135,17 +140,30 @@ void fwfs_newfs(uint8 part,uint32 offset) {
   } else {
   }
 
-  head = (fwfs_header_t*)(buff + 0x100);
-  block = offset + (head->bl_table / 512) + 1;
+  /* copy the firmware header */
+  mlc_memcpy(&fwfs.head, buff + 0x100, sizeof(fwfs_header_t));
+
+  mlc_printf("\nversion = %d\n", (int)fwfs.head.version);
+
+  if (fwfs.head.version == 1) {
+	  fwfs.head.bl_table = 0x4000;
+  }
+
+  block = offset + (fwfs.head.bl_table / 512);
+ 
+  if (fwfs.head.version >= 2) {
+ 	block += 1;
+  }
+
+  mlc_printf("\nblock = %d\n", (int)block);
 
   fwfs.filehandle = (fwfs_file*)mlc_malloc( sizeof(fwfs_file) * MAX_HANDLES );
 
   fwfs.image = (fwfs_image_t*)mlc_malloc(512);
   ata_readblocks( fwfs.image, block, 1 ); /* Reads the Bootloader image table */
-  /* !!! Assumption: Bootloader table is always at the start of a sector */
 
   fwfs.images = 0;
-  for(i=0;i<16;i++) {
+  for(i=0;i<MAX_IMAGES;i++) {
     if( (fwfs.image[i].type != 0xFFFFFFFF) && (fwfs.image[i].type != 0x0) ) {
 
       fwfs.image[i].type = ((fwfs.image[i].type & 0xFF000000)>>24) | ((fwfs.image[i].type & 0x00FF0000)>>8) | 
