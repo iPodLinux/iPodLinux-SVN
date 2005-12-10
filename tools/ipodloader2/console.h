@@ -9,4 +9,6 @@ void console_puts(volatile char *str);
 void console_putsXY(int x,int y,volatile char *str);
 void console_printf (const char *format, ...);
 
+void console_setcolor(uint16 fg,uint16 bg,uint8 transparent);
+
 #endif
