@@ -37,7 +37,7 @@ typedef struct _vortex_colors {
 	ttk_color bg;		// background
 	ttk_color title;	// VORTEX
 	ttk_color select;	// SELECT START LEVEL
-	ttk_color level;	// selected level
+	ttk_color sellevel;	// selected level
 	ttk_color credits;	// THANKS TO...
 	ttk_color con;		// console text 
 	ttk_color bonus;	// console bonus text
@@ -47,13 +47,14 @@ typedef struct _vortex_colors {
 	ttk_color web_top_sel;	// current PC position
 	ttk_color web_top_dot;	// top vector simulation dots
 	ttk_color web_bot_dot;	// bottom vector simulation dots
+	ttk_color web_fill;	// fill color for the web sides 
 	ttk_color baseind;	// base icon indicators (lives left)
 	ttk_color score;	// current score
+	ttk_color level;	// current level
 	ttk_color player;	// player character
 	ttk_color bolts;	// player's bolts
 	ttk_color super;	// superzapper color
 	ttk_color flippers;	// enemy characters
-	ttk_color stars;	// background starfield color
 } vortex_colors;
 
 
@@ -80,10 +81,13 @@ typedef struct vortex_globals {
 	int pcx1, pcy1, pcx2, pcy2;
 
 	vortex_colors color;
+
+	int classicMode;
 } vortex_globals;
 
 #define MIN(A,B) (((A)>(B))?(B):(A))
 #define MAX(A,B) (((A)<(B))?(B):(A))
 
+int Vortex_Rand( int max );
 
 #endif
