@@ -21,9 +21,9 @@ endif
 endif
 
 ifdef IPOD
-LIBS += -Wl,-elf2flt -Wl,-whole-archive -lc `$(TTKCONF) --ipod --sdl --libs` contrib/ucdl/libuCdl.a -lintl -Wl,-no-whole-archive -mapcs
-CROSS ?= arm-uclinux-elf
 CC = $(CROSS)-gcc
+LIBS += -Wl,-elf2flt -Wl,-whole-archive -lc `$(TTKCONF) --ipod --sdl --libs` contrib/ucdl/libuCdl.a -lintl `$(CC) -print-libgcc-file-name` -Wl,-no-whole-archive -mapcs
+CROSS ?= arm-uclinux-elf
 else
 ifeq ($(shell uname),Darwin)
 EXPSYM =
