@@ -3,10 +3,10 @@
 
 /* lcd.c */
 typedef struct st_ipod_lcd_info {
-	unsigned long base, rtc;
-	long generation;
-	int bpp, width, height, type;
-	unsigned short *fb;
+	unsigned long base, rtc, busy_mask;
+	char gen;
+	unsigned int bpp, width, height, type, fblen;
+	void *fb;
 } ipod_lcd_info;
 
 int ipod_get_contrast(void);
@@ -15,11 +15,14 @@ int ipod_get_backlight(void);
 int ipod_set_backlight(int backlight);
 int ipod_set_blank_mode(int blank); /* 0 = on, 1-2 = off, 3 power down */
 
-ipod_lcd_info * ipod_get_lcd_info(void);
-unsigned short * ipod_alloc_fb(ipod_lcd_info *lcd);
-void ipod_free_fb(ipod_lcd_info *lcd);
-void ipod_update_mono_lcd(ipod_lcd_info *lcd, int sx, int sy, int mx, int my);
-void ipod_update_colour_lcd(ipod_lcd_info *lcd, int sx, int sy, int mx, int my);
+ipod_lcd_info * ipod_lcd_get_info(void);
+void * ipod_lcd_alloc_fb(ipod_lcd_info *lcd);
+void ipod_lcd_free_fb(ipod_lcd_info *lcd);
+#ifdef IPOD
+void ipod_lcd_update(ipod_lcd_info *lcd, int sx, int sy, int mx, int my);
+void ipod_fb_video(void);
+void ipod_fb_text(void);
+#endif
 
 /* disk.c */
 /* these should be in the kernel somewhere */

@@ -42,18 +42,22 @@ int main(int argc, char **argv) {
 			sprintf(buf, "%c", ipod_get_fs_type());
 			break;
 		case 'l':
-			lcd = ipod_get_lcd_info();
+			lcd = ipod_lcd_get_info();
 			sprintf(buf, "%dx%d %d", lcd->width, lcd->height, lcd->type);
 			free(lcd);
 			break;
 		case 'c':
-			lcd = ipod_get_lcd_info();
-			ipod_alloc_fb(lcd);
-			memset(lcd->fb, 0, lcd->width * lcd->height * 2);
-			ipod_update_colour_lcd(lcd, 0, 0, lcd->width, lcd->height);
+			lcd = ipod_lcd_get_info();
+#ifdef IPOD
+			ipod_lcd_alloc_fb(lcd);
+			memset(lcd->fb, 0xff, lcd->fblen);
+			memset(lcd->fb + (lcd->fblen/2), 0xcc, (lcd->fblen/2));
+			ipod_fb_video();
+			ipod_lcd_update(lcd, 0, 0, lcd->width, lcd->height);
 			sleep(5);
-			//sprintf(buf, "%dx%d %d", lcd->width, lcd->height, lcd->type);
-			ipod_free_fb(lcd);
+			ipod_lcd_free_fb(lcd);
+			ipod_fb_text();
+#endif
 			free(lcd);
 			break;
 		case '?':
