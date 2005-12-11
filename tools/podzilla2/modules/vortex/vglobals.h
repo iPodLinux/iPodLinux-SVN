@@ -52,6 +52,7 @@ typedef struct _vortex_colors {
 	ttk_color score;	// current score
 	ttk_color level;	// current level
 	ttk_color player;	// player character
+	ttk_color player_fill;	// player character (fill color)
 	ttk_color bolts;	// player's bolts
 	ttk_color super;	// superzapper color
 	ttk_color flippers;	// enemy characters
@@ -77,8 +78,12 @@ typedef struct vortex_globals {
 	int wPosMajor;
 	int wPosMinor;
 
+	/* center of the current web */
 	int pcxC, pcyC;
-	int pcx1, pcy1, pcx2, pcy2;
+
+	/* player ship outline */
+	short px[5];
+	short py[5];
 
 	vortex_colors color;
 

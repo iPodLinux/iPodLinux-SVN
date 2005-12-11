@@ -41,6 +41,7 @@
 #include "vglobals.h"
 #include "levels.h"
 #include "vstars.h"
+#include "vgamobjs.h"
 
 static vortex_globals vglob;
 static int startcount;
@@ -119,27 +120,11 @@ void Vortex_DrawWeb( ttk_surface srf )
 
 void Vortex_DrawPlayer( ttk_surface srf )
 {
-	LEVELDATA * lv = &vortex_levels[ vglob.currentLevel ];
-	int p2 = vglob.wPosMajor +1;
+	if( !vglob.classicMode )
+		ttk_fillpoly( srf, 4, vglob.px, vglob.py, 
+				vglob.color.player_fill );
 
-	if( p2 > 15 ) p2 = 0;
-
-	/* draw the claw */
-	ttk_aaline( srf, lv->fx[vglob.wPosMajor], lv->fy[vglob.wPosMajor],
-		       vglob.pcx1, vglob.pcy1,
-		       vglob.color.player );
-
-	ttk_aaline( srf, vglob.pcx1, vglob.pcy1,
-		       lv->fx[p2], lv->fy[p2],
-		       vglob.color.player );
-
-	ttk_aaline( srf, lv->fx[p2], lv->fy[p2],
-		       vglob.pcx2, vglob.pcy2,
-		       vglob.color.player );
-
-	ttk_aaline( srf, vglob.pcx2, vglob.pcy2,
-		       lv->fx[vglob.wPosMajor], lv->fy[vglob.wPosMajor],
-		       vglob.color.player );
+	ttk_aapoly( srf, 4, vglob.px, vglob.py, vglob.color.player );
 }
 
 
@@ -165,10 +150,16 @@ void Vortex_OutlinedTextCenter( ttk_surface srf, const char *string,
 
 void Vortex_Base( ttk_surface srf, int x, int y )
 {
-	ttk_aaline( srf, x+0, y+9,  x+5, y+0,  vglob.color.baseind );
-	ttk_aaline( srf, x+5, y+0,  x+10, y+9, vglob.color.baseind );
-	ttk_aaline( srf, x+10, y+9, x+5, y+6,  vglob.color.baseind );
-	ttk_aaline( srf, x+5, y+6,  x+0, y+9,  vglob.color.baseind );
+	short xx[4], yy[4];
+	xx[0] = x; 	yy[0] = y+9;
+	xx[1] = x+5;	yy[1] = y;
+	xx[2] = x+10;	yy[2] = y+9;
+	xx[3] = x+5;	yy[3] = y+6;
+
+	if( !vglob.classicMode )
+		ttk_fillpoly( srf, 4, xx, yy, vglob.color.player_fill );
+
+	ttk_aapoly( srf, 4, xx, yy, vglob.color.player_fill );
 }
 
 
@@ -278,6 +269,14 @@ void cleanup_vortex()
 
 #define MINOR_MAX (0)
 
+
+/* finds the x/y position along [vect]or (point on outer edge of web)  
+   at depth z (128 == outer edge of web), from the [center] 
+ */
+#define Vortex_getZ( vect, z, center )\
+	(center + (((vect-center) * z )>>7))
+
+
 void Vortex_clawCompute( void )
 {
 	LEVELDATA * lv = &vortex_levels[ vglob.currentLevel ];
@@ -291,12 +290,17 @@ void Vortex_clawCompute( void )
 	vglob.pcxC = (lv->fx[ vglob.wPosMajor ] + lv->fx[ p2 ]) >> 1;
 	vglob.pcyC = (lv->fy[ vglob.wPosMajor ] + lv->fy[ p2 ]) >> 1;
 
-	/* compute the two center points of the claw (extrapolation) */
-	vglob.pcx1 = wxC + (((vglob.pcxC - wxC) * 150)>>7);
-	vglob.pcy1 = wyC + (((vglob.pcyC - wyC) * 150)>>7);
-
-	vglob.pcx2 = wxC + (((vglob.pcxC - wxC) * 140)>>7);
-	vglob.pcy2 = wyC + (((vglob.pcyC - wyC) * 140)>>7);
+	/* compute the claw */
+	vglob.px[0] = lv->fx[vglob.wPosMajor];
+	vglob.py[0] = lv->fy[vglob.wPosMajor];
+	vglob.px[1] = Vortex_getZ( vglob.pcxC, 150, wxC );
+	vglob.py[1] = Vortex_getZ( vglob.pcyC, 150, wyC ); 
+	vglob.px[2] = lv->fx[p2];
+	vglob.py[2] = lv->fy[p2];
+	vglob.px[3] = Vortex_getZ( vglob.pcxC, 140, wxC ); 
+	vglob.py[3] = Vortex_getZ( vglob.pcyC, 140, wyC ); 
+	vglob.px[4] = vglob.px[0];
+	vglob.py[4] = vglob.py[0];
 }
 
 void Vortex_incPosition( int steps )
@@ -513,6 +517,7 @@ void init_vortex()
 		vglob.color.score       = ttk_makecol(   0, 255, 255 );
 		vglob.color.level       = ttk_makecol(   0,   0, 128 );
 		vglob.color.player      = ttk_makecol( 255, 255,   0 );
+		vglob.color.player_fill = ttk_makecol( 255, 255, 128 );
 		vglob.color.bolts       = ttk_makecol( 255, 255, 255 );
 		vglob.color.super       = ttk_makecol(   0, 255, 255 );
 		vglob.color.flippers    = ttk_makecol( 255,   0,   0 );
@@ -536,6 +541,7 @@ void init_vortex()
 		vglob.color.score       = ttk_makecol( BLACK );
 		vglob.color.level       = ttk_makecol( BLACK );
 		vglob.color.player      = ttk_makecol( DKGREY );
+		vglob.color.player_fill = ttk_makecol( GREY );
 		vglob.color.bolts       = ttk_makecol( BLACK );
 		vglob.color.super       = ttk_makecol( DKGREY );
 		vglob.color.flippers    = ttk_makecol( BLACK );
