@@ -24,6 +24,8 @@
 #define IPOD_OLD_LCD_RTC  0xcf001110
 #define IPOD_NEW_LCD_BASE 0x70003000
 #define IPOD_NEW_LCD_RTC  0x60005010
+#define IPOD_STD_LCD_BUSY_MASK  0x8000
+#define IPOD_COL_LCD_BUSY_MASK  0x80000000
 
 #define FBIOGET_CONTRAST	_IOR('F', 0x22, int)
 #define FBIOSET_CONTRAST	_IOW('F', 0x23, int)
@@ -36,6 +38,9 @@
 
 #define inb(a) (*(volatile unsigned char *) (a))
 #define outb(a,b) (*(volatile unsigned char *) (b) = (a))
+
+#define inw(a) (*(volatile unsigned short *) (a))
+#define outw(a,b) (*(volatile unsigned short *) (b) = (a))
 
 #define inl(a) (*(volatile unsigned long *) (a))
 #define outl(a,b) (*(volatile unsigned long *) (b) = (a))

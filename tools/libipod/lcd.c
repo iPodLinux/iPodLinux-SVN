@@ -1,7 +1,8 @@
 /*
  * lcd.c - iPod lcd routines
  *
- * Copyright (C) 2005 Bernard Leach, David Carne
+ * Copyright (C) 2005 Bernard Leach, David Carne, Alastair Stuart,
+ *                    Benjamin Eriksson & Mattias Pierre.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +21,9 @@
 
 #include <stdlib.h>
 #include <string.h>
+#ifdef IPOD
+#include <linux/kd.h>
+#endif
 
 #include "ipod.h"
 #include "ipodhardware.h"
@@ -99,20 +103,17 @@ int ipod_set_blank_mode(int blank)
 	return 0;
 }
 
-unsigned short * ipod_alloc_fb(ipod_lcd_info *lcd)
+void * ipod_lcd_alloc_fb(ipod_lcd_info *lcd)
 {
 	if (lcd == 0)
 		return 0;
-
-	if (lcd->bpp == 2)
-		lcd->fb = malloc(lcd->width * (lcd->height/4));
-	else if (lcd->bpp == 16)
-		lcd->fb = malloc(lcd->width * (lcd->height*2));
+	
+	lcd->fb = malloc(lcd->fblen);
 	
 	return lcd->fb;
 }
 
-void ipod_free_fb(ipod_lcd_info *lcd)
+void ipod_lcd_free_fb(ipod_lcd_info *lcd)
 {
 	if (lcd == 0 || lcd->fb != 0)
 		return;
@@ -120,7 +121,7 @@ void ipod_free_fb(ipod_lcd_info *lcd)
 	free(lcd->fb);
 }
 
-ipod_lcd_info * ipod_get_lcd_info(void)
+ipod_lcd_info * ipod_lcd_get_info(void)
 {
 	long generation = ipod_get_hw_version();
 	ipod_lcd_info *lcd;
@@ -180,8 +181,17 @@ ipod_lcd_info * ipod_get_lcd_info(void)
 			/* video */
 			lcd->width = 320;
 			lcd->height = 240;
+			lcd->type = 5;
 			lcd->bpp = 16;
 			break;
+	}
+	
+	if (lcd->bpp == 2) {
+		lcd->busy_mask = IPOD_STD_LCD_BUSY_MASK;
+		lcd->fblen = lcd->width * (lcd->height/4);
+	} else if (lcd->bpp == 16) {
+		lcd->busy_mask = IPOD_COL_LCD_BUSY_MASK;
+		lcd->fblen = lcd->width * (lcd->height*2);
 	}
 	
 	if (generation >= 0x40000) {
@@ -192,287 +202,366 @@ ipod_lcd_info * ipod_get_lcd_info(void)
 		lcd->rtc = IPOD_OLD_LCD_RTC;
 	}
 	
-	lcd->generation = generation;
+	lcd->gen = generation >> 16;
 	
 	return lcd;
 }
 
-/*** The following LCD code is taken from Linux kernel uclinux-2.4.24-uc0-ipod2,
-	 file arch/armnommu/mach-ipod/fb.c. A few modifications have been made. ***/
+/* An amalgamation of all the hw specific lcd writing code follows. */
+ 
+#ifdef IPOD
 
-/* get current usec counter */
-static int M_timer_get_current(ipod_lcd_info *lcd)
+static int ipod_lcd_timer_get_current(ipod_lcd_info * lcd)
 {
 	return inl(lcd->rtc);
 }
 
-/* check if number of useconds has past */
-static int M_timer_check(ipod_lcd_info *lcd, int clock_start, int usecs)
+static int ipod_lcd_timer_check(ipod_lcd_info * lcd, int clock_start, int usecs)
 {
 	unsigned long clock;
 	clock = inl(lcd->rtc);
 	
-	if ( (clock - clock_start) >= usecs ) {
-		return 1;
-	} else {
-		return 0;
-	}
+	return (clock - clock_start) >= usecs;
 }
 
-/* wait for LCD with timeout */
-static void M_lcd_wait_write(ipod_lcd_info *lcd)
+static void ipod_lcd_wait_write(ipod_lcd_info * lcd)
 {
-	int start = M_timer_get_current(lcd);
-	
-	do {
-		if ( (inl(lcd->base) & (unsigned int)0x8000) == 0 ) 
-			break;
-	} while ( M_timer_check(lcd, start, 1000) == 0 );
-}
-
-
-/* send LCD data */
-static void M_lcd_send_data(ipod_lcd_info *lcd, int data_lo, int data_hi)
-{
-	M_lcd_wait_write(lcd);
-	if (lcd->generation >= 0x70000) {
-			outl ((inl (0x70003000) & ~0x1f00000) | 0x1700000, 0x70003000);
-			outl (data_hi | (data_lo << 8) | 0x760000, 0x70003008);
-		} else {
-			outl(data_lo, lcd->base + LCD_DATA);
-			M_lcd_wait_write(lcd);
-			outl(data_hi, lcd->base + LCD_DATA);
-		}
-}
-
-/* send LCD command */
-static void
-M_lcd_prepare_cmd(ipod_lcd_info *lcd, int cmd)
-{
-	M_lcd_wait_write(lcd);
-		if (lcd->generation > 0x70000) {
-			outl ((inl (0x70003000) & ~0x1f00000) | 0x1700000, 0x70003000);
-			outl (cmd | 0x74000, 0x70003008);
-		} else {
-			outl(0x0, lcd->base + LCD_CMD);
-			M_lcd_wait_write(lcd);
-			outl(cmd, lcd->base + LCD_CMD);
-		}
-}
-
-/* send LCD command and data */
-static void M_lcd_cmd_and_data(ipod_lcd_info *lcd, int cmd, int data_lo, int data_hi)
-{
-	M_lcd_prepare_cmd(lcd, cmd);
-
-	M_lcd_send_data(lcd, data_lo, data_hi);
-}
-
-// Copied from uW
-void ipod_update_mono_lcd(ipod_lcd_info *lcd, int sx, int sy, int mx, int my)
-{
-	int y;
-	int cursor_pos;
-	int linelen = (lcd->width + 3) / 4;
-
-	sx >>= 3;
-	mx >>= 3;
-
-	cursor_pos = sx + (sy << 5);
-
-	for ( y = sy; y <= my; y++ ) {
-		int x;
-		unsigned char *img_data;
-
-		/* move the cursor */
-		M_lcd_cmd_and_data(lcd, 0x11, cursor_pos >> 8, cursor_pos & 0xff);
-
-		/* setup for printing */
-		M_lcd_prepare_cmd(lcd, 0x12);
-
-		img_data = (unsigned char *)lcd->fb + (sx << 1) + (y * linelen);
-
-		/* loops up to 20 times */
-		for ( x = sx; x <= mx; x++ ) {
-			/* display eight pixels */
-			M_lcd_send_data(lcd, *(img_data + 1), *img_data);
-
-			img_data += 2;
-		}
-
-		/* update cursor pos counter */
-		cursor_pos += 0x20;
-	}
-}
-
-/* get current usec counter */
-static int C_timer_get_current(void)
-{
-	return inl(0x60005010);
-}
-
-/* check if number of useconds has past */
-static int C_timer_check(int clock_start, int usecs)
-{
-	unsigned long clock;
-	clock = inl(0x60005010);
-	
-	if ( (clock - clock_start) >= usecs ) {
-		return 1;
-	} else {
-		return 0;
-	}
-}
-
-/* wait for LCD with timeout */
-static void C_lcd_wait_write(void)
-{
-	if ((inl(0x70008A0C) & 0x80000000) != 0) {
-		int start = C_timer_get_current();
+	if ((inl(lcd->base) & lcd->busy_mask) != 0) {
+		int start = ipod_lcd_timer_get_current(lcd);
 			
 		do {
-			if ((inl(0x70008A0C) & 0x80000000) == 0) 
+			if ((inl(lcd->base) & lcd->busy_mask) == 0)
 				break;
-		} while (C_timer_check(start, 1000) == 0);
+		} while (ipod_lcd_timer_check(lcd, start, 1000) == 0);
 	}
 }
 
-static void C_lcd_send_lo (int v) 
+static void ipod_lcd_send_data(ipod_lcd_info * lcd, int data_lo, int data_hi)
 {
-	C_lcd_wait_write();
-	outl (v | 0x80000000, 0x70008A0C);
+	ipod_lcd_wait_write(lcd);
+	if (lcd->gen == 0x7) {
+		outl((inl(0x70003000) & ~0x1f00000) | 0x1700000, 0x70003000);
+		outl(data_hi | (data_lo << 8) | 0x760000, 0x70003008);
+	}
+	else {
+		outl(data_lo, lcd->base + LCD_DATA);
+		ipod_lcd_wait_write(lcd);
+		outl(data_hi, lcd->base + LCD_DATA);
+	}
 }
 
-static void C_lcd_send_hi (int v) 
+static void ipod_lcd_prepare_cmd(ipod_lcd_info * lcd, int cmd)
 {
-	C_lcd_wait_write();
-	outl (v | 0x81000000, 0x70008A0C);
+	ipod_lcd_wait_write(lcd);
+	if (lcd->gen == 0x7) {
+		outl((inl(0x70003000) & ~0x1f00000) | 0x1700000, 0x70003000);
+		outl(cmd | 0x740000, 0x70003008);
+	}
+	else {
+		outl(0x0, lcd->base + LCD_CMD);
+		ipod_lcd_wait_write(lcd);
+		outl(cmd, lcd->base + LCD_CMD);
+	}
 }
 
-static void C_lcd_cmd_data(ipod_lcd_info *lcd, int cmd, int data)
+static void ipod_lcd_send_lo(ipod_lcd_info * lcd, int v)
 {
-	if (lcd->type == 0) {
-		C_lcd_send_lo (cmd);
-		C_lcd_send_lo (data);
+	ipod_lcd_wait_write(lcd);
+	outl(v | 0x80000000, 0x70008a0c);
+}
+
+static void ipod_lcd_send_hi(ipod_lcd_info * lcd, int v)
+{
+	ipod_lcd_wait_write(lcd);
+	outl(v | 0x81000000, 0x70008a0c);
+}
+
+static void ipod_lcd_cmd_data(ipod_lcd_info * lcd, int cmd, int data)
+{
+	if (lcd->type == 0)
+	{
+		ipod_lcd_send_lo(lcd, cmd);
+		ipod_lcd_send_lo(lcd, data);
 	} else {
-		C_lcd_send_lo (0);
-		C_lcd_send_lo (cmd);
-		C_lcd_send_hi ((data >> 8) & 0xff);
-		C_lcd_send_hi (data & 0xff);
+		/* todo add support for old shit (?) */
+		ipod_lcd_send_lo(lcd, 0);
+		ipod_lcd_send_lo(lcd, cmd);
+		ipod_lcd_send_hi(lcd, (data >> 8) & 0xff);
+		ipod_lcd_send_hi(lcd,  data       & 0xff);
 	}
 }
 
-void ipod_update_colour_lcd(ipod_lcd_info *lcd, int sx, int sy, int mx, int my)
+static inline void ipod_lcd_cmd_and_data(ipod_lcd_info * lcd,
+                                         int cmd, int data_lo, int data_hi)
 {
-	int height = (my - sy) + 1;
-	int width = (mx - sx) + 1;
+	ipod_lcd_prepare_cmd(lcd, cmd);
+	ipod_lcd_send_data(lcd, data_lo, data_hi);
+}
+
+static void ipod_lcd_bcm_write32(unsigned address, unsigned value) {
+	/* write out destination address as two 16bit values */
+	outw(address, 0x30010000);
+	outw((address >> 16), 0x30010000);
+
+	/* wait for it to be write ready */
+	while ((inw(0x30030000) & 0x2) == 0);
+
+	/* write out the value low 16, high 16 */
+	outw(value, 0x30000000);
+	outw((value >> 16), 0x30000000);
+}
+
+static void ipod_lcd_bcm_setup_rect(unsigned cmd, unsigned start_horiz, unsigned start_vert, unsigned max_horiz, unsigned max_vert, unsigned count) {
+	ipod_lcd_bcm_write32(0x1F8, 0xFFFA0005);
+	ipod_lcd_bcm_write32(0xE0000, cmd);
+	ipod_lcd_bcm_write32(0xE0004, start_horiz);
+	ipod_lcd_bcm_write32(0xE0008, start_vert);
+	ipod_lcd_bcm_write32(0xE000C, max_horiz);
+	ipod_lcd_bcm_write32(0xE0010, max_vert);
+	ipod_lcd_bcm_write32(0xE0014, count);
+	ipod_lcd_bcm_write32(0xE0018, count);
+	ipod_lcd_bcm_write32(0xE001C, 0);
+}
+
+static unsigned ipod_lcd_bcm_read32(unsigned address) {
+	while ((inw(0x30020000) & 1) == 0);
+
+	/* write out destination address as two 16bit values */
+	outw(address, 0x30020000);
+	outw((address >> 16), 0x30020000);
+
+	/* wait for it to be read ready */
+	while ((inw(0x30030000) & 0x10) == 0);
+
+	/* read the value */
+	return inw(0x30000000) | inw(0x30000000) << 16;
+}
+
+static void ipod_lcd_bcm_finishup(void) {
+	unsigned data; 
+
+	outw(0x31, 0x30030000); 
+
+	ipod_lcd_bcm_read32(0x1FC);
+
+	do {
+		data = ipod_lcd_bcm_read32(0x1F8);
+	} while (data == 0xFFFA0005 || data == 0xFFFF);
+
+	ipod_lcd_bcm_read32(0x1FC);
+}
+
+
+static void ipod_lcd_update_16bpp(ipod_lcd_info * lcd, int sx, int sy, int mx, int my)
+{
+	int startx = sy;
+	int starty = sx;
+	int height = (my - sy);
+	int width  = (mx - sx);
 	int rect1, rect2, rect3, rect4;
-
+	
 	unsigned short *addr = lcd->fb;
-
-	if (width & 1) width++;
-
+	
 	/* calculate the drawing region */
-	if ((lcd->generation >> 16) != 0x6) {
-		rect1 = sx;
-		rect2 = sy;
-		rect3 = (sx + width) - 1;
-		rect4 = (sy + height) - 1;
+	if (lcd->gen != 0x6) {
+		rect1 = starty;                 /* start horiz */
+		rect2 = startx;                 /* start vert */
+		rect3 = (starty + width) - 1;   /* max horiz */
+		rect4 = (startx + height) - 1;  /* max vert */
 	} else {
-		rect1 = sy;
-		rect2 = (lcd->width - 1) - sx;
-		rect3 = (sy + height) - 1;
-		rect4 = (rect2 - width) + 1;
+		rect1 = startx;                          /* start vert */
+		rect2 = (lcd->width - 1) - starty;       /* start horiz */
+		rect3 = (startx + height) - 1;           /* end vert */
+		rect4 = (rect2 - width) + 1;             /* end horiz */
 	}
-
+	
 	/* setup the drawing region */
 	if (lcd->type == 0) {
-		C_lcd_cmd_data(lcd, 0x12, rect1 & 0xff);
-		C_lcd_cmd_data(lcd, 0x13, rect2 & 0xff);
-		C_lcd_cmd_data(lcd, 0x15, rect3 & 0xff);
-		C_lcd_cmd_data(lcd, 0x16, rect4 & 0xff);
-	} else {
+		ipod_lcd_cmd_data(lcd, 0x12, rect1);      /* start vert */
+		ipod_lcd_cmd_data(lcd, 0x13, rect2);      /* start horiz */
+		ipod_lcd_cmd_data(lcd, 0x15, rect3);      /* end vert */
+		ipod_lcd_cmd_data(lcd, 0x16, rect4);      /* end horiz */
+	} else if( lcd->type != 5 ) {
+		/* swap max horiz < start horiz */
 		if (rect3 < rect1) {
 			int t;
 			t = rect1;
 			rect1 = rect3;
 			rect3 = t;
 		}
-
+		
+		/* swap max vert < start vert */
 		if (rect4 < rect2) {
 			int t;
 			t = rect2;
 			rect2 = rect4;
 			rect4 = t;
 		}
-
+		
 		/* max horiz << 8 | start horiz */
-		C_lcd_cmd_data(lcd, 0x44, (rect3 << 8) | rect1);
+		ipod_lcd_cmd_data(lcd, 0x44, (rect3 << 8) | rect1);
 		/* max vert << 8 | start vert */
-		C_lcd_cmd_data(lcd, 0x45, (rect4 << 8) | rect2);
-
-		if ((lcd->generation >> 16) == 0x6) {
+		ipod_lcd_cmd_data(lcd, 0x45, (rect4 << 8) | rect2);
+	
+		if( lcd->gen == 0x6) {
+			/* start vert = max vert */
 			rect2 = rect4;
 		}
-
+		
 		/* position cursor (set AD0-AD15) */
 		/* start vert << 8 | start horiz */
-		C_lcd_cmd_data(lcd, 0x21, (rect2 << 8) | rect1);
-
-		/* start drawing */
-		C_lcd_send_lo(0x0);
-		C_lcd_send_lo(0x22);
+		ipod_lcd_cmd_data(lcd, 0x21, (rect2 << 8) | rect1);
+	
+	/* start drawing */
+		ipod_lcd_send_lo(lcd, 0x0);
+		ipod_lcd_send_lo(lcd, 0x22);
+	} else { /* 5G */
+		unsigned count = (width * height) << 1;
+		ipod_lcd_bcm_setup_rect(0x34, rect1, rect2, rect3, rect4, count);
 	}
-
-		addr += sy * lcd->width + sx;
-		while (height > 0) {
-		int h, x, y, pixels_to_write;
-
-		pixels_to_write = (width * height) * 2;
-
-		/* calculate how much we can do in one go */
-		h = height;
-		if (pixels_to_write > 64000) {
-			h = (64000/2) / width;
-			pixels_to_write = (width * h) * 2;
-		}
-
-		outl(0x10000080, 0x70008A20);
-		outl((pixels_to_write - 1) | 0xC0010000, 0x70008A24);
-		outl(0x34000000, 0x70008A20);
-
-		/* for each row */
-		for (y = 0; y < h; y++)
-		{
-			/* for each column */
-			for (x = 0; x < width; x += 2) {
-				unsigned two_pixels;
-
-				two_pixels = addr[0] | (addr[1] << 16);
-				addr += 2;
-
-				while ((inl(0x70008A20) & 0x1000000) == 0);
-
-				if (lcd->type != 0) {
-					unsigned t = (two_pixels & ~0xFF0000) >> 8;
-					two_pixels = two_pixels & ~0xFF00;
-					two_pixels = t | (two_pixels << 8);
-				}
-
-				/* output 2 pixels */
-				outl(two_pixels, 0x70008B00);
+	
+	addr += startx * (lcd->width*2) + starty;
+  
+	while (height > 0) {
+		int x, y;
+		int h, pixels_to_write;
+		unsigned int curpixel;
+		
+		curpixel = 0;
+		
+		if (lcd->type != 5) {
+			pixels_to_write = (width * height) * 2;
+			
+			/* calculate how much we can do in one go */
+			h = height;
+			if (pixels_to_write > 64000) {
+				h = (64000/2) / width;
+				pixels_to_write = (width * h) * 2;
 			}
-
-			addr += lcd->width - width;
+			
+			outl(0x10000080, 0x70008a20);
+			outl((pixels_to_write - 1) | 0xc0010000, 0x70008a24);
+			outl(0x34000000, 0x70008a20);
+		} else {
+			h = height;
 		}
-
-		while ((inl(0x70008A20) & 0x4000000) == 0);
-
-		outl(0x0, 0x70008A24);
-
-		height = height - h;
+	
+		/* for each row */
+		for (x = 0; x < h; x++) {
+			/* for each column */
+			for (y = 0; y < width; y += 2) {
+				unsigned two_pixels;
+				
+				two_pixels = ( ((addr[0]&0xFF)<<8) | ((addr[0]&0xFF00)>>8) ) | 
+				          ((((addr[1]&0xFF)<<8) | ((addr[1]&0xFF00)>>8) )<<16);
+				
+				addr += 2;
+	
+				if (lcd->type != 5) {
+					while ((inl(0x70008a20) & 0x1000000) == 0);
+						/* output 2 pixels */
+						outl(two_pixels, 0x70008b00);
+				} else {
+					/* output 2 pixels */
+					ipod_lcd_bcm_write32(0xE0020 + (curpixel << 2), two_pixels);
+					curpixel++;
+				}
+			}
+	
+		addr += lcd->width - width;
+		}
+	
+		if (lcd->type != 5) {
+			while ((inl(0x70008a20) & 0x4000000) == 0);
+				outl(0x0, 0x70008a24);
+			height = height - h;
+		} else {
+			height = 0;
+		}
 	}
+	
+	if (lcd->type == 5) {
+		ipod_lcd_bcm_finishup();
+	}
+
 }
 
 
+static void ipod_lcd_update_2bpp(ipod_lcd_info * lcd, int sx, int sy, int mx, int my)
+{
+	unsigned short  y;
+	unsigned short  cursor_pos;
+	unsigned int    width;
+	unsigned short  diff = 0;
+	unsigned int    rowh = (lcd->width/4);
+	unsigned char * img_data = (unsigned char *) lcd->fb;
+	
+	// Truncate the height of the data if it falls outside the LCD-area.
+	if (my > lcd->height)
+		my = lcd->height;
+
+	// Truncate the width of the data if it falls outside the LCD-area.
+	// Save the amount of data being cropped so one can skip that redundant
+	// information when blitting.
+	if (mx > lcd->width)
+	{
+		diff = (lcd->width - mx) / 4;
+		mx   = lcd->width;
+	}
+	
+	// The width of the blit-rect in bytes.
+	width = (mx - sx) / 8; 
+	
+	// Set the cursor position to where the blit-rect starts.
+	// NOTE: 0x20 = 32, 32*4 = 256, hence the width of one display row is 128px.
+	cursor_pos = sx + (sy * rowh);
+	
+	// Blit the data to the screen. This is done, as one would expect, first
+	// horizontally, then vertically. 
+	for (y = sy; y <= my; y++)
+	{
+		unsigned char x;
+		ipod_lcd_cmd_and_data(lcd, 0x11, cursor_pos >> 8, cursor_pos & 0xff);
+		ipod_lcd_prepare_cmd(lcd, 0x12);
+		
+		// This is the horizontal plot.
+		for (x = 0; x < width; x++)
+		{
+			// Send two bytes at once (?).
+			ipod_lcd_send_data(lcd, *(img_data+1), *img_data);
+			img_data += 2;
+		}
+		
+		// Skip any data that got truncated before.
+		img_data += diff;
+		
+		// Skip to the next row.
+		cursor_pos += rowh;
+	}
+}
+
+void ipod_lcd_update(ipod_lcd_info *lcd, int sx, int sy, int mx, int my)
+{
+	if (lcd->bpp == 2)
+		ipod_lcd_update_2bpp(lcd, sx, sy, mx, my);
+	else
+		ipod_lcd_update_16bpp(lcd, sx, sy, mx, my);
+}
+
+void ipod_fb_video(void)
+{
+	int fd = open("/dev/console", O_NONBLOCK);
+	ioctl(fd, KDSETMODE, KD_GRAPHICS);
+	close(fd);	
+}
+
+void ipod_fb_text(void)
+{
+	int fd = open("/dev/console", O_NONBLOCK);
+	ioctl(fd, KDSETMODE, KD_TEXT);
+	close(fd);
+}
+
+
+#endif
 
