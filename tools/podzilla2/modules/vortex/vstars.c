@@ -30,7 +30,7 @@ void Star_DrawStars( ttk_surface srf );
 
 void Star_GenerateStars( void )
 {       
-        int p, v;
+        int p;
         for( p=0 ; p<32 ; p++ )
         {       
                 stars[p].x = Vortex_Rand( ttk_screen->w );
