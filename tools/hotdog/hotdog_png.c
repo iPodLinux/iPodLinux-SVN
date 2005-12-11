@@ -34,8 +34,9 @@
 #include "hotdog.h"
 #include "hotdog_png.h"
 
-void HD_PNG_Render(hd_engine *eng,hd_object *obj) {
+void HD_PNG_Render(hd_engine *eng,hd_object *obj, int x, int y, int w, int h) {
     HD_ScaleBlendClip (obj->sub.png->argb, obj->sub.png->w, obj->sub.png->h,
+                       x, y, w, h,
                        eng->buffer, eng->screen.width, eng->screen.height,
                        obj->x, obj->y, obj->w, obj->h);
 }

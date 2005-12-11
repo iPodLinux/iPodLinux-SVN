@@ -44,68 +44,74 @@ typedef unsigned char  uint8;
 typedef   signed char   int8;
 
 typedef struct hd_primitive {
-	uint32 type;
-	uint32 color; // ARGB
+    uint32 type;
+    uint32 color; // ARGB
 } hd_primitive;
 
 typedef struct hd_font {
-  int32   w,h;
-  uint32 *argb;
+    int32   w,h;
+    uint32 *argb;
 } hd_font;
 
 typedef struct hd_canvas {
-	int32 w,h;
-	uint32 *argb;
+    int32   w,h;
+    uint32 *argb;
 } hd_canvas;
 
 typedef struct hd_png {
-	int32 w,h;
-
-	uint32 *argb;
+    int32   w,h;
+    uint32 *argb;
 } hd_png;
 
 struct hd_engine;
 struct hd_object;
 
+typedef struct hd_rect {
+    int x, y, w, h, z;
+    struct hd_rect *next; /* used only sometimes */
+} hd_rect;
+
 typedef struct hd_object {
-	 int32 x,y,w,h,z;
-	uint8  opacity;
-	uint32 type;
-
-	union {
-	  hd_png       *png;
-	  hd_primitive *prim;
-	  hd_font      *font;
-	  hd_canvas    *canvas;
-            void       *data;
-	} sub;
-
+    int32 x, y, w, h, z;
+    uint8 opacity;
+    uint32 type;
+    int animating;
+    /* private */ int dirty;
+    
+    union {
+        hd_png       *png;
+        hd_primitive *prim;
+        hd_font      *font;
+        hd_canvas    *canvas;
+        void       *data;
+    } sub;
+    
     struct hd_engine *eng;
-
-    void (*render)(struct hd_engine *eng, struct hd_object *obj);
+    
+    void (*render)(struct hd_engine *eng, struct hd_object *obj, int x, int y, int w, int h);
     void (*destroy)(struct hd_object *obj);
-
-    /* private */ int lx, ly, lw, lh;
+    
+    hd_rect clip, delta, dest, /* private */ last;
 } hd_object;
 
 typedef struct hd_obj_list {
-	hd_object *obj;
-
-	struct hd_obj_list *next;
+    hd_object *obj;
+    
+    struct hd_obj_list *next;
 } hd_obj_list;
 
 typedef struct hd_engine {
-	struct {
-		int32  width,height;
-		uint16 *framebuffer;
-                uint8  *fb2bpp;
-            void (*update)(struct hd_engine *, int, int, int, int);
-	} screen;
-
-	uint32  currentTime;
-	uint32 *buffer;
-
-	hd_obj_list *list;
+    struct {
+        int32  width,height;
+        uint16 *framebuffer;
+        uint8  *fb2bpp;
+        void (*update)(struct hd_engine *, int, int, int, int);
+    } screen;
+    
+    uint32  currentTime;
+    uint32 *buffer;
+    
+    hd_obj_list *list;
 } hd_engine;
 
 #define BLEND_ARGB8888_ON_ARGB8888(dst_argb, src_argb)         \
@@ -125,7 +131,8 @@ hd_engine *HD_Initialize(uint32 width,uint32 height,uint8 bpp, void *framebuffer
 void HD_Register(hd_engine *eng,hd_object *obj);
 void HD_Render(hd_engine *eng);
 void HD_Destroy(hd_object *obj);
-void HD_ScaleBlendClip (uint32 *sbuf, int sw, int sh, uint32 *dbuf, int dtw, int dth,
-                        int dx, int dy, int dw, int dh);
+void HD_ScaleBlendClip (uint32 *sbuf, int stw, int sth, int sx, int sy, int sw, int sh,
+                        uint32 *dbuf, int dtw, int dth, int dx, int dy, int dw, int dh);
 hd_object *HD_New_Object();
+hd_obj_list *HD_StackObjects (hd_obj_list *head);
 #endif

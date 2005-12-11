@@ -30,8 +30,9 @@ void     HD_Canvas_Destroy(hd_object *obj) {
   free(obj->sub.canvas);
 }
 
-void HD_Canvas_Render(hd_engine *eng,hd_object *obj) {
+void HD_Canvas_Render(hd_engine *eng,hd_object *obj, int x, int y, int w, int h) {
     HD_ScaleBlendClip (obj->sub.canvas->argb, obj->sub.canvas->w, obj->sub.canvas->h,
+                       x, y, w, h,
                        eng->buffer, eng->screen.width, eng->screen.height,
                        obj->x, obj->y, obj->w, obj->h);
 }
