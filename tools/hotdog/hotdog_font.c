@@ -100,10 +100,11 @@ void     HD_Font_Destroy(hd_object *obj) {
   free (obj->sub.font);
 }
 
-void HD_Font_Render (hd_engine *eng, hd_object *obj) 
+void HD_Font_Render (hd_engine *eng, hd_object *obj, int x, int y, int w, int h) 
 {
     HD_ScaleBlendClip (obj->sub.font->argb, obj->sub.font->w, obj->sub.font->h,
+                       x, y, w, h,
                        eng->buffer, eng->screen.width, eng->screen.height,
-                       obj->x, obj->y, obj->w, obj->h);    
+                       obj->x, obj->y, obj->w, obj->h);
 }
 

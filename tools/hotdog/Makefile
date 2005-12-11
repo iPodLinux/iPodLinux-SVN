@@ -30,7 +30,7 @@ AR=$(PREFIX)ar rc
 AR2=$(PREFIX)ranlib
 
 LIB = libhotdog.a
-LIBOBJS=  hotdog.o hotdog_png.o hotdog_primitive.o hotdog_font.o hotdog_animation.o hotdog_canvas.o
+LIBOBJS=  hotdog.o hotdog_png.o hotdog_primitive.o hotdog_font.o hotdog_animation.o hotdog_canvas.o zsort.o
 
 DEMO = hd-demo
 DEMOOBJS = main_darwin.o

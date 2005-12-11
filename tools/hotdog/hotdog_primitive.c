@@ -29,14 +29,14 @@
 
 #include "hotdog.h"
 
-void HD_Primitive_Render(hd_engine *eng,hd_object *obj) {
+void HD_Primitive_Render(hd_engine *eng,hd_object *obj, int cx, int cy, int cw, int ch) {
   int32 x,y;
   int32 startx,starty,endx,endy;
 
-  if(  obj->x         <                 0  ) startx = 0; else startx = obj->x;
-  if( (obj->x+obj->w) > eng->screen.width  ) endx   = eng->screen.width; else endx = obj->x + obj->w;
-  if(  obj->y         <                 0  ) starty = 0; else starty = obj->y;
-  if( (obj->y+obj->h) > eng->screen.height ) endy   = eng->screen.height; else endy = obj->y + obj->h;
+  if(  obj->x+cx     <                  0 ) startx = 0; else startx = obj->x + cx;
+  if( (obj->x+cx+cw) >  eng->screen.width ) endx   = eng->screen.width; else endx = obj->x + cx + cw;
+  if(  obj->y+cy     <                  0 ) starty = 0; else starty = obj->y + cy;
+  if( (obj->y+cy+ch) > eng->screen.height ) endy   = eng->screen.height; else endy = obj->y + cy + ch;
 
 
   for(y=starty;y<endy;y++) {

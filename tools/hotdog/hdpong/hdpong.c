@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
 	bg->y = 0;
 	bg->w = WIDTH;
 	bg->h = HEIGHT;
-	bg->depth = 1;
+	bg->z = 3;
 	bg->type = HD_TYPE_PNG;
 	
 	lbat = HD_PNG_Create("bat.png");
@@ -101,7 +101,7 @@ int main(int argc, char *argv[]) {
 	lbat->y = 0;
 	lbat->w = BATW;
 	lbat->h = BATH;
-	lbat->depth = 2;
+	lbat->z = 2;
 	lbat->type = HD_TYPE_PNG;
 	
 	rbat = HD_PNG_Create("bat.png");
@@ -109,20 +109,20 @@ int main(int argc, char *argv[]) {
 	rbat->y = HEIGHT/2-BATH/2;
 	rbat->w = BATW;
 	rbat->h = BATH;
-	rbat->depth = 2;
+	rbat->z = 2;
 	rbat->type = HD_TYPE_PNG;
 
 	ball = HD_PNG_Create("ball.png");
 	ball->x = WIDTH/2-BALLR;
 	ball->y = HEIGHT/2-BALLR;
 	ball->w = ball->h = BALLD;
-	ball->depth = 3;
+	ball->z = 1;
 	ball->type = HD_TYPE_PNG;
 
 /*
 	lscore.y = 2;
 	lscore.h = 40;
-	lscore.depth = 2;
+	lscore.z = 2;
 	lscore.type = HD_TYPE_FONT;
 	lscore.sub.font  = HD_Font_Create("../font.ttf", lscore.h, "0");
 	lscore.w = lscore.sub.font->w;

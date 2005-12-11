@@ -85,16 +85,118 @@ void HD_Register(hd_engine *eng,hd_object *obj) {
 }
 
 void HD_Render(hd_engine *eng) {
-	hd_obj_list *curr;
+	hd_obj_list *cur = eng->list;
+        hd_rect *dirties = 0, *rect = 0;
+        int needsort = 0;
 
-	// Clear the internal buffer
-	memset(eng->buffer,0,eng->screen.width*eng->screen.height*4);
+        // Make a list of all dirty rects. Rects are clipped
+        // to screen from the beginning.
+        while (cur) {
+            hd_object *obj = cur->obj;
+            if (obj->last.x != obj->x || obj->last.y != obj->y ||
+                obj->last.w != obj->w || obj->last.h != obj->h ||
+                obj->last.z != obj->z) {
+                if (!rect) {
+                    rect = dirties = malloc (sizeof(hd_rect));
+                } else {
+                    rect->next = malloc (sizeof(hd_rect));
+                    rect = rect->next;
+                }
+                rect->x = (obj->x < 0)? 0 : obj->x;
+                rect->y = (obj->y < 0)? 0 : obj->y;
+                rect->w = (obj->x + obj->w > eng->screen.width)? eng->screen.width - obj->x : obj->w;
+                rect->h = (obj->y + obj->h > eng->screen.height)? eng->screen.height-obj->y : obj->h;
+                rect->z = obj->z;
+                rect->next = 0;
+                obj->dirty = 1;
+                if (obj->last.z != obj->z) needsort = 1;
+            }
+            cur = cur->next;
+        }
 
-	curr = eng->list;
-	while(curr != NULL) {
-            curr->obj->render (eng, curr->obj);
-            curr = curr->next;
-	}
+        // Sort 'em if necessary
+        if (needsort)
+            eng->list = HD_StackObjects (eng->list);
+
+        // Clear dirty areas
+        rect = dirties;
+        while (rect) {
+            uint32 *p = eng->buffer + rect->y*eng->screen.width + rect->x;
+            uint32 *endp = p + rect->h*eng->screen.width;
+            while (p < endp) {
+                memset (p, 0, rect->w*4);
+                p += eng->screen.width;
+            }
+            rect = rect->next;
+        }
+
+        // Draw objects, and parts of any others that overlap/underlap
+        cur = eng->list;
+        while (cur) {
+            hd_object *obj = cur->obj;
+            if (!obj->dirty) {
+                rect = dirties;
+                while (rect) {
+                    // Just check if it overlaps at all for now. The conditional
+                    // will be executed N*M times, so keep it quick.
+                    if ((obj->x + obj->w > rect->x) && (obj->y + obj->h > rect->y) &&
+                        (obj->x < rect->x + rect->w) && (obj->y < rect->y + rect->h)) {
+                        int x, y, w, h;
+                        // Rect intersection of obj and rect.
+                        // In these diagrams, < > is the object and [ ] is the dirty rect.
+                        if (rect->x > obj->x) {
+                            // <[>] or <[]>
+                            x = rect->x - obj->x;
+                            if (rect->x + rect->w < obj->x + obj->w) {
+                                // <[]>
+                                w = rect->w;
+                            } else {
+                                // <[>]
+                                w = obj->w - x;
+                            }
+                        } else {
+                            // [<]> or [<>]
+                            x = obj->x - rect->x;
+                            if (obj->x + obj->w < rect->x + rect->w) {
+                                // [<>]
+                                w = obj->w;
+                            } else {
+                                // [<]>
+                                w = rect->w - x;
+                            }
+                        }
+                        
+                        // Similar for the Y coordinates.
+                        if (rect->y > obj->y) {
+                            y = rect->y - obj->y;
+                            if (rect->y + rect->h < obj->y + obj->h)
+                                h = rect->h;
+                            else
+                                h = obj->h - y;
+                        } else {
+                            y = obj->y - rect->y;
+                            if (obj->y + obj->h < rect->y + rect->h) {
+                                h = obj->h;
+                            } else {
+                                h = rect->h - y;
+                            }
+                        }
+
+                        // Draw it.
+                        obj->render (eng, obj, x, y, w, h);
+                    }
+                    rect = rect->next;
+                }
+            } else {
+                // This is the dirty one. Draw it and update last.
+                obj->render (eng, obj, 0, 0, obj->w, obj->h);
+                obj->last.x = obj->x;
+                obj->last.y = obj->y;
+                obj->last.w = obj->w;
+                obj->last.h = obj->h;
+            }
+            cur = cur->next;
+        }
 
 	// Translate internal ARGB8888 to RGB565
 	if (eng->screen.framebuffer) {
@@ -247,11 +349,15 @@ void HD_Render(hd_engine *eng) {
 #endif
         }
 
-        eng->screen.update (eng, 0, 0, eng->screen.width, eng->screen.height);
+        rect = dirties;
+        while (rect) {
+            eng->screen.update (eng, rect->x, rect->y, rect->w, rect->h);
+            rect = rect->next;
+        }
 }
 
-void HD_ScaleBlendClip (uint32 *sbuf, int sw, int sh, uint32 *dbuf, int dtw, int dth,
-                        int dx, int dy, int dw, int dh) 
+void HD_ScaleBlendClip (uint32 *sbuf, int stw, int sth, int sx, int sy, int sw, int sh,
+                        uint32 *dbuf, int dtw, int dth, int dx, int dy, int dw, int dh) 
 {
   int32 fp_step_x,fp_step_y,fp_ix,fp_iy,fp_initial_ix,fp_initial_iy;
   int32 x,y;
@@ -277,8 +383,8 @@ void HD_ScaleBlendClip (uint32 *sbuf, int sw, int sh, uint32 *dbuf, int dtw, int
     endx   = dx+dw;
     endy   = dy+dh;
 
-    fp_initial_ix = 0;
-    fp_initial_iy = 0;
+    fp_initial_ix = sx;
+    fp_initial_iy = sy;
   } else {
     starty = dy;
 	startx = dx;
@@ -289,22 +395,24 @@ void HD_ScaleBlendClip (uint32 *sbuf, int sw, int sh, uint32 *dbuf, int dtw, int
 
     // Let the clipping commence
     if( dx < 0 ) {
-		startx = 0;
-		endx   = dw + dx;
-		fp_initial_ix = -(dx) * fp_step_x;
-	}
-	if( (dx+dw) > dtw ) {
-		endx = dtw - 1;
-	}
+        startx = 0;
+        endx   = dw + dx;
+        fp_initial_ix = -(dx) * fp_step_x;
+    }
+    if( (dx+dw) > dtw ) {
+        endx = dtw - 1;
+    }
     if( dy < 0 ) {
-		starty = 0;
-		endy   = dh + dy;
-		fp_initial_iy = -(dy) * fp_step_y;
-	}
-	if( (dy+dh) > dth ) {
-		endy = dth - 1;
-	}
-	
+        starty = 0;
+        endy   = dh + dy;
+        fp_initial_iy = -(dy) * fp_step_y;
+    }
+    if( (dy+dh) > dth ) {
+        endy = dth - 1;
+    }
+
+    fp_initial_ix += sx;
+    fp_initial_iy += sy;
   }
   
   buffOff = starty * dtw;// + startx;
@@ -313,7 +421,7 @@ void HD_ScaleBlendClip (uint32 *sbuf, int sw, int sh, uint32 *dbuf, int dtw, int
   fp_iy = fp_initial_iy;
   for(y=starty;y<endy;y++) {
     fp_ix = fp_initial_ix;
-    imgOff = (fp_iy>>16) * sw;
+    imgOff = (fp_iy>>16) * stw;
     
     for(x=startx;x<endx;x++) {
       
@@ -354,13 +462,10 @@ void HD_Destroy (hd_object *obj)
 
 hd_object *HD_New_Object() 
 {
-    static int lz = 0;
+    static int lz = 65535;
     hd_object *ret = calloc (1, sizeof(hd_object));
     assert (ret != NULL);
-    ret->x = ret->y = 0;
-    ret->w = ret->h = -1;
-    ret->z = lz++;
-    ret->type = 0;
-    ret->lx = ret->ly = ret->lw = ret->lh = -1;
+    ret->last.z = ret->z = lz--;
+    ret->opacity = 0xff;
     return ret;
 }

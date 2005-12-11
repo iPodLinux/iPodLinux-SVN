@@ -30,6 +30,6 @@
 
 #include "hotdog.h"
 
-void HD_Primitive_Render(hd_engine *eng,hd_object *obj);
+void HD_Primitive_Render(hd_engine *eng,hd_object *obj, int x, int y, int w, int h);
 
 #endif
