@@ -145,6 +145,7 @@ size_t fat32_read(void *fsdata,void *ptr,size_t size,size_t nmemb,int fd) {
   /*
    * FFWD to the cluster we're positioned at
    * !!! Huge speedup if we cache this for each file
+   * (Hmm.. With the addition of the block-cache, this isn't as big of an issue, but it's still an issue though)
    */
   clusterNum = fs->filehandles[fd]->position / (fs->sectors_per_cluster * fs->bytes_per_sector);
   cluster = fs->filehandles[fd]->cluster;

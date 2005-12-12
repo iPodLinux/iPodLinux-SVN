@@ -2,6 +2,7 @@
 #define _CONSOLE_H_
 
 #include "bootloader.h"
+#include "fontmedium.h"
 
 void console_init(uint16 *fb);
 void console_putchar(char ch);

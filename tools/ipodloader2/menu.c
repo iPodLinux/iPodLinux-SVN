@@ -76,10 +76,10 @@ void menu_redraw(uint16 *fb,uint32 selectedItem) {
   for(i=0;i<menu.numItems;i++) {
     if( i==selectedItem ) {
       console_setcolor(0xFFFF,26,0x0);
-      console_putsXY(10,20+i*16,menu.string[i]);
+      console_putsXY(10,20+i*FONT_HEIGHT,menu.string[i]);
     } else {
       console_setcolor(0xFFFF,0x0000,0x1);
-      console_putsXY(10,20+i*16,menu.string[i]);
+      console_putsXY(10,20+i*FONT_HEIGHT,menu.string[i]);
     }
   }
 }
