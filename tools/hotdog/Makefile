@@ -46,7 +46,7 @@ $(DEMOOBJS):
 	$(CC) $(CFLAGS) $(DEMOCFLAGS) -c -o $@ $*.c
 
 $(DEMO): $(LIB) $(DEMOOBJS) 
-	$(CC) $? -o $@ $(LIB) $(LDFLAGS) $(DEMOLDFLAGS)
+	$(CC) $(DEMOOBJS) -o $@ $(LIB) $(LDFLAGS) $(DEMOLDFLAGS)
 
 clean:
 	$(RM) *.o *.elf *.elf2flt *.a *.gdb *~ $(DEMO)

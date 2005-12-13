@@ -184,8 +184,8 @@ hd_object *HD_PNG_Create(char *fname) {
 	
 	png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
 	
-	png->w = png_get_image_width(png_ptr,info_ptr);
-	png->h = png_get_image_height(png_ptr,info_ptr);
+	ret->natw = png->w = png_get_image_width(png_ptr,info_ptr);
+	ret->nath = png->h = png_get_image_height(png_ptr,info_ptr);
 	
 	row_pointers = png_get_rows(png_ptr, info_ptr);
 	png->argb = (uint32*)malloc( png->w * png->h * 4 );

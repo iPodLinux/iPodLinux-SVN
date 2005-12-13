@@ -16,8 +16,8 @@ hd_object *HD_Canvas_Create(uint32 width,uint32 height) {
   ret->sub.canvas->argb = (uint32 *)malloc( width * height * 4 );
   assert(ret->sub.canvas->argb != NULL);
 
-  ret->sub.canvas->w = width;
-  ret->sub.canvas->h = height;
+  ret->natw = ret->sub.canvas->w = width;
+  ret->nath = ret->sub.canvas->h = height;
   ret->render = HD_Canvas_Render;
   ret->destroy = HD_Canvas_Destroy;
 
