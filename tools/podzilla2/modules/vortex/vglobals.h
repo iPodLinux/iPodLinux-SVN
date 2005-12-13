@@ -26,10 +26,11 @@
 
 #define VORTEX_STATE_UNDEFINED	(-1)	/* nothing. */
 #define VORTEX_STATE_STARTUP	(0)	/* intro animation */
-#define VORTEX_STATE_LEVELSEL	(1)	/* user selecting a stage */
-#define VORTEX_STATE_GAME	(2)	/* user playing a stage */
-#define VORTEX_STATE_DEATH	(3)	/* user is dying. */
-#define VORTEX_STATE_DEAD	(4)	/* user has died.  bummer */
+#define VORTEX_STATE_STYLESEL	(1)	/* user selecting 2k5 or classic */
+#define VORTEX_STATE_LEVELSEL	(2)	/* user selecting a stage */
+#define VORTEX_STATE_GAME	(3)	/* user playing a stage */
+#define VORTEX_STATE_DEATH	(4)	/* user is dying. */
+#define VORTEX_STATE_DEAD	(5)	/* user has died.  bummer */
 
 
 /* colors for rendering */
