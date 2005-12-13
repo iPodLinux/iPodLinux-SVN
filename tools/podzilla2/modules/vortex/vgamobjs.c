@@ -213,7 +213,7 @@ void Vortex_Enemy_add( void )
 
 			/* for now. hack it */
 			if( !vortex_levels[ enemies[e].web ].flags & LF_CLOSEDWEB )
-				enemies[e].web = rand() % 14;
+				enemies[e].web = rand() % 13;
 			return;
 		}
 	}
