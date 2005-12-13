@@ -31,7 +31,8 @@
 
 /* user (or enemy) fire */
 #define VORTEX_BOLT_FRIENDLY	(0)	/* player fired bolt */
-#define VORTEX_BOLT_ENEMY	(1)	/* enemy fired bolt */
+#define VORTEX_BOLT_PARTICLE	(1)	/* player fired particle laser */
+#define VORTEX_BOLT_ENEMY	(2)	/* enemy fired bolt */
 
 typedef struct bolt {
 	int active;		/* 1 = active, 0 = free */
