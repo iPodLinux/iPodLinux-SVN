@@ -43,8 +43,8 @@
 #include "vstars.h"
 #include "vgamobjs.h"
 
-static vortex_globals vglob;
-static int startcount;
+vortex_globals vglob;
+
 #define VPADDING (10)
 
 int Vortex_Rand( int max )
@@ -162,27 +162,6 @@ void Vortex_Base( ttk_surface srf, int x, int y )
 	ttk_aapoly( srf, 4, xx, yy, vglob.color.player_fill );
 }
 
-void Vortex_DrawBolts( ttk_surface srf )
-{
-	int p;
-
-	for( p=1 ; p<NUM_Z_POINTS-2 ; p+=2 )
-	{
-		ttk_line( srf,	vglob.ptsX[vglob.wPosMajor][p+2][0],
-				vglob.ptsY[vglob.wPosMajor][p+2][0],
-				vglob.ptsX[vglob.wPosMajor][p][1],
-				vglob.ptsY[vglob.wPosMajor][p][1],
-				vglob.color.bolts );
-
-		ttk_line( srf,	vglob.ptsX[vglob.wPosMajor][p][1],
-				vglob.ptsY[vglob.wPosMajor][p][1],
-				vglob.ptsX[vglob.wPosMajor+1][p+2][0],
-				vglob.ptsY[vglob.wPosMajor+1][p+2][0],
-				vglob.color.bolts );
-	}
-}
-
-
 
 void draw_vortex (PzWidget *widget, ttk_surface srf) 
 {
@@ -206,7 +185,7 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 		Vortex_DrawWeb( srf );
 
 		/* let the user select what level to start on */
-		switch((vglob.timer>>3) & 0x03 ) {
+		switch((vglob.timer>>4) & 0x03 ) {
 		case 0: word = "SELECT"; break;
 		case 1: word = "START";  break;
 		case 2: word = "LEVEL";  break;
@@ -229,7 +208,7 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 			    10, 18, 1, vglob.color.sellevel, vglob.color.bg );
 
 		/* display some props to the masters */
-		switch((vglob.timer>>4) & 0x03 ) {
+		switch((vglob.timer>>5) & 0x03 ) {
 		case 0: credit = "THANKS TO";    break;
 		case 1: credit = "DAVE THEURER"; break;
 		case 2: credit = "JEFF MINTER";  break;
@@ -253,7 +232,7 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 		Vortex_DrawPlayer( srf );
 
 		/* draw bolts */
-		Vortex_DrawBolts( srf );
+		Vortex_Bolt_draw( srf );
 
 		/* draw any console text over all of that */
 		Vortex_Console_Render( srf );
@@ -272,7 +251,9 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 
 		/* and current level */
 		snprintf( buf, 15, "LVL %d", vglob.startLevel );
-		pz_vector_string( srf, buf, 1, 
+		pz_vector_string( srf, buf, 
+                            (ttk_screen->w - ttk_screen->wx) -
+			     pz_vector_width( buf, 5, 9, 1 ) -1,
 			    (ttk_screen->h - ttk_screen->wy)-10, 
                             5, 9, 1, vglob.color.level );
 		break;
@@ -386,8 +367,17 @@ void Vortex_newLevelCompute( void )
 	    vglob.ptsX[NUM_SEGMENTS][p][1] = vglob.ptsX[0][p][1];
 	    vglob.ptsY[NUM_SEGMENTS][p][1] = vglob.ptsY[0][p][1];
 	}
+}
 
+/* all of the stuff that needs to get reset at the beginning of a new level */
+void Vortex_initLevel( void )
+{
+	Vortex_newLevelCompute();
+	Vortex_Bolt_clear();
 	Vortex_clawCompute();
+	if( !vglob.classicMode ) {
+		Star_GenerateStars();
+	}
 }
 
 
@@ -493,9 +483,9 @@ int event_vortex (PzEvent *ev)
 		case( PZ_BUTTON_ACTION ):
 			if( vglob.state == VORTEX_STATE_LEVELSEL ) {
 				Vortex_ChangeToState( VORTEX_STATE_GAME );
-				Vortex_newLevelCompute();
+				Vortex_initLevel();
 			} else if( vglob.state == VORTEX_STATE_GAME ) {
-				Vortex_playerFires();
+				Vortex_Bolt_add();
 			}
 			break;
 
@@ -510,7 +500,7 @@ int event_vortex (PzEvent *ev)
 
 	case PZ_EVENT_TIMER:
 		if( (vglob.state == VORTEX_STATE_STARTUP) &&
-		    (++startcount < 5 ) )
+		    (vglob.timer < 5 ) )
 		{
 			Vortex_Console_AddItem( "VORTEX", 0, 0, 
 				VORTEX_STYLE_NORMAL, vglob.color.title );
@@ -518,6 +508,7 @@ int event_vortex (PzEvent *ev)
 
 		vglob.score += 3;
 
+		Vortex_Bolt_poll();
 		Vortex_Console_Tick();
 		vglob.timer++;
 		ev->wid->dirty = 1;
@@ -536,11 +527,10 @@ static void Vortex_Initialize( void )
 	vglob.timer = 0;
 	vglob.score = 0;
 	vglob.lives = 3;
+	vglob.hasParticleLaser = 0;
 
 	vglob.wPosMajor = 0;
 	vglob.wPosMinor = 0;
-
-	startcount = 0;
 
 	Vortex_ChangeToState( VORTEX_STATE_STARTUP );
 }
@@ -552,7 +542,7 @@ PzWindow *new_vortex_window()
 
 	vglob.window = pz_new_window( "Vortex", PZ_WINDOW_NORMAL );
 	vglob.widget = pz_add_widget( vglob.window, draw_vortex, event_vortex );
-	pz_widget_set_timer( vglob.widget, 40 );
+	pz_widget_set_timer( vglob.widget, 30 );
 
 	Vortex_Initialize( );
 	Vortex_Console_HiddenStatic( 1 );
@@ -612,6 +602,7 @@ void init_vortex()
 		vglob.color.player      = ttk_makecol( 255, 255,   0 );
 		vglob.color.player_fill = ttk_makecol( 255, 255, 128 );
 		vglob.color.bolts       = ttk_makecol( 255, 255, 255 );
+		vglob.color.plaser      = ttk_makecol( 255, 128,   0 );
 		vglob.color.super       = ttk_makecol(   0, 255, 255 );
 		vglob.color.flippers    = ttk_makecol( 255,   0,   0 );
 	} else {
@@ -636,6 +627,7 @@ void init_vortex()
 		vglob.color.player      = ttk_makecol( DKGREY );
 		vglob.color.player_fill = ttk_makecol( GREY );
 		vglob.color.bolts       = ttk_makecol( BLACK );
+		vglob.color.plaser      = ttk_makecol( BLACK );
 		vglob.color.super       = ttk_makecol( DKGREY );
 		vglob.color.flippers    = ttk_makecol( BLACK );
 	}

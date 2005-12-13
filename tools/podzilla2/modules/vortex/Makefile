@@ -1,3 +1,3 @@
 MODULE = vortex
 DATA = 
-obj-m = vortex.o console.o levels.o vstars.o
+obj-m = vortex.o console.o levels.o vstars.o vgamobjs.o

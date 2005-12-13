@@ -26,13 +26,13 @@
 #include "vglobals.h"
 
 typedef struct vstar {
-	int x;
-	int y;
-	int s;
-	ttk_color c;
+	int x;		/* horizontal */
+	int y;		/* vertical */
+	int s;		/* size */
+	ttk_color c;	/* color.  duh. */
 } vstar;
 
-void Star_GenerateStars( void );
-void Star_DrawStars( ttk_surface srf );
+void Star_GenerateStars( void );	/* will generate a new starfield */
+void Star_DrawStars( ttk_surface srf );	/* will draw the stars to srf */
 
 #endif

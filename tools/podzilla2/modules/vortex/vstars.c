@@ -23,7 +23,9 @@
 
 #include "vstars.h"
 
-vstar stars[32];
+#define NUM_STARS	(32)
+
+vstar stars[NUM_STARS];
 
 void Star_GenerateStars( void );
 void Star_DrawStars( ttk_surface srf );
@@ -31,21 +33,21 @@ void Star_DrawStars( ttk_surface srf );
 void Star_GenerateStars( void )
 {       
         int p;
-        for( p=0 ; p<32 ; p++ )
+        for( p=0 ; p<NUM_STARS ; p++ )
         {       
                 stars[p].x = Vortex_Rand( ttk_screen->w );
                 stars[p].y = Vortex_Rand( ttk_screen->h-ttk_screen->wy );
-                stars[p].c = ttk_makecol( 120 + Vortex_Rand( 128 ),
-					  120 + Vortex_Rand( 128 ),
-					  120 + Vortex_Rand( 128 ) );
-		stars[p].s = Vortex_Rand( 255 );
+                stars[p].c = ttk_makecol( 120 + (rand() & 0x7f),
+					  120 + (rand() & 0x7f),
+					  120 + (rand() & 0x7f) );
+		stars[p].s = rand() & 0x0ff;
     }
 }
 
 void Star_DrawStars( ttk_surface srf )
 {       
         int p;
-        for( p=0 ; p<32 ; p++ )
+        for( p=0 ; p<NUM_STARS ; p++ )
         {       
                 ttk_pixel( srf, stars[p].x, stars[p].y, stars[p].c );
 		if( stars[p].s < 32 ) {

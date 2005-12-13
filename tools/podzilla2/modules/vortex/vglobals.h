@@ -54,6 +54,7 @@ typedef struct _vortex_colors {
 	ttk_color player;	// player character
 	ttk_color player_fill;	// player character (fill color)
 	ttk_color bolts;	// player's bolts
+	ttk_color plaser;	// player's particle laser bolts
 	ttk_color super;	// superzapper color
 	ttk_color flippers;	// enemy characters
 } vortex_colors;
@@ -76,6 +77,8 @@ typedef struct vortex_globals {
 	int currentLevel;
 	int timer;
 
+	int hasParticleLaser;
+
 	int score;
 	int lives;
 
@@ -97,6 +100,11 @@ typedef struct vortex_globals {
 
 	int classicMode;
 } vortex_globals;
+
+/* so that we can all use it... */
+extern vortex_globals vglob;
+
+/* now some useful generic and utility stuff... */
 
 #define MIN(A,B) (((A)>(B))?(B):(A))
 #define MAX(A,B) (((A)<(B))?(B):(A))
