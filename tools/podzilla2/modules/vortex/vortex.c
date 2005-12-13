@@ -44,7 +44,7 @@
 #include "vgamobjs.h"
 
 /* version number */
-#define VORTEX_VERSION	"v0.035"
+#define VORTEX_VERSION	"05121311"
 
 vortex_globals vglob;
 
@@ -229,8 +229,8 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 
 		/* and the version number */
 		pz_vector_string( srf, VORTEX_VERSION, 1,
-			    (ttk_screen->h - ttk_screen->wy)-10, 
-                            5, 9, 1, vglob.color.version );
+			    (ttk_screen->h - ttk_screen->wy)-6, 
+                            3, 5, 1, vglob.color.version );
 		break;
 
 	case VORTEX_STATE_GAME:
