@@ -278,11 +278,11 @@ void Vortex_Enemy_poll( void )
 
 
 
+/* ********************************************************************** */
+
 void Vortex_CollisionDetection( void )
 {
-	int b,e;
-	int d;
-	static int s=0;
+	int b,d,e;
 
 	for( e=0 ; e<VGO_ENEMIES_NUM ; e++ )
 	{
