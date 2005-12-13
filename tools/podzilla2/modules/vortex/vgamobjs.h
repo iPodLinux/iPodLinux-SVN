@@ -81,6 +81,9 @@ typedef struct powerup {
 } powerup;
 
 
+/* gameplay interactions */
+void Vortex_CollisionDetection( void );
+
 /* bolt manipulation functions */
 void Vortex_Bolt_draw( ttk_surface srf );
 void Vortex_Bolt_add( void );

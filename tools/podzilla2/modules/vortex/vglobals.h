@@ -39,6 +39,7 @@ typedef struct _vortex_colors {
 	ttk_color select;	// SELECT START LEVEL
 	ttk_color sellevel;	// selected level
 	ttk_color credits;	// THANKS TO...
+	ttk_color version;	// version #..
 	ttk_color con;		// console text 
 	ttk_color bonus;	// console bonus text
 	ttk_color web_top;	// closest portion of web

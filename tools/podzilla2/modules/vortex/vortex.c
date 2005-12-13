@@ -43,6 +43,9 @@
 #include "vstars.h"
 #include "vgamobjs.h"
 
+/* version number */
+#define VORTEX_VERSION	"v0.035"
+
 vortex_globals vglob;
 
 #define VPADDING (10)
@@ -223,6 +226,11 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 			    (ttk_screen->h - ttk_screen->wy)-10, 
 			    5, 9, 1, vglob.color.credits,
 			    vglob.color.bg );
+
+		/* and the version number */
+		pz_vector_string( srf, VORTEX_VERSION, 1,
+			    (ttk_screen->h - ttk_screen->wy)-10, 
+                            5, 9, 1, vglob.color.version );
 		break;
 
 	case VORTEX_STATE_GAME:
@@ -520,7 +528,8 @@ int event_vortex (PzEvent *ev)
 		cleanup_vortex();
 		break;
 
-	case PZ_EVENT_TIMER:
+	case PZ_EVENT_TIMER:	/* this should be a switch( vglob.state ) xxx */
+		/* generate a splash screen */
 		if( (vglob.state == VORTEX_STATE_STARTUP) &&
 		    (vglob.timer < 5 ))
 		{
@@ -538,6 +547,7 @@ int event_vortex (PzEvent *ev)
 		Vortex_Console_Tick();
 		Vortex_CollisionDetection();
 
+		/* generate a death screen */
 		if( vglob.lives <= 0 ) {
 			if( vglob.state != VORTEX_STATE_DEATH ) {
 				Vortex_ChangeToState( VORTEX_STATE_DEATH );
@@ -625,6 +635,7 @@ void init_vortex()
 		vglob.color.select      = ttk_makecol( 255, 255,   0 );
 		vglob.color.sellevel    = ttk_makecol(   0, 255,   0 );
 		vglob.color.credits     = ttk_makecol(   0,   0, 255 );
+		vglob.color.version     = ttk_makecol(  64,  32,  32 );
 		vglob.color.con         = ttk_makecol( 255, 255,   0 );
 		vglob.color.bonus       = ttk_makecol( 255,   0,   0 );
 		vglob.color.web_top     = ttk_makecol(   0, 128, 255 );
@@ -652,6 +663,7 @@ void init_vortex()
 		vglob.color.select      = ttk_makecol( BLACK );
 		vglob.color.sellevel    = ttk_makecol( DKGREY );
 		vglob.color.credits     = ttk_makecol( GREY );
+		vglob.color.version     = ttk_makecol( GREY );
 		vglob.color.con         = ttk_makecol( BLACK );
 		vglob.color.bonus       = ttk_makecol( DKGREY );
 		vglob.color.web_top     = ttk_makecol( BLACK );
