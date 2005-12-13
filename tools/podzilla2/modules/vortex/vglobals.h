@@ -59,6 +59,10 @@ typedef struct _vortex_colors {
 } vortex_colors;
 
 
+#define NUM_SEGMENTS	(16)	/* number of panels per web */
+#define NUM_Z_POINTS	(32)	/* 0=center, 32=top */
+#define NUM_MIDS	(2)	/* 0=side, 1=center */
+
 typedef struct vortex_globals {
 	/* pz meta stuff */
 	PzModule * module;
@@ -79,7 +83,11 @@ typedef struct vortex_globals {
 	int wPosMinor;
 
 	/* center of the current web */
-	int pcxC, pcyC;
+	int pcxC, pcyC; /* this will become vglob.ptsX[current][32][1] */
+
+	/* intermediary points on the current web */
+	int   ptsX[NUM_SEGMENTS+1][NUM_Z_POINTS][NUM_MIDS];
+	int   ptsY[NUM_SEGMENTS+1][NUM_Z_POINTS][NUM_MIDS];
 
 	/* player ship outline */
 	short px[5];
