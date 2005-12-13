@@ -162,6 +162,27 @@ void Vortex_Base( ttk_surface srf, int x, int y )
 	ttk_aapoly( srf, 4, xx, yy, vglob.color.player_fill );
 }
 
+void Vortex_DrawBolts( ttk_surface srf )
+{
+	int p;
+
+	for( p=1 ; p<NUM_Z_POINTS-2 ; p+=2 )
+	{
+		ttk_line( srf,	vglob.ptsX[vglob.wPosMajor][p+2][0],
+				vglob.ptsY[vglob.wPosMajor][p+2][0],
+				vglob.ptsX[vglob.wPosMajor][p][1],
+				vglob.ptsY[vglob.wPosMajor][p][1],
+				vglob.color.bolts );
+
+		ttk_line( srf,	vglob.ptsX[vglob.wPosMajor][p][1],
+				vglob.ptsY[vglob.wPosMajor][p][1],
+				vglob.ptsX[vglob.wPosMajor+1][p+2][0],
+				vglob.ptsY[vglob.wPosMajor+1][p+2][0],
+				vglob.color.bolts );
+	}
+}
+
+
 
 void draw_vortex (PzWidget *widget, ttk_surface srf) 
 {
@@ -231,6 +252,9 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 		/* draw the player */
 		Vortex_DrawPlayer( srf );
 
+		/* draw bolts */
+		Vortex_DrawBolts( srf );
+
 		/* draw any console text over all of that */
 		Vortex_Console_Render( srf );
 
@@ -263,28 +287,33 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 }
 
 
-void cleanup_vortex() 
+void cleanup_vortex( void ) 
 {
 }
 
-#define MINOR_MAX (0)
 
+void Vortex_playerFires( void )
+{
+	int x;
+	printf( "PIX!\n" );
+}
 
 /* finds the x/y position along [vect]or (point on outer edge of web)  
    at depth z (128 == outer edge of web), from the [center] 
  */
 #define Vortex_getZ( vect, z, center )\
-	(center + (((vect-center) * z )>>7))
+	((center) + ((((vect)-(center)) * (z) )>>7))
 
 
-void Vortex_clawCompute( void )
+void Vortex_clawCompute( void ) /* NOTE: not "cowCompute" */ /* moo. */
 {
 	LEVELDATA * lv = &vortex_levels[ vglob.currentLevel ];
 	int wxC = ttk_screen->w>>1;   /* web X center */
 	int wyC = lv->y3d;            /* web Y center */
 
-	int p2 = vglob.wPosMajor +1;  /* second point in the selected field */
-	if( p2 > 15 ) p2 = 0;	      /* adjust for wraparound */
+	/* get the point index for the nextcurrent */
+	int p2 = vglob.wPosMajor +1;	/* second point in the selected field */
+	if( p2 > 15 ) p2 = 0;		/* adjust for wraparound */
 
 	/* store aside the centerpoint of the field edge */
 	vglob.pcxC = (lv->fx[ vglob.wPosMajor ] + lv->fx[ p2 ]) >> 1;
@@ -303,6 +332,68 @@ void Vortex_clawCompute( void )
 	vglob.py[4] = vglob.py[0];
 }
 
+void Vortex_newLevelCompute( void )
+{
+	int w, p, pp;
+	LEVELDATA * lv = &vortex_levels[ vglob.currentLevel ];
+	int wxC = ttk_screen->w>>1;   /* web X center */
+	int wyC = lv->y3d;            /* web Y center */
+
+	/* get the point index for the nextcurrent */
+	int p2 = vglob.wPosMajor +1;	/* second point in the selected field */
+	if( p2 > 15 ) p2 = 0;		/* adjust for wraparound */
+
+	/* store aside the centerpoint of the field edge */
+	vglob.pcxC = (lv->fx[ vglob.wPosMajor ] + lv->fx[ p2 ]) >> 1;
+	vglob.pcyC = (lv->fy[ vglob.wPosMajor ] + lv->fy[ p2 ]) >> 1;
+
+	/* compute the top-end points */
+	for( w=0 ; w<NUM_SEGMENTS ; w++ )
+	{
+	    /* the defined points. */
+	    vglob.ptsX[w][NUM_Z_POINTS-1][0] = lv->fx[w];
+	    vglob.ptsY[w][NUM_Z_POINTS-1][0] = lv->fy[w];
+
+	    /* the mid points */
+	    pp = w+1; 
+	    if( pp > 15 ) pp = 0;
+	    vglob.ptsX[w][NUM_Z_POINTS-1][1] = (lv->fx[w] + lv->fx[pp])>>1;
+	    vglob.ptsY[w][NUM_Z_POINTS-1][1] = (lv->fy[w] + lv->fy[pp])>>1;
+	}
+
+	/* compute the grid of points... */
+	for( w=0 ; w<NUM_SEGMENTS ; w++ )
+	    for( p=0; p<(NUM_Z_POINTS-2) ; p++ )
+	{
+	    int pscaled = (p*128)/NUM_Z_POINTS;
+
+	    /* along lines */
+	    vglob.ptsX[w][p][0] = Vortex_getZ( lv->fx[w], pscaled, wxC );
+	    vglob.ptsY[w][p][0] = Vortex_getZ( lv->fy[w], pscaled, wyC );
+
+	    /* centers */
+	    vglob.ptsX[w][p][1] = Vortex_getZ( 
+			    vglob.ptsX[w][NUM_Z_POINTS-1][1], pscaled, wxC );
+	    vglob.ptsY[w][p][1] = Vortex_getZ( 
+			    vglob.ptsY[w][NUM_Z_POINTS-1][1], pscaled, wyC );
+	}
+
+	/* put in a copy of [0] to [NUM_SEGMENTS] to make rendering easy */
+	for( p=0 ; p<NUM_Z_POINTS ; p++ )
+	{
+	    vglob.ptsX[NUM_SEGMENTS][p][0] = vglob.ptsX[0][p][0];
+	    vglob.ptsY[NUM_SEGMENTS][p][0] = vglob.ptsY[0][p][0];
+	    vglob.ptsX[NUM_SEGMENTS][p][1] = vglob.ptsX[0][p][1];
+	    vglob.ptsY[NUM_SEGMENTS][p][1] = vglob.ptsY[0][p][1];
+	}
+
+	Vortex_clawCompute();
+}
+
+
+/* number of minor steps per web.  0, 2, etc */
+#define MINOR_MAX (0)
+
 void Vortex_incPosition( int steps )
 {
 	if( steps > 1 ) Vortex_incPosition( steps-1 );
@@ -313,7 +404,7 @@ void Vortex_incPosition( int steps )
 		return;
 	}
 
-	if( vglob.wPosMajor < 14 ) {
+	if( vglob.wPosMajor < 15 ) {
 		vglob.wPosMajor++;
 		vglob.wPosMinor = 0;
 		Vortex_clawCompute();
@@ -402,8 +493,10 @@ int event_vortex (PzEvent *ev)
 		case( PZ_BUTTON_ACTION ):
 			if( vglob.state == VORTEX_STATE_LEVELSEL ) {
 				Vortex_ChangeToState( VORTEX_STATE_GAME );
-				Vortex_clawCompute();
-		    }
+				Vortex_newLevelCompute();
+			} else if( vglob.state == VORTEX_STATE_GAME ) {
+				Vortex_playerFires();
+			}
 			break;
 
 		default:
