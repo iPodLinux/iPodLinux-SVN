@@ -66,8 +66,8 @@ hd_object *HD_Font_Create(char *font,uint32 height,char *text) {
   assert(fsub->argb != NULL);
 
   memset(fsub->argb,0,xsize * height * 4);
-  fsub->w = xsize;
-  fsub->h = height;
+  ret->natw = fsub->w = xsize;
+  ret->nath = fsub->h = height;
 
   x = 0;
   for(n=0;n<strlen(text);n++) {

@@ -96,6 +96,7 @@ void HD_Render(hd_engine *eng) {
             if (obj->last.x != obj->x || obj->last.y != obj->y ||
                 obj->last.w != obj->w || obj->last.h != obj->h ||
                 obj->last.z != obj->z) {
+                // One rect: current position
                 if (!rect) {
                     rect = dirties = malloc (sizeof(hd_rect));
                 } else {
@@ -107,6 +108,16 @@ void HD_Render(hd_engine *eng) {
                 rect->w = (obj->x + obj->w > eng->screen.width)? eng->screen.width - obj->x : obj->w;
                 rect->h = (obj->y + obj->h > eng->screen.height)? eng->screen.height-obj->y : obj->h;
                 rect->z = obj->z;
+                // Next rect: old position
+                rect->next = malloc (sizeof(hd_rect));
+                rect = rect->next;
+                
+                rect->x = (obj->last.x < 0)? 0 : obj->last.x;
+                rect->y = (obj->last.y < 0)? 0 : obj->last.y;
+                rect->w = (obj->last.x + obj->last.w > eng->screen.width)? eng->screen.width - obj->last.x : obj->last.w;
+                rect->h = (obj->last.y + obj->last.h > eng->screen.height)? eng->screen.height - obj->last.y : obj->last.h;
+                rect->z = obj->last.z;
+
                 rect->next = 0;
                 obj->dirty = 1;
                 if (obj->last.z != obj->z) needsort = 1;
@@ -183,17 +194,23 @@ void HD_Render(hd_engine *eng) {
                         }
 
                         // Draw it.
-                        obj->render (eng, obj, x, y, w, h);
+                        if (obj->natw + obj->nath) {
+                            int32 fx = (obj->natw << 16) / obj->w, fy = (obj->nath << 16) / obj->h;
+                            obj->render (eng, obj, (x * fx) >> 16, (y * fy) >> 16, (w * fx) >> 16, (h * fy) >> 16);
+                        } else {
+                            obj->render (eng, obj, x, y, w, h);
+                        }
                     }
                     rect = rect->next;
                 }
             } else {
                 // This is the dirty one. Draw it and update last.
-                obj->render (eng, obj, 0, 0, obj->w, obj->h);
+                obj->render (eng, obj, 0, 0, obj->natw, obj->nath);
                 obj->last.x = obj->x;
                 obj->last.y = obj->y;
                 obj->last.w = obj->w;
                 obj->last.h = obj->h;
+                obj->dirty = 0;
             }
             cur = cur->next;
         }
@@ -353,6 +370,7 @@ void HD_Render(hd_engine *eng) {
         while (rect) {
             eng->screen.update (eng, rect->x, rect->y, rect->w, rect->h);
             rect = rect->next;
+            // FREE RECTS! xxx
         }
 }
 
@@ -364,8 +382,13 @@ void HD_ScaleBlendClip (uint32 *sbuf, int stw, int sth, int sx, int sy, int sw, 
   int32 startx,starty,endx,endy;
   uint32 buffOff, imgOff;
   
+  dw = dw * sw / stw;
+  dh = dh * sh / sth;
+  if (!dw || !dh) return;
   fp_step_x = (sw << 16) / dw;
   fp_step_y = (sh << 16) / dh;
+  dx += ((sx << 16) / fp_step_x);
+  dy += ((sy << 16) / fp_step_y);
 
   // 1st, check if we need to do anything at all
   if( (dx > dtw) || (dy > dth) ||
@@ -378,45 +401,42 @@ void HD_ScaleBlendClip (uint32 *sbuf, int stw, int sth, int sx, int sy, int sw, 
   } else if( (dx >= 0) && ((dx+dw) < dtw) &&
              (dy >= 0) && ((dy+dh) < dth)) {
 	
-    startx = dx;
-    starty = dy;
-    endx   = dx+dw;
-    endy   = dy+dh;
+      startx = dx;
+      starty = dy;
+    endx   = startx+dw;
+    endy   = starty+dh;
 
-    fp_initial_ix = sx;
-    fp_initial_iy = sy;
+    fp_initial_ix = (sx << 16);
+    fp_initial_iy = (sy << 16);
   } else {
-    starty = dy;
-	startx = dx;
-    endy   = dy+dh;
-    endx   = dx+dw;
+      startx = dx;
+      starty = dy;
+    endx   = startx+dw;
+    endy   = starty+dh;
     fp_initial_ix = 0;
     fp_initial_iy = 0;
 
     // Let the clipping commence
-    if( dx < 0 ) {
+    if( startx < 0 ) {
         startx = 0;
-        endx   = dw + dx;
-        fp_initial_ix = -(dx) * fp_step_x;
+        fp_initial_ix = -(startx) * fp_step_x;
     }
-    if( (dx+dw) > dtw ) {
+    if( endx > dtw ) {
         endx = dtw - 1;
     }
-    if( dy < 0 ) {
+    if( starty < 0 ) {
         starty = 0;
-        endy   = dh + dy;
-        fp_initial_iy = -(dy) * fp_step_y;
+        fp_initial_iy = -(starty) * fp_step_y;
     }
-    if( (dy+dh) > dth ) {
+    if( endy > dth ) {
         endy = dth - 1;
     }
 
-    fp_initial_ix += sx;
-    fp_initial_iy += sy;
+    fp_initial_ix += (sx << 16);
+    fp_initial_iy += (sy << 16);
   }
   
   buffOff = starty * dtw;// + startx;
-  imgOff  = 0;
   
   fp_iy = fp_initial_iy;
   for(y=starty;y<endy;y++) {
