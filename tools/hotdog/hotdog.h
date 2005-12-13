@@ -92,7 +92,10 @@ typedef struct hd_object {
     void (*render)(struct hd_engine *eng, struct hd_object *obj, int x, int y, int w, int h);
     void (*destroy)(struct hd_object *obj);
     
-    hd_rect clip, delta, dest, /* private */ last;
+    void (*animate)(struct hd_object *obj);
+    void *animdata;
+
+    /* private */ hd_rect last;
 } hd_object;
 
 typedef struct hd_obj_list {
@@ -131,6 +134,7 @@ typedef struct hd_engine {
 hd_engine *HD_Initialize(uint32 width,uint32 height,uint8 bpp, void *framebuffer, void (*update)(struct hd_engine*, int, int, int, int));
 void HD_Register(hd_engine *eng,hd_object *obj);
 void HD_Render(hd_engine *eng);
+void HD_Animate(hd_engine *eng);
 void HD_Destroy(hd_object *obj);
 void HD_ScaleBlendClip (uint32 *sbuf, int stw, int sth, int sx, int sy, int sw, int sh,
                         uint32 *dbuf, int dtw, int dth, int dx, int dy, int dw, int dh);

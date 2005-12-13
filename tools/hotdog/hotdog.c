@@ -84,6 +84,15 @@ void HD_Register(hd_engine *eng,hd_object *obj) {
 	curr->next->next = NULL;
 }
 
+void HD_Animate(hd_engine *eng) {
+    hd_obj_list *cur = eng->list;
+    while (cur) {
+        if (cur->obj->animating && cur->obj->animate)
+            cur->obj->animate (cur->obj);
+        cur = cur->next;
+    }
+}
+
 void HD_Render(hd_engine *eng) {
 	hd_obj_list *cur = eng->list;
         hd_rect *dirties = 0, *rect = 0;
