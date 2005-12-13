@@ -88,6 +88,7 @@ void HD_Render(hd_engine *eng) {
 	hd_obj_list *cur = eng->list;
         hd_rect *dirties = 0, *rect = 0;
         int needsort = 0;
+        int needrender = 0;
 
         // Make a list of all dirty rects. Rects are clipped
         // to screen from the beginning.
@@ -96,6 +97,7 @@ void HD_Render(hd_engine *eng) {
             if (obj->last.x != obj->x || obj->last.y != obj->y ||
                 obj->last.w != obj->w || obj->last.h != obj->h ||
                 obj->last.z != obj->z) {
+                needrender = 1;
                 // One rect: current position
                 if (!rect) {
                     rect = dirties = malloc (sizeof(hd_rect));
@@ -129,7 +131,13 @@ void HD_Render(hd_engine *eng) {
         if (needsort)
             eng->list = HD_StackObjects (eng->list);
 
-        // Clear dirty areas
+        if (!needrender) return;
+
+#ifndef PRECISE_DIRTIES
+        // Clear FB
+        memset (eng->buffer, 0, eng->screen.width * eng->screen.height * 4);
+#else
+        // Clear dirties
         rect = dirties;
         while (rect) {
             uint32 *p = eng->buffer + rect->y*eng->screen.width + rect->x;
@@ -140,7 +148,16 @@ void HD_Render(hd_engine *eng) {
             }
             rect = rect->next;
         }
+#endif
 
+#ifndef PRECISE_DIRTIES
+        // Draw everything
+        cur = eng->list;
+        while (cur) {
+            cur->obj->render (eng, cur->obj, 0, 0, cur->obj->natw, cur->obj->nath);
+            cur = cur->next;
+        }
+#else //// STILL BUGGY! ////
         // Draw objects, and parts of any others that overlap/underlap
         cur = eng->list;
         while (cur) {
@@ -214,6 +231,12 @@ void HD_Render(hd_engine *eng) {
             }
             cur = cur->next;
         }
+#endif
+
+        /** Arguable whether we should only translate dirty areas...
+         ** the ASM code below might get rather slower if we had to worry about short regions,
+         ** non-multiple-of-4 areas, etc.
+         **/
 
 	// Translate internal ARGB8888 to RGB565
 	if (eng->screen.framebuffer) {
@@ -368,9 +391,11 @@ void HD_Render(hd_engine *eng) {
 
         rect = dirties;
         while (rect) {
+            hd_rect *next;
             eng->screen.update (eng, rect->x, rect->y, rect->w, rect->h);
-            rect = rect->next;
-            // FREE RECTS! xxx
+            next = rect->next;
+            free (rect);
+            rect = next;
         }
 }
 
