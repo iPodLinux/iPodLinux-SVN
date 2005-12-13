@@ -21,6 +21,7 @@
  *
  */
 
+#include "console.h"
 #include "levels.h"
 #include "vglobals.h"
 #include "vgamobjs.h"
@@ -245,8 +246,27 @@ void Vortex_Enemy_poll( void )
 
 		case( VORTEX_ENS_ACTIVE ):
 			enemies[e].z += enemies[e].v;
-			if( enemies[e].z > (NUM_Z_POINTS - 6))
+			if( enemies[e].z > (NUM_Z_POINTS - 6)) {
 				enemies[e].state = VORTEX_ENS_INACTIVE;
+
+				/* for now... */
+				vglob.score -= 75;
+				if( vglob.score < 0 )
+				{
+					vglob.score = 0;
+					Vortex_Enemy_clear();
+					vglob.lives--;
+					if( vglob.lives <= 0 ){
+						vglob.lives = 0;
+					}
+					Vortex_Console_AddItem( "OUCH", 0, 0,
+					    VORTEX_STYLE_NORMAL,
+					    vglob.color.bonus );
+				} else {
+				    Vortex_Console_AddItem( "-75", 0, 0,
+					VORTEX_STYLE_NORMAL, vglob.color.con );
+				}
+			}
 			break;
 
 		case( VORTEX_ENS_DEATH ):

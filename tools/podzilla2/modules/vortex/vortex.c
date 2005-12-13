@@ -183,6 +183,7 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 			Vortex_ChangeToState( VORTEX_STATE_LEVELSEL );
 		break;
 
+
 	case VORTEX_STATE_LEVELSEL:
 		if( !vglob.classicMode ) Star_DrawStars( srf );
 		Vortex_DrawWeb( srf );
@@ -270,6 +271,13 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 		break;
 
 	case VORTEX_STATE_DEATH:
+		if( !vglob.classicMode ) Star_DrawStars( srf );
+		Vortex_Console_Render( srf );
+		if( Vortex_Console_GetZoomCount() == 0 )
+		{
+			Vortex_ChangeToState( VORTEX_STATE_DEAD );
+			pz_close_window( vglob.window );
+		}
 		break;
 
 	case VORTEX_STATE_DEAD:
@@ -514,16 +522,31 @@ int event_vortex (PzEvent *ev)
 
 	case PZ_EVENT_TIMER:
 		if( (vglob.state == VORTEX_STATE_STARTUP) &&
-		    (vglob.timer < 5 ) )
+		    (vglob.timer < 5 ))
 		{
 			Vortex_Console_AddItem( "VORTEX", 0, 0, 
 				VORTEX_STYLE_NORMAL, vglob.color.title );
 		}
 
+		if( (vglob.state == VORTEX_STATE_DEATH) &&
+		    (vglob.timer < 5 ))
+			Vortex_Console_AddItem( "GAME OVER", 0, 0, 
+				VORTEX_STYLE_NORMAL, vglob.color.title );
+
 		Vortex_Bolt_poll();
 		Vortex_Enemy_poll();
 		Vortex_Console_Tick();
 		Vortex_CollisionDetection();
+
+		if( vglob.lives <= 0 ) {
+			if( vglob.state != VORTEX_STATE_DEATH ) {
+				Vortex_ChangeToState( VORTEX_STATE_DEATH );
+				Vortex_Console_HiddenStatic( 1 );
+				Vortex_Console_AddItem( "GAME OVER", 0, 0, 
+				    VORTEX_STYLE_NORMAL, vglob.color.title );
+			}
+		}
+
 		vglob.timer++;
 		ev->wid->dirty = 1;
 		break;
