@@ -49,6 +49,7 @@ typedef struct _vortex_colors {
 	ttk_color web_bot_dot;	// bottom vector simulation dots
 	ttk_color web_fill;	// fill color for the web sides 
 	ttk_color baseind;	// base icon indicators (lives left)
+	ttk_color baseindo;	// base icon indicators (outline)
 	ttk_color score;	// current score
 	ttk_color level;	// current level
 	ttk_color player;	// player character
@@ -57,6 +58,7 @@ typedef struct _vortex_colors {
 	ttk_color plaser;	// player's particle laser bolts
 	ttk_color super;	// superzapper color
 	ttk_color flippers;	// enemy characters
+	ttk_color edeath;	// enemy death
 } vortex_colors;
 
 
@@ -78,6 +80,7 @@ typedef struct vortex_globals {
 	int timer;
 
 	int hasParticleLaser;
+	int hasSuperZapper;
 
 	int score;
 	int lives;

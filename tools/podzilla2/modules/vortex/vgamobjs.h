@@ -50,31 +50,34 @@ typedef struct bolt {
 #define VORTEX_ENT_TANKER	(4)	/* 2-for-1 special */
 
 /* enemy state */
-#define VORTEX_ENS_ZOOMY	(0)	/* enemy is approaching the web */
-#define VORTEX_ENS_ACTIVE	(1)	/* enemy is on the web and vulnerable */
-#define VORTEX_ENS_DEATH	(2)	/* enemy is dying */
+#define VORTEX_ENS_INACTIVE	(0)	/* enemy slot is inactive */
+#define VORTEX_ENS_ZOOMY	(1)	/* enemy is approaching the web */
+#define VORTEX_ENS_ACTIVE	(2)	/* enemy is on the web and vulnerable */
+#define VORTEX_ENS_FLIPPING	(3)	/* enemy is flipping */
+#define VORTEX_ENS_DEATH	(4)	/* enemy is dying */
 
 typedef struct enemy {
 	int state;		/* what life state it is in */
 	int type;		/* what kind of enemy it is */
 	int web;		/* where it is, rotationally */
-	int z;			/* where it is, depth */
-	int v;			/* velocity */
+	double z;		/* where it is, depth */
+	double v;		/* velocity */
 	int timeToFlip;		/* countdown time until it flips again */
 	int timeToFire;		/* countdown time until it fires again */
 } enemy;
 
 
 #define VORTEX_PU_PART	(0)	/* Particle laser */
-#define VORTEX_PU_2000	(1)	/* Zappo 2000*/
+#define VORTEX_PU_2000	(1)	/* Zappo 2000 - even numbered powerups */
 #define VORTEX_PU_BUD	(2)	/* little buddy */
 #define VORTEX_PU_LIFE	(3)	/* extra life */
+#define VORTEX_PU_OUTTA (4)	/* outta here.  5k points, + next level jump */
 
 typedef struct powerup {
 	int type;		/* what kind of enemy it is */
 	int web;		/* where it is, rotationally */
-	int z;			/* where it is, depth */
-	int v;			/* velocity */
+	double z;		/* where it is, depth */
+	double v;		/* velocity */
 } powerup;
 
 
@@ -83,6 +86,12 @@ void Vortex_Bolt_draw( ttk_surface srf );
 void Vortex_Bolt_add( void );
 void Vortex_Bolt_clear( void );
 void Vortex_Bolt_poll( void );
+
+/* enemy functions */
+void Vortex_Enemy_draw( ttk_surface srf );
+void Vortex_Enemy_add( void );
+void Vortex_Enemy_clear( void );
+void Vortex_Enemy_poll( void );
 
 
 #endif

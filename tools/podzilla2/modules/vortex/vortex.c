@@ -157,9 +157,12 @@ void Vortex_Base( ttk_surface srf, int x, int y )
 	xx[3] = x+5;	yy[3] = y+6;
 
 	if( !vglob.classicMode )
-		ttk_fillpoly( srf, 4, xx, yy, vglob.color.player_fill );
-
-	ttk_aapoly( srf, 4, xx, yy, vglob.color.player_fill );
+	{
+		ttk_fillpoly( srf, 4, xx, yy, vglob.color.baseind );
+		ttk_aapoly( srf, 4, xx, yy, vglob.color.baseindo );
+	} else {
+		ttk_aapoly( srf, 4, xx, yy, vglob.color.baseind );
+	}
 }
 
 
@@ -234,6 +237,9 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 		/* draw bolts */
 		Vortex_Bolt_draw( srf );
 
+		/* draw enemies */
+		Vortex_Enemy_draw( srf );
+
 		/* draw any console text over all of that */
 		Vortex_Console_Render( srf );
 
@@ -248,6 +254,11 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 		for( x=0 ; x<vglob.lives ; x++ ) {
 			Vortex_Base( srf, 1+(x*12), 1 );
 		}
+
+		/* and superzapper indicator, if applicable */
+		if( vglob.hasSuperZapper )
+			pz_vector_string( srf, "SZ", 1, 12, 5, 9, 1, 
+					vglob.color.super );
 
 		/* and current level */
 		snprintf( buf, 15, "LVL %d", vglob.startLevel );
@@ -374,6 +385,7 @@ void Vortex_initLevel( void )
 {
 	Vortex_newLevelCompute();
 	Vortex_Bolt_clear();
+	Vortex_Enemy_clear();
 	Vortex_clawCompute();
 	if( !vglob.classicMode ) {
 		Star_GenerateStars();
@@ -394,18 +406,19 @@ void Vortex_incPosition( int steps )
 		return;
 	}
 
-	if( vglob.wPosMajor < 15 ) {
-		vglob.wPosMajor++;
-		vglob.wPosMinor = 0;
-		Vortex_clawCompute();
-		return;
+	vglob.wPosMajor++;
+	vglob.wPosMinor = 0;
+
+	/* clip or rollover */
+	if( vortex_levels[ vglob.currentLevel ].flags & LF_CLOSEDWEB) {
+		if( vglob.wPosMajor > 15 )
+			vglob.wPosMajor = 0;
+	} else {
+		if( vglob.wPosMajor > 14 )
+			vglob.wPosMajor = 14;
 	}
 
-	if( vortex_levels[ vglob.currentLevel ].flags & LF_CLOSEDWEB ) {
-		vglob.wPosMajor = 0;
-		vglob.wPosMinor = 0;
-		Vortex_clawCompute();
-	}
+	Vortex_clawCompute();
 }
 
 void Vortex_decPosition( int steps )
@@ -486,6 +499,7 @@ int event_vortex (PzEvent *ev)
 				Vortex_initLevel();
 			} else if( vglob.state == VORTEX_STATE_GAME ) {
 				Vortex_Bolt_add();
+				Vortex_Enemy_add();
 			}
 			break;
 
@@ -506,10 +520,10 @@ int event_vortex (PzEvent *ev)
 				VORTEX_STYLE_NORMAL, vglob.color.title );
 		}
 
-		vglob.score += 3;
-
 		Vortex_Bolt_poll();
+		Vortex_Enemy_poll();
 		Vortex_Console_Tick();
+		Vortex_CollisionDetection();
 		vglob.timer++;
 		ev->wid->dirty = 1;
 		break;
@@ -528,6 +542,7 @@ static void Vortex_Initialize( void )
 	vglob.score = 0;
 	vglob.lives = 3;
 	vglob.hasParticleLaser = 0;
+	vglob.hasSuperZapper = 1;
 
 	vglob.wPosMajor = 0;
 	vglob.wPosMinor = 0;
@@ -597,6 +612,7 @@ void init_vortex()
 		vglob.color.web_bot_dot = ttk_makecol(   0, 128, 255 );
 		vglob.color.web_fill    = ttk_makecol(   0,   0,  30 );
 		vglob.color.baseind     = ttk_makecol( 255, 255,   0 );
+		vglob.color.baseindo    = ttk_makecol( 255,   0,   0 );
 		vglob.color.score       = ttk_makecol(   0, 255, 255 );
 		vglob.color.level       = ttk_makecol(   0,   0, 128 );
 		vglob.color.player      = ttk_makecol( 255, 255,   0 );
@@ -605,6 +621,7 @@ void init_vortex()
 		vglob.color.plaser      = ttk_makecol( 255, 128,   0 );
 		vglob.color.super       = ttk_makecol(   0, 255, 255 );
 		vglob.color.flippers    = ttk_makecol( 255,   0,   0 );
+		vglob.color.edeath      = ttk_makecol( 255, 255,   0 );
 	} else {
 		/* monochrome iPod */
 		vglob.color.bg          = ttk_makecol( WHITE );
@@ -622,6 +639,7 @@ void init_vortex()
 		vglob.color.web_bot_dot = ttk_makecol( GREY );
 		vglob.color.web_fill    = ttk_makecol( WHITE );
 		vglob.color.baseind     = ttk_makecol( BLACK );
+		vglob.color.baseindo    = ttk_makecol( BLACK );
 		vglob.color.score       = ttk_makecol( BLACK );
 		vglob.color.level       = ttk_makecol( BLACK );
 		vglob.color.player      = ttk_makecol( DKGREY );
@@ -630,6 +648,7 @@ void init_vortex()
 		vglob.color.plaser      = ttk_makecol( BLACK );
 		vglob.color.super       = ttk_makecol( DKGREY );
 		vglob.color.flippers    = ttk_makecol( BLACK );
+		vglob.color.edeath      = ttk_makecol( GREY );
 	}
 
 	/* precompute all of the web scaling... */

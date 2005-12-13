@@ -21,6 +21,7 @@
  *
  */
 
+#include "levels.h"
 #include "vglobals.h"
 #include "vgamobjs.h"
 
@@ -124,4 +125,161 @@ void Vortex_Bolt_clear( void )
 	int b;
 	for( b=0 ; b<VGO_BOLTS_NUM ; b++ )
 		bolts[b].active = 0;
+}
+
+
+
+/* ********************************************************************** */
+/* Enemy logic and stuff */
+#define VGO_ENEMIES_NUM (16)
+
+enemy enemies[VGO_ENEMIES_NUM];
+
+void Vortex_Enemy_draw( ttk_surface srf )
+{
+	int e,w,z;
+	for( e=0 ; e<VGO_ENEMIES_NUM ; e++ ){
+		w = enemies[e].web;
+		z = (int) enemies[e].z;
+
+		switch( enemies[e].state ) {
+		case( VORTEX_ENS_DEATH ):
+				ttk_line( srf,  vglob.ptsX[w  ][z  ][0],
+						vglob.ptsY[w  ][z  ][0],
+						vglob.ptsX[w+1][z+3][0],
+						vglob.ptsY[w+1][z+3][0],
+						vglob.color.edeath );
+				ttk_line( srf,  vglob.ptsX[w  ][z+3][0],
+						vglob.ptsY[w  ][z+3][0],
+						vglob.ptsX[w+1][z  ][0],
+						vglob.ptsY[w+1][z  ][0],
+						vglob.color.edeath );
+
+				ttk_ellipse( srf, vglob.ptsX[w  ][z][1],
+						  vglob.ptsY[w  ][z][1],
+						  10, 10, vglob.color.edeath );
+				ttk_ellipse( srf, vglob.ptsX[w  ][z][1],
+						  vglob.ptsY[w  ][z][1],
+						  5, 5, vglob.color.edeath );
+			break;
+
+		case( VORTEX_ENS_ZOOMY ):
+		case( VORTEX_ENS_ACTIVE ):
+			switch( enemies[e].type ){
+			case( VORTEX_ENT_FLIPPER ):
+				ttk_line( srf,  vglob.ptsX[w  ][z  ][0],
+						vglob.ptsY[w  ][z  ][0],
+						vglob.ptsX[w+1][z+3][0],
+						vglob.ptsY[w+1][z+3][0],
+						vglob.color.flippers );
+				ttk_line( srf,  vglob.ptsX[w  ][z+3][0],
+						vglob.ptsY[w  ][z+3][0],
+						vglob.ptsX[w+1][z  ][0],
+						vglob.ptsY[w+1][z  ][0],
+						vglob.color.flippers );
+
+				ttk_line( srf,  vglob.ptsX[w  ][z+3][0],
+						vglob.ptsY[w  ][z+3][0],
+						vglob.ptsX[w  ][z  ][0],
+						vglob.ptsY[w  ][z  ][0],
+						vglob.color.flippers );
+				ttk_line( srf,  vglob.ptsX[w+1][z+3][0],
+						vglob.ptsY[w+1][z+3][0],
+						vglob.ptsX[w+1][z  ][0],
+						vglob.ptsY[w+1][z  ][0],
+						vglob.color.flippers );
+			}
+			break;
+
+		default:
+			break;
+		}
+	}
+}
+
+void Vortex_Enemy_add( void )
+{
+	int e;
+	for( e=0 ; e<VGO_ENEMIES_NUM ; e++ ){
+		if( enemies[e].state == VORTEX_ENS_INACTIVE ) {
+			enemies[e].state      = VORTEX_ENS_ZOOMY;
+			enemies[e].type       = VORTEX_ENT_FLIPPER;/* for now */
+			enemies[e].web	      = rand() & 0x0f;
+			enemies[e].v          = 0.25;
+			enemies[e].z          = 0;
+			enemies[e].timeToFlip = 20;
+			enemies[e].timeToFire = 10;
+
+			/* for now. hack it */
+			if( !vortex_levels[ enemies[e].web ].flags & LF_CLOSEDWEB )
+				enemies[e].web = rand() % 14;
+			return;
+		}
+	}
+}
+
+void Vortex_Enemy_clear( void )
+{
+	int e;
+	for( e=0 ; e<VGO_ENEMIES_NUM ; e++ ){
+		enemies[e].state = VORTEX_ENS_INACTIVE;
+	}
+
+}
+
+void Vortex_Enemy_poll( void )
+{
+	int e;
+	for( e=0 ; e<VGO_ENEMIES_NUM ; e++ )
+	{
+		switch( enemies[e].state ) {
+		case( VORTEX_ENS_INACTIVE ):
+			break;
+
+		case( VORTEX_ENS_ZOOMY ):
+			enemies[e].z += enemies[e].v;
+			if( enemies[e].z > 5 ) {
+				enemies[e].state = VORTEX_ENS_ACTIVE;
+			}
+			break;
+
+		case( VORTEX_ENS_ACTIVE ):
+			enemies[e].z += enemies[e].v;
+			if( enemies[e].z > (NUM_Z_POINTS - 6))
+				enemies[e].state = VORTEX_ENS_INACTIVE;
+			break;
+
+		case( VORTEX_ENS_DEATH ):
+			enemies[e].state = VORTEX_ENS_INACTIVE;
+			break;
+		}
+	}
+}
+
+
+
+void Vortex_CollisionDetection( void )
+{
+	int b,e;
+	int d;
+	static int s=0;
+
+	for( e=0 ; e<VGO_ENEMIES_NUM ; e++ )
+	{
+	    if( enemies[e].state == VORTEX_ENS_ACTIVE ) {
+		for( b=0 ; b<VGO_BOLTS_NUM ; b++ ) {
+		    if( bolts[b].active == 1 ) {
+			if( bolts[b].web == enemies[e].web ) {
+			    d = (int) (bolts[b].z - enemies[e].z);
+			    if( d<1 ) {
+				/* HIT! */
+				enemies[e].state = VORTEX_ENS_DEATH;
+				bolts[b].active = 0;
+				vglob.score += 100;
+			    }
+			}
+		    }
+		}
+	    }
+	}
 }
