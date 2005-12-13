@@ -36,8 +36,8 @@
 #define VORTEX_NCONSOLE_ITEMS	(20)	/* number of console entries */
 #define VORTEX_CONSOLE_BUFSIZE	(32)	/* text buffer size */
 
-#define VORTEX_CONSOLE_SCALE    (2)     /* how fast it gets larger */
-#define VORTEX_CONSOLE_MATURITY (40)	/* at what age to they go static? */
+#define VORTEX_CONSOLE_SCALE    (1)     /* how fast it gets larger */
+#define VORTEX_CONSOLE_MATURITY (50)	/* at what age to they go static? */
 #define VORTEX_CONSOLE_CAROUSEL	(30)	/* logans run reference */
 
 typedef struct vortex_console {

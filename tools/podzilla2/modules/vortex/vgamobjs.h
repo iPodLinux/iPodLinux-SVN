@@ -34,10 +34,11 @@
 #define VORTEX_BOLT_ENEMY	(1)	/* enemy fired bolt */
 
 typedef struct bolt {
+	int active;		/* 1 = active, 0 = free */
 	int type;		/* bolt type */
 	int web;		/* where it is, rotationally */
-	int z;			/* where it is, depth */
-	int v;			/* velocity */
+	double z;		/* where it is, depth */
+	double v;		/* velocity */
 } bolt;
 
 
@@ -76,4 +77,14 @@ typedef struct powerup {
 	int v;			/* velocity */
 } powerup;
 
+
+/* bolt manipulation functions */
+void Vortex_Bolt_draw( ttk_surface srf );
+void Vortex_Bolt_add( void );
+void Vortex_Bolt_clear( void );
+void Vortex_Bolt_poll( void );
+
+
 #endif
+
+
