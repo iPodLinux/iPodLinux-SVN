@@ -50,6 +50,8 @@ vortex_globals vglob;
 
 #define VPADDING (10)
 
+void Vortex_initLevel( void );
+
 int Vortex_Rand( int max )
 {
         return (int)((float)max * rand() / (RAND_MAX + 1.0));
@@ -183,36 +185,64 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 		if( !vglob.classicMode ) Star_DrawStars( srf );
 		Vortex_Console_Render( srf );
 		if( Vortex_Console_GetZoomCount() == 0 )
-			Vortex_ChangeToState( VORTEX_STATE_LEVELSEL );
+			Vortex_ChangeToState( VORTEX_STATE_STYLESEL );
+			Vortex_initLevel();
+			vglob.wPosMajor = 8;
 		break;
 
-
+	case VORTEX_STATE_STYLESEL:
 	case VORTEX_STATE_LEVELSEL:
 		if( !vglob.classicMode ) Star_DrawStars( srf );
 		Vortex_DrawWeb( srf );
 
-		/* let the user select what level to start on */
-		switch((vglob.timer>>4) & 0x03 ) {
-		case 0: word = "SELECT"; break;
-		case 1: word = "START";  break;
-		case 2: word = "LEVEL";  break;
-		case 3: word = "";       break;
+		if( vglob.state == VORTEX_STATE_STYLESEL ) {
+			Vortex_DrawPlayer( srf );
+			Vortex_Bolt_draw( srf );
+
+			for( x=0 ; x<vglob.lives ; x++ ) {
+				Vortex_Base( srf, 1+(x*12), 1 );
+			}
+
+			/* let the user select what style to play with */
+			switch((vglob.timer>>4) & 0x03 ) {
+			case 0: word = "SELECT"; break;
+			case 1: word = "GAME";   break;
+			case 2: word = "STYLE";  break;
+			case 3: word = "";       break;
+			}
+		} else {
+			/* let the user select what level to start on */
+			switch((vglob.timer>>4) & 0x03 ) {
+			case 0: word = "SELECT"; break;
+			case 1: word = "START";  break;
+			case 2: word = "LEVEL";  break;
+			case 3: word = "";       break;
+			}
 		}
 
 		Vortex_OutlinedTextCenter( srf, word,
 			    (ttk_screen->w - ttk_screen->wx)>>1, 20,
 			    10, 18, 1, vglob.color.select, vglob.color.bg );
 
-		/* level number */
-		snprintf( buf, 15, "%c %d %c", 
-			(vglob.startLevel>0)?
-					VECTORFONT_SPECIAL_LEFT:' ',
-			vglob.startLevel,
-			(vglob.startLevel<=(NLEVELS-2))?
-					VECTORFONT_SPECIAL_RIGHT:' ');
+		if( vglob.state == VORTEX_STATE_STYLESEL ) {
+			if( vglob.classicMode )
+				snprintf( buf, 16, "CLASSIC %c", 
+						VECTORFONT_SPECIAL_RIGHT );
+			else
+				snprintf( buf, 16, "%c 2K5", 
+						VECTORFONT_SPECIAL_LEFT );
+		} else {
+			/* level number */
+			snprintf( buf, 15, "%c %d %c", 
+				(vglob.startLevel>0)?
+						VECTORFONT_SPECIAL_LEFT:' ',
+				vglob.startLevel,
+				(vglob.startLevel<=(NLEVELS-2))?
+						VECTORFONT_SPECIAL_RIGHT:' ');
+		}
 		Vortex_OutlinedTextCenter( srf, buf,
-			    (ttk_screen->w - ttk_screen->wx)>>1, 50,
-			    10, 18, 1, vglob.color.sellevel, vglob.color.bg );
+			(ttk_screen->w - ttk_screen->wx)>>1, 50,
+			10, 18, 1, vglob.color.sellevel, vglob.color.bg );
 
 		/* display some props to the masters */
 		switch((vglob.timer>>5) & 0x03 ) {
@@ -270,7 +300,7 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 					vglob.color.super );
 
 		/* and current level */
-		snprintf( buf, 15, "LVL %d", vglob.startLevel );
+		snprintf( buf, 15, "L%d", vglob.startLevel );
 		pz_vector_string( srf, buf, 
                             (ttk_screen->w - ttk_screen->wx) -
 			     pz_vector_width( buf, 5, 9, 1 ) -1,
@@ -300,11 +330,6 @@ void cleanup_vortex( void )
 }
 
 
-void Vortex_playerFires( void )
-{
-	/* allocate a new bolt structure */
-	/* start the bolt moving (velocity, etc) */
-}
 
 /* finds the x/y position along [vect]or (point on outer edge of web)  
    at depth z (128 == outer edge of web), from the [center] 
@@ -399,6 +424,10 @@ void Vortex_newLevelCompute( void )
 /* all of the stuff that needs to get reset at the beginning of a new level */
 void Vortex_initLevel( void )
 {
+	if( vglob.state == VORTEX_STATE_STARTUP ) return;
+	if( vglob.state == VORTEX_STATE_DEATH ) return;
+	if( vglob.state == VORTEX_STATE_DEAD ) return;
+
 	Vortex_newLevelCompute();
 	Vortex_Bolt_clear();
 	Vortex_Enemy_clear();
@@ -461,27 +490,38 @@ void Vortex_decPosition( int steps )
 	}
 }
 
+
+void Vortex_selectLevel( int l )
+{
+	vglob.startLevel = l;
+
+	/* and clip */
+	if( vglob.startLevel < 0 ) 
+		vglob.startLevel = 0;
+	if( vglob.startLevel >= (NLEVELS-1) ) 
+		vglob.startLevel = NLEVELS-1;
+
+	if( vglob.currentLevel != vglob.startLevel ) {
+		vglob.currentLevel = vglob.startLevel;
+		if( !vglob.classicMode )
+			Star_GenerateStars();
+	}
+}
+
 int event_vortex (PzEvent *ev) 
 {
 	switch (ev->type) {
 	case PZ_EVENT_SCROLL:
 
+		if( vglob.state == VORTEX_STATE_STYLESEL ) {
+			if( ev->arg > 0 )	vglob.classicMode = 0;
+			else 			vglob.classicMode = 1;
+			ev->wid->dirty = 1;
+		}
+
 		if( vglob.state == VORTEX_STATE_LEVELSEL ) {
 			TTK_SCROLLMOD( ev->arg, 4 );
-	   		/* adjust */ 
-			vglob.startLevel += ev->arg;
-
-			/* and clip */
-			if( vglob.startLevel < 0 ) 
-				vglob.startLevel = 0;
-			if( vglob.startLevel >= (NLEVELS-1) ) 
-				vglob.startLevel = NLEVELS-1;
-
-			if( vglob.currentLevel != vglob.startLevel ) {
-				vglob.currentLevel = vglob.startLevel;
-				if( !vglob.classicMode )
-					Star_GenerateStars();
-			}
+			Vortex_selectLevel( vglob.startLevel + ev->arg );
 		}
 
 		if( vglob.state == VORTEX_STATE_GAME ) {
@@ -510,7 +550,11 @@ int event_vortex (PzEvent *ev)
 			break;
 
 		case( PZ_BUTTON_ACTION ):
-			if( vglob.state == VORTEX_STATE_LEVELSEL ) {
+			if( vglob.state == VORTEX_STATE_STYLESEL ) {
+				Vortex_ChangeToState( VORTEX_STATE_LEVELSEL );
+				vglob.currentLevel = 0;
+				Vortex_initLevel();
+			} else if( vglob.state == VORTEX_STATE_LEVELSEL ) {
 				Vortex_ChangeToState( VORTEX_STATE_GAME );
 				Vortex_initLevel();
 			} else if( vglob.state == VORTEX_STATE_GAME ) {
@@ -528,26 +572,45 @@ int event_vortex (PzEvent *ev)
 		cleanup_vortex();
 		break;
 
-	case PZ_EVENT_TIMER:	/* this should be a switch( vglob.state ) xxx */
-		/* generate a splash screen */
-		if( (vglob.state == VORTEX_STATE_STARTUP) &&
-		    (vglob.timer < 5 ))
-		{
-			Vortex_Console_AddItem( "VORTEX", 0, 0, 
-				VORTEX_STYLE_NORMAL, vglob.color.title );
-		}
+	case PZ_EVENT_TIMER:
+		switch( vglob.state ){
+		case( VORTEX_STATE_STARTUP ):
+			/* generate a splash screen */
+			if( vglob.timer < 5 )
+				Vortex_Console_AddItem( "VORTEX", 0, 0, 
+				    VORTEX_STYLE_NORMAL, vglob.color.title );
+			break;
 
-		if( (vglob.state == VORTEX_STATE_DEATH) &&
-		    (vglob.timer < 5 ))
-			Vortex_Console_AddItem( "GAME OVER", 0, 0, 
-				VORTEX_STYLE_NORMAL, vglob.color.title );
+		case( VORTEX_STATE_STYLESEL ):
+			/* just move stuff around */
+			if( (vglob.timer & 0x3f) == 0x3f ) {
+				if( vglob.startLevel > 16 ) 
+					vglob.startLevel = -1;
+				Vortex_selectLevel( vglob.startLevel + 1 );
+				Vortex_initLevel();
+			}
+
+			if( (vglob.timer & 0x1f) == 0x1f )
+				Vortex_decPosition( 1 );
+			else if( (vglob.timer & 0x0f) == 0x0f)
+				Vortex_incPosition( 1 );
+			if( (vglob.timer & 0x0f) == 0x0f )
+				Vortex_Bolt_add();
+			break;
+
+		case( VORTEX_STATE_DEATH ):
+			if( vglob.timer < 5 )
+				Vortex_Console_AddItem( "GAME OVER", 0, 0, 
+				    VORTEX_STYLE_NORMAL, vglob.color.title );
+			break;
+		}
 
 		Vortex_Bolt_poll();
 		Vortex_Enemy_poll();
 		Vortex_Console_Tick();
 		Vortex_CollisionDetection();
 
-		/* generate a death screen */
+		/* generate a death screen - state changer */
 		if( vglob.lives <= 0 ) {
 			if( vglob.state != VORTEX_STATE_DEATH ) {
 				Vortex_ChangeToState( VORTEX_STATE_DEATH );
@@ -592,24 +655,13 @@ PzWindow *new_vortex_window()
 	vglob.widget = pz_add_widget( vglob.window, draw_vortex, event_vortex );
 	pz_widget_set_timer( vglob.widget, 30 );
 
+	vglob.classicMode = 0;
 	Vortex_Initialize( );
 	Vortex_Console_HiddenStatic( 1 );
 	Vortex_Console_AddItem( "VORTEX", 0, 0, 
 				VORTEX_STYLE_BOLD, vglob.color.title );
 
 	return pz_finish_window( vglob.window );
-}
-
-PzWindow *new_classic_vortex_window()
-{
-	vglob.classicMode = 1;
-	return( new_vortex_window() );
-}
-
-PzWindow *new_2k5_vortex_window()
-{
-	vglob.classicMode = 0;
-	return( new_vortex_window() );
 }
 
 
@@ -622,8 +674,7 @@ void init_vortex()
 	vglob.module = pz_register_module ("vortex", cleanup_vortex);
 
 	/* menu item display name */
-	pz_menu_add_action ("/Extras/Games/Vortex 2k5", new_2k5_vortex_window);
-	pz_menu_add_action ("/Extras/Games/Vortex Classic", new_classic_vortex_window);
+	pz_menu_add_action ("/Extras/Games/Vortex", new_vortex_window);
 
 	Vortex_Initialize();
 
