@@ -294,8 +294,8 @@ void cleanup_vortex( void )
 
 void Vortex_playerFires( void )
 {
-	int x;
-	printf( "PIX!\n" );
+	/* allocate a new bolt structure */
+	/* start the bolt moving (velocity, etc) */
 }
 
 /* finds the x/y position along [vect]or (point on outer edge of web)  
