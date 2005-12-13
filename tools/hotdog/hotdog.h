@@ -73,6 +73,7 @@ typedef struct hd_rect {
 
 typedef struct hd_object {
     int32 x, y, w, h, z;
+    int32 natw, nath; /* natural width and height */
     uint8 opacity;
     uint32 type;
     int animating;
