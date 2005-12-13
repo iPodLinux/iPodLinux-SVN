@@ -41,12 +41,13 @@ void Vortex_Bolt_draw( ttk_surface srf )
 		{
 			w = bolts[b].web;
 			z = (int) bolts[b].z;
-			if( vglob.hasParticleLaser )
+
+			if( bolts[b].type == VORTEX_BOLT_PARTICLE )
 			    c = vglob.color.plaser;
-			else
+			else if( bolts[b].type == VORTEX_BOLT_FRIENDLY )
 			    c = vglob.color.bolts;
 		
-			if( vglob.hasParticleLaser )
+			if( bolts[b].type == VORTEX_BOLT_PARTICLE )
 			{
 				/* angle 1 */
 				ttk_line( srf,  
@@ -79,7 +80,7 @@ void Vortex_Bolt_draw( ttk_surface srf )
 					vglob.ptsX[w][z-2][1],
 					vglob.ptsY[w][z-2][1],
 					c );
-				}
+			}
 		}
 	}
 }
@@ -108,14 +109,16 @@ void Vortex_Bolt_add( void )
 		if( bolts[b].active == 0 )
 		{
 			bolts[b].active = 1;
-			bolts[b].type   = VORTEX_BOLT_FRIENDLY;
 			bolts[b].web    = vglob.wPosMajor;
 			bolts[b].z 	= NUM_Z_POINTS-2;
 
-			if( vglob.hasParticleLaser == 1 )
-				bolts[b].v = 1.5; /* particles go quicker */
-			else 
-				bolts[b].v = 1;
+			if( vglob.hasParticleLaser == 1 ) {
+				bolts[b].v    = 1.7; /* particles go quicker */
+				bolts[b].type = VORTEX_BOLT_PARTICLE;
+			} else {
+				bolts[b].v    = 1;
+				bolts[b].type = VORTEX_BOLT_FRIENDLY;
+			}
 			return;
 		}
 	}
@@ -212,8 +215,8 @@ void Vortex_Enemy_add( void )
 			enemies[e].timeToFire = 10;
 
 			/* for now. hack it */
-			if( !vortex_levels[ enemies[e].web ].flags & LF_CLOSEDWEB )
-				enemies[e].web = rand() % 13;
+			if( !(vortex_levels[ enemies[e].web ].flags & LF_CLOSEDWEB) )
+				enemies[e].web = Vortex_Rand( 13 );
 			return;
 		}
 	}

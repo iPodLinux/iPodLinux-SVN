@@ -44,7 +44,7 @@
 #include "vgamobjs.h"
 
 /* version number */
-#define VORTEX_VERSION	"05121311"
+#define VORTEX_VERSION	"05121316"
 
 vortex_globals vglob;
 
@@ -552,6 +552,7 @@ int event_vortex (PzEvent *ev)
 		case( PZ_BUTTON_ACTION ):
 			if( vglob.state == VORTEX_STATE_STYLESEL ) {
 				Vortex_ChangeToState( VORTEX_STATE_LEVELSEL );
+				vglob.startLevel = 0;
 				vglob.currentLevel = 0;
 				Vortex_initLevel();
 			} else if( vglob.state == VORTEX_STATE_LEVELSEL ) {
@@ -590,7 +591,10 @@ int event_vortex (PzEvent *ev)
 				Vortex_initLevel();
 			}
 
-			if( (vglob.timer & 0x1f) == 0x1f )
+			if( (vglob.timer & 0x1f) == 0x1f ) 
+				vglob.hasParticleLaser ^= 1;
+
+			if( (vglob.timer & 0x1f) == 0x1f ) 
 				Vortex_decPosition( 1 );
 			else if( (vglob.timer & 0x0f) == 0x0f)
 				Vortex_incPosition( 1 );
