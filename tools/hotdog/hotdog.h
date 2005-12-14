@@ -140,4 +140,5 @@ void HD_ScaleBlendClip (uint32 *sbuf, int stw, int sth, int sx, int sy, int sw, 
                         uint32 *dbuf, int dtw, int dth, int dx, int dy, int dw, int dh);
 hd_object *HD_New_Object();
 hd_obj_list *HD_StackObjects (hd_obj_list *head);
+
 #endif
