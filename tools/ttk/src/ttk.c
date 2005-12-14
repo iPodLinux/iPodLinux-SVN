@@ -31,6 +31,7 @@ ttk_fontinfo *ttk_fonts = 0;
 TWidgetList *ttk_header_widgets = 0;
 int ttk_button_presstime[128];
 int ttk_button_holdsent[128];
+int ttk_button_erets[128];
 TWidget *ttk_button_pressedfor[128];
 int ttk_first_stap, ttk_last_stap, ttk_last_stap_time, ttk_ignore_stap;
 int ttk_dirty = 0;
@@ -372,6 +373,7 @@ int ttk_run()
 	for (i = 0; i < 128; i++) {
 	    ttk_button_presstime[i] = 0;
 	    ttk_button_holdsent[i] = 0;
+            ttk_button_erets[i] = 0;
 	}
 	
 	if (!ttk_windows) {
@@ -516,12 +518,12 @@ int ttk_run()
 	if (win->input) {
 	    if (win->input->frame && win->input->framedelay && (win->input->framelast + win->input->framedelay <= tick)) {
 		win->input->framelast = tick;
-		eret |= win->input->frame (win->input);
+		eret |= win->input->frame (win->input) & ~TTK_EV_UNUSED;
 	    }
 
 	    if (win->input->timer && win->input->timerdelay && (win->input->timerlast + win->input->timerdelay <= tick)) {
 		win->input->timerlast = tick + 1;
-		eret |= win->input->timer (win->input);
+		eret |= win->input->timer (win->input) & ~TTK_EV_UNUSED;
 	    }
 
 	    if (win->input->dirty) {
@@ -531,7 +533,7 @@ int ttk_run()
 
 	while (win->inbuf_start != win->inbuf_end) {
 	    if (win->focus) // NOT evtarget, that's probably the TI method
-		eret |= win->focus->input (win->focus, win->inbuf[win->inbuf_start]);
+		eret |= win->focus->input (win->focus, win->inbuf[win->inbuf_start]) & ~TTK_EV_UNUSED;
 	    win->inbuf_start++;
 	    win->inbuf_start &= 0x1f;
 	}
@@ -560,12 +562,12 @@ int ttk_run()
 	while (cur) {
 	    if (cur->v->frame && cur->v->framedelay && (cur->v->framelast + cur->v->framedelay <= tick)) {
 		cur->v->framelast = tick;
-		eret |= cur->v->frame (cur->v);
+		eret |= cur->v->frame (cur->v) & ~TTK_EV_UNUSED;
 	    }
 	    
 	    if (cur->v->timer && cur->v->timerdelay && (cur->v->timerlast + cur->v->timerdelay <= tick)) {
 		cur->v->timerlast = tick + 1;
-		eret |= cur->v->timer (cur->v);
+		eret |= cur->v->timer (cur->v) & ~TTK_EV_UNUSED;
 	    }
 
 	    if (cur->v->dirty) {
@@ -632,7 +634,8 @@ int ttk_run()
 	    if (local && (ttk_button_pressedfor[earg] == evtarget) &&
 		((ttk_button_presstime[earg] == tick) || evtarget->keyrepeat))
 	    {
-		eret |= evtarget->down (evtarget, earg);
+                int er = evtarget->down (evtarget, earg);
+                ttk_button_erets[earg] |= er; eret |= er & ~TTK_EV_UNUSED;
 	    }
 	    break;
 	case TTK_BUTTON_UP:
@@ -645,12 +648,21 @@ int ttk_run()
 	    ttk_button_holdsent[earg] = 0;
 	    ttk_button_pressedfor[earg] = 0;
 	    
-	    if (evtarget == pf && local && !hs)
-		eret |= evtarget->button (evtarget, earg, time);
+	    if (evtarget == pf && local && !hs) {
+		int er = evtarget->button (evtarget, earg, time);
+                // If *both* down and button returned unused, do unused. Otherwise,
+                // don't.
+                earg |= er;
+                if (!((er & TTK_EV_UNUSED) && (ttk_button_erets[earg] & TTK_EV_UNUSED))) {
+                    earg &= ~TTK_EV_UNUSED;
+                } else {
+                    earg |= TTK_EV_UNUSED;
+                }
+            }
 	    break;
 	case TTK_SCROLL:
 	    if (local)
-		eret |= evtarget->scroll (evtarget, earg);
+		eret |= evtarget->scroll (evtarget, earg) & ~TTK_EV_UNUSED;
 	    break;
 	}
 	
