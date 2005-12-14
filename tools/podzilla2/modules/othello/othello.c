@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2004 Courtney Cavin
- * Based on original code by David Weekly
+ * Copyright (C) 2005 Courtney Cavin
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,408 +17,325 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <math.h>
 #include <string.h>
+#include <stdint.h>
 
-#define PZ_COMPAT
 #include "pz.h"
 
-extern void new_browser_window(void);
-extern void toggle_backlight(void);
+typedef enum _State {
+	WAITING, THINKING, NO_MOVE, GAME_OVER
+} State;
 
-static GR_WINDOW_ID oth_wid;
-static GR_GC_ID oth_gc;
-int xlocal,ylocal,lastxlocal,lastylocal;
+#define S_BLACK 1
+#define S_WHITE 0
 
-void quit_podzilla(void);
-void reboot_ipod(void);
-static void oth_set_piece(int pos, int coloresq);
+#define CORNER 7
+#define EDGE 3
 
-static int current_oth_item = 19;
-static int last_current_oth_item;
-static int status[64];
-static int testb[64];
-static int over = 0;
+static PzModule *module;
 
-static int ogs, oxoff, oyoff;
+static State othello_state;
+static uint64_t board;
+static uint64_t b_set;
+static signed char cur_bit;
+/* board is a 64 bit playing space
+ * b_set is a 64 bit field of set pieces
+ *
+ * board: 01001
+ * b_set: 11011
+ * white: 10010 or board ^ b_set  (XOR)
+ * black: 01001 or board & b_set  (AND) */
 
-static void draw_oth()
+
+#define PC_SZ (wid->h / 10)
+#define PC_PAD 3
+#define BO_YS ((wid->h - (PC_SZ+PC_PAD)*8)/2)
+#define BO_XS ((wid->w - (PC_SZ+PC_PAD)*8)/2)
+static void othello_draw(PzWidget *wid, ttk_surface srf)
 {
-	int i;
-	GrSetGCUseBackground(oth_gc, GR_TRUE);
-	GrSetGCForeground(oth_gc, BLACK);
-	for(i = 0; i <= 8; i++) {
-		GrLine(oth_wid, oth_gc, oxoff,
-		       oyoff+(ogs*i), oxoff+(ogs*8), oyoff+(ogs*i));
-		GrLine(oth_wid, oth_gc, oxoff+(ogs*i),
-		       oyoff, oxoff+(ogs*i), oyoff+(ogs*8));
+	unsigned char xline, yline, c;
+	int coordx, coordy;
+	ttk_color fg = ttk_ap_getx("window.fg")->color;
+
+	yline = 0;
+	for (c = 0; c < 64; c++) {
+		xline = c % 8;
+		coordx = xline*(PC_SZ+PC_PAD) + PC_PAD/2 + BO_XS;
+		coordy = yline*(PC_SZ+PC_PAD) + PC_PAD/2 + BO_YS;
+		if (b_set & (1ULL << c)) {
+
+			if (board & (1ULL << c)) {
+				ttk_fillellipse(srf, coordx + PC_SZ/2,
+						coordy + PC_SZ/2, PC_SZ/2-1,
+						PC_SZ/2, fg);
+			}
+			ttk_aaellipse(srf, coordx + PC_SZ/2,
+					coordy + PC_SZ/2, PC_SZ/2,
+					PC_SZ/2, fg);
+		}
+		else {
+			ttk_pixel(srf, coordx + PC_SZ/2,
+					coordy + PC_SZ/2, fg);
+		}
+		if (cur_bit == c) {
+			ttk_aaellipse(srf, coordx + PC_SZ/2,
+					coordy + PC_SZ/2, PC_SZ/2, PC_SZ/2,
+					ttk_ap_getx("scroll.bar")->color);
+			ttk_aaellipse(srf, coordx + PC_SZ/2,
+					coordy + PC_SZ/2, PC_SZ/4, PC_SZ/4,
+					ttk_ap_getx("scroll.bar")->color);
+		}
+		if (xline == 7) yline++;
 	}
-
-	GrSetGCForeground(oth_gc, BLACK);
-	GrSetGCUseBackground(oth_gc, GR_FALSE);
-
-	if(current_oth_item < 0)
-		current_oth_item = (ogs*8)-1;
-	else if(current_oth_item >= ogs*8)
-		current_oth_item = 0;
-	xlocal=current_oth_item * ogs + oxoff - (ogs*8)*(int)(current_oth_item/8);
-	ylocal=oyoff+ogs*(int)(current_oth_item/8);
-	lastxlocal=last_current_oth_item * ogs + oxoff
-	            - (ogs*8)*(int)(last_current_oth_item/8);
-	lastylocal=oyoff+ogs*(int)(last_current_oth_item/8);
-	GrRect(oth_wid, oth_gc, xlocal+1,ylocal+1, ogs-1,ogs-1);
-
-	GrSetGCForeground(oth_gc, WHITE);
-	if(current_oth_item != last_current_oth_item) {
-		GrRect(oth_wid, oth_gc, lastxlocal+1,lastylocal+1, ogs-1,ogs-1);
-		if(status[last_current_oth_item] != 3)
-			oth_set_piece(last_current_oth_item, status[last_current_oth_item]);
-	}
-
-	GrSetGCMode(oth_gc, GR_MODE_SET);
+	/*XXX*/
 }
 
-static void oth_set_piece(int pos, int coloresq)
+static void set_piece(uint64_t *bo, uint64_t *bs, char side, unsigned char bit)
 {
-	GR_POINT cheese[] = {
-		{pos*ogs +(oxoff+1) -(ogs*8)*(int)(pos/8), 
-		  (oyoff+(ogs/2)) +ogs*(int)(pos/8)},
-		{pos*ogs +(oxoff+(ogs/2)) -(ogs*8)*(int)(pos/8),
-		  (oyoff+1) +ogs*(int)(pos/8)},
-		{pos*ogs +(oxoff+(ogs-1)) -(ogs*8)*(int)(pos/8),
-		  (oyoff+(ogs/2)) +ogs*(int)(pos/8)},
-		{pos*ogs +(oxoff+(ogs/2)) -(ogs*8)*(int)(pos/8),
-		  (oyoff+(ogs-1)) +ogs*(int)(pos/8)},
-		{pos*ogs +(oxoff+1) -(ogs*8)*(int)(pos/8),
-		  (oyoff+(ogs/2)) +ogs*(int)(pos/8)}
-	};
-	status[pos] = coloresq;
-	GrSetGCForeground(oth_gc, BLACK);
-	if(coloresq==0)
-		GrFillPoly(oth_wid, oth_gc, 5, cheese);
-	else if(coloresq==1) {
-		GrSetGCForeground(oth_gc, WHITE);
-		GrFillPoly(oth_wid, oth_gc, 5, cheese);
-		GrSetGCForeground(oth_gc, BLACK);
-		GrPoly(oth_wid, oth_gc, 5, cheese);
+	switch (side) {
+	case S_BLACK:
+		*bo |= (1ULL << bit);
+		break;
+	case S_WHITE:
+		*bo &= ~(1ULL << bit);
+		break;
 	}
+	*bs |= (1ULL << bit);
 }
 
-static void oth_do_draw()
+static void mask_direction(uint64_t *bo, uint64_t *bs, char side, char bit,
+		signed char dx, signed char dy, uint64_t *mask)
 {
-	int i;
-	pz_draw_header(_("Othello"));
-	for (i=0;i<64;i++) {
-		status[i]=3;
-	}
-	over = 0;
-	current_oth_item = 19;
-	draw_oth();
-	oth_set_piece(27, 1);
-	oth_set_piece(28, 0);
-	oth_set_piece(35, 0);
-	oth_set_piece(36, 1);
+	uint64_t t_mask = 0;
+	char iter;
+	char step;
+	char s = (side == S_BLACK);
+
+	step = dx + dy*8;
+	iter = bit + step;
+
+	/* no piece there */
+	if (!(*bs & (1ULL << iter)))
+		return;
+	
+	/* piece is on the same side */
+	if ((!!(*bo & (1ULL << iter))) == s)
+		return;
+
+	do {
+		if (!(*bs & (1ULL << iter)))
+			return;
+		if ((!!(*bo & (1ULL << iter))) == !s)
+			t_mask |= (1ULL << iter);
+		else if ((!!(*bo & (1ULL << iter))) == s)
+			break;
+		if ((dx > 0 && (iter % 8) == 7)||(dx < 0 && (iter % 8) == 0) ||
+			(dy > 0 && iter > 55)||(dy < 0 && iter < 8))
+			return;
+		iter += step;
+	} while (1);
+	*mask |= t_mask | (1ULL << bit);
 }
 
-static int endgame(int isOver)
+static uint64_t do_piece_math(uint64_t *bo, uint64_t *bs, char side, char bit)
 {
-	int i;
-	int human=0,computer=0;
-	int s;
-	char *lose[5] = {
-		"That was really sad...\0",
-		"I can\'t believe you lost!\0",
-		"Hah, taught you a lesson!\0",
-		"Can\'t handle it can you?\0",
-		"At least make an effort...\0"
-	};
-	char *win[5] = {
-		"Good Job!\0",
-		"You won!\0",
-		"Congrats\0",
-		"Way to go!\0",
-		"Woo Hoo!\0"
-	};
-	char *tie[5] = {
-		"A tie? Strange.\0",
-		"Nice Tie!\0",
-		"Tieing isnt winning...\0",
-		"Want some coke with that tie?\0",
-		"A Tie huh?\0"
-	};
-	char comp[8];
-	char hum[8];
-	srand(current_oth_item*last_current_oth_item);
-	s = rand() % 5;
-	for(i=0;i<64;i++) {
-		switch(status[i]) {
-			case 3:
-				if(!isOver)
-					return 0;
-				break;
-			case 1:
-				computer++;
-				break;
-			case 0:
-				human++;
-				break;
+	uint64_t mask = 0;
+	signed char dx = 0, dy = 0;
+
+	/* already a piece there */
+	if (*bs & (1ULL << bit))
+		return 0;
+
+	if ((bit % 8) == 0) dx++; /* left side */
+	if ((bit % 8) == 7) dx--; /* right side */
+	if (bit < 8) dy++; /* top */
+	if (bit > 55) dy--; /* bottom */
+
+	if (dx >= 0) mask_direction(bo, bs, side, bit, 1,0, &mask);
+	if (dx <= 0) mask_direction(bo, bs, side, bit, -1,0, &mask);
+	if (dy >= 0) mask_direction(bo, bs, side, bit, 0,1, &mask);
+	if (dy <= 0) mask_direction(bo, bs, side, bit, 0,-1, &mask);
+	if (dx >= 0 && dy >= 0) mask_direction(bo, bs, side, bit, 1,1, &mask);
+	if (dx >= 0 && dy <= 0) mask_direction(bo, bs, side, bit, 1,-1, &mask);
+	if (dx <= 0 && dy >= 0) mask_direction(bo, bs, side, bit, -1,1, &mask);
+	if (dx <= 0 && dy <= 0) mask_direction(bo, bs, side, bit, -1,-1, &mask);
+
+	return mask;
+}
+
+static int calculate_pointage(char side, uint64_t *mask)
+{
+	unsigned char c;
+	int points = 0;
+
+	for (c = 0; c < 64; c++) {
+		if (*mask & (1ULL << c)) {
+			if (c == 0 || c == 7 || c == 56 || c == 63)
+				points += CORNER;
+			if ((c % 8) == 0 || (c % 8) == 7) 
+				points += EDGE;
+			else
+				points++;
 		}
 	}
-	GrSetGCForeground(oth_gc, WHITE);
-	GrFillRect(oth_wid, oth_gc, oxoff, oyoff, (ogs*8)+1, (ogs*8)+1);
-	GrSetGCForeground(oth_gc, BLACK);
-	sprintf(comp, "Me: %d", computer);
-	sprintf(hum, "You: %d", human);
-	GrText(oth_wid, oth_gc, oxoff, oyoff, comp, -1, GR_TFASCII|GR_TFTOP);
-	GrText(oth_wid, oth_gc, oxoff, oyoff+18, hum, -1, GR_TFASCII|GR_TFTOP);
+	return points;
+}
 
-	if(human>computer) {
-		GrText(oth_wid, oth_gc, oxoff/4, oyoff+40,
-		       win[s], -1, GR_TFASCII|GR_TFTOP);
-		over=1;
+static int valid_move(uint64_t *bo, uint64_t *bs, char side, char bit)
+{
+	uint64_t mask;
+	int points;
 
+	mask = do_piece_math(bo, bs, side, bit);
+	points = calculate_pointage(side, &mask);
+
+	return !!(points);
+}
+
+static int move_piece(uint64_t *bo, uint64_t *bs, char side, char bit)
+{
+	uint64_t mask;
+	int points; 
+
+	if (*bs & (1ULL << bit))
+		return 0;
+
+	mask = do_piece_math(bo, bs, side, bit);
+	points = calculate_pointage(side, &mask);
+	if (side == S_BLACK)
+		*bo |= mask;
+	else
+		*bo &= ~mask;
+	*bs |= mask;
+
+	return points;
+}
+
+static signed char best_move(uint64_t *bo, uint64_t *bs, char side)
+{
+	uint64_t t_bo, t_bs;
+	unsigned char c, bc;
+	int best = 0;
+	int pts;
+
+	for (c = 0; c < 64; c++) {
+		if (!valid_move(bo, bs, side, c))
+			continue;
+		memcpy(&t_bo, bo, sizeof(uint64_t));
+		memcpy(&t_bs, bs, sizeof(uint64_t));
+		pts = move_piece(&t_bo, &t_bs, side, c);
+		if (pts > best) {
+			best = pts;
+			bc = c;
+		}
 	}
-	else if(computer>human) {
-		GrText(oth_wid, oth_gc, oxoff/4, oyoff+40,
-		       lose[s], -1, GR_TFASCII|GR_TFTOP);
-		over=1;
+	return (best != 0) ? bc : -1;
+}
+
+static int check_nomove()
+{
+	unsigned char c;
+	if (othello_state != NO_MOVE && othello_state != GAME_OVER) return 0;
+	for (c = 0; c < 64; c++) {
+		if (valid_move(&board, &b_set, S_WHITE, c)) return 0;
+		if (valid_move(&board, &b_set, S_BLACK, c)) return 0;
 	}
-	else {
-		GrText(oth_wid, oth_gc, oxoff/4, oyoff+40,
-		       tie[s], -1, GR_TFASCII|GR_TFTOP);
-		over=1;
-	}
+	othello_state = GAME_OVER;
 	return 1;
 }
 
-static int testmove(int xy,char test,int side,int dx,int dy,char execute) {
-	int pieces=0;
-	int oxy;
-	char found_end='N';
+#define TWRAP(x,y,z) if (x > z) x = y + (x - z - 1)
+#define BWRAP(x,y,z) if (x < y) x = z - (y - x - 1)
+#define WRAP(x,y,z) TWRAP(x,y,z); BWRAP(x,y,z)
 
-	oxy=xy;
-	xy+=dx;
-	xy+=(dy*8);
-	while((xy<64) && (xy>=0) && found_end=='N') {
-		if(status[xy]==side)
-			found_end='Y';
-		else if(status[xy]==3)
-			break;
-		else
-			pieces++;
-		if(xy==0||xy==8||xy==16||xy==24||xy==32||xy==40||xy==48||xy==56) {
-			if(dx==-1)
-				break;
-		}
-		else if(xy==7||xy==15||xy==23||xy==31||xy==39||xy==47||xy==55||xy==63) {
-			if(dx==1)
-				break;
-		}
-		xy+=dx;
-		xy+=(dy*8);
+static int computer_move(TWidget *this)
+{
+	signed char c;
 
-	}
-	if(found_end=='Y') {
-		if(execute=='Y') {
-			while(xy!=oxy) {
-				xy-=dx;
-				xy-=(dy*8);
-				if(test != 'Y')
-					oth_set_piece(xy, side);
-				else
-					testb[xy]=side;
-			}
-		}
-		return pieces;
-	}
-	return 0;
-}
+	if (check_nomove()) return 0;
+	this->dirty = 1;
 
-
-static int validmove(int xy,char test,int side,char execute) {
-	int opp;
-	int pieces=0;
-
-	if(side==0) opp=1;
-	if(side==1) opp=0;
-
-	if(status[xy] != 3)
+	if ((c = best_move(&board, &b_set, S_WHITE)) != -1)
+		move_piece(&board, &b_set, S_WHITE, c);
+	else
+		othello_state = NO_MOVE;
+	if (best_move(&board, &b_set, S_BLACK) == -1)
 		return 0;
 
-	if(xy>0 && xy!=8  && xy!=16 && xy!=24 && xy!=32 && xy!=40 && xy!=48 && xy!=56) {
-		if(xy>7)
-			if(status[xy-9]==opp)
-				pieces+=testmove(xy,test,side,-1,-1,execute);
-		if(status[xy-1]==opp)
-			pieces+=testmove(xy,test,side,-1,0,execute);
-		if(xy<56)
-			if(status[xy+7]==opp)
-				pieces+=testmove(xy,test,side,-1,1,execute);
-	}
-	if(xy>7)
-		if(status[xy-8]==opp)
-			pieces+=testmove(xy,test,side,0,-1,execute);
-	if(xy<56)
-		if(status[xy+8]==opp)
-			pieces+=testmove(xy,test,side,0,1,execute);
-	if(xy!=7 && xy!=15 && xy!=23 && xy!=31 && xy!=39 && xy!=47 && xy!=55 && xy!=63) {
-		if(xy>7)
-			if(status[xy-7]==opp)
-				pieces+=testmove(xy,test,side,1,-1,execute);
-		if(status[xy+1]==opp)
-			pieces+=testmove(xy,test,side,1,0,execute);
-		if(xy<56)
-			if(status[xy+9]==opp)
-				pieces+=testmove(xy,test,side,1,1,execute);
-	}
-	return pieces;
-}
-
-static int canmove(int side) {
-	int i;
-	for(i=0;i<64;i++)
-		if(status[i] == 3)
-			if(validmove(i,'N',side,'N'))
-				return 1;
+	do {
+		cur_bit++;
+		WRAP(cur_bit, 0, 63);
+	} while (!valid_move(&board, &b_set, S_BLACK, cur_bit));
+	othello_state = WAITING;
+	ttk_widget_set_timer(this, 0);
 	return 0;
 }
 
-static float movevalue(int xy,int side,int depth) {
-	int opp;
-	int i,pieces,maxpieces=-500,nmoves=0;
-	int oxy;
-	float value;
-
-	if(side==0) opp=1;
-	if(side==1) opp=0;
-
-	/* copy the board */
-	for(i=0;i<64;i++)
-		testb[i]=status[i];
-
-	/* play the space */
-	value = (float)validmove(xy,'Y',side,'Y');
-	if(xy == 0 || xy == 7 || xy == 56 || xy == 63)
-		value+=7;
-	if(xy == 8 || xy == 16 || xy == 24 || xy == 32 || xy == 40 || xy == 48 || xy == 15 || xy == 23 || xy == 31 || xy == 39 || xy == 47 || xy == 55)
-		value +=3;
-
-	/* assume an immediately optimal opponent and find best move */
-	for(i=0;i<64;i++)
-		if(status[i]==3)
-			if((pieces=validmove(xy,'Y',opp,'N')) > 0) {
-				if(i == 0 || i == 7 || i == 56 || i == 63)
-					pieces+=7;
-				if(i == 8 || i == 16 || i == 24 || i == 32 || i == 40 || i == 48 || i == 15 || i == 23 || i == 31 || i == 39 || i == 47 || i == 55)
-					pieces+=3;
-				if(pieces>maxpieces) {
-					maxpieces=pieces;
-					oxy=i;
-				}
-				nmoves++;
-			}
-
-	if(nmoves)
-		value -= (float)(validmove(oxy,'Y',opp,'Y')-1);
-	else {
-		value += 1;
-	}
-	return value;
-}
-
-static void computermove(int side) {
-	int i,mxy;
-	int pieces;
-	float value,maxvalue=-1000000;
-	for(i=0;i<64;i++)
-		if(status[i]==3)
-			if((pieces=validmove(i,'N',side,'N')) > 0) {
-				value=movevalue(i,side,1);
-				if(value>maxvalue) {
-					maxvalue=value;
-					mxy=i;
-				}
-			}
-	pieces=validmove(mxy,'N',side,'Y');
-}
-
-static int oth_do_keystroke(GR_EVENT * event)
+static int othello_event(PzEvent *e)
 {
 	int ret = 0;
-	switch (event->type) {
-	case GR_EVENT_TYPE_KEY_DOWN:
-		if(!over) {
-			if(canmove(0)) {
-				/*keystrokes during gameplay*/
-				switch (event->keystroke.ch) {
-				case '\n':
-				case '\r':
-					if(validmove(current_oth_item, 'N', 0, 'Y') > 0) {
-						if(!over)
-							computermove(1);
-					}
-					ret = 1;
-					break;
-				case 'l':
-					last_current_oth_item = current_oth_item;
-					current_oth_item--;
-					while(validmove(current_oth_item,'N',0,'N') == 0) {
-						current_oth_item--;
-						if(current_oth_item < 0)
-							current_oth_item = 63;
-					}
-					draw_oth();
-					ret = 1;
-					break;
-				case 'r':
-					last_current_oth_item = current_oth_item;
-					current_oth_item++;
-					while(validmove(current_oth_item,'N',0,'N') == 0) {
-						current_oth_item++;
-						if(current_oth_item > 63)
-							current_oth_item = 0;
-					}
-					draw_oth();
-					ret = 1;
-					break;
-				}
+	switch (e->type) {
+	case PZ_EVENT_BUTTON_DOWN:
+		switch (e->arg) {
+		case PZ_BUTTON_ACTION:
+			if (check_nomove() || othello_state != WAITING) break;
+			if (move_piece(&board, &b_set, S_BLACK, cur_bit)) {
+				ttk_widget_set_timer(e->wid, 1000); /* ms */
+				othello_state = THINKING;
+				e->wid->dirty = 1;
 			}
-			else if (canmove(1)) {
-				computermove(1);
-				draw_oth();
-			}
-			else
-				endgame(1);
-		}
-		/*global keystrokes*/
-		switch (event->keystroke.ch) {
-		case 'm':
-			pz_close_window(oth_wid);
-			ret = 1;
+			break;
+		case PZ_BUTTON_MENU:
+			pz_close_window(e->wid->win);
+			break;
+		default:
+			ret |= TTK_EV_UNUSED;
 			break;
 		}
+		break;
+	case PZ_EVENT_SCROLL:
+		if (check_nomove() || othello_state != WAITING) break;
+		do {
+			cur_bit += e->arg;
+			WRAP(cur_bit, 0, 63);
+		} while (!valid_move(&board, &b_set, S_BLACK, cur_bit));
+		e->wid->dirty = 1;
+		break;
+	default:
+		ret |= TTK_EV_UNUSED;
 		break;
 	}
 	return ret;
 }
 
-void new_oth_window()
+static PzWindow *new_othello_window()
 {
-	ogs = (int)(screen_info.cols/13);
-	oxoff = ((screen_info.cols-(ogs*8))/2);
-	oyoff = (((screen_info.rows-(HEADER_TOPLINE + 1))-(ogs*8))/2);
+	PzWindow *ret;
+	PzWidget *wid;
 
-	oth_gc = pz_get_gc(1);
-	GrSetGCUseBackground(oth_gc, GR_FALSE);
-	GrSetGCForeground(oth_gc, BLACK);
+	board = b_set = 0;
+	cur_bit = 19;
+	othello_state = WAITING;
 
-	oth_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols, screen_info.rows - (HEADER_TOPLINE + 1), oth_do_draw, oth_do_keystroke);
+	set_piece(&board, &b_set, S_WHITE, 27);
+	set_piece(&board, &b_set, S_WHITE, 36);
+	set_piece(&board, &b_set, S_BLACK, 28);
+	set_piece(&board, &b_set, S_BLACK, 35);
 
-	GrSelectEvents(oth_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_KEY_DOWN);
+	ret = pz_new_window(_("Othello"), PZ_WINDOW_NORMAL);
 
-	GrMapWindow(oth_wid);
+	wid = pz_add_widget(ret, othello_draw, othello_event);
+
+	wid->dirty = 1;
+	wid->timer = computer_move;
+
+	return pz_finish_window(ret);
 }
 
-PZ_SIMPLE_MOD ("othello", new_oth_window, "/Extras/Games/Othello")
+static void init_othello()
+{
+	module = pz_register_module("othello", NULL);
+	pz_menu_add_action("/Extras/Games/Othello", new_othello_window);
+}
+
+PZ_MOD_INIT(init_othello)
