@@ -401,11 +401,16 @@ void HD_Render(hd_engine *eng) {
         rect = dirties;
         while (rect) {
             hd_rect *next;
+#ifndef DARWIN /* for some reason updating rect's is incredibly slow on OS X */
             eng->screen.update (eng, rect->x, rect->y, rect->w, rect->h);
+#endif
             next = rect->next;
             free (rect);
             rect = next;
         }
+#ifdef DARWIN
+        eng->screen.update (eng, 0, 0, eng->screen.width, eng->screen.height);
+#endif
 }
 
 void HD_ScaleBlendClip (uint32 *sbuf, int stw, int sth, int sx, int sy, int sw, int sh,
