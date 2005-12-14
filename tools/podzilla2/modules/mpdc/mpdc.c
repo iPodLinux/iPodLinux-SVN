@@ -240,8 +240,12 @@ static void cleanup_mpdc()
 static void init_mpdc()
 {
 	const int flag = TTK_MENU_ICON_SUB;
-	if (mpdc_init() < 0)
+	if ((mpdz = mpd_init_connection()) == NULL) {
+#ifdef IPOD /* warning gets a bit annoying if you don't have MPD installed */
+		pz_error(_("Unable to connect to MPD"));
+#endif
 		return;
+	}
 	module = pz_register_module("mpdc", cleanup_mpdc);
 	pz_register_global_unused_handler(PZ_BUTTON_PLAY, mpdc_unused_handler);
 	pz_register_global_unused_handler(PZ_BUTTON_NEXT, mpdc_unused_handler);
