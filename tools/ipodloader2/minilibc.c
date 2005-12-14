@@ -448,6 +448,43 @@ char  *mlc_strncpy(char *dest,const char *src,size_t count) {
 }
 
 void *mlc_memcpy(void *dest,const void *src,size_t n) {
+  uint8  *bsrc,*bdest;
+  uint32 *dsrc,*ddest;
+
+  /*
+   * Do byte-copies until we hit an even 4 byte boundary
+   */
+  bsrc  = (uint8*)src;
+  bdest = (uint8*)dest;
+  while( ((uint32)bsrc & 3) && (n>0) ) {
+    *bdest++ = *bsrc++;
+    n--;
+  }
+
+  /*
+   * Do as many dword copies that we can
+   */
+  dsrc  = (uint32*)bsrc;
+  ddest = (uint32*)bdest;
+  while( n > 4 ) {
+    *ddest++ = *dsrc++;
+    n -= 4;
+  }
+
+  /*
+   * Copy the remaining bytes
+   */
+  bsrc  = (uint8*)dsrc;
+  bdest = (uint8*)ddest;
+  while( n > 0 ) {
+    *bdest++ = *bsrc++;
+    n--;
+  }
+
+  return(dest);
+}
+#if FAILSAFE_MALLOC
+void *mlc_memcpyX(void *dest,const void *src,size_t n) {
   size_t i;
   uint8 *d,*s;
   
@@ -462,7 +499,7 @@ void *mlc_memcpy(void *dest,const void *src,size_t n) {
 
   return(dest);
 }
-
+#endif
 char *mlc_strchr(const char *s,int c) {
   char *ret;
 
