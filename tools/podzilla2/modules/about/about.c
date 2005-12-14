@@ -334,6 +334,7 @@ static void about_draw (TWidget *this, ttk_surface srf)
     int wid = this->w - 10*data->scroll;
 
     if (data->epoch < ttk_epoch) {
+        ttk_fillrect (data->dblbuf, 0, 0, this->w, data->height, ttk_makecol (WHITE));
 	about_render (data->dblbuf, this->w);
 	data->epoch = ttk_epoch;
     }
