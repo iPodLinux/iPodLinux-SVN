@@ -5,6 +5,8 @@
 #include "hotdog.h"
 #include "hotdog_animation.h"
 
+/********* Linear animation *********/
+
 typedef struct 
 {
     hd_rect cur, delta, dest;
@@ -51,14 +53,7 @@ void HD_AnimateLinear (hd_object *obj, int sx, int sy, int sw, int sh,
     obj->animate = HD_DoLinearAnimation;
 }
 
-typedef struct 
-{
-    int32 x, y, r;
-    int32 fbot, ftop; /* scale factors for iTunes-style effect */
-    int32 angle; /* in rad*2048/pi << 16 */
-    int32 adelta; /* same units */
-    int frames;
-} anim_circledata;
+/********** Sine table, for all circular-ish stuff. *************/
 
 // Units of index = rad*2048/pi. Units of result = 1.16 fixed-point ints.
 uint32 sine_table[1025] = {
@@ -196,7 +191,7 @@ uint32 sine_table[1025] = {
 int32 fsin (int32 angle) 
 {
     int32 corresp;
-    while (angle > 4096) angle -= 4096;
+    while (angle >= 4096) angle -= 4096;
     while (angle < 0) angle += 4096;
 
     // Special values
@@ -222,3 +217,59 @@ int32 fcos (int32 angle)
     return fsin (angle + 1024);
 }
 
+
+/********* Circular animation *********/
+
+typedef struct 
+{
+    int32 x, y, r, w, aspect_ratio;
+    int32 fbot, ftop, fdelta; /* scale factors for Frontrow-style effect, << 16 */
+    int32 angle; /* in rad*2048/pi << 16 */
+    int32 adelta; /* same units */
+    int frames;
+} anim_circledata;
+
+void HD_DoCircleAnimation (hd_object *obj) 
+{
+    anim_circledata *a = obj->animdata;
+    a->angle += a->adelta;
+    obj->x = a->x + ((a->r * fcos (a->angle)) >> 16);
+    obj->y = a->y + ((a->r * fsin (a->angle)) >> 16);
+    if (a->fbot != 0x10000 || a->ftop != 0x10000) {
+        obj->w = (a->w * (a->fbot + ((a->fdelta >> 8) * (fsin (a->angle) >> 8)))) >> 16;
+        obj->h = (obj->w * a->aspect_ratio) >> 16;
+    }
+
+    if (a->frames == 0 || --a->frames == 0) {
+        free (obj->animdata);
+        obj->animate = 0;
+        obj->animating = 0;
+    }
+}
+
+void HD_AnimateCircle (hd_object *obj, int32 x, int32 y, int32 r, int32 fbot, int32 ftop,
+                       int32 astart, int32 adist, int frames) 
+{
+    anim_circledata *a = malloc (sizeof(anim_circledata));
+    assert (obj != NULL);
+    assert (a != NULL);
+
+    obj->animating = 1;
+    obj->animdata = a;
+    a->frames = frames;
+    a->x = x; a->y = y; a->r = r; a->w = obj->w;
+    a->aspect_ratio = (obj->w << 16) / obj->h;
+    a->fbot = (fbot == 1 || fbot == 0)? (1 << 16) : fbot;
+    a->ftop = (ftop == 1 || ftop == 0)? (1 << 16) : ftop;
+    a->fdelta = a->ftop - a->fbot;
+    a->angle = astart << 16;
+    a->adelta = (adist << 16) / frames;
+    obj->animate = HD_DoLinearAnimation;    
+    obj->x = a->x + ((a->r * fcos (a->angle)) >> 16);
+    obj->y = a->y + ((a->r * fsin (a->angle)) >> 16);
+    if (a->fbot != 0x10000 || a->ftop != 0x10000) {
+        obj->w = (a->w * (a->fbot + ((a->fdelta >> 8) * (fsin (a->angle) >> 8)))) >> 16;
+        obj->h = (obj->w * a->aspect_ratio) >> 16;
+    }
+}
+                       
