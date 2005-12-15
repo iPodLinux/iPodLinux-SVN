@@ -56,6 +56,7 @@ void ttk_ap_load (const char *filename)
     while (c) {
 	TApItem *t;
 	t = c->next;
+        free (c->name);
 	free (c);
 	c = t;
     }
@@ -183,6 +184,7 @@ void ttk_ap_load (const char *filename)
 			    } else {
 				ap->type |= TTK_AP_IMAGE;
 			    }
+                            free (path);
 			} else if (*thing == '-' || *thing == '+') { // spacing
 			    int sign = (*thing == '-')? -1 : 1;
 			    ap->spacing = atoi (thing + 1) * sign;
