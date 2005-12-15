@@ -317,6 +317,8 @@ fb_open(PSD psd)
 	mw_ipod_hw_ver = mw_get_hw_version() >> 16;
 	if (mw_get_hw_version() == 0x60000) {
 		mw_ipod_lcd_type = 0;
+	} else if( mw_ipod_hw_ver == 0xB ) {
+	  mw_ipod_lcd_type = 5;
 	} else {
 		if (mw_ipod_hw_ver == 0x6) {
 			int gpio_a01, gpio_a04;
