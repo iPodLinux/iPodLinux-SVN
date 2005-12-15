@@ -31,14 +31,18 @@ int main (int argc, char **argv)
     
     TWindow *mainwindow;
     TWidget *imgviewer;
+    ttk_surface img=ttk_load_image(argv[1]);
 
     mainwindow = ttk_init();
     ttk_menufont = ttk_get_font ("Chicago", 12);
     ttk_textfont = ttk_get_font ("Espy Sans", 10);
     
     imgviewer = ttk_new_imgview_widget (mainwindow->w, mainwindow->h,
-					ttk_load_image (argv[1]));
+					img);
     ttk_add_widget (mainwindow, imgviewer);
     ttk_window_title (mainwindow, "Image Viewer");
     ttk_run();
+    ttk_free_image(img);
+    ttk_free_window(mainwindow);
+    ttk_quit();
 }

@@ -125,6 +125,7 @@ int main (int argc, char *argv[])
     ttk_add_widget (win, wid);
     ttk_window_title (win, "Text Input Test");
     ttk_run();
+    ttk_free_window(win);
     ttk_quit();
     return 0;
 }

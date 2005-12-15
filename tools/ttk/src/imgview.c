@@ -180,6 +180,7 @@ static void do_dither (SDL_Surface *src, SDL_Surface *dst)
 	p = pline;
 	q = qline;
     }
+    freeFserr(&fserr);
 }
 #endif
 

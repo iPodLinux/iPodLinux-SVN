@@ -1321,6 +1321,10 @@ int ttk_remove_widget (TWindow *win, TWidget *wid)
 	if (current->v == wid) {
 	    if (last) last->next = current->next;
 	    else      win->widgets = current->next;
+	    if(current->v->data)
+		    free(current->v->data);
+	    if(current->v->data2)
+		    free(current->v->data2);
 	    free (current);
 	    if (last) current = last->next;
 	    else      current = win->widgets;

@@ -126,4 +126,6 @@ ttk_menu_item menu[] = {
     ttk_add_widget (mainwindow, menuwidget);
     ttk_window_title (mainwindow, "Menu Test");
     ttk_run();
+    ttk_free_window(mainwindow);
+    ttk_quit();
 }
