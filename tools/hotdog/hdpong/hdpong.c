@@ -302,5 +302,11 @@ int main(int argc, char *argv[]) {
 		usleep(10000);
 	}
 
+	HD_Destroy(bg);
+	HD_Destroy(lbat);
+	HD_Destroy(rbat);
+	HD_Destroy(ball);
+	free(engine->buffer);
+	free(engine);
 	return(0);
 }

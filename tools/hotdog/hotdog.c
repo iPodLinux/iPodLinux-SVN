@@ -496,9 +496,6 @@ void HD_ScaleBlendClip (uint32 *sbuf, int stw, int sth, int sx, int sy, int sw, 
 void HD_Destroy (hd_object *obj) 
 {
     hd_obj_list *cur, *last = 0;
-    
-    obj->destroy (obj);
-    free (obj);
 
     cur = obj->eng->list;
     if (cur->obj == obj) {
@@ -517,6 +514,9 @@ void HD_Destroy (hd_object *obj)
             }
         }
     }
+    
+    obj->destroy (obj);
+    free (obj);
 }
 
 hd_object *HD_New_Object() 
