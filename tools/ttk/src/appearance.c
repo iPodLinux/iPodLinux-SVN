@@ -233,6 +233,12 @@ void ttk_ap_load (const char *filename)
 	}
     }
 
+    for(;nextdef>0;nextdef--)
+        if(defines[nextdef-1].key!=NULL)
+            free(defines[nextdef-1].key);
+    if (topid)
+        free (topid);
+
     free (buf);
 }
 

@@ -158,4 +158,7 @@ int main (int argc, char **argv)
     ttk_add_widget (mainwindow, scrollwidget);
     ttk_window_title (mainwindow, "Scroll Test");
     ttk_run();
+    ttk_free_widget(scrollwidget);
+    ttk_free_window(mainwindow);
+    ttk_quit();
 }
