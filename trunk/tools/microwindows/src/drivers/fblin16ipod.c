@@ -27,6 +27,8 @@ static void lcd_update_display(PSD psd, int sx, int sy, int mx, int my);
 
 #define inl(p) (*(volatile unsigned long *) (p))
 #define outl(v,p) (*(volatile unsigned long *) (p) = (v))
+#define inw(a) (*(volatile unsigned short *) (a))
+#define outw(a,b) (*(volatile unsigned short *) (b) = (a))
 
 /* Calc linelen and mmap size, return 0 on fail*/
 static int
@@ -311,6 +313,59 @@ static void lcd_cmd_data(int cmd, int data)
 	}
 }
 
+static void lcd_bcm_write32(unsigned address, unsigned value) {
+	/* write out destination address as two 16bit values */
+	outw(address, 0x30010000);
+	outw((address >> 16), 0x30010000);
+
+	/* wait for it to be write ready */
+	while ((inw(0x30030000) & 0x2) == 0);
+
+	/* write out the value low 16, high 16 */
+	outw(value, 0x30000000);
+	outw((value >> 16), 0x30000000);
+}
+
+static void lcd_bcm_setup_rect(unsigned cmd, unsigned start_horiz, unsigned start_vert, unsigned max_horiz, unsigned max_vert, unsigned count) {
+	lcd_bcm_write32(0x1F8, 0xFFFA0005);
+	lcd_bcm_write32(0xE0000, cmd);
+	lcd_bcm_write32(0xE0004, start_horiz);
+	lcd_bcm_write32(0xE0008, start_vert);
+	lcd_bcm_write32(0xE000C, max_horiz);
+	lcd_bcm_write32(0xE0010, max_vert);
+	lcd_bcm_write32(0xE0014, count);
+	lcd_bcm_write32(0xE0018, count);
+	lcd_bcm_write32(0xE001C, 0);
+}
+
+static unsigned lcd_bcm_read32(unsigned address) {
+	while ((inw(0x30020000) & 1) == 0);
+
+	/* write out destination address as two 16bit values */
+	outw(address, 0x30020000);
+	outw((address >> 16), 0x30020000);
+
+	/* wait for it to be read ready */
+	while ((inw(0x30030000) & 0x10) == 0);
+
+	/* read the value */
+	return inw(0x30000000) | inw(0x30000000) << 16;
+}
+
+static void lcd_bcm_finishup(void) {
+	unsigned data; 
+
+	outw(0x31, 0x30030000); 
+
+	lcd_bcm_read32(0x1FC);
+
+	do {
+		data = lcd_bcm_read32(0x1F8);
+	} while (data == 0xFFFA0005 || data == 0xFFFF);
+
+	lcd_bcm_read32(0x1FC);
+}
+
 static void lcd_update_display(PSD psd, int sx, int sy, int mx, int my)
 {
 	int height = (my - sy) + 1;
@@ -344,7 +399,7 @@ static void lcd_update_display(PSD psd, int sx, int sy, int mx, int my)
 		lcd_cmd_data(0x13, rect2 & 0xff);
 		lcd_cmd_data(0x15, rect3 & 0xff);
 		lcd_cmd_data(0x16, rect4 & 0xff);
-	} else {
+	} else if( mw_ipod_lcd_type != 5 ) {
 		if (rect3 < rect1) {
 			int t;
 			t = rect1;
@@ -375,25 +430,35 @@ static void lcd_update_display(PSD psd, int sx, int sy, int mx, int my)
 		/* start drawing */
 		lcd_send_lo(0x0);
 		lcd_send_lo(0x22);
+	} else { /* 5G */
+	  unsigned count = (width * height) << 1;
+	  lcd_bcm_setup_rect(0x34, rect1, rect2, rect3, rect4, count);
 	}
 
 	addr += sx + sy * psd->linelen;
 
 	while (height > 0) {
 		int h, x, y, pixels_to_write;
+		unsigned int curpixel;
 
-		pixels_to_write = (width * height) * 2;
+		curpixel = 0;
 
-		/* calculate how much we can do in one go */
-		h = height;
-		if (pixels_to_write > 64000) {
-			h = (64000/2) / width;
-			pixels_to_write = (width * h) * 2;
+		if( mw_ipod_lcd_type != 5 ) {
+		  pixels_to_write = (width * height) * 2;
+		  
+		  /* calculate how much we can do in one go */
+		  h = height;
+		  if (pixels_to_write > 64000) {
+		    h = (64000/2) / width;
+		    pixels_to_write = (width * h) * 2;
+		  }
+		  
+		  outl(0x10000080, 0x70008A20);
+		  outl((pixels_to_write - 1) | 0xC0010000, 0x70008A24);
+		  outl(0x34000000, 0x70008A20);
+		} else {
+		  h = height;
 		}
-
-		outl(0x10000080, 0x70008A20);
-		outl((pixels_to_write - 1) | 0xC0010000, 0x70008A24);
-		outl(0x34000000, 0x70008A20);
 
 		/* for each row */
 		for (x = 0; x < h; x++)
@@ -402,30 +467,44 @@ static void lcd_update_display(PSD psd, int sx, int sy, int mx, int my)
 			for (y = 0; y < width; y += 2) {
 				unsigned two_pixels;
 
-				two_pixels = addr[0] | (addr[1] << 16);
+				two_pixels = ( ((addr[0]&0xFF)<<8) | ((addr[0]&0xFF00)>>8) ) | 
+				             ((((addr[1]&0xFF)<<8) | ((addr[1]&0xFF00)>>8) )<<16);
+
 				addr += 2;
 
-				while ((inl(0x70008A20) & 0x1000000) == 0);
+				if( mw_ipod_lcd_type == 5 ) {
+				  /* output 2 pixels */
+				  lcd_bcm_write32(0xE0020 + (curpixel << 2), two_pixels);
+				  curpixel++;	
+				} else {
+				  while ((inl(0x70008A20) & 0x1000000) == 0);
 
-				if (mw_ipod_lcd_type != 0) {
-					unsigned t = (two_pixels & ~0xFF0000) >> 8;
-					two_pixels = two_pixels & ~0xFF00;
-					two_pixels = t | (two_pixels << 8);
+				  /*if (mw_ipod_lcd_type != 0) {
+				    unsigned t = (two_pixels & ~0xFF0000) >> 8;
+				    two_pixels = two_pixels & ~0xFF00;
+				    two_pixels = t | (two_pixels << 8);
+				    }*/
+			       
+				  /* output 2 pixels */
+				  outl(two_pixels, 0x70008B00);
 				}
-
-
-				/* output 2 pixels */
-				outl(two_pixels, 0x70008B00);
 			}
 
 			addr += psd->xres - width;
 		}
 
-		while ((inl(0x70008A20) & 0x4000000) == 0);
+		if( mw_ipod_lcd_type != 5 ) {
+		  while ((inl(0x70008A20) & 0x4000000) == 0);
 
-		outl(0x0, 0x70008A24);
+		  outl(0x0, 0x70008A24);
 
-		height = height - h;
+		  height = height - h;
+		} else {
+		  height = 0;
+		}
+	}
+	if( mw_ipod_lcd_type == 5 ) {
+	  lcd_bcm_finishup();
 	}
 }
 
