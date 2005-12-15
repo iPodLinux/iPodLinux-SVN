@@ -29,6 +29,7 @@ LD=$(PREFIX)ld
 AR=$(PREFIX)ar rc
 AR2=$(PREFIX)ranlib
 
+CFLAGS+= -Wall
 LIB = libhotdog.a
 LIBOBJS=  hotdog.o hotdog_png.o hotdog_primitive.o hotdog_font.o hotdog_animation.o hotdog_canvas.o zsort.o
 

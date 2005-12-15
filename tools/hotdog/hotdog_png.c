@@ -234,6 +234,7 @@ hd_object *HD_PNG_Create(char *fname) {
 		return(NULL);
 	}
 	
+	png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
 	ret->render = HD_PNG_Render;
         ret->destroy = HD_PNG_Destroy;
 	
