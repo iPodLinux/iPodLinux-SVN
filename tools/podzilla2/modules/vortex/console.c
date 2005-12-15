@@ -127,7 +127,8 @@ static int Vortex_Console_FindOrClearSpace( void )
 
 
 /* add a message with a set x/y stepping and text style */
-void Vortex_Console_AddItem( char * text, int xs, int ys,
+void Vortex_Console_AddItemAt( char * text, int xs, int ys,
+				int xc, int yc,
 				int style, ttk_color color )
 {
 	int pos = Vortex_Console_FindOrClearSpace();
@@ -136,8 +137,8 @@ void Vortex_Console_AddItem( char * text, int xs, int ys,
 	consolebuf[pos].itemNumber = 0;
 	consolebuf[pos].age = 0;
 
-	consolebuf[pos].xc = (ttk_screen->w - ttk_screen->wx)>>1;
-	consolebuf[pos].yc = (ttk_screen->h - ttk_screen->wy)>>1;
+	consolebuf[pos].xc = xc;
+	consolebuf[pos].yc = yc;
 	consolebuf[pos].xs = xs;
 	consolebuf[pos].ys = ys;
 	consolebuf[pos].style = style;
@@ -147,6 +148,14 @@ void Vortex_Console_AddItem( char * text, int xs, int ys,
 	consolebuf[pos].buf[VORTEX_CONSOLE_BUFSIZE-1] = '\0'; //just in case 
 }
 
+void Vortex_Console_AddItem( char * text, int xs, int ys,
+				int style, ttk_color color )
+{
+	Vortex_Console_AddItemAt( text, xs, ys,  
+					(ttk_screen->w - ttk_screen->wx)>>1,
+					(ttk_screen->h - ttk_screen->wy)>>1,
+					style, color );
+}
 
 
 /* time passes */

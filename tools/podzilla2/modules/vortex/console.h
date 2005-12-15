@@ -30,6 +30,11 @@ void Vortex_Console_Init( void );
 void Vortex_Console_AddItem( char * text, int xs, int ys,
 			     int style, ttk_color col );
 
+void Vortex_Console_AddItemAt( char * text, int xs, int ys,
+                                int xc, int yc,
+                                int style, ttk_color color );
+
+
 /* time passes */
 void Vortex_Console_Tick( void );
 

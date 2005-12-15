@@ -262,12 +262,15 @@ void Vortex_Enemy_poll( void )
 					if( vglob.lives <= 0 ){
 						vglob.lives = 0;
 					}
-					Vortex_Console_AddItem( "OUCH", 0, 0,
-					    VORTEX_STYLE_NORMAL,
-					    vglob.color.bonus );
+					Vortex_Console_AddItemAt( "OUCH", 0, 0,
+						vglob.wxC, vglob.wyC,
+						VORTEX_STYLE_NORMAL,
+						vglob.color.bonus );
 				} else {
-				    Vortex_Console_AddItem( "-75", 0, 0,
-					VORTEX_STYLE_NORMAL, vglob.color.con );
+				    Vortex_Console_AddItemAt( "-75", 0, 0,
+						vglob.wxC, vglob.wyC,
+						VORTEX_STYLE_NORMAL,
+						vglob.color.con );
 				}
 			}
 			break;
