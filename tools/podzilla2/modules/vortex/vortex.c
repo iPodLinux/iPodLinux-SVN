@@ -341,8 +341,9 @@ void cleanup_vortex( void )
 void Vortex_clawCompute( void ) /* NOTE: not "cowCompute" */ /* moo. */
 {
 	LEVELDATA * lv = &vortex_levels[ vglob.currentLevel ];
-	int wxC = ttk_screen->w>>1;   /* web X center */
-	int wyC = lv->y3d;            /* web Y center */
+
+	vglob.wxC = ttk_screen->w>>1;   /* web X center */
+	vglob.wyC = lv->y3d;            /* web Y center */
 
 	/* get the point index for the nextcurrent */
 	int p2 = vglob.wPosMajor +1;	/* second point in the selected field */
@@ -355,12 +356,12 @@ void Vortex_clawCompute( void ) /* NOTE: not "cowCompute" */ /* moo. */
 	/* compute the claw */
 	vglob.px[0] = lv->fx[vglob.wPosMajor];
 	vglob.py[0] = lv->fy[vglob.wPosMajor];
-	vglob.px[1] = Vortex_getZ( vglob.pcxC, 150, wxC );
-	vglob.py[1] = Vortex_getZ( vglob.pcyC, 150, wyC ); 
+	vglob.px[1] = Vortex_getZ( vglob.pcxC, 150, vglob.wxC );
+	vglob.py[1] = Vortex_getZ( vglob.pcyC, 150, vglob.wyC ); 
 	vglob.px[2] = lv->fx[p2];
 	vglob.py[2] = lv->fy[p2];
-	vglob.px[3] = Vortex_getZ( vglob.pcxC, 140, wxC ); 
-	vglob.py[3] = Vortex_getZ( vglob.pcyC, 140, wyC ); 
+	vglob.px[3] = Vortex_getZ( vglob.pcxC, 140, vglob.wxC ); 
+	vglob.py[3] = Vortex_getZ( vglob.pcyC, 140, vglob.wyC ); 
 	vglob.px[4] = vglob.px[0];
 	vglob.py[4] = vglob.py[0];
 }
@@ -369,12 +370,13 @@ void Vortex_newLevelCompute( void )
 {
 	int w, p, pp;
 	LEVELDATA * lv = &vortex_levels[ vglob.currentLevel ];
-	int wxC = ttk_screen->w>>1;   /* web X center */
-	int wyC = lv->y3d;            /* web Y center */
 
 	/* get the point index for the nextcurrent */
 	int p2 = vglob.wPosMajor +1;	/* second point in the selected field */
 	if( p2 > 15 ) p2 = 0;		/* adjust for wraparound */
+
+	vglob.wxC = ttk_screen->w>>1;   /* web X center */
+	vglob.wyC = lv->y3d;            /* web Y center */
 
 	/* store aside the centerpoint of the field edge */
 	vglob.pcxC = (lv->fx[ vglob.wPosMajor ] + lv->fx[ p2 ]) >> 1;
@@ -401,14 +403,14 @@ void Vortex_newLevelCompute( void )
 	    int pscaled = (p*128)/NUM_Z_POINTS;
 
 	    /* along lines */
-	    vglob.ptsX[w][p][0] = Vortex_getZ( lv->fx[w], pscaled, wxC );
-	    vglob.ptsY[w][p][0] = Vortex_getZ( lv->fy[w], pscaled, wyC );
+	    vglob.ptsX[w][p][0] = Vortex_getZ( lv->fx[w], pscaled, vglob.wxC );
+	    vglob.ptsY[w][p][0] = Vortex_getZ( lv->fy[w], pscaled, vglob.wyC );
 
 	    /* centers */
 	    vglob.ptsX[w][p][1] = Vortex_getZ( 
-			    vglob.ptsX[w][NUM_Z_POINTS-1][1], pscaled, wxC );
+			vglob.ptsX[w][NUM_Z_POINTS-1][1], pscaled, vglob.wxC );
 	    vglob.ptsY[w][p][1] = Vortex_getZ( 
-			    vglob.ptsY[w][NUM_Z_POINTS-1][1], pscaled, wyC );
+			vglob.ptsY[w][NUM_Z_POINTS-1][1], pscaled, vglob.wyC );
 	}
 
 	/* put in a copy of [0] to [NUM_SEGMENTS] to make rendering easy */
@@ -554,6 +556,7 @@ int event_vortex (PzEvent *ev)
 				Vortex_ChangeToState( VORTEX_STATE_LEVELSEL );
 				vglob.startLevel = 0;
 				vglob.currentLevel = 0;
+				vglob.hasParticleLaser = 0;
 				Vortex_initLevel();
 			} else if( vglob.state == VORTEX_STATE_LEVELSEL ) {
 				Vortex_ChangeToState( VORTEX_STATE_GAME );

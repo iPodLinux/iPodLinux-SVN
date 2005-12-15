@@ -90,8 +90,11 @@ typedef struct vortex_globals {
 	int wPosMajor;
 	int wPosMinor;
 
-	/* center of the current web */
+	/* center of the current panel */
 	int pcxC, pcyC; /* this will become vglob.ptsX[current][32][1] */
+
+	/* center of the web on the screen, adjusted */
+	int wxC, wyC;
 
 	/* intermediary points on the current web */
 	int   ptsX[NUM_SEGMENTS+1][NUM_Z_POINTS][NUM_MIDS];
