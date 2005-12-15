@@ -78,7 +78,7 @@ void menu_draw_timer(menu_st *menulist)
 			menulist->timer = 0;
 		/* xor the pixmap */
 		GrSetGCMode(menulist->menu_gc, GR_MODE_XOR);
-		if (hw_version == 0 || hw_version == 0x6 || hw_version == 0xc) {
+		if (hw_version == 0 || hw_version == 0x6 || hw_version == 0xc || hw_version == 0xb) {
 			/* make sure that the xor works properly for devices with
 			 * fbrev turned off (host, photo) */
 			GrSetGCForeground(menulist->menu_gc, WHITE);
@@ -97,7 +97,7 @@ void menu_draw_timer(menu_st *menulist)
 				menulist->menu_gc, move, 0,
 				menulist->w, menulist->height);
 		GrSetGCMode(menulist->menu_gc, GR_MODE_SET);
-		if (hw_version == 0 || hw_version == 0x6 || hw_version == 0xc) {
+		if (hw_version == 0 || hw_version == 0x6 || hw_version == 0xc || hw_version == 0xb) {
 			/* reset fix for xor on certain devices (host, photo) */
 			GrSetGCForeground(menulist->menu_gc, BLACK);
 		}
@@ -231,7 +231,7 @@ void menu_draw_item(menu_st *menulist, int item)
 	/* xor the pixmap */
 	if(item == (menulist->sel - menulist->top_item)) {
 		GrSetGCMode(menulist->menu_gc, GR_MODE_XOR);
-		if (hw_version == 0 || hw_version == 0x6 || hw_version == 0xc) {
+		if (hw_version == 0 || hw_version == 0x6 || hw_version == 0xc || hw_version == 0xb) {
 			/* make sure that the xor works properly for devices with
 			 * fbrev turned off (host, photo) */
 			GrSetGCForeground(menulist->menu_gc, WHITE );
@@ -255,7 +255,7 @@ void menu_draw_item(menu_st *menulist, int item)
 				menulist->menu_gc, 0, 0, menulist->w,
 				menulist->height);
 		GrSetGCMode(menulist->menu_gc, GR_MODE_SET);
-		if (hw_version == 0 || hw_version == 0x6 || hw_version == 0xc) {
+		if (hw_version == 0 || hw_version == 0x6 || hw_version == 0xc || hw_version == 0xb) {
 			/* reset fix for xor on certain devices (host, photo) */
 			GrSetGCForeground(menulist->menu_gc, BLACK);
 		}
