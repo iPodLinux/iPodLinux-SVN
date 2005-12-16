@@ -307,6 +307,7 @@ void ttk_gc_set_usebg (ttk_gc gc, int flag);
 void ttk_gc_set_xormode (ttk_gc gc, int flag);
 void ttk_free_gc (ttk_gc gc);
 
+ttk_color ttk_getpixel (ttk_surface srf, int x, int y);
 void ttk_pixel (ttk_surface srf, int x, int y, ttk_color col);
 void ttk_pixel_gc (ttk_surface srf, ttk_gc gc, int x, int y);
 

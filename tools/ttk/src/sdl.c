@@ -306,6 +306,19 @@ static int fetchcolor (ttk_color col)
     return ret;
 }
 
+ttk_color ttk_getpixel (ttk_surface srf, int x, int y) 
+{
+    switch (srf->format->BytesPerPixel) {
+    case 1:
+        return *((Uint8 *)((Uint8 *)srf->pixels + y*srf->pitch) + x);
+    case 2:
+        return *((Uint16 *)((Uint8 *)srf->pixels + y*srf->pitch) + x);
+    case 4:
+        return *((Uint32 *)((Uint8 *)srf->pixels + y*srf->pitch) + x);
+    default:
+        return ttk_makecol_ex (255, 0, 255, srf);
+    }
+}
 void ttk_pixel (ttk_surface srf, int x, int y, ttk_color col) 
 {
     if (ttk_screen->bpp == 2)
