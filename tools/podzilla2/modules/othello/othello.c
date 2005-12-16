@@ -22,15 +22,25 @@
 
 #include "pz.h"
 
+#define NOMOVE -64
+
 typedef enum _State {
 	WAITING, THINKING, NO_MOVE, GAME_OVER
 } State;
 
+static signed char weights[] = {
+	 8,-2, 5, 4, 4, 5,-2, 8,
+	-2,-2, 0, 0, 0, 0,-2,-2,
+	 5, 0, 1, 1, 1, 1, 0, 5,
+	 4, 0, 1, 1, 1, 1, 0, 4,
+	 4, 0, 1, 1, 1, 1, 0, 4,
+	 5, 0, 1, 1, 1, 1, 0, 5,
+	-2,-2, 0, 0, 0, 0,-2,-2,
+	 8,-2, 5, 4, 4, 5,-2, 8
+};
+
 #define S_BLACK 1
 #define S_WHITE 0
-
-#define CORNER 7
-#define EDGE 3
 
 static PzModule *module;
 
@@ -167,15 +177,26 @@ static int calculate_pointage(char side, uint64_t *mask)
 {
 	unsigned char c;
 	int points = 0;
+	char got_corner = 0;
 
 	for (c = 0; c < 64; c++) {
 		if (*mask & (1ULL << c)) {
+#if 0
 			if (c == 0 || c == 7 || c == 56 || c == 63)
 				points += CORNER;
 			if ((c % 8) == 0 || (c % 8) == 7) 
 				points += EDGE;
 			else
 				points++;
+#else
+			if (c == 0 || c == 7 || c == 56 || c == 63)
+				got_corner++;
+			if (weights[c] < 0) {
+				if (got_corner)
+					continue;
+			}
+			points += weights[c];
+#endif
 		}
 	}
 	return points;
@@ -184,12 +205,10 @@ static int calculate_pointage(char side, uint64_t *mask)
 static int valid_move(uint64_t *bo, uint64_t *bs, char side, char bit)
 {
 	uint64_t mask;
-	int points;
 
 	mask = do_piece_math(bo, bs, side, bit);
-	points = calculate_pointage(side, &mask);
 
-	return !!(points);
+	return !!(mask);
 }
 
 static int move_piece(uint64_t *bo, uint64_t *bs, char side, char bit)
@@ -198,7 +217,7 @@ static int move_piece(uint64_t *bo, uint64_t *bs, char side, char bit)
 	int points; 
 
 	if (*bs & (1ULL << bit))
-		return 0;
+		return NOMOVE;
 
 	mask = do_piece_math(bo, bs, side, bit);
 	points = calculate_pointage(side, &mask);
@@ -215,7 +234,7 @@ static signed char best_move(uint64_t *bo, uint64_t *bs, char side)
 {
 	uint64_t t_bo, t_bs;
 	unsigned char c, bc;
-	int best = 0;
+	int best = NOMOVE;
 	int pts;
 
 	for (c = 0; c < 64; c++) {
@@ -229,7 +248,7 @@ static signed char best_move(uint64_t *bo, uint64_t *bs, char side)
 			bc = c;
 		}
 	}
-	return (best != 0) ? bc : -1;
+	return (best != NOMOVE) ? bc : NOMOVE;
 }
 
 static int check_nomove()
@@ -255,11 +274,11 @@ static int computer_move(TWidget *this)
 	if (check_nomove()) return 0;
 	this->dirty = 1;
 
-	if ((c = best_move(&board, &b_set, S_WHITE)) != -1)
+	if ((c = best_move(&board, &b_set, S_WHITE)) != NOMOVE)
 		move_piece(&board, &b_set, S_WHITE, c);
 	else
 		othello_state = NO_MOVE;
-	if (best_move(&board, &b_set, S_BLACK) == -1)
+	if (best_move(&board, &b_set, S_BLACK) == NOMOVE)
 		return 0;
 
 	do {
@@ -279,7 +298,8 @@ static int othello_event(PzEvent *e)
 		switch (e->arg) {
 		case PZ_BUTTON_ACTION:
 			if (check_nomove() || othello_state != WAITING) break;
-			if (move_piece(&board, &b_set, S_BLACK, cur_bit)) {
+			if (move_piece(&board, &b_set, S_BLACK, cur_bit) !=
+					NOMOVE) {
 				ttk_widget_set_timer(e->wid, 1000); /* ms */
 				othello_state = THINKING;
 				e->wid->dirty = 1;
