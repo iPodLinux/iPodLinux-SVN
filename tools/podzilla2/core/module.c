@@ -192,6 +192,8 @@ static void load_modinf (PzModule *mod)
             } else if (strcmp (key, "Provides") == 0) {
                 mod->providesstr = malloc (strlen (value) + 1);
                 strcpy (mod->providesstr, value);
+            } else if (strcmp (key, "Contact") == 0) {
+                // nothing
             } else if (strcmp (key, "Unstable") == 0) {
                 // You can override "beta" with secret=testing but you can't
                 // override other things, e.g. "alpha" or "does not work".
