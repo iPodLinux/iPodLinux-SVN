@@ -213,6 +213,37 @@ static int playing_visible(ttk_menu_item *item)
 			state == MPD_STATUS_STATE_PAUSE);
 }
 
+static int init_shuffle()
+{
+	mpd_Status status;
+	status.error = NULL;
+	mpd_sendStatusCommand(mpdz);
+	mpd_getStatus_st(&status, mpdz);
+	mpd_finishCommand(mpdz);
+	return status.random;
+}
+static void set_shuffle(ttk_menu_item *item, int cdata)
+{
+	mpd_sendRandomCommand(mpdz, (item->choice == 1));
+	mpd_finishCommand(mpdz);
+}
+
+static int init_repeat()
+{
+	mpd_Status status;
+	status.error = NULL;
+	mpd_sendStatusCommand(mpdz);
+	mpd_getStatus_st(&status, mpdz);
+	mpd_finishCommand(mpdz);
+	return status.repeat ? 2 : 0;
+}
+static void set_repeat(ttk_menu_item *item, int cdata)
+{
+	if (item->choice == 1) item->choice = 2;
+	mpd_sendRepeatCommand(mpdz, (item->choice == 2));
+	mpd_finishCommand(mpdz);
+}
+
 static int mpdc_unused_handler(int button, int time)
 {
 	switch (button) {
@@ -236,6 +267,12 @@ static void cleanup_mpdc()
 	pz_unregister_global_unused_handler(PZ_BUTTON_NEXT);
 	pz_unregister_global_unused_handler(PZ_BUTTON_PREVIOUS);
 }
+
+#define SETUP_MENUITEM(a,b,c) \
+  do { ttk_menu_item *item; \
+    item = pz_get_menu_item(a); \
+    item->choicechanged = b; \
+    item->choice = c; } while (0)
 
 static void init_mpdc()
 {
@@ -262,6 +299,8 @@ static void init_mpdc()
 	pz_menu_add_action("/Now Playing", mpd_currently_playing);
 	pz_get_menu_item("/Now Playing")->visible = playing_visible;
 
+	SETUP_MENUITEM("/Settings/Shuffle", set_shuffle, init_shuffle());
+	SETUP_MENUITEM("/Settings/Repeat", set_repeat, init_repeat());
 #if 0
 	ttk_add_header_widget(mpdc_icon());
 #endif
