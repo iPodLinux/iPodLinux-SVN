@@ -292,7 +292,7 @@ void
 decode_instr (FILE *f, unsigned long *iaddr)
 {
     unsigned long instr = *iaddr;
-    fprintf (f, "% 8lx:\t%08lx\t", (unsigned long)iaddr, instr);
+    fprintf (f, "%8lx:\t%08lx\t", (unsigned long)iaddr, instr);
     if ((instr & 0xff000000) == 0xeb000000) {
         unsigned long field = instr & 0xffffff;
         fprintf (f, "bl\tf=%lx", field);
