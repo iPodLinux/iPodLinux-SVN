@@ -1,3 +1,5 @@
 Module: mpdc
 Display-name: MPDc
 Author: Courtney Cavin
+Provides: music
+Contact: courtc@ipodlinux.org
