@@ -99,13 +99,14 @@ void Vortex_Bolt_poll( void );
 
 /* enemy functions */
 void Vortex_Enemy_draw( ttk_surface srf );
-void Vortex_Enemy_add( void );
+void Vortex_Enemy_add( int type );
 void Vortex_Enemy_clear( void );
 void Vortex_Enemy_poll( void );
 
 /* powerup functions */
 void Vortex_Powerup_draw( ttk_surface srf );
 void Vortex_Powerup_add( int web, int z, int type );
+void Vortex_Powerup_create( int web, int z );
 void Vortex_Powerup_clear( void );
 void Vortex_Powerup_poll( void );
 
