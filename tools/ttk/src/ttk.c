@@ -652,11 +652,11 @@ int ttk_run()
 		int er = evtarget->button (evtarget, earg, time);
                 // If *both* down and button returned unused, do unused. Otherwise,
                 // don't.
-                earg |= er;
+                eret |= er;
                 if (!((er & TTK_EV_UNUSED) && (ttk_button_erets[earg] & TTK_EV_UNUSED))) {
-                    earg &= ~TTK_EV_UNUSED;
+                    eret &= ~TTK_EV_UNUSED;
                 } else {
-                    earg |= TTK_EV_UNUSED;
+                    eret |= TTK_EV_UNUSED;
                 }
             }
 	    break;

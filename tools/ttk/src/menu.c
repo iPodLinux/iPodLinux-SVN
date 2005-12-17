@@ -818,7 +818,7 @@ int ttk_menu_button (TWidget *this, int button, int time)
 
 int ttk_menu_down (TWidget *this, int button)
 {
-    return 0;
+    return TTK_EV_UNUSED;
 }
 
 // When you free a menu, all the windows it spawned are also freed.
