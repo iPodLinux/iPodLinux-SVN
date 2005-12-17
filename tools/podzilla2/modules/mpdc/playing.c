@@ -44,6 +44,11 @@ static struct {
 	int seek_time;
 } multibar = {POSITION, 0};
 
+static struct {
+	int step;
+	int rate;
+} accel = {1, 0};
+
 static PzWindow *mcp_wid;
 static PzWidget *mcp_widget;
 
@@ -62,28 +67,24 @@ static void num2time(int num, char *tstr)
 	int seconds, minutes, hours, days;
 
 	seconds = num % 60;
-	minutes = num % 3600 / 60;
-	hours = num % 86400 / 3600;
+	minutes = (num % 3600) / 60;
+	hours = (num % 86400) / 3600;
 	days = num / 86400;
 
-	sprintf(tstr, "%s", "");
+	strcpy(tstr, "");
 	if (days) {
 		sprintf(tstr, "%d:", days);
 		if (hours < 10)
-			sprintf(tstr, "%s0", tstr);
-		if (hours == 0)
-			sprintf(tstr, "%s0", tstr);
+			strcat(tstr, "0");
 	}
-	if (hours) {
+	if (hours || days) {
 		sprintf(tstr, "%s%d:", tstr, hours);
 		if (minutes < 10)
-			sprintf(tstr, "%s0", tstr);
-		if (minutes == 0)
-			sprintf(tstr, "%s0", tstr);
+			strcat(tstr, "0");
 	}
 	sprintf(tstr, "%s%d:", tstr, minutes);
 	if (seconds < 10)
-		sprintf(tstr, "%s0", tstr);
+		strcat(tstr, "0");
 	sprintf(tstr, "%s%d", tstr, seconds >= 0 ? seconds : 0);
 }
 
@@ -252,6 +253,12 @@ static int mcp_handle_timer(struct TWidget *this)
 {
 	static int inc = 0;
 
+	if (accel.rate == 0)
+		accel.step = 1;
+	else if (accel.rate > 25 || accel.rate < 25)
+		accel.step++;
+	accel.rate = 0;
+
 	switch (multibar.state) {
 	case SEEK:
 		if (multibar.ticker == 2)
@@ -384,9 +391,16 @@ static int mcp_events(PzEvent *e)
 			mpdc_change_volume(mpdz, status.volume);
 			break;
 		case SEEK:
-			multibar.seek_time += e->arg * 4;
+			if (accel.rate && (!(e->arg < 0 && accel.rate < 0) &&
+					!(e->arg > 0 && accel.rate > 0))) {
+				accel.step = 1;
+				accel.rate = 0;
+			}
+			accel.rate += e->arg;
+			multibar.seek_time += e->arg * (4 * accel.step);
 			BOUNDS(multibar.seek_time, 0, status.totalTime);
-			multibar.seek_time -= multibar.seek_time % (e->arg * 4);
+			multibar.seek_time -= multibar.seek_time %
+				(e->arg * (4 * accel.step));
 			break;
 		}
 		e->wid->dirty = 1;
@@ -426,6 +440,7 @@ PzWindow *mpd_currently_playing()
 {
 	PzWindow *ret;
 	inited = 0;
+	accel.step = 1;
 	multibar.state = POSITION;
 	status.error = NULL;
 	current_song = NULL; /* needed for st mpd_newConnection */
