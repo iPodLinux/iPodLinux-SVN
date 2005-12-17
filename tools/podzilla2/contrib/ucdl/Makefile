@@ -1,5 +1,5 @@
 CROSS ?= arm-uclinux-elf-
-CC ?= $(CROSS)gcc
+CC = $(CROSS)gcc
 
 all: libuCdl.a modtest testmod.o
 
