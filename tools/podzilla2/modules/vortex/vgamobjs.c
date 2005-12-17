@@ -21,14 +21,134 @@
  *
  */
 
+/*
+  All of these each follow the same sort of overall design:
+	- there is an array that contains VGO_XXXX_NUM elements of a struct
+	- each struct has an 'active' variable; state/enum or int.
+	- the add() routine rolls through the array, looking for an open slot
+	  - if there's an open slot, it initializes and returns
+	  - if there's no open slot, it just returns without doing anything
+	- the create() routine deals with probability, and add()s if ok
+	- the draw() routine draws the entire array appropriately to the surface
+	- the clear() routine wipes all elements of the struct to inactive state
+	- the poll() routine gets called from a timer
+	  - it handles moving items along their trajectories
+	  - it handles all of the state changes for that kind of object
+*/
+
 #include "console.h"
 #include "levels.h"
 #include "vglobals.h"
 #include "vgamobjs.h"
 
-#define VGO_BOLTS_NUM	(3)
 
+#define VGO_ENEMIES_NUM 	(16)	/* max number of enemies */
+#define VGO_BOLTS_NUM		(3)	/* max number of shots fired */
+#define VGO_POWERUPS_NUM	(20)	/* max number of powerups */
+
+static enemy enemies[ VGO_ENEMIES_NUM ];
 static bolt bolts[ VGO_BOLTS_NUM ];
+static powerup powerups[ VGO_POWERUPS_NUM ];
+
+/* ********************************************************************** */
+
+void Vortex_CollisionDetection( void )
+{
+	int b,d,e,p;
+	char * buf;
+
+	/* check for bolt-enemy collisions */
+	for( e=0 ; e<VGO_ENEMIES_NUM ; e++ )
+	{
+	    if( enemies[e].state == VORTEX_ENS_ACTIVE ) {
+
+		/* check for bolts hitting enemies */
+		for( b=0 ; b<VGO_BOLTS_NUM ; b++ ) {
+		    if( bolts[b].active == 1 ) {
+			if( bolts[b].web == enemies[e].web ) {
+			    d = (int) (bolts[b].z - enemies[e].z);
+			    if( d<1 ) {
+				/* HIT! */
+				enemies[e].state = VORTEX_ENS_DEATH;
+				bolts[b].active = 0;
+				vglob.score += 100;
+
+				/* create a new powerup here */
+					/* for now, just do a ZAPPO 2000 */
+				Vortex_Powerup_add( 
+					enemies[e].web,
+					enemies[e].z,
+					VORTEX_PU_2000 );
+			    }
+			}
+		    }
+		}
+	    }
+	}
+
+	/* check for vaus - powerup collisions */
+	for( p=0 ; p<VGO_POWERUPS_NUM ; p++ )
+	{
+		if( (powerups[p].state == VORTEX_PU_EDGE)
+		    && ( vglob.wPosMajor == powerups[p].web ))
+		{
+			switch( powerups[p].type ){
+			case( VORTEX_PU_PART ):
+				vglob.score += 42;
+				vglob.hasParticleLaser = 1;
+				break;
+
+			case( VORTEX_PU_2000 ):
+				vglob.score += 2013;
+				if( p&1 )	buf = "ZAPPO 2000!";
+				else if( p&2 )	buf = "AWESOME!";
+				else if( p&4 )	buf = "EXCELLENT!";
+				else if( p&8 )	buf = "DUDE!";
+				else		buf = "+2000!";
+				Vortex_Console_AddItemAt(
+					"ZAPPO 2000", 0, 0,
+					vglob.wxC, vglob.wyC,
+					VORTEX_STYLE_NORMAL,
+					vglob.color.bonus );
+				break;
+
+			case( VORTEX_PU_BUD ):
+				vglob.score += 333;
+				Vortex_Console_AddItemAt(
+					"LITTLE BUDDY!", 0, 0,
+					vglob.wxC, vglob.wyC,
+					VORTEX_STYLE_NORMAL,
+					vglob.color.bonus );
+				break;
+
+			case( VORTEX_PU_LIFE ):
+				vglob.lives++;
+				vglob.score += 151;
+				Vortex_Console_AddItemAt(
+					"1UP!", 0, 0,
+					vglob.wxC, vglob.wyC,
+					VORTEX_STYLE_NORMAL,
+					vglob.color.bonus );
+				break;
+
+			case( VORTEX_PU_OUTTA ):
+				Vortex_Console_AddItemAt(
+					"OUTTA HERE!", 0, 0,
+					vglob.wxC, vglob.wyC,
+					VORTEX_STYLE_NORMAL,
+					vglob.color.bonus );
+				break;
+			}
+
+			powerups[p].state = VORTEX_PU_INACTIVE;
+		}
+	}
+}
+
+
+/* ********************************************************************** */
+
+
 
 void Vortex_Bolt_draw( ttk_surface srf )
 {
@@ -135,9 +255,7 @@ void Vortex_Bolt_clear( void )
 
 /* ********************************************************************** */
 /* Enemy logic and stuff */
-#define VGO_ENEMIES_NUM (16)
 
-enemy enemies[VGO_ENEMIES_NUM];
 
 void Vortex_Enemy_draw( ttk_surface srf )
 {
@@ -252,6 +370,8 @@ void Vortex_Enemy_poll( void )
 			if( enemies[e].z > (NUM_Z_POINTS - 6)) {
 				enemies[e].state = VORTEX_ENS_INACTIVE;
 
+				/* enemy made it out to edge! */
+
 				/* for now... */
 				vglob.score -= 75;
 				if( vglob.score < 0 )
@@ -267,10 +387,12 @@ void Vortex_Enemy_poll( void )
 						VORTEX_STYLE_NORMAL,
 						vglob.color.bonus );
 				} else {
+/*
 				    Vortex_Console_AddItemAt( "-75", 0, 0,
 						vglob.wxC, vglob.wyC,
 						VORTEX_STYLE_NORMAL,
 						vglob.color.con );
+*/
 				}
 			}
 			break;
@@ -282,30 +404,87 @@ void Vortex_Enemy_poll( void )
 	}
 }
 
-
-
 /* ********************************************************************** */
 
-void Vortex_CollisionDetection( void )
-{
-	int b,d,e;
+static int firstPowerup = 1;
 
-	for( e=0 ; e<VGO_ENEMIES_NUM ; e++ )
+
+void Vortex_Powerup_draw( ttk_surface srf )
+{
+	int p,w,z,d;
+
+	for( p=0 ; p<VGO_POWERUPS_NUM ; p++ )
 	{
-	    if( enemies[e].state == VORTEX_ENS_ACTIVE ) {
-		for( b=0 ; b<VGO_BOLTS_NUM ; b++ ) {
-		    if( bolts[b].active == 1 ) {
-			if( bolts[b].web == enemies[e].web ) {
-			    d = (int) (bolts[b].z - enemies[e].z);
-			    if( d<1 ) {
-				/* HIT! */
-				enemies[e].state = VORTEX_ENS_DEATH;
-				bolts[b].active = 0;
-				vglob.score += 100;
-			    }
+		w = powerups[p].web;
+		z = (int) powerups[p].z;
+
+		
+		if( (z&1) && (powerups[p].state != VORTEX_PU_INACTIVE) ) {
+			for( d=3; d<15 ; d+=5 ) {
+				ttk_ellipse( srf, vglob.ptsX[w  ][z][1],
+					vglob.ptsY[w  ][z][1],
+					d, d, vglob.color.powerup );
 			}
-		    }
 		}
-	    }
 	}
 }
+
+void Vortex_Powerup_add( int web, int z, int type )
+{
+	int p;
+
+	if( firstPowerup ) {
+		firstPowerup = 0;
+		Vortex_Console_AddItemAt(
+			"COLLECT POWERUPS", 0, 0,
+			vglob.wxC, vglob.wyC,
+			VORTEX_STYLE_BOLD,
+			vglob.color.con );
+	}
+
+	for( p=0 ; p<VGO_POWERUPS_NUM ; p++ )
+	{
+		if( powerups[p].state == VORTEX_PU_INACTIVE ){
+			powerups[p].type     = type;
+			powerups[p].state    = VORTEX_PU_ZOOM;
+			powerups[p].web	     = web;
+			powerups[p].z        = (double) z;
+			powerups[p].v	     = 0.5;
+			powerups[p].edgetime = 10;
+			return;
+		}
+	}
+}
+
+void Vortex_Powerup_clear( void )
+{
+	int p;
+	for( p=0 ; p<VGO_POWERUPS_NUM ; p++ )
+		powerups[p].state = VORTEX_PU_INACTIVE;
+	firstPowerup = 1;
+}
+
+void Vortex_Powerup_poll( void )
+{
+	int p;
+	for( p=0 ; p<VGO_POWERUPS_NUM ; p++ )
+	{
+		if( powerups[p].state == VORTEX_PU_ZOOM )
+		{
+			powerups[p].z += powerups[p].v;
+
+			if( powerups[p].z >= (NUM_Z_POINTS-1) ) {
+				/* powerup made it out to the edge */
+				powerups[p].state = VORTEX_PU_EDGE;
+				powerups[p].z = NUM_Z_POINTS-1;
+			}
+		} else if( powerups[p].state == VORTEX_PU_EDGE ){
+			/* powerup hangs out at the edge for a moment */
+			powerups[p].edgetime--;
+			if( powerups[p].edgetime <= 0 )
+				powerups[p].state = VORTEX_PU_INACTIVE;
+		}
+	}
+}
+
+

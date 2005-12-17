@@ -61,6 +61,7 @@ typedef struct _vortex_colors {
 	ttk_color super;	// superzapper color
 	ttk_color flippers;	// enemy characters
 	ttk_color edeath;	// enemy death
+	ttk_color powerup;	// powerup color
 } vortex_colors;
 
 
