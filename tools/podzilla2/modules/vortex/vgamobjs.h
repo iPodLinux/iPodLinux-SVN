@@ -74,11 +74,17 @@ typedef struct enemy {
 #define VORTEX_PU_LIFE	(3)	/* extra life */
 #define VORTEX_PU_OUTTA (4)	/* outta here.  5k points, + next level jump */
 
+#define VORTEX_PU_INACTIVE	(0)	/* powerup slot is empty */
+#define VORTEX_PU_ZOOM		(1)	/* powerup is sliding up the side */
+#define VORTEX_PU_EDGE		(2)	/* powerup is sitting on the edge */
+
 typedef struct powerup {
 	int type;		/* what kind of enemy it is */
+	int state;		/* what state is it in? */
 	int web;		/* where it is, rotationally */
 	double z;		/* where it is, depth */
 	double v;		/* velocity */
+	int edgetime;		/* how long it should wait at the edge */
 } powerup;
 
 
@@ -97,6 +103,11 @@ void Vortex_Enemy_add( void );
 void Vortex_Enemy_clear( void );
 void Vortex_Enemy_poll( void );
 
+/* powerup functions */
+void Vortex_Powerup_draw( ttk_surface srf );
+void Vortex_Powerup_add( int web, int z, int type );
+void Vortex_Powerup_clear( void );
+void Vortex_Powerup_poll( void );
 
 #endif
 

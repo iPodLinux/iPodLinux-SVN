@@ -44,7 +44,7 @@
 #include "vgamobjs.h"
 
 /* version number */
-#define VORTEX_VERSION	"05121316"
+#define VORTEX_VERSION	"05121701"
 
 vortex_globals vglob;
 
@@ -246,7 +246,7 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 
 		/* display some props to the masters */
 		switch((vglob.timer>>5) & 0x03 ) {
-		case 0: credit = "THANKS TO";    break;
+		case 0: credit = "ALL THANKS TO";    break;
 		case 1: credit = "DAVE THEURER"; break;
 		case 2: credit = "JEFF MINTER";  break;
 		case 3: credit = "";             break;
@@ -264,10 +264,10 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 		break;
 
 	case VORTEX_STATE_GAME:
-		/* do game stuff in here */
+		/* draw some stars */
+		if( !vglob.classicMode ) Star_DrawStars( srf );
 
 		/* draw the playfield */
-		if( !vglob.classicMode ) Star_DrawStars( srf );
 		Vortex_DrawWeb( srf );
 
 		/* draw the player */
@@ -278,6 +278,9 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 
 		/* draw enemies */
 		Vortex_Enemy_draw( srf );
+
+		/* draw powerups */
+		Vortex_Powerup_draw( srf );
 
 		/* draw any console text over all of that */
 		Vortex_Console_Render( srf );
@@ -431,6 +434,7 @@ void Vortex_initLevel( void )
 	if( vglob.state == VORTEX_STATE_DEAD ) return;
 
 	Vortex_newLevelCompute();
+	Vortex_Powerup_clear();
 	Vortex_Bolt_clear();
 	Vortex_Enemy_clear();
 	Vortex_clawCompute();
@@ -612,6 +616,7 @@ int event_vortex (PzEvent *ev)
 			break;
 		}
 
+		Vortex_Powerup_poll();
 		Vortex_Bolt_poll();
 		Vortex_Enemy_poll();
 		Vortex_Console_Tick();
@@ -714,13 +719,14 @@ void init_vortex()
 		vglob.color.super       = ttk_makecol(   0, 255, 255 );
 		vglob.color.flippers    = ttk_makecol( 255,   0,   0 );
 		vglob.color.edeath      = ttk_makecol( 255, 255,   0 );
+		vglob.color.powerup	= ttk_makecol(  64, 225,  64 );
 	} else {
 		/* monochrome iPod */
 		vglob.color.bg          = ttk_makecol( WHITE );
 		vglob.color.title       = ttk_makecol( BLACK );
 		vglob.color.select      = ttk_makecol( BLACK );
-		vglob.color.sellevel    = ttk_makecol( DKGREY );
-		vglob.color.credits     = ttk_makecol( GREY );
+		vglob.color.sellevel    = ttk_makecol( BLACK );
+		vglob.color.credits     = ttk_makecol( DKGREY );
 		vglob.color.version     = ttk_makecol( GREY );
 		vglob.color.con         = ttk_makecol( BLACK );
 		vglob.color.bonus       = ttk_makecol( DKGREY );
@@ -742,6 +748,7 @@ void init_vortex()
 		vglob.color.super       = ttk_makecol( DKGREY );
 		vglob.color.flippers    = ttk_makecol( BLACK );
 		vglob.color.edeath      = ttk_makecol( GREY );
+		vglob.color.powerup     = ttk_makecol( DKGREY );
 	}
 
 	/* precompute all of the web scaling... */
