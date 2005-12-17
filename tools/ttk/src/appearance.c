@@ -214,12 +214,18 @@ void ttk_ap_load (const char *filename)
 
 				    color++;
 
-				    r |= hex2nyb (*color++); r <<= 4;
-				    r |= hex2nyb (*color++);
-				    g |= hex2nyb (*color++); g <<= 4;
-				    g |= hex2nyb (*color++);
-				    b |= hex2nyb (*color++); b <<= 4;
-				    b |= hex2nyb (*color++);
+                                    if (isxdigit (color[3])) {
+                                        r |= hex2nyb (*color++); r <<= 4;
+                                        r |= hex2nyb (*color++);
+                                        g |= hex2nyb (*color++); g <<= 4;
+                                        g |= hex2nyb (*color++);
+                                        b |= hex2nyb (*color++); b <<= 4;
+                                        b |= hex2nyb (*color++);
+                                    } else {
+                                        r = hex2nyb (*color++); r |= (r << 4);
+                                        g = hex2nyb (*color++); g |= (g << 4);
+                                        b = hex2nyb (*color++); b |= (b << 4);
+                                    }
 
 				    ap->color = ttk_makecol (r, g, b);
 				    ap->type |= TTK_AP_COLOR;
