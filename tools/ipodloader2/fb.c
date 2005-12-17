@@ -294,18 +294,27 @@ static void fb_565_bitblt(uint16 *x, int sx, int sy, int mx, int my) {
       /* for each column */
       for (y = 0; y < width; y += 2) {
 	unsigned two_pixels;
-	
-	two_pixels = ( ((addr[0]&0xFF)<<8) | ((addr[0]&0xFF00)>>8) ) | 
-                     ((((addr[1]&0xFF)<<8) | ((addr[1]&0xFF00)>>8) )<<16);
 
+	if( ipod->lcd_type != 5 ) {
+	  two_pixels = ( ((addr[0]&0xFF)<<8) | ((addr[0]&0xFF00)>>8) ) | 
+	               ((((addr[1]&0xFF)<<8) | ((addr[1]&0xFF00)>>8) )<<16);
+	} else {
+	  two_pixels = (addr[1]<<16) | addr[0];
+	}
+	
 	addr += 2;
 	
 	if( ipod->lcd_type != 5 ) {
+
 	  while ((inl(0x70008a20) & 0x1000000) == 0);
 	  
 	  /* output 2 pixels */
 	  outl(two_pixels, 0x70008b00);
 	} else {
+	  /*two_pixels = ((two_pixels&0xFF000000)>>24) | ((two_pixels&0xFF0000)>>8) | 
+	    ((two_pixels&0xFF00) << 8) | ((two_pixels&0xFF)<<24);*/
+
+
           /* output 2 pixels */
           lcd_bcm_write32(0xE0020 + (curpixel << 2), two_pixels);
           curpixel++;	
