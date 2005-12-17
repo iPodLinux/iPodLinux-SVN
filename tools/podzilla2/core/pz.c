@@ -36,6 +36,22 @@ void ____Spurious_references_to_otherwise_unreferenced_symbols()
     /* Add anything else *in TTK only* that's unrefed and
      * needed by a module.
      */
+
+#ifndef IPOD
+    /* And now for the div funcs and such in libgcc...
+     * rand() is so the compiler can't do constant
+     * optimization.
+     */
+    unsigned long ul = 1337 + rand();
+    unsigned long long ull = 42424242 + rand();
+    float f = 3.14159 + (float)rand();
+    double d = 2.718281828 + (float)rand();
+
+#define DO_STUFF_INT(x) { x += 5; x *= 27; x %= 420; x /= 42; x <<= 4; x -= 3; x >>= 20; }
+#define DO_STUFF_FP(x) { x += 5.0; x *= 27.0; x /= 42.0; x -= 3.0; }
+    DO_STUFF_INT(ul); DO_STUFF_INT(ull);
+    DO_STUFF_FP(f);   DO_STUFF_FP(d);
+#endif
 }
 
 /* compat globals */
