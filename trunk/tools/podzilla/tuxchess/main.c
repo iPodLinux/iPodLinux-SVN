@@ -32,6 +32,11 @@
 
 #define WHEEL_EVENT_MOD 3
 
+/*Specific Photo*/
+#define MAROON GR_RGB( 153, 102, 0 )
+#define LIGHT_BLUE GR_RGB( 184, 241, 255 )
+#define DARK_BLUE GR_RGB( 51, 0, 204 )
+
 static GR_WINDOW_ID tuxchess_wid;
 static GR_WINDOW_ID historic_wid;
 static GR_WINDOW_ID end_wid;
@@ -53,10 +58,9 @@ char key_pressed ='\0';
 static char xcoord='A', ycoord='1', oldx='A', oldy='1';
 static char oldx_curs='M', oldy_curs='9';
 int contr=110, right_hit=0, left_hit=0, click=1, end=0;
-int is_mini=0, readint = 0, writeint = 0;
+int is_mini=0, is_photo=0, readint = 0, writeint = 0;
 char end_type='w';
-void draw_cursor(char x, char y);
-void draw_end(char col);
+void draw_end(int col);
 static int sel=0;
 struct keycolumn {
         short xoffset;
@@ -204,7 +208,7 @@ void draw_historic(void)
 	GrLine(historic_wid, tuxchess_gc, 55, 1, 55, 105);
 	GrText(historic_wid, tuxchess_gc, 14,14, 
 		"Moves", -1, GR_TFASCII);	/* Title in the text box */
-	GrLine(historic_wid, tuxchess_gc, 1, 17, 56, 17);
+	GrLine(historic_wid, tuxchess_gc, 1, 17, 55, 17);
 
 	/* So ugly code since char* arrays seem to confuse my iPod - writes 6 lines */
 	GrText(historic_wid, tuxchess_gc, 6, 33, historic_line1, -1, GR_TFASCII);
@@ -555,23 +559,23 @@ void do_left(void)
 }
 
 /* Draw the cursor */
-void draw_cursor(char coord1, char coord2)
+void tuxchess_draw_cursor(int coord_x, int coord_y)
 {
-	int x,y;
+	GR_COLOR colour;
 
-	x = (coord1-65)*13;
-	y = 106-((coord2-48)*13);
-
-	GrSetGCForeground(tuxchess_gc,WHITE);
-	GrRect(tuxchess_wid,tuxchess_gc,x,y,13,13);
-	GrSetGCForeground(tuxchess_gc,BLACK);
-	GrRect(tuxchess_wid,tuxchess_gc,x+1,y+1,11,11);
-	GrSetGCForeground(tuxchess_gc,WHITE);
-	GrRect(tuxchess_wid,tuxchess_gc,x+2,y+2,9,9);
+	colour = (is_photo==0) ? WHITE : LIGHT_BLUE;
+	GrSetGCForeground(tuxchess_gc,colour);
+	GrRect(tuxchess_wid,tuxchess_gc,coord_x,coord_y,13,13);
+	colour = (is_photo==0) ? BLACK : DARK_BLUE;
+	GrSetGCForeground(tuxchess_gc,colour);
+	GrRect(tuxchess_wid,tuxchess_gc,coord_x+1,coord_y+1,11,11);
+	colour = (is_photo==0) ? WHITE : LIGHT_BLUE;
+	GrSetGCForeground(tuxchess_gc,colour);
+	GrRect(tuxchess_wid,tuxchess_gc,coord_x+2,coord_y+2,9,9);
 }
 
 /* Draw the rook */
-void draw_rook(int coord_x, int coord_y, char color)
+void draw_rook(int coord_x, int coord_y, int color)
 {
 	GR_POINT rook[] = {
 		{coord_x+1, coord_y+1}, {coord_x+3, coord_y+1},
@@ -587,7 +591,7 @@ void draw_rook(int coord_x, int coord_y, char color)
 		{coord_x+1, coord_y+1}
 	};
 
-	if(color == 'w')
+	if(color == 0)
 	{
 		GrSetGCForeground(tuxchess_gc,WHITE);
 		GrFillPoly(tuxchess_wid,tuxchess_gc,21,rook);
@@ -602,7 +606,7 @@ void draw_rook(int coord_x, int coord_y, char color)
 }
 
 /* Draw the queen */
-void draw_queen(int coord_x, int coord_y, char color)
+void draw_queen(int coord_x, int coord_y, int color)
 {
 	GR_POINT queen[] = {
 		{coord_x+1, coord_y+1}, {coord_x+4, coord_y+4},
@@ -611,7 +615,7 @@ void draw_queen(int coord_x, int coord_y, char color)
 		{coord_x+3, coord_y+10}, {coord_x+1, coord_y+1}
 	};
 
-	if (color == 'w')
+	if (color == 0)
 	{
 		GrSetGCForeground(tuxchess_gc,WHITE);
 		GrFillPoly(tuxchess_wid,tuxchess_gc,8,queen);
@@ -627,7 +631,7 @@ void draw_queen(int coord_x, int coord_y, char color)
 }
 
 /* Draw the knight */
-void draw_knight(int coord_x, int coord_y, char color)
+void draw_knight(int coord_x, int coord_y, int color)
 {
 	GR_POINT knight[] = {
 		{coord_x+5, coord_y+1}, {coord_x+8, coord_y+3},
@@ -637,7 +641,7 @@ void draw_knight(int coord_x, int coord_y, char color)
 		{coord_x+5, coord_y+1}
 	};
 
-	if(color == 'w')
+	if(color == 0)
 	{
 		GrSetGCForeground(tuxchess_gc,WHITE);
 		GrFillPoly(tuxchess_wid,tuxchess_gc,9,knight);
@@ -653,12 +657,12 @@ void draw_knight(int coord_x, int coord_y, char color)
 }
 
 /* Draw the king */
-void draw_king(int coord_x, int coord_y, char color)
+void draw_king(int coord_x, int coord_y, int color)
 {
-	GrSetGCForeground(tuxchess_gc,BLACK);
+ 	GrSetGCForeground(tuxchess_gc,BLACK);
 	GrLine(tuxchess_wid,tuxchess_gc,coord_x+6,coord_y+1,coord_x+6,coord_y+4);
 	GrLine(tuxchess_wid,tuxchess_gc,coord_x+4,coord_y+2,coord_x+8,coord_y+2);
-	if(color == 'w')
+	if(color == 0)
 		GrSetGCForeground(tuxchess_gc,WHITE);
 
 	GrFillEllipse(tuxchess_wid,tuxchess_gc,coord_x+6,coord_y+8,4,4);
@@ -667,7 +671,7 @@ void draw_king(int coord_x, int coord_y, char color)
 }
 
 /* Draw the bishop */
-void draw_bishop(int coord_x, int coord_y, char color)
+void draw_bishop(int coord_x, int coord_y, int color)
 {
 	GR_POINT bishop1[] = {
 		{coord_x+7, coord_y+1}, {coord_x+8, coord_y+4},
@@ -691,7 +695,7 @@ void draw_bishop(int coord_x, int coord_y, char color)
 		{coord_x+4, coord_y+10}
 	};
 
-	if(color == 'w')
+	if(color == 0)
 	{
 		GrSetGCForeground(tuxchess_gc,WHITE);
 		GrFillPoly(tuxchess_wid,tuxchess_gc,9,bishop2);
@@ -720,9 +724,9 @@ void draw_bishop(int coord_x, int coord_y, char color)
 }
 
 /* Draw the pawn */
-void draw_pawn(int coord_x, int coord_y, char color)
+void draw_pawn(int coord_x, int coord_y, int color)
 {
-	if(color == 'w')
+	if(color == 0)
 	{
 		GrSetGCForeground(tuxchess_gc,WHITE);
 		GrFillEllipse(tuxchess_wid,tuxchess_gc,coord_x+6,coord_y+6,2,4);
@@ -824,7 +828,7 @@ static int tuxchess_handle_event(GR_EVENT *event)
 }
 
 /* End of the game */
-void draw_end(char col)
+void draw_end(int col)
 {
 	int offset, off_x, off_y;
 
@@ -860,13 +864,13 @@ void draw_end(char col)
 		/* Clear the window */
 		GrClearWindow(end_wid, GR_FALSE);
 
-		if (col=='b') {
+		if (col==1) {
 			GrText(end_wid, tuxchess_gc, 57-off_x,40-off_y, "You Lost", -1, GR_TFASCII);
 		}
-		else if (col=='w') {
+		else if (col==0) {
 			GrText(end_wid, tuxchess_gc, 54-off_x,40-off_y, "Well Done", -1, GR_TFASCII);
 		}
-		else if (col=='d') {
+		else if (col==2) {
 			GrText(end_wid, tuxchess_gc, 67-off_x,40-off_y, "Draw", -1, GR_TFASCII);
 		}
 
@@ -884,7 +888,8 @@ void open_tuxchess_window (void)
 	tuxchess_gc = pz_get_gc(1);	/* Get the graphics context */
 
 	is_mini = (screen_info.cols == 138);
-
+	is_photo = (screen_info.cols == 220);
+	
 	if (is_mini) {
 		/* Open the window for the board: */
 		tuxchess_wid = pz_new_window(0, 2,
@@ -908,8 +913,7 @@ void open_tuxchess_window (void)
 	else {
 		/* Open the window for the board: */
 		tuxchess_wid = pz_new_window(0, HEADER_TOPLINE + 1,
-			104,
-			screen_info.rows - HEADER_TOPLINE - 1,
+			104, screen_info.rows - HEADER_TOPLINE - 1,
 			tuxchess_do_draw,
 			tuxchess_handle_event);
 
@@ -1050,13 +1054,15 @@ void print_board()
 	static int color_type=1; //gray color
 
 	GR_GC_ID tuxchess_gc;
+	GR_COLOR colour;
 
 	tuxchess_gc = GrNewGC();	/* Get the graphics context */
 
-	if (end == 1) {
+	if (end == 1)
+		{
 		reorg_historic(3);
 		end = 0;
-	}
+		}
 
 	x_curs = xcoord-65;
 	y_curs = ycoord-49;
@@ -1064,78 +1070,62 @@ void print_board()
 	y_curs_old = oldy_curs-49;
 
 	/* Draw the pieces */
-	for (row = 0; row < 8; row++) {
-		for (column = 0; column < 8; column++) {
+	for (row = 0; row < 8; row++)
+		{
+		for (column = 0; column < 8; column++)
+			{
 			i = keyrows[row].columns[column].scancode;
 			color_type=!color_type;
 			if (((piece_avt[i] != piece[i])
 				|| (color_avt[i] != color[i]))
 				|| (x_curs_old==column && y_curs_old==7-row)
-				|| (x_curs==column && y_curs==7-row)) {
-				if(color_type==1) {
-					GrSetGCForeground(tuxchess_gc,GRAY);
-				}
-				else {
+				|| (x_curs==column && y_curs==7-row))
+				{
+				if(color_type==1)
+					{
+					colour = (is_photo==0) ? GRAY : MAROON;
+					GrSetGCForeground(tuxchess_gc,colour);
+					}
+				else
+					{
 					GrSetGCForeground(tuxchess_gc,WHITE);
-				}
+					}
 
 				GrFillRect(tuxchess_wid,tuxchess_gc,0+column*13,2+row*13,13,13);
 				x = keyrows[row].columns[column].xoffset/3.75;
 				y = 2+keyrows[row].yoffset/3.75;
-				switch(color[i]) {
-				case LIGHT:
-					switch(piece_char[piece[i]]) {
-					case 'P': 
-						draw_pawn(x,y,'w');
-						break;
-					case 'N': 
-						draw_knight(x,y,'w');
-						break;
-					case 'B': 
-						draw_bishop(x,y,'w');
-						break;
-					case 'R': 
-						draw_rook(x,y,'w');
-						break;
-					case 'Q': 
-						draw_queen(x,y,'w');
-						break;
-					case 'K':
-						draw_king(x,y,'w');
-						break;
-					}
-					break;
 
-				case DARK:
-					switch(piece_char[piece[i]]) {
+				switch(piece_char[piece[i]])
+					{
 					case 'P':
-						draw_pawn(x,y,'b');
+						draw_pawn(x,y,color[i]);
 						break;
 					case 'N': 
-						draw_knight(x,y,'b');
+						draw_knight(x,y,color[i]);
 						break;
 					case 'B': 
-						draw_bishop(x,y,'b');
+						draw_bishop(x,y,color[i]);
 						break;
 					case 'R': 
-						draw_rook(x,y,'b');
+						draw_rook(x,y,color[i]);
 						break;
 					case 'Q': 
-						draw_queen(x,y,'b');
+						draw_queen(x,y,color[i]);
 						break;
 					case 'K':
-						draw_king(x,y,'b');
+						draw_king(x,y,color[i]);
 						break;
+					} /* switch */
+					
+				}
+				piece_avt[i] = piece[i];
+				color_avt[i] = color[i];
+				
+				if (x_curs==column && y_curs==7-row)
+					{
+					tuxchess_draw_cursor(x, y);
 					}
-					break;
-				} /* switch */
-			}
-			piece_avt[i] = piece[i];
-			color_avt[i] = color[i];
-
-			if (x_curs==column && y_curs==7-row) {
-				draw_cursor(xcoord, ycoord);
-			}
+				
 		} /* for col */
 		color_type=!color_type;
 	} /* for row */
@@ -1167,7 +1157,7 @@ void print_result()
 				else {
 					pz_draw_header("Black mates");
 				}
-				draw_end('b');
+				draw_end(1);
 			}
 			else {
 				printf("White mates");
@@ -1177,7 +1167,7 @@ void print_result()
 				else {
 					pz_draw_header("White mates");
 				}
-				draw_end('w');
+				draw_end(0);
 			}
 		}
 		else {
@@ -1188,7 +1178,7 @@ void print_result()
 			else {
 				pz_draw_header("Stalemate");
 			}
-			draw_end('d');
+			draw_end(2);
 		}
 	}
 /*
@@ -1205,7 +1195,7 @@ void print_result()
 		if (is_mini == 0) {
 			pz_draw_header("Draw : fifty moves");
 		}
-		draw_end('d');
+		draw_end(2);
 	}
 }
 
