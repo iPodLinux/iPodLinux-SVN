@@ -77,7 +77,6 @@ typedef struct vortex_globals {
 
 	/* gameplay stuff */
 	int state;
-	int level;
 	int startLevel;
 	int currentLevel;
 	int timer;

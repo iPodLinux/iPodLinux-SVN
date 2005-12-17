@@ -28,7 +28,6 @@
 	- the add() routine rolls through the array, looking for an open slot
 	  - if there's an open slot, it initializes and returns
 	  - if there's no open slot, it just returns without doing anything
-	- the create() routine deals with probability, and add()s if ok
 	- the draw() routine draws the entire array appropriately to the surface
 	- the clear() routine wipes all elements of the struct to inactive state
 	- the poll() routine gets called from a timer
@@ -55,6 +54,7 @@ static powerup powerups[ VGO_POWERUPS_NUM ];
 void Vortex_CollisionDetection( void )
 {
 	int b,d,e,p;
+	int r;
 	char * buf;
 
 	/* check for bolt-enemy collisions */
@@ -74,11 +74,9 @@ void Vortex_CollisionDetection( void )
 				vglob.score += 100;
 
 				/* create a new powerup here */
-					/* for now, just do a ZAPPO 2000 */
-				Vortex_Powerup_add( 
+				Vortex_Powerup_create(
 					enemies[e].web,
-					enemies[e].z,
-					VORTEX_PU_2000 );
+					enemies[e].z );
 			    }
 			}
 		    }
@@ -96,17 +94,23 @@ void Vortex_CollisionDetection( void )
 			case( VORTEX_PU_PART ):
 				vglob.score += 42;
 				vglob.hasParticleLaser = 1;
+				Vortex_Console_AddItemAt(
+					"Particle Laser!", 0, 0,
+					vglob.wxC, vglob.wyC,
+					VORTEX_STYLE_NORMAL,
+					vglob.color.bonus );
 				break;
 
 			case( VORTEX_PU_2000 ):
 				vglob.score += 2013;
-				if( p&1 )	buf = "ZAPPO 2000!";
-				else if( p&2 )	buf = "AWESOME!";
-				else if( p&4 )	buf = "EXCELLENT!";
-				else if( p&8 )	buf = "DUDE!";
-				else		buf = "+2000!";
+				r = rand() & 0x0ff;
+
+				if( r > 0xc0 )		buf = "ZAPPO 2000!";
+				else if ( r > 0x80 )	buf = "AWESOME!";
+				else if ( r > 0x40 )	buf = "EXCELLENT!";
+				else			buf = "+2000!";
 				Vortex_Console_AddItemAt(
-					"ZAPPO 2000", 0, 0,
+					buf, 0, 0,
 					vglob.wxC, vglob.wyC,
 					VORTEX_STYLE_NORMAL,
 					vglob.color.bonus );
@@ -289,6 +293,8 @@ void Vortex_Enemy_draw( ttk_surface srf )
 		case( VORTEX_ENS_ACTIVE ):
 			switch( enemies[e].type ){
 			case( VORTEX_ENT_FLIPPER ):
+				/* these look better non-antialiased */
+				/* aliased? */
 				ttk_line( srf,  vglob.ptsX[w  ][z  ][0],
 						vglob.ptsY[w  ][z  ][0],
 						vglob.ptsX[w+1][z+3][0],
@@ -319,13 +325,13 @@ void Vortex_Enemy_draw( ttk_surface srf )
 	}
 }
 
-void Vortex_Enemy_add( void )
+void Vortex_Enemy_add( int type )
 {
 	int e;
 	for( e=0 ; e<VGO_ENEMIES_NUM ; e++ ){
 		if( enemies[e].state == VORTEX_ENS_INACTIVE ) {
 			enemies[e].state      = VORTEX_ENS_ZOOMY;
-			enemies[e].type       = VORTEX_ENT_FLIPPER;/* for now */
+			enemies[e].type       = type;
 			enemies[e].web	      = rand() & 0x0f;
 			enemies[e].v          = 0.25;
 			enemies[e].z          = 0;
@@ -340,6 +346,8 @@ void Vortex_Enemy_add( void )
 	}
 }
 
+static int enemy_flipper_countup;
+
 void Vortex_Enemy_clear( void )
 {
 	int e;
@@ -347,11 +355,29 @@ void Vortex_Enemy_clear( void )
 		enemies[e].state = VORTEX_ENS_INACTIVE;
 	}
 
+	enemy_flipper_countup = -99;
 }
+
 
 void Vortex_Enemy_poll( void )
 {
 	int e;
+	static int timings_flipper[16] = { 70, 65, 60, 55, 50, 47, 45,
+			 		   40, 37, 33, 30, 28, 26, 24 };
+        int idx = vglob.currentLevel;
+	if( idx > 15 ) idx = 15;
+    
+	/* trigger a new enemy if necessary */
+	enemy_flipper_countup++;
+	if( (enemy_flipper_countup >= timings_flipper[idx])
+	    || (enemy_flipper_countup<0) )
+	{
+		Vortex_Enemy_add( VORTEX_ENT_FLIPPER );
+		enemy_flipper_countup = 0;
+	}
+
+
+	/* check the state stuff */
 	for( e=0 ; e<VGO_ENEMIES_NUM ; e++ )
 	{
 		switch( enemies[e].state ) {
@@ -406,9 +432,6 @@ void Vortex_Enemy_poll( void )
 
 /* ********************************************************************** */
 
-static int firstPowerup = 1;
-
-
 void Vortex_Powerup_draw( ttk_surface srf )
 {
 	int p,w,z,d;
@@ -421,7 +444,7 @@ void Vortex_Powerup_draw( ttk_surface srf )
 		
 		if( (z&1) && (powerups[p].state != VORTEX_PU_INACTIVE) ) {
 			for( d=3; d<15 ; d+=5 ) {
-				ttk_ellipse( srf, vglob.ptsX[w  ][z][1],
+				ttk_aaellipse( srf, vglob.ptsX[w  ][z][1],
 					vglob.ptsY[w  ][z][1],
 					d, d, vglob.color.powerup );
 			}
@@ -429,18 +452,20 @@ void Vortex_Powerup_draw( ttk_surface srf )
 	}
 }
 
+static int powerup_counter = 0;
+
 void Vortex_Powerup_add( int web, int z, int type )
 {
 	int p;
 
-	if( firstPowerup ) {
-		firstPowerup = 0;
+	if( powerup_counter == 0 ) {
 		Vortex_Console_AddItemAt(
 			"COLLECT POWERUPS", 0, 0,
 			vglob.wxC, vglob.wyC,
 			VORTEX_STYLE_BOLD,
 			vglob.color.con );
 	}
+	powerup_counter++;
 
 	for( p=0 ; p<VGO_POWERUPS_NUM ; p++ )
 	{
@@ -456,12 +481,24 @@ void Vortex_Powerup_add( int web, int z, int type )
 	}
 }
 
+
+void Vortex_Powerup_create( int web, int z )
+{
+	/* this needs *EXTENSIVE* work */
+	if( (powerup_counter & 0x01) == 0 ) {
+		Vortex_Powerup_add( web, z, VORTEX_PU_2000 );
+	} else if( vglob.hasParticleLaser == 0 ) {
+		Vortex_Powerup_add( web, z, VORTEX_PU_PART );
+	} else 
+		Vortex_Powerup_add( web, z, VORTEX_PU_2000 );
+}
+
 void Vortex_Powerup_clear( void )
 {
 	int p;
 	for( p=0 ; p<VGO_POWERUPS_NUM ; p++ )
 		powerups[p].state = VORTEX_PU_INACTIVE;
-	firstPowerup = 1;
+	powerup_counter = 0;
 }
 
 void Vortex_Powerup_poll( void )

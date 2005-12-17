@@ -44,7 +44,7 @@
 #include "vgamobjs.h"
 
 /* version number */
-#define VORTEX_VERSION	"05121701"
+#define VORTEX_VERSION	"05121703"
 
 vortex_globals vglob;
 
@@ -293,8 +293,16 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
                             5, 9, 1, vglob.color.score );
 
 		/* and lives left */
-		for( x=0 ; x<vglob.lives ; x++ ) {
-			Vortex_Base( srf, 1+(x*12), 1 );
+		if( vglob.lives > 4 ) {
+			snprintf( buf, 15, "%d", vglob.lives );
+			pz_vector_string( srf, buf, 1, 1,
+				5, 9, 1, vglob.color.baseind);
+			Vortex_Base( srf, 8, 1 );
+			
+		} else {
+			for( x=0 ; x<vglob.lives ; x++ ) {
+				Vortex_Base( srf, 1+(x*12), 1 );
+			}
 		}
 
 		/* and superzapper indicator, if applicable */
@@ -567,7 +575,6 @@ int event_vortex (PzEvent *ev)
 				Vortex_initLevel();
 			} else if( vglob.state == VORTEX_STATE_GAME ) {
 				Vortex_Bolt_add();
-				Vortex_Enemy_add();
 			}
 			break;
 
@@ -643,7 +650,6 @@ static void Vortex_Initialize( void )
 {
 	/* globals init */
 	vglob.widget = NULL;
-	vglob.level = 0;
 	vglob.startLevel = 0;
 	vglob.currentLevel = 0;
 	vglob.timer = 0;
