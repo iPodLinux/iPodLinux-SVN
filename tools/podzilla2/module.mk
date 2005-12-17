@@ -39,7 +39,7 @@ LD ?= ld
 TARGET = x11
 ifeq ($(shell uname),Darwin)
 PIC = -dynamic
-MAKESO = ld -bundle /usr/lib/bundle1.o -flat_namespace -undefined suppress
+MAKESO = ld -bundle /usr/lib/bundle1.o -flat_namespace -undefined suppress `gcc -print-libgcc-file-name`
 else
 PIC = -fPIC -DPIC
 MAKESO = cc -shared
