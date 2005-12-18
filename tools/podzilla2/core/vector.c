@@ -166,31 +166,41 @@ static struct vector_polystruct V_specials[] =
 };
 
 static struct vector_polystruct *lookup[] = {
-    [0x30] = V_digits + 0, V_digits + 1, V_digits + 2, V_digits + 3, V_digits + 4, V_digits + 5,
-             V_digits + 6, V_digits + 7, V_digits + 8, V_digits + 9,
+    [0x30] = 	V_digits + 0,  V_digits + 1,  V_digits + 2,  V_digits + 3, 
+		V_digits + 4,  V_digits + 5,  V_digits + 6,  V_digits + 7,
+		V_digits + 8,  V_digits + 9,
 
-    [0x41] = V_alpha + 0, V_alpha + 1, V_alpha + 2, V_alpha + 3, V_alpha + 4, V_alpha + 5,
-             V_alpha + 6, V_alpha + 7, V_alpha + 8, V_alpha + 9, V_alpha + 10, V_alpha + 11,
-             V_alpha + 12, V_alpha + 13, V_alpha + 14, V_alpha + 15, V_alpha + 16, V_alpha + 17,
-             V_alpha + 18, V_alpha + 19, V_alpha + 20, V_alpha + 21, V_alpha + 22, V_alpha + 23,
-             V_alpha + 24, V_alpha + 25,
-    [0x61] = V_alpha + 0, V_alpha + 1, V_alpha + 2, V_alpha + 3, V_alpha + 4, V_alpha + 5,
-             V_alpha + 6, V_alpha + 7, V_alpha + 8, V_alpha + 9, V_alpha + 10, V_alpha + 11,
-             V_alpha + 12, V_alpha + 13, V_alpha + 14, V_alpha + 15, V_alpha + 16, V_alpha + 17,
-             V_alpha + 18, V_alpha + 19, V_alpha + 20, V_alpha + 21, V_alpha + 22, V_alpha + 23,
-             V_alpha + 24, V_alpha + 25,
+    [0x41] = 	V_alpha + 0,  V_alpha + 1,  V_alpha + 2,  V_alpha + 3, 
+		V_alpha + 4,  V_alpha + 5,  V_alpha + 6,  V_alpha + 7, 
+		V_alpha + 8,  V_alpha + 9,  V_alpha + 10, V_alpha + 11,
+             	V_alpha + 12, V_alpha + 13, V_alpha + 14, V_alpha + 15, 
+		V_alpha + 16, V_alpha + 17, V_alpha + 18, V_alpha + 19, 
+		V_alpha + 20, V_alpha + 21, V_alpha + 22, V_alpha + 23,
+             	V_alpha + 24, V_alpha + 25,
 
-    ['!'] = V_punctuation + 0, [':'] = V_punctuation + 1, ['/'] = V_punctuation + 2,
-    ['\\'] = V_punctuation + 3, ['_'] = V_punctuation + 4, ['.'] = V_punctuation + 5,
-    [','] = V_punctuation + 6, ['['] = V_punctuation + 7, [']'] = V_punctuation + 8,
-    ['\''] = V_punctuation + 9, ['-'] = V_punctuation + 10, ['&'] = V_punctuation + 11,
-    ['('] = V_punctuation + 12, [')'] = V_punctuation + 13, ['%'] = V_punctuation + 14,
-    ['~'] = V_punctuation + 15, ['`'] = V_punctuation + 16, ['@'] = V_punctuation + 17,
-    ['#'] = V_punctuation + 18, ['$'] = V_punctuation + 19, ['^'] = V_punctuation + 20,
-    ['*'] = V_punctuation + 21, [';'] = V_punctuation + 22, ['?'] = V_punctuation + 23,
+    [0x61] = 	V_alpha + 0,  V_alpha + 1,  V_alpha + 2,  V_alpha + 3, 
+		V_alpha + 4,  V_alpha + 5,  V_alpha + 6,  V_alpha + 7, 
+		V_alpha + 8,  V_alpha + 9,  V_alpha + 10, V_alpha + 11,
+             	V_alpha + 12, V_alpha + 13, V_alpha + 14, V_alpha + 15, 
+		V_alpha + 16, V_alpha + 17, V_alpha + 18, V_alpha + 19, 
+		V_alpha + 20, V_alpha + 21, V_alpha + 22, V_alpha + 23,
+             	V_alpha + 24, V_alpha + 25,
+
+    ['!'] = V_punctuation + 0, 		[':'] = V_punctuation + 1,
+    ['/'] = V_punctuation + 2,		['\\'] = V_punctuation + 3, 
+    ['_'] = V_punctuation + 4, 		['.'] = V_punctuation + 5,
+    [','] = V_punctuation + 6, 		['['] = V_punctuation + 7, 
+    [']'] = V_punctuation + 8,		['\''] = V_punctuation + 9, 
+    ['-'] = V_punctuation + 10, 	['&'] = V_punctuation + 11,
+    ['('] = V_punctuation + 12, 	[')'] = V_punctuation + 13, 
+    ['%'] = V_punctuation + 14, 	['~'] = V_punctuation + 15, 
+    ['`'] = V_punctuation + 16, 	['@'] = V_punctuation + 17,
+    ['#'] = V_punctuation + 18, 	['$'] = V_punctuation + 19, 
+    ['^'] = V_punctuation + 20, 	['*'] = V_punctuation + 21, 
+    [';'] = V_punctuation + 22, 	['?'] = V_punctuation + 23,
     ['='] = V_punctuation + 24,
 
-    [250] = V_specials + 0, V_specials + 1, V_specials + 2, V_specials + 3
+    [250] = 	V_specials + 0, V_specials + 1, V_specials + 2, V_specials + 3
 };
 
 // Returns the number of pixels wide it was.
