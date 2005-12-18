@@ -32,7 +32,7 @@ CC = $(CROSS)-gcc
 LD = $(CROSS)-ld
 TARGET = ipod
 PIC =
-MYCFLAGS = -mapcs -mcpu=arm7tdmi -DVERSION=\"$(VERSION)\"
+MYCFLAGS = -mapcs -mcpu=arm7tdmi -DVERSION=\"$(VERSION)\" -Wall
 else
 CC ?= cc
 LD ?= ld
