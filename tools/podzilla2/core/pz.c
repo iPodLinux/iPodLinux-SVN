@@ -44,12 +44,14 @@ void ____Spurious_references_to_otherwise_unreferenced_symbols()
      */
     unsigned long ul = 1337 + rand();
     unsigned long long ull = 42424242 + rand();
+    long l = ul; long long ll = ull;
     float f = 3.14159 + (float)rand();
     double d = 2.718281828 + (float)rand();
 
 #define DO_STUFF_INT(x) { x += 5; x *= 27; x %= 420; x /= 42; x <<= 4; x -= 3; x >>= 20; }
 #define DO_STUFF_FP(x) { x += 5.0; x *= 27.0; x /= 42.0; x -= 3.0; }
     DO_STUFF_INT(ul); DO_STUFF_INT(ull);
+    DO_STUFF_INT(l);  DO_STUFF_INT(ll);
     DO_STUFF_FP(f);   DO_STUFF_FP(d);
 #endif
 }
