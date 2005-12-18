@@ -9,6 +9,42 @@ use POSIX qw/getpid setsid/;
 my($CHANNEL) = "#ipodlinux";
 my($KEY)     = "";
 
+sub makeTTK($) {
+    my($rev) = shift;
+
+    chdir "/home/oremanj/dev/ipl/management/.svnc/ttk";
+    system "svn up >/dev/null 2>&1" and do { $conn->privmsg("#ipodlinux", "svn up in ttk failed $?"); return; };
+    system "make distclean all >/dev/null 2>&1" and do { $conn->privmsg("#ipodlinux", "Someone just broke the TTK build."); return; };
+    return 1;
+}
+
+sub makeAP($) {
+    my($rev) = shift;
+    chdir "/home/oremanj/dev/ipl/management/.svnc/ttk";
+    system "svn up >/dev/null 2>&1" and do { $conn->privmsg("#ipodlinux", "svn up in ttk failed $?"); return; };
+    system "zip -r /var/www/html/iplbuilds/appearance-$rev.zip fonts schemes >/dev/null";
+}
+
+sub makePZcore($) {
+    my($rev) = shift;
+
+    chdir "/home/oremanj/dev/ipl/management/.svnc/podzilla2";
+    system "svn up >/dev/null 2>&1" and do { $conn->privmsg("#ipodlinux", "svn up in pz2 failed $?"); return; };
+    system "make clean all IPOD=1 >/dev/null 2>&1" and do { $conn->privmsg("#ipodlinux", "Someone just broke the PZ2 build."); return; };
+    system "cat podzilla | gzip -9 > /var/www/html/iplbuilds/podzilla2-$rev.gz";
+    return 1;
+}
+
+sub makePZmods($) {
+    my($rev) = shift;
+
+    chdir "/home/oremanj/dev/ipl/management/.svnc/podzilla2";
+    system "svn up >/dev/null 2>&1" and do { $conn->privmsg("#ipodlinux", "svn up in pz2 failed $?"); return; };
+    system "make IPOD=1 >/dev/null 2>&1" and do { $conn->privmsg("#ipodlinux", "Someone just broke the PZ2 build (modules)."); return; };
+    system "( cd xpods; zip -r /var/www/html/iplbuilds/pzmodules-$rev.zip * >/dev/null 2>&1 )";
+    return 1;
+}
+
 sub parse_data($) {
     my(@data) = split /\n/, $_[0];
     my($headers) = 1;
@@ -51,9 +87,23 @@ sub parse_data($) {
 
     my($flist) = "";
     my(@dirs) = @files;
+    my($rev);
+    ($rev = $tracurl) =~ s!.*/!!;
 
     map { s|/[^/]*$|| } @dirs;
     @dirs = keys %{{ map { $_ => 1 } @dirs }};
+
+    if (grep { m[/ttk/(fonts|schemes)] } (@files)) {
+        do { makeAP($rev); kill 9 => $$ } unless fork;
+    }
+
+    if (grep { m[/ttk/src] } (@files)) {
+        do { makeTTK($rev) && makePZcore($rev) && makePZmods($rev); kill 9 => $$ } unless fork;
+    } elsif (grep { m[/podzilla2/core] } (@files)) {
+        do { makePZcore($rev) && makePZmods($rev); kill 9 => $$ } unless fork;
+    } elsif (grep { m[/podzilla2/modules] } (@files)) {
+        do { makePZmods($rev); kill 9 => $$ } unless fork;
+    }
 
     if (scalar @files == 1) {
 	($flist = $files[0]) =~ s#^((?:tools/)?[^/]+/)#10$1#;
@@ -166,6 +216,10 @@ $SIG{'ALRM'} = sub {
     }
     alarm 5;
 };
+$SIG{'CHLD'} = sub { wait; };
+
+$CHANNEL = shift @ARGV || "#ipodlinux";
+$KEY = shift @ARGV || "rs232";
 
 open PIDFILE, ">.svnc/svnbot.pid" or die "Can't open PID file; do you need to mkdir .svnc?\n";
 print PIDFILE getpid;
