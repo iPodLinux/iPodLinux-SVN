@@ -29,8 +29,9 @@
 #define VORTEX_STATE_STYLESEL	(1)	/* user selecting 2k5 or classic */
 #define VORTEX_STATE_LEVELSEL	(2)	/* user selecting a stage */
 #define VORTEX_STATE_GAME	(3)	/* user playing a stage */
-#define VORTEX_STATE_DEATH	(4)	/* user is dying. */
-#define VORTEX_STATE_DEAD	(5)	/* user has died.  bummer */
+#define VORTEX_STATE_ADVANCE	(4)	/* advancing to the next stage */
+#define VORTEX_STATE_DEATH	(5)	/* user is dying. */
+#define VORTEX_STATE_DEAD	(6)	/* user has died.  bummer */
 
 
 /* colors for rendering */
@@ -80,6 +81,7 @@ typedef struct vortex_globals {
 	int startLevel;
 	int currentLevel;
 	int timer;
+	int paused;
 
 	int hasParticleLaser;
 	int hasSuperZapper;
