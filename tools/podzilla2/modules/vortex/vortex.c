@@ -556,18 +556,19 @@ int event_vortex (PzEvent *ev)
 
 	    if( !vglob.paused ) {
 		if( vglob.state == VORTEX_STATE_STYLESEL ) {
+			TTK_SCROLLMOD( ev->arg, 5 );
 			if( ev->arg > 0 )	vglob.classicMode = 0;
 			else 			vglob.classicMode = 1;
 			ev->wid->dirty = 1;
 		}
 
 		if( vglob.state == VORTEX_STATE_LEVELSEL ) {
-			TTK_SCROLLMOD( ev->arg, 4 );
+			TTK_SCROLLMOD( ev->arg, 5 );
 			Vortex_selectLevel( vglob.startLevel + ev->arg );
 		}
 
 		if( vglob.state == VORTEX_STATE_GAME ) {
-			TTK_SCROLLMOD( ev->arg, 1 );
+			TTK_SCROLLMOD( ev->arg, 3 );
 			if( ev->arg > 0 ) {
 				Vortex_decPosition( ev->arg );
 			} else {
