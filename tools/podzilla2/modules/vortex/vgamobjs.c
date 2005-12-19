@@ -443,8 +443,21 @@ void Vortex_Powerup_draw( ttk_surface srf )
 
 		
 		if( (z&1) && (powerups[p].state != VORTEX_PU_INACTIVE) ) {
+			ttk_aaline( srf,  
+					vglob.ptsX[w][powerups[p].zStart][0],
+					vglob.ptsY[w][powerups[p].zStart][0],
+					vglob.ptsX[w][z][1],
+					vglob.ptsY[w][z][1],
+					vglob.color.powerup );
+			ttk_aaline( srf,  
+					vglob.ptsX[w][z][1],
+					vglob.ptsY[w][z][1],
+					vglob.ptsX[w+1][powerups[p].zStart][0],
+					vglob.ptsY[w+1][powerups[p].zStart][0],
+					vglob.color.powerup );
+			
 			for( d=3; d<15 ; d+=5 ) {
-				ttk_aaellipse( srf, vglob.ptsX[w  ][z][1],
+				ttk_ellipse( srf, vglob.ptsX[w  ][z][1],
 					vglob.ptsY[w  ][z][1],
 					d, d, vglob.color.powerup );
 			}
@@ -473,6 +486,7 @@ void Vortex_Powerup_add( int web, int z, int type )
 			powerups[p].type     = type;
 			powerups[p].state    = VORTEX_PU_ZOOM;
 			powerups[p].web	     = web;
+			powerups[p].zStart   = z;
 			powerups[p].z        = (double) z;
 			powerups[p].v	     = 0.5;
 			powerups[p].edgetime = 10;

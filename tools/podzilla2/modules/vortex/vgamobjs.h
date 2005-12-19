@@ -82,6 +82,7 @@ typedef struct powerup {
 	int type;		/* what kind of enemy it is */
 	int state;		/* what state is it in? */
 	int web;		/* where it is, rotationally */
+	int zStart;		/* starting z position */
 	double z;		/* where it is, depth */
 	double v;		/* velocity */
 	int edgetime;		/* how long it should wait at the edge */

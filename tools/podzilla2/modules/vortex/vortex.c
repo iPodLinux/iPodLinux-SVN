@@ -44,7 +44,7 @@
 #include "vgamobjs.h"
 
 /* version number */
-#define VORTEX_VERSION	"05121703"
+#define VORTEX_VERSION	"05121900"
 
 vortex_globals vglob;
 
@@ -180,6 +180,31 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 
 	ttk_fillrect( srf, 0, 0, ttk_screen->w, ttk_screen->h, vglob.color.bg );
 
+	if( vglob.paused ) {
+		Vortex_OutlinedTextCenter( srf, "VORTEX",
+			(ttk_screen->w - ttk_screen->wx)>>1, 
+			((ttk_screen->h - ttk_screen->wy)>>1)-20,
+			10, 18, 1, vglob.color.title, vglob.color.bg );
+
+		Vortex_OutlinedTextCenter( srf, "\xFD\xFDpaused\xFB\xFB",
+			(ttk_screen->w - ttk_screen->wx)>>1, 
+			((ttk_screen->h - ttk_screen->wy)>>1)+5,
+			10, 18, 1, vglob.color.select, vglob.color.bg );
+
+		Vortex_OutlinedTextCenter( srf, "Coded By", 
+			    (ttk_screen->w - ttk_screen->wx)>>1, 
+			    (ttk_screen->h - ttk_screen->wy)-22, 
+			    5, 9, 1, vglob.color.credits,
+			    vglob.color.bg );
+
+		Vortex_OutlinedTextCenter( srf, "BleuLlama", 
+			    (ttk_screen->w - ttk_screen->wx)>>1, 
+			    (ttk_screen->h - ttk_screen->wy)-10, 
+			    5, 9, 1, vglob.color.credits,
+			    vglob.color.bg );
+		return;
+	}
+
 	switch( vglob.state ) {
 	case VORTEX_STATE_STARTUP:
 		if( !vglob.classicMode ) Star_DrawStars( srf );
@@ -270,6 +295,9 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 		/* draw the playfield */
 		Vortex_DrawWeb( srf );
 
+		/* draw powerups */
+		Vortex_Powerup_draw( srf );
+
 		/* draw the player */
 		Vortex_DrawPlayer( srf );
 
@@ -278,9 +306,6 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 
 		/* draw enemies */
 		Vortex_Enemy_draw( srf );
-
-		/* draw powerups */
-		Vortex_Powerup_draw( srf );
 
 		/* draw any console text over all of that */
 		Vortex_Console_Render( srf );
@@ -317,6 +342,8 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 			     pz_vector_width( buf, 5, 9, 1 ) -1,
 			    (ttk_screen->h - ttk_screen->wy)-10, 
                             5, 9, 1, vglob.color.level );
+
+
 		break;
 
 	case VORTEX_STATE_DEATH:
@@ -527,6 +554,7 @@ int event_vortex (PzEvent *ev)
 	switch (ev->type) {
 	case PZ_EVENT_SCROLL:
 
+	    if( !vglob.paused ) {
 		if( vglob.state == VORTEX_STATE_STYLESEL ) {
 			if( ev->arg > 0 )	vglob.classicMode = 0;
 			else 			vglob.classicMode = 1;
@@ -545,26 +573,37 @@ int event_vortex (PzEvent *ev)
 			} else {
 				Vortex_incPosition( ev->arg * -1 );
 			}
+		}
+	    }
+	    break;
 
-			/* change the level for now too... */
-/*
-			vglob.currentLevel += ev->arg;
-			if( vglob.currentLevel < 0 ) 
-				vglob.currentLevel = 0;
-			if( vglob.currentLevel >= (NLEVELS-1) ) 
-				vglob.currentLevel = NLEVELS-1;
-*/
+	case PZ_EVENT_BUTTON_DOWN:
+		switch( ev->arg ) {
+		case( PZ_BUTTON_HOLD ):
+			vglob.paused = 1;
+			break;
 		}
 		break;
 
 	case PZ_EVENT_BUTTON_UP:
 		switch( ev->arg ) {
 		case( PZ_BUTTON_MENU ):
-			pz_close_window (ev->wid->win);
+			if( !vglob.paused ) {
+				pz_close_window (ev->wid->win);
+			}
+			break;
+
+		case( PZ_BUTTON_HOLD ):
+			vglob.paused = 0;
 			break;
 
 		case( PZ_BUTTON_ACTION ):
-			if( vglob.state == VORTEX_STATE_STYLESEL ) {
+		if( !vglob.paused ) {
+			if( vglob.state == VORTEX_STATE_STARTUP ) {
+				Vortex_ChangeToState( VORTEX_STATE_STYLESEL );
+				Vortex_initLevel();
+				vglob.wPosMajor = 8;
+			} else if( vglob.state == VORTEX_STATE_STYLESEL ) {
 				Vortex_ChangeToState( VORTEX_STATE_LEVELSEL );
 				vglob.startLevel = 0;
 				vglob.currentLevel = 0;
@@ -576,6 +615,7 @@ int event_vortex (PzEvent *ev)
 			} else if( vglob.state == VORTEX_STATE_GAME ) {
 				Vortex_Bolt_add();
 			}
+		}
 			break;
 
 		default:
@@ -623,23 +663,24 @@ int event_vortex (PzEvent *ev)
 			break;
 		}
 
-		Vortex_Powerup_poll();
-		Vortex_Bolt_poll();
-		Vortex_Enemy_poll();
-		Vortex_Console_Tick();
-		Vortex_CollisionDetection();
+		if( !vglob.paused ) {
+			Vortex_Powerup_poll();
+			Vortex_Bolt_poll();
+			Vortex_Enemy_poll();
+			Vortex_Console_Tick();
+			Vortex_CollisionDetection();
 
-		/* generate a death screen - state changer */
-		if( vglob.lives <= 0 ) {
-			if( vglob.state != VORTEX_STATE_DEATH ) {
+			/* generate a death screen - state changer */
+			if( (vglob.lives <= 0)
+			    && (vglob.state != VORTEX_STATE_DEATH) ) {
 				Vortex_ChangeToState( VORTEX_STATE_DEATH );
 				Vortex_Console_HiddenStatic( 1 );
 				Vortex_Console_AddItem( "GAME OVER", 0, 0, 
-				    VORTEX_STYLE_NORMAL, vglob.color.title );
+					VORTEX_STYLE_NORMAL, vglob.color.title );
 			}
-		}
 
-		vglob.timer++;
+			vglob.timer++;
+		}
 		ev->wid->dirty = 1;
 		break;
 	}
@@ -660,6 +701,7 @@ static void Vortex_Initialize( void )
 
 	vglob.wPosMajor = 0;
 	vglob.wPosMinor = 0;
+	vglob.paused = 0;
 
 	Vortex_ChangeToState( VORTEX_STATE_STARTUP );
 }
