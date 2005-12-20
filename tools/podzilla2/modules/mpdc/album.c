@@ -51,7 +51,7 @@ void queue_album(ttk_menu_item *item)
 	
 	if (mpdc_tickle() < 0)
 		return;
-	mpd_sendSearchArtistAlbum(mpdz, current_song.artist, item->name);
+	mpd_sendFindArtistAlbum(mpdz, current_song.artist, item->name);
 	if (mpdz->error) {
 		mpdc_tickle();
 		return;

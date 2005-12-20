@@ -395,7 +395,7 @@ void mpd_sendLsInfoCommand(mpd_Connection * connection, const char * dir);
 
 void mpd_sendSearchCommand(mpd_Connection * connection, int table, 
 		const char * str);
-void mpd_sendSearchArtistAlbum(mpd_Connection * connection, const char *artist,
+void mpd_sendFindArtistAlbum(mpd_Connection * connection, const char *artist,
 		const char *album);
 
 void mpd_sendFindCommand(mpd_Connection * connection, int table, 
