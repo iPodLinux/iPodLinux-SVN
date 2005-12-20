@@ -35,8 +35,8 @@ typedef struct _menu_data
 {
     ttk_menu_item **menu;
     int allocation;
-    
     ttk_menu_item *mlist;
+    int *vixi, *xivi, vitems;
     ttk_surface *itemsrf, *itemsrfI;
     ttk_font font;
     int items, itemheight, top, sel, visible, scroll, spos, sheight;
@@ -53,43 +53,18 @@ typedef struct _menu_data
 // indexes in the imaginary "list" of *visible* items. ("Visible"
 // as in "[item]->visible() returns 1", not "onscreen right now".)
 
-static int VIFromXI (TWidget *this, int xiFinal) 
+static void MakeVIXI (TWidget *this) 
 {
     int vi, xi;
     _MAKETHIS;
 
-    // Special-cased for no apparent reason...
-    if (xiFinal >= data->items) { // number of visible items
-	for (vi = xi = 0; data->menu && data->menu[xi] && xi < data->items; xi++) {
-	    if (!data->menu[xi]->visible || data->menu[xi]->visible (data->menu[xi]))
-		vi++;
-	}
-	return vi;
+    for (vi = xi = 0; xi < data->items; xi++) {
+        data->vixi[xi] = vi;
+        data->xivi[vi] = xi;
+        if (!data->menu[xi]->visible || data->menu[xi]->visible (data->menu[xi]))
+            vi++;
     }
-    
-    for (vi = xi = 0; data->menu && data->menu[xi] && xi < xiFinal; vi++, xi++) {
-	if (data->menu[xi]->visible && !data->menu[xi]->visible (data->menu[xi]))
-	    vi--;
-    }
-
-    return vi;
-}
-
-static int XIFromVI (TWidget *this, int vi) 
-{
-    int xi = 0;
-    int xiOld;
-    _MAKETHIS;
-    
-    for (xi = 0; data->menu && data->menu[xi] && vi; vi--, xi++) {
-	if (data->menu[xi]->visible && !data->menu[xi]->visible (data->menu[xi]))
-	    vi++;
-    }
-    xiOld = xi;
-    while ((xi < data->items) && data->menu[xi] && data->menu[xi]->visible && !data->menu[xi]->visible (data->menu[xi]))
-	xi++;
-    if (xi >= data->items) xi = xiOld;
-    return xi;
+    data->vitems = vi;
 }
 
 static void render (TWidget *this, int first, int n)
@@ -110,7 +85,7 @@ static void render (TWidget *this, int first, int n)
     if (!data->menu)
 	return;
 
-    for (xi = 0, vi = VIFromXI (this, 0); data->menu[xi] && vi < first+n; xi++, vi = VIFromXI (this, xi)) {
+    for (xi = 0, vi = data->vixi[0]; data->menu[xi] && vi < first+n; xi++, vi = data->vixi[xi]) {
 	if (vi < first) continue;
 
 	// Unselected
@@ -169,7 +144,7 @@ ttk_menu_item *ttk_menu_get_item_called (TWidget *this, const char *s)
 ttk_menu_item *ttk_menu_get_selected_item (TWidget *this) 
 {
     _MAKETHIS;
-    return data->menu[XIFromVI (this, data->top + data->sel)];
+    return data->menu[data->xivi[data->top + data->sel]];
 }
 
 
@@ -212,7 +187,7 @@ void ttk_menu_item_updated (TWidget *this, ttk_menu_item *p)
 	p->scrolldelay = 10;
     }
 
-    if (VIFromXI (this, data->items) > data->visible) {
+    if (data->vitems > data->visible) {
 	data->scroll = 1;
     }
 
@@ -223,7 +198,7 @@ void ttk_menu_item_updated (TWidget *this, ttk_menu_item *p)
 		break;
 	}
 	if (i < data->items)
-	    render (this, VIFromXI (this, i), 1);
+	    render (this, data->vixi[i], 1);
     }
 #endif
 }
@@ -268,7 +243,7 @@ static void free_renderings (TWidget *this, int first, int n)
 	return;
     }
 
-    for (xi = 0, vi = VIFromXI (this, 0); data->menu[xi] && vi < first+n; xi++, vi = VIFromXI (this, xi)) {
+    for (xi = 0, vi = data->vixi[0]; data->menu[xi] && vi < first+n; xi++, vi = data->vixi[xi]) {
 	if (vi < first) continue;
 
 	if (data->itemsrf[xi])  ttk_free_surface (data->itemsrf[xi]);
@@ -291,6 +266,8 @@ void ttk_menu_insert (TWidget *this, ttk_menu_item *item, int xi)
     if (data->items >= data->allocation) {
 	data->allocation = data->items + 50;
 	data->menu = realloc (data->menu, sizeof(void*) * data->allocation);
+        data->vixi = realloc (data->vixi, sizeof(int) * data->allocation);
+        data->xivi = realloc (data->xivi, sizeof(int) * data->allocation);
 	if (data->itemsrf) {
 	    data->itemsrf = realloc (data->itemsrf, data->allocation * sizeof(ttk_surface));
 	    memset (data->itemsrf + data->items, 0, (data->allocation - data->items) * sizeof(ttk_surface));
@@ -309,8 +286,9 @@ void ttk_menu_insert (TWidget *this, ttk_menu_item *item, int xi)
     data->items++;
     
     ttk_menu_item_updated (this, item);
+    MakeVIXI (this);
     item->menudata = data;
-    if (VIFromXI (this, xi) - data->top - 1 <= data->visible) {
+    if (data->vixi[xi] - data->top - 1 <= data->visible) {
 	render (this, data->top, data->visible);
     }    
 }
@@ -322,6 +300,8 @@ void ttk_menu_append (TWidget *this, ttk_menu_item *item)
     if (data->items >= data->allocation-1) {
 	data->allocation = data->items + 50;
 	data->menu = realloc (data->menu, sizeof(void*) * data->allocation);
+        data->vixi = realloc (data->vixi, sizeof(int) * data->allocation);
+        data->xivi = realloc (data->xivi, sizeof(int) * data->allocation);
 	if (data->itemsrf) {
 	    data->itemsrf = realloc (data->itemsrf, data->allocation * sizeof(ttk_surface));
 	    memset (data->itemsrf + data->items, 0, (data->allocation - data->items) * sizeof(ttk_surface));
@@ -338,7 +318,8 @@ void ttk_menu_append (TWidget *this, ttk_menu_item *item)
     
     ttk_menu_item_updated (this, item);
     item->menudata = data;
-    if (VIFromXI (this, data->items) - data->top - 1 <= data->visible) {
+    MakeVIXI (this);
+    if (data->vitems - data->top - 1 <= data->visible) {
 	render (this, data->top, data->visible);
     }
 }
@@ -381,8 +362,11 @@ void ttk_menu_updated (TWidget *this)
     data->items = 0;
     while (p && p->name) { p++; data->items++; }
     data->allocation = data->items + 50;
+    if (data->vixi) free (data->vixi);
+    data->vixi = calloc (data->allocation, sizeof(int));
+    data->xivi = calloc (data->allocation, sizeof(int));
 
-    data->scroll = (VIFromXI (this, data->items) > data->visible);
+    data->scroll = (data->vitems > data->visible);
 
     if (data->menu) free (data->menu);
     data->menu = calloc (data->allocation, sizeof(void*));
@@ -414,7 +398,7 @@ int ttk_menu_frame (TWidget *this)
 
     if (!data->menu || !data->items) return 0;
 
-    ttk_menu_item *selected = data->menu[XIFromVI (this, data->top + data->sel)];
+    ttk_menu_item *selected = data->menu[data->xivi[data->top + data->sel]];
 
     data->ds++;
 
@@ -550,8 +534,9 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
 	render (this, data->top, data->visible);
 	data->epoch = ttk_epoch;
     }
-    data->scroll = (VIFromXI (this, data->items) > data->visible);
-    
+
+    MakeVIXI (this);
+    data->scroll = (data->vitems > data->visible);
 
     if (!data->items) {
 	char *header = "No Items.";
@@ -572,9 +557,9 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
     
     if (!data->menu) return;
 
-    for (vi = data->top, xi = XIFromVI (this, data->top);
+    for (vi = data->top, xi = data->xivi[data->top];
 	 data->menu[xi] && vi < MIN (data->top + data->visible, data->items);
-	 xi++, vi = VIFromXI (this, xi)) {
+	 xi++, vi = data->vixi[xi]) {
 	ttk_color col;
         int selected = (vi == data->top + data->sel);
 
@@ -666,7 +651,6 @@ int ttk_menu_scroll (TWidget *this, int dir)
 {
     _MAKETHIS;
     int oldtop, oldsel, lasttop = -1, lastsel = -1;
-    int vitems = VIFromXI (this, data->items);
     TTK_SCROLLMOD (dir, 5);
 
     if (!data->menu || !data->items) return 0;
@@ -689,9 +673,9 @@ int ttk_menu_scroll (TWidget *this, int dir)
     // :TRICKY: order in this pair of ifs is important, and they
     // should not be else-ifs!
     
-    if ((data->top + data->visible) > vitems) {
-	data->sel -= vitems - (data->top + data->visible);
-	data->top  = vitems - data->visible;
+    if ((data->top + data->visible) > data->vitems) {
+	data->sel -= data->vitems - (data->top + data->visible);
+	data->top  = data->vitems - data->visible;
     }
     if (data->top < 0) {
 	data->sel += data->top; // actually subtracts; top is negative
@@ -700,15 +684,15 @@ int ttk_menu_scroll (TWidget *this, int dir)
     if (data->sel < 0) {
 	data->sel = 0;
     }
-    if (data->sel >= MIN (data->visible, vitems)) {
-	data->sel = MIN (data->visible, vitems) - 1;
+    if (data->sel >= MIN (data->visible, data->vitems)) {
+	data->sel = MIN (data->visible, data->vitems) - 1;
     }
     
-    data->spos = data->top * (this->h - 2*ttk_ap_getx ("header.line") -> spacing) / vitems;
+    data->spos = data->top * (this->h - 2*ttk_ap_getx ("header.line") -> spacing) / data->vitems;
     
     if ((oldtop != data->top) || (oldsel != data->sel)) {
 	this->dirty++;
-	data->menu[XIFromVI (this, oldtop + oldsel)]->textofs = 0;
+	data->menu[data->xivi[oldtop + oldsel]]->textofs = 0;
 
 	if (oldtop != data->top) {
 	    // Make sure the new items are rendered
@@ -737,7 +721,7 @@ int ttk_menu_button (TWidget *this, int button, int time)
         return 0;
     }
 
-    item = data->menu[XIFromVI (this, data->top + data->sel)];
+    item = data->menu[data->xivi[data->top + data->sel]];
 
     switch (button) {
     case TTK_BUTTON_ACTION:
