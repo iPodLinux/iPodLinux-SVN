@@ -60,6 +60,8 @@ typedef struct _vortex_colors {
 	ttk_color bolts;	// player's bolts
 	ttk_color plaser;	// player's particle laser bolts
 	ttk_color super;	// superzapper color
+	ttk_color sz_text1;	// "SUPERZAPPER"
+	ttk_color sz_text2;	// "RECHARGE"
 	ttk_color flippers;	// enemy characters
 	ttk_color edeath;	// enemy death
 	ttk_color powerup;	// powerup color
