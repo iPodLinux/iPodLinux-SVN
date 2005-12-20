@@ -112,7 +112,7 @@ TWidget *populate_songs(char *search)
 		mpd_sendFindCommand(mpdz, MPD_TABLE_ARTIST,current_song.artist);
 	}
 	else {
-		mpd_sendSearchArtistAlbum(mpdz, current_song.artist,
+		mpd_sendFindArtistAlbum(mpdz, current_song.artist,
 				current_song.album);
 		by_album = 1;
 	}

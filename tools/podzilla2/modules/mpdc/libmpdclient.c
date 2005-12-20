@@ -1186,12 +1186,12 @@ void mpd_sendSearchCommand(mpd_Connection * connection, int table,
 	mpd_executeCommand(connection,string);
 }
 
-void mpd_sendSearchArtistAlbum(mpd_Connection * connection, const char *artist,
+void mpd_sendFindArtistAlbum(mpd_Connection * connection, const char *artist,
 		const char *album)
 {
 	char * str = connection->buffer;
 	if (artist == album && !album) return;
-	strcpy(str, "search");
+	strcpy(str, "find");
 	if (artist)
 		sprintf(str, "%s artist \"%s\"", str, artist);
 	if (album)
