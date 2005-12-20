@@ -21,8 +21,8 @@
 
 /*
  * Game play, design, and in-game elements are based on the games:
- *	"Tempest" (c)1980 Atari
- *	"Tempest 2000", (c)1994,1996 Atari/Llamasoft
+ *	"Tempest" (c)1980 Atari/Dave Theurer
+ *	"Tempest 2000", (c)1994,1996 Atari/Llamasoft/Jeff Minter
  *
  *  Mad props to 
  *	Dave Theurer for designing the awesome "Tempest"
@@ -44,7 +44,7 @@
 #include "vgamobjs.h"
 
 /* version number */
-#define VORTEX_VERSION	"05121900"
+#define VORTEX_VERSION	"05122002"
 
 vortex_globals vglob;
 
@@ -346,6 +346,12 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 
 		break;
 
+	case VORTEX_STATE_ADVANCE:
+		/* XXX this needs a lot more code - animations */
+		if( !vglob.classicMode ) Star_DrawStars( srf );
+		Vortex_Console_Render( srf );
+		break;
+
 	case VORTEX_STATE_DEATH:
 		if( !vglob.classicMode ) Star_DrawStars( srf );
 		Vortex_Console_Render( srf );
@@ -461,6 +467,14 @@ void Vortex_newLevelCompute( void )
 	}
 }
 
+void Vortex_player_clear( void )
+{
+	vglob.hasParticleLaser = 0;
+	vglob.hasSuperZapper = 1;
+	vglob.wPosMajor = 0;
+	vglob.wPosMinor = 0;
+}
+
 /* all of the stuff that needs to get reset at the beginning of a new level */
 void Vortex_initLevel( void )
 {
@@ -473,6 +487,7 @@ void Vortex_initLevel( void )
 	Vortex_Bolt_clear();
 	Vortex_Enemy_clear();
 	Vortex_clawCompute();
+	Vortex_player_clear();
 	if( !vglob.classicMode ) {
 		Star_GenerateStars();
 	}
@@ -598,8 +613,12 @@ int event_vortex (PzEvent *ev)
 			vglob.paused = 0;
 			break;
 
+		case( PZ_BUTTON_PLAY ):
+			Vortex_ChangeToState( VORTEX_STATE_ADVANCE );
+			break;
+
 		case( PZ_BUTTON_ACTION ):
-		if( !vglob.paused ) {
+		    if( !vglob.paused ) {
 			if( vglob.state == VORTEX_STATE_STARTUP ) {
 				Vortex_ChangeToState( VORTEX_STATE_STYLESEL );
 				Vortex_initLevel();
@@ -608,7 +627,6 @@ int event_vortex (PzEvent *ev)
 				Vortex_ChangeToState( VORTEX_STATE_LEVELSEL );
 				vglob.startLevel = 0;
 				vglob.currentLevel = 0;
-				vglob.hasParticleLaser = 0;
 				Vortex_initLevel();
 			} else if( vglob.state == VORTEX_STATE_LEVELSEL ) {
 				Vortex_ChangeToState( VORTEX_STATE_GAME );
@@ -616,8 +634,8 @@ int event_vortex (PzEvent *ev)
 			} else if( vglob.state == VORTEX_STATE_GAME ) {
 				Vortex_Bolt_add();
 			}
-		}
-			break;
+		    }
+		    break;
 
 		default:
 			break;
@@ -655,6 +673,29 @@ int event_vortex (PzEvent *ev)
 				Vortex_incPosition( 1 );
 			if( (vglob.timer & 0x0f) == 0x0f )
 				Vortex_Bolt_add();
+			break;
+
+		case( VORTEX_STATE_ADVANCE ):
+			/* xxx */
+			if( vglob.timer == 0 ) {
+			    Vortex_Console_WipeAllText();
+			    Vortex_Console_HiddenStatic( 1 );
+			    Vortex_Console_AddItem( "SUPERZAPPER", 0, 0, 
+				VORTEX_STYLE_NORMAL, vglob.color.sz_text1 );
+			}
+
+			if( vglob.timer == 20 ) {
+			    Vortex_Console_AddItem( "RECHARGE", 0, 0, 
+				VORTEX_STYLE_NORMAL, vglob.color.sz_text2 );
+			}
+
+			if( vglob.timer > 60 ) {
+				Vortex_ChangeToState( VORTEX_STATE_GAME );
+				Vortex_selectLevel( vglob.currentLevel + 1 );
+				Vortex_initLevel();
+				Vortex_Console_WipeAllText();
+				Vortex_Console_HiddenStatic( 0 );
+			}
 			break;
 
 		case( VORTEX_STATE_DEATH ):
@@ -769,6 +810,8 @@ void init_vortex()
 		vglob.color.flippers    = ttk_makecol( 255,   0,   0 );
 		vglob.color.edeath      = ttk_makecol( 255, 255,   0 );
 		vglob.color.powerup	= ttk_makecol(  64, 225,  64 );
+		vglob.color.sz_text1	= ttk_makecol(   0, 255, 128 );
+		vglob.color.sz_text2	= ttk_makecol( 128, 255,   0 );
 	} else {
 		/* monochrome iPod */
 		vglob.color.bg          = ttk_makecol( WHITE );
@@ -798,6 +841,8 @@ void init_vortex()
 		vglob.color.flippers    = ttk_makecol( BLACK );
 		vglob.color.edeath      = ttk_makecol( GREY );
 		vglob.color.powerup     = ttk_makecol( DKGREY );
+		vglob.color.sz_text1	= ttk_makecol( BLACK );
+		vglob.color.sz_text2	= ttk_makecol( BLACK );
 	}
 
 	/* precompute all of the web scaling... */
