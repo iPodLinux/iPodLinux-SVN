@@ -45,6 +45,7 @@ typedef struct _menu_data
     int epoch;
     int free_everything;
     int i18nable;
+    int drawn;
 } menu_data;
 
 // Note:
@@ -65,6 +66,7 @@ static void MakeVIXI (TWidget *this)
             vi++;
     }
     data->vitems = vi;
+    data->scroll = (vi > data->visible);
 }
 
 static void render (TWidget *this, int first, int n)
@@ -86,18 +88,42 @@ static void render (TWidget *this, int first, int n)
 	return;
 
     for (xi = 0, vi = data->vixi[0]; data->menu[xi] && vi < first+n; xi++, vi = data->vixi[xi]) {
+        char *truncname;
+
 	if (vi < first) continue;
+
+        data->menu[xi]->linewidth = this->w - 10*data->scroll;
+        if (data->menu[xi]->flags & TTK_MENU_ICON)
+            data->menu[xi]->linewidth -= 12;
+        if (data->menu[xi]->choices)
+            data->menu[xi]->linewidth -= ttk_text_width (data->font, data->menu[xi]->choices[data->menu[xi]->choice]) + 2;
+        data->menu[xi]->linewidth -= 4;
+        
+        if ((data->menu[xi]->textwidth > data->menu[xi]->linewidth) && !(data->menu[xi]->flags & TTK_MENU_TEXT_SCROLLING))
+            data->menu[xi]->flags |= TTK_MENU_TEXT_SLEFT;
+        else if (data->menu[xi]->flags & TTK_MENU_TEXT_SCROLLING)
+            data->menu[xi]->flags &= ~TTK_MENU_TEXT_SCROLLING;
 
 	// Unselected
 	if (data->itemsrf[xi]) ttk_free_surface (data->itemsrf[xi]);
 	data->itemsrf[xi] = ttk_new_surface (data->menu[xi]->textwidth + 6,
 					    data->itemheight, ttk_screen->bpp);
 	ttk_fillrect (data->itemsrf[xi], 0, 0, data->menu[xi]->textwidth + 6, data->itemheight,
-		      ttk_ap_getx ("menu.bg") -> color);
+                      ttk_ap_getx ("menu.bg") -> color);
+
         if (data->i18nable)
-            ttk_text (data->itemsrf[xi], data->font, 3, ofs, ttk_ap_getx ("menu.fg") -> color, gettext (data->menu[xi]->name));
+            truncname = strdup (gettext (data->menu[xi]->name));
         else
-            ttk_text (data->itemsrf[xi], data->font, 3, ofs, ttk_ap_getx ("menu.fg") -> color, data->menu[xi]->name);
+            truncname = strdup (data->menu[xi]->name);
+
+        if (ttk_text_width (data->font, truncname) > data->menu[xi]->linewidth) {
+            sprintf (truncname + strlen (truncname) - 4, "...");
+            while (strlen (truncname) > 3 && ttk_text_width (data->font, truncname) > data->menu[xi]->linewidth) {
+                sprintf (truncname + strlen (truncname) - 5, "...");
+            }
+        }
+        
+        ttk_text (data->itemsrf[xi], data->font, 3, ofs, ttk_ap_getx ("menu.fg") -> color, truncname);
 
 	// Selected
 	if (data->itemsrfI[xi]) ttk_free_surface (data->itemsrfI[xi]);
@@ -175,17 +201,13 @@ void ttk_menu_item_updated (TWidget *this, ttk_menu_item *p)
     else
         p->textwidth = ttk_text_width (data->font, p->name) + 4;
     
-    p->linewidth = (this->w - 10*data->scroll - 15*!!(p->flags & TTK_MENU_ICON));
     p->iconflash = 3;
     p->flags |= TTK_MENU_ICON_FLASHOFF;
     p->iftime = 10;
     p->textflash = 0;
 
-    if (p->textwidth > p->linewidth) {
-	p->flags |= TTK_MENU_TEXT_SLEFT;
-	p->textofs = 0;
-	p->scrolldelay = 10;
-    }
+    p->textofs = 0;
+    p->scrolldelay = 10;
 
     if (data->vitems > data->visible) {
 	data->scroll = 1;
@@ -318,12 +340,17 @@ void ttk_menu_append (TWidget *this, ttk_menu_item *item)
     
     ttk_menu_item_updated (this, item);
     item->menudata = data;
-    if (!item->visible || item->visible (item)) {
-        data->vixi[data->items - 1] = data->vitems;
-        data->xivi[data->vitems] = data->items - 1;
-        data->vitems++;
+    if (data->items < 2 || (data->menu[data->items - 2]->visible && !data->menu[data->items - 2]->visible (data->menu[data->items - 2]))) {
+        MakeVIXI (this);
     } else {
-        data->vixi[data->items - 1] = data->vitems - 1;
+        if (!item->visible || item->visible (item)) {
+            data->vixi[data->items - 1] = data->vitems;
+            data->xivi[data->vitems] = data->items - 1;
+            data->vitems++;
+        } else {
+            data->vixi[data->items - 1] = data->vitems - 1;
+        }
+        data->scroll = (data->vitems > data->visible);
     }
     if (data->vitems - data->top - 1 <= data->visible) {
 	render (this, data->top, data->visible);
@@ -387,6 +414,7 @@ void ttk_menu_updated (TWidget *this)
 	p++;
     }
     *q = 0;
+    MakeVIXI (this);
 
     if (data->scroll) {
 	data->sheight = data->visible * this->h / data->items;
@@ -504,6 +532,7 @@ TWidget *ttk_new_menu_widget (ttk_menu_item *items, ttk_font font, int w, int h)
     data->closeable = data->i18nable = 1;
     data->epoch = ttk_epoch;
     data->free_everything = !items;
+    data->drawn = 0;
 
     ttk_widget_set_fps (ret, 10);
 
@@ -530,7 +559,7 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
     _MAKETHIS;
     int i, y = this->y;
     int ofs = (data->itemheight - ttk_text_height (data->font)) / 2;
-    int nivis = 0, nvvis = 0;
+    int nivis = 0;
     int spos, sheight;
     int vi, xi;
 
@@ -543,6 +572,11 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
 	    ttk_menu_item_updated (this, data->menu[i]);
 	render (this, data->top, data->visible);
 	data->epoch = ttk_epoch;
+    }
+
+    if (!data->drawn) {
+        MakeVIXI (this);
+        data->drawn = 1;
     }
 
     data->scroll = (data->vitems > data->visible);
@@ -634,10 +668,8 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
 	y += data->itemheight;
     }
 
-    nvvis = vi - data->top;
-
     if (data->scroll) {
-	sheight = nvvis * (this->h) / nivis;
+	sheight = data->visible * (this->h) / nivis;
 	spos = data->top * (this->h - 2*ttk_ap_getx ("header.line") -> spacing) / nivis - 1;
 
 	if (sheight < 3) sheight = 3;
@@ -737,6 +769,7 @@ int ttk_menu_button (TWidget *this, int button, int time)
 	if (item->choices) {
 	    ++item->choice; item->choice %= item->nchoices;
 	    if (item->choicechanged) item->choicechanged (item, item->cdata);
+            render (this, data->top + data->sel, 1);
 	    this->dirty++;
 	    break;
 	}
