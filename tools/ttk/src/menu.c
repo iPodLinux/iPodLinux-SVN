@@ -456,7 +456,8 @@ int ttk_menu_frame (TWidget *this)
 
     // Redraw every ~1s, in case menu items change visibility / fonts change
     if ((oldflags != selected->flags) || (oldflash != ((selected->textflash << 8) | selected->iconflash)) || !(data->ds % 10)) {
-        MakeVIXI (this);
+        if (!(data->ds % 10))
+            MakeVIXI (this);
         this->dirty++;
     }
 
