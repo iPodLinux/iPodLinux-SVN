@@ -318,7 +318,13 @@ void ttk_menu_append (TWidget *this, ttk_menu_item *item)
     
     ttk_menu_item_updated (this, item);
     item->menudata = data;
-    MakeVIXI (this);
+    if (!item->visible || item->visible (item)) {
+        data->vixi[data->items - 1] = data->vitems;
+        data->xivi[data->vitems] = data->items - 1;
+        data->vitems++;
+    } else {
+        data->vixi[data->items - 1] = data->vitems - 1;
+    }
     if (data->vitems - data->top - 1 <= data->visible) {
 	render (this, data->top, data->visible);
     }
