@@ -455,7 +455,10 @@ int ttk_menu_frame (TWidget *this)
         selected->textflash--;
 
     // Redraw every ~1s, in case menu items change visibility / fonts change
-    if ((oldflags != selected->flags) || (oldflash != ((selected->textflash << 8) | selected->iconflash)) || !(data->ds % 10)) this->dirty++;
+    if ((oldflags != selected->flags) || (oldflash != ((selected->textflash << 8) | selected->iconflash)) || !(data->ds % 10)) {
+        MakeVIXI (this);
+        this->dirty++;
+    }
 
     return 0;
 }
@@ -535,7 +538,6 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
 	data->epoch = ttk_epoch;
     }
 
-    MakeVIXI (this);
     data->scroll = (data->vitems > data->visible);
 
     if (!data->items) {
