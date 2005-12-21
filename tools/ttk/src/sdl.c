@@ -426,6 +426,55 @@ void ttk_fillrect_gc (ttk_surface srf, ttk_gc gc, int x, int y, int w, int h)
     }
 }
 
+/* note: the gradient functions could stand to be optimized */
+void ttk_hgradient( ttk_surface srf, int x1, int y1, int x2, int y2, 
+			ttk_color left, ttk_color right )
+{
+	int steps = x2-x1;
+	int column, s;
+	int rL, gL, bL;
+	int rR, gR, bR;
+	ttk_color tc;
+
+	if( steps < 0 ) steps*=-1;
+
+	ttk_unmakecol( left, &rL, &gL, &bL );
+	ttk_unmakecol( right, &rR, &gR, &bR );
+
+	for( column=0 ; column<steps; column++ )
+	{
+		s = steps-column;
+		tc = ttk_makecol(   (rL*s)/steps+(rR*column)/steps,
+				    (gL*s)/steps+(gR*column)/steps,
+				    (bL*s)/steps+(bR*column)/steps );
+		ttk_line( srf, x1+column, y1, x1+column, y2, tc );
+	}
+}
+void ttk_vgradient(ttk_surface srf, int x1, int y1, int x2, int y2, 
+			ttk_color top, ttk_color bottom )
+{
+	int steps = y2-y1;
+	int row, s;
+	int rT, gT, bT;
+	int rB, gB, bB;
+	ttk_color tc;
+
+	if( steps < 0 ) steps*=-1;
+
+	ttk_unmakecol( top, &rT, &gT, &bT );
+	ttk_unmakecol( bottom, &rB, &gB, &bB );
+
+	for( row=0 ; row<steps; row++ )
+	{
+		s = steps-row;
+		tc = ttk_makecol(   (rT*s)/steps+(rB*row)/steps,
+				    (gT*s)/steps+(gB*row)/steps,
+				    (bT*s)/steps+(bB*row)/steps );
+		ttk_line( srf, x1, y1+row, x2, y1+row, tc );
+	}
+}
+
+
 void ttk_poly (ttk_surface srf, int nv, short *vx, short *vy, ttk_color col)
 {
     if (ttk_screen->bpp == 2)

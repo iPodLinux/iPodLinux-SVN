@@ -320,6 +320,10 @@ void ttk_rect (ttk_surface srf, int x1, int y1, int x2, int y2, ttk_color col);
 void ttk_rect_gc (ttk_surface srf, ttk_gc gc, int x, int y, int w, int h);
 void ttk_fillrect (ttk_surface srf, int x1, int y1, int x2, int y2, ttk_color col);
 void ttk_fillrect_gc (ttk_surface srf, ttk_gc gc, int x, int y, int w, int h);
+void ttk_hgradient( ttk_surface srf, int x1, int y1, int x2, int y2,
+                        ttk_color left, ttk_color right );
+void ttk_vgradient(ttk_surface srf, int x1, int y1, int x2, int y2,
+                        ttk_color top, ttk_color bottom );
 
 void ttk_poly (ttk_surface srf, int nv, short *vx, short *vy, ttk_color col);
 void ttk_poly_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v);
