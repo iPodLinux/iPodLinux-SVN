@@ -28,138 +28,13 @@
 
 static int make_dirty (TWidget *this) { this->dirty++; ttk_dirty |= TTK_DIRTY_HEADER; return 0; }
 
-/** Battery charge: **/
-static void battery_draw_digit (ttk_surface srf, int x, int y, int w, int h, ttk_color col, char digit) 
-{
-    int sx = x, sy = y, ex = x + w - 1, ey = y + h - 1;
-    int my = sy + (ey - sy) / 2, ty = sy + (my - sy) / 2, by = ey - (ey - my) / 2;
-
-    switch (digit) {
-    // Numbers:
-    //  [0]   [1]   [2]    [3]    [4] 
-    // +---+   +   +---+  +---+  +   +
-    // |   |   |       |      |  |   |
-    // |   |   |       |      |  |   |
-    // |   |   |       |      |  |   |
-    // |   |   |   +---+  +---+  +---+
-    // |   |   |   |          |      |
-    // |   |   |   |          |      |
-    // |   |   |   |          |      |
-    // |   |   |   |          |      |
-    // +---+   +   +---+  +---+      +
-    case '0':
-	ttk_rect (srf, sx, sy, ex, ey, col);
-	break;
-    case '1':
-	ttk_line (srf, ex, sy, ex, ey, col);
-	break;
-    case '2':
-	ttk_line (srf, sx, sy, ex, sy, col);
-	ttk_line (srf, ex, sy, ex, my, col);
-	ttk_line (srf, sx, my, ex, my, col);
-	ttk_line (srf, sx, my, sx, ey, col);
-	ttk_line (srf, sx, ey, ex, ey, col);
-	break;
-    case '3':
-	ttk_line (srf, sx, sy, ex, sy, col);
-	ttk_line (srf, ex, sy, ex, ey, col);
-	ttk_line (srf, sx, my, ex, my, col);
-	ttk_line (srf, sx, ey, ex, ey, col);
-	break;
-    case '4':
-	ttk_line (srf, sx, sy, sx, my, col);
-	ttk_line (srf, sx, my, ex, my, col);
-	ttk_line (srf, ex, sy, ex, ey, col);
-	break;
-    //  [5]    [6]    [7]    [8]    [9]
-    // +---+  +---+  +---+  +---+  +---+
-    // |      |      |   |  |   |  |   |
-    // |      |      +   |  |   |  |   |
-    // |      |          |  |   |  |   |
-    // +---+  +---+      |  +---+  +---+
-    //     |  |   |      |  |   |      |
-    //     |  |   |      |  |   |      |
-    //     |  |   |      |  |   |      |
-    //     |  |   |      |  |   |      |
-    // +---+  +---+      +  +---+  +---+
-    case '5':
-	ttk_line (srf, sx, sy, ex, sy, col);
-	ttk_line (srf, sx, sy, sx, my, col);
-	ttk_line (srf, sx, my, ex, my, col);
-	ttk_line (srf, ex, my, ex, ey, col);
-	ttk_line (srf, sx, ey, ex, ey, col);
-	break;
-    case '6':
-	ttk_line (srf, sx, sy, ex, sy, col);
-	ttk_line (srf, sx, sy, sx, ey, col);
-	ttk_rect (srf, sx, my, ex, ey, col);
-	break;
-    case '7':
-	ttk_line (srf, sx, sy, sx, ty, col);
-	ttk_line (srf, sx, sy, ex, sy, col);
-	ttk_line (srf, ex, sy, ex, ey, col);
-	break;
-    case '8':
-	ttk_rect (srf, sx, sy, ex, ey, col);
-	ttk_line (srf, sx, my, ex, my, col);
-	break;
-    case '9':
-	ttk_rect (srf, sx, sy, ex, my, col);
-	ttk_line (srf, ex, my, ex, ey, col);
-	ttk_line (srf, sx, ey, ex, ey, col);
-	break;
-    
-    // Letters:
-    //  [C]    [h]    [r]    [g]
-    // +---+  +
-    // |      |
-    // |      |             +---+
-    // |      |             |   |
-    // |      +---+   +--+  |   |
-    // |      |   |  ++     |   |
-    // |      |   |  |      +---+
-    // |      |   |  |          |
-    // |      |   |  |      +   |
-    // +---+  +   +  +      +---+
-    case 'C':
-	ttk_line (srf, sx, sy, ex, sy, col);
-	ttk_line (srf, sx, sy, sx, ey, col);
-	ttk_line (srf, sx, ey, ex, ey, col);
-	break;
-    case 'h':
-	ttk_line (srf, sx, sy, sx, ey, col);
-	ttk_line (srf, sx, my, ex, my, col);
-	ttk_line (srf, ex, my, ex, ey, col);
-	break;
-    case 'r':
-	ttk_line (srf, sx, my+1, sx, ey, col);
-	ttk_line (srf, sx+1, my, ex, my, col);
-	ttk_pixel (srf, sx+1, my+1, col);
-	break;
-    case 'g':
-	ttk_rect (srf, sx, ty, ex, by, col);
-	ttk_line (srf, ex, by, ex, ey, col);
-	ttk_line (srf, sx, ey, ex, ey, col);
-	ttk_pixel (srf, sx, ey-1, col);
-	break;
-	
-    case '/':
-	ttk_draw_icon (ttk_icon_charging, srf, sx, sy, ttk_makecol (BLACK), ttk_makecol (WHITE));
-	break;
-    case ' ':
-	break;
-
-    default:
-	fprintf (stderr, "Warning: undrawable vletter `%c'\n", digit);
-	break;
-    }
-}
 
 static void battery_draw (TWidget *this, ttk_surface srf) 
 {
     TApItem *ap;
     char buf[32];
     int battery_fill, battery_is_charging;
+    ttk_color c;
 
     battery_fill = pz_ipod_get_battery_level();
     battery_is_charging = pz_ipod_is_charging();
@@ -168,17 +43,19 @@ static void battery_draw (TWidget *this, ttk_surface srf)
     if (pz_get_int_setting (pz_global_config, BATTERY_DIGITS)) {
 	battery_fill = battery_fill * 1000 / 512;
 	
-	snprintf (buf, 32, "%3d", battery_fill);
-	if (battery_is_charging) strcat (buf, "/");
-	if (battery_fill >= 1000) strcpy (buf, "Chrg");
+	if( battery_fill < 100 ) 
+		c = ttk_ap_getx( "battery.fill.low" )->color;
+	else
+		c = ttk_ap_getx( "battery.fill.normal" )->color;
 
-	char *p = buf;
-	int x = this->x;
-	while (*p) {
-	    battery_draw_digit (srf, x, this->y, 5, this->h, ttk_ap_getx ((battery_fill < 100)? "battery.fill.low" : "battery.fill.normal") -> color, *p);
-	    x += 6;
-	    p++;
-	}
+	if (battery_fill >= 1000) 
+		strcpy (buf, "Chrg");
+	else
+		snprintf( buf, 32, "%c%3d", 
+				(battery_is_charging)?'+':' ',
+				battery_fill );
+
+	pz_vector_string( srf, buf, this->x, this->y, 5, 9, 1, c );
 	return;
     }
 
