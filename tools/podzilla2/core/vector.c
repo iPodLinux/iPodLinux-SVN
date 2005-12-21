@@ -37,7 +37,6 @@
   19 -- 09 -- 10| aa
   11 24 12 25 13| d6 <-+ Between these rows: 32 between 24 and 29,
   14 29 15 30 16| ff <-+ 26 between 12 and 15, 31 between 25 and 30
-
 */
 #define PT0  0x0000
 #define PT1  0x8000
@@ -154,6 +153,7 @@ static struct vector_polystruct V_punctuation[] =
     /* ; */ {11, {PT1, 0xc02a, PT4, 0x402a, PT1,  PT9|SKIP, 0xc0d6, PT15, 0x40ff, 0x40d6, PT9}},
     /* ? */ {9, {PT18, PT1, PT17, PT34, PT9,  PT12|SKIP, PT29, PT30, PT12}},
     /* = */ {4, {PT3, PT5,  PT19|SKIP, PT10}},
+    /* + */ {4, { 0x8822, 0x88dd, 0x0088|SKIP, 0xff88 }},
 };
 
 /* specials */
@@ -198,7 +198,7 @@ static struct vector_polystruct *lookup[] = {
     ['#'] = V_punctuation + 18, 	['$'] = V_punctuation + 19, 
     ['^'] = V_punctuation + 20, 	['*'] = V_punctuation + 21, 
     [';'] = V_punctuation + 22, 	['?'] = V_punctuation + 23,
-    ['='] = V_punctuation + 24,
+    ['='] = V_punctuation + 24,		['+'] = V_punctuation + 25,
 
     [250] = 	V_specials + 0, V_specials + 1, V_specials + 2, V_specials + 3
 };
