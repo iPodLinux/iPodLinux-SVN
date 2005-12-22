@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005 Joshua Oreman
+ * Copyright (c) 2005 Scott Lawrence
  *
  * This file is a part of TTK.
  *
@@ -18,22 +18,27 @@
  * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef _ALL_TTK_H_
-#define _ALL_TTK_H_
+#ifndef _TTK_GRADIENT_H_
+#define _TTK_GRADIENT_H_
 
-#define TTK_API_VERSION  0x10007
-#define TTK_VERSION_CHECK() ttk_version_check(TTK_API_VERSION)
+#include "ttk.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <ttk/ttk.h>
-#include <ttk/menu.h>
-#include <ttk/icons.h>
-#include <ttk/slider.h>
-#include <ttk/imgview.h>
-#include <ttk/gradient.h>
-#include <ttk/textarea.h>
-# include <ttk/mwin-emu.h>
-#include <ttk/appearance.h>
+typedef struct _gradient_node
+{
+	ttk_color start;
+	ttk_color end;
+	ttk_color gradient[256];
+	struct _gradient_node * next;
+} gradient_node;
+
+
+/* erase the entire list */
+void ttk_gradient_clear( void );
+
+/* find a gradient from the list, return NULL on failure, or the node */
+gradient_node * ttk_gradient_find( ttk_color start, ttk_color end );
+
+/* find a gradient from the list, create, return NULL on failure, or the node */
+gradient_node * ttk_gradient_find_or_add( ttk_color start, ttk_color end );
 
 #endif
