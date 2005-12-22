@@ -446,14 +446,6 @@ main(int argc, char **argv)
         else
             sprintf (exepath, "/bin/%s", argv[0]);
 
-        if (access (exepath, X_OK) && !access (argv[0], X_OK))
-            strcpy (exepath, argv[0]);
-
-        if (access (exepath, X_OK)) {
-            fprintf (stderr, "Unable to find myself.\n");
-            return 255;
-        }
-
 	if (uCdl_init (exepath) == 0) {
 		ttk_quit();
 		fprintf (stderr, _("uCdl_init failed: %s\n"), uCdl_error());
