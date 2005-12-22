@@ -139,6 +139,10 @@ int uCdl_init (const char *symfile)
 
     fread(&n_syms, sizeof(long), 1, fp);
     n_syms = ntohl(n_syms);
+    if (!n_syms) {
+        error = "No symbols.";
+        return 0;
+    }
 
     while (n_syms-- > 0) {
 	unsigned int pos, addr = 0;

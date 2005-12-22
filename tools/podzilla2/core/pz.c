@@ -440,9 +440,23 @@ main(int argc, char **argv)
 	atexit (pz_uninit);
 
 #ifdef IPOD
-	if (uCdl_init ("/bin/podzilla") == 0) {
+        char exepath[256];
+        if (argv[0][0] == '/')
+            strcpy (exepath, argv[0]);
+        else
+            sprintf (exepath, "/bin/%s", argv[0]);
+
+        if (!access (exepath, X_OK) && access (argv[0], X_OK))
+            strcpy (exepath, argv[0]);
+
+        if (!access (exepath, X_OK)) {
+            fprintf (stderr, "Unable to find myself.\n");
+            return 255;
+        }
+
+	if (uCdl_init (exepath) == 0) {
 		ttk_quit();
-		fprintf (stderr, _("uCdl_open failed: %s\n"), uCdl_error());
+		fprintf (stderr, _("uCdl_init failed: %s\n"), uCdl_error());
 		exit (0);
 	}
 #endif
