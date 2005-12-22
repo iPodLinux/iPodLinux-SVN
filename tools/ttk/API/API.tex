@@ -1018,6 +1018,55 @@ static unsigned short pong_ball[] = {
 };
 \end{verbatim}
 
+\subsection{Gradient Functions}
+\begin{verbatim}
+void ttk_hgradient( ttk_surface srf, int x1, int y1, int x2, int y2,
+                        ttk_color left, ttk_color right );
+void ttk_vgradient(ttk_surface srf, int x1, int y1, int x2, int y2,
+                        ttk_color top, ttk_color bottom );
+\end{verbatim}
+
+These two behave like {\tt ttk_fillrect} above.  The only addition is 
+{\tt left}, {\tt right}, {\tt top} and {\tt bottom}, which define the 
+colors used in the gradient.  hgradient draws a gradient of vertical lines
+that progress horizontally, vgradient progresses vertically.
+
+For example, {\tt ttk_hgradient} draws a rectangle, similarly to
+{\tt ttk_fillrect} but the contents are filled with a gradient that
+is "left" color on the left side of the rectangle, and "right" color
+on the right side of the rectangle.
+
+
+\begin{verbatim}
+typedef struct _gradient_node {
+        ttk_color start;
+        ttk_color end;
+        ttk_color gradient[256];
+        struct _gradient_node * next;
+} gradient_node;
+void ttk_gradient_clear( void );
+gradient_node * ttk_gradient_find( ttk_color start, ttk_color end );
+gradient_node * ttk_gradient_find_or_add( ttk_color start, ttk_color end );
+\end{verbatim}
+
+These functions deal with the creation and retrieval of gradients, which are 
+stored in a simple linked list.  These functions are internally used by
+{\tt ttk_hgradient} and {\tt ttk_vgradient}, as described above.
+
+{\tt ttk_gradient_find} will search the internal list for the
+specified color gradient.  If it is found, it will return the {\tt
+gradient_node} that matches.  If it is not found, it will return
+NULL.
+{\tt ttk_gradient_find_or_add} will search the internal list for
+the specified color gradient.  If it is found, it will return the
+{\tt gradient_node} that matches.  If it is not found, it will
+create a new node, populate it with the requested gradient array,
+prepend it onto the main list, and return the new node.
+
+The gradient itself is stored as 256 elements that progress from
+``start'' to ``end'', color-wise.  Those are in the ``gradient''
+array in the struct.
+
 \subsection{Text and Font Functions}
 \begin{verbatim}
 ttk_fontinfo *ttk_get_fontinfo (const char *name, int size);
