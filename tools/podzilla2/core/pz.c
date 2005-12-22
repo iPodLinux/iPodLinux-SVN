@@ -449,7 +449,7 @@ main(int argc, char **argv)
         if (access (exepath, X_OK) && !access (argv[0], X_OK))
             strcpy (exepath, argv[0]);
 
-        if (!access (exepath, X_OK)) {
+        if (access (exepath, X_OK)) {
             fprintf (stderr, "Unable to find myself.\n");
             return 255;
         }
