@@ -446,7 +446,7 @@ main(int argc, char **argv)
         else
             sprintf (exepath, "/bin/%s", argv[0]);
 
-        if (!access (exepath, X_OK) && access (argv[0], X_OK))
+        if (access (exepath, X_OK) && !access (argv[0], X_OK))
             strcpy (exepath, argv[0]);
 
         if (!access (exepath, X_OK)) {
