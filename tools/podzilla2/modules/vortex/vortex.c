@@ -838,18 +838,21 @@ void init_vortex()
 		vglob.color.web_fill    = ttk_makecol(   0,   0,  30 );
 		vglob.color.baseind     = ttk_makecol( 255, 128,   0 );
 		vglob.color.baseind_fill= ttk_makecol( 255, 255,   0 );
-		vglob.color.score       = ttk_makecol(   0, 255, 255 );
+		vglob.color.score       = ttk_makecol(   0, 255,   0 );
 		vglob.color.level       = ttk_makecol(   0,   0, 128 );
 		vglob.color.player      = ttk_makecol( 255, 128,   0 );
 		vglob.color.player_fill = ttk_makecol( 255, 255,   0 );
 		vglob.color.bolts       = ttk_makecol( 255, 255, 255 );
 		vglob.color.plaser      = ttk_makecol( 255, 128,   0 );
-		vglob.color.super       = ttk_makecol(   0, 255, 255 );
+		vglob.color.super       = ttk_makecol( 128, 128, 128 );
 		vglob.color.flippers    = ttk_makecol( 255,   0,   0 );
 		vglob.color.edeath      = ttk_makecol( 255, 255,   0 );
 		vglob.color.powerup	= ttk_makecol(  64, 225,  64 );
 		vglob.color.sz_text1	= ttk_makecol(   0, 255, 128 );
 		vglob.color.sz_text2	= ttk_makecol( 128, 255,   0 );
+		vglob.color.spikers	= ttk_makecol(   0, 255, 128 );
+		vglob.color.spikes	= ttk_makecol(   0, 255,   0 );
+		vglob.color.spike_death	= ttk_makecol( 255, 255, 255 );
 	} else {
 		/* monochrome iPod */
 		vglob.color.bg          = ttk_makecol( WHITE );
@@ -881,6 +884,9 @@ void init_vortex()
 		vglob.color.powerup     = ttk_makecol( DKGREY );
 		vglob.color.sz_text1	= ttk_makecol( BLACK );
 		vglob.color.sz_text2	= ttk_makecol( BLACK );
+		vglob.color.spikers	= ttk_makecol( BLACK );
+		vglob.color.spikes	= ttk_makecol( BLACK );
+		vglob.color.spike_death	= ttk_makecol( GREY );
 	}
 
 
