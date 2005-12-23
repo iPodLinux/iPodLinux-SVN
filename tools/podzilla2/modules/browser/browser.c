@@ -17,6 +17,7 @@
  */
 
 #include <dirent.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -42,7 +43,8 @@ static TWindow *open_directory(const char *filename);
 
 static TWindow *previous_directory(ttk_menu_item *item)
 {
-	chdir((char *)item->menu->data2); /* last working directory */
+	fchdir(*(int *)item->menu->data2); /* last working directory */
+	close(*(int *)item->menu->data2);
 	free(item->menu->data2);
 	return TTK_MENU_UPONE;
 }
@@ -87,7 +89,8 @@ static int entry_cmp(const void *x, const void *y)
 static int button_handler(TWidget *this, int button, int time)
 {
 	if (button == TTK_BUTTON_MENU) {
-		chdir((char *)this->data2); /* last working directory */
+		fchdir(*(int *)this->data2); /* last working directory */
+		close(*(int *)this->data2);
 		free(this->data2);
 	}
 	return ttk_menu_button(this, button, time);
@@ -175,18 +178,24 @@ static TWindow *open_directory(const char *filename)
 {
 	TWindow *ret;
 	TWidget *menu;
-	char *lwd;
+	int lwd;
 
-	lwd = malloc(MAXPATHLEN * sizeof(char));
-	getcwd(lwd, MAXPATHLEN);
+	lwd = open(".", O_RDONLY);
 
 	chdir(filename);
-	ret = pz_new_window(_("File Browser"), PZ_WINDOW_NORMAL);
+	if (pz_get_int_setting(pz_global_config, BROWSER_PATH)) {
+		char wd[MAXPATHLEN], *p;
+		p = getcwd(wd, MAXPATHLEN);
+		while (ttk_text_width(ttk_menufont, p) > ttk_screen->w - 60)
+			memcpy((void *)++p, "...", 3);
+		ret = pz_new_window(p, PZ_WINDOW_NORMAL);
+	}
+	else
+		ret = pz_new_window(_("File Browser"), PZ_WINDOW_NORMAL);
 
 	menu = read_directory("./");
-	menu->data2 = lwd; /* I have explicit permission to use data2 in this
-			      situation because I am directly wrapping a TTK
-			      widget */
+	menu->data2 = malloc(sizeof(int));
+	*(int *)menu->data2 = lwd;
 	ttk_add_widget(ret, menu);
 
 	ret->data = 0x12345678;
