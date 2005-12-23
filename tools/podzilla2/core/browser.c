@@ -242,21 +242,40 @@ static void rm_rf (const char *path)
 static TWindow *browser_aborted (ttk_menu_item *item) { return TTK_MENU_UPONE; }
 static TWindow *browser_do_delete (ttk_menu_item *item) 
 {
-    struct stat st;
-    const char *filename = item->data;
-    if (stat (filename, &st) < 0) {
-	pz_perror (filename);
-	return TTK_MENU_UPONE;
-    }
-    if (S_ISDIR (st.st_mode)) {
-	if (filename[0] && filename[1] && strchr (filename + 2, '/')) // not "" or "/" or a root dir
-	    rm_rf (filename);
-	else
-	    pz_error ("Dangerous rm -rf aborted.\n");
-    } else {
-	unlink (filename);
-    }
-    return TTK_MENU_QUIT;
+#define PATHSIZ 512
+	struct stat st;
+	const char *filename = item->data;
+	if (stat (filename, &st) < 0) {
+		pz_perror (filename);
+		return TTK_MENU_UPONE;
+	}
+	if (S_ISDIR (st.st_mode)) {
+		/* we change the current directory here in order to find the
+		 * absolute path of the specified directory with getcwd. this
+		 * removes the need to check for references to the parent
+		 * directory or follow along a path until we find the end
+		 * result. in addition, opening the current directory and using
+		 * its file descriptor to return to it is faster than storing
+		 * its path */
+		if (filename[0]) {
+			int fd;
+			char full_path[PATHSIZ];
+			if ((fd = open(".", O_RDONLY)) == -1)
+				return TTK_MENU_UPONE;
+			chdir(filename);
+			getcwd(full_path, PATHSIZ);
+			fchdir(fd);
+			close(fd);
+			if (full_path[0] && full_path[1] &&
+					strchr(full_path + 2, '/'))
+				rm_rf (filename); // not "" or "/" or a root dir
+			else
+				pz_error (_("Dangerous rm -rf aborted.\n"));
+		}
+	} else {
+		unlink (filename);
+	}
+	return TTK_MENU_QUIT;
 }
 
 static ttk_menu_item rmdir_menu[] = {
