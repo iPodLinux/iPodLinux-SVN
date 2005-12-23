@@ -74,25 +74,24 @@ static TWindow *browser_pipe_exec (ttk_menu_item *item)
 
 static int is_ascii_file(const char *filename)
 {
+#define ASCIILEN 64
 	FILE *fp;
-	unsigned char buf[64], *ptr;
-	long file_len;
-	struct stat ftype; 
+	unsigned char buf[ASCIILEN], *ptr;
+	unsigned long min_len;
+	struct stat st; 
 
-	stat(filename, &ftype); 
-	if(S_ISBLK(ftype.st_mode)||S_ISCHR(ftype.st_mode))
+	stat(filename, &st); 
+	if(S_ISBLK(st.st_mode)||S_ISCHR(st.st_mode))
 		return 0;
 	if((fp=fopen(filename, "r"))==NULL) {
 		perror(filename);
 		return 0;
 	}
-	fseek(fp, 0, SEEK_END);
-	file_len = ftell(fp);
-	rewind(fp);
-	fread(buf, file_len<64?file_len:64, 1, fp);
+	min_len = st.st_size < ASCIILEN ? st.st_size : ASCIILEN;
+	fread(buf, min_len, 1, fp);
 	fclose(fp);
 	
-	for(ptr=buf;ptr-buf<(file_len<64?file_len:64);ptr++)
+	for(ptr=buf;ptr-buf<min_len;ptr++)
 		if(*ptr<7||*ptr>127)
 			return 0;
 	return 1;
@@ -117,6 +116,11 @@ static TWindow *new_textview_window(char *filename)
     ttk_window_title (ret, strrchr (filename, '/')? strrchr (filename, '/') + 1 : filename);
     free (buf); // strdup'd in textarea
     return ret;
+}
+
+static TWindow *browser_textview (ttk_menu_item *item)
+{
+	return new_textview_window((char *)item->data);
 }
 
 typedef struct browser_handler
@@ -317,7 +321,8 @@ static ttk_menu_item empty_menu[] = {
     // Items after here are not put in the menu, but can be referenced by browser_handle_action().
     /* dirs: */ { N_("Delete"), { browser_rmdir }, TTK_MENU_ICON_EXE, 0 },
     /* apps: */ { N_("Read output"), { browser_pipe_exec }, TTK_MENU_ICON_EXE, 0 },
-    /* files:*/ { N_("Delete"), { browser_delete }, 0, 0 }
+    /* files:*/ { N_("Delete"), { browser_delete }, 0, 0 },
+    /* files:*/ { N_("View contents"), { browser_textview }, 0, 0 }
 };
 
 TWidget *pz_browser_get_actions (const char *path)
@@ -333,11 +338,14 @@ TWidget *pz_browser_get_actions (const char *path)
     if (stat (path, &st) >= 0) {
 	if (st.st_mode & S_IFDIR) {
 	    ttk_menu_append (ret, empty_menu + 1);
-	} else if (st.st_mode & S_IXUSR) {
-	    ttk_menu_append (ret, empty_menu + 2);
+	} else if (!S_ISBLK(st.st_mode) && !S_ISCHR(st.st_mode)) {
+	    if (st.st_mode & S_IXUSR) {
+	    	ttk_menu_append (ret, empty_menu + 2);
+	    }
 	    ttk_menu_append (ret, empty_menu + 3);
-	} else {
-	    ttk_menu_append (ret, empty_menu + 3);
+	    if (is_ascii_file(path)) {
+		ttk_menu_append (ret, empty_menu + 4);
+	    }
 	}
     }
     while (cur) {
