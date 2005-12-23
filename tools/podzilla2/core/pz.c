@@ -395,7 +395,10 @@ main(int argc, char **argv)
 {
 	TWindow *first;
 
-        TTK_VERSION_CHECK();
+        if (!TTK_VERSION_CHECK()) {
+        	fprintf (stderr, "Version mismatch; exiting.\n");
+        	return 1;
+        }
 
 #ifdef IPOD
         signal (SIGBUS, debug_handler);
