@@ -908,6 +908,10 @@ void ttk_window_show_header (TWindow *win)
 	    win->focus->h -= 20;
 	    win->focus->dirty++;
 	}
+        win->x = ttk_screen->wx;
+        win->y = ttk_screen->wy;
+        win->w = ttk_screen->w - win->x;
+        win->h = ttk_screen->h - win->y;
     }
 }
 
@@ -918,9 +922,13 @@ void ttk_window_hide_header (TWindow *win)
 	win->show_header = 0;
 	ttk_dirty |= TTK_FILTHY;
 	if (win->focus) {
-	    win->focus->h += 20;
+	    win->focus->h += ttk_screen->wy;
 	    win->focus->dirty++;
 	}
+        win->x = 0;
+        win->y = 0;
+        win->w = ttk_screen->w;
+        win->h = ttk_screen->h;
     }
 }
 
