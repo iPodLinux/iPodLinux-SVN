@@ -60,12 +60,20 @@ void Vortex_CollisionDetection( void )
 	/* check for bolt-enemy collisions */
 	for( e=0 ; e<VGO_ENEMIES_NUM ; e++ )
 	{
-	    if( enemies[e].state == VORTEX_ENS_ACTIVE ) {
+	    if( (enemies[e].state == VORTEX_ENS_ACTIVE)
+		|| (  (enemies[e].state == VORTEX_ENS_ZOOMY)
+		    &&
+		      (enemies[e].type == VORTEX_ENT_SPIKER) 
+		    &&
+		      (enemies[e].v < 0.0)
+		   ) ){
 
 		/* check for bolts hitting enemies */
 		for( b=0 ; b<VGO_BOLTS_NUM ; b++ ) {
 		    if( bolts[b].active == 1 ) {
 			if( bolts[b].web == enemies[e].web ) {
+
+			    /* check for bolts hitting ships */
 			    d = (int) (bolts[b].z - enemies[e].z);
 			    if( d<1 ) {
 				/* HIT! */
@@ -74,9 +82,21 @@ void Vortex_CollisionDetection( void )
 				vglob.score += 100;
 
 				/* create a new powerup here */
-				Vortex_Powerup_create(
-					enemies[e].web,
-					enemies[e].z );
+				if( (rand() & 0x0ff) > 128 )
+					Vortex_Powerup_create(
+						enemies[e].web, enemies[e].z );
+			    }
+
+			    /* check for bolts hitting spikes */
+			    if( bolts[b].z <= enemies[e].spikeTop ) {
+				enemies[e].spikeTop--;
+				if( enemies[e].spikeTop < 10 ) {
+					enemies[e].state = VORTEX_ENS_DEATH;
+					enemies[e].v = 0;
+					enemies[e].z = 10;
+				}
+				bolts[b].active = 0;
+				vglob.score += 5;
 			    }
 			}
 		    }
@@ -292,6 +312,31 @@ void Vortex_Enemy_draw( ttk_surface srf )
 		case( VORTEX_ENS_ZOOMY ):
 		case( VORTEX_ENS_ACTIVE ):
 			switch( enemies[e].type ){
+			case( VORTEX_ENT_SPIKER ):
+				/* first draw the depth line */
+				if( enemies[e].spikeTop > 9 ) {
+				    ttk_aaline( srf, 
+					vglob.ptsX[w][9][1],
+					vglob.ptsY[w][9][1],
+					vglob.ptsX[w][enemies[e].spikeTop][1],
+					vglob.ptsY[w][enemies[e].spikeTop][1],
+					vglob.color.spikes );
+				}
+
+				/* next draw the spiker */
+				if( enemies[e].z > 0 ) {
+				    ttk_ellipse( srf, vglob.ptsX[w][z][1],
+					    vglob.ptsY[w][z][1],
+					    2, 2, vglob.color.spikers );
+				    ttk_ellipse( srf, vglob.ptsX[w][z][1],
+					    vglob.ptsY[w][z][1],
+					    3, 3, vglob.color.spikers );
+				    ttk_ellipse( srf, vglob.ptsX[w][z][1],
+					    vglob.ptsY[w][z][1],
+					    4, 4, vglob.color.spikers );
+				}
+				break;
+
 			case( VORTEX_ENT_FLIPPER ):
 				/* these look better non-antialiased */
 				/* aliased? */
@@ -330,6 +375,7 @@ void Vortex_Enemy_add( int type )
 	int e;
 	for( e=0 ; e<VGO_ENEMIES_NUM ; e++ ){
 		if( enemies[e].state == VORTEX_ENS_INACTIVE ) {
+
 			enemies[e].state      = VORTEX_ENS_ZOOMY;
 			enemies[e].type       = type;
 			enemies[e].web	      = rand() & 0x0f;
@@ -337,6 +383,8 @@ void Vortex_Enemy_add( int type )
 			enemies[e].z          = 0;
 			enemies[e].timeToFlip = 20;
 			enemies[e].timeToFire = 10;
+			enemies[e].spikeTop   = 0;
+			enemies[e].finalTop   = 8 + Vortex_Rand( 22 );
 
 			/* for now. hack it */
 			if( !(vortex_levels[ enemies[e].web ].flags & LF_CLOSEDWEB) )
@@ -362,6 +410,7 @@ void Vortex_Enemy_clear( void )
 void Vortex_Enemy_poll( void )
 {
 	int e;
+	static int t = 0;
 	static int timings_flipper[16] = { 70, 65, 60, 55, 50, 47, 45,
 			 		   40, 37, 33, 30, 28, 26, 24 };
         int idx = vglob.currentLevel;
@@ -369,10 +418,15 @@ void Vortex_Enemy_poll( void )
     
 	/* trigger a new enemy if necessary */
 	enemy_flipper_countup++;
-	if( (enemy_flipper_countup >= timings_flipper[idx])
+	if( (enemy_flipper_countup >= timings_flipper[idx]-20)
 	    || (enemy_flipper_countup<0) )
 	{
-		Vortex_Enemy_add( VORTEX_ENT_FLIPPER );
+		t ^= 1;		/* for now, every other one is each */
+		if( t )
+			Vortex_Enemy_add( VORTEX_ENT_FLIPPER );
+		else
+			Vortex_Enemy_add( VORTEX_ENT_SPIKER );
+		if( t>=4 ) t=0;
 		enemy_flipper_countup = 0;
 	}
 
@@ -393,33 +447,44 @@ void Vortex_Enemy_poll( void )
 
 		case( VORTEX_ENS_ACTIVE ):
 			enemies[e].z += enemies[e].v;
-			if( enemies[e].z > (NUM_Z_POINTS - 6)) {
-				enemies[e].state = VORTEX_ENS_INACTIVE;
 
-				/* enemy made it out to edge! */
-
-				/* for now... */
-				vglob.score -= 75;
-				if( vglob.score < 0 )
+			switch( enemies[e].type ){
+			case( VORTEX_ENT_SPIKER ):
+				/* check for movement */
+				if( enemies[e].z > enemies[e].finalTop )
 				{
-					vglob.score = 0;
-					Vortex_Enemy_clear();
-					vglob.lives--;
-					if( vglob.lives <= 0 ){
-						vglob.lives = 0;
-					}
-					Vortex_Console_AddItemAt( "OUCH", 0, 0,
-						vglob.wxC, vglob.wyC,
-						VORTEX_STYLE_NORMAL,
-						vglob.color.bonus );
-				} else {
-/*
-				    Vortex_Console_AddItemAt( "-75", 0, 0,
-						vglob.wxC, vglob.wyC,
-						VORTEX_STYLE_NORMAL,
-						vglob.color.con );
-*/
+					/* bounce it back! */
+					enemies[e].v *= -1;
+					enemies[e].z += enemies[e].v;
 				}
+				if( enemies[e].z > enemies[e].spikeTop )
+					enemies[e].spikeTop = (int)enemies[e].z;
+				break;
+
+			case( VORTEX_ENT_FLIPPER ):
+				if( enemies[e].z > (NUM_Z_POINTS - 6)) {
+					enemies[e].state = VORTEX_ENS_INACTIVE;
+
+					/* enemy made it out to edge! */
+
+					/* for now... */
+					vglob.score -= 75;
+					if( vglob.score < 0 )
+					{
+						vglob.score = 0;
+						Vortex_Enemy_clear();
+						vglob.lives--;
+						if( vglob.lives <= 0 ){
+							vglob.lives = 0;
+						}
+						Vortex_Console_AddItemAt(
+							"OUCH", 0, 0,
+							vglob.wxC, vglob.wyC,
+							VORTEX_STYLE_NORMAL,
+							vglob.color.bonus );
+					}
+				}
+				break;
 			}
 			break;
 
