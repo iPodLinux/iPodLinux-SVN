@@ -64,6 +64,9 @@ typedef struct _vortex_colors {
 	ttk_color sz_text2;	// "RECHARGE"
 	ttk_color flippers;	// enemy characters
 	ttk_color edeath;	// enemy death
+	ttk_color spikers;	// enemy spikers
+	ttk_color spikes;	// enemy spikes
+	ttk_color spike_death;	// when shooting at spikes
 	ttk_color powerup;	// powerup color
 } vortex_colors;
 
