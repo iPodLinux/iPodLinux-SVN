@@ -35,8 +35,8 @@ void Star_GenerateStars( void )
         int p;
         for( p=0 ; p<NUM_STARS ; p++ )
         {       
-                stars[p].x = Vortex_Rand( ttk_screen->w );
-                stars[p].y = Vortex_Rand( ttk_screen->h-ttk_screen->wy );
+                stars[p].x = Vortex_Rand( vglob.usableW );
+                stars[p].y = Vortex_Rand( vglob.usableH );
                 stars[p].c = ttk_makecol( 120 + (rand() & 0x7f),
 					  120 + (rand() & 0x7f),
 					  120 + (rand() & 0x7f) );

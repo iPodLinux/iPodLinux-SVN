@@ -44,11 +44,17 @@
 #include "vgamobjs.h"
 
 /* version number */
-#define VORTEX_VERSION	"05122002"
+#define VORTEX_VERSION	"05122223"
 
+/* change this #define to an #undef if you want the header bar to show */
+#define VORTEX_FULLSCREEN
+
+/* the globals */
 vortex_globals vglob;
 
+/* padding around the web to the top and bottom */
 #define VPADDING (10)
+
 
 void Vortex_initLevel( void );
 
@@ -125,11 +131,16 @@ void Vortex_DrawWeb( ttk_surface srf )
 
 void Vortex_DrawPlayer( ttk_surface srf )
 {
-	if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
+	if( vglob.gameStyle == VORTEX_STYLE_CLASSIC )
+	{
+		ttk_aapoly( srf, 4, vglob.px, vglob.py,
+				vglob.color.player_fill );
+	} else {
 		ttk_fillpoly( srf, 4, vglob.px, vglob.py, 
 				vglob.color.player_fill );
-
-	ttk_aapoly( srf, 4, vglob.px, vglob.py, vglob.color.player );
+		ttk_aapoly( srf, 4, vglob.px, vglob.py,
+				vglob.color.player );
+	}
 }
 
 
@@ -163,10 +174,10 @@ void Vortex_DrawAvailableBase( ttk_surface srf, int x, int y )
 
 	if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
 	{
-		ttk_fillpoly( srf, 4, xx, yy, vglob.color.baseind );
-		ttk_aapoly( srf, 4, xx, yy, vglob.color.baseindo );
-	} else {
+		ttk_fillpoly( srf, 4, xx, yy, vglob.color.baseind_fill );
 		ttk_aapoly( srf, 4, xx, yy, vglob.color.baseind );
+	} else {
+		ttk_aapoly( srf, 4, xx, yy, vglob.color.baseind_fill );
 	}
 }
 
@@ -199,26 +210,22 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 
 	if( vglob.paused ) {
 		Vortex_OutlinedTextCenter( srf, "VORTEX",
-			(ttk_screen->w - ttk_screen->wx)>>1, 
-			((ttk_screen->h - ttk_screen->wy)>>1)-20,
+			vglob.usableW>>1, (vglob.usableH>>1)-20,
 			10, 18, 1, vglob.color.title, vglob.color.bg );
 
 		Vortex_OutlinedTextCenter( srf, "\xFD\xFDpaused\xFB\xFB",
-			(ttk_screen->w - ttk_screen->wx)>>1, 
-			((ttk_screen->h - ttk_screen->wy)>>1)+5,
+			vglob.usableW>>1, (vglob.usableH>>1)+5,
 			10, 18, 1, vglob.color.select, vglob.color.bg );
 
 		Vortex_OutlinedTextCenter( srf, "Coded By", 
-			    (ttk_screen->w - ttk_screen->wx)>>1, 
-			    (ttk_screen->h - ttk_screen->wy)-22, 
-			    5, 9, 1, vglob.color.credits,
-			    vglob.color.bg );
+			vglob.usableW>>1, vglob.usableH-22,
+			5, 9, 1, vglob.color.credits,
+			vglob.color.bg );
 
 		Vortex_OutlinedTextCenter( srf, "BleuLlama", 
-			    (ttk_screen->w - ttk_screen->wx)>>1, 
-			    (ttk_screen->h - ttk_screen->wy)-10, 
-			    5, 9, 1, vglob.color.credits,
-			    vglob.color.bg );
+			vglob.usableW>>1, vglob.usableH-10,
+			5, 9, 1, vglob.color.credits,
+			vglob.color.bg );
 		return;
 	}
 
@@ -268,7 +275,7 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 		}
 
 		Vortex_OutlinedTextCenter( srf, word,
-			    (ttk_screen->w - ttk_screen->wx)>>1, 20,
+			    vglob.usableW>>1, 20,
 			    10, 18, 1, vglob.color.select, vglob.color.bg );
 
 		if( vglob.state == VORTEX_STATE_STYLESEL ) {
@@ -290,7 +297,7 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 						VECTORFONT_SPECIAL_RIGHT:' ');
 		}
 		Vortex_OutlinedTextCenter( srf, buf,
-			(ttk_screen->w - ttk_screen->wx)>>1, 50,
+			vglob.usableW>>1, 50,
 			10, 18, 1, vglob.color.sellevel, vglob.color.bg );
 
 		/* display some props to the masters */
@@ -301,15 +308,13 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 		case 3: credit = "";             break;
 		}
 		Vortex_OutlinedTextCenter( srf, credit, 
-			    (ttk_screen->w - ttk_screen->wx)>>1, 
-			    (ttk_screen->h - ttk_screen->wy)-10, 
+			    vglob.usableW>>1, vglob.usableH-10,
 			    5, 9, 1, vglob.color.credits,
 			    vglob.color.bg );
 
 		/* and the version number */
 		pz_vector_string( srf, VORTEX_VERSION, 1,
-			    (ttk_screen->h - ttk_screen->wy)-6, 
-                            3, 5, 1, vglob.color.version );
+			    vglob.usableH-6, 3, 5, 1, vglob.color.version );
 		break;
 
 	case VORTEX_STATE_GAME:
@@ -338,9 +343,8 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 		/* plop down the score */
 		snprintf( buf, 15, "%04d", vglob.score );
 		pz_vector_string( srf, buf,
-                            (ttk_screen->w - ttk_screen->wx) -
-			     pz_vector_width( buf, 5, 9, 1 ) -1, 1,
-                            5, 9, 1, vglob.color.score );
+			    vglob.usableW - pz_vector_width( buf, 5, 9, 1 ) -1,
+			    1, 5, 9, 1, vglob.color.score );
 
 		/* and lives left */
 		Vortex_DrawAvailableBases( srf );
@@ -353,9 +357,9 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 		/* and current level */
 		snprintf( buf, 15, "L%d", vglob.startLevel );
 		pz_vector_string( srf, buf, 
-                            (ttk_screen->w - ttk_screen->wx) -
+			    vglob.usableW -
 			     pz_vector_width( buf, 5, 9, 1 ) -1,
-			    (ttk_screen->h - ttk_screen->wy)-10, 
+			    vglob.usableH-10,
                             5, 9, 1, vglob.color.level );
 		break;
 
@@ -401,7 +405,7 @@ void Vortex_clawGeometryCompute( void ) /* NOTE: not "cowCompute" */ /* moo. */
 {
 	LEVELDATA * lv = &vortex_levels[ vglob.currentLevel ];
 
-	vglob.wxC = ttk_screen->w>>1;   /* web X center */
+	vglob.wxC = vglob.usableW>>1;   /* web X center */
 	vglob.wyC = lv->y3d;            /* web Y center */
 
 	/* get the point index for the nextcurrent */
@@ -434,7 +438,7 @@ void Vortex_newLevelCompute( void )
 	int p2 = vglob.wPosMajor +1;	/* second point in the selected field */
 	if( p2 > 15 ) p2 = 0;		/* adjust for wraparound */
 
-	vglob.wxC = ttk_screen->w>>1;   /* web X center */
+	vglob.wxC = vglob.usableW>>1;   /* web X center */
 	vglob.wyC = lv->y3d;            /* web Y center */
 
 	/* store aside the centerpoint of the field edge */
@@ -770,12 +774,23 @@ static void Vortex_Initialize( void )
 	Vortex_ChangeToState( VORTEX_STATE_STARTUP );
 }
 
+
 PzWindow *new_vortex_window()
 {
 	srand( time( NULL ));
-	Vortex_Console_Init();
 
 	vglob.window = pz_new_window( "Vortex", PZ_WINDOW_NORMAL );
+
+	/* make it full screen */
+#ifdef VORTEX_FULLSCREEN
+	ttk_window_hide_header( vglob.window );
+	vglob.window->x = 0;
+	vglob.window->y = 0;
+	vglob.window->w = ttk_screen->w;
+	vglob.window->h = ttk_screen->h;
+#endif
+	Vortex_Console_Init();
+
 	vglob.widget = pz_add_widget( vglob.window, draw_vortex, event_vortex );
 	pz_widget_set_timer( vglob.widget, 30 );
 
@@ -821,12 +836,12 @@ void init_vortex()
 		vglob.color.web_top_dot = ttk_makecol( 128, 255, 255 );
 		vglob.color.web_bot_dot = ttk_makecol(   0, 128, 255 );
 		vglob.color.web_fill    = ttk_makecol(   0,   0,  30 );
-		vglob.color.baseind     = ttk_makecol( 255, 255,   0 );
-		vglob.color.baseindo    = ttk_makecol( 255,   0,   0 );
+		vglob.color.baseind     = ttk_makecol( 255, 128,   0 );
+		vglob.color.baseind_fill= ttk_makecol( 255, 255,   0 );
 		vglob.color.score       = ttk_makecol(   0, 255, 255 );
 		vglob.color.level       = ttk_makecol(   0,   0, 128 );
-		vglob.color.player      = ttk_makecol( 255, 255,   0 );
-		vglob.color.player_fill = ttk_makecol( 255, 255, 128 );
+		vglob.color.player      = ttk_makecol( 255, 128,   0 );
+		vglob.color.player_fill = ttk_makecol( 255, 255,   0 );
 		vglob.color.bolts       = ttk_makecol( 255, 255, 255 );
 		vglob.color.plaser      = ttk_makecol( 255, 128,   0 );
 		vglob.color.super       = ttk_makecol(   0, 255, 255 );
@@ -853,7 +868,7 @@ void init_vortex()
 		vglob.color.web_bot_dot = ttk_makecol( GREY );
 		vglob.color.web_fill    = ttk_makecol( WHITE );
 		vglob.color.baseind     = ttk_makecol( BLACK );
-		vglob.color.baseindo    = ttk_makecol( BLACK );
+		vglob.color.baseind_fill= ttk_makecol( BLACK );
 		vglob.color.score       = ttk_makecol( BLACK );
 		vglob.color.level       = ttk_makecol( BLACK );
 		vglob.color.player      = ttk_makecol( DKGREY );
@@ -868,8 +883,18 @@ void init_vortex()
 		vglob.color.sz_text2	= ttk_makecol( BLACK );
 	}
 
+
 	/* precompute all of the web scaling... */
 	/* convert from rom coordinates to screen coordinates */
+
+	/* set up the screen sizes. */
+#ifdef VORTEX_FULLSCREEN
+	vglob.usableW   = ttk_screen->w;
+	vglob.usableH   = ttk_screen->h;
+#else
+	vglob.usableW   = ttk_screen->w - ttk_screen->wx;
+	vglob.usableH   = ttk_screen->h - ttk_screen->wy;
+#endif
 
 	/* flip all of the Y pixels. */
 	for( p=0 ; p<NLEVELS ; p++ )
@@ -882,11 +907,10 @@ void init_vortex()
 		vortex_levels[p].y3d = 256 - vortex_levels[p].y3d;
 
 		/* and scale y3d while we're at it... */
-		vortex_levels[p].y3d = 
-			    ( vortex_levels[p].y3d
-			    * (ttk_screen->h-VPADDING-ttk_screen->wy) ) >> 8;
+		vortex_levels[p].y3d = ( vortex_levels[p].y3d 
+                            * (vglob.usableH - VPADDING)) >> 8;
 		vortex_levels[p].y3d = vortex_levels[p].y3d
-			    - ((ttk_screen->h-VPADDING-ttk_screen->wy)>>1)
+			    - ((vglob.usableH - VPADDING )>>1)
 			    + (ttk_screen->h>>1);
 	}
 
@@ -895,20 +919,18 @@ void init_vortex()
 	for( p=0 ; p<NLEVELS ; p++ ) {
 	    	for( q=0 ; q<16 ; q++ ) {
 			/* scale */
-			vortex_levels[p].fx[q] = 
-			    ( vortex_levels[p].x[q] 
-			    * (ttk_screen->h-VPADDING-ttk_screen->wy) ) >> 8;
-			vortex_levels[p].fy[q] = 
-			    ( vortex_levels[p].y[q] 
-			    * (ttk_screen->h-VPADDING-ttk_screen->wy) ) >> 8;
+			vortex_levels[p].fx[q] = ( vortex_levels[p].x[q] 
+				* (vglob.usableH - VPADDING )) >> 8;
+			vortex_levels[p].fy[q] = ( vortex_levels[p].y[q] 
+				* (vglob.usableH - VPADDING )) >> 8;
 
 			/* and translate */
 			vortex_levels[p].fx[q] = vortex_levels[p].fx[q] 
-			    - ((ttk_screen->h-VPADDING/2-ttk_screen->wy)>>1)
-			    + (ttk_screen->w>>1);
+			    - ( (vglob.usableH-VPADDING)>>1 )
+			    + (vglob.usableW>>1);
 			vortex_levels[p].fy[q] = vortex_levels[p].fy[q] 
-			    - ((ttk_screen->h-VPADDING/2-ttk_screen->wy)>>1)
-			    + ((ttk_screen->h-VPADDING)>>1);
+			    - ( (vglob.usableH-VPADDING)>>1 )
+			    + (vglob.usableH>>1);
 		}
 	}
 
@@ -917,8 +939,7 @@ void init_vortex()
 	    	for( q=0 ; q<16 ; q++ ) {
 			/* swipe the results from above and scale them*/
 			vortex_levels[p].rx[q] = 
-			    (   (vortex_levels[p].fx[q]) 
-			      + ((ttk_screen->w>>1)*3)
+			    ( (vortex_levels[p].fx[q]) + ((vglob.usableW>>1)*3)
 			    )>>2;
 
 			vortex_levels[p].ry[q] = 

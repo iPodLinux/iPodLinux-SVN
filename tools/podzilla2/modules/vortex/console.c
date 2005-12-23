@@ -27,6 +27,7 @@
 
 #include "pz.h"
 #include "console.h"
+#include "vglobals.h"
 
 
 #define VORTEX_CONSOLE_INACTIVE	(0)	/* item is empty */
@@ -152,8 +153,8 @@ void Vortex_Console_AddItem( char * text, int xs, int ys,
 				int style, ttk_color color )
 {
 	Vortex_Console_AddItemAt( text, xs, ys,  
-					(ttk_screen->w - ttk_screen->wx)>>1,
-					(ttk_screen->h - ttk_screen->wy)>>1,
+					vglob.usableW>>1,
+					vglob.usableH>>1,
 					style, color );
 }
 
@@ -236,7 +237,7 @@ void Vortex_Console_Render( ttk_surface srf )
 		/* static text, draw it in the lower left */
 		if( !static_is_hidden ) {
 		    if( consolebuf[x].state == VORTEX_CONSOLE_STATIC ) {
-			    ypos = ttk_screen->h - ttk_screen->wy 
+			    ypos = vglob.usableH
 				    - (10*(consolebuf[x].itemNumber+1)) - 1;
 			    if( ypos > 16 ) {
 				    pz_vector_string( srf, consolebuf[x].buf,
