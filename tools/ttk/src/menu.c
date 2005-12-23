@@ -373,6 +373,7 @@ void ttk_menu_sort_my_way (TWidget *this, int (*cmp)(const void *, const void *)
     _MAKETHIS;
     
     qsort (data->menu, data->items, sizeof(void*), cmp);
+    MakeVIXI (this);
     render (this, data->top, data->visible);
 }
 void ttk_menu_sort (TWidget *this) 
