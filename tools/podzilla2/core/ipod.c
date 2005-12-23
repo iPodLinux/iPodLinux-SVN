@@ -19,6 +19,8 @@
 #include <fcntl.h>
 #ifdef IPOD
 #include <linux/fb.h>
+#else
+#include <time.h>
 #endif
 #include <sys/ioctl.h>
 #include <errno.h>
