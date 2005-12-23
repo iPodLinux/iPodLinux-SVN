@@ -9,7 +9,7 @@ ifeq ($(OSTYPE),Darwin)
 endif
 ifeq ($(OSTYPE),Linux)
 	PREFIX =
-	CFLAGS = -g -fomit-frame-pointer -funroll-loops
+	CFLAGS = -O3 -fomit-frame-pointer -funroll-loops
 	LDFLAGS = -lc
 endif
 ifneq ($(IPOD),)
@@ -34,7 +34,6 @@ LIB = libhotdog.a
 LIBOBJS=  hotdog.o hotdog_png.o hotdog_primitive.o hotdog_font.o hotdog_animation.o hotdog_canvas.o zsort.o
 
 DEMO = hd-demo
-DEMOOBJS = main_darwin.o
 
 all: $(LIB)
 
@@ -43,11 +42,11 @@ $(LIB): $(LIBOBJS)
 	$(AR) $(LIB) $(LIBOBJS)
 	$(AR2) $(LIB)
 
-$(DEMOOBJS):
-	$(CC) $(CFLAGS) $(DEMOCFLAGS) -c -o $@ $*.c
+main_anim.o: main_anim.c
+	$(CC) $(CFLAGS) $(DEMOCFLAGS) -c -o $@ $<
 
-$(DEMO): $(LIB) $(DEMOOBJS) 
-	$(CC) $(DEMOOBJS) -o $@ $(LIB) $(LDFLAGS) $(DEMOLDFLAGS)
+$(DEMO): $(LIB) main_anim.o
+	$(CC) main_anim.o -o $@ $(LIB) $(LDFLAGS) $(DEMOLDFLAGS)
 
 clean:
 	$(RM) *.o *.elf *.elf2flt *.a *.gdb *~ $(DEMO)
