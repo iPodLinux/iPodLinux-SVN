@@ -129,6 +129,7 @@ static TWidget *read_directory(const char *dirname)
 
 	ret = ttk_new_menu_widget(NULL, ttk_menufont, ttk_screen->w -
 			ttk_screen->wx, ttk_screen->h - ttk_screen->wy);
+	ttk_menu_set_i18nable(ret, 0);
 	dir = opendir(dirname);
 
 	while ((subdir = readdir(dir))) {
