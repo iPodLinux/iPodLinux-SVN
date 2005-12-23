@@ -44,7 +44,7 @@
 #include "vgamobjs.h"
 
 /* version number */
-#define VORTEX_VERSION	"05122223"
+#define VORTEX_VERSION	"05122301"
 
 /* change this #define to an #undef if you want the header bar to show */
 #define VORTEX_FULLSCREEN
@@ -343,8 +343,8 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 		/* plop down the score */
 		snprintf( buf, 15, "%04d", vglob.score );
 		pz_vector_string( srf, buf,
-			    vglob.usableW - pz_vector_width( buf, 5, 9, 1 ) -1,
-			    1, 5, 9, 1, vglob.color.score );
+			    vglob.usableW - pz_vector_width( buf, 7, 13, 1 ) -1,
+			    1, 7, 13, 1, vglob.color.score );
 
 		/* and lives left */
 		Vortex_DrawAvailableBases( srf );
