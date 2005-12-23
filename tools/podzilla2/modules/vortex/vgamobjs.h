@@ -63,8 +63,12 @@ typedef struct enemy {
 	int web;		/* where it is, rotationally */
 	double z;		/* where it is, depth */
 	double v;		/* velocity */
+	/* for flippers */
 	int timeToFlip;		/* countdown time until it flips again */
 	int timeToFire;		/* countdown time until it fires again */
+	/* for spikers */
+	int spikeTop;		/* spike size (from back to front ) */
+	int finalTop;		/* how far to go in before reversing */
 } enemy;
 
 
