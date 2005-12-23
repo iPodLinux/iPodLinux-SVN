@@ -233,14 +233,14 @@ void HD_DoCircleAnimation (hd_object *obj)
 {
     anim_circledata *a = obj->animdata;
     a->angle += a->adelta;
-    obj->x = a->x + ((a->r * fcos (a->angle)) >> 16);
-    obj->y = a->y + ((a->r * fsin (a->angle)) >> 16);
+    obj->x = a->x + ((a->r * fcos (a->angle >> 16)) >> 16);
+    obj->y = a->y + ((a->r * fsin (a->angle >> 16)) >> 16);
     if (a->fbot != 0x10000 || a->ftop != 0x10000) {
-        obj->w = (a->w * (a->fbot + ((a->fdelta >> 8) * (fsin (a->angle) >> 8)))) >> 16;
+        obj->w = (a->w * (a->fbot + ((a->fdelta >> 8) * ((fsin (a->angle >> 16) + 0x10000) >> 9)))) >> 16;
         obj->h = (obj->w * a->aspect_ratio) >> 16;
     }
 
-    if (a->frames == 0 || --a->frames == 0) {
+    if (a->frames && !--a->frames) {
         free (obj->animdata);
         obj->animate = 0;
         obj->animating = 0;
@@ -256,19 +256,24 @@ void HD_AnimateCircle (hd_object *obj, int32 x, int32 y, int32 r, int32 fbot, in
 
     obj->animating = 1;
     obj->animdata = a;
-    a->frames = frames;
+    if (frames < 0) {
+        a->frames = 0;
+        frames = -frames;
+    } else {
+        a->frames = frames;
+    }
     a->x = x; a->y = y; a->r = r; a->w = obj->w;
-    a->aspect_ratio = (obj->w << 16) / obj->h;
+    a->aspect_ratio = (obj->h << 16) / obj->w;
     a->fbot = (fbot == 1 || fbot == 0)? (1 << 16) : fbot;
     a->ftop = (ftop == 1 || ftop == 0)? (1 << 16) : ftop;
     a->fdelta = a->ftop - a->fbot;
     a->angle = astart << 16;
     a->adelta = (adist << 16) / frames;
-    obj->animate = HD_DoLinearAnimation;    
-    obj->x = a->x + ((a->r * fcos (a->angle)) >> 16);
-    obj->y = a->y + ((a->r * fsin (a->angle)) >> 16);
+    obj->animate = HD_DoCircleAnimation;    
+    obj->x = a->x + ((a->r * fcos (a->angle >> 16)) >> 16);
+    obj->y = a->y + ((a->r * fsin (a->angle >> 16)) >> 16);
     if (a->fbot != 0x10000 || a->ftop != 0x10000) {
-        obj->w = (a->w * (a->fbot + ((a->fdelta >> 8) * (fsin (a->angle) >> 8)))) >> 16;
+        obj->w = (a->w * (a->fbot + ((a->fdelta >> 8) * ((fsin (a->angle >> 16) + 0x10000) >> 9)))) >> 16;
         obj->h = (obj->w * a->aspect_ratio) >> 16;
     }
 }
