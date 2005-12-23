@@ -51,8 +51,8 @@ typedef struct _vortex_colors {
 	ttk_color web_top_dot;	// top vector simulation dots
 	ttk_color web_bot_dot;	// bottom vector simulation dots
 	ttk_color web_fill;	// fill color for the web sides 
-	ttk_color baseind;	// base icon indicators (lives left)
-	ttk_color baseindo;	// base icon indicators (outline)
+	ttk_color baseind;	// base icon indicators (outline)
+	ttk_color baseind_fill;	// base icon indicators (lives left)
 	ttk_color score;	// current score
 	ttk_color level;	// current level
 	ttk_color player;	// player character
@@ -82,6 +82,9 @@ typedef struct vortex_globals {
 	PzModule * module;
 	PzWindow * window;
 	PzWidget * widget;
+
+	int usableW;		/* replaces   ttk_screen->w - ttk_screen->wx */
+	int usableH;		/* replaces   ttk_screen->h - ttk_screen->wy */
 
 	/* gameplay stuff */
 	int state;
