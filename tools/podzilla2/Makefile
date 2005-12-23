@@ -46,8 +46,12 @@ all: checktarget core modules contrib xpods pods
 	@echo " LD      podzilla"
 	@$(CC) -o podzilla core/built-in.o $(wildcard modules/built-in.o) $(LIBS)
 ifdef IPOD
+# This must be AFTER the elf2flt compilation, because elf2flt deletes podzilla.elf.
+	@echo " LD      podzilla.elf"
+	@$(CC) -Wl,-r -o podzilla.o core/built-in.o $(wildcard modules/built-in.o) $(LIBS)
+	@$(CROSS)-ld.real -T elf2flt.ld -Ur -o podzilla.elf podzilla.o
 	@echo " SYMS    podzilla"
-	@$(CROSS)-nm podzilla.gdb | ./contrib/ucdl/symadd podzilla
+	@$(CROSS)-nm podzilla.elf | ./contrib/ucdl/symadd podzilla
 endif
 
 .message:
