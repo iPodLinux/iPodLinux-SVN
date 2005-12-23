@@ -72,6 +72,11 @@ typedef struct _vortex_colors {
 #define NUM_Z_POINTS	(32)	/* 0=center, 32=top */
 #define NUM_MIDS	(2)	/* 0=side, 1=center */
 
+#define VORTEX_STYLE_CLASSIC	(0)
+#define VORTEX_STYLE_2K5	(1)
+#define VORTEX_STYLE_BURRITO	(2)
+#define VORTEX_STYLE_MAX	(1)
+
 typedef struct vortex_globals {
 	/* pz meta stuff */
 	PzModule * module;
@@ -110,7 +115,7 @@ typedef struct vortex_globals {
 
 	vortex_colors color;
 
-	int classicMode;
+	int gameStyle;
 } vortex_globals;
 
 /* so that we can all use it... */
@@ -118,8 +123,13 @@ extern vortex_globals vglob;
 
 /* now some useful generic and utility stuff... */
 
+#ifndef MIN
 #define MIN(A,B) (((A)>(B))?(B):(A))
+#endif
+
+#ifndef MAX
 #define MAX(A,B) (((A)<(B))?(B):(A))
+#endif 
 
 int Vortex_Rand( int max );
 

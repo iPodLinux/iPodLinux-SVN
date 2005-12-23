@@ -64,7 +64,7 @@ void Vortex_ChangeToState( int st )
 	Vortex_Console_HiddenStatic( 0 );
 	vglob.timer = 0;
 	vglob.state = st;
-	if( !vglob.classicMode ) Star_GenerateStars( );
+	if( vglob.gameStyle != VORTEX_STYLE_CLASSIC ) Star_GenerateStars();
 }
 
 
@@ -79,7 +79,7 @@ void Vortex_DrawWeb( ttk_surface srf )
 	if( vortex_levels[ vglob.currentLevel ].flags & LF_CLOSEDWEB ) maxP++;
 
 	/* fill the web */
-	if( !vglob.classicMode ) {
+	if( vglob.gameStyle != VORTEX_STYLE_CLASSIC ) {
 		for( p=0 ; p<maxP ; p++ )
 		{
 			n = (p+1)&0x0f;
@@ -125,7 +125,7 @@ void Vortex_DrawWeb( ttk_surface srf )
 
 void Vortex_DrawPlayer( ttk_surface srf )
 {
-	if( !vglob.classicMode )
+	if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
 		ttk_fillpoly( srf, 4, vglob.px, vglob.py, 
 				vglob.color.player_fill );
 
@@ -153,7 +153,7 @@ void Vortex_OutlinedTextCenter( ttk_surface srf, const char *string,
 	pz_vector_string_center( srf, string, x, y, cw, ch, kern, col );
 }
 
-void Vortex_Base( ttk_surface srf, int x, int y )
+void Vortex_DrawAvailableBase( ttk_surface srf, int x, int y )
 {
 	short xx[4], yy[4];
 	xx[0] = x; 	yy[0] = y+9;
@@ -161,12 +161,30 @@ void Vortex_Base( ttk_surface srf, int x, int y )
 	xx[2] = x+10;	yy[2] = y+9;
 	xx[3] = x+5;	yy[3] = y+6;
 
-	if( !vglob.classicMode )
+	if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
 	{
 		ttk_fillpoly( srf, 4, xx, yy, vglob.color.baseind );
 		ttk_aapoly( srf, 4, xx, yy, vglob.color.baseindo );
 	} else {
 		ttk_aapoly( srf, 4, xx, yy, vglob.color.baseind );
+	}
+}
+
+void Vortex_DrawAvailableBases( ttk_surface srf )
+{
+	char buf[16];
+	int x;
+
+	if( vglob.lives > 4 ) {
+		snprintf( buf, 15, "%d", vglob.lives );
+		pz_vector_string( srf, buf, 1, 1,
+			5, 9, 1, vglob.color.baseind);
+		Vortex_DrawAvailableBase( srf, 8, 1 );
+		
+	} else {
+		for( x=0 ; x<vglob.lives ; x++ ) {
+			Vortex_DrawAvailableBase( srf, 1+(x*12), 1 );
+		}
 	}
 }
 
@@ -176,7 +194,6 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 	char buf[16];
 	char * word;
 	char * credit;
-	int x;
 
 	ttk_fillrect( srf, 0, 0, ttk_screen->w, ttk_screen->h, vglob.color.bg );
 
@@ -207,7 +224,8 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 
 	switch( vglob.state ) {
 	case VORTEX_STATE_STARTUP:
-		if( !vglob.classicMode ) Star_DrawStars( srf );
+		if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
+			Star_DrawStars( srf );
 		Vortex_Console_Render( srf );
 		if( Vortex_Console_GetZoomCount() == 0 )
 			Vortex_ChangeToState( VORTEX_STATE_STYLESEL );
@@ -217,16 +235,20 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 
 	case VORTEX_STATE_STYLESEL:
 	case VORTEX_STATE_LEVELSEL:
-		if( !vglob.classicMode ) Star_DrawStars( srf );
+		if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
+			Star_DrawStars( srf );
 		Vortex_DrawWeb( srf );
 
 		if( vglob.state == VORTEX_STATE_STYLESEL ) {
 			Vortex_DrawPlayer( srf );
 			Vortex_Bolt_draw( srf );
 
+/*
 			for( x=0 ; x<vglob.lives ; x++ ) {
-				Vortex_Base( srf, 1+(x*12), 1 );
+				Vortex_DrawAvailableBase( srf, 1+(x*12), 1 );
 			}
+*/
+			Vortex_DrawAvailableBases( srf );
 
 			/* let the user select what style to play with */
 			switch((vglob.timer>>4) & 0x03 ) {
@@ -250,12 +272,14 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 			    10, 18, 1, vglob.color.select, vglob.color.bg );
 
 		if( vglob.state == VORTEX_STATE_STYLESEL ) {
-			if( vglob.classicMode )
+			if( vglob.gameStyle == VORTEX_STYLE_CLASSIC )
 				snprintf( buf, 16, "CLASSIC %c", 
 						VECTORFONT_SPECIAL_RIGHT );
-			else
+			else if( vglob.gameStyle == VORTEX_STYLE_2K5 )
 				snprintf( buf, 16, "%c 2K5", 
 						VECTORFONT_SPECIAL_LEFT );
+			else
+				snprintf( buf, 16, "BURRITO" );
 		} else {
 			/* level number */
 			snprintf( buf, 15, "%c %d %c", 
@@ -290,7 +314,8 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 
 	case VORTEX_STATE_GAME:
 		/* draw some stars */
-		if( !vglob.classicMode ) Star_DrawStars( srf );
+		if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
+			Star_DrawStars( srf );
 
 		/* draw the playfield */
 		Vortex_DrawWeb( srf );
@@ -318,17 +343,7 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
                             5, 9, 1, vglob.color.score );
 
 		/* and lives left */
-		if( vglob.lives > 4 ) {
-			snprintf( buf, 15, "%d", vglob.lives );
-			pz_vector_string( srf, buf, 1, 1,
-				5, 9, 1, vglob.color.baseind);
-			Vortex_Base( srf, 8, 1 );
-			
-		} else {
-			for( x=0 ; x<vglob.lives ; x++ ) {
-				Vortex_Base( srf, 1+(x*12), 1 );
-			}
-		}
+		Vortex_DrawAvailableBases( srf );
 
 		/* and superzapper indicator, if applicable */
 		if( vglob.hasSuperZapper )
@@ -342,18 +357,18 @@ void draw_vortex (PzWidget *widget, ttk_surface srf)
 			     pz_vector_width( buf, 5, 9, 1 ) -1,
 			    (ttk_screen->h - ttk_screen->wy)-10, 
                             5, 9, 1, vglob.color.level );
-
-
 		break;
 
 	case VORTEX_STATE_ADVANCE:
 		/* XXX this needs a lot more code - animations */
-		if( !vglob.classicMode ) Star_DrawStars( srf );
+		if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
+			Star_DrawStars( srf );
 		Vortex_Console_Render( srf );
 		break;
 
 	case VORTEX_STATE_DEATH:
-		if( !vglob.classicMode ) Star_DrawStars( srf );
+		if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
+			Star_DrawStars( srf );
 		Vortex_Console_Render( srf );
 		if( Vortex_Console_GetZoomCount() == 0 )
 		{
@@ -382,7 +397,7 @@ void cleanup_vortex( void )
 	((center) + ((((vect)-(center)) * (z) )>>7))
 
 
-void Vortex_clawCompute( void ) /* NOTE: not "cowCompute" */ /* moo. */
+void Vortex_clawGeometryCompute( void ) /* NOTE: not "cowCompute" */ /* moo. */
 {
 	LEVELDATA * lv = &vortex_levels[ vglob.currentLevel ];
 
@@ -478,7 +493,6 @@ void Vortex_player_clear( void )
 /* all of the stuff that needs to get reset at the beginning of a new level */
 void Vortex_initLevel( void )
 {
-	if( vglob.state == VORTEX_STATE_STARTUP ) return;
 	if( vglob.state == VORTEX_STATE_DEATH ) return;
 	if( vglob.state == VORTEX_STATE_DEAD ) return;
 
@@ -486,11 +500,12 @@ void Vortex_initLevel( void )
 	Vortex_Powerup_clear();
 	Vortex_Bolt_clear();
 	Vortex_Enemy_clear();
-	Vortex_clawCompute();
+	Vortex_clawGeometryCompute();
 	Vortex_player_clear();
-	if( !vglob.classicMode ) {
+
+	if( vglob.state == VORTEX_STATE_STARTUP ) return;
+	if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
 		Star_GenerateStars();
-	}
 }
 
 
@@ -503,7 +518,7 @@ void Vortex_incPosition( int steps )
 
 	if( vglob.wPosMinor < MINOR_MAX ) {
 		vglob.wPosMinor++;
-		Vortex_clawCompute();
+		Vortex_clawGeometryCompute();
 		return;
 	}
 
@@ -519,7 +534,7 @@ void Vortex_incPosition( int steps )
 			vglob.wPosMajor = 14;
 	}
 
-	Vortex_clawCompute();
+	Vortex_clawGeometryCompute();
 }
 
 void Vortex_decPosition( int steps )
@@ -528,21 +543,21 @@ void Vortex_decPosition( int steps )
 
 	if( vglob.wPosMinor > 0 ) {
 		vglob.wPosMinor--;
-		Vortex_clawCompute();
+		Vortex_clawGeometryCompute();
 		return;
 	}
 
 	if( vglob.wPosMajor > 0 ) {
 		vglob.wPosMajor--;
 		vglob.wPosMinor = MINOR_MAX;
-		Vortex_clawCompute();
+		Vortex_clawGeometryCompute();
 		return;
 	}
 
 	if( vortex_levels[ vglob.currentLevel ].flags & LF_CLOSEDWEB ) {
 		vglob.wPosMajor = 15;
 		vglob.wPosMinor = MINOR_MAX;
-		Vortex_clawCompute();
+		Vortex_clawGeometryCompute();
 	}
 }
 
@@ -559,7 +574,7 @@ void Vortex_selectLevel( int l )
 
 	if( vglob.currentLevel != vglob.startLevel ) {
 		vglob.currentLevel = vglob.startLevel;
-		if( !vglob.classicMode )
+		if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
 			Star_GenerateStars();
 	}
 }
@@ -572,8 +587,15 @@ int event_vortex (PzEvent *ev)
 	    if( !vglob.paused ) {
 		if( vglob.state == VORTEX_STATE_STYLESEL ) {
 			TTK_SCROLLMOD( ev->arg, 5 );
-			if( ev->arg > 0 )	vglob.classicMode = 0;
-			else 			vglob.classicMode = 1;
+			if( ev->arg > 0 )
+				vglob.gameStyle++;
+			else 
+				vglob.gameStyle--;
+
+			if( vglob.gameStyle < 0 )
+				vglob.gameStyle = 0;
+			if( vglob.gameStyle > VORTEX_STYLE_MAX )
+				vglob.gameStyle = VORTEX_STYLE_MAX;
 			ev->wid->dirty = 1;
 		}
 
@@ -757,11 +779,12 @@ PzWindow *new_vortex_window()
 	vglob.widget = pz_add_widget( vglob.window, draw_vortex, event_vortex );
 	pz_widget_set_timer( vglob.widget, 30 );
 
-	vglob.classicMode = 0;
+	vglob.gameStyle = VORTEX_STYLE_2K5;
 	Vortex_Initialize( );
 	Vortex_Console_HiddenStatic( 1 );
 	Vortex_Console_AddItem( "VORTEX", 0, 0, 
 				VORTEX_STYLE_BOLD, vglob.color.title );
+	Star_GenerateStars();
 
 	return pz_finish_window( vglob.window );
 }
