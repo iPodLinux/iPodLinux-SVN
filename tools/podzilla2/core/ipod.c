@@ -50,6 +50,7 @@
 #define outl(a,b) (*(volatile unsigned long *) (b) = (a))
 
 extern int pz_setting_debounce;
+extern void pz_set_backlight_timer(int sec);
 
 static int ipod_ioctl(int request, int *arg)
 {
