@@ -23,12 +23,12 @@
 
 TWidget *ttk_new_imgview_widget (int w, int h, ttk_surface img);
 
-void ttk_imgview_draw (TWidget *this, ttk_surface srf);
-int ttk_imgview_scroll (TWidget *this, int dir);
-int ttk_imgview_down (TWidget *this, int button);
-void ttk_imgview_free (TWidget *this);
+void ttk_imgview_draw (TWidget *_this, ttk_surface srf);
+int ttk_imgview_scroll (TWidget *_this, int dir);
+int ttk_imgview_down (TWidget *_this, int button);
+void ttk_imgview_free (TWidget *_this);
 
-TWindow *ttk_mh_imgview (struct ttk_menu_item *this);
+TWindow *ttk_mh_imgview (struct ttk_menu_item *_this);
 void *ttk_md_imgview (ttk_surface srf);
 
 #endif

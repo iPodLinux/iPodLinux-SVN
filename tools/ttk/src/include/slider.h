@@ -22,15 +22,15 @@
 #define _TTK_SLIDER_H_
 
 TWidget *ttk_new_slider_widget (int x, int y, int w, int min, int max, int *val, const char *title);
-void ttk_slider_set_bar (TWidget *this, ttk_surface empty, ttk_surface full);
-void ttk_slider_set_callback (TWidget *this, void (*cb)(int cdata, int val), int cdata);
+void ttk_slider_set_bar (TWidget *_this, ttk_surface empty, ttk_surface full);
+void ttk_slider_set_callback (TWidget *_this, void (*cb)(int cdata, int val), int cdata);
 
-void ttk_slider_draw (TWidget *this, ttk_surface srf);
-int ttk_slider_scroll (TWidget *this, int dir);
-int ttk_slider_down (TWidget *this, int button);
-void ttk_slider_free (TWidget *this);
+void ttk_slider_draw (TWidget *_this, ttk_surface srf);
+int ttk_slider_scroll (TWidget *_this, int dir);
+int ttk_slider_down (TWidget *_this, int button);
+void ttk_slider_free (TWidget *_this);
 
-TWindow *ttk_mh_slider (struct ttk_menu_item *this);
+TWindow *ttk_mh_slider (struct ttk_menu_item *_this);
 void *ttk_md_slider (int w, int min, int max, int *val);
 
 #endif

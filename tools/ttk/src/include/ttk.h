@@ -88,7 +88,6 @@ typedef Uint32 ttk_color;
 #ifndef NO_SF
 #include "SFont.h"
 #endif
-struct SFont_Font;
 struct Bitmap_Font;
 struct _TTF_Font;
 typedef SDL_Surface *ttk_surface;
@@ -155,6 +154,7 @@ typedef struct TWindow
     /* private */ int inbuf_start, inbuf_end;
     /* private */ int onscreen;
     int data;
+    void *data2;
 } TWindow;
 
 typedef struct TWindowStack {

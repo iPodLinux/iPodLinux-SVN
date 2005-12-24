@@ -23,12 +23,12 @@
 
 TWidget *ttk_new_textarea_widget (int w, int h, const char *text, ttk_font font, int baselineskip);
 
-void ttk_textarea_draw (TWidget *this, ttk_surface srf);
-int ttk_textarea_scroll (TWidget *this, int dir);
-int ttk_textarea_down (TWidget *this, int button);
-void ttk_textarea_free (TWidget *this);
+void ttk_textarea_draw (TWidget *_this, ttk_surface srf);
+int ttk_textarea_scroll (TWidget *_this, int dir);
+int ttk_textarea_down (TWidget *_this, int button);
+void ttk_textarea_free (TWidget *_this);
 
-TWindow *ttk_mh_textarea (struct ttk_menu_item *this);
+TWindow *ttk_mh_textarea (struct ttk_menu_item *_this);
 void *ttk_md_textarea (char *text, int baselineskip);
 
 #endif
