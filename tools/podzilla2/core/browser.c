@@ -26,10 +26,160 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#ifdef IPOD
+#include <linux/vt.h>
+#endif
 #include <dirent.h>
 #include <string.h>
 #include <errno.h>
 #include "pz.h"
+
+void pz_exec(char *filename)
+{
+#ifdef IPOD
+	static const char *const tty0[] = {"/dev/tty0", "/dev/vc/0", 0};
+	static const char *const vcs[] = {"/dev/vc/%d", "/dev/tty%d", 0};
+	int i, tty0_fd, ttyfd, oldvt, curvt, fd, status;
+	pid_t pid;
+
+	/* query for a free VT */
+	ttyfd = -1;
+	tty0_fd = -1;
+	for (i = 0; tty0[i] && (tty0_fd < 0); ++i) {
+		tty0_fd = open(tty0[i], O_WRONLY, 0);
+	}
+
+	if (tty0_fd < 0) {
+		tty0_fd = dup(0); /* STDIN is a VT? */
+	}
+	ioctl(tty0_fd, VT_OPENQRY, &curvt);
+	close(tty0_fd);
+	
+	if ((geteuid() == 0) && (curvt > 0)) {
+		for (i = 0; vcs[i] && (ttyfd < 0); ++i) {
+			char vtpath[12];
+
+			sprintf(vtpath, vcs[i], curvt);
+			ttyfd = open(vtpath, O_RDWR);
+		}
+	}
+	if (ttyfd < 0) {
+		fprintf(stderr, "No available TTYs.\n");
+		return;
+	}
+
+	if (ttyfd >= 0) {
+		/* switch to the correct vt */
+		if (curvt > 0) {
+			struct vt_stat vtstate;
+
+			if (ioctl(ttyfd, VT_GETSTATE, &vtstate) == 0) {
+				oldvt = vtstate.v_active;
+			}
+			if (ioctl(ttyfd, VT_ACTIVATE, curvt)) {
+				perror("child VT_ACTIVATE");
+				return;
+			}
+			if (ioctl(ttyfd, VT_WAITACTIVE, curvt)) {
+				perror("child VT_WAITACTIVE");
+				return;
+			}
+		}
+	}
+
+	switch(pid = vfork()) {
+	case -1: /* error */
+		perror("vfork");
+		break;
+	case 0: /* child */
+		close(ttyfd);
+		if(setsid() < 0) {
+			perror("setsid");
+			_exit(1);
+		}
+		close(0);
+		if((fd = open("/dev/console", O_RDWR)) == -1) {
+			perror("/dev/console");
+			_exit(1);
+		}
+		if(dup(fd) == -1) {
+			perror("stdin dup");
+			_exit(1);
+		}
+		close(1);
+		if(dup(fd) == -1) {
+			perror("stdout dup");
+			_exit(1);
+		}
+		close(2);
+		if(dup(fd) == -1) {
+			perror("stderr dup");
+			_exit(1);
+		}
+
+		execl(filename, filename, NULL);
+		fprintf(stderr, _("Exec failed! (Check Permissions)\n"));
+		_exit(1);
+		break;
+	default: /* parent */
+		waitpid(pid, &status, 0);
+		sleep(5);
+		
+		if (oldvt > 0) {
+        		if (ioctl(ttyfd, VT_ACTIVATE, oldvt)) {
+				perror("parent VT_ACTIVATE");
+				return;
+			}
+        		if(ioctl(ttyfd, VT_WAITACTIVE, oldvt)) {
+				perror("parent VT_WAITACTIVE");
+				return;
+			}
+		}
+		if (ttyfd > 0)
+			close(ttyfd);
+
+		if (curvt > 0) {
+			int oldfd;
+
+			if ((oldfd = open("/dev/vc/1", O_RDWR)) < 0)
+				oldfd = open("/dev/tty1", O_RDWR);
+			if (oldfd >= 0) {
+				if (ioctl(oldfd, VT_DISALLOCATE, curvt)) {
+					perror("VT_DISALLOCATE");
+					return;
+				}
+				close(oldfd);
+			}
+		}
+		break;
+	}
+#else
+	pz_message(filename);
+#endif /* IPOD */
+}
+
+static TWindow *browser_vt_exec (ttk_menu_item *item)
+{
+	pz_exec((char *)item->data);
+	return TTK_MENU_UPONE;
+}
+
+static TWindow *browser_bg_exec (ttk_menu_item *item)
+{
+	switch (vfork()) {
+	case 0:
+		setsid();
+		switch (vfork()) {
+		case 0: execl((char *)item->data, (char *)item->data, NULL);
+		default: _exit(0);
+		}
+	case -1: break;
+	default:
+		wait(NULL);
+		break;
+	}
+	return TTK_MENU_UPONE;
+}
 
 static TWindow *browser_pipe_exec (ttk_menu_item *item)
 {
@@ -67,7 +217,6 @@ static TWindow *browser_pipe_exec (ttk_menu_item *item)
 		ttk_show_window (pz_create_stringview(buf, _("Pipe Output")));
 		ret = TTK_MENU_REPLACE;
 	}
-	free(execline);
 	free(buf);
 	return ret;
 }
@@ -291,6 +440,7 @@ static ttk_menu_item rmdir_menu[] = {
 static TWindow *browser_rmdir (ttk_menu_item *item) 
 {
     TWindow *ret = ttk_new_window();
+    ret->data = 0x12345678;
     ttk_window_set_title (ret, _("Really Delete Directory?"));
     rmdir_menu[0].flags = 0; rmdir_menu[1].flags = TTK_MENU_ICON_EXE;
     rmdir_menu[0].data = rmdir_menu[1].data = item->data;
@@ -308,6 +458,7 @@ static ttk_menu_item delete_menu[] = {
 static TWindow *browser_delete (ttk_menu_item *item) 
 {
     TWindow *ret = ttk_new_window();
+    ret->data = 0x12345678;
     ttk_window_set_title (ret, _("Really Delete?"));
     delete_menu[0].flags = 0; delete_menu[1].flags = TTK_MENU_ICON_EXE;
     delete_menu[0].data = delete_menu[1].data = item->data;
@@ -316,11 +467,30 @@ static TWindow *browser_delete (ttk_menu_item *item)
     return ret;
 }
 
+static ttk_menu_item execute_menu[] = {
+    { N_("Open VT"), { browser_vt_exec }, TTK_MENU_ICON_EXE, 0 },
+    { N_("Read output"), { browser_pipe_exec }, TTK_MENU_ICON_EXE, 0 },
+    { N_("Background"), { browser_bg_exec }, TTK_MENU_ICON_EXE, 0 },
+    { 0, {0}, 0, 0 }
+};
+static TWindow *browser_execute(ttk_menu_item *item)
+{
+	TWindow *ret = ttk_new_window();
+	ret->data = 0x12345678;
+	ttk_window_set_title(ret, _("Execute"));
+	execute_menu[0].data = execute_menu[1].data =
+		execute_menu[2].data = item->data;
+	ttk_add_widget(ret, ttk_new_menu_widget(execute_menu, ttk_menufont,
+				item->menuwidth, item->menuheight));
+	ttk_set_popup(ret);
+	return ret;
+}
+
 static ttk_menu_item empty_menu[] = {
     { 0, { 0 }, 0, 0 },
     // Items after here are not put in the menu, but can be referenced by browser_handle_action().
     /* dirs: */ { N_("Delete"), { browser_rmdir }, TTK_MENU_ICON_EXE, 0 },
-    /* apps: */ { N_("Read output"), { browser_pipe_exec }, TTK_MENU_ICON_EXE, 0 },
+    /* apps: */ { N_("Execute"), { browser_execute }, TTK_MENU_ICON_SUB, 0 },
     /* files:*/ { N_("Delete"), { browser_delete }, 0, 0 },
     /* files:*/ { N_("View contents"), { browser_textview }, 0, 0 }
 };
@@ -332,8 +502,6 @@ TWidget *pz_browser_get_actions (const char *path)
     TWidget *ret = ttk_new_menu_widget (empty_menu, ttk_menufont, ttk_screen->w - ttk_screen->wx,
 					ttk_screen->h - ttk_screen->wy);
     // add default handlers XXX
-    empty_menu[1].flags = empty_menu[2].flags = TTK_MENU_ICON_EXE;
-    empty_menu[4].flags = 0;
     empty_menu[1].data = empty_menu[2].data = empty_menu[3].data = empty_menu[4].data = (char *)path;
     if (stat (path, &st) >= 0) {
 	if (st.st_mode & S_IFDIR) {
