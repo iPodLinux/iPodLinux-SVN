@@ -1,4 +1,4 @@
-OBJS = ttk.o menu.o icons.o slider.o imgview.o textarea.o appearance.o mwin-emu.o gradient.o
+OBJS = ttk.o menu.o icons.o slider.o imgview.o textarea.o appearance.o mwin-emu.o gradient.o ttkmm.o
 HDR = ttk.h menu.h icons.h slider.h imgview.h textarea.h appearance.h mwin-emu.h gradient.h
 
 EXAMPLES = exscroll exmenu eximage exti
@@ -9,6 +9,7 @@ PREFIX ?= /usr
 ifdef IPOD
 CROSS ?= arm-uclinux-elf
 CC = $(CROSS)-gcc
+CXX = $(CROSS)-g++
 AR = $(CROSS)-ar
 RANLIB = $(CROSS)-ranlib
 MYCFLAGS += -DIPOD
@@ -17,6 +18,7 @@ GS = -Wl,--start-group
 GE = -Wl,--end-group
 else
 CC ?= gcc
+CXX ?= g++
 AR ?= ar
 RANLIB ?= ranlib
 MYCFLAGS += $(NATIVE_CFLAGS)
@@ -125,6 +127,8 @@ endif
 # Source:
 %.o: %.c
 	$(CC) $(CFLAGS) $(MYCFLAGS) -c -o $@ $<
+%.o: %.cc
+	$(CXX) $(CFLAGS) $(CXXFLAGS) $(MYCFLAGS) -c -o $@ $<
 
 # Examples:
 %: %.o libttk.a
