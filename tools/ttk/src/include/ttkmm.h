@@ -13,7 +13,7 @@ namespace TTK
         Application();
         ~Application();
         
-        void setResolution (int w, int h, int bpp);
+        static void setResolution (int w, int h, int bpp);
 
         int run();
 
@@ -28,6 +28,7 @@ namespace TTK
     public:
         Font (const char *name, int size);
         Font (ttk_font fnt);
+        ~Font();
 
         ttk_fontinfo *info();
 
@@ -47,12 +48,13 @@ namespace TTK
     {
     public:
         Color (int r = 0, int g = 0, int b = 0);
+        Color (const char *ap_prop);
         Color (ttk_color col);
         
         int getR();
         int getG();
         int getB();
-        int unmake (int& r, int& g, int& b);
+        void unmake (int& r, int& g, int& b);
 
         operator ttk_color() { return _col; }
 
@@ -66,6 +68,7 @@ namespace TTK
         Surface (int w, int h);
         Surface (const char *imagefile);
         Surface (ttk_surface srf);
+        ~Surface();
         
         Color makecol (int r, int g, int b);
         void unmakecol (ttk_color col, int& r, int& g, int& b);
@@ -73,45 +76,46 @@ namespace TTK
         Color operator()(int x, int y) { return getPixel (x, y); }
         Color getPixel (int x, int y);
 
-        void pixel (int x, int y, Color col);
+        void pixel (int x, int y, ttk_color col);
 
-        void line (int x1, int y1, int x2, int y2, Color col);
-        void aaline (int x1, int y1, int x2, int y2, Color col);
+        void line (int x1, int y1, int x2, int y2, ttk_color col);
+        void aaline (int x1, int y1, int x2, int y2, ttk_color col);
 
-        void rect (int x1, int y1, int x2, int y2, Color col);
-        void fillrect (int x1, int y1, int x2, int y2, Color col);
+        void rect (int x1, int y1, int x2, int y2, ttk_color col);
+        void fillrect (int x1, int y1, int x2, int y2, ttk_color col);
 
-        void poly (int nv, short *vx, short *vy, Color col);
-        void aapoly (int nv, short *vx, short *vy, Color col);
-        void fillpoly (int nv, short *vx, short *vy, Color col);
+        void poly (int nv, short *vx, short *vy, ttk_color col);
+        void aapoly (int nv, short *vx, short *vy, ttk_color col);
+        void fillpoly (int nv, short *vx, short *vy, ttk_color col);
         
-        void circle (int x, int y, int r, Color col) { ellipse (x, y, r, r, col); }
-        void aacircle (int x, int y, int r, Color col) { aaellipse (x, y, r, r, col); }
-        void fillcircle (int x, int y, int r, Color col) { fillellipse (x, y, r, r, col); }
+        void circle (int x, int y, int r, ttk_color col) { ellipse (x, y, r, r, col); }
+        void aacircle (int x, int y, int r, ttk_color col) { aaellipse (x, y, r, r, col); }
+        void fillcircle (int x, int y, int r, ttk_color col) { fillellipse (x, y, r, r, col); }
 
-        void ellipse (int x, int y, int rx, int ry, Color col);
-        void aaellipse (int x, int y, int rx, int ry, Color col);
-        void fillellipse (int x, int y, int rx, int ry, Color col);
+        void ellipse (int x, int y, int rx, int ry, ttk_color col);
+        void aaellipse (int x, int y, int rx, int ry, ttk_color col);
+        void fillellipse (int x, int y, int rx, int ry, ttk_color col);
 
-        void bitmap (int x, int y, int w, int h, unsigned short *data, Color col);
+        void bitmap (int x, int y, int w, int h, unsigned short *data, ttk_color col);
         
         void text (ttk_font fnt, int x, int y, ttk_color col, const char *str);
         void text_lat1 (ttk_font fnt, int x, int y, ttk_color col, const char *str);
         void text_uc16 (ttk_font fnt, int x, int y, ttk_color col, const uc16 *str);
 
         void blitOn (Surface& dest, int x, int y);
-        void blit (int x, int y, int w, int h, Surface& dest, int x, int y);
+        void blit (int sx, int sy, int sw, int sh, Surface& dest, int dx, int dy);
         
         Surface scale (float factor);
         
-        int width();
-        int height();
+        int width() { return _w; }
+        int height() { return _h; }
 
         operator ttk_surface() { return _srf; }
 
     protected:
         ttk_surface _srf;
         int _w, _h;
+        int _needsfree;
     };
 
     class Widget;
@@ -151,20 +155,20 @@ namespace TTK
         void getInputSize (int& w, int& h);
 
         void dirty();
-        Widget *operator[](int idx);
 
         operator TWindow*() { return _win; }
         
     protected:
         TWindow *_win;
+        int _needsfree;
     };
 
     class Widget 
     {
     public:
-        Widget (int x, int y, int w = -1, int h = -1, int focusable = 1);
+        Widget (int x = 0, int y = 0, int w = -1, int h = -1, int focusable = 1);
         Widget (TWidget *from);
-        ~Widget();
+        virtual ~Widget() {}
         
         void setTimer (int ms);
         void setFramerate (int fps);
@@ -191,7 +195,7 @@ namespace TTK
         Window *window();
 
         /* Event handlers: */
-        virtual void draw (Surface *srf) = 0;
+        virtual void draw (Surface srf) = 0;
         virtual int scroll (int distance) { return TTK_EV_UNUSED; }
         virtual int stap (int location) { return TTK_EV_UNUSED; }
         virtual int button (int button, int time) { return TTK_EV_UNUSED; }
@@ -203,7 +207,9 @@ namespace TTK
 
         operator TWidget*() { return _wid; }
 
-    private:
+    protected:
+        void _setHandlers();
+
         TWidget *_wid;
     };
 
