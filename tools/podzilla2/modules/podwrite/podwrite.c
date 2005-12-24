@@ -159,13 +159,13 @@ PzWindow * new_podwrite_menu_window()
 	PzWindow * w;
 	podwrite_menu = ttk_new_menu_widget(0, ttk_menufont, ttk_screen->w, ttk_screen->h-ttk_screen->wy);
 	if (!podwrite_menu) return 0;
-	ttk_menu_append(podwrite_menu, podwrite_new_menu_item(_("Return to PodWrite"), podwrite_mh_return, 0));
-	ttk_menu_append(podwrite_menu, podwrite_new_menu_item(_("Move Cursor"), podwrite_mh_cursor, 0));
-	ttk_menu_append(podwrite_menu, podwrite_new_menu_item(_("Scroll"), podwrite_mh_scroll, 0));
-	ttk_menu_append(podwrite_menu, podwrite_new_menu_item(_("Clear All Text"), podwrite_mh_clear, 0));
-	ttk_menu_append(podwrite_menu, podwrite_new_menu_item(_("Save..."), podwrite_mh_save, 0));
-	ttk_menu_append(podwrite_menu, podwrite_new_menu_item(_("Change Input Method"), podwrite_mh_input, TTK_MENU_ICON_SUB));
-	ttk_menu_append(podwrite_menu, podwrite_new_menu_item(_("Quit PodWrite"), podwrite_mh_quit, 0));
+	ttk_menu_append(podwrite_menu, podwrite_new_menu_item("Return to PodWrite", podwrite_mh_return, 0));
+	ttk_menu_append(podwrite_menu, podwrite_new_menu_item("Move Cursor", podwrite_mh_cursor, 0));
+	ttk_menu_append(podwrite_menu, podwrite_new_menu_item("Scroll", podwrite_mh_scroll, 0));
+	ttk_menu_append(podwrite_menu, podwrite_new_menu_item("Clear All Text", podwrite_mh_clear, 0));
+	ttk_menu_append(podwrite_menu, podwrite_new_menu_item("Save...", podwrite_mh_save, 0));
+	ttk_menu_append(podwrite_menu, podwrite_new_menu_item("Change Input Method", podwrite_mh_input, TTK_MENU_ICON_SUB));
+	ttk_menu_append(podwrite_menu, podwrite_new_menu_item("Quit PodWrite", podwrite_mh_quit, 0));
 	w = pz_new_menu_window(podwrite_menu);
 	if (w) w->title = _("PodWrite");
 	return w;
@@ -376,7 +376,7 @@ void podwrite_mod_init(void)
 {
 	pz_menu_add_action("/Extras/Applications/PodWrite", new_podwrite_window);
 	
-	podwrite_fbx.name = _("Open with PodWrite");
+	podwrite_fbx.name = "Open with PodWrite";
 	podwrite_fbx.makesub = podwrite_open_handler;
 	pz_browser_add_action (podwrite_openable, &podwrite_fbx);
 }

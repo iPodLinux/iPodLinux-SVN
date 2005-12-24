@@ -413,8 +413,8 @@ TWidget * ti_keypad_fbncreate()
 void ti_keypad_init()
 {
 	module = pz_register_module("tikeypad", 0);
-	ti_register(ti_keypad_4gcreate, ti_keypad_4gncreate, _("Telephone Keypad"), 9);
-	ti_register(ti_keypad_fbcreate, ti_keypad_fbncreate, _("Four-Button Telephone Keypad"), 11);
+	ti_register(ti_keypad_4gcreate, ti_keypad_4gncreate, "Telephone Keypad", 9);
+	ti_register(ti_keypad_fbcreate, ti_keypad_fbncreate, "Four-Button Telephone Keypad", 11);
 	
 	ti_keypad_ptext_inited = pz_module_softdep("tiptext", "ti_ptext_inited");
 	ti_keypad_ptext_init = pz_module_softdep("tiptext", "ti_ptext_init");

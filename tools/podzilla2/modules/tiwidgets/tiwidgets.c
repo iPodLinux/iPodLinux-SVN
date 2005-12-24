@@ -24,7 +24,7 @@
 /* dependent on textinput module */
 extern ttk_color ti_ap_get(int);
 
-PzModule * module;
+static PzModule * module;
 
 /* Text Input Buffer Management */
 

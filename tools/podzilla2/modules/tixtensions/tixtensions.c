@@ -22,7 +22,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
-PzModule * module;
+static PzModule * module;
 
 static char * tix_rename_oldname;
 static char * tix_file_clipboard = 0;
@@ -34,6 +34,7 @@ static ttk_menu_item tix_mkdir_menuitem;
 static ttk_menu_item tix_cut_menuitem;
 static ttk_menu_item tix_copy_menuitem;
 static ttk_menu_item tix_paste_menuitem;
+static ttk_menu_item tix_pastelink_menuitem;
 
 extern TWidget * ti_new_standard_text_widget(int x, int y, int w, int h, int absheight, char * dt, int (*callback)(TWidget *, char *));
 extern void ti_multiline_text(ttk_surface srf, ttk_font fnt, int x, int y, int w, int h, ttk_color col, const char *t, int cursorpos, int scroll, int * lc, int * sl, int * cb);
@@ -78,7 +79,7 @@ PzWindow * tix_paste_handler(ttk_menu_item * item)
 				fwrite(buf, 1, buflen, fout);
 			}
 			if (!feof(fin)) {
-				pz_perror("Fwrite call returned error in file copy");
+				pz_perror("fwrite call returned error in file copy");
 			}
 			if (fin) fclose(fin);
 			if (fout) fclose(fout);
@@ -86,12 +87,26 @@ PzWindow * tix_paste_handler(ttk_menu_item * item)
 			
 		} else {
 			if (rename(tix_file_clipboard, fn)) {
-				pz_perror("Rename call returned error");
+				pz_perror("rename call returned error");
 			}
 			free(tix_file_clipboard);
 			free(tix_file_clipboard_name);
 			tix_file_clipboard = 0;
 			tix_file_clipboard_name = 0;
+		}
+	}
+	return TTK_MENU_UPONE;
+}
+
+PzWindow * tix_pastelink_handler(ttk_menu_item * item)
+{
+	char fn[1024];
+	if (tix_file_clipboard) {
+		getcwd(fn, 1024);
+		if (fn[strlen(fn)-1] != '/') strcat(fn, "/");
+		strcat(fn, tix_file_clipboard_name);
+		if (symlink(tix_file_clipboard, fn)) {
+			pz_perror("symlink call returned error");
 		}
 	}
 	return TTK_MENU_UPONE;
@@ -136,7 +151,7 @@ int tix_mkdir_callback(TWidget * wid, char * fn)
 	pz_close_window(wid->win);
 	if (fn[0]) {
 		if (mkdir(fn, 0755)) {
-			perror("Mkdir call returned error");
+			pz_perror("mkdir call returned error");
 		}
 	}
 	return 0;
@@ -173,7 +188,7 @@ int tix_rename_callback(TWidget * wid, char * fn)
 	pz_close_window(wid->win);
 	if (fn[0]) {
 		if (rename(tix_rename_oldname, fn)) {
-			perror("Rename call returned error");
+			pz_perror("rename call returned error");
 		}
 	}
 	free(tix_rename_oldname);
@@ -258,26 +273,31 @@ void init_ti_extensions()
 	
 	pz_menu_add_action ("/Run...", new_run_window);
 	
-	tix_rename_menuitem.name = _("Rename");
+	tix_rename_menuitem.name = "Rename";
 	tix_rename_menuitem.makesub = new_rename_window;
 	pz_browser_add_action (tix_true, &tix_rename_menuitem);
 	
-	tix_mkdir_menuitem.name = _("Make Directory");
+	tix_mkdir_menuitem.name = "Make Directory";
 	tix_mkdir_menuitem.makesub = new_mkdir_window;
 	pz_browser_add_action (tix_true, &tix_mkdir_menuitem);
 	
-	tix_cut_menuitem.name = _("Cut");
+	tix_cut_menuitem.name = "Cut";
 	tix_cut_menuitem.makesub = tix_cut_handler;
 	pz_browser_add_action (tix_true, &tix_cut_menuitem);
 	
-	tix_copy_menuitem.name = _("Copy");
+	tix_copy_menuitem.name = "Copy";
 	tix_copy_menuitem.makesub = tix_copy_handler;
 	pz_browser_add_action (tix_true, &tix_copy_menuitem);
 	
-	tix_paste_menuitem.name = _("Paste");
+	tix_paste_menuitem.name = "Paste";
 	tix_paste_menuitem.makesub = tix_paste_handler;
 	tix_paste_menuitem.visible = tix_paste_visible;
 	pz_browser_add_action (tix_true, &tix_paste_menuitem);
+	
+	tix_pastelink_menuitem.name = "Paste Link";
+	tix_pastelink_menuitem.makesub = tix_pastelink_handler;
+	tix_pastelink_menuitem.visible = tix_paste_visible;
+	pz_browser_add_action (tix_true, &tix_pastelink_menuitem);
 }
 
 PZ_MOD_INIT(init_ti_extensions)

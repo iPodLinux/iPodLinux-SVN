@@ -158,7 +158,7 @@ TWidget * ti_unihex_ncreate()
 void ti_unihex_init()
 {
 	module = pz_register_module("tiunihex", 0);
-	ti_register(ti_unihex_screate, ti_unihex_ncreate, _("Unicode Hex Input"), 16);
+	ti_register(ti_unihex_screate, ti_unihex_ncreate, "Unicode Hex Input", 16);
 }
 
 PZ_MOD_INIT(ti_unihex_init)

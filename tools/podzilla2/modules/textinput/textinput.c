@@ -93,6 +93,7 @@ TWidget * ti_create_tim_widget(int ht, int wd)
 
 /* the built-in Serial TIM */
 
+#ifdef IPOD
 int ti_serial_abort(TWidget * this, int ch) 
 {
 	if (ch == TTK_BUTTON_ACTION) {
@@ -102,6 +103,7 @@ int ti_serial_abort(TWidget * this, int ch)
 	}
 	return TTK_EV_UNUSED;
 }
+#endif
 
 int ti_serial_down(TWidget * this, int ch)
 {
@@ -124,8 +126,10 @@ TWidget * ti_serial_create()
 	wid->rawkeys = 1;
 	wid->keyrepeat = 1;
 	wid->down = ti_serial_down;
+#ifdef IPOD
 	wid->held = ti_serial_abort;
 	wid->holdtime = 3000;
+#endif
 	return wid;
 }
 
@@ -206,7 +210,12 @@ void ti_init()
 		ti_tim_ncreators[i]=0;
 	}
 	ti_selected_tim = pz_get_int_setting(ti_conf, TI_SETTING_SEL_TIM);
-	ti_register(ti_serial_create, ti_serial_create, _("Serial"), 0);
+#ifdef IPOD
+	if (!ti_selected_tim) {
+		pz_warning (_("Serial text input is selected. Make sure a keyboard is attached or select a different input method."));
+	}
+#endif
+	ti_register(ti_serial_create, ti_serial_create, "Serial", 0);
 }
 
 PZ_MOD_INIT(ti_init)
