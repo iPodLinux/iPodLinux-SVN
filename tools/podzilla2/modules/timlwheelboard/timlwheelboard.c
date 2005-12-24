@@ -349,7 +349,7 @@ TWidget * ti_mlwlb_ncreate()
 void ti_mlwlb_init()
 {
 	module = pz_register_module("timlwheelboard", ti_mlwlb_free_all);
-	ti_register(ti_mlwlb_screate, ti_mlwlb_ncreate, _("Multilingual Wheelboard"), 18);
+	ti_register(ti_mlwlb_screate, ti_mlwlb_ncreate, "Multilingual Wheelboard", 18);
 	ti_mlwlb_load_all();
 }
 
