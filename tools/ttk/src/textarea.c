@@ -54,17 +54,18 @@ static void render (TWidget *this)
     char **end;
     // Current char
     char *p;
+#if 0
     // Current beginning-of-word --> candidate EOL
     char *wend;
-    // Current xpos, wordwidth
-    int xpos, wordwidth;
+#endif
+    // Current xpos
+    int xpos;
 
  wrapit:
     lines = 0;
     end = wrapat;
     p = data->text;
-    wend = 0;
-    xpos = wordwidth = 0;
+    xpos = 0;
 
     // The text width functions should be very inexpensive, so we can just
     // do them per-char and be simple.
@@ -79,6 +80,39 @@ static void render (TWidget *this)
 	    break;
 	}
 	
+        switch (*p) {
+        case '\n':
+            *end++ = p;
+            lines++;
+            xpos = 0;
+            p++;
+            continue;
+        case '\t':
+            xpos = (xpos + 15) & 15;
+            break;
+        default:
+            xpos += ttk_text_width (data->font, s);
+            break;
+        }
+
+        if (xpos > wid) {
+            char *q = p - 1;
+            // Backtrack to find a char to break on
+            while ((q > data->text) && (!lines || q > end[-1]) && (*q != ' ') && (*q != '\t') && (*q != '-'))
+                --q;
+            if (q <= data->text || (lines && q <= end[-1])) {
+                // Couldn't find one in the past line, this is a really big word. Break it up.
+                *end++ = p - 1;
+                p--; // reconsider the chopped character for the next line
+            } else {
+                *end++ = q;
+                p = q;
+            }
+            lines++;
+            xpos = 0;
+        }
+    
+#if 0
 	if (*p == ' ' || *p == '\t' || *p == '-' || *p == '\n') {
 	    int olines = lines;
 	    
@@ -129,6 +163,7 @@ static void render (TWidget *this)
 	} else {
 	    wordwidth += ttk_text_width (data->font, s);
 	}
+#endif
 	
 	if (((lines * 20) > this->h) && (wid == (this->w - 2))) {
 	    wid -= 11; // scrollbar
