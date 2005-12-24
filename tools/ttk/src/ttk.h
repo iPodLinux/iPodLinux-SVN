@@ -21,7 +21,7 @@
 #ifndef _ALL_TTK_H_
 #define _ALL_TTK_H_
 
-#define TTK_API_VERSION  0x10007
+#define TTK_API_VERSION  0x10107
 #define TTK_VERSION_CHECK() ttk_version_check(TTK_API_VERSION)
 
 #include <stdio.h>
@@ -35,5 +35,9 @@
 #include <ttk/textarea.h>
 # include <ttk/mwin-emu.h>
 #include <ttk/appearance.h>
+
+#ifdef __cplusplus
+#include <ttk/ttkmm.h>
+#endif
 
 #endif
