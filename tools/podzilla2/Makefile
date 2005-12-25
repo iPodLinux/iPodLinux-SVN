@@ -22,7 +22,7 @@ endif
 
 ifdef IPOD
 CC = $(CROSS)-gcc
-LIBS += -Wl,-elf2flt -Wl,-whole-archive -lc `$(TTKCONF) --ipod --sdl --libs` contrib/ucdl/libuCdl.a -lintl `$(CC) -print-libgcc-file-name` -Wl,-no-whole-archive -mapcs
+LIBS += -Wl,-elf2flt -Wl,-whole-archive -lc `$(TTKCONF) --ipod --sdl --libs` contrib/ucdl/libuCdl.a -lintl `$(CC) -print-libgcc-file-name` -lsupc++ -Wl,-no-whole-archive -mapcs
 CROSS ?= arm-uclinux-elf
 else
 ifeq ($(shell uname),Darwin)
@@ -33,7 +33,7 @@ EXPSYM = -Wl,-E
 INTL =
 LIBS += -L/sw/lib
 endif
-LIBS += `$(TTKCONF) --x11 --sdl --libs` -L/usr/local/lib -ldl $(INTL) $(EXPSYM)
+LIBS += `$(TTKCONF) --x11 --sdl --libs` -L/usr/local/lib -lstdc++ -ldl $(INTL) $(EXPSYM)
 CC ?= cc
 endif
 POD ?= ../../../podfile/pod # relative to two dirs down
