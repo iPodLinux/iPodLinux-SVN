@@ -114,9 +114,7 @@ void console_init(uint16 *fb) {
   console.dimensions.w = console.ipod->lcd_width;
   console.dimensions.h = console.ipod->lcd_height;
 
-  if (console.dimensions.w < 150)
-    font = font_small;
-  else if (console.dimensions.w < 300)
+  if (console.dimensions.w < 300)
     font = font_medium;
   else
     font = font_large;
