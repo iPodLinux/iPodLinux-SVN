@@ -82,7 +82,7 @@ namespace TTK
         void aaline (int x1, int y1, int x2, int y2, ttk_color col);
 
         void rect (int x1, int y1, int x2, int y2, ttk_color col);
-        void rect (int x1, int y1, int x2, int y2, const char *ap_prop)
+        void rect (int x1, int y1, int x2, int y2, const char *ap_prop);
         void fillrect (int x1, int y1, int x2, int y2, ttk_color col);
         void fillrect (int x1, int y1, int x2, int y2, const char *ap_prop);
 
