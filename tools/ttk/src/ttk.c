@@ -659,6 +659,8 @@ int ttk_run()
                     eret |= TTK_EV_UNUSED;
                 }
             }
+
+            ttk_button_erets[earg] = 0;
 	    break;
 	case TTK_SCROLL:
 	    if (local)
