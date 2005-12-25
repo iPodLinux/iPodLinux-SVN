@@ -48,6 +48,10 @@
 #error Version mismatch.
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef PZ_COMPAT
 #define MWBACKEND /* no mwin emu */
 #else
@@ -572,6 +576,10 @@ void pz_uninit();
 #define CS_LOADFG	"loadavg.fg"	/* load average meter */
 
 t_GR_COLOR appearance_get_color (const char *prop);
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif
