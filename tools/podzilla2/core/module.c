@@ -354,14 +354,11 @@ static void do_init (PzModule *mod)
     if (mod->to_load > 0) {
 #ifdef IPOD
 	mod->init = uCdl_sym (mod->handle, "__init_module__");
-	if (!mod->init) pz_warning (_("Could not do modinit function for %s: %s"), mod->name, uCdl_error());
 #else
 	mod->init = dlsym (mod->handle, "__init_module__");
-	if (!mod->init) pz_warning (_("Could not do modinit function for %s: %s"), mod->name, dlerror());
 #endif
-	else {
+	if (mod->init)
 	    (*mod->init)();
-	}
     } else if (mod->to_load < 0) {
         (*mod->init)();
     }
