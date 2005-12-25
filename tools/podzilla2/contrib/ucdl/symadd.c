@@ -79,9 +79,12 @@ int main(int argc, char **argv)
 		char sym[256]; /* overflow not unlikely */
 		sscanf(line, "%s %c %s", &offsets, &type, &sym);
                 t = toupper (type);
-		if (t == 'T' || t == 'V' || t == 'W') t = 0;
-		if (t == 'D' || t == 'R' || t == 'G') t = 1;
-		if (t == 'B' || t == 'C' || t == 'S') t = 2;
+		if (t == 'T' || t == 'W') t = 0;
+		if (t == 'D' || t == 'V' || t == 'R' || t == 'G') t = 1;
+		if (t == 'B' || t == 'S') t = 2;
+                if (t == 'C') {
+                    fprintf (stderr, "warning: common symbol %s remains, dropping\n", sym);
+                }
                 if (islower (type)) t |= 4;
 		if (t >= 8)    continue;
 		offsets[8] = '\0';
