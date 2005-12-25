@@ -349,7 +349,7 @@ TWidget * ti_osk_ncreate()
 void ti_osk_init()
 {
 	module = pz_register_module("tiosk", 0);
-	ti_register(ti_osk_screate, ti_osk_ncreate, "On-Screen Keyboard", 3);
+	ti_register(ti_osk_screate, ti_osk_ncreate, N_("On-Screen Keyboard"), 3);
 	ti_osk_font = ttk_get_font("SeaChel", 9);
 }
 

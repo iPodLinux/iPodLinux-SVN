@@ -243,7 +243,7 @@ TWidget * ti_thumbscript_create()
 void ti_thumbscript_init()
 {
 	module = pz_register_module("tithumbscript", 0);
-	ti_register(ti_thumbscript_create, ti_thumbscript_create, "Thumbscript", 10);
+	ti_register(ti_thumbscript_create, ti_thumbscript_create, N_("Thumbscript"), 10);
 }
 
 PZ_MOD_INIT(ti_thumbscript_init)
