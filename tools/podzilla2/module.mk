@@ -23,7 +23,16 @@ endif
 
 obj = $(obj-y) $(obj-m)
 ifeq ($(strip $(obj)),)
-$(error You must specify some object files.)
+ifeq ($(strip $(MODLIBS)),)
+$(error You must specify some object files or libraries.)
+else
+WA = -whole-archive
+NWA = -no-whole-archive
+obj-m = LIBRARY
+endif
+else
+WA =
+NWA =
 endif
 
 ifdef IPOD
@@ -52,17 +61,21 @@ built-in = built-in.o
 endif
 
 ifdef obj-m
-ifeq ($(words $(obj-m)),1)
+ifeq ($(obj-m),LIBRARY)
+obj-m =
+endif
 ## Case for single-file
 ifndef IPOD
 finalmod = $(MODULE).so
 onlyso = true
 $(MODULE).so: $(obj-m)
-	@$(MAKESO) $(LDFLAGS) -o $@ $(obj-m)
+	@echo " LD [SO] $(MODULE).so"
+	@$(MAKESO) $(LDFLAGS) -o $@ $(obj-m) $(MODLIBS)
 else
 finalmod = $(MODULE).mod.o
 $(MODULE).mod.o: $(obj-m)
-	@$(LD) -r -d -o $(MODULE).mod.o $(obj-m)
+	@echo " LD [M]  $(MODULE).mod.o"
+	@$(LD) -r -d -o $(MODULE).mod.o $(obj-m) $(WA) $(MODLIBS) $(NWA)
 endif
 
 else
@@ -71,15 +84,14 @@ ifndef IPOD
 finalmod = $(MODULE).so
 $(MODULE).so: $(obj-m)
 	@echo " LD [SO] $(MODULE).so"
-	@$(MAKESO) $(LDFLAGS) -o $@ $(obj-m)
+	@$(MAKESO) $(LDFLAGS) -o $@ $(obj-m) $(MODLIBS)
 else
 finalmod = $(MODULE).mod.o
 $(MODULE).mod.o: $(obj-m)
-	@echo " LD [M]  $(MODULE)"
-	@$(LD) -r -d -o $@ $(obj-m) $(MODLIBS)
+	@echo " LD [M]  $(MODULE).mod.o"
+	@$(LD) -r -d -o $@ $(obj-m) $(WA) $(MODLIBS) $(NWA)
 endif
 
-endif
 endif
 
 ifeq ($(onlyso),true)
@@ -108,6 +120,7 @@ $(obj-m): %.o: %.c
 	@$(CC) $(CFLAGS) $(MYCFLAGS) $(PIC) -c -o $@ $< -I$(PZPATH)/core `$(TTKCONF) --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD -I/sw/include -L/sw/lib
 endif
 
+LIBRARY:
 
 #####
 #####
