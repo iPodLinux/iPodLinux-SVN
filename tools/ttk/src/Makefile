@@ -1,4 +1,4 @@
-OBJS = ttk.o menu.o icons.o slider.o imgview.o textarea.o appearance.o mwin-emu.o gradient.o ttkmm.o
+OBJS = ttk.o menu.o icons.o slider.o imgview.o textarea.o appearance.o mwin-emu.o gradient.o
 HDR = ttk.h menu.h icons.h slider.h imgview.h textarea.h appearance.h mwin-emu.h gradient.h
 
 EXAMPLES = exscroll exmenu eximage exti

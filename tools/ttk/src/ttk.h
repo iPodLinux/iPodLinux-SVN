@@ -24,6 +24,9 @@
 #define TTK_API_VERSION  0x10107
 #define TTK_VERSION_CHECK() ttk_version_check(TTK_API_VERSION)
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <ttk/ttk.h>
@@ -35,8 +38,8 @@
 #include <ttk/textarea.h>
 # include <ttk/mwin-emu.h>
 #include <ttk/appearance.h>
-
 #ifdef __cplusplus
+}
 #include <ttk/ttkmm.h>
 #endif
 
