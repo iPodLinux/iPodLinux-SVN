@@ -215,7 +215,7 @@ void ti_init()
 		pz_warning (_("Serial text input is selected. Make sure a keyboard is attached or select a different input method."));
 	}
 #endif
-	ti_register(ti_serial_create, ti_serial_create, "Serial", 0);
+	ti_register(ti_serial_create, ti_serial_create, N_("Serial"), 0);
 }
 
 PZ_MOD_INIT(ti_init)

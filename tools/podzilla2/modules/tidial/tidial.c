@@ -180,8 +180,8 @@ TWidget * ti_dial_dtncreate()
 void ti_dial_init()
 {
 	module = pz_register_module("tidial", 0);
-	ti_register(ti_dial_stcreate, ti_dial_stncreate, "Scroll-Through", 2);
-	ti_register(ti_dial_dtcreate, ti_dial_dtncreate, "Dial Type", 8);
+	ti_register(ti_dial_stcreate, ti_dial_stncreate, N_("Scroll-Through"), 2);
+	ti_register(ti_dial_dtcreate, ti_dial_dtncreate, N_("Dial Type"), 8);
 }
 
 PZ_MOD_INIT(ti_dial_init)

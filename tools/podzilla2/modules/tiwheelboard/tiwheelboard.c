@@ -239,7 +239,7 @@ TWidget * ti_wlb_ncreate()
 void ti_wlb_init()
 {
 	module = pz_register_module("tiwheelboard", 0);
-	ti_register(ti_wlb_screate, ti_wlb_ncreate, "Wheelboard", 6);
+	ti_register(ti_wlb_screate, ti_wlb_ncreate, N_("Wheelboard"), 6);
 }
 
 PZ_MOD_INIT(ti_wlb_init)

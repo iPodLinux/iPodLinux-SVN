@@ -248,7 +248,7 @@ TWidget * ti_fbk_ncreate()
 void ti_fbk_init()
 {
 	module = pz_register_module("tifbk", 0);
-	ti_register(ti_fbk_screate, ti_fbk_ncreate, "Four-Button Keyboard", 7);
+	ti_register(ti_fbk_screate, ti_fbk_ncreate, N_("Four-Button Keyboard"), 7);
 }
 
 PZ_MOD_INIT(ti_fbk_init)

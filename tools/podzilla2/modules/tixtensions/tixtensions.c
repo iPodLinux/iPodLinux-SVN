@@ -273,28 +273,28 @@ void init_ti_extensions()
 	
 	pz_menu_add_action ("/Run...", new_run_window);
 	
-	tix_rename_menuitem.name = "Rename";
+	tix_rename_menuitem.name = N_("Rename");
 	tix_rename_menuitem.makesub = new_rename_window;
 	pz_browser_add_action (tix_true, &tix_rename_menuitem);
 	
-	tix_mkdir_menuitem.name = "Make Directory";
+	tix_mkdir_menuitem.name = N_("Make Directory");
 	tix_mkdir_menuitem.makesub = new_mkdir_window;
 	pz_browser_add_action (tix_true, &tix_mkdir_menuitem);
 	
-	tix_cut_menuitem.name = "Cut";
+	tix_cut_menuitem.name = N_("Cut");
 	tix_cut_menuitem.makesub = tix_cut_handler;
 	pz_browser_add_action (tix_true, &tix_cut_menuitem);
 	
-	tix_copy_menuitem.name = "Copy";
+	tix_copy_menuitem.name = N_("Copy");
 	tix_copy_menuitem.makesub = tix_copy_handler;
 	pz_browser_add_action (tix_true, &tix_copy_menuitem);
 	
-	tix_paste_menuitem.name = "Paste";
+	tix_paste_menuitem.name = N_("Paste");
 	tix_paste_menuitem.makesub = tix_paste_handler;
 	tix_paste_menuitem.visible = tix_paste_visible;
 	pz_browser_add_action (tix_true, &tix_paste_menuitem);
 	
-	tix_pastelink_menuitem.name = "Paste Link";
+	tix_pastelink_menuitem.name = N_("Paste Link");
 	tix_pastelink_menuitem.makesub = tix_pastelink_handler;
 	tix_pastelink_menuitem.visible = tix_paste_visible;
 	pz_browser_add_action (tix_true, &tix_pastelink_menuitem);

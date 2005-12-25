@@ -279,7 +279,7 @@ TWidget * ti_cursive_create()
 void ti_cursive_init()
 {
 	module = pz_register_module("ticursive", 0);
-	ti_register(ti_cursive_create, ti_cursive_create, "Cursive", 5);
+	ti_register(ti_cursive_create, ti_cursive_create, N_("Cursive"), 5);
 }
 
 PZ_MOD_INIT(ti_cursive_init)
