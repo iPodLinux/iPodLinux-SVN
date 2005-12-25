@@ -69,7 +69,8 @@ void console_putchar(char ch) {
       x = 0;
       y = 0;
     }
-
+    fb_update (console.fb);
+    return;
 #endif
   }
   if(ch == '\r') { console.cursor.x = 0; return; }

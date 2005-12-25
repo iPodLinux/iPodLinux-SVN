@@ -118,7 +118,10 @@ int fat32_open(void *fsdata,char *fname) {
 
   file = fat32_findfile(fs->root_dir_first_cluster,fname);
 
-  if(file==NULL) mlc_printf("Couldnt find file\n");
+  if(file==NULL) {
+    mlc_printf("Couldnt find file\n");
+    return(-1);
+  }
 
   if(file != NULL) {
     if( fs->numHandles < MAX_HANDLES ) {
@@ -126,7 +129,7 @@ int fat32_open(void *fsdata,char *fname) {
     } else return(-1);
   }
 
-  return(0);
+  return(fs->numHandles-1);
 }
 
 size_t fat32_read(void *fsdata,void *ptr,size_t size,size_t nmemb,int fd) {

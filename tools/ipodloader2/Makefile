@@ -1,7 +1,7 @@
-CC      = arm-elf-gcc
+CC      = arm-uclinux-elf-gcc
 CFLAGS  = -O2 -Wall -pedantic -std=c99 -ffreestanding -nostdinc -fomit-frame-pointer
 LDFLAGS = -Wl,-Tarm_elf_40.x -nostartfiles -fomit-frame-pointer
-OBJCOPY = arm-elf-objcopy
+OBJCOPY = arm-uclinux-elf-objcopy
 
 all: loader.bin
 #	@echo "Building firmware image"

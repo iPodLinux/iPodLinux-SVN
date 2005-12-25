@@ -14,7 +14,7 @@
 #include "ext2.h"
 #include "minilibc.h"
 
-#define EXT2_MAXBLOCKSIZE 8192
+#define EXT2_MAXBLOCKSIZE 4096
 
 #define MAX_HANDLES 10
 
@@ -39,8 +39,8 @@ static void ext2_read_superblock(ext2_t *fs, uint32 offset) {
 static void ext2_getblock(uint8 *buffer,uint32 block);
 
 void ext2_ReadDatablockFromInode(inode_t *inode, void *ptr,unsigned int num) {
-  uint32 buff[EXT2_MAXBLOCKSIZE];
-  uint32 buff2[EXT2_MAXBLOCKSIZE];
+  uint32 buff[EXT2_MAXBLOCKSIZE/4];
+  uint32 buff2[EXT2_MAXBLOCKSIZE/4];
 
   if(        num < 12 ) { /* Direct blocks */
     ext2_getblock(ptr,inode->i_block[num]);
@@ -123,7 +123,7 @@ static uint32 ext2_finddirentry(uint8 *dirname,inode_t *inode) {
   while( diroff < inode->i_size ) {
 
     ext2_readdata(inode,&dir,diroff,sizeof(dir));
-    
+
     if( dirlen == dir.name_len) {
       if( mlc_memcmp(dirname,dir.name,dirlen) == 0 ) {
         return(dir.inode);
@@ -138,14 +138,14 @@ static uint32 ext2_finddirentry(uint8 *dirname,inode_t *inode) {
 
 
 static void ext2_getblock(uint8 *buffer,uint32 block) {
-  uint32 offset = ((block - ext2->super.s_first_data_block) << (1 + ext2->super.s_log_block_size)) + 2 + ext2->lba_offset;
+  uint32 offset = (block << (1 + ext2->super.s_log_block_size)) + ext2->lba_offset;
 
   ata_readblocks(buffer,offset,1 << (ext2->super.s_log_block_size + 1));
 }
 
 static void ext2_getinode(inode_t *ptr,uint32 num) {
   uint32 block,off,group,group_offset;
-  uint8 buff[1024];
+  uint8 buff[EXT2_MAXBLOCKSIZE];
 
   num--;
 
@@ -169,7 +169,7 @@ void ext2_getblockgroup(void) {  /* gets our groups of blocks descriptor */
   int numgroups = ext2->super.s_inodes_count / ext2->super.s_inodes_per_group;
   int read = 0;
 
-  block = (((ext2->super.s_first_data_block+1) - ext2->super.s_first_data_block) << (1 + ext2->super.s_log_block_size)) +2 + ext2->lba_offset;
+  block = ((ext2->super.s_first_data_block + 1) << (1 + ext2->super.s_log_block_size)) + ext2->lba_offset;
 
   while(read < numgroups * sizeof(group_t))
     {
@@ -201,6 +201,7 @@ static ext2_file *ext2_findfile(char *fname) {
 
     inode_num = ext2_finddirentry(dirname,retnode);
     if(inode_num == 0) {
+        mlc_printf ("%s not found\n", fname);
       return(NULL);
     }
     
@@ -224,6 +225,7 @@ int ext2_open(void *fsdata,char *fname) {
   file = ext2_findfile(fname);
 
   if( file == NULL ) {
+      mlc_printf ("File is NULL!\n");
     return(-1);
   }
 
@@ -231,7 +233,7 @@ int ext2_open(void *fsdata,char *fname) {
     fs->filehandle[fs->numHandles++] = file;
   }
 
-  return(0);
+  return(fs->numHandles-1);
 }
 
 int ext2_seek(void *fsdata,int fd,long offset,int whence) {
@@ -274,22 +276,21 @@ long ext2_tell(void *fsdata,int fd) {
 }
 
 size_t ext2_read(void *fsdata,void *ptr,size_t size,size_t nmemb,int fd) {
-  uint32 read,toRead;
+  uint32 toRead;
   ext2_t *fs;
 
   fs = (ext2_t*)fsdata;
 
-  read   = 0;
   toRead = size*nmemb;
-  if( toRead > (fs->filehandle[fd]->length + fs->filehandle[fd]->position) ) {
-    toRead = fs->filehandle[fd]->length + fs->filehandle[fd]->position;
+  if( toRead > (fs->filehandle[fd]->length - fs->filehandle[fd]->position) ) {
+    toRead = fs->filehandle[fd]->length - fs->filehandle[fd]->position;
   }
 
   ext2_readdata(&fs->filehandle[fd]->inode, ptr, fs->filehandle[fd]->position ,toRead);
 
   fs->filehandle[fd]->position += toRead;
 
-  return(read);
+  return(toRead);
 }
 
 void ext2_newfs(uint8 part,uint32 offset) {
