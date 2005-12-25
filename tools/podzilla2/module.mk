@@ -21,6 +21,11 @@ ifndef MODULE
 $(error You must define MODULE.)
 endif
 
+cobj-y  := $(patsubst %.c,%.o,$(wildcard $(patsubst %.o,%.c,$(obj-y))))
+ccobj-y := $(patsubst %.cc,%.o,$(wildcard $(patsubst %.o,%.cc,$(obj-y))))
+cobj-m  := $(patsubst %.c,%.o,$(wildcard $(patsubst %.o,%.c,$(obj-m))))
+ccobj-m := $(patsubst %.cc,%.o,$(wildcard $(patsubst %.o,%.cc,$(obj-m))))
+
 obj = $(obj-y) $(obj-m)
 ifeq ($(strip $(obj)),)
 ifeq ($(strip $(MODLIBS)),)
@@ -38,12 +43,14 @@ endif
 ifdef IPOD
 CROSS ?= arm-uclinux-elf
 CC = $(CROSS)-gcc
+CXX = $(CROSS)-g++
 LD = $(CROSS)-ld
 TARGET = ipod
 PIC =
 MYCFLAGS = -mapcs -mcpu=arm7tdmi -DVERSION=\"$(VERSION)\" -Wall
 else
 CC ?= cc
+CXX ?= c++
 LD ?= ld
 TARGET = x11
 ifeq ($(shell uname),Darwin)
@@ -75,7 +82,7 @@ else
 finalmod = $(MODULE).mod.o
 $(MODULE).mod.o: $(obj-m)
 	@echo " LD [M]  $(MODULE).mod.o"
-	@$(LD) -r -d -o $(MODULE).mod.o $(obj-m) $(WA) $(MODLIBS) $(NWA)
+	@$(LD) -Ur -d -o $(MODULE).mod.o $(obj-m) $(WA) $(MODLIBS) $(NWA)
 endif
 
 else
@@ -89,7 +96,7 @@ else
 finalmod = $(MODULE).mod.o
 $(MODULE).mod.o: $(obj-m)
 	@echo " LD [M]  $(MODULE).mod.o"
-	@$(LD) -r -d -o $@ $(obj-m) $(WA) $(MODLIBS) $(NWA)
+	@$(LD) -Ur -d -o $@ $(obj-m) $(WA) $(MODLIBS) $(NWA)
 endif
 
 endif
@@ -107,17 +114,24 @@ built-in.o: $(obj-y)
 	@echo " LD      $(MODULE)"
 	@$(LD) -r -o built-in.o $(obj-y)
 
-$(obj-y): %.o: %.c
+$(cobj-y): %.o: %.c
 	@echo " CC     " $@
 	@$(CC) $(CFLAGS) $(MYCFLAGS) -c -o $@ $< -I$(PZPATH)/core `$(TTKCONF) --$(TARGET) --sdl --cflags` -D__PZ_BUILTIN_MODULE -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD -I/sw/include -L/sw/lib
+
+$(ccobj-y): %.o: %.cc
+	@echo " CXX    " $@
+	@$(CXX) $(CFLAGS) $(MYCFLAGS) -c -o $@ $< -I$(PZPATH)/core `$(TTKCONF) --$(TARGET) --sdl --cflags` -D__PZ_BUILTIN_MODULE -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD -I/sw/include -L/sw/lib
 endif
 
 #####
 
 ifdef obj-m
-$(obj-m): %.o: %.c
+$(cobj-m): %.o: %.c
 	@echo " CC [M] " $@
 	@$(CC) $(CFLAGS) $(MYCFLAGS) $(PIC) -c -o $@ $< -I$(PZPATH)/core `$(TTKCONF) --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD -I/sw/include -L/sw/lib
+$(ccobj-m): %.o: %.cc
+	@echo " CXX [M]" $@
+	@$(CXX) $(CFLAGS) $(MYCFLAGS) $(PIC) -c -o $@ $< -I$(PZPATH)/core `$(TTKCONF) --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD -I/sw/include -L/sw/lib
 endif
 
 LIBRARY:

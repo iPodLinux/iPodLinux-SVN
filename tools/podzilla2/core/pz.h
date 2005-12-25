@@ -291,15 +291,15 @@ typedef struct _pz_Event
 #define PZ_WINDOW_XYWH        3
 
 PzWindow *pz_do_window (const char *name, int geometry,
-			void (*draw)(PzWidget *this, ttk_surface srf),
+			void (*draw)(PzWidget *_this, ttk_surface srf),
 			int (*event)(PzEvent *ev), int timer);
 
 PzWindow *pz_new_window (const char *name, int geometry, ...);
 PzWindow *pz_finish_window (PzWindow *win);
 
-PzWidget *pz_add_widget (PzWindow *win, void (*draw)(PzWidget *this, ttk_surface srf),
+PzWidget *pz_add_widget (PzWindow *win, void (*draw)(PzWidget *_this, ttk_surface srf),
 			 int (*event)(PzEvent *ev));
-PzWidget *pz_new_widget (void (*draw)(PzWidget *this, ttk_surface srf), int (*event)(PzEvent *ev));
+PzWidget *pz_new_widget (void (*draw)(PzWidget *_this, ttk_surface srf), int (*event)(PzEvent *ev));
 void pz_resize_widget (PzWidget *wid, int w, int h);
 void pz_widget_set_timer (PzWidget *wid, int ms);
 

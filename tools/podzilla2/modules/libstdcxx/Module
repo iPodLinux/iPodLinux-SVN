@@ -1,3 +1,4 @@
 Module: libstdcxx
 Display-name: C++ standard library
 Author: GNU
+Dependencies: pthreadstubs

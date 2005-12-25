@@ -78,7 +78,7 @@ typedef struct esymbol
 typedef struct section
 {
     const char *name;
-    unsigned int nameidx, type, flags, offset, size, linkidx, info, entsize, alignment;
+    unsigned int nameidx, type, flags, offset, size, linkidx, info, entsize, alignment, alignmask;
     char *addr;
     struct section *link, *relsection;
 } section;
@@ -290,9 +290,13 @@ void *uCdl_open (const char *path)
 	sec->linkidx = sh.sh_link;
 	sec->info = sh.sh_info;
 	sec->alignment = sh.sh_addralign;
+        sec->alignmask = (1 << sec->alignment) - 1;
 
 	if (sh.sh_type == SHT_PROGBITS || sh.sh_type == SHT_NOBITS) {
 	    memsize += sh.sh_size;
+            if (memsize & sec->alignmask) {
+                memsize = (memsize + sec->alignmask) & ~sec->alignmask;
+            }
 	}
 
 	shnum--;
@@ -325,6 +329,10 @@ void *uCdl_open (const char *path)
 	case SHT_PROGBITS:
 	    if (!(sec->flags & SHF_ALLOC)) break;
 	    
+            if (lastoff & sec->alignmask) {
+                lastoff = (lastoff + sec->alignmask) & ~sec->alignmask;
+            }
+
 	    lseek (fd, sec->offset, SEEK_SET);
 	    sec->addr = ret->loc + lastoff;
 
@@ -334,6 +342,10 @@ void *uCdl_open (const char *path)
 	    break;
 	case SHT_NOBITS:
 	    if (!(sec->flags & SHF_ALLOC)) break;
+
+            if (lastoff & sec->alignmask) {
+                lastoff = (lastoff + sec->alignmask) & ~sec->alignmask;
+            }
 
 	    sec->addr = ret->loc + lastoff;
 
@@ -506,14 +518,21 @@ void *uCdl_open (const char *path)
 	    while (!defined && curh) {
 		esymbol *esy;
 		int i;
+                int lastweak = 0;
 
 		for (esy = curh->symbols, i = 0; i < curh->nsyms; i++, esy++) {
-		    if (!strcmp (esy->name, sym->name) && esy->binding == STB_GLOBAL) {
+		    if (!strcmp (esy->name, sym->name) && (esy->binding == STB_GLOBAL || esy->binding == STB_WEAK)) {
+                        int thisweak = (esy->binding == STB_WEAK);
+                        if (defined && thisweak && !lastweak)
+                            continue;
+                        if (defined && !thisweak && lastweak)
+                            defined = 0; // no multiple definition error
 			defined++;
 			sym->value = (unsigned int)esy->section->addr + esy->value;
 			sym->size = 0;
 			sym->type = STT_FUNC;
 			sym->binding = STB_GLOBAL;
+                        lastweak = thisweak;
 		    }
 		}
 
@@ -558,6 +577,10 @@ void *uCdl_open (const char *path)
 	    break;
 	case R_ARM_ABS32:
 	case R_ARM_REL32:
+            if ((unsigned long)addr & 3) {
+                sprintf (error = errbuf, "Unable to handle ABS32 relocation for unaligned address %p. Relocation is at (P) %x for (S) %x, section %s, symbol %s.", addr, P, S, rel->section->name, rel->symbol->name);
+                return 0;
+            }
 	    A = *addr32;
 	    break;
 	case R_ARM_PC13:
