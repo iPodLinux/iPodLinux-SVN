@@ -153,8 +153,12 @@ namespace TTK
 
     void Surface::rect (int x1, int y1, int x2, int y2, ttk_color col)
     { ttk_rect (_srf, x1, y1, x2, y2, col); }
+    void Surface::rect (int x1, int y1, int x2, int y2, const char *ap_prop)
+    { ttk_ap_rect (_srf, ttk_ap_get (ap_prop), x1, y1, x2, y2); }
     void Surface::fillrect (int x1, int y1, int x2, int y2, ttk_color col)
     { ttk_fillrect (_srf, x1, y1, x2, y2, col); }
+    void Surface::fillrect (int x1, int y1, int x2, int y2, const char *ap_prop)
+    { ttk_ap_fillrect (_srf, ttk_ap_get (ap_prop), x1, y1, x2, y2); }
 
     void Surface::poly (int nv, short *vx, short *vy, ttk_color col)
     { ttk_poly (_srf, nv, vx, vy, col); }
