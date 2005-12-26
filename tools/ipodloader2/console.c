@@ -30,6 +30,18 @@ void console_setcolor(uint16 fg,uint16 bg,uint8 transparent) {
   console.transparent = transparent;
 }
 
+void console_home() 
+{
+  console.cursor.x = 0;
+  console.cursor.y = 0;
+}
+
+void console_setfont(const uint8 *font) {
+  font_width  = font[0];
+  font_height = font[1];
+  fontdata    = font + 2;
+}
+
 void console_blitchar(int x,int y,char ch) {
   int r,c;
 
@@ -55,13 +67,19 @@ void console_putchar(char ch) {
     console.cursor.x = 0;
     console.cursor.y++;
 
-#if THIS_CORRUPTS_MEMORY_SOMEHOW
+#if 1
     /* Check if we need to scroll the display up */
-    if(console.cursor.y > (console.dimensions.h/font_height) ) {
+    if(console.cursor.y >= (console.dimensions.h/font_height) ) {
+      int i;
       mlc_memcpy(console.fb,
-		 console.fb+(console.dimensions.w*font_height*2),
+		 console.fb+(console.dimensions.w*font_height),
 		 (console.dimensions.w*console.dimensions.h*2) - 
 		 (console.dimensions.w*font_height*2) );
+      for (i = console.dimensions.w*(console.dimensions.h-font_height); i < console.dimensions.w*console.dimensions.h; i++) {
+          console.fb[i] = console.bgcolor;
+      }
+      
+      console.cursor.y--;
     }
     fb_update(console.fb);
     return;
@@ -124,7 +142,7 @@ void console_init(uint16 *fb) {
   fontdata = font + 2;
 
   console.fgcolor     = 0xFFFF;
-  console.bgcolor     = 0x0000;
+  console.bgcolor     = 0x0018;
   console.transparent = 0x0;
 
   console.fb = fb;

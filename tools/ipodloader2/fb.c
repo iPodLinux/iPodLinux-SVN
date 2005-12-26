@@ -155,11 +155,11 @@ uint8 LUMA565(uint16 val) {
 static void fb_2bpp_bitblt(uint16 *fb, int sx, int sy, int mx, int my) {
   int cursor_pos;
   int y;
-  
+
   sx >>= 3;
   mx >>= 3;
   
-  cursor_pos = sx + (sy << 5);
+  cursor_pos = 0; //sx + (sy << 5); //+1;
   
   for ( y = sy; y <= my; y++ ) {
     int x;
@@ -178,14 +178,14 @@ static void fb_2bpp_bitblt(uint16 *fb, int sx, int sy, int mx, int my) {
       uint8 pix[2];
 
       /* RGB565 to 2BPP downsampling */
-      pix[0]  = (LUMA565( fb[y*ipod->lcd_width+x*8+0] ) >> 6) << 6;
-      pix[0] |= (LUMA565( fb[y*ipod->lcd_width+x*8+1] ) >> 6) << 4;
-      pix[0] |= (LUMA565( fb[y*ipod->lcd_width+x*8+2] ) >> 6) << 2;
-      pix[0] |= (LUMA565( fb[y*ipod->lcd_width+x*8+3] ) >> 6) << 0;
-      pix[1]  = (LUMA565( fb[y*ipod->lcd_width+x*8+4] ) >> 6) << 6;
-      pix[1] |= (LUMA565( fb[y*ipod->lcd_width+x*8+5] ) >> 6) << 4;
-      pix[1] |= (LUMA565( fb[y*ipod->lcd_width+x*8+6] ) >> 6) << 2;
-      pix[1] |= (LUMA565( fb[y*ipod->lcd_width+x*8+7] ) >> 6) << 0;
+      pix[0]  = (LUMA565( fb[y*ipod->lcd_width+x*8+7] ) >> 6) << 6;
+      pix[0] |= (LUMA565( fb[y*ipod->lcd_width+x*8+6] ) >> 6) << 4;
+      pix[0] |= (LUMA565( fb[y*ipod->lcd_width+x*8+5] ) >> 6) << 2;
+      pix[0] |= (LUMA565( fb[y*ipod->lcd_width+x*8+4] ) >> 6) << 0;
+      pix[1]  = (LUMA565( fb[y*ipod->lcd_width+x*8+3] ) >> 6) << 6;
+      pix[1] |= (LUMA565( fb[y*ipod->lcd_width+x*8+2] ) >> 6) << 4;
+      pix[1] |= (LUMA565( fb[y*ipod->lcd_width+x*8+1] ) >> 6) << 2;
+      pix[1] |= (LUMA565( fb[y*ipod->lcd_width+x*8+0] ) >> 6) << 0;
       
       /* display a character */
       lcd_send_data(pix[0],pix[1]);
@@ -344,7 +344,7 @@ void fb_update(uint16 *x) {
   if( ipod->lcd_format == IPOD_LCD_FORMAT_RGB565 ) 
     fb_565_bitblt(x,0,0,ipod->lcd_width,ipod->lcd_height);
   else
-    fb_2bpp_bitblt(x,0,0,ipod->lcd_width,ipod->lcd_height);
+    fb_2bpp_bitblt(x,0,0,ipod->lcd_width-1,ipod->lcd_height-1);
 }
 
 void fb_cls(uint16 *x,uint16 val) {
@@ -357,7 +357,25 @@ void fb_cls(uint16 *x,uint16 val) {
 
 void fb_init(void) {
 
+  int hw_ver;
   ipod = ipod_get_hwinfo();
+  hw_ver = ipod->hw_rev >> 16;
+
+  if (hw_ver == 0x4 || hw_ver == 0x7) {
+    /* driver output control - 160x112 (ipod mini) */
+    lcd_cmd_and_data(0x1, 0x0, 0xd);
+  }
+  else if (hw_ver < 0x4 || hw_ver == 0x5) {
+    /* driver output control - 160x128 */
+    lcd_cmd_and_data(0x1, 0x1, 0xf);
+  }
+  
+  /* ID=1 -> auto decrement address counter */
+  /* AM=00 -> data is continuously written in parallel */
+  /* LG=00 -> no logical operation */
+  if (hw_ver < 0x6 || hw_ver == 0x7) {
+    lcd_cmd_and_data(0x5, 0x0, 0x10);
+  }
 
 #if YOU_WANT_TO_SCREW_UP_THE_COLORS_IN_RETAILOS
   if( ((ipod->hw_rev>>16) == 0x6) && (ipod->lcd_type == 0) ) {

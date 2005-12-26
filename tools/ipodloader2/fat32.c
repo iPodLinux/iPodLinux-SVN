@@ -119,7 +119,7 @@ int fat32_open(void *fsdata,char *fname) {
   file = fat32_findfile(fs->root_dir_first_cluster,fname);
 
   if(file==NULL) {
-    mlc_printf("Couldnt find file\n");
+    mlc_printf("%s not found\n", fname);
     return(-1);
   }
 

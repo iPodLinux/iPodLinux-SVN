@@ -97,7 +97,7 @@ void *loader(void) {
     framebuffer = (uint16*)mlc_malloc( ipod->lcd_width * ipod->lcd_height * 2 );
 
     fb_init();
-    fb_cls(framebuffer,0x1F);
+    fb_cls(framebuffer,0x18);
 
     console_init(framebuffer);
     console_puts("iPL Bootloader 2.0\n");
@@ -167,6 +167,9 @@ void *loader(void) {
       }
     }
 
+    menu_cls(framebuffer);
+    console_home();
+    
     if( conf->image[menuPos].type == CONFIG_IMAGE_BINARY ) {
       void *ret;
       ret = loader_startImage(ipod,conf->image[menuPos].path);
