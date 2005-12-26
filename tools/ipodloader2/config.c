@@ -9,17 +9,19 @@ static config_t config;
 static const char *find_somewhere (const char **names, const char *what)
 {
     int fd = -1;
-    mlc_printf ("Looking for a %s.\n", what);
+    mlc_printf (">> Looking for a %s...\n", what);
     for (; fd < 0 && *names; names++) {
-        mlc_printf ("Trying %s...\n", *names);
         fd = vfs_open ((char *)*names);
     }
     if (*names) {
         names--;
-        mlc_printf ("Found it.\n", *names, fd);
+        mlc_printf (">> Found it at %s.\n", *names);
+    } else {
+        int i;
+        mlc_printf (">>! Not found. :-(\n\n");
+        for (i = 0; i < 1000000; i++)
+            ;
     }
-    else
-        mlc_printf ("Not found. :-(\n\n");
     return *names;
 }
 

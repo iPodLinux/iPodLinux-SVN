@@ -13,6 +13,8 @@ void console_putsXY(int x,int y,volatile char *str);
 void console_printf (const char *format, ...);
 
 void console_setcolor(uint16 fg,uint16 bg,uint8 transparent);
+void console_setfont(const uint8 *font);
+void console_home();
 
 extern int font_width, font_height;
 extern const uint8 *fontdata;

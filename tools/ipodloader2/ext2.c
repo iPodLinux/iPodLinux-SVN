@@ -225,7 +225,6 @@ int ext2_open(void *fsdata,char *fname) {
   file = ext2_findfile(fname);
 
   if( file == NULL ) {
-      mlc_printf ("File is NULL!\n");
     return(-1);
   }
 
