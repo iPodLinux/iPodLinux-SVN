@@ -12,16 +12,67 @@
 
 static uint16 *framebuffer;
 
-static void loader_startDiskmode(ipod_t *ipod) {
-  unsigned char * storage_ptr = (unsigned char *)0x40017F00;
-  char * diskmode = "diskmode\0";
-  char * hotstuff = "hotstuff\0";
-  
-  mlc_memcpy(storage_ptr, diskmode, 9);
-  storage_ptr = (unsigned char *)0x40017f08;
-  mlc_memcpy(storage_ptr, hotstuff, 9);
-  outl(1, 0x40017F10);
-  
+/*
+is_pp5022:
+                MOV     R0, #0x70000000
+                LDR     R0, [R0]
+                MOV     R0, R0,LSL#8
+                MOV     R0, R0,LSR#24
+                CMP     R0, #0x32
+                MOVNE   R0, #0
+                MOVEQ   R0, #1
+                BX      LR
+*/
+
+static int is_pp5022 (ipod_t *ipod)
+{
+    if (ipod->hw_rev < 0x60000)
+        return 0;
+
+    if (((inl (0x70000000) << 8) >> 24) == 0x32)
+        return 1;
+    return 0;
+}
+
+/*
+@ void *__cdecl iram_get_end_ptr(int offset)
+iram_get_end_ptr:
+                STMFD   SP!, {R4,LR}
+                MOV     R4, R0
+                BL      is_pp5022
+                CMP     R0, #0
+                LDREQ   R0, =0x40018000
+                LDRNE   R0, =0x40020000
+                ADD     R0, R0, R4
+                SUB     R0, R0, #0x100
+                LDMFD   SP!, {R4,PC}
+*/
+
+static void *iram_get_end_ptr (ipod_t *ipod, int offset) 
+{
+    static unsigned long iram_end;
+    if (!iram_end) {
+        if (is_pp5022 (ipod))
+            iram_end = 0x40020000;
+        else
+            iram_end = 0x40018000;
+    }
+    return (void *)(iram_end - 0x100 + offset);
+}
+
+static void set_boot_action (ipod_t *ipod, const char *str) {
+  mlc_memcpy (iram_get_end_ptr (ipod, 0x0), str, 9);
+  mlc_memcpy (iram_get_end_ptr (ipod, 0x8), "hotstuff", 9);
+  outl (1, (unsigned long)iram_get_end_ptr (ipod, 0x10));
+  if (ipod->hw_rev >= 0x40000) {
+    outl(inl(0x60006004) | 0x4, 0x60006004);
+  } else {
+    outl(inl(0xcf005030) | 0x4, 0xcf005030);
+  }
+}
+
+static void reboot_ipod (ipod_t *ipod) 
+{
   if (ipod->hw_rev >= 0x40000) {
     outl(inl(0x60006004) | 0x4, 0x60006004);
   } else {
@@ -30,6 +81,7 @@ static void loader_startDiskmode(ipod_t *ipod) {
   /*
    * We never exit this function
    */
+  for(;;);
 }
 
 static void *loader_startImage(ipod_t *ipod,char *image) {
@@ -179,7 +231,13 @@ void *loader(void) {
       else
 	return(ret);
     } else if( conf->image[menuPos].type == CONFIG_IMAGE_SPECIAL ) {
-      loader_startDiskmode(ipod);
+        if (!mlc_strcmp (conf->image[menuPos].path, "diskmode"))
+            set_boot_action (ipod, "diskmode");
+        else if (!mlc_strcmp (conf->image[menuPos].path, "diskscan"))
+            set_boot_action (ipod, "diskscan");
+        else if (!mlc_strcmp (conf->image[menuPos].path, "retailOS"))
+            set_boot_action (ipod, "retailOS");
+        reboot_ipod (ipod);
     } else {
       goto redoMenu;
     }
