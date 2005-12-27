@@ -394,21 +394,20 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 		/* faux close widget */
 		if ( !pz_get_int_setting (pz_global_config, DISPLAY_LOAD) 
 			&& !pz_hold_is_on) {
-			/* i don't totally understand why the top is 6.0
-			    while the bottom assumes 7.0, but it looks
-			    right, so run with it. */
-			double xo = (float)ttk_screen->wy / 6.0;
-			double yo = (float)ttk_screen->wy / 6.0;
+			double xo = ((float)ttk_screen->wy) / 8.0;
+			double yo = ((float)ttk_screen->wy) / 8.0;
+			/* this should be tweaked to look better on mini */
+			/* i think that the proportions are wrong also */
 
 			ttk_ap_fillrect( srf, ttk_ap_get ("header.fg"), 
-					(int)xo, (int)yo,
-					(int)xo*6, (int)yo*6 );
+					(int) (xo*1),  (int) (yo*1),
+					(int) (xo*7),  (int) (yo*7) );
 			ttk_ap_fillrect( srf, ttk_ap_get ("header.bg"),
-					(int) xo*2, (int)yo*2,
-					(int) xo*5, (int)yo*5 );
+					(int) (xo*2),  (int) (yo*2),
+					(int) (xo*6), (int) (yo*6) );
 			ttk_ap_fillrect (srf, ttk_ap_get ("header.accent"), 
-					(int) xo*3, (int)yo*3,
-					(int) xo*4, (int)yo*4 );
+					(int) (xo*3.5), (int) (yo*3.5),
+					(int) (xo*4.5), (int) (yo*4.5) );
 		}
 
 		/* clear text area */
