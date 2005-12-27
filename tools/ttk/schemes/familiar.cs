@@ -15,7 +15,7 @@
 \def graptop    #F0F4F8
 \def grapbar    #F0F4F8
 
-  header: bg => white, fg => black, line => #808888 -1, accent => white
+  header: bg => white, fg => black, line => #808888 -1, accent => #ff0000
 	  gradient.top => graptop,
 	  gradient.middle => grapmid,
 	  gradient.bottom => grapbot,
