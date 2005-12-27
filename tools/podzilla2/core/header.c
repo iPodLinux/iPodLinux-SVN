@@ -353,42 +353,53 @@ void pz_header_colors_dirty( void )
 /** Decorations: **/
 static void draw_decorations (TWidget *this, ttk_surface srf)
 {
-    int width = ttk_text_width (ttk_menufont, ttk_windows->w->title);
+	int width = ttk_text_width (ttk_menufont, ttk_windows->w->title);
 
-    /* draw the decorations */
-    if (decorations == PZ_DEC_AMIGA13 || decorations == PZ_DEC_AMIGA11) {
-	/* drag bars */
-	if (decorations == PZ_DEC_AMIGA13) {
-	    ttk_ap_fillrect (srf, ttk_ap_get ("header.accent"), hwid_left[hwid_lnext-1] + 6, 4,
-			     hwid_right[hwid_rnext-1] - 6, 7);
-	    ttk_ap_fillrect (srf, ttk_ap_get ("header.accent"), hwid_left[hwid_lnext-1] + 6, ttk_screen->wy - 8,
-			     hwid_right[hwid_rnext-1] - 6, ttk_screen->wy - 5);
-	} else {
-	    int i;
-	    for (i = 2; i < ttk_screen->wy; i += 2) {
-		ttk_line (srf, hwid_left[hwid_lnext-1] + 2, i, hwid_right[hwid_rnext-1] - 2, i, ttk_ap_getx ("header.accent") -> color);
+	/* draw the decorations */
+	if (decorations == PZ_DEC_AMIGA13 || decorations == PZ_DEC_AMIGA11) {
+		/* drag bars */
+		if (decorations == PZ_DEC_AMIGA13) {
+			/* 1.2/1.3 look */
+			int o = ttk_screen->wy / 4;
+			ttk_ap_fillrect (srf, ttk_ap_get ("header.accent"),
+				    hwid_left[hwid_lnext-1] + 6, o,
+				    hwid_right[hwid_rnext-1] - 6, o*2-1 );
+
+			ttk_ap_fillrect (srf, ttk_ap_get ("header.accent"), 
+				    hwid_left[hwid_lnext-1] + 6, 
+				    ttk_screen->wy - o*2 + 1,
+				    hwid_right[hwid_rnext-1] - 6, 
+				    ttk_screen->wy - o);
+	
+		} else {
+			/* 1.1/1.0 look */
+			int i;
+			for (i = 1; i < ttk_screen->wy; i += 2) {
+				ttk_line (srf, hwid_left[hwid_lnext-1] + 2, i, 
+				    hwid_right[hwid_rnext-1] - 3, i, 
+				    ttk_ap_getx ("header.accent") -> color);
+		}
+	}
+
+	    /* vertical widget separators */
+	    ttk_ap_fillrect (srf, ttk_ap_get ("header.accent"), hwid_left[hwid_lnext-1] + 2, 0,
+			     hwid_left[hwid_lnext-1] + 3, ttk_screen->wy - 1);
+	    ttk_ap_fillrect (srf, ttk_ap_get ("header.accent"), hwid_right[hwid_rnext-1] - 2, 0,
+			     hwid_right[hwid_rnext-1] - 3, ttk_screen->wy - 1);
+
+	    /* "close box" */
+	    if (!pz_get_int_setting (pz_global_config, DISPLAY_LOAD) && !pz_hold_is_on) {
+		ttk_ap_fillrect (srf, ttk_ap_get ("header.accent"), 2, 2, hwid_left[hwid_lnext-1] - 2, ttk_screen->wy - 4);
+		ttk_ap_fillrect (srf, ttk_ap_get ("header.bg"), 4, 4, hwid_left[hwid_lnext-1] - 4, ttk_screen->wy - 6);
+		ttk_ap_fillrect (srf, ttk_ap_get ("header.fg"), 7, 7, hwid_left[hwid_lnext-1] - 7, ttk_screen->wy - 9);
 	    }
-	}
 
-	/* vertical widget separators */
-	ttk_ap_fillrect (srf, ttk_ap_get ("header.accent"), hwid_left[hwid_lnext-1] + 2, 0,
-			 hwid_left[hwid_lnext-1] + 3, ttk_screen->wy - 1);
-	ttk_ap_fillrect (srf, ttk_ap_get ("header.accent"), hwid_right[hwid_rnext-1] - 2, 0,
-			 hwid_right[hwid_rnext-1] - 3, ttk_screen->wy - 1);
-
-	/* "close box" */
-	if (!pz_get_int_setting (pz_global_config, DISPLAY_LOAD) && !pz_hold_is_on) {
-	    ttk_ap_fillrect (srf, ttk_ap_get ("header.accent"), 2, 2, hwid_left[hwid_lnext-1] - 2, ttk_screen->wy - 4);
-	    ttk_ap_fillrect (srf, ttk_ap_get ("header.bg"), 4, 4, hwid_left[hwid_lnext-1] - 4, ttk_screen->wy - 6);
-	    ttk_ap_fillrect (srf, ttk_ap_get ("header.fg"), 7, 7, hwid_left[hwid_lnext-1] - 7, ttk_screen->wy - 9);
-	}
-
-	/* clear text area */
-	if (ttk_ap_getx ("header.bg") -> type & TTK_AP_COLOR) {
-	    ttk_ap_fillrect (srf, ttk_ap_get ("header.bg"),
-			     (ttk_screen->w - width) / 2 - 4, 0,
-			     (ttk_screen->w + width) / 2 + 4, ttk_screen->wy - 2);
-	}
+	    /* clear text area */
+	    if (ttk_ap_getx ("header.bg") -> type & TTK_AP_COLOR) {
+		ttk_ap_fillrect (srf, ttk_ap_get ("header.bg"),
+				 (ttk_screen->w - width) / 2 - 4, 0,
+				 (ttk_screen->w + width) / 2 + 4, ttk_screen->wy - 2);
+	    }
 
     } else if (decorations == PZ_DEC_MROBE) {
 	// . X X X .
