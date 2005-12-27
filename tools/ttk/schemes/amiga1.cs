@@ -9,7 +9,7 @@
 \def orange #ff8800
 
 
-  header: bg => white, fg => blue, line => blue -1, accent => blue
+  header: bg => white, fg => blue, line => blue -1, accent => black
 	  gradient.top => white,
 	  gradient.middle => orange,
 	  gradient.bottom => white,

@@ -7,12 +7,13 @@
 \def red   #ff0000
 \def blue  #000044
 \def ltred #aa0000
+\def medred #880000
 \def dkred #550000
 \def orange #ff5500
 \def yellow #ffff00
 \def white #ffffff
 
-  header: bg => dkred, fg => black, line => red -1, accent => red
+  header: bg => black, fg => red, line => red -1, accent => red
 	  gradient.top => red,
 	  gradient.middle => yellow,
 	  gradient.bottom => red,
