@@ -10,11 +10,11 @@ static const char *find_somewhere (const char **names, const char *what)
 {
     int fd = -1;
     mlc_printf (">> Looking for a %s...\n", what);
-    for (; fd < 0 && *names; names++) {
+    for (; *names; names++) {
         fd = vfs_open ((char *)*names);
+        if (fd >= 0) break;
     }
     if (*names) {
-        names--;
         mlc_printf (">> Found it at %s.\n", *names);
     } else {
         int i;
