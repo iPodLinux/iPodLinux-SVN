@@ -12,18 +12,6 @@
 
 static uint16 *framebuffer;
 
-/*
-is_pp5022:
-                MOV     R0, #0x70000000
-                LDR     R0, [R0]
-                MOV     R0, R0,LSL#8
-                MOV     R0, R0,LSR#24
-                CMP     R0, #0x32
-                MOVNE   R0, #0
-                MOVEQ   R0, #1
-                BX      LR
-*/
-
 static int is_pp5022 (ipod_t *ipod)
 {
     if (ipod->hw_rev < 0x60000)
@@ -33,20 +21,6 @@ static int is_pp5022 (ipod_t *ipod)
         return 1;
     return 0;
 }
-
-/*
-@ void *__cdecl iram_get_end_ptr(int offset)
-iram_get_end_ptr:
-                STMFD   SP!, {R4,LR}
-                MOV     R4, R0
-                BL      is_pp5022
-                CMP     R0, #0
-                LDREQ   R0, =0x40018000
-                LDRNE   R0, =0x40020000
-                ADD     R0, R0, R4
-                SUB     R0, R0, #0x100
-                LDMFD   SP!, {R4,PC}
-*/
 
 static void *iram_get_end_ptr (ipod_t *ipod, int offset) 
 {
