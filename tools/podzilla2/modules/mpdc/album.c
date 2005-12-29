@@ -93,6 +93,7 @@ static TWindow *open_album(ttk_menu_item *item)
 		return TTK_MENU_DONOTHING;
 	current_song.album = ((char *)item->data)[0]? (char *)item->data: NULL;
 	ret = pz_new_window(_("Songs"), PZ_WINDOW_NORMAL);
+	ret->data = 0x12345678;
 	ttk_add_widget(ret, populate_songs((char *)item->data));
 	return pz_finish_window(ret);
 }
