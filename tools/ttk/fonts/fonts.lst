@@ -11,6 +11,7 @@
 [Chixa-14] (Chixa) <14> {-1}
 [ComicSansMS] (Comic Sans MS) <12>
 [ComicSansMS-Bold] (Comic Sans MS Bold) <12>
+[Commodore_diamond_12] (Diamond) <12> {+2}
 [EspySans-13] (Espy Sans) <10>
 [GadgetRegular] (Gadget) <12>
 [GPalatino-12] (GPalatino) <12>
@@ -20,6 +21,10 @@
 [Los_Angeles] (Los Angeles) <12>
 [LucidaGrande] (Lucida Grande) <12>
 [MyriadPro-12] (Myriad) <12>
+[Commodore_opal_9] (Opal) <9> {+1}
+[UmlautLlama_onyx_9] (Onyx) <9>
+[Commodore_opal_9_dbl] (Opal Double) <18> {+1}
+[UmlautLlama_peridot_7] (Peridot) <7> {+1}
 [Sabine_Doscbthm] (Sabine Doscbthm) <9>
 [Sabine_Doscbthm_Black] (Sabine Doscbthm Black) <9>
 [Sabine_Doscbthm_Script] (Sabine Doscbthm Script) <9>
@@ -29,5 +34,9 @@
 [Sempach] (Sempach) <9>
 [Sempach-12] (Sempach II) <12>
 [Some_Acronym] (Some Acronym) <9>
+[Commodore_topaz_8] (Topaz) <8>
+[Commodore_topaz_8_dbl] (Topaz Doubled) <16> {+1}
+[Commodore_topaz2_8] (Topaz Sans) <8>
+[Commodore_topaz2_8_dbl] (Topaz Sans Doubled) <16> {+1}
 [Twiggy] (Twiggy) <12>
 [Unifont] (Unifont) <12>
