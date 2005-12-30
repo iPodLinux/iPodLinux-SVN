@@ -30,6 +30,8 @@
 #include "ucdl.h"
 #endif
 
+FILE *errout;
+
 void ____Spurious_references_to_otherwise_unreferenced_symbols() 
 {
     TWidget *(*tnivw)(int,int,ttk_surface) = ttk_new_imgview_widget; (void) tnivw;
@@ -303,6 +305,7 @@ void pz_uninit()
 	ttk_quit();
 	pz_touch_settings();
 	pz_modules_cleanup();
+        fclose (errout);
 }
 
 #ifdef IPOD
@@ -404,6 +407,8 @@ main(int argc, char **argv)
         signal (SIGBUS, debug_handler);
 #endif
 
+        errout = stderr;
+
 	if (argc > 1) {
 		if (argv[1][0] == '-') {
 			if (!strcmp (argv[1], "-photo"))
@@ -428,6 +433,12 @@ main(int argc, char **argv)
 				}
 				ttk_set_emulation ( atoi( argv[2] ),
 						    atoi( argv[3] ), 16 );
+                        } else if (!strcmp (argv[1], "-errout")) {
+                                if( argc != 3 ) {
+                                        usage( argv[0] );
+                                        exit( -2 );
+                                }
+                                errout = fopen (argv[2], "a");
 			} else {
 				usage( argv[0] );
 				exit( -1 );

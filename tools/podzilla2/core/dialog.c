@@ -36,6 +36,8 @@ typedef struct
     ttk_surface dblbuf;
 } dialog_data;
 
+extern FILE *errout;
+
 #define _MAKETHIS dialog_data *data = (dialog_data *)this->data
 
 // Not thread-safe.
@@ -480,24 +482,14 @@ static void warn_or_err (const char *title, const char *fmt, va_list ap)
     char *str = malloc (1024);
     vsnprintf (str, 1024, fmt, ap);
     pz_do_dialog (title, str, _("Ok"), 0, 0, 0, 1);
-    fprintf (stderr, "%s: %s\n", title, str);
+    fprintf (errout, "%s: %s\n", title, str);
 }
 void pz_warning (const char *fmt, ...) 
 {
-#ifdef IPOD
-    FILE *fp = fopen ("msg.inf", "a");
-    fprintf (fp, "W- %%%p \"%s\" len %ld\n", fmt, fmt, strlen (fmt));
-    fclose (fp);
-#endif
     va_list ap;
     va_start (ap, fmt);
     warn_or_err (_("Warning"), fmt, ap);
     va_end (ap);
-#ifdef IPOD
-    fp = fopen ("msg.inf", "a");
-    fprintf (fp, "  done\n");
-    fclose (fp);
-#endif
 }
 void pz_error (const char *fmt, ...) 
 {
