@@ -27,44 +27,76 @@
 
 vstar stars[NUM_STARS];
 
-void Star_GenerateStars( void );
-void Star_DrawStars( ttk_surface srf );
+static void Star_bang( int which )
+{
+	/* start position */
+	stars[which].x = (double)Vortex_Rand( vglob.usableW );
+	stars[which].y = (double)Vortex_Rand( vglob.usableH );
+
+	/* acceleration */
+	stars[which].xa = 0;
+	stars[which].ya = 0;
+
+	/* vellocity */
+	stars[which].xv = ((double)(rand()&0x0ff))/255.0 - 0.5;
+	stars[which].yv = ((double)(rand()&0x0ff))/255.0 - 0.5;
+
+	/* color and size */
+	stars[which].c = ttk_makecol( 120 + (rand() & 0x7f),
+				      120 + (rand() & 0x7f),
+				      120 + (rand() & 0x7f) );
+	stars[which].s = rand() & 0x0ff;
+}
 
 void Star_GenerateStars( void )
 {       
         int p;
-        for( p=0 ; p<NUM_STARS ; p++ )
-        {       
-                stars[p].x = Vortex_Rand( vglob.usableW );
-                stars[p].y = Vortex_Rand( vglob.usableH );
-                stars[p].c = ttk_makecol( 120 + (rand() & 0x7f),
-					  120 + (rand() & 0x7f),
-					  120 + (rand() & 0x7f) );
-		stars[p].s = rand() & 0x0ff;
-    }
+        for( p=0 ; p<NUM_STARS ; p++ ) Star_bang( p );
 }
 
 void Star_DrawStars( ttk_surface srf )
 {       
         int p;
+	int x,y;
         for( p=0 ; p<NUM_STARS ; p++ )
         {       
-                ttk_pixel( srf, stars[p].x, stars[p].y, stars[p].c );
+		x = (int) stars[p].x;
+		y = (int) stars[p].y;
+
+                ttk_pixel( srf, x, y, stars[p].c );
 		if( stars[p].s < 32 ) {
 		    /* 1/8 chance it'll be a larger square star */
-		    ttk_pixel( srf, stars[p].x+1, stars[p].y+0, stars[p].c );
-		    ttk_pixel( srf, stars[p].x+1, stars[p].y+1, stars[p].c );
-		    ttk_pixel( srf, stars[p].x+0, stars[p].y+1, stars[p].c );
+		    ttk_pixel( srf, x+1, y+0, stars[p].c );
+		    ttk_pixel( srf, x+1, y+1, stars[p].c );
+		    ttk_pixel( srf, x+0, y+1, stars[p].c );
 		} else if (stars[p].s < 48)  {
 		    /* 1/16 chance it'll be a large t-shaped star */
-		    ttk_pixel( srf, stars[p].x+1, stars[p].y+0, stars[p].c );
-		    ttk_pixel( srf, stars[p].x-1, stars[p].y-0, stars[p].c );
-		    ttk_pixel( srf, stars[p].x+0, stars[p].y+1, stars[p].c );
-		    ttk_pixel( srf, stars[p].x-0, stars[p].y-1, stars[p].c );
+		    ttk_pixel( srf, x+1, y+0, stars[p].c );
+		    ttk_pixel( srf, x-1, y-0, stars[p].c );
+		    ttk_pixel( srf, x+0, y+1, stars[p].c );
+		    ttk_pixel( srf, x-0, y-1, stars[p].c );
 		}
         }
 }
 
 void Star_Poll( void )
 {
+	int p;
+	for( p=0 ; p<NUM_STARS ; p++ )
+	{
+		/* accelerate the star */
+		stars[p].xv += stars[p].xa;
+		stars[p].yv += stars[p].ya;
+
+		/* move the star */
+		stars[p].x += stars[p].xv;
+		stars[p].y += stars[p].yv;
+
+		/* regen star if it's offscreen */
+		if(   (stars[p].x > vglob.usableW)
+		   || (stars[p].x < 0)
+		   || (stars[p].y > vglob.usableH)
+		   || (stars[p].y < 0))
+        		Star_bang( p );
+	}
 }
