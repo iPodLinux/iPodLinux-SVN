@@ -223,6 +223,13 @@ DEC	[0-9]+
     ap->ry = atoi (str);
 }
 
+<VALUE>(h|horiz|x)[ \t]*left	ap->type &= ~(TTK_AP_IMG_HCENTER | TTK_AP_IMG_HRIGHT);
+<VALUE>(h|horiz|x)[ \t]*center	ap->type |= TTK_AP_IMG_HCENTER; ap->type &= ~TTK_AP_IMG_HRIGHT;
+<VALUE>(h|horiz|x)[ \t]*right	ap->type |= TTK_AP_IMG_HRIGHT; ap->type &= ~TTK_AP_IMG_HCENTER;
+<VALUE>(v|vert|y)[ \t]*top	ap->type &= ~(TTK_AP_IMG_VCENTER | TTK_AP_IMG_VBOTTOM);
+<VALUE>(v|vert|y)[ \t]*center	ap->type |= TTK_AP_IMG_VCENTER; ap->type &= ~TTK_AP_IMG_VBOTTOM;
+<VALUE>(v|vert|y)[ \t]*bot(tom)? ap->type|= TTK_AP_IMG_VBOTTOM; ap->type &= ~TTK_AP_IMG_VCENTER;
+
 <VALUE,GRADSTART,GRADEND>{ID} {
     char *str = 0;
     int i;
@@ -433,9 +440,216 @@ void ttk_ap_dorect (ttk_surface srf, TApItem *ap, int x1, int y1, int x2, int y2
     }
 
     if (img) {
-        // ...
-	ttk_blit_image_ex (img, 0, 0, x2-x1, y2-y1,
-			   srf, x1, y1);
+        int w, h, rx, ry, rw, rh;
+        ttk_surface_get_dimen (img, &w, &h);
+        
+        if (ap->type & TTK_AP_RRECT) {
+            rx = ap->rx;
+            ry = ap->ry;
+            rw = ap->rw;
+            rh = ap->rh;
+        } else {
+            rx = ry = 0;
+            rw = w;
+            rh = h;
+        }
+        
+        // Now we have to check if the corners / edges will overlap
+        // each other. If they do, we want to enlarge the rrect
+        // box until they don't.
+        int diff;
+        if ((diff = (x1 + rx) - (x2 - w + rx + rw)) > 0) {
+            // shrink horizontally
+            if (rx != w - rw - rx) {
+                int tot = w - rw;
+                int orx = rx, orw = rw;
+                // Take equal parts from both.
+                rx -= diff * orx / tot;
+                rw += orx - rx + diff * (w - orw - orx) / tot;
+            } else {
+                rx -= diff/2;
+                rw += diff;
+            }
+        }
+        if ((diff = (y1 + ry) - (y2 - h + ry + rh)) > 0) {
+            // shrink vertically
+            if (ry != h - rh - ry) {
+                int tot = h - rh;
+                int ory = ry, orh = rh;
+                // Take equal parts from both.
+                ry -= diff * ory / tot;
+                rh += ory - ry + diff * (h - orh - ory) / tot;
+            } else {
+                ry -= diff/2;
+                rh += diff;
+            }
+        }
+
+        if (rx < 0) rx = 0;
+        if (ry < 0) ry = 0;
+        if (rx+rw > w) rw = w - rx;
+        if (ry+rh > h) rh = h - ry;
+        
+        //- Draw the corners.
+        ttk_blit_image_ex (img, 0, 0, rx, ry, srf, x1, y1); // UL
+        ttk_blit_image_ex (img, rx + rw, 0, w - rw - rx, ry,
+                           srf, x2 - w + rx + rw, y1); // UR
+        ttk_blit_image_ex (img, 0, ry + rh, rx, h - rh - ry,
+                           srf, x1, y2 - h + ry + rh); // LL
+        ttk_blit_image_ex (img, rx + rw, ry + rh, w - rw - rx, h - rh - ry,
+                           srf, x2 - w + rx + rw, y2 - h + ry + rh); // LR
+        
+        //- Draw the edges.
+        if (((x1 + rx) < (x2 - w + rx + rw)) && (rx > 0 || rx + rw < w)) {
+            // top and bottom
+            int x, ex = x2 - x1 + rw - w;
+            int excess = ((ap->type & TTK_AP_IMG_HAMASK) == TTK_AP_IMG_HCENTER)? ex % (2*rw) : ex % rw;
+            
+            switch (ap->type & TTK_AP_IMG_HAMASK) {
+            case TTK_AP_IMG_HLEFT:
+                x = 0;
+                ttk_blit_image_ex (img, rx, 0, excess, ry, srf, x2 - excess - w + rx + rw, y1);
+                ttk_blit_image_ex (img, rx, ry + rh, excess, h - rh - ry,
+                                   srf, x2 - excess - w + rx + rw, y2 - h + ry + rh);
+                break;
+            case TTK_AP_IMG_HCENTER:
+                x = excess/2;
+                ttk_blit_image_ex (img, rx + rw - excess/2, 0, excess/2, ry,
+                                   srf, x1 + rx, y1);
+                ttk_blit_image_ex (img, rx, 0, excess/2, ry, srf, x2 - excess/2 - w + rx + rw, y1);
+                
+                ttk_blit_image_ex (img, rx + rw - excess/2, ry + rh, excess/2, h - rh - ry,
+                                   srf, x1 + rx, y2 - h + ry + rh);
+                ttk_blit_image_ex (img, rx, ry + rh, excess/2, h - rh - ry,
+                                   srf, x2 - excess/2 - w + rx + rw, y2 - h + ry + rh);
+                break;
+            case TTK_AP_IMG_HRIGHT:
+                x = excess;
+                ttk_blit_image_ex (img, rx, 0, excess, ry, srf, x2 - excess - w + rx + rw, y1);
+                ttk_blit_image_ex (img, rx, ry + rh, excess, h - rh - ry,
+                                   srf, x2 - excess - w + rx + rw, y2 - h + ry + rh);
+                ttk_blit_image_ex (img, rx + rw - excess, 0, excess, ry,
+                                   srf, x1 + rx, y1);
+                ttk_blit_image_ex (img, rx + rw - excess, ry + rh, excess, h - rh - ry,
+                                   srf, x1 + rx, y2 - h + ry + rh);
+                break;
+            }
+            
+            for (; x + rw <= ex; x += rw) {
+                ttk_blit_image_ex (img, rx, 0, rw, ry, srf, x1 + rx + x, y1);
+                ttk_blit_image_ex (img, rx, ry + rh, rw, h - rh - ry,
+                                   srf, x1 + rx + x, y2 - h + ry + rh);
+            }
+        }
+        
+        if (((y1 + ry) < (y2 - h + ry + rh)) && (ry > 0 || ry + rh < h)) {
+            // left and right
+            int y, ey = y2 - y1 + rh - h;
+            int excess = ((ap->type & TTK_AP_IMG_VAMASK) == TTK_AP_IMG_VCENTER)? ey % (2*rh) : ey % rh;
+            
+            switch (ap->type & TTK_AP_IMG_VAMASK) {
+            case TTK_AP_IMG_VTOP:
+                y = 0;
+                ttk_blit_image_ex (img, 0, ry, rx, excess, srf, x1, y2 - excess - h + ry + rh);
+                ttk_blit_image_ex (img, rx + rw, ry, w - rw - rx, excess,
+                                   srf, x2 - w + rx + rw, y2 - excess - h + ry + rh);
+                break;
+            case TTK_AP_IMG_VCENTER:
+                y = excess/2;
+                ttk_blit_image_ex (img, 0, ry + rh - excess/2, rx, excess/2,
+                                   srf, x1, y1 + ry);
+                ttk_blit_image_ex (img, 0, ry, rx, excess/2, srf, x1, y2 - excess/2 - h + ry + rh);
+                
+                ttk_blit_image_ex (img, rx + rw, ry + rh - excess/2, w + rw - rx, excess/2,
+                                   srf, x2 - w + rx + rw, y1 + ry);
+                ttk_blit_image_ex (img, rx + rw, ry, w - rw - rx, excess/2,
+                                   srf, x2 - w + rx + rw, y2 - excess/2 - h + ry + rh);
+                break;
+            case TTK_AP_IMG_VBOTTOM:
+                y = excess;
+                ttk_blit_image_ex (img, 0, ry + rh - excess, rx, excess,
+                                   srf, x1, y1 + ry);
+                ttk_blit_image_ex (img, rx + rw, ry + rh - excess, w - rw - rx, excess,
+                                   srf, x2 - w + rx + rw, y1 + ry);
+            }
+            
+            for (; y + rh <= ey; y += rh) {
+                ttk_blit_image_ex (img, 0, ry, rx, rh, srf, x1, y1 + ry + y);
+                ttk_blit_image_ex (img, rx + rw, ry, w - rw - rx, rh,
+                                   srf, x2 - w + rx + rw, y1 + ry + y);
+            }
+        }
+        
+        //- Tiled part
+        if ((x1 + rx) < (x2 - w + rx + rw) && (y1 + ry) < (y2 - h + ry + rh)) {
+            int ox, oy, ex = x2 - x1 + rw - w, ey = y2 - y1 + rh - h;
+            int exx = ((ap->type & TTK_AP_IMG_HAMASK) == TTK_AP_IMG_HCENTER)? ex % (2*rw) : ex % rw;
+            int exy = ((ap->type & TTK_AP_IMG_VAMASK) == TTK_AP_IMG_VCENTER)? ey % (2*rh) : ey % rh;
+            
+            switch (ap->type & TTK_AP_IMG_HAMASK) {
+                case TTK_AP_IMG_HLEFT:   ox = 0; break;
+                case TTK_AP_IMG_HCENTER: ox = exx/2; break;
+                case TTK_AP_IMG_HRIGHT:  ox = exx; break;
+            }
+            switch (ap->type & TTK_AP_IMG_VAMASK) {
+                case TTK_AP_IMG_VTOP:    oy = 0; break;
+                case TTK_AP_IMG_VCENTER: oy = exy/2; break;
+                case TTK_AP_IMG_VBOTTOM: oy = exy; break;
+            }
+
+            exx -= ox;
+            exy -= oy;
+            ex -= exx;
+            ey -= exy;
+            
+            // o[xy] = offset of UL corner of first full img on dst
+            // e[xy] = offset of LR corner of last full img on dst
+            // ex[xy] = distance from e[xy] to LR corner of center on dst
+            
+            //- Corners
+            if (ox && oy) { // UL of dst, LR of src
+                ttk_blit_image_ex (img, rx + rw - ox, ry + rh - oy, ox, oy,
+                                   srf, x1 + rx, y1 + ry);
+            }
+            if (exx && oy) { // UR of dst, LL of src
+                ttk_blit_image_ex (img, rx, ry + rh - oy, exx, oy,
+                                   srf, x2 - w + rx + rw - exx, y1 + ry);
+            }
+            if (ox && exy) { // LL of dst, UR of src
+                ttk_blit_image_ex (img, rx + rw - ox, ry, ox, exy,
+                                   srf, x1 + rx, y2 - h + ry + rh - exy);
+            }
+            if (exx && exy) { // LR of dst, UL of src
+                ttk_blit_image_ex (img, rx, ry, exx, exy,
+                                   srf, x2 - w + rx + rw - exx, y2 - h + ry + rh - exy);
+            }
+            
+            //- Edges
+            int x, y;
+            if (oy)
+                for (x = ox; x < ex; x += rw)
+                    ttk_blit_image_ex (img, rx, ry + rh - oy, (x + rw < ex)? rw : (ex-x), oy,
+                                       srf, x1 + rx + x, y1 + ry);
+            if (exy)
+                for (x = ox; x < ex; x += rw)
+                    ttk_blit_image_ex (img, rx, ry, (x + rw < ex)? rw : (ex - x), exy,
+                                       srf, x1 + rx + x, y2 - h + ry + rh - exy);
+            if (ox)
+                for (y = oy; y < ey; y += rh)
+                    ttk_blit_image_ex (img, rx + rw - ox, ry, ox, (y + rh < ey)? rh : (ey-y),
+                                       srf, x1 + rx, y1 + ry + y);
+            if (exx)
+                for (y = oy; y < ey; y += rh)
+                    ttk_blit_image_ex (img, rx, ry, exx, (y + rh < ey)? rh : (ey - y),
+                                       srf, x2 - w + rx + rw - exx, y1 + ry + y);
+            
+            //- Tiled part
+            for (y = oy; y < ey; y += rh) {
+                for (x = ox; x < ex; x += rw) {
+                    ttk_blit_image_ex (img, rx, ry, rw, rh, srf, x1 + rx + x, y1 + ry + y);
+                }
+            }
+        }
     }
     
     if (iscol) {
