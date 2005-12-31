@@ -811,6 +811,7 @@ PzWindow *new_vortex_window()
 	Vortex_Console_HiddenStatic( 1 );
 	Vortex_Console_AddItem( "VORTEX", 0, 0, 
 				VORTEX_STYLE_BOLD, vglob.color.title );
+	Star_SetStyle( STAR_MOTION_STATIC );
 	Star_GenerateStars();
 
 	return pz_finish_window( vglob.window );
