@@ -1,6 +1,7 @@
 %{ /*-*-C-*- (well, lex really, but C works well enough) */
 
 #include <ttk.h>
+#include <string.h>
 #define NUM_DEFS	(16)
 static TApItem *ap_head = 0;
 
@@ -386,10 +387,8 @@ void ttk_ap_dorect (ttk_surface srf, TApItem *ap, int x1, int y1, int x2, int y2
     
     if (ap->type & TTK_AP_COLOR)
 	col = ap->color;
-    else if (srf)
-	iscol = 0;
     else
-	col = ttk_makecol_ex (BLACK, srf);
+	iscol = 0;
 
     if (ap->type & TTK_AP_SPACING) {
         int ox1 = x1, ox2 = x2, oy1 = y1, oy2 = y2;
