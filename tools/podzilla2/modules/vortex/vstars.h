@@ -26,8 +26,14 @@
 #include "vglobals.h"
 
 typedef struct vstar {
-	int x;		/* horizontal */
-	int y;		/* vertical */
+	double x;	/* horizontal */
+	double y;	/* vertical */
+
+	double xv;	/* x velocity */
+	double yv;	/* x velocity */
+	double xa;	/* x acceleration */
+	double ya;	/* y acceleration */
+
 	int s;		/* size */
 	ttk_color c;	/* color.  duh. */
 } vstar;
