@@ -27,6 +27,7 @@
 #define TTK_AP_RRECT    010
 #define TTK_AP_GRADIENT 020
 #define TTK_AP_GRAD_MID 040
+#define TTK_AP_GRAD_HORIZ 0100
 
 typedef struct TApItem
 {
