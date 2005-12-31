@@ -15,6 +15,8 @@
 	  gradient.bottom => blue,
 	  gradient.bar => white
 
+   music: bar.bg => black, bar => white
+
  battery: border => black, bg => white, fill.normal => black +1, 
 		fill.low => white +1, fill.charge => black +1,
 		bg.low => blue, bg.charging => blue

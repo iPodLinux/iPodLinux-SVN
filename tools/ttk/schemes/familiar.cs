@@ -20,6 +20,8 @@
 	  gradient.middle => grapmid,
 	  gradient.bottom => grapbot,
 	  gradient.bar => grapbar +1
+   music: bar => <vert #0039b3 to #60a4ef to #87d0ff>
+	  bar.bar => #91bae7 +1
  battery: border => #606C78, bg => #C0D0D8, fill.normal => #68D028, fill.low => #C03020, fill.charge => #68D028,
 	  bg.low => #C0D0D8, bg.charging => #C0D0D8
     lock: border => #282C28, fill => #383C40
