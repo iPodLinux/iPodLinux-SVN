@@ -114,7 +114,7 @@ void      config_init(void) {
             config.image[config.items].type  = CONFIG_IMAGE_BINARY;
             config.image[config.items].title = p;
             config.image[config.items].path  = value;
-            if (!mlc_strcmp (value, "diskmode") || !mlc_strcmp (value, "diskscan"))
+            if (!mlc_strcmp (value, "diskmode") || !mlc_strcmp (value, "diskscan") || !mlc_strcmp (value, "reboot"))
                 config.image[config.items].type = CONFIG_IMAGE_SPECIAL;
             config.items++;
             if (config.items >= 8)
