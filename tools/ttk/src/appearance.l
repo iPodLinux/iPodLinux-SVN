@@ -168,6 +168,9 @@ DEC	[0-9]+
     }
 }
 
+<GRADSTART,GRADEND>horiz(ontal)? ap->type |= TTK_AP_GRAD_HORIZ;
+<GRADSTART,GRADEND>vert(ical)?	 ap->type &= ~TTK_AP_GRAD_HORIZ;
+
 <VALUE>"<"	BEGIN GRADSTART;
 <GRADSTART>(to|,) BEGIN GRADEND;
 <GRADEND>(to|,)	{
@@ -220,7 +223,7 @@ DEC	[0-9]+
     ap->ry = atoi (str);
 }
 
-<VALUE>{ID} {
+<VALUE,GRADSTART,GRADEND>{ID} {
     char *str = 0;
     int i;
     for (i = 0; i < nextdef; i++) {
@@ -411,9 +414,29 @@ void ttk_ap_dorect (ttk_surface srf, TApItem *ap, int x1, int y1, int x2, int y2
         }
     }
     
-    if (img)
+    if (ap->type & TTK_AP_GRADIENT) {
+        void (*gradfn)(ttk_surface, int, int, int, int, ttk_color, ttk_color) = ttk_vgradient;
+        if (ap->type & TTK_AP_GRAD_HORIZ)
+            gradfn = ttk_hgradient;
+        
+        if (ap->type & TTK_AP_GRAD_MID) {
+            if (gradfn == ttk_hgradient) {
+                gradfn (srf, x1, y1, (x1 + x2) >> 1, y2, ap->gradstart, ap->gradmid);
+                gradfn (srf, (x1 + x2) >> 1, y1, x2, y2, ap->gradmid, ap->gradend);
+            } else {
+                gradfn (srf, x1, y1, x2, (y1 + y2) >> 1, ap->gradstart, ap->gradmid);
+                gradfn (srf, x1, (y1 + y2) >> 1, x2, y2, ap->gradmid, ap->gradend);
+            }
+        } else {
+            gradfn (srf, x1, y1, x2, y2, ap->gradstart, ap->gradend);
+        }
+    }
+
+    if (img) {
+        // ...
 	ttk_blit_image_ex (img, 0, 0, x2-x1, y2-y1,
 			   srf, x1, y1);
+    }
     
     if (iscol) {
 	if (filled)

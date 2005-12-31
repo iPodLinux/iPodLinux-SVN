@@ -3,7 +3,6 @@
 \def white  #ffffff
 \def gray   #a0a0a0
 \def dkgray #505050
-\def red    #ff0000
 
   header: bg => white, fg => black, line => black -1, accent => gray
 	  gradient.top => white,
