@@ -23,9 +23,16 @@
 
 #include "vstars.h"
 
+static int motion = STAR_MOTION_STATIC;		/* default motion */
+
 #define NUM_STARS	(32)
 
 vstar stars[NUM_STARS];
+
+void Star_SetStyle( int kind )
+{
+	motion = kind;
+}
 
 static void Star_bang( int which )
 {
@@ -34,12 +41,14 @@ static void Star_bang( int which )
 	stars[which].y = (double)Vortex_Rand( vglob.usableH );
 
 	/* acceleration */
-	stars[which].xa = 0;
-	stars[which].ya = 0;
+	stars[which].xa = stars[which].ya = 0;
+	stars[which].xv = stars[which].yv = 0;
 
-	/* vellocity */
-	stars[which].xv = ((double)(rand()&0x0ff))/255.0 - 0.5;
-	stars[which].yv = ((double)(rand()&0x0ff))/255.0 - 0.5;
+	/* velocity */
+	if( motion == STAR_MOTION_RANDOM ) {
+		stars[which].xv = ((double)(rand()&0x0ff))/255.0 - 0.5;
+		stars[which].yv = ((double)(rand()&0x0ff))/255.0 - 0.5;
+	}
 
 	/* color and size */
 	stars[which].c = ttk_makecol( 120 + (rand() & 0x7f),
