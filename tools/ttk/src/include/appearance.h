@@ -21,9 +21,12 @@
 #ifndef _TTK_APPEARANCE_H_
 #define _TTK_APPEARANCE_H_
 
-#define TTK_AP_COLOR   1
-#define TTK_AP_IMAGE   2
-#define TTK_AP_SPACING 4
+#define TTK_AP_COLOR    01
+#define TTK_AP_IMAGE    02
+#define TTK_AP_SPACING  04
+#define TTK_AP_RRECT    010
+#define TTK_AP_GRADIENT 020
+#define TTK_AP_GRAD_MID 040
 
 typedef struct TApItem
 {
@@ -32,6 +35,8 @@ typedef struct TApItem
     ttk_color color;
     ttk_surface img;
     int spacing;
+    int rx, ry, rw, rh;
+    ttk_color gradstart, gradend, gradmid;
     struct TApItem *next; // used in some cases
 } TApItem;
 
