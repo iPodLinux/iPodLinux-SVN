@@ -97,11 +97,16 @@ static void mcp_draw_percent(PzWidget *wid, ttk_surface srf, int per)
 	int pw = (w * num) / 100;
 	const int h = 9;
 
+	if (ttk_ap_get("music.bar.bg"))
+		ttk_ap_fillrect(srf, ttk_ap_get("music.bar.bg"), x,y,x+w+1,y+h);
 	switch (multibar.state) {
 	case POSITION:
 	case VOLUME_S:
-		ttk_ap_fillrect(srf, ttk_ap_get("scroll.bar"),
+		ttk_ap_fillrect(srf, ttk_ap_get("music.bar"),
 				x, y, x + pw, y + h);
+		if (ttk_ap_get("music.bar.bar"))
+			ttk_ap_fillrect(srf, ttk_ap_get("music.bar.bar"),
+					x, y, x + pw + 1, y + h/2);
 		break;
 	case SEEK:
 		ttk_ap_rect(srf, ttk_ap_get("scroll.bar"),
