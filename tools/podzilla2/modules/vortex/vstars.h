@@ -25,6 +25,9 @@
 #include "ttk.h"
 #include "vglobals.h"
 
+#define STAR_MOTION_STATIC	(0)
+#define STAR_MOTION_RANDOM	(1)
+
 typedef struct vstar {
 	double x;	/* horizontal */
 	double y;	/* vertical */
@@ -41,5 +44,6 @@ typedef struct vstar {
 void Star_GenerateStars( void );	/* will generate a new starfield */
 void Star_DrawStars( ttk_surface srf );	/* will draw the stars to srf */
 void Star_Poll( void );			/* update the starfield */
+void Star_SetStyle( int kind );		/* set the kind of star motion */
 
 #endif

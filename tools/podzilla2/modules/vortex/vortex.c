@@ -827,6 +827,7 @@ void draw_stars (PzWidget *widget, ttk_surface srf)
 
 int event_stars (PzEvent *ev) 
 {
+	static int kind = 0;
 	switch (ev->type) {
 	case PZ_EVENT_BUTTON_UP:
 		switch( ev->arg ) {
@@ -835,6 +836,11 @@ int event_stars (PzEvent *ev)
 			break;
 
 		case( PZ_BUTTON_PLAY ):
+			if( kind )
+				Star_SetStyle( STAR_MOTION_RANDOM );
+			else
+				Star_SetStyle( STAR_MOTION_STATIC );
+			kind ^= 1;
 			Star_GenerateStars();
 			ev->wid->dirty = 1;
 			break;
@@ -878,6 +884,7 @@ PzWindow *new_stars_window()
 	Vortex_Console_HiddenStatic( 1 );
 	vglob.timer = 0;
 	vglob.state = VORTEX_STATE_STARS;
+	Star_SetStyle( STAR_MOTION_RANDOM );
 	Star_GenerateStars();
 
 	return pz_finish_window( vglob.window );
