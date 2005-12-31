@@ -24,6 +24,7 @@
 #ifndef __VORTEX_GLOBALS_H__
 #define __VORTEX_GLOBALS_H__
 
+#define VORTEX_STATE_STARS	(-2)
 #define VORTEX_STATE_UNDEFINED	(-1)	/* nothing. */
 #define VORTEX_STATE_STARTUP	(0)	/* intro animation */
 #define VORTEX_STATE_STYLESEL	(1)	/* user selecting 2k5 or classic */
@@ -78,6 +79,7 @@ typedef struct _vortex_colors {
 #define VORTEX_STYLE_CLASSIC	(0)
 #define VORTEX_STYLE_2K5	(1)
 #define VORTEX_STYLE_BURRITO	(2)
+#define VORTEX_STYLE_STARS	(3)
 #define VORTEX_STYLE_MAX	(1)
 
 typedef struct vortex_globals {

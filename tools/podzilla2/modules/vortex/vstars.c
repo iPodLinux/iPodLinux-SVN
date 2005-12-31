@@ -64,3 +64,7 @@ void Star_DrawStars( ttk_surface srf )
 		}
         }
 }
+
+void Star_Poll( void )
+{
+}
