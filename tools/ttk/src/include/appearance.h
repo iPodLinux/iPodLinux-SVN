@@ -21,13 +21,23 @@
 #ifndef _TTK_APPEARANCE_H_
 #define _TTK_APPEARANCE_H_
 
-#define TTK_AP_COLOR    01
-#define TTK_AP_IMAGE    02
-#define TTK_AP_SPACING  04
-#define TTK_AP_RRECT    010
-#define TTK_AP_GRADIENT 020
-#define TTK_AP_GRAD_MID 040
-#define TTK_AP_GRAD_HORIZ 0100
+#define TTK_AP_COLOR        01
+#define TTK_AP_IMAGE        02
+#define TTK_AP_SPACING      04
+#define TTK_AP_RRECT        010
+#define TTK_AP_GRADIENT     020
+#define TTK_AP_GRAD_MID     040
+#define TTK_AP_GRAD_HORIZ   0100
+
+#define TTK_AP_IMG_HLEFT    0000
+#define TTK_AP_IMG_HCENTER  0200
+#define TTK_AP_IMG_HRIGHT   0400
+#define TTK_AP_IMG_HAMASK   0600
+
+#define TTK_AP_IMG_VTOP     00000
+#define TTK_AP_IMG_VCENTER  02000
+#define TTK_AP_IMG_VBOTTOM  04000
+#define TTK_AP_IMG_VAMASK   06000
 
 typedef struct TApItem
 {

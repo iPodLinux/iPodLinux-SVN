@@ -1,8 +1,8 @@
 OBJS = ttk.o menu.o icons.o slider.o imgview.o textarea.o lex.yy.o mwin-emu.o gradient.o ttkmm.o
 HDR = ttk.h menu.h icons.h slider.h imgview.h textarea.h appearance.h mwin-emu.h gradient.h ttkmm.h
 
-EXAMPLES = exscroll exmenu eximage exti exap
-EXOBJS = exscroll.o exmenu.o eximage.o exti.o exap.o
+EXAMPLES = exscroll exmenu eximage exti
+EXOBJS = exscroll.o exmenu.o eximage.o exti.o
 
 MYCFLAGS = -g -I. -Wall -Wno-unused -Wno-implicit -Wno-char-subscripts
 PREFIX ?= /usr
@@ -60,12 +60,13 @@ endif
 
 ifdef IPOD
 LIBSA = ../libs/common/*.a
+LIBS += -lintl
 else
 LIBSA =
 LIBS += -L/sw/lib -L/usr/local/lib
-endif
-ifndef NO_INTL
+ifneq ($(shell uname),Linux)
 LIBS += -lintl
+endif
 endif
 
 ifeq ($(GFXLIB),SDL)
