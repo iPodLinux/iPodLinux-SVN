@@ -9,6 +9,7 @@
 	  gradient.middle => white,
 	  gradient.bottom => dkgray,
 	  gradient.bar => gray
+   music: bar => dkgray
  battery: border => black, bg => white, fill.normal => black +1, fill.low => dkgray +1, fill.charge => black +1,
 	  bg.low => white, bg.charging => gray
     lock: border => black, fill => black

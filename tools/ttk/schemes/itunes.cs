@@ -53,6 +53,7 @@
 	  gradient.middle => grapmid,
 	  gradient.bottom => grapbot,
 	  gradient.bar => grapbar +1
+   music: bar => <vert graptop to grapmid to grapbot>,  bar.bar => grapbar +1
  battery: border => metalfg, bg => grapmid, fill.normal => metalfg +1, fill.low => metalwid +1, fill.charge => metalfg +1,
 	  bg.low => red, bg.charging => blue
     lock: border => metalwid, fill => metalwid
