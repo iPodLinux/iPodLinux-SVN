@@ -22,7 +22,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <libintl.h>
+
+#ifndef NO_INTL
+extern char *gettext (const char *msgid);
+#else
+#define gettext(str) str
+#endif
 
 #ifndef MIN
 #define MIN(x,y) (((x)<(y))?(x):(y))
