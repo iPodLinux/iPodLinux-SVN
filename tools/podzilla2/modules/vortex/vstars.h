@@ -34,5 +34,6 @@ typedef struct vstar {
 
 void Star_GenerateStars( void );	/* will generate a new starfield */
 void Star_DrawStars( ttk_surface srf );	/* will draw the stars to srf */
+void Star_Poll( void );			/* update the starfield */
 
 #endif

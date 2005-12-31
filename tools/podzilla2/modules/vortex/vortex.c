@@ -55,6 +55,15 @@ vortex_globals vglob;
 /* padding around the web to the top and bottom */
 #define VPADDING (10)
 
+/* various strings for confusing display */
+char *confusing[][4] = {
+	{ "Burrito", NULL },
+	{ "Montana", NULL },
+	{ "One", "Step", "Beyond", NULL },
+	{ "Madness", "Comes", "Tonight", NULL },
+	{ "Moo", NULL },
+	{ NULL },
+};
 
 void Vortex_initLevel( void );
 
@@ -732,6 +741,9 @@ int event_vortex (PzEvent *ev)
 		}
 
 		if( !vglob.paused ) {
+			if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
+				Star_Poll();
+
 			Vortex_Powerup_poll();
 			Vortex_Bolt_poll();
 			Vortex_Enemy_poll();
@@ -806,6 +818,73 @@ PzWindow *new_vortex_window()
 
 
 
+void draw_stars (PzWidget *widget, ttk_surface srf) 
+{
+	ttk_fillrect( srf, 0, 0, ttk_screen->w, ttk_screen->h, vglob.color.bg );
+	Star_DrawStars( srf );
+}
+
+
+int event_stars (PzEvent *ev) 
+{
+	switch (ev->type) {
+	case PZ_EVENT_BUTTON_UP:
+		switch( ev->arg ) {
+		case( PZ_BUTTON_MENU ):
+			pz_close_window (ev->wid->win);
+			break;
+
+		case( PZ_BUTTON_PLAY ):
+			Star_GenerateStars();
+			ev->wid->dirty = 1;
+			break;
+		}
+		break;
+
+	case PZ_EVENT_DESTROY:
+		cleanup_vortex();
+		break;
+
+	case PZ_EVENT_TIMER:
+		Star_Poll();
+		ev->wid->dirty = 1;
+		break;
+	}
+	return 0;
+}
+
+
+PzWindow *new_stars_window()
+{
+	srand( time( NULL ));
+
+	vglob.window = pz_new_window( "Stars", PZ_WINDOW_NORMAL );
+
+	/* make it full screen */
+#ifdef VORTEX_FULLSCREEN
+	ttk_window_hide_header( vglob.window );
+	vglob.window->x = 0;
+	vglob.window->y = 0;
+	vglob.window->w = ttk_screen->w;
+	vglob.window->h = ttk_screen->h;
+#endif
+	Vortex_Console_Init();
+
+	vglob.widget = pz_add_widget( vglob.window, draw_stars, event_stars );
+	pz_widget_set_timer( vglob.widget, 30 );
+
+	vglob.gameStyle = VORTEX_STYLE_STARS;
+	Vortex_Initialize( );
+	Vortex_Console_HiddenStatic( 1 );
+	vglob.timer = 0;
+	vglob.state = VORTEX_STATE_STARS;
+	Star_GenerateStars();
+
+	return pz_finish_window( vglob.window );
+}
+
+
+
 void init_vortex() 
 {
 	int p,q;
@@ -815,6 +894,7 @@ void init_vortex()
 
 	/* menu item display name */
 	pz_menu_add_action ("/Extras/Games/Vortex", new_vortex_window);
+	pz_menu_add_action ("/Extras/Stuff/Stars", new_stars_window);
 
 	Vortex_Initialize();
 
