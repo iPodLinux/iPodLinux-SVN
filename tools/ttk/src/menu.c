@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <libintl.h>
 
 #ifndef MIN
 #define MIN(x,y) (((x)<(y))?(x):(y))
