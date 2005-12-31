@@ -1,8 +1,8 @@
-OBJS = ttk.o menu.o icons.o slider.o imgview.o textarea.o appearance.o mwin-emu.o gradient.o ttkmm.o
+OBJS = ttk.o menu.o icons.o slider.o imgview.o textarea.o lex.yy.o mwin-emu.o gradient.o ttkmm.o
 HDR = ttk.h menu.h icons.h slider.h imgview.h textarea.h appearance.h mwin-emu.h gradient.h ttkmm.h
 
-EXAMPLES = exscroll exmenu eximage exti
-EXOBJS = exscroll.o exmenu.o eximage.o exti.o
+EXAMPLES = exscroll exmenu eximage exti exap
+EXOBJS = exscroll.o exmenu.o eximage.o exti.o exap.o
 
 MYCFLAGS = -g -I. -Wall -Wno-unused -Wno-implicit -Wno-char-subscripts
 PREFIX ?= /usr
@@ -26,6 +26,8 @@ ifdef SDL_FRAMEWORK
 MYCFLAGS += -framework SDL -framework SDL_image -I/Library/Frameworks/SDL.framework/Headers/ -I/Library/Frameworks/SDL_image.framework/Headers/
 endif
 endif
+
+FLEX ?= flex
 
 ifdef SDL
 GFXLIB = SDL
@@ -129,6 +131,8 @@ endif
 	$(CC) $(CFLAGS) $(MYCFLAGS) -c -o $@ $<
 %.o: %.cc
 	$(CXX) $(CFLAGS) $(CXXFLAGS) $(MYCFLAGS) -c -o $@ $<
+lex.yy.c: appearance.l
+	$(FLEX) appearance.l
 
 # Examples:
 %: %.o libttk.a
