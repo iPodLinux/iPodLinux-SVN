@@ -100,9 +100,6 @@ mpd_Connection *mpd_init_connection()
 	
 	mpd_newConnection_st(&con_fd, hostname, atoi(port), 16);
 
-	free(hostname);
-	free(port);
-
 	if (con_fd.error) {
 		return NULL;
 	}
