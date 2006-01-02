@@ -1,9 +1,10 @@
 obj-m = terminal.o
 MODULE = terminal
-ifdef __linux__
+ifdef IPOD
+MODLIBS = -lutil
+else
+ifneq ($(shell uname),Darwin)
 MODLIBS = -lutil
 endif
-ifdef __FreeBSD__
-MODLIBS = -lutil
 endif
 DATA = minix-sh
