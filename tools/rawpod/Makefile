@@ -1,6 +1,9 @@
-APPS = ipodls ipodfind
+APPS = ipodls ipodfind ipodcopy
 
 all: librawpod.a $(APPS)
+
+ipodcopy: librawpod.a ipodcopy.cc dirent.cc
+	g++ -g -o $@ ipodcopy.cc dirent.cc librawpod.a
 
 ipodls: librawpod.a ipodls.cc
 	g++ -o $@ ipodls.cc librawpod.a

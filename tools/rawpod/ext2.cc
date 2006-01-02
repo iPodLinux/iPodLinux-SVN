@@ -649,6 +649,7 @@ int Ext2FS::mkdir (const char *path)
 
     fp->_inode->i_mode &= 07777;
     fp->_inode->i_mode |= S_IFDIR;
+    fp->_inode->i_mode |= 00111; // exec/search perms
 
     // Write a full block of zeroes.
     u8 *zeroes = new u8[_blocksize];
@@ -883,6 +884,8 @@ int Ext2FS::symlink (const char *target, const char *link)
     } else {
         fp->write (target, strlen (target));
     }
+
+    fp->_inode->i_mode = S_IFLNK | 0777; // lrwxrwxrwx - default symlink perms
     
     fp->close();
     delete fp;
@@ -1573,7 +1576,7 @@ s32 Ext2FS::creat (const char *path, int type)
 }
 
 VFS::File *Ext2FS::open (const char *path, int flags)
-{  
+{
     s32 ino = lookup (path, 1);
     if (((flags & O_WRONLY) || (flags & O_RDWR)) && !_writable)
         return new ErrorFile (EROFS);
@@ -1604,7 +1607,7 @@ VFS::File *Ext2FS::open (const char *path, int flags)
     return new Ext2File (this, ino, ((flags & O_WRONLY) || (flags & O_RDWR)) && _writable);
 }
 
-int Ext2FS::lstat (const char *path, struct stat *st) 
+int Ext2FS::lstat (const char *path, struct my_stat *st) 
 {
     s32 ino = lookup (path, 0);
     if (ino < 0)
@@ -1651,7 +1654,7 @@ int Ext2Dir::readdir (struct VFS::dirent *d)
         _off += de->rec_len;
 
         if (de->inode) good = 1;
-    } while (!good && (ret > 0));
+    } while (!good && (ret > 0) && de->rec_len);
     
     d->d_ino = de->inode;
     memcpy (d->d_name, de->name, de->name_len);
