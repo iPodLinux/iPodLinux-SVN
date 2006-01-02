@@ -75,7 +75,7 @@ namespace VFS
             buf += _blocksize;
         }
 
-        if (blkend < end) {
+        if (blkend < end && start < end) {
             if (!tmp) tmp = new char[_blocksize];
             err = doRead (tmp, blkend >> _blocksize_bits); CHECKERR;
             memcpy (tmp, buf, end - blkend);

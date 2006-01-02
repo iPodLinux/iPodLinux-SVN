@@ -5,10 +5,9 @@
  */
 
 #ifndef WIN32
-#define stat __stat
 #include <fcntl.h> /* get the *nix O_* constants, instead of
                     ours */
-#undef stat
+#define DONT_REDEFINE_OPEN_CONSTANTS
 #endif
 #include "device.h"
 

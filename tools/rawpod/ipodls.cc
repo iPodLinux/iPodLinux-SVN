@@ -9,7 +9,7 @@ int lflag = 0;
 int cflag = 0;
 Ext2FS *ext2;
 
-void print_file (const char *name, struct stat *st, const char *linktarget)
+void print_file (const char *name, struct my_stat *st, const char *linktarget)
 {
 #define BRIGHT (1<<15)
     int color = 0;
@@ -82,7 +82,7 @@ void print_file (const char *name, struct stat *st, const char *linktarget)
 
 void process_arg (const char *arg) 
 {
-    struct stat st;
+    struct my_stat st;
     int err;
     char linkbuf[256];
     if ((err = ext2->lstat (arg, &st)) < 0) {

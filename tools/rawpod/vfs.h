@@ -17,16 +17,25 @@
 #include "errno.h"
 #else
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #endif
 
-#ifndef O_RDONLY
+#ifndef DONT_REDEFINE_OPEN_CONSTANTS
+#undef O_RDONLY
+#undef O_WRONLY
+#undef O_RDWR
+#undef O_CREAT
+#undef O_APPEND
+#undef O_EXCL
+#undef O_TRUNC
 #define O_RDONLY 01
 #define O_WRONLY 02
-#define O_RDWR   03
-#define O_CREAT  04
-#define O_APPEND 010
-#define O_EXCL   020
-#define O_TRUNC  040
+#define O_RDWR   04
+#define O_CREAT  010
+#define O_APPEND 020
+#define O_EXCL   040
+#define O_TRUNC  080
 #endif
 
 typedef unsigned char u8;
@@ -44,7 +53,7 @@ typedef   signed long long s64;
 #undef st_ctime
 #undef st_mtime
 
-struct stat 
+struct my_stat 
 {
     u32           st_dev;      /* device */
     u32           st_ino;      /* inode */
@@ -60,7 +69,6 @@ struct stat
     u32           st_mtime;    /* time of last modification */
     u32           st_ctime;    /* time of last status change */    
 };
-#define _STAT_DEFINED
 
 #ifndef S_IFMT
 #define S_IFMT     0170000
@@ -155,7 +163,7 @@ namespace VFS
         virtual int chown (int uid, int gid = -1) { return -EPERM; }
         virtual int chmod (int mode) { return -EPERM; }
         virtual int truncate() { return -EROFS; }
-        virtual int stat (struct stat *st) { return -ENOSYS; }
+        virtual int stat (struct my_stat *st) { return -ENOSYS; }
 
         virtual int close() {}
     };
@@ -251,7 +259,7 @@ namespace VFS
 	virtual int link (const char *oldpath, const char *newpath) { return -EPERM; }
 	virtual int symlink (const char *dest, const char *path) { return -EPERM; }
         virtual int readlink (const char *path, char *buf, int len) { return -EINVAL; }
-        virtual int stat (const char *path, struct stat *st) {
+        virtual int stat (const char *path, struct my_stat *st) {
             File *fp = open (path, O_RDONLY);
             int err = 0;
             if (fp->error())
@@ -262,7 +270,7 @@ namespace VFS
             delete fp;
             return err;
         }
-        virtual int lstat (const char *path, struct stat *st) {
+        virtual int lstat (const char *path, struct my_stat *st) {
             return stat (path, st);
         }
 

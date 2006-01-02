@@ -394,7 +394,7 @@ public:
     virtual int   link (const char *oldpath, const char *newpath);
     virtual int   symlink (const char *dest, const char *path);
     virtual int   readlink (const char *path, char *buf, int len);
-    virtual int   lstat (const char *path, struct stat *st);
+    virtual int   lstat (const char *path, struct my_stat *st);
 
     void setWritable (int flag) { _writable = flag; }
     
@@ -463,7 +463,7 @@ public:
         kill_file (1);
         _pos = _size = 0;
     }
-    virtual int stat (struct stat *st) {
+    virtual int stat (struct my_stat *st) {
         st->st_dev = 0;
         st->st_ino = _ino;
         st->st_mode = _inode->i_mode;

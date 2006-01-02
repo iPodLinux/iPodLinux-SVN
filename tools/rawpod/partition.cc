@@ -10,9 +10,7 @@
 #ifdef WIN32
 #include <windows.h>
 #else
-#define stat __stat
 #include <fcntl.h>
-#undef stat
 #include <unistd.h>
 #include <sys/ioctl.h>
 #define BLKRRPART  _IO(0x12,95) /* re-read partition table */
