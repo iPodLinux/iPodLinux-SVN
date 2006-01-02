@@ -438,7 +438,7 @@ void ttk_hgradient( ttk_surface srf, int x1, int y1, int x2, int y2,
 	if( steps < 0 ) steps*=-1;
 
 	for( column=0 ; column<steps; column++ )
-		ttk_line( srf, x1+column, y1, x1+column, y2, 
+		ttk_line( srf, x1+column, y1, x1+column, y2-1, 
 		    gn->gradient[ (column * 256)/steps  ] );
 }
 
@@ -454,7 +454,7 @@ void ttk_vgradient(ttk_surface srf, int x1, int y1, int x2, int y2,
 	if( steps < 0 ) steps*=-1;
 
 	for( row=0 ; row<steps; row++ )
-		ttk_line( srf, x1, y1+row, x2, y1+row, 
+		ttk_line( srf, x1, y1+row, x2-1, y1+row, 
 		    gn->gradient[ (row * 256)/steps  ] );
 }
 
