@@ -27,19 +27,28 @@
 #include <fcntl.h>
 
 /* Some systems have util.h, some systems have pty.h, some systems have libutil.h. Feh. */
-/* If terminal fails to compile, try make CFLAGS=-DHAVE_PTY or make CFLAGS=-DHAVE_LIBUTIL. */
-#if defined(IPOD)
+
+/* since we don't have autotools assistance here, we'll have to guess as
+ * best as we can.
+ * general guidelines:
+ *   linux: pty.h
+ *   osx || netbsd || openbsd: util.h
+ *   freebsd: libutil.h
+ *   qnx: unix.h
+ *   solaris: not included */
+#if defined(IPOD) || defined (__linux__)
 #include <pty.h>
 #include <utmp.h>
-#elif defined(HAVE_UTIL)
+#elif defined(__APPLE__) || defined(__NetBSD__) || defined(__OpenBSD__)
 #include <util.h>
-#elif defined(HAVE_LIBUTIL)
+#elif defined(__FreeBSD__)
 #include <libutil.h>
-#elif defined(HAVE_PTY)
-#include <pty.h>
-#include <utmp.h>
+#elif defined (__QNX__)
+#include <unix.h>
+#elif defined(solaris) || (defined(__SVR4) && defined(sun))
+#warning Solaris doesn't support this and needs manual implementation here
 #else
-#include <util.h>
+#warning Unknown operating system, this build will probably fail, sorry. Try adjusting the includes.
 #endif
 
 #include <termios.h>
