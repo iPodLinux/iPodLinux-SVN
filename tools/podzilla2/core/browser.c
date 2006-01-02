@@ -252,7 +252,7 @@ static TWindow *new_textview_window(char *filename)
 	char *buf = NULL;
 	char tmp[4096];
 	FILE *fp;
-	long len;
+	long len, cs;
 
 	if ((fp = fopen(filename, "r")) == NULL) {
 		pz_perror(filename);
@@ -262,12 +262,16 @@ static TWindow *new_textview_window(char *filename)
 	len = ftell(fp);
 	rewind(fp);
 	if (len == 0) {
+		cs = 0;
 		while (fgets(tmp, 4096, fp) != NULL) {
 			len = buf ? strlen(buf) : 0;
-			if ((buf=realloc(buf, (len+4096)*sizeof(char)))==NULL) {
-				pz_error(_("Memory reallocation failed."));
-				fclose(fp);
-				return TTK_MENU_DONOTHING;
+			if (len + strlen(tmp) > cs) {
+				cs += 8192;
+				if ((buf = realloc(buf, cs)) == NULL) {
+					pz_error(_("Memory allocation failed"));
+					fclose(fp);
+					return TTK_MENU_DONOTHING;
+				}
 			}
 			strncpy(buf + len, tmp, 4096);
 		}
@@ -278,9 +282,9 @@ static TWindow *new_textview_window(char *filename)
 		}
 	}
 	else {
-		long cs = len;
+		cs = len;
 		if ((buf = malloc(len + 1)) == NULL) {
-			pz_error(_("Memory allocation failed."));
+			pz_error(_("Memory allocation failed"));
 			fclose(fp);
 			return TTK_MENU_DONOTHING;
 		}
