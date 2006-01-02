@@ -99,8 +99,10 @@ TWindow *pz_select_color_scheme()
     		strcpy (item->data, d->d_name);
     		
     		fgets (buf, 100, f);
-    		if (strchr (buf, ' '))
+    		if (strchr (buf, ' ')) {
     			item->name = strdup (strchr (buf, ' ') + 1);
+			*(strchr(item->name, '\n')) = '\0'; 
+		}
     		else
     			item->name = strdup (d->d_name);
     		fclose (f);
