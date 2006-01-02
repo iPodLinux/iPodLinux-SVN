@@ -28,7 +28,7 @@
 
     lock: border => red, fill => black
 
- loadavg: bg => dkred, fg => ltred, spike => red
+ loadavg: bg => <vert black to red>, fg => <vert red to black>, spike => yellow
 
   window: bg => black, fg => red, border => dkred -3
 

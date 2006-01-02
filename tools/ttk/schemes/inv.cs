@@ -15,7 +15,7 @@
 	  bg.low => black, bg.charging =>white
 
     lock: border => black, fill => black
- loadavg: bg => gray, fg => dkgray, spike => black
+ loadavg: bg => white, fg => dkgray, spike => black
 
   window: bg => white, fg => black, border => gray -3
   dialog: bg => white, fg => black, line => black,
