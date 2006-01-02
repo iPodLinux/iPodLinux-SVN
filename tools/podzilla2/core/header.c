@@ -25,6 +25,8 @@
 #include <unistd.h>
 #include "pz.h"
 
+static int decorations;			/* which decoration set to use */
+static int decoration_colors_dirty = 0; /* have the colors changed on us? */
 
 static int make_dirty (TWidget *this) { this->dirty++; ttk_dirty |= TTK_DIRTY_HEADER; return 0; }
 
@@ -56,7 +58,9 @@ static void battery_draw (TWidget *this, ttk_surface srf)
 				    (battery_is_charging)?'+':' ',
 				    battery_fill );
 
-		pz_vector_string( srf, buf, this->x, this->y, 5, 9, 1, c );
+		pz_vector_string( srf, buf, 
+				(this->x)-((decorations == PZ_DEC_AMIGA20)?1:0),
+				this->y, 5, 9, 1, c );
 		return;
 	}
 
@@ -358,8 +362,6 @@ void pz_header_unset_local()
     local--;
 }
 
-static int decorations;			/* which decoration set to use */
-static int decoration_colors_dirty = 0; /* have the colors changed on us? */
 void pz_header_set_decorations (int decor) 
 {
 	if( decorations != decor )  decoration_colors_dirty++;
@@ -438,6 +440,46 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 				 (ttk_screen->w - width) / 2 - 4, 0,
 				 (ttk_screen->w + width) / 2 + 4, 
 				 ttk_screen->wy - 2 );
+		}
+
+    } else if (decorations == PZ_DEC_AMIGA20) {
+		/* top */
+		ttk_line( srf, 0, 0, this->w, 0,
+				ttk_ap_getx( "header.shine" )->color );
+		/* left */
+		ttk_line( srf, 0, 0, 0, ttk_screen->wy-2,
+				ttk_ap_getx( "header.shine" )->color );
+		/* bottom - handled by header.line */
+		/* right */
+		ttk_line( srf, ttk_screen->w-1, 1,
+				ttk_screen->w-1, ttk_screen->wy-2,
+				ttk_ap_getx( "header.shadow" )->color );
+
+		/* right widget vertical border bar */
+		ttk_line( srf, hwid_right[hwid_rnext-1]-5, 1,
+			       hwid_right[hwid_rnext-1]-5, ttk_screen->wy - 1,
+			       ttk_ap_getx( "header.shadow" )->color );
+		ttk_line( srf, hwid_right[hwid_rnext-1]-4, 1,
+			       hwid_right[hwid_rnext-1]-4, ttk_screen->wy - 1,
+			       ttk_ap_getx( "header.shine" )->color );
+
+		/* left widget vertical border bar */
+		ttk_line( srf, ttk_screen->wy-1, 0,
+				ttk_screen->wy-1, ttk_screen->wy - 1,
+				ttk_ap_getx( "header.shadow" )->color );
+		ttk_line( srf, ttk_screen->wy, 0,
+				ttk_screen->wy, ttk_screen->wy - 1,
+				ttk_ap_getx( "header.shine" )->color );
+
+		/* left widget - faux close button */
+		if ( !pz_get_int_setting (pz_global_config, DISPLAY_LOAD) 
+			&& !pz_hold_is_on) {
+			double xo = ((float)ttk_screen->wy) / 7.0;
+			double yo = ((float)ttk_screen->wy) / 7.0;
+			ttk_fillrect( srf, xo*2.6, yo*2, xo*4.4, yo*5,
+				ttk_ap_getx( "header.shine" )->color );
+			ttk_rect( srf, xo*2.6, yo*2, xo*4.4, yo*5,
+				ttk_ap_getx( "header.shadow" )->color );
 		}
 
     } else if (decorations == PZ_DEC_MROBE) {
