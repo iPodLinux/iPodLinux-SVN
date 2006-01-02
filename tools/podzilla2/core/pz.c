@@ -405,6 +405,10 @@ main(int argc, char **argv)
 
 #ifdef IPOD
         signal (SIGBUS, debug_handler);
+
+#define SCHEMESDIR "/usr/share/schemes/"
+#else
+#define SCHEMESDIR "schemes/"
 #endif
 
         errout = stderr;
@@ -445,6 +449,9 @@ main(int argc, char **argv)
 			}
 		}
 	}
+
+        if (access (SCHEMESDIR "default.cs", R_OK) < 0)
+            symlink ("mono.cs", SCHEMESDIR "default.cs");
 
 	if ((first = ttk_init()) == 0) {
 		fprintf(stderr, _("ttk_init failed\n"));
