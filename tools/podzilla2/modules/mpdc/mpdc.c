@@ -94,9 +94,9 @@ mpd_Connection *mpd_init_connection()
  	char *port = getenv("MPD_PORT");
  
  	if (hostname == NULL)
- 		hostname = strdup("127.0.0.1");
+ 		hostname = "127.0.0.1";
  	if (port == NULL)
- 		port = strdup("6600");
+ 		port = "6600";
 	
 	mpd_newConnection_st(&con_fd, hostname, atoi(port), 16);
 
@@ -221,6 +221,8 @@ static int init_shuffle()
 }
 static void set_shuffle(ttk_menu_item *item, int cdata)
 {
+	if (mpdc_tickle() < 0)
+		return;
 	mpd_sendRandomCommand(mpdz, (item->choice == 1));
 	mpd_finishCommand(mpdz);
 }
@@ -236,6 +238,8 @@ static int init_repeat()
 }
 static void set_repeat(ttk_menu_item *item, int cdata)
 {
+	if (mpdc_tickle() < 0)
+		return;
 	if (item->choice == 1) item->choice = 2;
 	mpd_sendRepeatCommand(mpdz, (item->choice == 2));
 	mpd_finishCommand(mpdz);
