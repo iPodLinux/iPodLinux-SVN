@@ -119,7 +119,7 @@ int dialog_create( char * title, char * text,
 #include <locale.h>
 #ifdef IPOD
 #ifndef __UCLIBC_HAS_LOCALE__
-#error You need to update your toolchain if you wish to have locale support. ("http://so2.sys-techs.net/ipod/toolchain/")
+#error "You need to update your toolchain if you wish to have locale support. (http://ipodlinux.org/Toolchain)"
 #endif /* !__UCLIBC_HAS_LOCALE__ */
 #define LOCALEDIR "/usr/share/locale"
 #else /* !IPOD */
