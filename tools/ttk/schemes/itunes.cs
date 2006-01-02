@@ -49,6 +49,7 @@
 #TTK appearance only gives me 10 /defs - feh!
 
   header: bg => metalbg, fg => metalfg, line => #666666 -1, accent => #d6d6d6
+	  shadow => #333, shine => #ddd,
 	  gradient.top => graptop,
 	  gradient.middle => grapmid,
 	  gradient.bottom => grapbot,

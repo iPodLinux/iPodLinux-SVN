@@ -14,6 +14,7 @@
 \def white #ffffff
 
   header: bg => black, fg => red, line => red -1, accent => red
+	  shadow => black, shine => red,
 	  gradient.top => red,
 	  gradient.middle => yellow,
 	  gradient.bottom => red,
