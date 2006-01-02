@@ -103,7 +103,7 @@ static void mcp_draw_percent(PzWidget *wid, ttk_surface srf, int per)
 	case POSITION:
 	case VOLUME_S:
 		ttk_ap_fillrect(srf, ttk_ap_get("music.bar"),
-				x, y, x + pw, y + h);
+				x, y, x + pw + 1, y + h);
 		if (ttk_ap_get("music.bar.bar"))
 			ttk_ap_fillrect(srf, ttk_ap_get("music.bar.bar"),
 					x, y, x + pw + 1, y + h/2);
