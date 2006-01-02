@@ -114,16 +114,16 @@ int Ext2FS::writeblocks (void *buf, u32 block, int len)
     if (ret < 0) {
         switch (_sb->s_errors) {
         case EXT2_ERRORS_CONTINUE:
-            cerr << "EXT2-fs warning: IO error reading block " << block << " for "
+            cerr << "EXT2-fs warning: IO error writing block " << block << " for "
                       << len << " bytes; continuing.\n";
             break;
         case EXT2_ERRORS_RO:
-            cerr << "EXT2-fs error: IO error reading block " << block << " for "
+            cerr << "EXT2-fs error: IO error writing block " << block << " for "
                       << len << " bytes. Remounting read-only.\n";
             _writable = 0;
             break;
         case EXT2_ERRORS_PANIC:
-            cerr << "EXT2-fs error: IO error reading block " << block << " for"
+            cerr << "EXT2-fs error: IO error writing block " << block << " for"
                       << len << " bytes.\n";
             printf ("EXT2-fs error mode set to PANIC, quitting\n");
             exit (255);
@@ -318,6 +318,8 @@ void Ext2FS::inode_to_cpu (ext2_inode *i)
 
 ext2_inode *Ext2FS::geti (u32 ino) 
 {
+    if (ino == 0) return 0;
+
     ino--; // e2fs inodes are numbered from 1 up but stored from 0 up.
     
     int group = ino / _ino_per_group;
@@ -503,11 +505,13 @@ s32 Ext2FS::sublookup (u32 root, const char *path, int resolve_final_symlink)
             de = (ext2_dir_entry_2 *)dirp;
             if (de->name_len == len) {
                 if (!memcmp (de->name, component, de->name_len)) {
-                    delete inode;
-                    dirino = ino;
-                    ino = de->inode;
-                    delete[] dirdata;
-                    goto good;
+                    if (de->inode) {
+                        delete inode;
+                        dirino = ino;
+                        ino = de->inode;
+                        delete[] dirdata;
+                        goto good;
+                    }
                 }
             }
             if (!de->rec_len) break;
@@ -1133,6 +1137,7 @@ int Ext2File::writeblock (void *buf, u32 block)
                     if ((newblk = balloc (group)) < 0)
                         return newblk;
                     _iblock = new u32[blk_per_blk];
+                    memset (_iblock, 0, _blocksize);
                     _inode->i_block[EXT2_IND_BLOCK] = newblk;
                 }
                 _iblock[block] = pblk;
@@ -1145,6 +1150,7 @@ int Ext2File::writeblock (void *buf, u32 block)
                         if ((newblk = balloc (group)) < 0)
                             return newblk;
                         _diblock = new u32[blk_per_blk];
+                        memset (_diblock, 0, _blocksize);
                         _inode->i_block[EXT2_DIND_BLOCK] = newblk;
                     }
 
@@ -1171,6 +1177,7 @@ int Ext2File::writeblock (void *buf, u32 block)
                             if ((newblk = balloc (group)) < 0)
                                 return newblk;
                             _tiblock = new u32[blk_per_blk];
+                            memset (_tiblock, 0, _blocksize);
                             _inode->i_block[EXT2_TIND_BLOCK] = newblk;
                         }
                         
@@ -1372,6 +1379,12 @@ s32 Ext2File::balloc (int group)
     _inode->i_blocks += _blocksize / 512;
 
     delete[] blkmap;
+
+    // Zero the new block.
+    u8 *z = new u8[_blocksize];
+    memset (z, 0, _blocksize);
+    _ext2->writeblocks (z, pblk, _blocksize);
+    delete[] z;
 
     return pblk;
 }

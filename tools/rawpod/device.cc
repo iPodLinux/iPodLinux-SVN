@@ -4,6 +4,10 @@
  * source distribution for details.
  */
 
+// If you uncomment this, reads will get about three times
+// faster but writes will get about 50 times slower.
+/* #define RAW_DEVICE_ACCESS */
+
 #ifndef WIN32
 #include <fcntl.h> /* get the *nix O_* constants, instead of
                     ours */
@@ -68,6 +72,11 @@ int LocalFile::close() {
 
 #else
 
+#ifdef RAW_DEVICE_ACCESS
+#include <malloc.h>
+#include <string.h> /* memcpy */
+#endif
+
 /**************************************************************/
 
 LocalFile::LocalFile (const char *file, int flags) {
@@ -78,6 +87,9 @@ LocalFile::LocalFile (const char *file, int flags) {
     } else if (flags & OPEN_WRITE) mode |= O_WRONLY;
     
     if (flags & OPEN_CREATE) mode |= O_CREAT | O_TRUNC;
+#ifdef RAW_DEVICE_ACCESS
+    if (flags & OPEN_DEV)    mode |= O_DIRECT;
+#endif
     
     _fd = open (file, mode, 0666);
 }
@@ -118,26 +130,50 @@ LocalRawDevice::LocalRawDevice (int n)
     drive[7] = n + 'a';
 #endif
     setBlocksize (512);
-    _f = new LocalFile (drive, OPEN_READ | OPEN_WRITE);
+    _f = new LocalFile (drive, OPEN_READ | OPEN_WRITE | OPEN_DEV);
     if (_f->error()) _valid = -_f->error();
     else _valid = 1;
 }
 
 int LocalRawDevice::doRead (void *buf, u64 sec) 
 {
+#ifdef RAW_DEVICE_ACCESS
+    static void *alignedbuf = 0;
+    if (!alignedbuf)
+        alignedbuf = memalign (512, 512);
+#endif
+
     s64 err;
     if (_valid <= 0) return _valid;
     if ((err = _f->lseek (sec << 9, SEEK_SET)) < 0) return err;
+#ifdef RAW_DEVICE_ACCESS
+    if ((err = _f->read (alignedbuf, 512) < 0)) return err;
+
+    memcpy (buf, alignedbuf, 512);
+#else
     if ((err = _f->read (buf, 512) < 0)) return err;
+#endif
     return 0;
 }
 
 int LocalRawDevice::doWrite (const void *buf, u64 sec) 
 {
+#ifdef RAW_DEVICE_ACCESS
+    static void *alignedbuf = 0;
+    if (!alignedbuf)
+        alignedbuf = memalign (512, 512);
+
+    memcpy (alignedbuf, buf, 512);
+#endif
+
     s64 err;
     if (_valid <= 0) return _valid;
     if ((err = _f->lseek (sec << 9, SEEK_SET)) < 0) return err;
-    if ((err = _f->write (buf, 512)) < 0) return err;
+#ifdef RAW_DEVICE_ACCESS
+    if ((err = _f->write (alignedbuf, 512) < 0)) return err;
+#else
+    if ((err = _f->write (buf, 512) < 0)) return err;
+#endif
     return 0;
 }
 
