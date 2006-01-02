@@ -27,6 +27,11 @@ int find_iPod()
 #ifdef FIND_IPOD_APP
 int main() 
 {
-    find_iPod();
+    int disknr = find_iPod();
+    if (disknr >= 0)
+        printf ("Found iPod at physical disk %d.\n", disknr);
+    else
+        printf ("iPod not found.\n");
+    return 0;
 }
 #endif
