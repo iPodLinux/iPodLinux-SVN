@@ -21,11 +21,7 @@
 #define SEEK_END  FILE_END
 #endif
 #else
-#include <fcntl.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <errno.h>
 #endif
 
 class LocalFile : public VFS::File 

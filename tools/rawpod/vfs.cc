@@ -5,7 +5,6 @@
  */
 
 #include "vfs.h"
-#include <fcntl.h>
 #include <string.h>
 
 #ifndef MIN
@@ -104,6 +103,7 @@ namespace VFS
         default:
             return -EINVAL;
         }
+
         return oldoff;
     }
 

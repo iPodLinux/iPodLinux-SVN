@@ -132,6 +132,7 @@ int Ext2FS::writeblocks (void *buf, u32 block, int len)
     return ret;
 }
 
+#ifdef linux
 #include <arpa/inet.h>
 
 u32 swab32 (u32 x) 
@@ -149,6 +150,12 @@ u16 swab16 (u16 x)
 #define C2L16(x) x = swab16(htons(x))
 #define L2C32(x) x = ntohl(swab32(x))
 #define L2C16(x) x = ntohs(swab16(x))
+#else
+#define C2L32(x)
+#define C2L16(x)
+#define L2C32(x)
+#define L2C16(x)
+#endif
 
 void Ext2FS::sb_to_little() 
 {
