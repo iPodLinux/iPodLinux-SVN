@@ -273,7 +273,7 @@ static TWindow *new_textview_window(char *filename)
 					return TTK_MENU_DONOTHING;
 				}
 			}
-			strncpy(buf + len, tmp, 4096);
+			strncpy(buf + len, tmp, cs - len);
 		}
 		if (buf == NULL) {
 			pz_message(_("Empty file"));
