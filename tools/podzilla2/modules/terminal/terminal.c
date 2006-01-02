@@ -46,9 +46,9 @@
 #elif defined (__QNX__)
 #include <unix.h>
 #elif defined(solaris) || (defined(__SVR4) && defined(sun))
-#warning Solaris doesn't support this and needs manual implementation here
+#warning "Solaris doesn't support this and needs manual implementation here"
 #else
-#warning Unknown operating system, this build will probably fail, sorry. Try adjusting the includes.
+#warning "Unknown operating system, this build will probably fail, sorry. Try adjusting the includes."
 #endif
 
 #include <termios.h>
