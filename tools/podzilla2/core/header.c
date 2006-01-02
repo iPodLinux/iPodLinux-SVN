@@ -126,16 +126,11 @@ static TWidget *new_battery_indicator()
 /** Load average **/
 static double get_load_average( void )
 {
-#ifdef IPOD
+	double ret = 0.00;
 #ifdef __linux__
 	FILE * file;
 	float f;
-#else
-	double avgs[3];
-#endif
-	double ret = 0.00;
 
-#ifdef __linux__
 	file = fopen( "/proc/loadavg", "r" );
 	if( file ) {
 		fscanf( file, "%f", &f );
@@ -145,45 +140,48 @@ static double get_load_average( void )
 		ret = 0.50;
 	}
 #else
+#ifdef __APPLE__
+	double avgs[3];
 	if( getloadavg( avgs, 3 ) < 0 ) return( 0.50 );
 	ret = avgs[0];
+#else 
+	ret = (float)(rand()%20) * 0.05;
+#endif
 #endif
 	return( ret );
-#else
-	return (float)(rand()%20) * 0.05;
-#endif
 }
 
 
-#define LAVG_WIDTH 20
+#define LAVG_WIDTH 19
 #define _LAMAKETHIS int *avgs = (int *)this->data
 
 static void loadavg_draw (TWidget *this, ttk_surface srf) 
 {
-	float avg;
+	double avg;
 	int i;
-	_LAMAKETHIS;
+	/*_LAMAKETHIS; */
 
 	avg = get_load_average();
 
-	memmove (avgs, avgs + 1, sizeof(int) * (LAVG_WIDTH - 1));
-	avgs[LAVG_WIDTH - 1] = (int)(avg * (float)this->h);
+	i = (this->h-1) - (avg * this->h-1);
+	if( i < 0 ) i = 0;
+	if( i > (this->h-1)) i= this->h-1;
 
+	/* backing */
 	ttk_ap_fillrect (srf, ttk_ap_get ("loadavg.bg"), 
 				this->x, this->y,
-				this->x + this->w - 1, this->y + this->h - 1);
-	for (i = 0; i < LAVG_WIDTH; i++) {
-		if (avg < this->h) {
-			ttk_ap_hline (srf, ttk_ap_get ("loadavg.fg"), 
-					this->x + i,
-					this->y + this->h - avgs[i] - 1, 
-					this->y + this->h - 1);
-		} else {
-			ttk_ap_hline (srf, ttk_ap_get ("loadavg.spike"), 
-					this->x + i, this->y,
-					this->y + this->h - 1);
-		}
-	}
+				this->x + this->w - 2, 
+				this->y + i);
+
+	/* body */
+	ttk_ap_fillrect (srf, ttk_ap_get ("loadavg.fg"), 
+				this->x, this->y+i,
+				this->x + this->w - 2, 
+				this->y + this->h - 1);
+
+	/* spike line */
+	ttk_ap_hline( srf, ttk_ap_get( "loadavg.spike" ),
+			    this->x, this->x + this->w - 3, this->y+i );
 }
 
 static void loadavg_destroy (TWidget *this) 
@@ -193,7 +191,7 @@ static TWidget *new_load_average_display()
 {
 	TWidget *ret = ttk_new_widget (0, 0);
 	ret->w = LAVG_WIDTH;
-	ret->h = ttk_screen->wy - 3;
+	ret->h = ttk_screen->wy - 2;
 	
 	ret->data = calloc (LAVG_WIDTH, sizeof(int));
 	ret->draw = loadavg_draw;
@@ -464,11 +462,11 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 			       ttk_ap_getx( "header.shine" )->color );
 
 		/* left widget vertical border bar */
+		ttk_line( srf, ttk_screen->wy-2, 0,
+				ttk_screen->wy-2, ttk_screen->wy - 1,
+				ttk_ap_getx( "header.shadow" )->color );
 		ttk_line( srf, ttk_screen->wy-1, 0,
 				ttk_screen->wy-1, ttk_screen->wy - 1,
-				ttk_ap_getx( "header.shadow" )->color );
-		ttk_line( srf, ttk_screen->wy, 0,
-				ttk_screen->wy, ttk_screen->wy - 1,
 				ttk_ap_getx( "header.shine" )->color );
 
 		/* left widget - faux close button */
