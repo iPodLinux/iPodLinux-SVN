@@ -118,12 +118,10 @@ static void mcp_draw_percent(PzWidget *wid, ttk_surface srf, int per)
 		break;
 	}
 
-	/* these are actually just lines, but the ap_rect function deals
-	 * with them appropriatly */
-	ttk_ap_rect(srf, ttk_ap_get("window.fg"), x, y - 1, x + w, y - 1);
-	ttk_ap_rect(srf, ttk_ap_get("window.fg"), x, y + h, x + w, y + h);
-	ttk_ap_rect(srf, ttk_ap_get("window.fg"), x - 1, y, x - 1, y +(h - 1));
-	ttk_ap_rect(srf, ttk_ap_get("window.fg"), x+w+1, y, x+w+1, y +(h - 1));
+	ttk_ap_hline(srf, ttk_ap_get("window.fg"), x, x + w, y - 1);
+	ttk_ap_hline(srf, ttk_ap_get("window.fg"), x, x + w, y + h);
+	ttk_ap_vline(srf, ttk_ap_get("window.fg"), x - 1, y, y +(h - 1));
+	ttk_ap_vline(srf, ttk_ap_get("window.fg"), x+w+1, y, y +(h - 1));
 }
 
 static void mcp_place_text(PzWidget *wid, ttk_surface srf, void *text,
