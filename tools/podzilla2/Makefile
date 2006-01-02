@@ -154,14 +154,16 @@ API.pdf: API.tex
 	pdflatex API.tex
 
 translate:
-	@echo " Extracting strings..."
+	@echo " Extracting menu strings..."
+	@find . -type f -name '*.c' | perl xgettext-menu.pl > menu-strings.c
+	@echo " Extracting other strings..."
 	@xgettext -kN_ -k_ -o pz2.pot.tmp `find . -type f -name '*.c' -print`
 	@echo " Generating template file..."
 	@echo "# podzilla2 LANGUAGE translation" > podzilla2.pot
 	@echo "# Copyright (C) 2003-2006 Bernard Leach" >> podzilla2.pot
 	@echo "# This file is distributed under the same license as the podzilla2 package." >> podzilla2.pot
 	@tail -n +4 pz2.pot.tmp >> podzilla2.pot
-	@rm pz2.pot.tmp
+	@rm -f pz2.pot.tmp
 	@echo
 	@echo "---------------------------------------------------------------"
 	@echo "Translation template file is in podzilla2.pot"
@@ -169,4 +171,4 @@ translate:
 	@echo " documentation at http://ipodlinux.org/Internationalization"
 	@echo "---------------------------------------------------------------"
 
-.PHONY: core modules clean pods xpods dev-env contrib .curtgt
+.PHONY: core modules clean pods xpods dev-env contrib translate .curtgt
