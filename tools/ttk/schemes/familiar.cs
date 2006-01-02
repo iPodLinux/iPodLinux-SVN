@@ -22,7 +22,11 @@
 	  gradient.bar => grapbar +1
    music: bar => <vert #0039b3 to #60a4ef to #87d0ff>
 	  bar.bar => #91bae7 +1
- battery: border => #606C78, bg => #C0D0D8, fill.normal => #68D028, fill.low => #C03020, fill.charge => #68D028,
+ battery: border => #606C78,
+	  bg => #C0D0D8,
+	  fill.normal => <vert #bde0a0 to #5eba6f to #1c6d4c>,
+	  fill.low => #C03020,
+	  fill.charge => <vert #bde0a0 to #5eba6f to #1c6d4c>,
 	  bg.low => #C0D0D8, bg.charging => #C0D0D8
     lock: border => #282C28, fill => #383C40
  loadavg: bg => #E8F4E8, fg => #68D028, spike => #C0D0D8
