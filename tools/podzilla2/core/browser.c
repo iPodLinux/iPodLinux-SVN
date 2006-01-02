@@ -248,23 +248,55 @@ static int is_ascii_file(const char *filename)
 
 static TWindow *new_textview_window(char *filename)
 {
-    struct stat st;
-    if (stat (filename, &st) < 0)
-	return 0;
-    char *buf = malloc (st.st_size);
-    if (!buf)
-	return 0;
-    int fd = open (filename, O_RDONLY);
-    if (fd < 0)
-	return 0;
-    read (fd, buf, st.st_size);
-    close (fd);
-    
-    TWindow *ret = ttk_new_window();
-    ttk_add_widget (ret, ttk_new_textarea_widget (ret->w, ret->h, buf, ttk_textfont, ttk_text_height (ttk_textfont) + 2));
-    ttk_window_title (ret, strrchr (filename, '/')? strrchr (filename, '/') + 1 : filename);
-    free (buf); // strdup'd in textarea
-    return ret;
+	TWindow *ret;
+	char *buf = NULL;
+	char tmp[4096];
+	FILE *fp;
+	long len;
+
+	if ((fp = fopen(filename, "r")) == NULL) {
+		pz_perror(filename);
+		return TTK_MENU_DONOTHING;
+	}
+	fseek(fp, 0L, SEEK_END);
+	len = ftell(fp);
+	rewind(fp);
+	if (len == 0) {
+		while (fgets(tmp, 4096, fp) != NULL) {
+			len = buf ? strlen(buf) : 0;
+			if ((buf=realloc(buf, (len+4096)*sizeof(char)))==NULL) {
+				pz_error(_("Memory reallocation failed."));
+				fclose(fp);
+				return TTK_MENU_DONOTHING;
+			}
+			strncpy(buf + len, tmp, 4096);
+		}
+		if (buf == NULL) {
+			pz_message(_("Empty file"));
+			fclose(fp);
+			return TTK_MENU_DONOTHING;
+		}
+	}
+	else {
+		long cs = len;
+		if ((buf = malloc(len + 1)) == NULL) {
+			pz_error(_("Memory allocation failed."));
+			fclose(fp);
+			return TTK_MENU_DONOTHING;
+		}
+		while (cs > 0) cs -= fread(buf + (len - cs), 1, cs, fp);
+		*(buf + len) = '\0'; 
+	}
+	fclose(fp);
+
+	ret = ttk_new_window();
+	ret->data = 0x12345678;
+	ttk_add_widget(ret, ttk_new_textarea_widget(ret->w, ret->h, buf,
+				ttk_textfont, ttk_text_height(ttk_textfont)+2));
+	ttk_window_title(ret, strrchr(filename, '/')?
+			strrchr(filename, '/') + 1:filename);
+	free(buf); /* strdup'd in textarea */
+	return ret;
 }
 
 static TWindow *browser_textview (ttk_menu_item *item)
