@@ -115,7 +115,7 @@ namespace VFS
         int err = 0;
         
         if (end >= _size) {
-            end = _size - 1;
+            end = _size;
             n = end - _pos;
             if (n <= 0)
                 return 0;
