@@ -40,11 +40,13 @@
           title.fg => black,
           button.bg => aquabtn, button.fg => black, button.border => aquabtnbdr,
 	  button.sel.bg => aquadbtn, button.sel.fg => black, button.sel.border => aquadbtnbdr, button.sel.inner => aquadbtn +1
-  scroll: box => #b8b8b8, bg => #ebebeb +1, bar => #6cabed
+  scroll: box => #b8b8b8, bg => #ebebeb,
+          bar => <horiz #0039b3 to #60a4ef to #87d0ff>
    input: bg => white, fg => black, selbg => aquadbtn, selfg => black, border => aquawinbdr, cursor => #808080
 
     menu: bg => white, fg => black, choice => nearblack, icon => nearblack,
-          selbg => #3675d2, selfg => white, selchoice => white,
+          selbg => <vert #209bd6 to #0073bc>,
+          selfg => white, selchoice => white,
 # WTF are these used for?
           icon0 => #3b79da, icon1 => #28503c, icon2 => #50a078, icon3 => #ffffff
   slider: border => #282828, bg => #e8ebd2, full => #acb098
