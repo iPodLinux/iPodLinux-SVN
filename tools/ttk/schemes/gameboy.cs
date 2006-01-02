@@ -8,6 +8,7 @@
 \def black  #000000
 
   header: bg => white, fg => black, line => black -1, accent => gray
+	  shadow => dkgray, shine => gray,
 	  gradient.top => white,
 	  gradient.middle => dkgray,
 	  gradient.bottom => gray,

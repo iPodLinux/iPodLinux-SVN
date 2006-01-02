@@ -8,6 +8,9 @@
 	  fg => #777,
 	  line => #666 -1,
 	  accent => dkgray
+	  shine => gray
+	  shadow => dkgray
+	  accent => dkgray
 	  gradient.top => #333,
 	  gradient.middle => black,
 	  gradient.bottom => #333,

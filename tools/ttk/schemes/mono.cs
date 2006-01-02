@@ -5,6 +5,7 @@
 \def dkgray #505050
 
   header: bg => white, fg => black, line => black -1, accent => gray
+	  shadow => dkgray, shine => gray,
 	  gradient.top => white,
 	  gradient.middle => white,
 	  gradient.bottom => dkgray,

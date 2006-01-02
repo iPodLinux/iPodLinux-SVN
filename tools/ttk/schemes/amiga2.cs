@@ -9,7 +9,8 @@
 \def blue   #83acd6
 
 
-  header: bg => blue, fg => black, line => white -1, accent => black
+  header: bg => blue, fg => black, line => black -1, accent => black
+	  shine => white, shadow => black,
 	  gradient.top => blue,
 	  gradient.middle => white,
 	  gradient.bottom => blue,
