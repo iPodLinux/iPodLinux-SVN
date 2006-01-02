@@ -6,6 +6,7 @@
 #include <time.h>
 
 int lflag = 0;
+int cflag = 0;
 Ext2FS *ext2;
 
 void print_file (const char *name, struct stat *st, const char *linktarget)
@@ -14,9 +15,6 @@ void print_file (const char *name, struct stat *st, const char *linktarget)
     int color = 0;
     char endch = ' ';
     char mode[11];
-    char date[14];
-    struct tm tmdate, tmnow;
-    time_t datesec;
 
     switch (st->st_mode & S_IFMT) {
     case S_IFREG:
@@ -42,6 +40,10 @@ void print_file (const char *name, struct stat *st, const char *linktarget)
     case S_IFSOCK:
         mode[0] = 's'; color = 35 | BRIGHT; endch = '=';
         break;
+    default:
+        mode[0] = '?';
+        printf ("bad mode %o\n", st->st_mode);
+        break;
     }
 
     mode[1]  = (st->st_mode & 0400) ? 'r' : '-';
@@ -59,26 +61,17 @@ void print_file (const char *name, struct stat *st, const char *linktarget)
     if (st->st_mode & S_ISGID) mode[6] = (mode[6] == 'x') ? 's' : 'S';
     if (st->st_mode & S_ISVTX) mode[9] = (mode[9] == 'x') ? 't' : 'T';
 
-    datesec = st->st_mtime;
-    localtime_r (&datesec, &tmdate);
-    datesec = time (0);
-    localtime_r (&datesec, &tmnow);
-    if ((((tmdate.tm_mon < tmnow.tm_mon) ||
-	  ((tmdate.tm_mon == tmnow.tm_mon) && (tmdate.tm_mday < tmnow.tm_mday))) &&
-	 (tmdate.tm_year < tmnow.tm_year)) ||
-	(tmdate.tm_year > tmnow.tm_year))
-	strftime (date, 13, "%b %d  %Y", &tmdate);
-    else
-	strftime (date, 13, "%b %d %H:%M", &tmdate);
-
     if (lflag)
-        printf ("%10s %4d %-4d %-4d %8llu %12s ", mode, st->st_nlink, st->st_uid, st->st_gid,
-                (u64)st->st_size, date);
+        printf ("%10s %4d %-4d %-4d %8llu ", mode, st->st_nlink, st->st_uid, st->st_gid,
+                (u64)st->st_size);
 
-    printf ("\033[%s%dm%s\033[0m", (color & BRIGHT)? "1;" : "",
-            color & ~BRIGHT, name);
+    if (cflag)
+        printf ("\033[%s%dm%s\033[0m", (color & BRIGHT)? "1;" : "",
+                color & ~BRIGHT, name);
+    else
+        printf ("%s", name);
 
-    if (endch != ' ')
+    if (cflag && endch != ' ')
         printf ("%c", endch);
 
     if (lflag && S_ISLNK (st->st_mode)) {
@@ -150,9 +143,14 @@ int main (int argc, char **argv)
     }
 
     argv++;
-    if (*argv && !strcmp (*argv, "-l")) {
-        lflag = 1;
-        argv++;
+    if (*argv && (**argv == '-')) {
+        ++*argv;
+        while (**argv) {
+            if (**argv == 'l') lflag = 1;
+            if (**argv == 'c') cflag = 1;
+            ++*argv;
+        }
+        ++argv;
     }
     while (*argv) {
         process_arg (*argv++);

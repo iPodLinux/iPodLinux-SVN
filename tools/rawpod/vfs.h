@@ -8,11 +8,26 @@
 #define _VFS_H_
 
 #define _FILE_OFFSET_BITS 64
+#ifndef _LARGEFILE64_SOURCE
 #define _LARGEFILE64_SOURCE
+#endif
 
-#include <errno.h>
-#include <fcntl.h>
 #include <stdio.h>
+#ifdef WIN32
+#include "errno.h"
+#else
+#include <errno.h>
+#endif
+
+#ifndef O_RDONLY
+#define O_RDONLY 01
+#define O_WRONLY 02
+#define O_RDWR   03
+#define O_CREAT  04
+#define O_APPEND 010
+#define O_EXCL   020
+#define O_TRUNC  040
+#endif
 
 typedef unsigned char u8;
 typedef unsigned short u16;
@@ -24,6 +39,57 @@ typedef   signed short s16;
 typedef   signed int s32;
 typedef   signed long slong;
 typedef   signed long long s64;
+
+#undef st_atime
+#undef st_ctime
+#undef st_mtime
+
+struct stat 
+{
+    u32           st_dev;      /* device */
+    u32           st_ino;      /* inode */
+    u32           st_mode;     /* protection */
+    u32           st_nlink;    /* number of hard links */
+    u16           st_uid;      /* user ID of owner */
+    u16           st_gid;      /* group ID of owner */
+    u32           st_rdev;     /* device type (if inode device) */
+    u64           st_size;     /* total size, in bytes */
+    u32           st_blksize;  /* blocksize for filesystem I/O */
+    u32           st_blocks;   /* number of blocks allocated */
+    u32           st_atime;    /* time of last access */
+    u32           st_mtime;    /* time of last modification */
+    u32           st_ctime;    /* time of last status change */    
+};
+#define _STAT_DEFINED
+
+#ifndef S_IFMT
+#define S_IFMT     0170000
+#define S_IFSOCK   0140000
+#define S_IFLNK    0120000
+#define S_IFREG    0100000
+#define S_IFBLK    0060000
+#define S_IFDIR    0040000
+#define S_IFCHR    0020000
+#define S_IFIFO    0010000
+#define S_ISUID    0004000
+#define S_ISGID    0002000
+#define S_ISVTX    0001000
+#define S_IRWXU    00700
+#define S_IRUSR    00400
+#define S_IWUSR    00200
+#define S_IXUSR    00100
+#define S_IRWXG    00070
+#define S_IRGRP    00040
+#define S_IWGRP    00020
+#define S_IXGRP    00010
+#define S_IRWXO    00007
+#define S_IROTH    00004
+#define S_IWOTH    00002
+#define S_IXOTH    00001
+
+#define S_ISDIR(m)  (((m) & S_IFMT) == S_IFDIR)
+#define S_ISLNK(m)  (((m) & S_IFMT) == S_IFLNK)
+#endif
 
 namespace VFS
 {
@@ -41,7 +107,9 @@ namespace VFS
     class BlockDevice : public Device
     {
     public:
-        BlockDevice() : Device() {}
+        BlockDevice()
+            : Device(), _pos (0), _blocksize (512), _blocksize_bits (512), _blocks (0)
+        {}
         virtual ~BlockDevice() {}
 
         virtual int read (void *buf, int n);

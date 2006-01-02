@@ -4,6 +4,12 @@
  * source distribution for details.
  */
 
+#ifndef WIN32
+#define stat __stat
+#include <fcntl.h> /* get the *nix O_* constants, instead of
+                    ours */
+#undef stat
+#endif
 #include "device.h"
 
 #ifdef WIN32
@@ -120,7 +126,7 @@ LocalRawDevice::LocalRawDevice (int n)
 
 int LocalRawDevice::doRead (void *buf, u64 sec) 
 {
-    int err;
+    s64 err;
     if (_valid <= 0) return _valid;
     if ((err = _f->lseek (sec << 9, SEEK_SET)) < 0) return err;
     if ((err = _f->read (buf, 512) < 0)) return err;
@@ -129,7 +135,7 @@ int LocalRawDevice::doRead (void *buf, u64 sec)
 
 int LocalRawDevice::doWrite (const void *buf, u64 sec) 
 {
-    int err;
+    s64 err;
     if (_valid <= 0) return _valid;
     if ((err = _f->lseek (sec << 9, SEEK_SET)) < 0) return err;
     if ((err = _f->write (buf, 512)) < 0) return err;
@@ -147,7 +153,7 @@ PartitionDevice::PartitionDevice (VFS::Device *dev, u64 startsec, u64 nsecs)
 
 int PartitionDevice::doRead (void *buf, u64 sec) 
 {
-    int err;
+    s64 err;
     
     if (sec > _length)
         return 0;
@@ -160,7 +166,7 @@ int PartitionDevice::doRead (void *buf, u64 sec)
 
 int PartitionDevice::doWrite (const void *buf, u64 sec) 
 {
-    int err;
+    s64 err;
     
     if (sec > _length)
         return 0;
