@@ -1,5 +1,5 @@
 /*
- *      Vortex - A "Tempest"/"Tempest 2000" style game.
+ *     Vortex - A "Tempest"/"Tempest 2000" style game.
  *  
  * Copyright (C) 2005 Scott Lawrence
  *
