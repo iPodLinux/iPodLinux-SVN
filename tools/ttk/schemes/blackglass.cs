@@ -19,10 +19,10 @@
  battery: border => #666,
 	  bg => black,
 	  bg.low => #777,
-	  bg.charging => #222,
+	  bg.charging => #444,
 	  fill.normal => gray +1,
 	  fill.low => gray +1,
-	  fill.charge => #777
+	  fill.charge => black +1
 
     lock: border => #666,
 	  fill => white
