@@ -81,8 +81,8 @@ static void resistors_rangeAdjust( int i )
 
 void draw_resistors( PzWidget *widget, ttk_surface srf )
 {
-	int i;
-	int v;
+	int i, v;
+	int yo = (ttk_screen->bpp == 2)? 11 : 12;
 	int vc = 20;
 	int w4 = rglob.w>>2;
 	float bo = ((float)(rglob.w>>1)/5.0);
@@ -90,21 +90,33 @@ void draw_resistors( PzWidget *widget, ttk_surface srf )
 	int bw = (int) (bo*3)/4.0;
 	ttk_color lttan = ttk_makecol( 205, 205, 155 );
 	ttk_color dktan = ttk_makecol( 150, 150, 100 );
+	ttk_color bg = ttk_ap_get( "window.bg" )->color;
+	ttk_color fg = ttk_ap_get( "window.fg" )->color;
 	char buf[80];
 
 	/* leads */
-	ttk_vgradient( srf, 0, vc-2, rglob.w, vc+2, 
+	if( ttk_screen->bpp == 2 )
+		ttk_rect( srf, -1, vc-2, rglob.w+1, vc+2, fg );
+	else
+		ttk_vgradient( srf, 0, vc-2, rglob.w, vc+2, 
 			ttk_makecol( GREY ), ttk_makecol( DKGREY ) );
 
 	/* body */
-	ttk_vgradient( srf, w4, vc-12, w4*3, vc+12, lttan, dktan );
-	ttk_vgradient( srf, w4-20, vc-15, w4, vc+15, lttan, dktan );
-	ttk_vgradient( srf, w4*3, vc-15, w4*3+20, vc+15, lttan, dktan );
+	if( ttk_screen->bpp == 2 ) {
+		ttk_rect( srf, w4, vc-12, w4*3, vc+12, fg );
+		ttk_rect( srf, w4-20, vc-15, w4, vc+15, fg );
+		ttk_rect( srf, w4*3, vc-15, w4*3+20, vc+15, fg );
+		ttk_fillrect( srf, w4-19, vc-11, w4*3+19, vc+11, bg );
+	} else {
+		ttk_vgradient( srf, w4, vc-12, w4*3, vc+12, lttan, dktan );
+		ttk_vgradient( srf, w4-20, vc-15, w4, vc+15, lttan, dktan );
+		ttk_vgradient( srf, w4*3, vc-15, w4*3+20, vc+15, lttan, dktan );
+	}
 
 	for( i=0 ; i<4 ; i++ ){
 		if( i<3 || (i==3 && rglob.bandData[i]<12) )
-			ttk_fillrect( srf, 3+w4+bo2+(int)(bo*i), vc-12, 
-				   3+w4+bo2+(int)(bo*i)+bw, vc+12,
+			ttk_fillrect( srf, 3+w4+bo2+(int)(bo*i), vc-yo, 
+				   3+w4+bo2+(int)(bo*i)+bw, vc+yo,
 				   rcolors[ rglob.bandData[i] ] );
 
 		if( (i==rglob.bandNo) && !rglob.paused )
@@ -118,8 +130,7 @@ void draw_resistors( PzWidget *widget, ttk_surface srf )
 	    shortNames[ rglob.bandData[0] ], shortNames[ rglob.bandData[1] ],
 	    shortNames[ rglob.bandData[2] ], shortNames[ rglob.bandData[3] ] );
 
-	pz_vector_string_center( srf, buf, rglob.w>>1, vc+30, 
-				5, 9, 1, ttk_ap_get( "window.fg" )->color );
+	pz_vector_string_center( srf, buf, rglob.w>>1, vc+30, 5, 9, 1, fg );
 
 	/* additional cursor on that string */
 	if( (rglob.timer & 2) && !rglob.paused ) {
@@ -249,9 +260,14 @@ void init_resistors()
 
 
 	cursor[0] = ttk_makecol( WHITE );
-	cursor[1] = ttk_makecol( 255, 255, 0 );
-	cursor[2] = ttk_makecol( BLACK );
-	cursor[3] = ttk_makecol( 0, 255, 255 );
+	cursor[1] = ttk_makecol( BLACK );
+	if( ttk_screen->bpp == 2 ) {
+		cursor[2] = cursor[0];
+		cursor[3] = cursor[1];
+	} else {
+		cursor[2] = ttk_makecol( 255, 255, 0 );
+		cursor[3] = ttk_makecol( 0, 255, 255 );
+	}
 
 	rcolors[0]  = ttk_makecol(   0,   0,   0 );	/* black */
 	rcolors[1]  = ttk_makecol(  79,  52,  51 );	/* brown */
