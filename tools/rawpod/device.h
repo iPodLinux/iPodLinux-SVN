@@ -53,13 +53,14 @@ class LocalRawDevice : public VFS::BlockDevice
 public:
     LocalRawDevice (int n);
 
-protected:
-    virtual int doRead (void *buf, u64 sec);
-    virtual int doWrite (const void *buf, u64 sec);
     int error() {
         if (_valid < 0) return _valid;
         return 0;
     }
+
+protected:
+    virtual int doRead (void *buf, u64 sec);
+    virtual int doWrite (const void *buf, u64 sec);
 
 private:
     LocalFile *_f;

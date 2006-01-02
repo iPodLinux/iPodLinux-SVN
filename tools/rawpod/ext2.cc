@@ -882,6 +882,36 @@ int Ext2FS::symlink (const char *target, const char *link)
     return 0;
 }
 
+int Ext2FS::readlink (const char *path, char *buf, int len) 
+{
+    s32 ino = lookup (path);
+    if (ino < 0)
+        return ino;
+
+    ext2_inode *inode = geti (ino);
+    if ((inode->i_mode & 0770000) != 0120000) {
+        delete inode;
+        return -EINVAL;
+    }
+    if (!inode->i_blocks) { // fast symlink
+        if (len < inode->i_size) {
+            memcpy (buf, inode->i_block, len-1);
+            buf[len-1] = 0;
+        } else {
+            memcpy (buf, inode->i_block, inode->i_size);
+            buf[inode->i_size] = 0;
+        }
+        delete inode;
+        return 0;
+    }
+    delete inode;
+
+    Ext2File *fp = new Ext2File (this, ino, 0);
+    fp->read (buf, len);
+    delete fp;
+    return 0;
+}
+
 
 
 Ext2File::Ext2File (Ext2FS *ext2, u32 ino, int writable) 

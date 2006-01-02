@@ -182,6 +182,7 @@ namespace VFS
         virtual int rename (const char *oldpath, const char *newpath) { return -EROFS; }
 	virtual int link (const char *oldpath, const char *newpath) { return -EPERM; }
 	virtual int symlink (const char *dest, const char *path) { return -EPERM; }
+        virtual int readlink (const char *path, char *buf, int len) { return -EINVAL; }
         virtual int stat (const char *path, struct stat *st) {
             File *fp = open (path, O_RDONLY);
             int err = 0;

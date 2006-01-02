@@ -393,6 +393,7 @@ public:
     virtual int   rename (const char *oldpath, const char *newpath);
     virtual int   link (const char *oldpath, const char *newpath);
     virtual int   symlink (const char *dest, const char *path);
+    virtual int   readlink (const char *path, char *buf, int len);
     virtual int   lstat (const char *path, struct stat *st);
 
     void setWritable (int flag) { _writable = flag; }
