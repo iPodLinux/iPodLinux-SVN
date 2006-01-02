@@ -383,10 +383,6 @@ void ttk_ap_dorect (ttk_surface srf, TApItem *ap, int x1, int y1, int x2, int y2
 
     if (!ap) return; // not an error
     
-    if (x1 == x2 || y1 == y2) {
-	ttk_line (srf, x1, y1, x2, y2, ap->color);
-	return;
-    }
     if (x1 > x2) tmp = x1, x1 = x2, x2 = tmp;
     if (y1 > y2) tmp = y1, y1 = y2, y2 = tmp;
 
@@ -420,6 +416,9 @@ void ttk_ap_dorect (ttk_surface srf, TApItem *ap, int x1, int y1, int x2, int y2
             }
         }
     }
+
+    if (x2 <= x1) x2 = x1 + 1;
+    if (y2 <= y1) y2 = y1 + 1;
     
     if (ap->type & TTK_AP_GRADIENT) {
         void (*gradfn)(ttk_surface, int, int, int, int, ttk_color, ttk_color) = ttk_vgradient;
