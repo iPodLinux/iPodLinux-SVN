@@ -225,7 +225,7 @@ void pz_menu_init()
     pz_menu_add_setting ("/Settings/Browser Path Display", BROWSER_PATH, pz_global_config, 0);
     pz_menu_add_setting ("/Settings/Browser Show Hidden", BROWSER_HIDDEN, pz_global_config, 0);
     pz_menu_add_stub ("/File Browser");
-    pz_menu_add_action ("/Power/Quit Podzilla", quit_podzilla);
+    pz_menu_add_action ("/Power/Quit podzilla", quit_podzilla);
     pz_menu_add_action ("/Power/Reboot iPod/Cancel", PZ_MENU_UPONE);
     pz_menu_add_action ("/Power/Reboot iPod/Absolutely", reboot_ipod);
     pz_menu_add_action ("/Power/Turn Off iPod/Cancel", PZ_MENU_UPONE);
@@ -239,7 +239,7 @@ TWindow *pz_default_new_menu_window (TWidget *menu_wid)
     // If you don't want to directly use menu_wid, you can use ttk_menu_get_item() and friends.
     TWindow *ret = ttk_new_window();
     ttk_add_widget (ret, menu_wid);
-    ttk_window_title (ret, "Podzilla");
+    ttk_window_title (ret, "podzilla");
     return ret;
 }
 

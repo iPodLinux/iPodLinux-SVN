@@ -145,7 +145,7 @@ static void load_modinf (PzModule *mod)
     if (!mod->podpath) { // static mod, no POD
 	// mod->name already set
 	mod->longname = strdup (mod->name);
-	mod->author = strdup ("Podzilla Team");
+	mod->author = strdup ("podzilla Team");
 	return;
     }
 
@@ -548,7 +548,7 @@ void pz_modules_init()
     }
 
     if (!module_head) {
-	pz_message_title (_("Warning"), _("No modules. Podzilla will probably be very boring."));
+	pz_message_title (_("Warning"), _("No modules. podzilla will probably be very boring."));
 	return;
     }
 
