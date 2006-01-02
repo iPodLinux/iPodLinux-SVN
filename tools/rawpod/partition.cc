@@ -5,6 +5,7 @@
 #endif
 
 #include "partition.h"
+#include "device.h"
 #include <string.h>
 #ifdef WIN32
 #include <windows.h>
@@ -155,3 +156,56 @@ int devWriteMBR (int devnr, unsigned char *buf)
 
     return 0;
 }
+
+int find_iPod() 
+{
+    int disknr;
+    unsigned char mbr[512];
+    for (disknr = 0; disknr < 8; disknr++) {
+        PartitionTable ptbl;
+        int type;
+
+        if (devReadMBR (disknr, mbr) != 0) {
+            continue;
+        }
+        if ((ptbl = partCopyFromMBR (mbr)) == 0) {
+            continue;
+        }
+        if ((type = partFigureOutType (ptbl)) == PART_NOT_IPOD) {
+            continue;
+        }
+        
+        return disknr;
+    }
+    return -1;
+}
+
+VFS::Device *setup_partition (int disknr, int partnr)
+{
+    partnr--;
+
+    LocalRawDevice *fulldev = new LocalRawDevice (disknr);
+    if (fulldev->error()) {
+        printf ("drive %d: %s\n", disknr, strerror (fulldev->error()));
+        return 0;
+    }
+
+    unsigned char mbr[512];
+    if (devReadMBR (disknr, mbr) != 0) {
+        printf ("drive %d: could not read MBR\n", disknr);
+        return 0;
+    }
+
+    PartitionTable ptbl;
+    if ((ptbl = partCopyFromMBR (mbr)) == 0) {
+        printf ("drive %d: invalid partition table\n", disknr);
+        return 0;
+    }
+
+    PartitionDevice *partdev = new PartitionDevice (fulldev, ptbl[partnr].offset,
+                                                    ptbl[partnr].length);
+    partFreeTable (ptbl);
+    
+    return partdev;
+}
+

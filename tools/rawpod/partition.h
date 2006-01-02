@@ -1,6 +1,8 @@
 #ifndef _PARTITION_H_
 #define _PARTITION_H_
 
+#include "vfs.h"
+
 typedef struct 
 {
     unsigned char active;
@@ -34,5 +36,11 @@ void partFreeTable (PartitionTable t);
 // return 0 for success, nonzero for failure
 int devReadMBR (int devnr, unsigned char *buf);
 int devWriteMBR (int devnr, unsigned char *buf);
+
+// returns -1 for failure, or the devnr
+int find_iPod();
+
+// returns 0 for failure and prints a message
+VFS::Device *setup_partition (int disknr, int partnr);
 
 #endif
