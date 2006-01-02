@@ -12,6 +12,7 @@
 #define OPEN_READ    1
 #define OPEN_WRITE   2
 #define OPEN_CREATE  4
+#define OPEN_DEV     8
 
 #ifdef WIN32
 #include <windows.h>

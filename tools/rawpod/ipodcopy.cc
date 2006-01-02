@@ -142,6 +142,9 @@ void copy (const char *src, const char *dest)
         }
 
         while (dp->readdir (&de)) {
+            if (!strcmp (de.d_name, ".") || !strcmp (de.d_name, ".."))
+                continue;
+
             char *sub = new char[strlen (src) + strlen (de.d_name) + 2];
             sprintf (sub, "%s/%s", src, de.d_name);
             copy (sub, dst);
@@ -183,13 +186,17 @@ void copy (const char *src, const char *dest)
 
     printf ("%s -> %s\n", src, dst);
 
-    char buf[512];
+    char buf[4096];
     int rdlen;
-    while ((rdlen = sfp->read (buf, 512)) > 0) {
+    int off = 0;
+    while ((rdlen = sfp->read (buf, 4096)) > 0) {
         int err;
         if ((err = dfp->write (buf, rdlen)) < 0) {
             fprintf (stderr, "ipodcp[%d]: writing %s: %s\n", copynr, dst, strerror (-err));
+            break;
         }
+        off += rdlen;
+        printf ("\r%6dKB\r", off>>10);
     }
     if (rdlen < 0) {
         fprintf (stderr, "ipodcp[%d]: reading %s: %s\n", copynr, src, strerror (-rdlen));
