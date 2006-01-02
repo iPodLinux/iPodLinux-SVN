@@ -31,75 +31,92 @@ static int make_dirty (TWidget *this) { this->dirty++; ttk_dirty |= TTK_DIRTY_HE
 
 static void battery_draw (TWidget *this, ttk_surface srf) 
 {
-    TApItem *ap;
-    char buf[32];
-    int battery_fill, battery_is_charging;
-    ttk_color c;
+	TApItem fill;
+	TApItem *ap;
+	char buf[32];
+	int battery_fill, battery_is_charging;
+	ttk_color c;
 
-    battery_fill = pz_ipod_get_battery_level();
-    battery_is_charging = pz_ipod_is_charging();
-	
+	battery_fill = pz_ipod_get_battery_level();
+	battery_is_charging = pz_ipod_is_charging();
 
-    if (pz_get_int_setting (pz_global_config, BATTERY_DIGITS)) {
-	battery_fill = battery_fill * 1000 / 512;
-	
-	if( battery_fill < 100 ) 
-		c = ttk_ap_getx( "battery.fill.low" )->color;
-	else
-		c = ttk_ap_getx( "battery.fill.normal" )->color;
+	/* draw the level as digits/text if that's the user's setting */
+	if (pz_get_int_setting (pz_global_config, BATTERY_DIGITS)) {
+		battery_fill = battery_fill * 1000 / 512;
+	    
+		if( battery_fill < 100 ) 
+			c = ttk_ap_getx( "battery.fill.low" )->color;
+		else
+			c = ttk_ap_getx( "battery.fill.normal" )->color;
 
-	if (battery_fill >= 1000) 
-		strcpy (buf, "Chrg");
-	else
-		snprintf( buf, 32, "%c%3d", 
-				(battery_is_charging)?'+':' ',
-				battery_fill );
+		if (battery_fill >= 1000) 
+			strcpy (buf, "Chrg");
+		else
+			snprintf( buf, 32, "%c%3d", 
+				    (battery_is_charging)?'+':' ',
+				    battery_fill );
 
-	pz_vector_string( srf, buf, this->x, this->y, 5, 9, 1, c );
-	return;
-    }
+		pz_vector_string( srf, buf, this->x, this->y, 5, 9, 1, c );
+		return;
+	}
 
-    TApItem fill;
-    if (battery_is_charging) {
-	memcpy (&fill, ttk_ap_getx ("battery.fill.charge"), sizeof(TApItem));
-	ap = ttk_ap_get( "battery.bg.charging" );
-    } else if (battery_fill < 64) {
-	memcpy (&fill, ttk_ap_getx ("battery.fill.low"), sizeof(TApItem));
-	ap = ttk_ap_get( "battery.bg.low" );
-    } else {
-	memcpy (&fill, ttk_ap_getx ("battery.fill.normal"), sizeof(TApItem));
-	ap = ttk_ap_get( "battery.bg" );
-    }
+	if (battery_is_charging) {
+		memcpy (&fill, ttk_ap_getx ("battery.fill.charge"), 
+			sizeof(TApItem));
+		ap = ttk_ap_get( "battery.bg.charging" );
 
-    /* fill the container... */
-    ttk_ap_fillrect (srf, ap, this->x + 4, this->y + 1, this->x + 22, this->y + 9);
-    ttk_draw_icon (ttk_icon_battery, srf, this->x, this->y, ttk_ap_getx ("battery.border")->color, ttk_ap_getx ("header.bg")->color);
+	} else if (battery_fill < 64) {
+		memcpy (&fill, ttk_ap_getx ("battery.fill.low"), 
+			sizeof(TApItem));
+		ap = ttk_ap_get( "battery.bg.low" );
 
-    if (fill.type & TTK_AP_SPACING) {
-	fill.type &= ~TTK_AP_SPACING;
-	ttk_ap_fillrect (srf, &fill, this->x + 4 + fill.spacing, this->y + 1 + fill.spacing,
-			 this->x + 4 + fill.spacing + ((battery_fill * (17 - 2*fill.spacing) + battery_fill / 2) / 512),
-			 this->y + 9 - fill.spacing);
-    } else {
-	ttk_ap_fillrect (srf, &fill, this->x + 4, this->y + 1,
-			 this->x + 4 + ((battery_fill * 17 + battery_fill / 2) / 512),
-			 this->y + 9);
-    }
+	} else {
+		memcpy (&fill, ttk_ap_getx ("battery.fill.normal"), 
+			sizeof(TApItem));
+		ap = ttk_ap_get( "battery.bg" );
+	}
 
-    if (battery_is_charging)
-	ttk_draw_icon (ttk_icon_charging, srf, this->x, this->y, ttk_ap_getx ("battery.border")->color, ttk_ap_getx ("header.bg")->color);
+	/* fill the container... */
+	ttk_ap_fillrect (srf, ap, this->x + 4, this->y + 1, 
+				this->x + 22, this->y + 9);
+	ttk_draw_icon (ttk_icon_battery, srf, this->x, this->y, 
+				ttk_ap_getx ("battery.border")->color, 
+				ttk_ap_getx ("header.bg")->color);
+
+	if (fill.type & TTK_AP_SPACING) {
+		fill.type &= ~TTK_AP_SPACING;
+		ttk_ap_fillrect (srf, &fill,
+				this->x + 4 + fill.spacing,
+				this->y + 1 + fill.spacing,
+				this->x + 4 + fill.spacing 
+				+ ((battery_fill * (17 - 2*fill.spacing)
+				    + battery_fill / 2) / 512),
+				this->y + 9 - fill.spacing);
+	} else {
+		ttk_ap_fillrect (srf, &fill,
+				this->x + 4, this->y + 1,
+				 this->x + 4 + ((battery_fill * 17 
+				    + battery_fill / 2) / 512),
+				 this->y + 9);
+	}
+
+	/* overlay the charge icon if we're charging */
+	if (battery_is_charging)
+		ttk_draw_icon (ttk_icon_charging, srf, this->x, this->y,
+			ttk_ap_getx ("battery.border")->color, 
+			ttk_ap_getx ("header.bg")->color);
 }
 
 static TWidget *new_battery_indicator() 
 {
-    TWidget *ret = ttk_new_widget (0, 0);
-    ret->w = 25;
-    ret->h = 10;
-    ret->draw = battery_draw;
-    ret->timer = make_dirty;
-    ttk_widget_set_timer (ret, 1000);
+	TWidget *ret = ttk_new_widget (0, 0);
+	ret->w = 25;
+	ret->h = 10;
+	ret->draw = battery_draw;
+	ret->timer = make_dirty;
+	ttk_widget_set_timer (ret, 1000);
 
-    return ret;
+	return ret;
 }
 
 /** Load average **/
@@ -139,25 +156,30 @@ static double get_load_average( void )
 
 static void loadavg_draw (TWidget *this, ttk_surface srf) 
 {
-    float avg;
-    int i;
-    _LAMAKETHIS;
+	float avg;
+	int i;
+	_LAMAKETHIS;
 
-    avg = get_load_average();
+	avg = get_load_average();
 
-    memmove (avgs, avgs + 1, sizeof(int) * (LAVG_WIDTH - 1));
-    avgs[LAVG_WIDTH - 1] = (int)(avg * (float)this->h);
+	memmove (avgs, avgs + 1, sizeof(int) * (LAVG_WIDTH - 1));
+	avgs[LAVG_WIDTH - 1] = (int)(avg * (float)this->h);
 
-    ttk_ap_fillrect (srf, ttk_ap_get ("loadavg.bg"), this->x, this->y, this->x + this->w - 1, this->y + this->h - 1);
-    for (i = 0; i < LAVG_WIDTH; i++) {
-	if (avg < this->h) {
-	    ttk_ap_hline (srf, ttk_ap_get ("loadavg.fg"), this->x + i,
-			  this->y + this->h - avgs[i] - 1, this->y + this->h - 1);
-	} else {
-	    ttk_ap_hline (srf, ttk_ap_get ("loadavg.spike"), this->x + i,
-			  this->y, this->y + this->h - 1);
+	ttk_ap_fillrect (srf, ttk_ap_get ("loadavg.bg"), 
+				this->x, this->y,
+				this->x + this->w - 1, this->y + this->h - 1);
+	for (i = 0; i < LAVG_WIDTH; i++) {
+		if (avg < this->h) {
+			ttk_ap_hline (srf, ttk_ap_get ("loadavg.fg"), 
+					this->x + i,
+					this->y + this->h - avgs[i] - 1, 
+					this->y + this->h - 1);
+		} else {
+			ttk_ap_hline (srf, ttk_ap_get ("loadavg.spike"), 
+					this->x + i, this->y,
+					this->y + this->h - 1);
+		}
 	}
-    }
 }
 
 static void loadavg_destroy (TWidget *this) 
@@ -165,17 +187,17 @@ static void loadavg_destroy (TWidget *this)
 
 static TWidget *new_load_average_display() 
 {
-    TWidget *ret = ttk_new_widget (0, 0);
-    ret->w = LAVG_WIDTH;
-    ret->h = ttk_screen->wy - 3;
-    
-    ret->data = calloc (LAVG_WIDTH, sizeof(int));
-    ret->draw = loadavg_draw;
-    ret->timer = make_dirty;
-    ret->destroy = loadavg_destroy;
-    ttk_widget_set_timer (ret, 1000);
+	TWidget *ret = ttk_new_widget (0, 0);
+	ret->w = LAVG_WIDTH;
+	ret->h = ttk_screen->wy - 3;
+	
+	ret->data = calloc (LAVG_WIDTH, sizeof(int));
+	ret->draw = loadavg_draw;
+	ret->timer = make_dirty;
+	ret->destroy = loadavg_destroy;
+	ttk_widget_set_timer (ret, 1000);
 
-    return ret;
+	return ret;
 }
 
 
