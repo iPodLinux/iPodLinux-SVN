@@ -17,7 +17,7 @@
  battery: border => black, bg => white, fill.normal => black +1, fill.low => dkgray +1, fill.charge => black +1,
 	  bg.low => white, bg.charging => gray
     lock: border => black, fill => black
- loadavg: bg => gray, fg => dkgray, spike => black
+ loadavg: bg => white, fg => dkgray, spike => black
 
   window: bg => white, fg => black, border => gray -3
   dialog: bg => white, fg => black, line => black,

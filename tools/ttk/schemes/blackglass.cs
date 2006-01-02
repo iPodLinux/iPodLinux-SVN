@@ -30,7 +30,7 @@
     lock: border => #666,
 	  fill => white
 	  
- loadavg: bg => dkgray,
+ loadavg: bg => black,
 	  fg => gray,
 	  spike => white
 	  
