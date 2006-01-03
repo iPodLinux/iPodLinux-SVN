@@ -29,13 +29,13 @@
 #undef O_APPEND
 #undef O_EXCL
 #undef O_TRUNC
-#define O_RDONLY 01
-#define O_WRONLY 02
-#define O_RDWR   04
-#define O_CREAT  010
-#define O_APPEND 020
-#define O_EXCL   040
-#define O_TRUNC  080
+#define O_RDONLY 00
+#define O_WRONLY 01
+#define O_RDWR   02
+#define O_CREAT  04
+#define O_APPEND 010
+#define O_EXCL   020
+#define O_TRUNC  040
 #endif
 
 typedef unsigned char u8;

@@ -1,15 +1,18 @@
-APPS = ipodls ipodfind ipodcopy
+APPS = ipodls ipodfind ipodcopy ipodshell
 
 all: librawpod.a $(APPS)
 
 ipodcopy: librawpod.a ipodcopy.cc dirent.cc
-	g++ -g -o $@ ipodcopy.cc dirent.cc librawpod.a
+	g++ -o $@ ipodcopy.cc dirent.cc librawpod.a
 
 ipodls: librawpod.a ipodls.cc
 	g++ -o $@ ipodls.cc librawpod.a
 
 ipodfind: librawpod.a ipodfind.cc
 	g++ -o $@ ipodfind.cc librawpod.a
+
+ipodshell: librawpod.a ipodshell.cc
+	g++ -o $@ ipodshell.cc librawpod.a
 
 librawpod.a: partition.o ext2.o device.o vfs.o
 	ar cru $@ $?
