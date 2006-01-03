@@ -374,7 +374,7 @@ PzWindow * podwrite_open_handler(ttk_menu_item * item)
 
 void podwrite_mod_init(void)
 {
-	pz_menu_add_action("/Extras/Applications/PodWrite", new_podwrite_window);
+	pz_menu_add_action("/Extras/Stuff/PodWrite", new_podwrite_window);
 	
 	podwrite_fbx.name = N_("Open with PodWrite");
 	podwrite_fbx.makesub = podwrite_open_handler;
