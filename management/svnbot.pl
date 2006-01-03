@@ -14,7 +14,7 @@ sub makeTTK($) {
 
     chdir "/home/oremanj/dev/ipl/management/.svnc/ttk";
     system "svn up >/dev/null 2>&1" and do { $conn->privmsg("#ipodlinux", "svn up in ttk failed $?"); return; };
-    system "make distclean all >/dev/null 2>&1" and do { $conn->privmsg("#ipodlinux", "Someone just broke the TTK build."); return; };
+    system "make distclean all >builderr 2>&1" and do { $conn->privmsg("#ipodlinux", "Someone just broke the TTK build."); return; };
     return 1;
 }
 
@@ -30,7 +30,7 @@ sub makePZcore($) {
 
     chdir "/home/oremanj/dev/ipl/management/.svnc/podzilla2";
     system "svn up >/dev/null 2>&1" and do { $conn->privmsg("#ipodlinux", "svn up in pz2 failed $?"); return; };
-    system "make clean all IPOD=1 >/dev/null 2>&1" and do { $conn->privmsg("#ipodlinux", "Someone just broke the PZ2 build."); return; };
+    system "make clean all IPOD=1 >builderr 2>&1" and do { $conn->privmsg("#ipodlinux", "Someone just broke the PZ2 build."); return; };
     system "cat podzilla | gzip -9 > /var/www/html/iplbuilds/podzilla2-$rev.gz";
     return 1;
 }
@@ -40,7 +40,7 @@ sub makePZmods($) {
 
     chdir "/home/oremanj/dev/ipl/management/.svnc/podzilla2";
     system "svn up >/dev/null 2>&1" and do { $conn->privmsg("#ipodlinux", "svn up in pz2 failed $?"); return; };
-    system "make IPOD=1 >/dev/null 2>&1" and do { $conn->privmsg("#ipodlinux", "Someone just broke the PZ2 build (modules)."); return; };
+    system "make IPOD=1 >builderr 2>&1" and do { $conn->privmsg("#ipodlinux", "Someone just broke the PZ2 build (modules)."); return; };
     system "( cd xpods; zip -r /var/www/html/iplbuilds/pzmodules-$rev.zip * >/dev/null 2>&1 )";
     return 1;
 }
