@@ -41,10 +41,12 @@ typedef struct _resistors_globals {
 
 static resistors_globals rglob;
 
+/*
 static char *names[13] = {
 	"Black", "Brown", "Red", "Orange", "Yellow", "Green",
 	"Blue", "Violet", "Gray", "White", "Gold", "Silver", "None"
 };
+*/
 
 static char *shortNames[13] = {
 	"Blk", "Brn", "Red", "Org", "Yel", "Grn",
