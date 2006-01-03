@@ -16,8 +16,6 @@
  * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#undef TELL_ME_WHERE_IT_HURTS
-
 #include "pz.h"
 #define _XOPEN_SOURCE
 #include <stdio.h>
@@ -28,14 +26,15 @@
 
 /* Some systems have util.h, some systems have pty.h, some systems have libutil.h. Feh. */
 
-/* since we don't have autotools assistance here, we'll have to guess as
- * best as we can.
- * general guidelines:
+/* Since we don't have autotools assistance here, we'll have to guess as best as we can.
+ * General Guidelines:
  *   linux: pty.h
  *   osx || netbsd || openbsd: util.h
  *   freebsd: libutil.h
  *   qnx: unix.h
- *   solaris: not included */
+ *   solaris: not included
+ */
+
 #if defined(IPOD) || defined (__linux__)
 #include <pty.h>
 #include <utmp.h>
@@ -62,15 +61,6 @@
 static PzModule * module;
 static ttk_font terminal_font;
 static TWidget * terminal_widget;
-
-/* - - debugging - - */
-#ifdef TERMINAL_DEBUG
-static FILE * terminal_dump = 0;
-#endif
-#ifdef TELL_ME_WHERE_IT_HURTS
-static FILE * hz = 0;
-#define LOG(s) do{hz=fopen("/hp/terminal.hz","a");if(!hz)hz=fopen("/terminal.hz","a");if(hz){fprintf(hz,"%s", s "\n");fclose(hz);}}while(0)
-#endif
 
 /* - - terminal params - - */
 static int terminal_tiheight = 0;
@@ -683,9 +673,6 @@ void terminal_childdied()
 
 void terminal_destroy(TWidget * wid)
 {
-#ifdef TERMINAL_DEBUG
-	if (terminal_dump) { fclose(terminal_dump); terminal_dump = 0; }
-#endif
 	/* terminate child */
 	signal(SIGCHLD, SIG_IGN);
 	kill(terminal_child, SIGKILL);
@@ -740,9 +727,6 @@ int terminal_timer(TWidget * wid)
 		if (FD_ISSET(terminal_master, &set)) {
 			if (read(terminal_master, &c, 1) > 0) {
 				terminal_handlech(c);
-#ifdef TERMINAL_DEBUG
-				if (terminal_dump) fwrite(&c, 1, 1, terminal_dump);
-#endif
 			} else { q = 0; }
 		} else { q = 0; }
 	}
@@ -765,40 +749,16 @@ int vforkpty(int * m, char * n, struct termios * t, struct winsize * w)
 	*/
 	int slavenum;
 	int p;
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("    Opening PTY");
-#endif
 	if (openpty(m, &slavenum, n, t, w)) return -1;
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("    About to vfork");
-#endif
 	p = vfork();
 	if (p == -1) {
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("    Failed");
-#endif
 		return -1;
 	} else if (p) {
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("    Parent: Closing slave");
-#endif
 		close(slavenum);
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("    Parent: Returning");
-#endif
 		return p;
 	} else {
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("    Child: Closing master");
-#endif
 		close(*m);
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("    Child: Logging in to tty");
-#endif
 		login_tty(slavenum);
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("    Child: Returning");
-#endif
 		return 0;
 	}
 }
@@ -806,25 +766,13 @@ LOG("    Child: Returning");
 int terminal_pty_open(int * master, int * slave, char * pty_name, struct termios * tios, struct winsize * twin, char * termtype, char * signon, char * exec_path, char * exec_name, char * exec_arg)
 {
 	int p;
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("  About to vforkpty");
-#endif
 	p = vforkpty(master, pty_name, tios, twin);
 	if (p == -1) {
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("  Failed");
-#endif
 		close(*master);
 		return -1; /* could not vfork */
 	} else if (p) {
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("  Parent: Returning");
-#endif
 		return p;
 	} else {
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("  Child: Setting up environ");
-#endif
 		if (twin) {
 			char se[50];
 			snprintf(se, 50, "LINES=%d", twin->ws_row);
@@ -837,34 +785,19 @@ LOG("  Child: Setting up environ");
 			snprintf(se, 50, "TERM=%s", termtype);
 			putenv(se);
 		}
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("  Child: Closing stdin/out/err");
-#endif
 		close(0);
 		close(1);
 		close(2);
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("  Child: Opening slave");
-#endif
 		*slave = open(pty_name, O_RDWR);
 		if (*slave < 0) {
 			_exit(0);
 		}
 		dup(*slave);
 		dup(*slave);
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("  Child: Printing signon");
-#endif
 		if (signon) {
 			printf("%s\n", signon);
 		}
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("  Child: About to execl");
-#endif
 		if ( execl(exec_path, exec_name, exec_arg, 0) ) {
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("  Child: Failed, returning");
-#endif
 			close(*slave);
 			_exit(0);
 		}
@@ -889,17 +822,8 @@ PzWindow * new_terminal_window(void)
 	pid_t p;
 	
 	/* - - create window - - */
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("Creating window");
-#endif
 	ret = pz_new_window(_("Terminal"), PZ_WINDOW_NORMAL);
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("Creating widget");
-#endif
 	terminal_widget = wid = ttk_new_widget(0,0);
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("Setting up widget");
-#endif
 	wid->w = ret->w;
 	wid->h = ret->h;
 	wid->draw = terminal_render;
@@ -907,24 +831,10 @@ LOG("Setting up widget");
 	wid->timer = terminal_timer;
 	wid->destroy = terminal_destroy;
 	wid->focusable = 1;
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("Adding widget");
-#endif
 	ttk_add_widget(ret, wid);
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("Finishing window");
-#endif
 	ret = pz_finish_window(ret);
 	
-	/* - - debugging - - */
-#ifdef TERMINAL_DEBUG
-	terminal_dump = fopen("terminal.out", "wb");
-#endif
-	
 	/* - - set up terminal - - */
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("Setting up terminal params");
-#endif
 	terminal_tiheight = pz_start_input_for(ret);
 	terminal_win.ws_ypixel = terminal_h = ret->h-terminal_tiheight;
 	terminal_win.ws_xpixel = terminal_w = ret->w;
@@ -933,64 +843,31 @@ LOG("Setting up terminal params");
 	terminal_win.ws_row = terminal_scroll_bot = terminal_rows = terminal_h/terminal_ch;
 	terminal_win.ws_col = terminal_cols = terminal_w/terminal_cw;
 	terminal_cells = terminal_rows * terminal_cols;
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("Allocating buffer");
-#endif
 	if (terminal_buf) free(terminal_buf);
 	terminal_buf = (int *)calloc(terminal_cells, sizeof(int));
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("Setting up terminal state");
-#endif
 	terminal_scroll_top = terminal_x = terminal_y = 0;
 	terminal_attr = 0;
 	terminal_escape = 0;
 	terminal_escape_seq[0]=0;
 	
 	/* - - open the pseudoterminal - - */
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("Opening pseudoterminal");
-#endif
 	p = terminal_pty_open(&terminal_master, &terminal_slave, terminal_pty_name, 0, &terminal_win, "vt102", _("Welcome to iPodLinux!"), TERMINAL_EXEC_PATH, TERMINAL_EXEC_NAME, 0);
 	if (p < 0) {
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("Failed");
-#endif
 		pz_error("Could not open a pseudoterminal.");
 		terminal_child = 0;
 	} else if (p > 0) {
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("Succeeded");
-#endif
 		terminal_child = p;
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("Setting up for signal");
-#endif
 		signal(SIGCHLD, terminal_childdied);
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("Starting timer");
-#endif
 		ttk_widget_set_timer(wid, 10);
 	}
 	
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("Returning window to podzilla");
-#endif
 	return ret;
 }
 
 void terminal_mod_init(void)
 {
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("Registering module");
-#endif
 	module = pz_register_module("terminal", 0);
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("Loading unifont");
-#endif
 	terminal_font = ttk_get_font("Unifont", 12);
-#ifdef TELL_ME_WHERE_IT_HURTS
-LOG("Adding menu item");
-#endif
 	pz_menu_add_action("/Extras/Terminal", new_terminal_window);
 }
 
