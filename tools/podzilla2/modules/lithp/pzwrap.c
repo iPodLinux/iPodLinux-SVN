@@ -2,6 +2,8 @@
  *
  *      a wrapper to use lithp as a podzilla2 module
  *      
+ * 	This module should also show how to use lithp in your own modules
+ *
  *      (c)2006 Scott Lawrence   yorgle@gmail.com
  */
 
@@ -204,7 +206,7 @@ void init_lithpwrap()
 	lglob.module = pz_register_module( "lithp", cleanup_lithpwrap );
 
 	/* menu item display name */
-	pz_menu_add_action( "Lithp Demo", new_lithpwrap_window );
+	pz_menu_add_action( "Extras/Stuff/Lithp Demo", new_lithpwrap_window );
 
 	/* now the file browser hooks */
 	lithp_fbx.name = N_( "Open with Lithp" );
