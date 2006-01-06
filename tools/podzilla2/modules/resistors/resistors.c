@@ -60,7 +60,7 @@ static char *tolerances[13] = {
 
 static int mults[12]   = { 1, 10, 100,  1, 10, 100,  1, 10, 100,  1, 10, 100 };
 static char *units[12] = {	"", "", "",	"K", "K", "K",
-				"M", "M", "M", 	"M", "M", "M" };
+				"M", "M", "M", 	"G", "G", "G" };
 
 static int ranges[4][2] = {
 	{ 0, 9 }, { 0, 9 }, { 0, 9 }, { 10, 12 }
