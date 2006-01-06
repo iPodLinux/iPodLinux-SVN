@@ -1,0 +1,107 @@
+##########################################################
+
+TARGET := lithp
+VERSION := 0.6
+
+DOC := lithp.pdf
+TEX := $(DOC:%.pdf=%.tex)
+
+SRCS := main.c parser.c lists.c eval.c vars.c lithp.c
+HDRS := lithp.h
+SAMPLES := sample01.lsp sample02.lsp sample03.lsp
+
+OBJS := main.o parser.o lists.o eval.o vars.o lithp.o
+
+##########################################################
+
+
+all:	$(TARGET) 
+
+docs:	$(DOC)
+
+tidy:
+	rm -f core
+	rm -f $(OBJS)
+
+clean:	tidy
+	rm -f $(TARGET)
+	rm -f $(DOC)
+
+clobber: clean
+
+backup: clean
+	cd .. ;\
+	tar -cvf lithp-$(VERSION).tar lithp ;\
+	gzip -f lithp-$(VERSION).tar
+
+test: all
+	./lithp sample01.lsp
+
+
+
+##########################################################
+
+CXX := CC
+
+CXXFLAGS := -g -mt -instances=static 
+
+CFLAGS := -g -Wall -pedantic
+
+LDFLAGS := -g
+
+NLIBS := \
+	-lsocket -ldl -lnsl -lgen -lposix4
+
+##########################################################
+
+MKDIR_CMD = test -d $(@D) || mkdir -p $(@D)
+
+    #
+    # Ugly hack to run pdflatex as often as needed.
+    #
+%.pdf:	%.tex
+	oldFingerprint="XXX" ; \
+	if [ -f $*.aux ]; then \
+	    fingerprint="`sum $*.aux`" ; \
+	else \
+	    fingerprint="YYY" ; \
+	fi ; \
+	while [ ! "$${oldFingerprint}" = "$${fingerprint}" ]; do \
+	    oldFingerprint="$${fingerprint}" ; \
+	    pdflatex $< ; \
+	    fingerprint="`sum $*.aux`" ; \
+	done
+
+$(TOP)/bin/%:	%
+	@$(MKDIR_CMD)
+	cp -p $< $@
+	strip $@
+
+$(TOP)/doc/pdf/%.pdf:	%.pdf
+	@$(MKDIR_CMD)
+	cp -p $< $@
+
+$(TEX):	$(NWS)
+	noweave -x $(NWS) > $@
+
+$(TARGET):	$(OBJS)
+	$(CXX) -o $@ $(LDFLAGS) $(OBJS) $(LIBS)
+
+##########################################################
+
+.PHONY:	install
+.PHONY:	all
+.PHONY:	docs
+.PHONY:	tidy
+.PHONY:	clean
+.PHONY:	clobber
+
+##########################################################
+
+main.o:	$(HDRS)
+parser.o: $(HDRS)
+eval.o: $(HDRS)
+vars.o: $(HDRS)
+
+##########################################################
+# $Id: GNUmakefile,v 1.1.1.1 2002/06/24 22:57:06 jerry Exp $

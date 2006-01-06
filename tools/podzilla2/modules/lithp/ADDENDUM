@@ -1,0 +1,142 @@
+
+This is the additional functionality available with the podzilla integration.
+
+# example PZ2 app in lithp
+#  identifiers for user use are lowercase
+#  identifiers for internal things have uppercase
+#  all variables have global scope
+
+
+# if you want a timer, set this in the OnInit callback
+(setq TimerMsec 1000)
+
+# for future compatibility, set the following to define this spec
+(setq LithpVersion "0.6")
+
+# to change the header
+(setq HeaderText "My Cool Thing")
+
+
+# colors are defined as:  a list of 4 elements for a color
+#  ( red, green, blue, mononame )
+# mononame can be one of:  BLACK, GRAY, LTGRAY, WHITE
+
+(setq red (255 0 0 WHITE) black (0 0 0 BLACK)))
+(setq green (0 255 0 GRAY))
+
+
+
+
+(setq t 0 x 0)
+
+# callbacks from the pz2 engine
+(defun OnInit   () (...))
+(defun OnTimer  () (setq t (1+ t)))
+(defun OnLeft   () (setq x (1- x)))
+(defun OnRight  () (setq x (1+ x)))
+(defun OnAction () (...))
+(defun OnPlay   () (...))
+(defun OnRew    () (...))
+(defun OnFF     () (...))
+(defun OnDraw   () (
+		    (DrawPixel red ((Rand Width) (Rand Height)) )
+))
+
+
+# to trigger a redraw, set this to T
+(setq DirtyScreen 'T)
+
+
+
+# date/time
+#  (GetDateList)
+#	returns a list of 7 items: hour, min, sec, day, month, monthint, year
+
+# screen stuff
+#  (GetScreenSize)
+# 	returns a list of 3 elements:  width, height, bpp
+
+# random number from 0 to max
+#  (Rand max)
+
+# settings functions
+#  (SetSetting "key" "value" )
+#  (GetSetting "key" )
+#  (GetApColor "key" )
+
+
+# for graphics functions, 0,0 is top left
+#  (DrawPixel        color (pos))
+#  (DrawLine         color (pos1) (pos2) )
+#  (DrawAALine       color (pos1) (pos2) )
+#  (DrawRect         color (pos1) (pos2) )
+#  (DrawFillRect     color (pos1) (pos2) )
+#  (DrawVGradient    color color (pos1) (pos2) )
+#  (DrawHGradient    color color (pos1) (pos2) )
+#  (DrawPoly         color (pos list) )
+#  (DrawFillPoly     color (pos list) )
+#  (DrawEllipse      color (pos1) (w h) )
+#  (DrawAAEllipse    color (pos1) (w h) )
+#  (DrawFillEllipse  color (pos1) (w h) )
+#  (DrawText         color (pos) text )
+#  (DrawVectorText   color (pos) w h text )
+#  (DrawClear        color )
+
+# color is (red green blue mono)
+# pos is   (x y)
+
+
+# misc
+# (RandomOf a b c d)
+
+# (For (init) (conditional) (endofloop) (code) (return))
+
+
+
+####################
+# future addtions:
+
+# variables:
+
+# Frames 	number of frames drawn since we started
+# Ticks		number of timer ticks since we started
+
+
+# functions:
+
+(defvar *x*)
+(undefvar *x*)
+(defined x) 	returns T if it's defined somehow, NIL if not
+# things that might be defined:
+#  ColorScreen
+#  MonoScreen
+#  Gen1 Gen2 Gen3 Gen4 Gen5 GenMini1 GenMini2 GenMini GenPhoto GenColor
+
+
+################################################################################
+Future TODO:
+
+
+########## Bugfix
+>> (setf x 4)
+4
+>> x
+4
+>> (x)
+NIL
+>> '(x)
+NIL
+
+
+########## load
+Recursively load the specified file, and evaluate it.
+
+(load "filepath")
+ - returns "T" if successfully loaded
+
+
+########## expansion
+
+convert the function list to be a registerable thing, to make it more 
+easily expandable
+
