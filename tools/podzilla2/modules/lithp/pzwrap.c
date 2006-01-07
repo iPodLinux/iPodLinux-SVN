@@ -184,6 +184,7 @@ static void lithpwrap_init_globals( void )
 	lglob.timer = 0;
 	lglob.frames = 0;
 	lglob.lb = burritoNew();
+	lglob.lb->isMono = ( ttk_screen->bpp < 16 )?1:0;
 }
 
 
@@ -203,7 +204,6 @@ PzWindow *new_lithpwrap_window_with_file( char * fn )
 	lithpwrap_init_globals();
 
 	Lithp_parseInFile( lglob.lb, fn );
-
 	Lithp_evaluateBurrito( lglob.lb );
 
 	/* various things */
@@ -237,7 +237,7 @@ PzWindow *new_lithpwrap_window_with_file( char * fn )
 PzWindow *new_lithpwrap_window()
 {
 
-#ifdef NEVER
+#ifndef NEVER
 	return( new_lithpwrap_window_with_file( "/sample01.lsp" ));
 #else
 	int t;
@@ -301,8 +301,7 @@ void init_lithpwrap()
 
 	/* menu item display name */
 	pz_menu_add_action( "Extras/Stuff/Lithp Demo", new_lithpwrap_window );
-/*	pz_menu_add_action( "Lithp Demo", new_lithpwrap_window );
-*/
+	pz_menu_add_action( "Lithp Demo", new_lithpwrap_window );
 
 	/* now the file browser hooks */
 	lithp_fbx.name = N_( "Open with Lithp" );

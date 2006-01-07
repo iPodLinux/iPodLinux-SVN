@@ -31,7 +31,7 @@
 (defun OnPrev   () (list (princ "prev")(terpri) ))
 
 (defun OnDraw   () (list 
-			(DrawPen 255 255 255 WHITE)
+			(DrawPen (Rand 255) (Rand 255) (Rand 255) (RandomOf BLACK WHITE) )
 			(DrawClear)
 			(DrawPen (Rand 255) (Rand 255) (Rand 255) BLACK)
 			(DrawPen2 (Rand 255) (Rand 255) (Rand 255) BLACK)
@@ -53,6 +53,15 @@
 			(DrawRect (Rand Width) (Rand Height) (Rand Width) (Rand Height))
 			(DrawPen (Rand 255) (Rand 255) (Rand 255) BLACK)
 			(DrawPixel (Rand Width) (Rand Height))
+
+			(setq x (+ 4 (Rand 12)))
+			(DrawVectorText (/ Width 2) (/ (* 3 Height) 4) x (* x 2) 
+					(RandomOf Montana Burrito Cheese Bleu Llama) )
+
+			(DrawVectorTextCentered (/ Width 2) (/ Height 4) x (* x 2) 
+					(RandomOf Montana Burrito Cheese Bleu Llama) )
+
+			#(DrawText (/ Width 2) (/ Height 2) Hello )
 			#(princ "=== DRAW ===" Frames Ticks (Rand Width) ) 
 			#(terpri)
 		    )

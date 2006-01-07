@@ -51,6 +51,7 @@ typedef struct _lithp_burrito {
 	ttk_surface srf;
 	ttk_color   pen1;
 	ttk_color   pen2;
+	int isMono;
 
 	/* for reading */
 	FILE * inFile;
@@ -198,6 +199,7 @@ le * eval_cb_defun( lithp_burrito *lb, const int argc, le * branch );
 ** graphics functions
 */
 le * eval_gfx_Rand ( lithp_burrito * lb, const int argc, le * branch );
+le * eval_gfx_RandomOf ( lithp_burrito * lb, const int argc, le * branch );
 le * eval_gfx_DrawPen ( lithp_burrito * lb, const int argc, le * branch );
 le * eval_gfx_DrawPen2 ( lithp_burrito * lb, const int argc, le * branch );
 le * eval_gfx_DrawPixel ( lithp_burrito * lb, const int argc, le * branch );
@@ -214,6 +216,7 @@ le * eval_gfx_DrawAAEllipse ( lithp_burrito * lb, const int argc, le * branch );
 le * eval_gfx_DrawFillEllipse( lithp_burrito * lb, const int argc, le * branch);
 le * eval_gfx_DrawText ( lithp_burrito * lb, const int argc, le * branch );
 le * eval_gfx_DrawVectorText( lithp_burrito * lb, const int argc, le * branch );
+le * eval_gfx_DrawVectorTextCentered( lithp_burrito * lb, const int argc, le * branch );
 le * eval_gfx_DrawClear ( lithp_burrito * lb, const int argc, le * branch );
 
 
