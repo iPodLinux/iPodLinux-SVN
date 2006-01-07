@@ -200,6 +200,9 @@ le * eval_cb_defun( lithp_burrito *lb, const int argc, le * branch );
 */
 le * eval_gfx_Rand ( lithp_burrito * lb, const int argc, le * branch );
 le * eval_gfx_RandomOf ( lithp_burrito * lb, const int argc, le * branch );
+le * eval_gfx_RangeClip ( lithp_burrito * lb, const int argc, le * branch );
+le * eval_gfx_RangeWrap ( lithp_burrito * lb, const int argc, le * branch );
+
 le * eval_gfx_DrawPen ( lithp_burrito * lb, const int argc, le * branch );
 le * eval_gfx_DrawPen2 ( lithp_burrito * lb, const int argc, le * branch );
 le * eval_gfx_DrawPixel ( lithp_burrito * lb, const int argc, le * branch );
