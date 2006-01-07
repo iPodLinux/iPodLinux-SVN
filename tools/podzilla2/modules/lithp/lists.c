@@ -226,15 +226,27 @@ void leDumpEvalTree( lithp_burrito *lb, le * list, int indent )
 }
 
 
+void Lithp_evaluateBurrito( lithp_burrito * lb )
+{
+	le * temp = lb->list;
+	le * le_value = NULL;
+
+	while( temp ) {
+		if( temp->branch ) {
+			le_value = evaluateBranch( lb, temp->branch );
+			leWipe(le_value);
+		}
+		temp=temp->list_next;
+	}
+}
+
 void leDumpEval( lithp_burrito * lb, le * list, int indent )
 {
 	le * temp = list;
 	le * le_value = NULL;
 
-	while (temp)
-	{
-		if (temp->branch)
-		{
+	while (temp) {
+		if (temp->branch) {
 			printf ("\n");
 			leDumpReformat( stdout, temp->branch );
 

@@ -48,6 +48,7 @@ typedef struct _lithpwrap_globals {
 	/* various helpers */
 	int paused;
 	int timer;
+	int frames;
 
 	/* this is where the lisp gets parsed into */
 	lithp_burrito * lb;
@@ -63,32 +64,48 @@ static lithpwrap_globals lglob;
 */
 static void draw_lithpwrap( PzWidget *widget, ttk_surface srf )
 {
+	char buf[80];
 /*
 	ttk_color bg = ttk_ap_get( "window.bg" )->color;
 	ttk_color fg = ttk_ap_get( "window.fg" )->color;
 */
 
-	// doDraw
+	lglob.frames++;
+	snprintf( buf, 80, "%d", lglob.frames );
+	Lithp_setString( lglob.lb, "Frames", buf );
+
+	Lithp_callDefun( lglob.lb , "OnDraw" );
 }
 
 static void cleanup_lithpwrap( void ) 
 {
+	burritoDelete( lglob.lb );
+	lglob.lb = NULL;
 }
 
 
 static int event_lithpwrap( PzEvent *ev )
 {
+	int t;
+	char buf[80];
+	char *v;
+
+	if( !lglob.lb ) printf( "no burrito!\n" );
+
+	/* update some lithp variables... */
+	lglob.timer++;
+	snprintf( buf, 80, "%d", lglob.timer );
+	Lithp_setString( lglob.lb, "Ticks", buf );
+
+
 	switch (ev->type) {
 	case PZ_EVENT_SCROLL:
 		if( !lglob.paused ) {
 			TTK_SCROLLMOD( ev->arg, 5 );
-/*
 			if( ev->arg > 0 )
-				doLeftScroll
+				Lithp_callDefun( lglob.lb , "OnRight" );
 			else
-				doRightScroll
-*/
-			ev->wid->dirty = 1;
+				Lithp_callDefun( lglob.lb , "OnLeft" );
 		}
 		break;
 
@@ -110,12 +127,20 @@ static int event_lithpwrap( PzEvent *ev )
 			lglob.paused = 0;
 			break;
 
+		case( PZ_BUTTON_PREVIOUS ):
+			Lithp_callDefun( lglob.lb , "OnPrevious" );
+			break;
+
+		case( PZ_BUTTON_NEXT ):
+			Lithp_callDefun( lglob.lb , "OnNext" );
+			break;
+
 		case( PZ_BUTTON_PLAY ):
-			// do play
+			Lithp_callDefun( lglob.lb , "OnPlay" );
 			break;
 
 		case( PZ_BUTTON_ACTION ):
-			// do action
+			Lithp_callDefun( lglob.lb , "OnAction" );
 			break;
 		}
 		break;
@@ -125,10 +150,20 @@ static int event_lithpwrap( PzEvent *ev )
 		break;
 
 	case PZ_EVENT_TIMER:
-		// do timer
 		lglob.timer++;
-		ev->wid->dirty = 1;
+		Lithp_callDefun( lglob.lb , "OnTimer" );
 		break;
+	}
+
+	/* for some reason, this sometimes needs to be checked */
+	if( lglob.lb ) {
+		v = Lithp_getString( lglob.lb, "DirtyScreen" );
+		if( v!= NULL ) {
+			t = atoi( v );
+			if( t > 0 ) ev->wid->dirty = 1;
+			else        ev->wid->dirty = 0;
+		}
+		Lithp_setString( lglob.lb, "DirtyScreen", "0" );
 	}
 	return 0;
 }
@@ -146,25 +181,64 @@ static void lithpwrap_init_globals( void )
 	lglob.h = ttk_screen->h - ttk_screen->wy;
 	lglob.paused = 0;
 	lglob.timer = 0;
-	lglob.lb = NULL;
+	lglob.frames = 0;
+	lglob.lb = burritoNew();
 }
+
+
+/* eventually, this example will display some text to the screen and such */
+static char example[] = {
+	"(defun OnInit () (list (setq TimerMSec 1000)))" 
+	"(defun OnTimer () (list (princ \"timer!\")(terpri)))"
+};
 
 PzWindow *new_lithpwrap_window()
 {
+	int t;
 	lithpwrap_init_globals();
+
+	/*
+	Lithp_parseInFile( lglob.lb, "/sample01.lsp" );
+	*/
+	Lithp_parseInString( lglob.lb, example );
+
+	Lithp_evaluateBurrito( lglob.lb );
+
+	Lithp_callDefun( lglob.lb, "OnInit" );
+	Lithp_setString( lglob.lb, "DirtyScreen", "0" );
 
 	lglob.window = pz_new_window( "Lithp", PZ_WINDOW_NORMAL );
 	lglob.widget = pz_add_widget( lglob.window, 
 				draw_lithpwrap, event_lithpwrap );
 
-	//pz_widget_set_timer( lglob.widget, 150 );
+	/* setup a timer, if the user wants */
+	t = atoi( Lithp_getString( lglob.lb, "TimerMSec" ));
+	if( t > 0 ) pz_widget_set_timer( lglob.widget, t );
 
-	return pz_finish_window( lglob.window );
+	return( pz_finish_window( lglob.window ));
 }
 
 PzWindow *new_lithpwrap_window_with_file( char * fn )
 {
-	return new_lithpwrap_window();
+	int t;
+	lithpwrap_init_globals();
+
+	Lithp_parseInFile( lglob.lb, fn );
+
+	Lithp_evaluateBurrito( lglob.lb );
+
+	Lithp_callDefun( lglob.lb, "OnInit" );
+	Lithp_setString( lglob.lb, "DirtyScreen", "0" );
+
+	lglob.window = pz_new_window( "Lithp", PZ_WINDOW_NORMAL );
+	lglob.widget = pz_add_widget( lglob.window, 
+				draw_lithpwrap, event_lithpwrap );
+
+	/* setup a timer, if the user wants */
+	t = atoi( Lithp_getString( lglob.lb, "TimerMSec" ));
+	if( t > 0 ) pz_widget_set_timer( lglob.widget, t );
+
+	return( pz_finish_window( lglob.window ));
 }
 
 
