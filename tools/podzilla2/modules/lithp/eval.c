@@ -143,7 +143,7 @@ le * evaluateNode( lithp_burrito * lb, le * node)
 	return( value );
 }
 
-    
+
 le * evaluateDefun( lithp_burrito *lb, le * fcn, le * params )
 {
 	le * function;
@@ -201,7 +201,19 @@ le * evaluateDefun( lithp_burrito *lb, le * fcn, le * params )
 }
 
 
-    
+void Lithp_callDefun( lithp_burrito *lb, char * fname )
+{
+	le * fcn;
+	le * temp = variableGet( lb->defunList, fname );
+
+	if( !temp ) return;
+	fcn = leNew( fname );
+
+	(void)evaluateNode( lb, fcn );
+
+	leWipe( fcn );
+}
+ 
 
 int countNodes(le * branch)
 {
@@ -903,6 +915,7 @@ le * eval_cb_terpri( lithp_burrito * lb, const int argc, le * branch )
 	if (!branch || argc != 1 ) return( leNew( "NIL" ));
 
 	printf( "\n" );
+	fflush( stdout );
 	return( leNew( "NIL" ) );
 }
 

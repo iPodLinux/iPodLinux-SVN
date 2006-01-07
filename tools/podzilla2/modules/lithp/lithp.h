@@ -94,6 +94,12 @@ char * variableGetString( le * varlist, char * key );
 
 void variableDump( le * varlist );
 
+#define Lithp_getString( lb, key )\
+	variableGetString( (lb)->mainVarList, (key) )
+
+#define Lithp_setString( lb, key, value )\
+	variableSetString( (lb)->mainVarList, (key), (value) )
+
 
 /*****************************************
 ** Evaluation stuff
@@ -192,5 +198,9 @@ void burritoDelete( lithp_burrito * lb );
 
 int Lithp_parseInFile( lithp_burrito * lb, char * inputfilename );
 int Lithp_parseInString( lithp_burrito * lb, char * theString );
+
+void Lithp_evaluateBurrito( lithp_burrito * lb );
+
+void Lithp_callDefun( lithp_burrito * lb, char * fname );
 
 #endif
