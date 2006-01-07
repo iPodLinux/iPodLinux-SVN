@@ -236,10 +236,7 @@ PzWindow *new_lithpwrap_window_with_file_or_string( char * fn, int isFile )
 	if( isFile )
 		Lithp_parseInFile( lglob.lb, fn );
 	else 
-{
-printf( "%s\n", fn );
 		Lithp_parseInString( lglob.lb, fn );
-}
 	Lithp_evaluateBurrito( lglob.lb );
 
 	/* call the init routine */
