@@ -80,7 +80,28 @@ evalLookupNode evalTable[] =
 	{ "gc"		, eval_cb_nothing	},
 	{ "garbage-collect" , eval_cb_nothing	},
 
-	{ NULL		, NULL			}
+	/* now, the additional functions for graphics renderings */
+
+	{ "Rand"		, eval_gfx_Rand			},
+	{ "DrawPen"		, eval_gfx_DrawPen		},
+	{ "DrawPen2"		, eval_gfx_DrawPen2		},
+	{ "DrawPixel"		, eval_gfx_DrawPixel		},
+	{ "DrawLine"		, eval_gfx_DrawLine		},
+	{ "DrawAALine"		, eval_gfx_DrawAALine		},
+	{ "DrawRect"		, eval_gfx_DrawRect		},
+	{ "DrawFillRect"	, eval_gfx_DrawFillRect		},
+	{ "DrawVGradient"	, eval_gfx_DrawVGradient	},
+	{ "DrawhGradient"	, eval_gfx_DrawHGradient	},
+	{ "DrawPoly"		, eval_gfx_DrawPoly		},
+	{ "DrawFillPoly"	, eval_gfx_DrawFillPoly		},
+	{ "DrawEllipse"		, eval_gfx_DrawEllipse		},
+	{ "DrawAAEllipse"	, eval_gfx_DrawAAEllipse	},
+	{ "DrawFillEllipse"	, eval_gfx_DrawFillEllipse	},
+	{ "DrawText"		, eval_gfx_DrawText		},
+	{ "DrawVectorText"	, eval_gfx_DrawVectorText	},
+	{ "DrawClear"		, eval_gfx_DrawClear		},
+
+	{ NULL			, NULL				}
 };
 
 le * evaluateBranch( lithp_burrito *lb, le * trybranch)
@@ -1063,4 +1084,207 @@ le * eval_cb_defun( lithp_burrito * lb, const int argc, le * branch )
 			);
 
 	return( leNew( branch->list_next->data ));
+}
+
+/*****************************************************************************/
+/*  graphics / podzilla addons */
+
+le * eval_gfx_Rand ( lithp_burrito * lb, const int argc, le * branch )
+{
+        le * retle;
+        int value;
+	int r;
+
+        if (!branch || argc < 2) return( leNew( "NIL" ) );
+
+        retle = evaluateNode( lb, branch->list_next );
+        value = evalCastLeToInt( retle );
+        leWipe( retle );
+
+        r = (int)((float)value * rand() / (RAND_MAX + 1.0));
+
+        return( evalCastIntToLe( r ) );
+}
+
+
+
+static void eval_getint_1( lithp_burrito *lb, le * branch, int *a )
+{
+	le * retle = evaluateNode( lb, branch->list_next );
+        *a = evalCastLeToInt( retle );
+}
+
+static void eval_getint_2( lithp_burrito *lb, le * branch, int *a, int *b )
+{
+	le * retle = evaluateNode( lb, branch->list_next );
+        *a = evalCastLeToInt( retle );
+	retle = evaluateNode( lb, branch->list_next->list_next );
+        *b = evalCastLeToInt( retle );
+}
+
+static void eval_getint_3( lithp_burrito *lb, le * branch, int *a, int *b, int *c )
+{
+	le * retle = evaluateNode( lb, branch->list_next );
+        *a = evalCastLeToInt( retle );
+	retle = evaluateNode( lb, branch->list_next->list_next );
+        *b = evalCastLeToInt( retle );
+	retle = evaluateNode( lb, branch->list_next->list_next->list_next );
+        *c = evalCastLeToInt( retle );
+}
+
+static void eval_getint_4( lithp_burrito *lb, le * branch, int *a, int *b, int *c, int *d )
+{
+	le * retle = evaluateNode( lb, branch->list_next );
+        *a = evalCastLeToInt( retle );
+	retle = evaluateNode( lb, branch->list_next->list_next );
+        *b = evalCastLeToInt( retle );
+	retle = evaluateNode( lb, branch->list_next->list_next->list_next );
+        *c = evalCastLeToInt( retle );
+	retle = evaluateNode( lb, branch->list_next->list_next->list_next->list_next );
+        *d = evalCastLeToInt( retle );
+}
+
+le * eval_gfx_DrawPen ( lithp_burrito * lb, const int argc, le * branch )
+{
+	int r,g,b;
+	if( !lb || !branch || argc != 5 ) return( leNew( "NIL" ));
+	
+	eval_getint_3( lb, branch, &r, &g, &b );
+	lb->pen1 = ttk_makecol( r, g, b );
+	return( leNew( "T" ));
+}
+le * eval_gfx_DrawPen2 ( lithp_burrito * lb, const int argc, le * branch )
+{
+	int r,g,b;
+	if( !lb || !branch || argc != 5 ) return( leNew( "NIL" ));
+	
+	eval_getint_3( lb, branch, &r, &g, &b );
+	lb->pen2 = ttk_makecol( r, g, b );
+	return( leNew( "T" ));
+}
+
+le * eval_gfx_DrawPixel ( lithp_burrito * lb, const int argc, le * branch )
+{
+	int x,y;
+	if( !lb || !branch || argc != 3 ) return( leNew( "NIL" ));
+
+	eval_getint_2( lb, branch, &x, &y );
+	ttk_pixel( lb->srf, x, y, lb->pen1 );
+	return( leNew( "T" ));
+}
+
+le * eval_gfx_DrawLine ( lithp_burrito * lb, const int argc, le * branch )
+{
+	int x,y,a,b;
+	if( !lb || !branch || argc != 5 ) return( leNew( "NIL" ));
+
+	eval_getint_4( lb, branch, &x, &y, &a, &b );
+	ttk_line( lb->srf, x, y, a, b, lb->pen1 );
+	return( leNew( "T" ));
+}
+
+le * eval_gfx_DrawAALine ( lithp_burrito * lb, const int argc, le * branch )
+{
+	int x,y,a,b;
+	if( !lb || !branch || argc != 5 ) return( leNew( "NIL" ));
+
+	eval_getint_4( lb, branch, &x, &y, &a, &b );
+	ttk_aaline( lb->srf, x, y, a, b, lb->pen1 );
+	return( leNew( "T" ));
+}
+
+le * eval_gfx_DrawRect ( lithp_burrito * lb, const int argc, le * branch )
+{
+	int x,y,a,b;
+	if( !lb || !branch || argc != 5 ) return( leNew( "NIL" ));
+
+	eval_getint_4( lb, branch, &x, &y, &a, &b );
+	ttk_rect( lb->srf, x, y, a, b, lb->pen1 );
+	return( leNew( "T" ));
+}
+
+le * eval_gfx_DrawFillRect ( lithp_burrito * lb, const int argc, le * branch )
+{
+	int x,y,a,b;
+	if( !lb || !branch || argc != 5 ) return( leNew( "NIL" ));
+
+	eval_getint_4( lb, branch, &x, &y, &a, &b );
+	ttk_fillrect( lb->srf, x, y, a, b, lb->pen1 );
+	return( leNew( "T" ));
+}
+
+le * eval_gfx_DrawVGradient ( lithp_burrito * lb, const int argc, le * branch )
+{
+	int x,y,a,b;
+	if( !lb || !branch || argc != 5 ) return( leNew( "NIL" ));
+
+	eval_getint_4( lb, branch, &x, &y, &a, &b );
+	ttk_vgradient( lb->srf, x, y, a, b, lb->pen1, lb->pen2 );
+	return( leNew( "T" ));
+}
+
+le * eval_gfx_DrawHGradient ( lithp_burrito * lb, const int argc, le * branch )
+{
+	int x,y,a,b;
+	if( !lb || !branch || argc != 5 ) return( leNew( "NIL" ));
+
+	eval_getint_4( lb, branch, &x, &y, &a, &b );
+	ttk_hgradient( lb->srf, x, y, a, b, lb->pen1, lb->pen2 );
+	return( leNew( "T" ));
+}
+
+le * eval_gfx_DrawPoly ( lithp_burrito * lb, const int argc, le * branch )
+{
+	return( leNew( "T" ));
+}
+
+le * eval_gfx_DrawFillPoly ( lithp_burrito * lb, const int argc, le * branch )
+{
+	return( leNew( "T" ));
+}
+
+le * eval_gfx_DrawEllipse ( lithp_burrito * lb, const int argc, le * branch )
+{
+	int x,y,a,b;
+	if( !lb || !branch || argc != 5 ) return( leNew( "NIL" ));
+
+	eval_getint_4( lb, branch, &x, &y, &a, &b );
+	ttk_ellipse( lb->srf, x, y, a, b, lb->pen1 );
+	return( leNew( "T" ));
+}
+
+le * eval_gfx_DrawAAEllipse ( lithp_burrito * lb, const int argc, le * branch )
+{
+	int x,y,a,b;
+	if( !lb || !branch || argc != 5 ) return( leNew( "NIL" ));
+
+	eval_getint_4( lb, branch, &x, &y, &a, &b );
+	ttk_aaellipse( lb->srf, x, y, a, b, lb->pen1 );
+	return( leNew( "T" ));
+}
+
+le * eval_gfx_DrawFillEllipse ( lithp_burrito * lb, const int argc, le * branch )
+{
+	int x,y,a,b;
+	if( !lb || !branch || argc != 5 ) return( leNew( "NIL" ));
+
+	eval_getint_4( lb, branch, &x, &y, &a, &b );
+	ttk_fillellipse( lb->srf, x, y, a, b, lb->pen1 );
+	return( leNew( "T" ));
+}
+
+le * eval_gfx_DrawText ( lithp_burrito * lb, const int argc, le * branch )
+{
+	return( leNew( "T" ));
+}
+
+le * eval_gfx_DrawVectorText ( lithp_burrito * lb, const int argc, le * branch )
+{
+	return( leNew( "T" ));
+}
+
+le * eval_gfx_DrawClear ( lithp_burrito * lb, const int argc, le * branch )
+{
+	ttk_fillrect( lb->srf, 0, 0, lb->srf->w, lb->srf->h, lb->pen1 );
+	return( leNew( "T" ));
 }

@@ -70,6 +70,7 @@ static void draw_lithpwrap( PzWidget *widget, ttk_surface srf )
 	ttk_color fg = ttk_ap_get( "window.fg" )->color;
 */
 
+	lglob.lb->srf = srf;
 	lglob.frames++;
 	snprintf( buf, 80, "%d", lglob.frames );
 	Lithp_setString( lglob.lb, "Frames", buf );
@@ -192,14 +193,56 @@ static char example[] = {
 	"(defun OnTimer () (list (princ \"timer!\")(terpri)))"
 };
 
+
+PzWindow *new_lithpwrap_window_with_file( char * fn )
+{
+	int t;
+	char * tbar;
+	char buf[32];
+
+	lithpwrap_init_globals();
+
+	Lithp_parseInFile( lglob.lb, fn );
+
+	Lithp_evaluateBurrito( lglob.lb );
+
+	/* various things */
+	Lithp_setString( lglob.lb, "DirtyScreen", "0" );
+	Lithp_setString( lglob.lb, "Ticks", "0" );
+	Lithp_setString( lglob.lb, "Frames", "0" );
+	snprintf( buf, 32, "%d", lglob.w );
+	Lithp_setString( lglob.lb, "Width", buf );
+	snprintf( buf, 32, "%d", lglob.h );
+	Lithp_setString( lglob.lb, "Height", buf );
+
+	Lithp_callDefun( lglob.lb, "OnInit" );
+
+	/* adjust the header */
+	tbar = Lithp_getString( lglob.lb, "HeaderText" );
+	if( !tbar || !strcmp( tbar, "-1" )) tbar = "Lithp";
+
+	/* setup the window */
+	lglob.window = pz_new_window( tbar, PZ_WINDOW_NORMAL );
+	lglob.widget = pz_add_widget( lglob.window, 
+				draw_lithpwrap, event_lithpwrap );
+
+	/* setup a timer, if the user wants */
+	t = atoi( Lithp_getString( lglob.lb, "TimerMSec" ));
+	if( t > 0 ) pz_widget_set_timer( lglob.widget, t );
+
+
+	return( pz_finish_window( lglob.window ));
+}
+
 PzWindow *new_lithpwrap_window()
 {
+
+#ifdef NEVER
+	return( new_lithpwrap_window_with_file( "/sample01.lsp" ));
+#else
 	int t;
 	lithpwrap_init_globals();
 
-	/*
-	Lithp_parseInFile( lglob.lb, "/sample01.lsp" );
-	*/
 	Lithp_parseInString( lglob.lb, example );
 
 	Lithp_evaluateBurrito( lglob.lb );
@@ -216,31 +259,8 @@ PzWindow *new_lithpwrap_window()
 	if( t > 0 ) pz_widget_set_timer( lglob.widget, t );
 
 	return( pz_finish_window( lglob.window ));
+#endif
 }
-
-PzWindow *new_lithpwrap_window_with_file( char * fn )
-{
-	int t;
-	lithpwrap_init_globals();
-
-	Lithp_parseInFile( lglob.lb, fn );
-
-	Lithp_evaluateBurrito( lglob.lb );
-
-	Lithp_callDefun( lglob.lb, "OnInit" );
-	Lithp_setString( lglob.lb, "DirtyScreen", "0" );
-
-	lglob.window = pz_new_window( "Lithp", PZ_WINDOW_NORMAL );
-	lglob.widget = pz_add_widget( lglob.window, 
-				draw_lithpwrap, event_lithpwrap );
-
-	/* setup a timer, if the user wants */
-	t = atoi( Lithp_getString( lglob.lb, "TimerMSec" ));
-	if( t > 0 ) pz_widget_set_timer( lglob.widget, t );
-
-	return( pz_finish_window( lglob.window ));
-}
-
 
 
 /*
@@ -281,6 +301,8 @@ void init_lithpwrap()
 
 	/* menu item display name */
 	pz_menu_add_action( "Extras/Stuff/Lithp Demo", new_lithpwrap_window );
+/*	pz_menu_add_action( "Lithp Demo", new_lithpwrap_window );
+*/
 
 	/* now the file browser hooks */
 	lithp_fbx.name = N_( "Open with Lithp" );
