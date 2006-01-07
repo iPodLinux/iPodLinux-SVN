@@ -83,6 +83,7 @@ evalLookupNode evalTable[] =
 	/* now, the additional functions for graphics renderings */
 
 	{ "Rand"		, eval_gfx_Rand			},
+	{ "RandomOf"		, eval_gfx_RandomOf		},
 	{ "DrawPen"		, eval_gfx_DrawPen		},
 	{ "DrawPen2"		, eval_gfx_DrawPen2		},
 	{ "DrawPixel"		, eval_gfx_DrawPixel		},
@@ -90,16 +91,19 @@ evalLookupNode evalTable[] =
 	{ "DrawAALine"		, eval_gfx_DrawAALine		},
 	{ "DrawRect"		, eval_gfx_DrawRect		},
 	{ "DrawFillRect"	, eval_gfx_DrawFillRect		},
+	{ "DrawClear"		, eval_gfx_DrawClear		},
 	{ "DrawVGradient"	, eval_gfx_DrawVGradient	},
 	{ "DrawhGradient"	, eval_gfx_DrawHGradient	},
-	{ "DrawPoly"		, eval_gfx_DrawPoly		},
-	{ "DrawFillPoly"	, eval_gfx_DrawFillPoly		},
 	{ "DrawEllipse"		, eval_gfx_DrawEllipse		},
 	{ "DrawAAEllipse"	, eval_gfx_DrawAAEllipse	},
 	{ "DrawFillEllipse"	, eval_gfx_DrawFillEllipse	},
-	{ "DrawText"		, eval_gfx_DrawText		},
 	{ "DrawVectorText"	, eval_gfx_DrawVectorText	},
-	{ "DrawClear"		, eval_gfx_DrawClear		},
+	{ "DrawVectorTextCentered"	, eval_gfx_DrawVectorTextCentered	},
+/*
+	{ "DrawText"		, eval_gfx_DrawText		},
+	{ "DrawPoly"		, eval_gfx_DrawPoly		},
+	{ "DrawFillPoly"	, eval_gfx_DrawFillPoly		},
+*/
 
 	{ NULL			, NULL				}
 };
@@ -1106,23 +1110,45 @@ le * eval_gfx_Rand ( lithp_burrito * lb, const int argc, le * branch )
         return( evalCastIntToLe( r ) );
 }
 
+/* this is to be called like:  (RandomOf A B C D)
+** although, it probably should be (RandomOf (list A B C D))
+** this should work fine for now though
+*/
+le * eval_gfx_RandomOf( lithp_burrito * lb, const int argc, le * branch )
+{
+        le * ptr;
+        int value;
+	int r;
+
+        if (!branch) return( leNew( "NIL" ) );
+        value = (int)((float)(argc-1) * rand() / (RAND_MAX + 1.0));
+
+	ptr = branch->list_next;
+	for( r=0 ; r<value ; r++ ) ptr = ptr->list_next;
+
+        return( leNew( ptr->data ));
+}
 
 
-static void eval_getint_1( lithp_burrito *lb, le * branch, int *a )
+/*
+static le * eval_getint_1( lithp_burrito *lb, le * branch, int *a )
 {
 	le * retle = evaluateNode( lb, branch->list_next );
         *a = evalCastLeToInt( retle );
+	return( branch->list_next->list_next );
 }
+*/
 
-static void eval_getint_2( lithp_burrito *lb, le * branch, int *a, int *b )
+static le * eval_getint_2( lithp_burrito *lb, le * branch, int *a, int *b )
 {
 	le * retle = evaluateNode( lb, branch->list_next );
         *a = evalCastLeToInt( retle );
 	retle = evaluateNode( lb, branch->list_next->list_next );
         *b = evalCastLeToInt( retle );
+	return( branch->list_next->list_next->list_next );
 }
 
-static void eval_getint_3( lithp_burrito *lb, le * branch, int *a, int *b, int *c )
+static le * eval_getint_3( lithp_burrito *lb, le * branch, int *a, int *b, int *c )
 {
 	le * retle = evaluateNode( lb, branch->list_next );
         *a = evalCastLeToInt( retle );
@@ -1130,9 +1156,10 @@ static void eval_getint_3( lithp_burrito *lb, le * branch, int *a, int *b, int *
         *b = evalCastLeToInt( retle );
 	retle = evaluateNode( lb, branch->list_next->list_next->list_next );
         *c = evalCastLeToInt( retle );
+	return( branch->list_next->list_next->list_next->list_next );
 }
 
-static void eval_getint_4( lithp_burrito *lb, le * branch, int *a, int *b, int *c, int *d )
+static le * eval_getint_4( lithp_burrito *lb, le * branch, int *a, int *b, int *c, int *d )
 {
 	le * retle = evaluateNode( lb, branch->list_next );
         *a = evalCastLeToInt( retle );
@@ -1142,24 +1169,46 @@ static void eval_getint_4( lithp_burrito *lb, le * branch, int *a, int *b, int *
         *c = evalCastLeToInt( retle );
 	retle = evaluateNode( lb, branch->list_next->list_next->list_next->list_next );
         *d = evalCastLeToInt( retle );
+	return( branch->list_next->list_next->list_next->list_next->list_next );
+}
+
+static ttk_color eval_make_color( 
+			lithp_burrito *lb, int r, int g, int b, char *m)
+{
+	ttk_color c;
+	if( lb->isMono ) {
+		if( !strcmp( m, "WHITE" ))         c = ttk_makecol( WHITE );
+		else if ( !strcmp( m, "GREY" ))    c = ttk_makecol( GREY );
+		else if ( !strcmp( m, "DKGREY" ))  c = ttk_makecol( DKGREY );
+		else 				   c = ttk_makecol( BLACK );
+	} else {
+		c = ttk_makecol( r, g, b );
+	}
+	return( c );
 }
 
 le * eval_gfx_DrawPen ( lithp_burrito * lb, const int argc, le * branch )
 {
 	int r,g,b;
+	le *mono, *result;
 	if( !lb || !branch || argc != 5 ) return( leNew( "NIL" ));
 	
-	eval_getint_3( lb, branch, &r, &g, &b );
-	lb->pen1 = ttk_makecol( r, g, b );
+	mono = eval_getint_3( lb, branch, &r, &g, &b );
+	result = evaluateNode( lb, mono );
+	lb->pen1 = eval_make_color( lb, r, g, b, result->data );
+
 	return( leNew( "T" ));
 }
+
 le * eval_gfx_DrawPen2 ( lithp_burrito * lb, const int argc, le * branch )
 {
 	int r,g,b;
+	le *mono, *result;
 	if( !lb || !branch || argc != 5 ) return( leNew( "NIL" ));
 	
-	eval_getint_3( lb, branch, &r, &g, &b );
-	lb->pen2 = ttk_makecol( r, g, b );
+	mono = eval_getint_3( lb, branch, &r, &g, &b );
+	result = evaluateNode( lb, mono );
+	lb->pen1 = eval_make_color( lb, r, g, b, result->data );
 	return( leNew( "T" ));
 }
 
@@ -1275,11 +1324,45 @@ le * eval_gfx_DrawFillEllipse ( lithp_burrito * lb, const int argc, le * branch 
 
 le * eval_gfx_DrawText ( lithp_burrito * lb, const int argc, le * branch )
 {
+/*
+	le * t;
+	le * t2;
+	int x,y;
+	if( !lb || !branch || argc < 5 ) return( leNew( "NIL" ));
+
+	t = eval_getint_2( lb, branch, &x, &y );
+	t2 = evaluateNode( lb, t );
+	ttk_text( lb->srf, (font) x, y, lb->pen1, t2->data );
+
+*/
 	return( leNew( "T" ));
 }
 
 le * eval_gfx_DrawVectorText ( lithp_burrito * lb, const int argc, le * branch )
 {
+	int x,y,w,h;
+	le *t, *t2;
+
+	if( !lb || !branch || argc < 6 ) return( leNew( "NIL" ));
+	t = eval_getint_4( lb, branch, &x, &y, &w, &h );
+	t2 = evaluateNode( lb, t );
+
+	pz_vector_string( lb->srf, t2->data, x, y, w, h, 1, lb->pen1 );
+
+	return( leNew( "T" ));
+}
+
+le * eval_gfx_DrawVectorTextCentered ( lithp_burrito * lb, const int argc, le * branch )
+{
+	int x,y,w,h;
+	le *t, *t2;
+
+	if( !lb || !branch || argc < 6 ) return( leNew( "NIL" ));
+	t = eval_getint_4( lb, branch, &x, &y, &w, &h );
+	t2 = evaluateNode( lb, t );
+
+	pz_vector_string_center( lb->srf, t2->data, x, y, w, h, 1, lb->pen1 );
+
 	return( leNew( "T" ));
 }
 
