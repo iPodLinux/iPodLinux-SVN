@@ -25,6 +25,7 @@
 #define __LITHP_H__
 
 #include <stdio.h>
+#include "pz.h"
 
 
 /* the list element defines a node of the list */
@@ -45,6 +46,11 @@ typedef struct _lithp_burrito {
 	struct le *list;
 	struct le *mainVarList;
 	struct le *defunList;
+
+	/* for the draw routines */
+	ttk_surface srf;
+	ttk_color   pen1;
+	ttk_color   pen2;
 
 	/* for reading */
 	FILE * inFile;
@@ -98,7 +104,7 @@ void variableDump( le * varlist );
 	variableGetString( (lb)->mainVarList, (key) )
 
 #define Lithp_setString( lb, key, value )\
-	variableSetString( (lb)->mainVarList, (key), (value) )
+	(lb)->mainVarList = variableSetString( (lb)->mainVarList, (key), (value) )
 
 
 /*****************************************
@@ -187,6 +193,28 @@ le * eval_cb_enum( lithp_burrito *lb, const int argc, le * branch );
 
 le * eval_cb_defun( lithp_burrito *lb, const int argc, le * branch );
 
+
+/*****************************************
+** graphics functions
+*/
+le * eval_gfx_Rand ( lithp_burrito * lb, const int argc, le * branch );
+le * eval_gfx_DrawPen ( lithp_burrito * lb, const int argc, le * branch );
+le * eval_gfx_DrawPen2 ( lithp_burrito * lb, const int argc, le * branch );
+le * eval_gfx_DrawPixel ( lithp_burrito * lb, const int argc, le * branch );
+le * eval_gfx_DrawLine ( lithp_burrito * lb, const int argc, le * branch );
+le * eval_gfx_DrawAALine ( lithp_burrito * lb, const int argc, le * branch );
+le * eval_gfx_DrawRect ( lithp_burrito * lb, const int argc, le * branch );
+le * eval_gfx_DrawFillRect ( lithp_burrito * lb, const int argc, le * branch );
+le * eval_gfx_DrawVGradient ( lithp_burrito * lb, const int argc, le * branch );
+le * eval_gfx_DrawHGradient ( lithp_burrito * lb, const int argc, le * branch );
+le * eval_gfx_DrawPoly ( lithp_burrito * lb, const int argc, le * branch );
+le * eval_gfx_DrawFillPoly ( lithp_burrito * lb, const int argc, le * branch );
+le * eval_gfx_DrawEllipse ( lithp_burrito * lb, const int argc, le * branch );
+le * eval_gfx_DrawAAEllipse ( lithp_burrito * lb, const int argc, le * branch );
+le * eval_gfx_DrawFillEllipse( lithp_burrito * lb, const int argc, le * branch);
+le * eval_gfx_DrawText ( lithp_burrito * lb, const int argc, le * branch );
+le * eval_gfx_DrawVectorText( lithp_burrito * lb, const int argc, le * branch );
+le * eval_gfx_DrawClear ( lithp_burrito * lb, const int argc, le * branch );
 
 
 /*****************************************
