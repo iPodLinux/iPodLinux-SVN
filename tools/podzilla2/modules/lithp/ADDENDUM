@@ -1,78 +1,39 @@
-
-This is the additional functionality available with the podzilla integration.
-
-# example PZ2 app in lithp
-#  identifiers for user use are lowercase
-#  identifiers for internal things have uppercase
-#  all variables have global scope
-
-
-# if you want a timer, set this in the OnInit callback
-(setq TimerMsec 1000)
-
-# for future compatibility, set the following to define this spec
-(setq LithpVersion "0.6")
-
-# to change the header
-(setq HeaderText "My Cool Thing")
-
-# fullscreen option
-(setq FullScreen 1)
-
-
-# colors are defined as:  a list of 4 elements for a color
-#  ( red, green, blue, mononame )
-# mononame can be one of:  BLACK, GRAY, LTGRAY, WHITE
-
-(setq red (255 0 0 WHITE) black (0 0 0 BLACK)))
-(setq green (0 255 0 GRAY))
+# This is the additional functionality available with the podzilla integration.
+# 
+#  NOTE: This file will be integrated into the proper README file.
+# 	 This file is a placeholder for notes until that integraton is done
+#
 
 
 
+#################### ####################
+# event callbacks from the pz2 engine
 
-(setq t 0 x 0)
+(setq t 0 x 0)				# for use below. ;)
 
-# callbacks from the pz2 engine
-(defun OnStartup   () (...))
-(defun OnPreFlight () (...))
+(defun OnStartup   () (...))		# called before windows are set up
+(defun OnPreFlight () (...))		# called after windows are set up
 
-(defun OnTimer  () (setq t (1+ t)))
-(defun OnLeft   () (setq x (1- x)))
-(defun OnRight  () (setq x (1+ x)))
-(defun OnAction () (...))
-(defun OnPlay   () (...))
-(defun OnRew    () (...))
-(defun OnFF     () (...))
-(defun OnDraw   () (
-		    (DrawPixel red ((Rand Width) (Rand Height)) )
-))
+(defun OnTimer  () (setq t (1+ t)))	# called if a timer is enabled
+(defun OnLeft   () (setq x (1- x)))	# CCW rotation
+(defun OnRight  () (setq x (1+ x)))	# CW rotation
+(defun OnAction () (...))		# center button pressed
+(defun OnPlay   () (...))		# play button pressed
+(defun OnPrev   () (...))		# Previos |<< button pressed
+(defun OnNext	() (...))		# Next >>| button pressed
 
-
-# to trigger a redraw, set this to T
-(setq DirtyScreen 'T)
+(defun OnDraw   () (...))		# redraw the screen
 
 
-
-# date/time
-#  (GetDateList)
-#	returns a list of 7 items: hour, min, sec, day, month, monthint, year
-
-# screen stuff
-#  (GetScreenSize)
-# 	returns a list of 3 elements:  width, height, bpp
-
-# random number from 0 to max
-#  (Rand max)
-
-# settings functions
-#  (SetSetting "key" "value" )
-#  (GetSetting "key" )
-#  (GetApColor "key" )
-
+#################### ####################
+# graphics routines
 
 # for graphics functions, 0,0 is top left
-#  (DrawPen	     color )
-#  (DrawPen2	     color )
+#  (DrawPen	     red green blue mono )
+			# "mono" is the color to use on monochrome ipods
+			# it should be one of:  BLACK DKGRAY GRAY WHITE
+#  (DrawPen2	     red green blue mono )	# used for gradient
+
 #  (DrawPixel        x y )
 #  (DrawLine         x1 y1 x2 y2 )
 #  (DrawAALine       x1 y1 x2 y2 )
@@ -83,52 +44,105 @@ This is the additional functionality available with the podzilla integration.
 #  (DrawEllipse      x y w h )
 #  (DrawAAEllipse    x y w h )
 #  (DrawFillEllipse  x y w h )
-#  (DrawText         x y text )
 #  (DrawVectorText   x y w h text )
 #  (DrawClear        )
 
+# unimplemented:
+#  (DrawText         x y text )
 #  (DrawPoly         x1 y1 x2 y2 ... )
 #  (DrawFillPoly     x1 y1 x2 y2 ... )
 
-# color is (red green blue mono)
-# pos is   (x y)
+
+#################### ####################
+# misc routines
+
+# (RandomOf a b c d)		# returns a random element in the list
+
+# (Rand max)			# returns random number from 0 to max
+
+# (RangeClip v min max)		# clips V to [min, max]
+# (RangeWrap v min max)		# wraps V to [min, max] 
+				# if bigger than max it goes to min etc
 
 
-# misc
-# (RandomOf a b c d)
-
-# (For (init) (conditional) (endofloop) (code) (return))
-
-
-# (RangeClip v min max)
-# (RangeWrap v min max)
-
-
-####################
-# future addtions:
-
+#################### ####################
 # variables:
 
-# Frames 	number of frames drawn since we started
-# Ticks		number of timer ticks since we started
+# Name		Read/Write	Description
+
+# Frames 	Read		number of frames drawn since we started
+# Ticks		Read		number of timer ticks have happened
+# Width		Read		screen width
+# Height	Read		screen height
+# DirtyScreen	Write		Tells PZ to redraw the screen
+# HeaderText	Write 		OnStartup - changes the podzilla header
+# TimerMSec	Write		OnStartup - sets up the timer interval
+# LithpVersion	Write		OnStartup - makes sure to use the right parser
 
 
-# functions:
+# if you want a timer, set this in the OnInit callback
+(setq TimerMsec 1000)
 
-(defvar *x*)
-(undefvar *x*)
-(defined x) 	returns T if it's defined somehow, NIL if not
-# things that might be defined:
-#  ColorScreen
-#  MonoScreen
-#  Gen1 Gen2 Gen3 Gen4 Gen5 GenMini1 GenMini2 GenMini GenPhoto GenColor
+# for future compatibility, set the following to define this spec
+# NOTE: in the initial version, this is ignored.
+(setq LithpVersion "0.6")
+
+# to change the header
+(setq HeaderText "My Cool Thing")
+
+# fullscreen option (do not call or set to 0 if you want a header
+(setq FullScreen 1)
+
+# to trigger a redraw, set this to 1 (in an event callback)
+(setq DirtyScreen 1)
+
+
+# HINTS:
+# to center something on the screen, use (/ Width 2) and (/ Height 2) 
+
+
+#################### ####################
+# future addtions:
+
+# text routine to join text into a single item
+
+# colors should be definable in variables
+#	(setq red (255 0 0 WHITE) black (0 0 0 BLACK)))
+#	(setq green (0 255 0 GRAY))
+
+# getting data out of appearance/settings of podzilla itself from lisp
+# 	(SetSetting "key" "value" )
+#	(GetSetting "key" )
+#	(GetApColor "key" )
+
+# for loops
+# 	(For (init) (conditional) (endofloop) (code) (return))
+
+# defined/undefined checks of variables
+#	(defvar *x*)
+#	(undefvar *x*)
+#	(defined x) 	returns T if it's defined somehow, NIL if not
+
+# RandomOf should take a list as well
+#	(RandomOf (list a b c d))
+
+# FullScreen, DirtyScreen should be boolean T/NIL rather than Integer 1/0
+
+# other things that might be defined:
+#	ColorScreen
+#	MonoScreen
+#	Gen1 Gen2 Gen3 Gen4 Gen5 GenMini1 GenMini2 GenMini GenPhoto GenColor
+
+# retrieval of system things
+#  	(GetDateList)
+#	returns a list of 7 items: hour, min, sec, day, month, monthint, year
 
 
 ################################################################################
 Future TODO:
 
 
-########## Bugfix
+########## Bugfix:
 >> (setf x 4)
 4
 >> x
@@ -149,5 +163,6 @@ Recursively load the specified file, and evaluate it.
 ########## expansion
 
 convert the function list to be a registerable thing, to make it more 
-easily expandable
+easily expandable.  ie: register callbacks for c handlers, rather than a 
+static array of function pointers.
 
