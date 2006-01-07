@@ -94,7 +94,6 @@ static int event_lithpwrap( PzEvent *ev )
 	if( !lglob.lb ) printf( "no burrito!\n" );
 
 	/* update some lithp variables... */
-	lglob.timer++;
 	snprintf( buf, 80, "%d", lglob.timer );
 	Lithp_setString( lglob.lb, "Ticks", buf );
 
@@ -190,21 +189,61 @@ static void lithpwrap_init_globals( void )
 
 /* eventually, this example will display some text to the screen and such */
 static char example[] = {
-	"(defun OnInit () (list (setq TimerMSec 1000)))" 
-	"(defun OnTimer () (list (princ \"timer!\")(terpri)))"
+"(defun OnStartup () (list\n"
+"			(princ \"Startup\")(terpri)\n"
+"			(setq TimerMSec 100)\n"
+"			(setq HeaderText \"Example\")\n"
+"			(setq LithpVersion  \"0.7\")\n"
+"))\n"
+
+"(defun OnPreFlight () (list\n"
+"			(princ \"PreFlight\")(terpri)\n"
+"))\n"
+
+"(defun OnTimer () (list\n"
+"			(setq DirtyScreen 1)\n"
+"))\n"
+
+"(defun OnDraw () (list\n"
+"			(DrawPen 255 255 255 WHITE)\n"
+"			(DrawClear)\n"
+"			(DrawPen (Rand 255) (Rand 255) (Rand 255) DKGRAY)\n"
+"			(DrawFillRect (Rand Width) (Rand Height)\n"
+"					(Rand Width) (Rand Height))\n"
+"			(DrawFillRect (Rand Width) (Rand Height)\n"
+"					(Rand Width) (Rand Height))\n"
+"			(DrawFillRect (Rand Width) (Rand Height)\n"
+"					(Rand Width) (Rand Height))\n"
+"			(DrawFillRect (Rand Width) (Rand Height)\n"
+"					(Rand Width) (Rand Height))\n"
+"			(DrawPen 0 0 0 BLACK)\n"
+"			(DrawVectorTextCentered (/ Width 2) 10\n"
+"					5 9 \"MENU TO RETURN\")\n"
+"))\n"
 };
+/* ugh. we need those newlines in there. the parser gets confused otherwise */
 
 
-PzWindow *new_lithpwrap_window_with_file( char * fn )
+PzWindow *new_lithpwrap_window_with_file_or_string( char * fn, int isFile )
 {
 	int t;
 	char * tbar;
+	char * fs;
 	char buf[32];
 
 	lithpwrap_init_globals();
 
-	Lithp_parseInFile( lglob.lb, fn );
+	if( isFile )
+		Lithp_parseInFile( lglob.lb, fn );
+	else 
+{
+printf( "%s\n", fn );
+		Lithp_parseInString( lglob.lb, fn );
+}
 	Lithp_evaluateBurrito( lglob.lb );
+
+	/* call the init routine */
+	Lithp_callDefun( lglob.lb, "OnStartup" );
 
 	/* various things */
 	Lithp_setString( lglob.lb, "DirtyScreen", "0" );
@@ -215,14 +254,25 @@ PzWindow *new_lithpwrap_window_with_file( char * fn )
 	snprintf( buf, 32, "%d", lglob.h );
 	Lithp_setString( lglob.lb, "Height", buf );
 
-	Lithp_callDefun( lglob.lb, "OnInit" );
-
 	/* adjust the header */
 	tbar = Lithp_getString( lglob.lb, "HeaderText" );
 	if( !tbar || !strcmp( tbar, "-1" )) tbar = "Lithp";
 
 	/* setup the window */
 	lglob.window = pz_new_window( tbar, PZ_WINDOW_NORMAL );
+
+	/* adjust for fullscreen? */
+	fs = Lithp_getString( lglob.lb, "FullScreen" );
+	if( !strcmp( fs, "1" )){
+		ttk_window_hide_header( lglob.window );
+		lglob.window->x = 0;
+		lglob.window->y = 0;
+		lglob.window->w = ttk_screen->w;
+		lglob.window->h = ttk_screen->h;
+		lglob.w = ttk_screen->w;
+		lglob.h = ttk_screen->h;
+	}
+
 	lglob.widget = pz_add_widget( lglob.window, 
 				draw_lithpwrap, event_lithpwrap );
 
@@ -230,35 +280,19 @@ PzWindow *new_lithpwrap_window_with_file( char * fn )
 	t = atoi( Lithp_getString( lglob.lb, "TimerMSec" ));
 	if( t > 0 ) pz_widget_set_timer( lglob.widget, t );
 
+	/* call the init routine */
+	Lithp_callDefun( lglob.lb, "OnPreFlight" );
 
 	return( pz_finish_window( lglob.window ));
 }
 
 PzWindow *new_lithpwrap_window()
 {
-
-#ifndef NEVER
-	return( new_lithpwrap_window_with_file( "/sample01.lsp" ));
+	return new_lithpwrap_window_with_file_or_string( 
+#ifdef NEVER
+			"/sample01.lsp", 1 );
 #else
-	int t;
-	lithpwrap_init_globals();
-
-	Lithp_parseInString( lglob.lb, example );
-
-	Lithp_evaluateBurrito( lglob.lb );
-
-	Lithp_callDefun( lglob.lb, "OnInit" );
-	Lithp_setString( lglob.lb, "DirtyScreen", "0" );
-
-	lglob.window = pz_new_window( "Lithp", PZ_WINDOW_NORMAL );
-	lglob.widget = pz_add_widget( lglob.window, 
-				draw_lithpwrap, event_lithpwrap );
-
-	/* setup a timer, if the user wants */
-	t = atoi( Lithp_getString( lglob.lb, "TimerMSec" ));
-	if( t > 0 ) pz_widget_set_timer( lglob.widget, t );
-
-	return( pz_finish_window( lglob.window ));
+			example, 0);
 #endif
 }
 
@@ -286,7 +320,7 @@ int lithp_openable( const char * filename )
 
 PzWindow * lithp_open_handler( ttk_menu_item * item )
 {
-	return new_lithpwrap_window_with_file( item->data );
+	return new_lithpwrap_window_with_file_or_string( item->data, 1 );
 }
 
 
@@ -301,7 +335,9 @@ void init_lithpwrap()
 
 	/* menu item display name */
 	pz_menu_add_action( "Extras/Stuff/Lithp Demo", new_lithpwrap_window );
+/*
 	pz_menu_add_action( "Lithp Demo", new_lithpwrap_window );
+*/
 
 	/* now the file browser hooks */
 	lithp_fbx.name = N_( "Open with Lithp" );

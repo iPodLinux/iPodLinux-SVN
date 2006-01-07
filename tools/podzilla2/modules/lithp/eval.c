@@ -84,6 +84,9 @@ evalLookupNode evalTable[] =
 
 	{ "Rand"		, eval_gfx_Rand			},
 	{ "RandomOf"		, eval_gfx_RandomOf		},
+	{ "RangeClip"		, eval_gfx_RangeClip		},
+	{ "RangeWrap"		, eval_gfx_RangeWrap		},
+
 	{ "DrawPen"		, eval_gfx_DrawPen		},
 	{ "DrawPen2"		, eval_gfx_DrawPen2		},
 	{ "DrawPixel"		, eval_gfx_DrawPixel		},
@@ -1092,6 +1095,57 @@ le * eval_cb_defun( lithp_burrito * lb, const int argc, le * branch )
 
 /*****************************************************************************/
 /*  graphics / podzilla addons */
+/*
+static le * eval_getint_1( lithp_burrito *lb, le * branch, int *a )
+{
+	le * retle = evaluateNode( lb, branch->list_next );
+        *a = evalCastLeToInt( retle );
+        leWipe( retle );
+	return( branch->list_next->list_next );
+}
+*/
+
+static le * eval_getint_2( lithp_burrito *lb, le * branch, int *a, int *b )
+{
+	le * retle = evaluateNode( lb, branch->list_next );
+        *a = evalCastLeToInt( retle );
+        leWipe( retle );
+	retle = evaluateNode( lb, branch->list_next->list_next );
+        *b = evalCastLeToInt( retle );
+        leWipe( retle );
+	return( branch->list_next->list_next->list_next );
+}
+
+static le * eval_getint_3( lithp_burrito *lb, le * branch, int *a, int *b, int *c )
+{
+	le * retle = evaluateNode( lb, branch->list_next );
+        *a = evalCastLeToInt( retle );
+        leWipe( retle );
+	retle = evaluateNode( lb, branch->list_next->list_next );
+        *b = evalCastLeToInt( retle );
+        leWipe( retle );
+	retle = evaluateNode( lb, branch->list_next->list_next->list_next );
+        *c = evalCastLeToInt( retle );
+        leWipe( retle );
+	return( branch->list_next->list_next->list_next->list_next );
+}
+
+static le * eval_getint_4( lithp_burrito *lb, le * branch, int *a, int *b, int *c, int *d )
+{
+	le * retle = evaluateNode( lb, branch->list_next );
+        *a = evalCastLeToInt( retle );
+        leWipe( retle );
+	retle = evaluateNode( lb, branch->list_next->list_next );
+        *b = evalCastLeToInt( retle );
+        leWipe( retle );
+	retle = evaluateNode( lb, branch->list_next->list_next->list_next );
+        *c = evalCastLeToInt( retle );
+        leWipe( retle );
+	retle = evaluateNode( lb, branch->list_next->list_next->list_next->list_next );
+        *d = evalCastLeToInt( retle );
+        leWipe( retle );
+	return( branch->list_next->list_next->list_next->list_next->list_next );
+}
 
 le * eval_gfx_Rand ( lithp_burrito * lb, const int argc, le * branch )
 {
@@ -1099,7 +1153,7 @@ le * eval_gfx_Rand ( lithp_burrito * lb, const int argc, le * branch )
         int value;
 	int r;
 
-        if (!branch || argc < 2) return( leNew( "NIL" ) );
+        if (!branch || argc != 2) return( leNew( "NIL" ) );
 
         retle = evaluateNode( lb, branch->list_next );
         value = evalCastLeToInt( retle );
@@ -1108,6 +1162,29 @@ le * eval_gfx_Rand ( lithp_burrito * lb, const int argc, le * branch )
         r = (int)((float)value * rand() / (RAND_MAX + 1.0));
 
         return( evalCastIntToLe( r ) );
+}
+
+le * eval_gfx_RangeClip( lithp_burrito * lb, const int argc, le * branch )
+{
+	int v, min, max;
+        if (!branch || argc != 4) return( leNew( "NIL" ) );
+
+	(void)eval_getint_3( lb, branch, &v, &min, &max );
+	if( v>max ) v=max;
+	if( v<min ) v=min;
+
+        return( evalCastIntToLe( v ) );
+}
+
+le * eval_gfx_RangeWrap( lithp_burrito * lb, const int argc, le * branch )
+{
+	int v, min, max;
+        if (!branch || argc != 4) return( leNew( "NIL" ) );
+
+	(void)eval_getint_3( lb, branch, &v, &min, &max );
+	if( v>max ) v=min;
+	if( v<min ) v=max;
+        return( evalCastIntToLe( v ) );
 }
 
 /* this is to be called like:  (RandomOf A B C D)
@@ -1130,47 +1207,6 @@ le * eval_gfx_RandomOf( lithp_burrito * lb, const int argc, le * branch )
 }
 
 
-/*
-static le * eval_getint_1( lithp_burrito *lb, le * branch, int *a )
-{
-	le * retle = evaluateNode( lb, branch->list_next );
-        *a = evalCastLeToInt( retle );
-	return( branch->list_next->list_next );
-}
-*/
-
-static le * eval_getint_2( lithp_burrito *lb, le * branch, int *a, int *b )
-{
-	le * retle = evaluateNode( lb, branch->list_next );
-        *a = evalCastLeToInt( retle );
-	retle = evaluateNode( lb, branch->list_next->list_next );
-        *b = evalCastLeToInt( retle );
-	return( branch->list_next->list_next->list_next );
-}
-
-static le * eval_getint_3( lithp_burrito *lb, le * branch, int *a, int *b, int *c )
-{
-	le * retle = evaluateNode( lb, branch->list_next );
-        *a = evalCastLeToInt( retle );
-	retle = evaluateNode( lb, branch->list_next->list_next );
-        *b = evalCastLeToInt( retle );
-	retle = evaluateNode( lb, branch->list_next->list_next->list_next );
-        *c = evalCastLeToInt( retle );
-	return( branch->list_next->list_next->list_next->list_next );
-}
-
-static le * eval_getint_4( lithp_burrito *lb, le * branch, int *a, int *b, int *c, int *d )
-{
-	le * retle = evaluateNode( lb, branch->list_next );
-        *a = evalCastLeToInt( retle );
-	retle = evaluateNode( lb, branch->list_next->list_next );
-        *b = evalCastLeToInt( retle );
-	retle = evaluateNode( lb, branch->list_next->list_next->list_next );
-        *c = evalCastLeToInt( retle );
-	retle = evaluateNode( lb, branch->list_next->list_next->list_next->list_next );
-        *d = evalCastLeToInt( retle );
-	return( branch->list_next->list_next->list_next->list_next->list_next );
-}
 
 static ttk_color eval_make_color( 
 			lithp_burrito *lb, int r, int g, int b, char *m)
