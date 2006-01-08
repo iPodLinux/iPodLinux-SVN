@@ -13,6 +13,7 @@
 
 (defun OnStartup   () (...))		# called before windows are set up
 (defun OnPreFlight () (...))		# called after windows are set up
+(defun OnShutdown  () (...))		# called when the user exits to pz2
 
 (defun OnTimer  () (setq t (1+ t)))	# called if a timer is enabled
 (defun OnLeft   () (setq x (1- x)))	# CCW rotation
@@ -45,6 +46,7 @@
 #  (DrawAAEllipse    x y w h )
 #  (DrawFillEllipse  x y w h )
 #  (DrawVectorText   x y w h text )
+#  (DrawVectorTextCentered   x y w h text )
 #  (DrawClear        )
 
 # unimplemented:
