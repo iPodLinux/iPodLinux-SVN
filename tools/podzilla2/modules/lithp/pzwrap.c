@@ -70,6 +70,7 @@ static void draw_lithpwrap( PzWidget *widget, ttk_surface srf )
 	ttk_color fg = ttk_ap_get( "window.fg" )->color;
 */
 
+	if( !lglob.lb ) return;
 	lglob.lb->srf = srf;
 	lglob.frames++;
 	snprintf( buf, 80, "%d", lglob.frames );
@@ -78,12 +79,20 @@ static void draw_lithpwrap( PzWidget *widget, ttk_surface srf )
 	Lithp_callDefun( lglob.lb , "OnDraw" );
 }
 
-static void cleanup_lithpwrap( void ) 
+/* gets called on shutdown of the session.. */
+static void session_end( void )
 {
+	Lithp_callDefun( lglob.lb, "OnShutdown" );
 	burritoDelete( lglob.lb );
 	lglob.lb = NULL;
 }
 
+
+
+/* this gets called on shutdown of podzilla */
+static void cleanup_lithpwrap( void ) 
+{
+}
 
 static int event_lithpwrap( PzEvent *ev )
 {
@@ -120,6 +129,7 @@ static int event_lithpwrap( PzEvent *ev )
 	case PZ_EVENT_BUTTON_UP:
 		switch( ev->arg ) {
 		case( PZ_BUTTON_MENU ):
+			session_end();
 			pz_close_window (ev->wid->win);
 			break;
 
@@ -207,10 +217,6 @@ static char example[] = {
 
 "(defun OnDraw () (list\n"
 "			(DrawPen (Rand 255) (Rand 255) (Rand 255) DKGRAY)\n"
-"			(DrawFillRect (Rand Width) (Rand Height)\n"
-"					(Rand Width) (Rand Height))\n"
-"			(DrawFillRect (Rand Width) (Rand Height)\n"
-"					(Rand Width) (Rand Height))\n"
 "			(DrawFillRect (Rand Width) (Rand Height)\n"
 "					(Rand Width) (Rand Height))\n"
 "			(DrawFillRect (Rand Width) (Rand Height)\n"
@@ -323,7 +329,6 @@ PzWindow * lithp_open_handler( ttk_menu_item * item )
 {
 	return new_lithpwrap_window_with_file_or_string( item->data, 1 );
 }
-
 
 
 /*
