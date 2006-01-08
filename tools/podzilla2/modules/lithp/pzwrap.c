@@ -191,6 +191,7 @@ static void lithpwrap_init_globals( void )
 static char example[] = {
 "(defun OnStartup () (list\n"
 "			(princ \"Startup\")(terpri)\n"
+"			(setq Persistant 1)\n"
 "			(setq TimerMSec 100)\n"
 "			(setq HeaderText \"Example\")\n"
 "			(setq LithpVersion  \"0.7\")\n"
@@ -205,8 +206,6 @@ static char example[] = {
 "))\n"
 
 "(defun OnDraw () (list\n"
-"			(DrawPen 255 255 255 WHITE)\n"
-"			(DrawClear)\n"
 "			(DrawPen (Rand 255) (Rand 255) (Rand 255) DKGRAY)\n"
 "			(DrawFillRect (Rand Width) (Rand Height)\n"
 "					(Rand Width) (Rand Height))\n"
@@ -229,6 +228,7 @@ PzWindow *new_lithpwrap_window_with_file_or_string( char * fn, int isFile )
 	int t;
 	char * tbar;
 	char * fs;
+	char * pers;
 	char buf[32];
 
 	lithpwrap_init_globals();
@@ -272,6 +272,10 @@ PzWindow *new_lithpwrap_window_with_file_or_string( char * fn, int isFile )
 
 	lglob.widget = pz_add_widget( lglob.window, 
 				draw_lithpwrap, event_lithpwrap );
+
+	/* adjust for persistance */
+	pers = Lithp_getString( lglob.lb, "Persistant" );
+	if( !strcmp( pers, "1"))  lglob.widget->w = lglob.widget->h = 0;
 
 	/* setup a timer, if the user wants */
 	t = atoi( Lithp_getString( lglob.lb, "TimerMSec" ));
