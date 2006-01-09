@@ -96,7 +96,7 @@ evalLookupNode evalTable[] =
 	{ "DrawFillRect"	, eval_gfx_DrawFillRect		},
 	{ "DrawClear"		, eval_gfx_DrawClear		},
 	{ "DrawVGradient"	, eval_gfx_DrawVGradient	},
-	{ "DrawhGradient"	, eval_gfx_DrawHGradient	},
+	{ "DrawHGradient"	, eval_gfx_DrawHGradient	},
 	{ "DrawEllipse"		, eval_gfx_DrawEllipse		},
 	{ "DrawAAEllipse"	, eval_gfx_DrawAAEllipse	},
 	{ "DrawFillEllipse"	, eval_gfx_DrawFillEllipse	},
