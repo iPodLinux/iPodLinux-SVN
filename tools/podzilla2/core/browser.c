@@ -39,7 +39,7 @@ void pz_exec(char *filename)
 #ifdef IPOD
 	static const char *const tty0[] = {"/dev/tty0", "/dev/vc/0", 0};
 	static const char *const vcs[] = {"/dev/vc/%d", "/dev/tty%d", 0};
-	int i, tty0_fd, ttyfd, oldvt, curvt, fd, status;
+	int i, tty0_fd, ttyfd, curvt, fd, status, oldvt = 0;
 	pid_t pid;
 
 	/* query for a free VT */
@@ -240,7 +240,7 @@ static int is_ascii_file(const char *filename)
 	fread(buf, min_len, 1, fp);
 	fclose(fp);
 	
-	for(ptr=buf;ptr-buf<min_len;ptr++)
+	for(ptr=buf;ptr-buf<(long)min_len;ptr++)
 		if(*ptr<7||*ptr>127)
 			return 0;
 	return 1;
@@ -265,7 +265,7 @@ static TWindow *new_textview_window(char *filename)
 		cs = 0;
 		while (fgets(tmp, 4096, fp) != NULL) {
 			len = buf ? strlen(buf) : 0;
-			if (len + strlen(tmp) > cs) {
+			if (len + (long)strlen(tmp) > cs) {
 				cs += 8192;
 				if ((buf = realloc(buf, cs)) == NULL) {
 					pz_error(_("Memory allocation failed"));

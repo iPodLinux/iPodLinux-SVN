@@ -613,7 +613,7 @@ static void Clocks_draw_4bit_horiz( int y, int val )
 	int r = (xv-2)>>1;
 	int xv4 = (Clocks_screen_info.cols-(r*2))/3;
 	int vc;
-	int xp;
+	int xp = 0;
 
 	/* note... there's a whole lot of magic going on in here to
 	   get the 4 and 6 light rows to look correct. */

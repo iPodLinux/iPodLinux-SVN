@@ -42,7 +42,7 @@ static struct {
 	short state; /* states: POSITION, VOLUME_S, SEEK */
 	int ticker;  /* time ticker */
 	int seek_time;
-} multibar = {POSITION, 0};
+} multibar = {POSITION, 0, 0};
 
 static struct {
 	int step;

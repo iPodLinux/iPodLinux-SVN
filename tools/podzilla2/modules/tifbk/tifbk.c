@@ -89,6 +89,7 @@ void ti_fbk_draw(TWidget * wid, ttk_surface srf)
 	unsigned long int c, ch, m, mh;
 	int i, x, y, cw;
 	char cho[2];
+	x = y = 0;
 	m = ti_fbk_CurrModeSwitch;
 	c = ti_fbk_CurrCharOutput;
 	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));

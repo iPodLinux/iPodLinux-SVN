@@ -233,7 +233,7 @@ static int move_piece(uint64_t *bo, uint64_t *bs, char side, char bit)
 static signed char best_move(uint64_t *bo, uint64_t *bs, char side)
 {
 	uint64_t t_bo, t_bs;
-	unsigned char c, bc;
+	unsigned char c, bc = 0;
 	int best = NOMOVE;
 	int pts;
 

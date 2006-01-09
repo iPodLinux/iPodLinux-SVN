@@ -382,7 +382,7 @@ static void test_connection(int nconn)
 	int bc_row[BCOLS*BROWS];
 	int bc_col[BCOLS*BROWS];
 	int ccol,crow;
-	int pscore,nhit;
+	int nhit,pscore = 0;
 	/* how to do
 	 * for each ball
 	 * for now no optimization

@@ -76,7 +76,7 @@ static int song_held_handler(TWidget *this, int button)
 
 static TWindow *open_song(ttk_menu_item *item)
 {
-	int i, num;
+	int i, num = 0;
 	ttk_menu_item *sitem;
 
 	if (mpdc_tickle() < 0)

@@ -484,7 +484,7 @@ static void mines_clear_path(const int x, const int y)
 		UNCOVER_IF_CLEAR(x - 1, y - 1)
 }
 
-static int mines_is_high_score(time)
+static int mines_is_high_score(int time)
 {
 	FILE *fd;
 	int highscore = 32768, ret = 0;
