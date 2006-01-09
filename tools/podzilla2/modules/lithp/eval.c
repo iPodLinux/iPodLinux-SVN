@@ -231,14 +231,16 @@ le * evaluateDefun( lithp_burrito *lb, le * fcn, le * params )
 
 void Lithp_callDefun( lithp_burrito *lb, char * fname )
 {
+	le * ret;
 	le * fcn;
 	le * temp = variableGet( lb->defunList, fname );
 
 	if( !temp ) return;
 	fcn = leNew( fname );
 
-	(void)evaluateNode( lb, fcn );
+	ret = evaluateNode( lb, fcn );
 
+	leWipe( ret );
 	leWipe( fcn );
 }
  

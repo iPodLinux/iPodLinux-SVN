@@ -82,6 +82,7 @@ static void draw_lithpwrap( PzWidget *widget, ttk_surface srf )
 /* gets called on shutdown of the session.. */
 static void session_end( void )
 {
+	pz_widget_set_timer( lglob.widget, 0 );
 	Lithp_callDefun( lglob.lb, "OnShutdown" );
 	burritoDelete( lglob.lb );
 	lglob.lb = NULL;
@@ -100,7 +101,10 @@ static int event_lithpwrap( PzEvent *ev )
 	char buf[80];
 	char *v;
 
-	if( !lglob.lb ) printf( "no burrito!\n" );
+	if( !lglob.lb ) {
+		printf( "no burrito!\n" );
+		return( 0 );
+	}
 
 	/* update some lithp variables... */
 	snprintf( buf, 80, "%d", lglob.timer );
@@ -201,8 +205,8 @@ static void lithpwrap_init_globals( void )
 static char example[] = {
 "(defun OnStartup () (list\n"
 "			(princ \"Startup\")(terpri)\n"
-"			(setq Persistant 1)\n"
-"			(setq TimerMSec 100)\n"
+"			(setq Persistent 1)\n"
+"			(setq TimerMSec 2000)\n"
 "			(setq HeaderText \"Example\")\n"
 "			(setq LithpVersion  \"0.7\")\n"
 "))\n"
@@ -279,8 +283,8 @@ PzWindow *new_lithpwrap_window_with_file_or_string( char * fn, int isFile )
 	lglob.widget = pz_add_widget( lglob.window, 
 				draw_lithpwrap, event_lithpwrap );
 
-	/* adjust for persistance */
-	pers = Lithp_getString( lglob.lb, "Persistant" );
+	/* adjust for persistence */
+	pers = Lithp_getString( lglob.lb, "Persistent" );
 	if( !strcmp( pers, "1"))  lglob.widget->w = lglob.widget->h = 0;
 
 	/* setup a timer, if the user wants */
