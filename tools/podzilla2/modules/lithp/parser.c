@@ -60,6 +60,9 @@ static int mygetc( lithp_burrito * lb )
 			lb->pos++;
 		}
 	}
+	/* hack until i rewrite the parser engine */
+	if( ret == '\t' )  ret = '\n';
+
 	return( ret );
 }
 
