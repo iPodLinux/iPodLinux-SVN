@@ -80,7 +80,7 @@
 # HeaderText	Write 		OnStartup - changes the podzilla header
 # TimerMSec	Write		OnStartup - sets up the timer interval
 # LithpVersion	Write		OnStartup - makes sure to use the right parser
-# Persistant	Write		OnStartup - makes the widget not clear
+# Persistent	Write		OnStartup - makes the widget not clear
 
 
 # if you want a timer, set this in the OnInit callback
@@ -101,7 +101,7 @@
 
 # to not clear the widget between OnDraw polls, set this to '1'
 # otherwise, it gets cleared with whatever the 'bg' color is.
-(setq Persistant 1)
+(setq Persistent 1)
 
 
 # HINTS:
