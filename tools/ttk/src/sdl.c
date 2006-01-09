@@ -1718,7 +1718,7 @@ static void draw_bf (ttk_font *f, ttk_surface srf, int x, int y, ttk_color col, 
         corefont_drawtext (f->bf, srf, x, y, text, cc, col);
     else {
         unsigned short *buf = malloc (strlen (str) * 2);
-        int len = ConvertUTF8 (str, buf);
+        int len = ConvertUTF8 ((unsigned char *)str, buf);
         corefont16_drawtext (f->bf, srf, x, y, buf, len, col);
         free (buf);
     }
@@ -1752,7 +1752,7 @@ static int width_bf (ttk_font *f, const char *str)
         gen_gettextsize (f->bf, str, strlen (str), &width, &height, &base);
     else {
         unsigned short *buf = malloc (strlen (str) * 2);
-        int len = ConvertUTF8 (str, buf);
+        int len = ConvertUTF8 ((unsigned char *)str, buf);
         gen16_gettextsize (f->bf, buf, len, &width, &height, &base);
         free (buf);
     }
