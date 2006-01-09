@@ -292,7 +292,7 @@ ttk_menu_item *resolve_menupath (const char *path, int loc)
 {
     const char *p = path;
     TWidget *menu;
-    ttk_menu_item *item;
+    ttk_menu_item *item = 0;
     int i, len;
 
     if (!strcmp (path, "/")) {

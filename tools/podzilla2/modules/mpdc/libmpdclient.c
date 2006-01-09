@@ -1039,7 +1039,7 @@ void mpd_freeInfoEntityInfo_st(void) {
 
 unsigned int mpd_getNextInfoEntity_st(mpd_InfoEntity * entity,
 		mpd_Connection * connection) {
-	mpd_Song * s;
+	mpd_Song * s = NULL;
 	if(connection->doneProcessing || (connection->listOks &&
 			connection->doneListOk))
 	{

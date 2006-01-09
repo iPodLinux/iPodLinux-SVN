@@ -32,9 +32,9 @@ extern int ti_register(TWidget *(* cr)(), TWidget *(* ncr)(), char *, int);
 static PzModule * module;
 
 typedef struct ti_cursive_record_ {
-	unsigned char * seq;
-	unsigned char ch;
-	unsigned char sh;
+	char * seq;
+	char ch;
+	char sh;
 } ti_cursive_record;
 
 const ti_cursive_record ti_cursive_records[] = {
@@ -94,7 +94,7 @@ const ti_cursive_record ti_cursive_records[] = {
 };
 const int ti_cursive_record_count = 51;
 
-static unsigned char ti_cursive_buffer[6];
+static char ti_cursive_buffer[6];
 static int ti_cursive_buffer_pos = 0;
 static int ti_cursive_shift = 0;
 
@@ -124,7 +124,7 @@ char ti_cursive_get_char(void)
 
 void ti_cursive_push(void)
 {
-	unsigned char c;
+	char c;
 	c = ti_cursive_get_char();
 	if (c != 0) { ttk_input_char(c); }
 	ti_cursive_buffer[0] = 0;
@@ -133,7 +133,7 @@ void ti_cursive_push(void)
 
 void ti_cursive_draw(TWidget * wid, ttk_surface srf)
 {
-	unsigned char s[2];
+	char s[2];
 	int x, y, w;
 	x = wid->x;
 	w = wid->w;

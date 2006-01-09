@@ -182,7 +182,7 @@ void ti_keypad_push(int n)
 		ti_keypad_output();
 	} else if (n == ti_keypad_curr_btn) {
 		ti_keypad_curr_char++;
-		if (ti_keypad_curr_char > strlen(ti_keypad_numeric?ti_keypad_buttons_n[ti_keypad_curr_btn]:ti_keypad_buttons[ti_keypad_curr_btn])) { ti_keypad_curr_char = 1; }
+		if (ti_keypad_curr_char > (int)strlen(ti_keypad_numeric?ti_keypad_buttons_n[ti_keypad_curr_btn]:ti_keypad_buttons[ti_keypad_curr_btn])) { ti_keypad_curr_char = 1; }
 	} else {
 		ti_keypad_output();
 		ti_keypad_curr_btn = n;

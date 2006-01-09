@@ -105,11 +105,12 @@ static TWindow *clear_queue(ttk_menu_item *item)
 	return TTK_MENU_UPONE;
 }
 
+#define END 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 static ttk_menu_item queue_menu[] = {
-	{N_("Save"), {save_queue}, 0, 0},
-	{N_("Remove"), {remove_song}, 0, 0},
-	{N_("Clear"), {clear_queue}, 0, 0},
-	{0, {0}, 0, 0}
+	{N_("Save"), {save_queue,0}, END},
+	{N_("Remove"), {remove_song,0}, END},
+	{N_("Clear"), {clear_queue,0}, END},
+	{0, {0,0}, END}
 };
 static TWindow *queue_actions(ttk_menu_item *item)
 {

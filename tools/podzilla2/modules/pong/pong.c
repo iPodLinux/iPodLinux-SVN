@@ -61,7 +61,7 @@ static struct Position pball, pplayer1, pplayer2;
 static struct Velocity vball, vplayer1, vplayer2;
 static int roundover, comppoint, userpoint, gameover, paused;
 
-void pong_print_score(num, side)
+void pong_print_score(int num, int side)
 {
 	int ref;
 	

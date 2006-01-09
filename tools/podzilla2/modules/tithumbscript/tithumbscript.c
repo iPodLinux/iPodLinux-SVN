@@ -134,7 +134,7 @@ void ti_thumbscript_draw(TWidget * wid, ttk_surface srf)
 
 void ti_thumbscript_push(int n)
 {
-	int fc, lc, ch;
+	int fc, lc, ch = 0;
 	if (ti_thumbscript_last == 0) {
 		ti_thumbscript_last = n+1;
 	} else {

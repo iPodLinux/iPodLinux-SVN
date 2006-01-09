@@ -193,7 +193,7 @@ void terminal_get_esc_seq_parms(char * seq, int * p1, int d1, int * p2, int d2, 
 	if (p1) *p1 = d1;
 	if (p2) *p2 = d2;
 	if (p3) *p3 = d3;
-	for (i=0; i<strlen(seq); i++) {
+	for (i=0; i<(int)strlen(seq); i++) {
 		ch = seq[i];
 		if (ch == ';') {
 			p++;
@@ -266,7 +266,7 @@ void terminal_handlech(unsigned short ch)
 		} else if (ch == ')') {
 			terminal_escape = 5;
 		} else if (((ch>='A')&&(ch<='Z'))||((ch>='a')&&(ch<='z'))) {
-			unsigned char resp[40];
+			char resp[40];
 			int parm, parm1, parm2;
 			switch (terminal_escape) {
 			case 1: /* sequence of the form ESC X where X is a letter */
