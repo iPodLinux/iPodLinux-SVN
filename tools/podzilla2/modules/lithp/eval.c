@@ -1009,9 +1009,9 @@ le * eval_cb_set_helper(
 		le * branch
 		)
 {
-	le * newkey;
-	le * newvalue;
-	le * current;
+	le * newkey = NULL;
+	le * newvalue = NULL;
+	le * current = NULL;
 
 	if (!branch || argc < 3)  return( leNew( "NIL" ) );
 
