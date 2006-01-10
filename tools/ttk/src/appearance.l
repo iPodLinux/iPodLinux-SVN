@@ -37,7 +37,7 @@ static int expansion_stack_ptr = 0;
 %x PREFIX
 %x KEY
 %x VALUE
-%x GRADSTART GRADEND
+%x GRADSTART GRADEND GRADWITH
 %x SKIP
 
 %option yylineno
@@ -131,11 +131,11 @@ DEC	[0-9]+
 
     BEGIN VALUE;
 }
-.		WARN ("unrecognized character %s in key", yytext);
+<KEY>.		WARN ("unrecognized character %s in key", yytext);
 
-<VALUE,GRADSTART,GRADEND>[ \t]+
+<VALUE,GRADSTART,GRADEND,GRADWITH>[ \t]+
 
-<VALUE,GRADSTART,GRADEND>"#"{HEX} {
+<VALUE,GRADSTART,GRADEND,GRADWITH>"#"{HEX} {
     int r, g, b; r = g = b = 0;
 
     r |= hex2nyb (yytext[1]); r <<= 4;
@@ -150,10 +150,11 @@ DEC	[0-9]+
                         ap->color = ttk_makecol (r, g, b); ap->type |= TTK_AP_COLOR; break;
         case GRADSTART: ap->gradstart = ttk_makecol (r, g, b); ap->type |= TTK_AP_GRADIENT; break;
         case GRADEND:   ap->gradend = ttk_makecol (r, g, b); break;
+        case GRADWITH:  ap->gradwith = ttk_makecol (r, g, b); break;
     }
 }
 
-<VALUE,GRADSTART,GRADEND>"#"{SHEX} {
+<VALUE,GRADSTART,GRADEND,GRADWITH>"#"{SHEX} {
     int r, g, b;
     
     r = hex2nyb (yytext[1]); r |= (r << 4);
@@ -165,11 +166,12 @@ DEC	[0-9]+
                         ap->color = ttk_makecol (r, g, b); ap->type |= TTK_AP_COLOR; break;
         case GRADSTART: ap->gradstart = ttk_makecol (r, g, b); ap->type |= TTK_AP_GRADIENT; break;
         case GRADEND:   ap->gradend = ttk_makecol (r, g, b); break;
+        case GRADWITH:  ap->gradwith = ttk_makecol (r, g, b); break;
     }
 }
 
-<GRADSTART,GRADEND>horiz(ontal)? ap->type |= TTK_AP_GRAD_HORIZ;
-<GRADSTART,GRADEND>vert(ical)?	 ap->type &= ~TTK_AP_GRAD_HORIZ;
+<GRADSTART,GRADEND,GRADWITH>horiz(ontal)? ap->type |= TTK_AP_GRAD_HORIZ;
+<GRADSTART,GRADEND,GRADWITH>vert(ical)?	  ap->type &= ~TTK_AP_GRAD_HORIZ;
 
 <VALUE>"<"	BEGIN GRADSTART;
 <GRADSTART>(to|,) BEGIN GRADEND;
@@ -179,7 +181,46 @@ DEC	[0-9]+
     ap->type |= TTK_AP_GRAD_MID;
     ap->gradmid = ap->gradend;
 }
-<GRADEND>">"	BEGIN VALUE;
+<GRADSTART>with	WARN ("`with' must come at the end, ignoring");
+<GRADEND>with {
+    ap->type |= TTK_AP_GRAD_BAR;
+    BEGIN GRADWITH;
+}
+<GRADWITH>"@":?[ \t]*[0-9]+(","[ \t]*[0-9]+(","[ \t]*[0-9]+","[ \t]*[0-9]+)?)? {
+    // extract the values
+    int t, r, b, l;
+    char *str = (char *)yytext;
+    t = r = b = l = 0;
+    while (*str == '@' || *str == ':' || isspace (*str)) str++;
+    t = strtol (str, (char **)&str, 10);
+    while (*str && *str != ',') str++;
+    if (!*str) {
+        r = b = l = t;
+    } else {
+        while (*str == ',' || isspace (*str)) str++;
+        r = strtol (str, (char **)&str, 10);
+        while (*str && *str != ',') str++;
+        if (!*str) {
+            b = t, l = r;
+        } else {
+            while (*str == ',' || isspace (*str)) str++;
+            b = strtol (str, (char **)&str, 10);
+            while (*str && *str != ',') str++;
+            if (!*str) {
+                l = r;
+            } else {
+                while (*str == ',' || isspace (*str)) str++;
+                l = strtol (str, (char **)&str, 10);
+            }
+        }
+    }
+
+    ap->gbt = t;
+    ap->gbr = r;
+    ap->gbb = b;
+    ap->gbl = l;
+}
+<GRADEND,GRADWITH>">"	BEGIN VALUE;
 
 <VALUE>("-"|"+")[0-9]+ {
     if (ap->type & TTK_AP_SPACING)
@@ -436,6 +477,9 @@ void ttk_ap_dorect (ttk_surface srf, TApItem *ap, int x1, int y1, int x2, int y2
         } else {
             gradfn (srf, x1, y1, x2, y2, ap->gradstart, ap->gradend);
         }
+
+        if ((ap->type & TTK_AP_GRAD_BAR) && (x1 + ap->gbl < x2 - ap->gbr) && (y1 + ap->gbt < y2 - ap->gbb))
+            ttk_fillrect (srf, x1 + ap->gbl, y1 + ap->gbt, x2 - ap->gbr, y2 - ap->gbb, ap->gradwith);
     }
 
     if (img) {
