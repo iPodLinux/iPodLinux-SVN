@@ -105,6 +105,7 @@ void ti_wlb_switch_cset(void)
 void ti_wlb_advance_level(int i)
 {
 	int add;
+	unsigned char c;
 	ti_wlb_position=3;
 	if (ti_wlb_limit%2!=0) 
 		add=1;
@@ -118,10 +119,11 @@ void ti_wlb_advance_level(int i)
 		ti_wlb_limit=(ti_wlb_limit)/2+add;
 	} else {
 		if (i==1) {
-			ttk_input_char(ti_wlb_charset[ti_wlb_startpos+1]);
+			c = ti_wlb_charset[ti_wlb_startpos+1];
 		} else {
-			ttk_input_char(ti_wlb_charset[ti_wlb_startpos]);
+			c = ti_wlb_charset[ti_wlb_startpos];
 		}
+		ttk_input_char(c);
 		ti_wlb_limit=13;
 		ti_wlb_startpos=0;
 	}

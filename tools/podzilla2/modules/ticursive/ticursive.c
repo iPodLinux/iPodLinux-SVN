@@ -124,7 +124,7 @@ char ti_cursive_get_char(void)
 
 void ti_cursive_push(void)
 {
-	char c;
+	unsigned char c;
 	c = ti_cursive_get_char();
 	if (c != 0) { ttk_input_char(c); }
 	ti_cursive_buffer[0] = 0;
