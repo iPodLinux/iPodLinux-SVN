@@ -28,6 +28,7 @@
 #define TTK_AP_GRADIENT     020
 #define TTK_AP_GRAD_MID     040
 #define TTK_AP_GRAD_HORIZ   0100
+#define TTK_AP_GRAD_BAR     01000
 
 #define TTK_AP_IMG_HLEFT    0000
 #define TTK_AP_IMG_HCENTER  0200
@@ -47,7 +48,8 @@ typedef struct TApItem
     ttk_surface img;
     int spacing;
     int rx, ry, rw, rh;
-    ttk_color gradstart, gradend, gradmid;
+    ttk_color gradstart, gradend, gradmid, gradwith;
+    int gbt, gbr, gbb, gbl; // grad bar top/right/bottom/left
     struct TApItem *next; // used in some cases
 } TApItem;
 
