@@ -177,7 +177,7 @@ void Vortex_CollisionDetection( void )
 void Vortex_Bolt_draw( ttk_surface srf )
 {
         int b,w,z;
-	ttk_color c;
+	ttk_color c = 0;
 
 	for( b=0 ; b<VGO_BOLTS_NUM ; b++ )
 	{
