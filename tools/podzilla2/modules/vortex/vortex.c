@@ -212,8 +212,8 @@ void Vortex_DrawAvailableBases( ttk_surface srf )
 void draw_vortex (PzWidget *widget, ttk_surface srf) 
 {
 	char buf[16];
-	char * word;
-	char * credit;
+	char * word = NULL;
+	char * credit = NULL;
 
 	ttk_fillrect( srf, 0, 0, ttk_screen->w, ttk_screen->h, vglob.color.bg );
 
