@@ -202,6 +202,9 @@ static void do_partitions()
 
         showdev[0] = 0;
 
+        if (!strncmp (buf, "/dev/root", 9) && ttk_get_podversion() != TTK_POD_X11)
+            strcpy (buf, "/dev/hda3 "); // space is intentional
+
         if (!strncmp (buf, "/dev/ide/host", 13)) {
             int h = -1, t = -1, p = -1;
             sscanf (buf, "/dev/ide/host%d/bus0/target%d/lun0/part%d", &h, &t, &p);
