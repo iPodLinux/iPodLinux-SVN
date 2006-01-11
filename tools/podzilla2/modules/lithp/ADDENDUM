@@ -149,6 +149,9 @@
 ################################################################################
 Future TODO:
 
+########## Bugfix:
+(list	should not evaluate
+(defun	should allow for multiple body elements
 
 ########## Bugfix:
 >> (setf x 4)
