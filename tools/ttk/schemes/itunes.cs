@@ -50,10 +50,10 @@
 
   header: bg => metalbg, fg => metalfg, line => #666666 -1, accent => #d6d6d6
 	  shadow => #333, shine => #ddd,
-	  gradient.top => graptop,
-	  gradient.middle => grapmid,
-	  gradient.bottom => grapbot,
-	  gradient.bar => grapbar +1
+	  gradient.top => #c5c5c5,
+	  gradient.middle => #acacac,
+	  gradient.bottom => #969696,
+	  gradient.bar => #acacac +1
    music: bar => <vert graptop to grapmid to grapbot with #d5dbfb @:1,1,5,1>
  battery: border => metalfg, bg => grapmid, fill.normal => metalfg +1, fill.low => metalwid +1, fill.charge => metalfg +1,
 	  bg.low => red, bg.charging => blue
@@ -63,17 +63,18 @@
   window: bg => aquabg, fg => aquafg, border => aquawinbdr -3
   dialog: bg => aquabg, fg => aquafg, line => #8b8b8b,
           title.fg => aquafg,
-          button.bg => aquabtn, button.fg => aquafg, button.border => aquabtnbdr,
-	  button.sel.bg => aquadbtn, button.sel.fg => aquafg, button.sel.border => aquadbtnbdr, button.sel.inner => aquadbtn +1
+          button.bg => <vert #f9f9f9 to #e3e3e3 to #ffffff>, button.fg => aquafg, button.border => aquabtnbdr,
+	  button.sel.bg => <vert #c7d0ea to #61a2e4 to #8de4ff>, button.sel.fg => aquafg, button.sel.border => aquadbtnbdr, button.sel.inner => aquadbtn +1
    error: bg => aquabg, fg => aquafg, line => #8b8b8b,
           title.fg => aquafg,
-          button.bg => aquabtn, button.fg => aquafg, button.border => aquabtnbdr,
-	  button.sel.bg => aquadbtn, button.sel.fg => aquafg, button.sel.border => aquadbtnbdr, button.sel.inner => aquadbtn +1
-  scroll: box => #b8b8b8, bg => #ebebeb +1, bar => #6cabed
+          button.bg => <vert #f9f9f9 to #e3e3e3 to #ffffff>, button.fg => aquafg, button.border => aquabtnbdr,
+	  button.sel.bg => <vert #c7d0ea to #61a2e4 to #8de4ff>, button.sel.fg => aquafg, button.sel.border => aquadbtnbdr, button.sel.inner => aquadbtn +1
+  scroll: box => #b8b8b8, bg => <horiz #b8b8b8 to #efefef> +1,
+          bar => @familiar-(scroll.bar).png
    input: bg => aquabg, fg => aquafg, selbg => aquadbtn, selfg => aquafg, border => aquawinbdr, cursor => #808080
 
     menu: bg => #e7edf6, fg => #000000, choice => #000000, icon => #000000,
-          selbg => #3b79da, selfg => #ffffff, selchoice => #ffffff,
+          selbg => <vert #5999e5 to #1f5ccf>, selfg => #ffffff, selchoice => #ffffff,
           icon0 => #3b79da, icon1 => #28503c, icon2 => #50a078, icon3 => #ffffff
   slider: border => #282828, bg => #e8ebd2, full => #acb098
 textarea: bg => #ffffff, fg => #000000
