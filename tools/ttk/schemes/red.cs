@@ -17,7 +17,7 @@
 	  shadow => black, shine => red,
 	  gradient.top => red,
 	  gradient.middle => yellow,
-	  gradient.bottom => red,
+	  gradient.bottom => dkred,
 	  gradient.bar => white -1 
 
    music: bar => ltred +2
@@ -42,7 +42,9 @@
           button.bg => dkred, button.fg => red, button.border => black,
           button.sel.bg => ltred, button.sel.fg => black, button.sel.border => red, button.sel.inner => dkred +1
 
-  scroll: box => red, bg => black +1, bar => ltred +2
+  scroll: box => dkred,
+		bg => <horiz dkred to black to dkred>,
+		bar => <horiz black to red to black>-1
 
    input: bg => black, fg => red, selbg => red, selfg => black, border => dkred, cursor => red
 
