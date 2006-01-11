@@ -1,6 +1,7 @@
 /* lithp - main wrapper interface
  *
  *      (c)2006 Scott Lawrence   yorgle@gmail.com
+ *
  */
 
 /*
