@@ -16,8 +16,7 @@
 	  gradient.bottom => #333,
 	  gradient.bar => #333 +2
 
-   music: bar => <vert #333 to black to #222>
-	  bar.bar => #333 +1
+   music: bar => <vert #333 to black to #222 with #333 @:1,1,6,1>
 	  
  battery: border => #666,
 	  bg => black,

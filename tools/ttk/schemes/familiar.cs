@@ -16,19 +16,20 @@
 \def grapbar    #F0F4F8
 
   header: bg => white, fg => black, line => #808888 -1, accent => #ff0000
-	  shadow => #0039b3, shine => #87d0ff,
-	  gradient.top => graptop,
-	  gradient.middle => grapmid,
-	  gradient.bottom => grapbot,
-	  gradient.bar => grapbar +1
-   music: bar => <vert #0039b3 to #60a4ef to #87d0ff>
-	  bar.bar => #91bae7 +1
+          shadow => #0039b3, shine => #87d0ff,
+          gradient.top => graptop,
+          gradient.middle => grapmid,
+          gradient.bottom => grapbot,
+          gradient.bar => grapbar +1
+   music: bar => @familiar-(music.bar).png ,
+          bar.bg => @familiar-(music.bar.bg).png
  battery: border => #606C78,
-	  bg => #C0D0D8,
-	  fill.normal => <vert #bde0a0 to #5eba6f to #1c6d4c>,
-	  fill.low => #C03020,
-	  fill.charge => <vert #bde0a0 to #5eba6f to #1c6d4c>,
-	  bg.low => #C0D0D8, bg.charging => #C0D0D8
+          bg => <vert #a0adb8 to #d8e2e6>,
+          fill.normal => <#80e141, #6dd433, #258208 with #aefa73 @:1,0,5,0>,
+          fill.low => #C03020,
+          fill.charge => <#80e141, #6dd433, #258208 with #aefa73 @:1,0,5,0>,
+          bg.low =>  <vert #a0adb8 to #d8e2e6>,
+          bg.charging => <vert #a0adb8 to #d8e2e6>
     lock: border => #282C28, fill => #383C40
  loadavg: bg => #E8F4E8, fg => #68D028, spike => #C0D0D8
 
@@ -36,13 +37,14 @@
   dialog: bg => white, fg => black, line => #808888,
           title.fg => black,
           button.bg => aquabtn, button.fg => black, button.border => aquabtnbdr,
-	      button.sel.bg => aquadbtn, button.sel.fg => black, button.sel.border => aquadbtnbdr, button.sel.inner => aquadbtn +1
+          button.sel.bg => aquadbtn, button.sel.fg => black, button.sel.border => aquadbtnbdr, button.sel.inner => aquadbtn +1
    error: bg => white, fg => black, line => #808888,
           title.fg => black,
           button.bg => aquabtn, button.fg => black, button.border => aquabtnbdr,
-	  button.sel.bg => aquadbtn, button.sel.fg => black, button.sel.border => aquadbtnbdr, button.sel.inner => aquadbtn +1
-  scroll: box => #b8b8b8, bg => #ebebeb,
-          bar => <horiz #0039b3 to #60a4ef to #87d0ff>
+          button.sel.bg => aquadbtn, button.sel.fg => black, button.sel.border => aquadbtnbdr, button.sel.inner => aquadbtn +1
+  scroll: box => #56585a -1,
+          bg => <horiz #c0c8c8 to #d8e2e6 to #e8f2f3>,
+          bar => @familiar-(scroll.bar).png
    input: bg => white, fg => black, selbg => aquadbtn, selfg => black, border => aquawinbdr, cursor => #808080
 
     menu: bg => white, fg => black, choice => nearblack, icon => nearblack,
