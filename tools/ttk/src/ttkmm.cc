@@ -309,7 +309,7 @@ namespace TTK
     }
 
     void e_draw (TWidget *wid, ttk_surface srf)
-    { Widget *Wid = (Widget *)wid->data2; Wid->draw (srf); }
+    { Widget *Wid = (Widget *)wid->data2; Wid->draw (Surface (srf)); }
     int e_scroll (TWidget *wid, int dist)
     { Widget *Wid = (Widget *)wid->data2; return Wid->scroll (dist); }
     int e_stap (TWidget *wid, int where)
