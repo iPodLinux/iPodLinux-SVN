@@ -236,5 +236,7 @@ int Lithp_parseInString( lithp_burrito * lb, char * theString );
 void Lithp_evaluateBurrito( lithp_burrito * lb );
 
 void Lithp_callDefun( lithp_burrito * lb, char * fname );
+void Lithp_callDefunViaVariable( lithp_burrito *lb, char * var );
+
 
 #endif

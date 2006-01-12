@@ -11,19 +11,20 @@
 
 (setq t 0 x 0)				# for use below. ;)
 
-(defun OnStartup   () (...))		# called before windows are set up
-(defun OnPreFlight () (...))		# called after windows are set up
-(defun OnShutdown  () (...))		# called when the user exits to pz2
+# requesting function names
+(setq pz2:Startup fname)		# called before windows are set up
+(setq pz2:PreFlight fname) 		# called after windows are set up
+(setq pz2:Shutdown fname) 		# called when the user exits to pz2
 
-(defun OnTimer  () (setq t (1+ t)))	# called if a timer is enabled
-(defun OnLeft   () (setq x (1- x)))	# CCW rotation
-(defun OnRight  () (setq x (1+ x)))	# CW rotation
-(defun OnAction () (...))		# center button pressed
-(defun OnPlay   () (...))		# play button pressed
-(defun OnPrev   () (...))		# Previos |<< button pressed
-(defun OnNext	() (...))		# Next >>| button pressed
+(setq pz2:Timer fname) 			# called if a timer is enabled
 
-(defun OnDraw   () (...))		# redraw the screen
+(setq pz2:Left fname)			# CCW rotation
+(setq pz2:Right fname) 			# CW rotation
+(setq pz2:Action fname) 		# center button pressed
+(setq pz2:Play fname) 			# play button pressed
+(setq pz2:Prev fname) 			# Previous |<< button pressed
+(setq pz2:Next fname) 			# Next >>| button pressed
+(setq pz2:Draw fname)			# redraw the screen
 
 
 #################### ####################
@@ -70,38 +71,37 @@
 #################### ####################
 # variables:
 
-# Name		Read/Write	Description
+# Name			Read/Write	Description
 
-# Frames 	Read		number of frames drawn since we started
-# Ticks		Read		number of timer ticks have happened
-# Width		Read		screen width
-# Height	Read		screen height
-# DirtyScreen	Write		Tells PZ to redraw the screen
-# HeaderText	Write 		OnStartup - changes the podzilla header
-# TimerMSec	Write		OnStartup - sets up the timer interval
-# LithpVersion	Write		OnStartup - makes sure to use the right parser
-# Persistent	Write		OnStartup - makes the widget not clear
+# pz2:Frames 		Read		number of frames drawn since we started
+# pz2:Ticks		Read		number of timer ticks have happened
+# pz2:Width		Read		screen width
+# pz2:Height		Read		screen height
+# pz2:DirtyScreen	Write		Tells PZ to redraw the screen
+# pz2:HeaderText	Write 		OnStartup - changes the podzilla header
+# pz2:TimerMSec		Write		OnStartup - sets up the timer interval
+# pz2:Persistent	Write		OnStartup - makes the widget not clear
 
+
+# for future compatibility, this needs to be near the top of the file.
+# NOTE: in the initial version, this is ignored.
+(require  'pz2:0.8)
 
 # if you want a timer, set this in the OnInit callback
-(setq TimerMsec 1000)
-
-# for future compatibility, set the following to define this spec
-# NOTE: in the initial version, this is ignored.
-(setq LithpVersion "0.6")
+(setq pz2:TimerMsec 1000)
 
 # to change the header
-(setq HeaderText "My Cool Thing")
+(setq pz2:HeaderText "My Cool Thing")
 
 # fullscreen option (do not call or set to 0 if you want a header
-(setq FullScreen 1)
+(setq pz2:FullScreen 1)
 
 # to trigger a redraw, set this to 1 (in an event callback)
-(setq DirtyScreen 1)
+(setq pz2:DirtyScreen 1)
 
 # to not clear the widget between OnDraw polls, set this to '1'
 # otherwise, it gets cleared with whatever the 'bg' color is.
-(setq Persistent 1)
+(setq pz2:Persistent 1)
 
 
 # HINTS:
