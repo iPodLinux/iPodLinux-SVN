@@ -80,6 +80,8 @@ evalLookupNode evalTable[] =
 	{ "gc"		, eval_cb_nothing	},
 	{ "garbage-collect" , eval_cb_nothing	},
 
+	{ "require"	, eval_cb_require	},
+
 	/* now, the additional functions for graphics renderings */
 
 	{ "Rand"		, eval_gfx_Rand			},
@@ -101,7 +103,8 @@ evalLookupNode evalTable[] =
 	{ "DrawAAEllipse"	, eval_gfx_DrawAAEllipse	},
 	{ "DrawFillEllipse"	, eval_gfx_DrawFillEllipse	},
 	{ "DrawVectorText"	, eval_gfx_DrawVectorText	},
-	{ "DrawVectorTextCentered"	, eval_gfx_DrawVectorTextCentered	},
+	{ "DrawVectorTextCentered"	, eval_gfx_DrawVectorTextCentered },
+
 /*
 	{ "DrawText"		, eval_gfx_DrawText		},
 	{ "DrawPoly"		, eval_gfx_DrawPoly		},
@@ -287,6 +290,19 @@ le * evalCastIntToLe( int intvalue )
 
 
 /* the functions that do the work... */
+
+le * eval_cb_require( lithp_burrito * lb, const int argc, le * branch )
+{
+        if (!branch || argc != 2) return( leNew( "NIL" ) );
+
+	/* we should do different things based on this eventually... */
+	if( !strcmp( branch->list_next->data, "pz2:0.8" )) {
+		lb->apiVersion = 0.8;
+		return( leNew( "T" ));
+	}
+	
+	return( leNew( "NIL" ));
+}
 
 le * eval_cb_nothing( lithp_burrito * lb, const int argc, le * branch )
 {
