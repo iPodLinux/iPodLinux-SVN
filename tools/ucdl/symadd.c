@@ -74,21 +74,26 @@ int main(int argc, char **argv)
 
 	while (fgets(line, 1023, symp)) {
 		char offsets[9];
-		char type;
+		char type, t;
 		unsigned int offset;
 		char sym[256]; /* overflow not unlikely */
 		sscanf(line, "%s %c %s", &offsets, &type, &sym);
-		if (type == 'T' || type == 'V' || type == 'W') type = 0;
-		if (type == 'D' || type == 'R' || type == 'G') type = 1;
-		if (type == 'B' || type == 'C' || type == 'S') type = 2;
-		if (type > 2)    continue;
+                t = toupper (type);
+		if (t == 'T' || t == 'W') t = 0;
+		if (t == 'D' || t == 'V' || t == 'R' || t == 'G') t = 1;
+		if (t == 'B' || t == 'S') t = 2;
+                if (t == 'C') {
+                    fprintf (stderr, "warning: common symbol %s remains, dropping\n", sym);
+                }
+                if (islower (type)) t |= 4;
+		if (t >= 8)    continue;
 		offsets[8] = '\0';
 		offset = axtol(offsets);
 		offset = htonl(offset);
 		fwrite(&offset, sizeof(unsigned int), 1, fp);
 		fwrite(&sym, sizeof(char), strlen(sym), fp);
 		fwrite("\0", sizeof(char), 1, fp);
-		fwrite(&type, sizeof(char), 1, fp);
+		fwrite(&t, sizeof(char), 1, fp);
 		n_syms++;
 	}
 	fclose(symp);

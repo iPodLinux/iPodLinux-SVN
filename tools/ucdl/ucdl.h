@@ -10,3 +10,7 @@ void *uCdl_open (const char *path);
 void *uCdl_sym (void *handle, const char *name);
 void uCdl_close (void *handle);
 const char *uCdl_error();
+
+/* Debugging facilities: */
+const char *uCdl_resolve_addr (unsigned long addr, unsigned long *offset, const char **module);
+
