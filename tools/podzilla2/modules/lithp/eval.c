@@ -243,6 +243,16 @@ void Lithp_callDefun( lithp_burrito *lb, char * fname )
 	leWipe( ret );
 	leWipe( fcn );
 }
+
+void Lithp_callDefunViaVariable( lithp_burrito *lb, char * var )
+{
+	le * temp = variableGet( lb->mainVarList, var );
+
+	if( !temp ) return;
+	if( !temp->data ) return;
+
+	Lithp_callDefun( lb, temp->data );
+}
  
 
 int countNodes(le * branch)

@@ -74,16 +74,16 @@ static void draw_lithpwrap( PzWidget *widget, ttk_surface srf )
 	lglob.lb->srf = srf;
 	lglob.frames++;
 	snprintf( buf, 80, "%d", lglob.frames );
-	Lithp_setString( lglob.lb, "Frames", buf );
+	Lithp_setString( lglob.lb, "pz2:Frames", buf );
 
-	Lithp_callDefun( lglob.lb , "OnDraw" );
+	Lithp_callDefunViaVariable( lglob.lb , "pz2:Draw" );
 }
 
 /* gets called on shutdown of the session.. */
 static void session_end( void )
 {
 	pz_widget_set_timer( lglob.widget, 0 );
-	Lithp_callDefun( lglob.lb, "OnShutdown" );
+	Lithp_callDefunViaVariable( lglob.lb, "pz2:Shutdown" );
 	burritoDelete( lglob.lb );
 	lglob.lb = NULL;
 }
@@ -108,7 +108,7 @@ static int event_lithpwrap( PzEvent *ev )
 
 	/* update some lithp variables... */
 	snprintf( buf, 80, "%d", lglob.timer );
-	Lithp_setString( lglob.lb, "Ticks", buf );
+	Lithp_setString( lglob.lb, "pz2:Ticks", buf );
 
 
 	switch (ev->type) {
@@ -116,9 +116,9 @@ static int event_lithpwrap( PzEvent *ev )
 		if( !lglob.paused ) {
 			TTK_SCROLLMOD( ev->arg, 5 );
 			if( ev->arg > 0 )
-				Lithp_callDefun( lglob.lb , "OnRight" );
+				Lithp_callDefunViaVariable( lglob.lb , "pz2:Right" );
 			else
-				Lithp_callDefun( lglob.lb , "OnLeft" );
+				Lithp_callDefunViaVariable( lglob.lb , "pz2:Left" );
 		}
 		break;
 
@@ -142,19 +142,19 @@ static int event_lithpwrap( PzEvent *ev )
 			break;
 
 		case( PZ_BUTTON_PREVIOUS ):
-			Lithp_callDefun( lglob.lb , "OnPrevious" );
+			Lithp_callDefunViaVariable( lglob.lb , "pz2:Previous" );
 			break;
 
 		case( PZ_BUTTON_NEXT ):
-			Lithp_callDefun( lglob.lb , "OnNext" );
+			Lithp_callDefunViaVariable( lglob.lb , "pz2:Next" );
 			break;
 
 		case( PZ_BUTTON_PLAY ):
-			Lithp_callDefun( lglob.lb , "OnPlay" );
+			Lithp_callDefunViaVariable( lglob.lb , "pz2:Play" );
 			break;
 
 		case( PZ_BUTTON_ACTION ):
-			Lithp_callDefun( lglob.lb , "OnAction" );
+			Lithp_callDefunViaVariable( lglob.lb , "pz2:Action" );
 			break;
 		}
 		break;
@@ -165,19 +165,19 @@ static int event_lithpwrap( PzEvent *ev )
 
 	case PZ_EVENT_TIMER:
 		lglob.timer++;
-		Lithp_callDefun( lglob.lb , "OnTimer" );
+		Lithp_callDefunViaVariable( lglob.lb , "pz2:Timer" );
 		break;
 	}
 
 	/* for some reason, this sometimes needs to be checked */
 	if( lglob.lb ) {
-		v = Lithp_getString( lglob.lb, "DirtyScreen" );
+		v = Lithp_getString( lglob.lb, "pz2:DirtyScreen" );
 		if( v!= NULL ) {
 			t = atoi( v );
 			if( t > 0 ) ev->wid->dirty = 1;
 			else        ev->wid->dirty = 0;
 		}
-		Lithp_setString( lglob.lb, "DirtyScreen", "0" );
+		Lithp_setString( lglob.lb, "pz2:DirtyScreen", "0" );
 	}
 	return 0;
 }
@@ -203,32 +203,40 @@ static void lithpwrap_init_globals( void )
 
 /* eventually, this example will display some text to the screen and such */
 static char example[] = {
-"(defun OnStartup () (list"
-"	(princ \"Startup\")(terpri)"
-"	(setq Persistent 1)"
-"	(setq HeaderText \"Example\")"
-"	(setq LithpVersion  \"0.8\")"
-"	(setq TimerMSec 200)"
-"	(princ \"end\")(terpri)"
+"(require 'pz2:0.8)"
+/* hooks for our functions */
+"(setq pz2:Startup   myStartup)"
+"(setq pz2:PreFlight myPreFlight)"
+"(setq pz2:Timer     myTimer)"
+"(setq pz2:Draw      myDraw)"
+
+/* and now our functions... */
+"(defun myStartup () (list"
+"	(princ 'Startup')(terpri)"
+"	(setq pz2:Persistent 1)"
+"	(setq pz2:HeaderText 'Example')"
+"	(setq pz2:TimerMSec 200)"
+"	(princ 'end')(terpri)"
 "))"
 
-"(defun OnPreFlight () (list"
-"	(princ \"PreFlight\")(terpri)"
+"(defun myPreFlight () (list"
+"	(princ 'PreFlight')(terpri)"
 "))"
 
-"(defun OnTimer ()"
-"	(setq DirtyScreen 1)"
+"(defun myTimer ()"
+"	(setq pz2:DirtyScreen 1)"
 ")"
 
-"(defun OnDraw () (list"
+"(defun myDraw () (list"
 "	(DrawPen (Rand 255) (Rand 255) (Rand 255) DKGRAY)"
-"	(DrawFillRect (Rand Width) (Rand Height) (Rand Width) (Rand Height))"
-"	(DrawFillRect (Rand Width) (Rand Height) (Rand Width) (Rand Height))"
+"	(DrawFillRect (Rand pz2:Width) (Rand pz2:Height)"
+"                     (Rand pz2:Width) (Rand pz2:Height))"
+"	(DrawFillRect (Rand pz2:Width) (Rand pz2:Height)"
+"                     (Rand pz2:Width) (Rand pz2:Height))"
 "	(DrawPen 0 0 0 BLACK)"
-"	(DrawVectorTextCentered (/ Width 2) 10 5 9 \"MENU TO RETURN\")"
+"	(DrawVectorTextCentered (/ pz2:Width 2) 10 5 9 \"MENU TO RETURN\")"
 "))"
 };
-/* ugh. we need those newlines in there. the parser gets confused otherwise */
 
 
 PzWindow *new_lithpwrap_window_with_file_or_string( char * fn, int isFile )
@@ -248,26 +256,26 @@ PzWindow *new_lithpwrap_window_with_file_or_string( char * fn, int isFile )
 	Lithp_evaluateBurrito( lglob.lb );
 
 	/* call the init routine */
-	Lithp_callDefun( lglob.lb, "OnStartup" );
+	Lithp_callDefunViaVariable( lglob.lb, "pz2:Startup" );
 
 	/* various things */
-	Lithp_setString( lglob.lb, "DirtyScreen", "0" );
-	Lithp_setString( lglob.lb, "Ticks", "0" );
-	Lithp_setString( lglob.lb, "Frames", "0" );
+	Lithp_setString( lglob.lb, "pz2:DirtyScreen", "0" );
+	Lithp_setString( lglob.lb, "pz2:Ticks", "0" );
+	Lithp_setString( lglob.lb, "pz2:Frames", "0" );
 	snprintf( buf, 32, "%d", lglob.w );
-	Lithp_setString( lglob.lb, "Width", buf );
+	Lithp_setString( lglob.lb, "pz2:Width", buf );
 	snprintf( buf, 32, "%d", lglob.h );
-	Lithp_setString( lglob.lb, "Height", buf );
+	Lithp_setString( lglob.lb, "pz2:Height", buf );
 
 	/* adjust the header */
-	tbar = Lithp_getString( lglob.lb, "HeaderText" );
+	tbar = Lithp_getString( lglob.lb, "pz2:HeaderText" );
 	if( !tbar || !strcmp( tbar, "-1" )) tbar = "Lithp";
 
 	/* setup the window */
 	lglob.window = pz_new_window( tbar, PZ_WINDOW_NORMAL );
 
 	/* adjust for fullscreen? */
-	fs = Lithp_getString( lglob.lb, "FullScreen" );
+	fs = Lithp_getString( lglob.lb, "pz2:FullScreen" );
 	if( !strcmp( fs, "1" )){
 		ttk_window_hide_header( lglob.window );
 		lglob.window->x = 0;
@@ -282,15 +290,15 @@ PzWindow *new_lithpwrap_window_with_file_or_string( char * fn, int isFile )
 				draw_lithpwrap, event_lithpwrap );
 
 	/* adjust for persistence */
-	pers = Lithp_getString( lglob.lb, "Persistent" );
+	pers = Lithp_getString( lglob.lb, "pz2:Persistent" );
 	if( !strcmp( pers, "1"))  lglob.widget->w = lglob.widget->h = 0;
 
 	/* setup a timer, if the user wants */
-	t = atoi( Lithp_getString( lglob.lb, "TimerMSec" ));
+	t = atoi( Lithp_getString( lglob.lb, "pz2:TimerMSec" ));
 	if( t > 0 ) pz_widget_set_timer( lglob.widget, t );
 
 	/* call the init routine */
-	Lithp_callDefun( lglob.lb, "OnPreFlight" );
+	Lithp_callDefunViaVariable( lglob.lb, "pz2:PreFlight" );
 
 	return( pz_finish_window( lglob.window ));
 }
