@@ -25,6 +25,7 @@
 
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -38,16 +39,17 @@
 /* Comment out to enable copious debugging information: */
 #define printf(args...)
 
-#define SYM_TEXT 0
-#define SYM_DATA 1
-#define SYM_BSS  2
+#define SYM_TEXT  0
+#define SYM_DATA  1
+#define SYM_BSS   2
+#define SYM_LOCAL 4
 
-// Symbols loaded from a .sym file
+// Symbols loaded from the calling app
 typedef struct symbol
 {
     char *sym;
     unsigned int addr;
-	int whence;
+    int whence, local;
     struct symbol *next;
 } symbol;
 
@@ -76,7 +78,7 @@ typedef struct esymbol
 typedef struct section
 {
     const char *name;
-    unsigned int nameidx, type, flags, offset, size, linkidx, info, entsize, alignment;
+    unsigned int nameidx, type, flags, offset, size, linkidx, info, entsize, alignment, alignmask;
     char *addr;
     struct section *link, *relsection;
 } section;
@@ -90,6 +92,7 @@ typedef struct handle
     int nsecs, nsyms, shstrtabidx, symstrtabidx;
     char **strtabs;
     void *loc;
+    const char *filename;
     struct handle *next;
 } handle;
 
@@ -136,6 +139,10 @@ int uCdl_init (const char *symfile)
 
     fread(&n_syms, sizeof(long), 1, fp);
     n_syms = ntohl(n_syms);
+    if (!n_syms) {
+        error = "No symbols.";
+        return 0;
+    }
 
     while (n_syms-- > 0) {
 	unsigned int pos, addr = 0;
@@ -164,15 +171,16 @@ int uCdl_init (const char *symfile)
 	}
 
 	if (cur == 0) {
-	    cur = mysyms = malloc(sizeof(struct symbol));
+	    cur = mysyms = calloc(1, sizeof(struct symbol));
 	} else {
-	    cur->next = malloc(sizeof(struct symbol));
+	    cur->next = calloc(1, sizeof(struct symbol));
 	    cur = cur->next;
 	}
 	
 	cur->sym = sym;
 	cur->addr = addr;
-	cur->whence = whence;
+	cur->whence = whence & 3;
+        cur->local = !!(whence & SYM_LOCAL);
 	cur->next = 0;
     }
 
@@ -258,9 +266,10 @@ void *uCdl_open (const char *path)
     int memsize = 0;
     handle *ret = calloc (1, sizeof(handle));
     ret->loc = ret->symbols = 0;
+    ret->filename = path;
     ret->strtabs = calloc (eh.e_shnum, sizeof(char*));
     ret->shstrtabidx = eh.e_shstrndx;
-    ret->sections = malloc (sizeof(section) * eh.e_shnum);
+    ret->sections = calloc (eh.e_shnum, sizeof(section));
     
     for (i = 0; i < eh.e_shnum; i++) ret->strtabs[i] = 0;
 
@@ -281,9 +290,13 @@ void *uCdl_open (const char *path)
 	sec->linkidx = sh.sh_link;
 	sec->info = sh.sh_info;
 	sec->alignment = sh.sh_addralign;
+        sec->alignmask = (1 << sec->alignment) - 1;
 
 	if (sh.sh_type == SHT_PROGBITS || sh.sh_type == SHT_NOBITS) {
 	    memsize += sh.sh_size;
+            if (memsize & sec->alignmask) {
+                memsize = (memsize + sec->alignmask) & ~sec->alignmask;
+            }
 	}
 
 	shnum--;
@@ -296,6 +309,7 @@ void *uCdl_open (const char *path)
 	free (ret);
 	return 0;
     }
+    memset (ret->loc, memsize, 42);
 
     unsigned int lastoff = 0;
 
@@ -315,6 +329,10 @@ void *uCdl_open (const char *path)
 	case SHT_PROGBITS:
 	    if (!(sec->flags & SHF_ALLOC)) break;
 	    
+            if (lastoff & sec->alignmask) {
+                lastoff = (lastoff + sec->alignmask) & ~sec->alignmask;
+            }
+
 	    lseek (fd, sec->offset, SEEK_SET);
 	    sec->addr = ret->loc + lastoff;
 
@@ -324,6 +342,10 @@ void *uCdl_open (const char *path)
 	    break;
 	case SHT_NOBITS:
 	    if (!(sec->flags & SHF_ALLOC)) break;
+
+            if (lastoff & sec->alignmask) {
+                lastoff = (lastoff + sec->alignmask) & ~sec->alignmask;
+            }
 
 	    sec->addr = ret->loc + lastoff;
 
@@ -339,7 +361,7 @@ void *uCdl_open (const char *path)
 	case SHT_SYMTAB:
 	    ret->nsyms = sec->size / sec->entsize;
 	    ret->symstrtabidx = sec->linkidx;
-	    ret->symbols = malloc (sec->size / sec->entsize * sizeof(esymbol));
+	    ret->symbols = calloc (sec->size / sec->entsize, sizeof(esymbol));
 	    {
 		Elf_Sym st;
 		esymbol *sym = ret->symbols;
@@ -384,9 +406,9 @@ void *uCdl_open (const char *path)
 			continue;
 
 		    if (!rel) {
-			rel = ret->relocs = malloc (sizeof(reloc));
+			rel = ret->relocs = calloc (1, sizeof(reloc));
 		    } else {
-			rel->next = malloc (sizeof(reloc));
+			rel->next = calloc (1, sizeof(reloc));
 			rel = rel->next;
 		    }
 
@@ -400,7 +422,7 @@ void *uCdl_open (const char *path)
 		    } else {
 			rel->offset = ra.r_offset;
 			rel->symbolidx = ra.r_info >> 8;
-			rel->type = (r.r_info & 0xff) | RELOC_HAS_ADDEND;
+			rel->type = (ra.r_info & 0xff) | RELOC_HAS_ADDEND;
 			rel->addend = ra.r_addend;
 		    }
 		    rel->next = 0;
@@ -483,7 +505,7 @@ void *uCdl_open (const char *path)
 	    sym->section = ret->sections /* + 0 */;
 
 	    while (sy) {
-		if (!strcmp (sy->sym, sym->name)) {
+		if (!strcmp (sy->sym, sym->name) && !sy->local) {
 		    defined++;
 		    sym->value = sy->addr;
 		    sym->size = 0;
@@ -496,14 +518,21 @@ void *uCdl_open (const char *path)
 	    while (!defined && curh) {
 		esymbol *esy;
 		int i;
+                int lastweak = 0;
 
 		for (esy = curh->symbols, i = 0; i < curh->nsyms; i++, esy++) {
-		    if (!strcmp (esy->name, sym->name) && esy->binding == STB_GLOBAL) {
+		    if (!strcmp (esy->name, sym->name) && (esy->binding == STB_GLOBAL || esy->binding == STB_WEAK)) {
+                        int thisweak = (esy->binding == STB_WEAK);
+                        if (defined && thisweak && !lastweak)
+                            continue;
+                        if (defined && !thisweak && lastweak)
+                            defined = 0; // no multiple definition error
 			defined++;
-			sym->value = esy->value;
+			sym->value = (unsigned int)esy->section->addr + esy->value;
 			sym->size = 0;
 			sym->type = STT_FUNC;
 			sym->binding = STB_GLOBAL;
+                        lastweak = thisweak;
 		    }
 		}
 
@@ -548,6 +577,10 @@ void *uCdl_open (const char *path)
 	    break;
 	case R_ARM_ABS32:
 	case R_ARM_REL32:
+            if ((unsigned long)addr & 3) {
+                sprintf (error = errbuf, "Unable to handle ABS32 relocation for unaligned address %p. Relocation is at (P) %x for (S) %x, section %s, symbol %s.", addr, P, S, rel->section->name, rel->symbol->name);
+                return 0;
+            }
 	    A = *addr32;
 	    break;
 	case R_ARM_PC13:
@@ -648,14 +681,12 @@ void *uCdl_open (const char *path)
     handle *curh = uCdl_loaded_modules;
     ret->next = 0;
     if (!curh) {
-	curh = ret;
+	curh = uCdl_loaded_modules = ret;
     } else {
 	while (curh->next) curh = curh->next;
 	curh->next = ret;
     }
 
-    fclose (dbg);
-    
     return (void *)ret;
 }
 
@@ -725,6 +756,46 @@ const char *uCdl_error()
 {
     const char *ret = error;
     error = 0;
+    return ret;
+}
+
+const char *uCdl_resolve_addr (unsigned long addr, unsigned long *off, const char **modname) 
+{
+    unsigned long closest_off = 0xffffffff;
+    const char *ret = 0;
+    handle *curh = uCdl_loaded_modules;
+    symbol *sy = mysyms;
+    
+    while (sy) {
+        if ((addr >= sy->addr) && (addr - sy->addr < closest_off) && sy->sym[0] != '$') {
+            closest_off = addr - sy->addr;
+            ret = sy->sym;
+            if (modname) *modname = "<core>";
+        }
+        sy = sy->next;
+    }
+
+    while (curh) {
+        esymbol *esy;
+        int i;
+        
+        for (esy = curh->symbols, i = 0; i < curh->nsyms; i++, esy++) {
+            unsigned long symaddr = (unsigned long)esy->section->addr + esy->value;
+            if ((addr >= symaddr) && (addr - symaddr < closest_off) && esy->name[0] != '$') {
+                closest_off = addr - symaddr;
+                ret = esy->name;
+                if (modname) *modname = curh->filename;
+            }
+        }
+        
+        curh = curh->next;
+    }
+
+    if (!ret) {
+        ret = "ABS";
+        closest_off = addr;
+    }
+    if (off) *off = closest_off;
     return ret;
 }
 
