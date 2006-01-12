@@ -38,6 +38,7 @@ lithp_burrito * burritoNew( void )
 	lb->inFile = NULL;
 	lb->inString = NULL;
 	lb->pos = 0;
+	lb->apiVersion = 0.0;
 
 	return( lb );
 }

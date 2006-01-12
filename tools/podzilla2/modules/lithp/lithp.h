@@ -57,6 +57,9 @@ typedef struct _lithp_burrito {
 	FILE * inFile;
 	char * inString;
 	int pos;
+
+	/* misc */
+	float apiVersion;
 } lithp_burrito;
 
 
@@ -129,6 +132,8 @@ int evalCastLeToInt( const le * levalue );
 le * evalCastIntToLe( int intvalue );
 
 le * eval_cb_nothing( lithp_burrito *lb, const int argc, le * branch );
+
+le * eval_cb_require( lithp_burrito * lb, const int argc, le * branch );
 
 enum cumefcn { C_NONE, C_ADD, C_SUBTRACT, C_MULTIPLY, C_DIVIDE };
 
