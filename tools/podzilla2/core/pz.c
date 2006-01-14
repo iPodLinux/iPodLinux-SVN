@@ -166,6 +166,7 @@ int pz_event_handler (int ev, int earg, int time)
     static int vtswitched = 0;
 
     pz_set_backlight_timer (PZ_BL_RESET);
+    pz_reset_idle_timer();
 
     /* unset setting_debounce if we're not anymore */
     if (pz_setting_debounce && (ttk_windows->w->focus->draw != ttk_slider_draw)) {
