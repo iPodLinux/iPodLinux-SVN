@@ -34,11 +34,10 @@ static struct pz_Idle {
 static ttk_timer pz_idle_timer;
 static unsigned char idle_status = PZ_PRIORITY_IDLE;
 
-/* super amazing code here */
 void pz_set_priority(unsigned char st)
-{ idle_status = st; }
+{ idle_status = (idle_status & ~PZ_PRIORITY_VITAL) | (st & PZ_PRIORITY_VITAL); }
 unsigned char pz_get_priority()
-{ return idle_status; }
+{ return idle_status & PZ_PRIORITY_VITAL; }
 
 /* boring allocation and assignment, nothing to see here, move along */
 void pz_register_idle(int (*func)(void *), void *data)
