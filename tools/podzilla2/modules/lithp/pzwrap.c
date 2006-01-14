@@ -210,6 +210,8 @@ static char example[] = {
 "(setq pz2:Timer     myTimer)"
 "(setq pz2:Draw      myDraw)"
 
+"(setq textcolor    '(255 0 100 BLACK))"
+
 /* and now our functions... */
 "(defun myStartup () (list"
 "	(princ 'Startup')(terpri)"
@@ -228,13 +230,13 @@ static char example[] = {
 ")"
 
 "(defun myDraw () (list"
-"	(DrawPen (Rand 255) (Rand 255) (Rand 255) DKGRAY)"
+"	(DrawPen (Rand 255) (Rand 255) (Rand 255) (RandomOf WHITE DKGREY GREY) )"
 "	(DrawFillRect (Rand pz2:Width) (Rand pz2:Height)"
 "                     (Rand pz2:Width) (Rand pz2:Height))"
 "	(DrawFillRect (Rand pz2:Width) (Rand pz2:Height)"
 "                     (Rand pz2:Width) (Rand pz2:Height))"
-"	(DrawPen 0 0 0 BLACK)"
-"	(DrawVectorTextCentered (/ pz2:Width 2) 10 5 9 \"MENU TO RETURN\")"
+"	(DrawPen textcolor)"
+"	(DrawVectorTextCentered (/ pz2:Width 2) 10 5 9 'MENU_TO_RETURN' )"
 "))"
 };
 

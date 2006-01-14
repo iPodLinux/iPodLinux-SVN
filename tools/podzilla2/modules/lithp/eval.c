@@ -1158,6 +1158,20 @@ static le * eval_getint_3( lithp_burrito *lb, le * branch, int *a, int *b, int *
 	return( branch->list_next->list_next->list_next->list_next );
 }
 
+static le * eval_getint_3_noskip( lithp_burrito *lb, le * node, int *a, int *b, int *c )
+{
+	le * retle = evaluateNode( lb, node );
+        *a = evalCastLeToInt( retle );
+        leWipe( retle );
+	retle = evaluateNode( lb, node->list_next );
+        *b = evalCastLeToInt( retle );
+        leWipe( retle );
+	retle = evaluateNode( lb, node->list_next->list_next );
+        *c = evalCastLeToInt( retle );
+        leWipe( retle );
+	return( node->list_next->list_next->list_next );
+}
+
 static le * eval_getint_4( lithp_burrito *lb, le * branch, int *a, int *b, int *c, int *d )
 {
 	le * retle = evaluateNode( lb, branch->list_next );
@@ -1244,6 +1258,8 @@ static ttk_color eval_make_color(
 		if( !strcmp( m, "WHITE" ))         c = ttk_makecol( WHITE );
 		else if ( !strcmp( m, "GREY" ))    c = ttk_makecol( GREY );
 		else if ( !strcmp( m, "DKGREY" ))  c = ttk_makecol( DKGREY );
+		else if ( !strcmp( m, "GRAY" ))    c = ttk_makecol( GREY );
+		else if ( !strcmp( m, "DKGRAY" ))  c = ttk_makecol( DKGREY );
 		else 				   c = ttk_makecol( BLACK );
 	} else {
 		c = ttk_makecol( r, g, b );
@@ -1251,14 +1267,31 @@ static ttk_color eval_make_color(
 	return( c );
 }
 
+/* valid input:
+	(DrawPen r g b m)
+	(DrawPen (r g b m))
+*/
 le * eval_gfx_DrawPen ( lithp_burrito * lb, const int argc, le * branch )
 {
 	int r,g,b;
+	int ac;
 	le *mono, *result;
-	if( !lb || !branch || argc != 5 ) return( leNew( "NIL" ));
+
+	if( !lb || !branch || (argc != 5 && argc != 2) )
+		return( leNew( "NIL" ));
+
+	if( argc == 5 ) {
+		mono = eval_getint_3( lb, branch, &r, &g, &b );
+		result = evaluateNode( lb, mono );
+	} else {
+		result = evaluateNode( lb, branch->list_next );
+
+		ac = countNodes( result );
+		if( ac != 4 ) return( leNew( "NIL" ));
+
+		mono = eval_getint_3_noskip( lb, result, &r, &g, &b );
+	}
 	
-	mono = eval_getint_3( lb, branch, &r, &g, &b );
-	result = evaluateNode( lb, mono );
 	lb->pen1 = eval_make_color( lb, r, g, b, result->data );
 
 	return( leNew( "T" ));
