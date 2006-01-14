@@ -211,9 +211,7 @@ static void mcp_update_status()
 	if (inited && status.state != MPD_STATUS_STATE_PLAY &&
 			status.state != MPD_STATUS_STATE_PAUSE) {
 		pz_close_window(mcp_wid);
-		if (current_song != NULL) {
-			current_song = NULL;
-		}
+		current_song = NULL;
 		inited = 0;
 		return;
 	}
@@ -371,6 +369,7 @@ static int mcp_events(PzEvent *e)
 			mcp_update_status();
 			break;
 		case PZ_BUTTON_MENU:
+			inited = 0;
 			current_song = NULL;
 			pz_close_window(e->wid->win);
 			break;
@@ -435,6 +434,9 @@ static int mcp_events(PzEvent *e)
 	}
 	return ret;
 }
+
+char mcp_active()
+{ return (char)inited; }
 
 PzWindow *mpd_currently_playing()
 {
