@@ -458,11 +458,23 @@ void pz_uninit();
 #define PZ_BL_ON      0
 
 
+/** Priority priority.c **/
+#define PZ_PRIORITY_IDLE   1
+#define PZ_PRIORITY_ACTIVE 3
+#define PZ_PRIORITY_VITAL  7
+
+void pz_set_priority(unsigned char st);
+unsigned char pz_get_priority();
+void pz_register_idle(int (*func)(void *), void *data);
+void pz_unregister_idle(int (*func)(void *));
+void pz_reset_idle_timer();
+
+
 /** Locale **/
 #define LOCALE
 #ifdef IPOD
 #ifndef __UCLIBC_HAS_LOCALE__
-#warning You need to update your toolchain if you wish to have locale support. ("http://so2.sys-techs.net/ipod/toolchain/")
+#warning "You need to update your toolchain if you wish to have locale support. (http://ipodlinux.org/Toolchain)"
 #undef LOCALE
 #endif
 #define LOCALEDIR "/usr/share/locale"
