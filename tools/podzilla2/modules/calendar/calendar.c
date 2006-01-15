@@ -111,22 +111,25 @@ static char *month_name[] = {
 	"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 };
 
-static char *appearance[3][5] = {
+static char *appearance[3][6] = {
 	{	"calendar.bg.selected",
 		"calendar.border.top.selected",
 		"calendar.border.bottom.selected",
 		"calendar.border.sides.selected",
-		"calendar.corner.selected" },
+		"calendar.corner.selected",
+		"calendar.text.selected" },
 	{	"calendar.bg.today",
 		"calendar.border.top.today",
 		"calendar.border.bottom.today",
 		"calendar.border.sides.today",
-		"calendar.corner.today" },
+		"calendar.corner.today",
+		"calendar.text.today" },
 	{	"calendar.bg.normal",
 		"calendar.border.top.normal",
 		"calendar.border.bottom.normal",
 		"calendar.border.sides.normal",
-		"calendar.corner.normal" },
+		"calendar.corner.normal",
+		"calendar.text.normal" },
 };
 
 /*
@@ -283,13 +286,16 @@ static void draw_headers()
 
 static void cal_draw_number(const int x, const int y, const int number)
 {
-	int tens, units, off=2;
+	int tens, units, off=2, app;
 	ttk_color col;
-	if(selected){
-		col = ttk_ap_getx("window.bg")->color;
+	if (selected) {
+		app = 0;
+	} else if (istoday) {
+		app = 1;
 	} else {
-		col = ttk_ap_getx("window.fg")->color;
+		app = 2;
 	}
+	col = ttk_ap_getx(appearance[app][5])->color;
 	if (number<100) {
 		units = number%10;
 		if (number-units) {
@@ -493,49 +499,10 @@ PzWindow *new_calendar_window(void)
 {
 	calendar_init();
 
-	switch(ttk_get_podversion()){
-		case TTK_POD_MINI_1G:
-		case TTK_POD_MINI_2G:
-			DaySpace = 19;
-			WeekSpace = 15;
-			xcalpos = 2;
-			ycalpos = 12;
-			break;
-		case TTK_POD_1G:
-		case TTK_POD_2G:
-		case TTK_POD_3G:
-		case TTK_POD_4G:
-			DaySpace = 22;
-			WeekSpace = 15;
-			xcalpos = 2;
-			ycalpos = 13;
-			break;
-		case TTK_POD_PHOTO:
-			DaySpace = 30;
-			WeekSpace = 22;
-			xcalpos = 4;
-			ycalpos = 16;
-			break;
-		case TTK_POD_NANO:
-			DaySpace = 24;
-			WeekSpace = 15;
-			xcalpos = 3;
-			ycalpos = 15;
-			break;
-		case TTK_POD_VIDEO:
-			DaySpace = 44;
-			WeekSpace = 33;
-			ycalpos = 16;
-			xcalpos = 5;
-			break;
-		case TTK_POD_X11:
-		default:
-			DaySpace = 30;
-			WeekSpace = 22;
-			xcalpos = 4;
-			ycalpos = 16;
-			break;
-	}
+	DaySpace = round(ttk_screen->w/7)-1;
+	WeekSpace = round((ttk_screen->h)/6)-7;
+	xcalpos = (ttk_screen->w-(7*DaySpace))/2;
+	ycalpos = 16;
 
 	window = pz_new_window( "Calendar", PZ_WINDOW_NORMAL );
 
