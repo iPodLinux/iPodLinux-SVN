@@ -35,9 +35,9 @@
   slider: border => black, bg => white, full => black
 textarea: bg => white, fg => black
 
-calendar: 	bg.selected => dkgray,
+calendar: 	bg.selected => black,
 		bg.normal => white,
-		bg.today => gray,
+		bg.today => dkgray,
 		border.sides.selected => gray,
 		border.sides.normal => gray,
 		border.sides.today => gray,
@@ -49,4 +49,7 @@ calendar: 	bg.selected => dkgray,
 		border.bottom.today => gray,
 		corner.selected => white, 
 		corner.normal => white, 
-		corner.today => white
+		corner.today => white,
+		text.selected => white,
+		text.normal => black,
+		text.today => white

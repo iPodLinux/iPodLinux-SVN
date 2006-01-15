@@ -52,18 +52,21 @@
 textarea: bg => blue, fg => white
 
 calendar:       
-	bg.selected => orange,
-	border.sides.selected => black,
-	border.top.selected => black,
-	border.bottom.selected => black,
+	bg.selected => black,
+	text.selected => orange,
+	border.sides.selected => orange,
+	border.top.selected => orange,
+	border.bottom.selected => orange,
 	corner.selected => blue,
-	bg.normal => blue,
+	bg.normal => white,
+	text.normal => blue,
 	border.sides.normal => black,
 	border.top.normal => black,
 	border.bottom.normal => black,
 	corner.normal => blue,
-	bg.today => blue, 
-	border.sides.today => white,
-	border.top.today => white,
-	border.bottom.today => white,
-	corner.today => blue
+	bg.today => orange, 
+	text.today => black
+	border.sides.today => black,
+	border.top.today => black,
+	border.bottom.today => black,
+	corner.today => blue,

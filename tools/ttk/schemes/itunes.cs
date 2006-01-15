@@ -93,4 +93,8 @@ calendar: 	bg.selected => #9e9e9e,
 		border.bottom.today => #5ea3ed,
 		corner.selected => #9e9e9e, 
 		corner.normal => #e6e6e6, 
-		corner.today => #5ea3ed
+		corner.today => #5ea3ed,
+		text.selected => aquafg,
+		text.normal => aquafg,
+		text.today => aquafg
+
