@@ -1,9 +1,10 @@
 /*
- * acalendar.c, a simple calendar for AV3xx
+ * calendar.c, a simple calendar for AV3xx
  *
  * Copyright 2004, Goetz Minuth
  * Copyright 2004, Bernard Leach, ported to iPod
  * Copyright 2005, Alastair S, funkified
+ * Copyright 2006, Felix Bruns, support for schemes and all iPod screen sizes
  *
  * This File is free software; I give unlimited permission to copy and/or
  * distribute it, with or without modifications, as long as this notice is
@@ -18,14 +19,14 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <time.h>
-#define PZ_COMPAT
 #include "pz.h"
 
-static int DaySpace = 22;
-static int WeekSpace = 15;
+PzModule * module;
+PzWindow * window;
+PzWidget * widget;
+ttk_surface surface;
 
-#define XCALPOS 2
-static int ycalpos = 13;
+static int DaySpace, WeekSpace, xcalpos, ycalpos;
 
 /*char labels[] = "MTWTFSS";
 
@@ -46,7 +47,7 @@ char calfont[7][24] = {
 	 0x38, 0xDB, 0x06, 0x70, 0xDB, 0x46, 0x6C, 0xDB, 0x06, 0x38, 0xDE, 0x86},
 };*/
 		
-static GR_BITMAP cal_font[10][6] = { //remove when font support works...
+static unsigned short cal_font[10][6] = { //remove when font support works...
 	{0x6700, 0x9700, 0x9700, 0x9700, 0x9700, 0x6700}, // 0
 	{0x2700, 0x6700, 0x2700, 0x2700, 0x2700, 0x2700}, // 1
 	{0x6700, 0x9700, 0x1700, 0x2700, 0x4700, 0xF700}, // 2
@@ -59,7 +60,7 @@ static GR_BITMAP cal_font[10][6] = { //remove when font support works...
 	{0x6700, 0x9700, 0x9700, 0x7700, 0x1700, 0x6700}, // 9
 };
 
-static GR_BITMAP cal_header_font[7][16] = {
+static unsigned short cal_header_font[7][16] = {
 	{0x0000, 0x0000, 0x6180, 0x0300, 0x7380, 0x0100, 0x7F9C, 0xF300, 
 	 0x6DB6, 0xDA00, 0x61B6, 0xD800, 0x61B6, 0xD800, 0x619C, 0xD800}, // Mon
 	{0x0000, 0x0200, 0x1E00, 0x0000, 0x0C00, 0x0000, 0x0CD9, 0xC300, 
@@ -97,7 +98,8 @@ static int leap_year;
 struct shown shown;
 static int last_mday;
 
-static void clear_calendar();
+static int istoday;
+static int selected;
 
 static int days_in_month[2][13] = {
 	{0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
@@ -109,8 +111,23 @@ static char *month_name[] = {
 	"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 };
 
-static GR_WINDOW_ID calendar_wid;
-static GR_GC_ID calendar_gc;
+static char *appearance[3][5] = {
+	{	"calendar.bg.selected",
+		"calendar.border.top.selected",
+		"calendar.border.bottom.selected",
+		"calendar.border.sides.selected",
+		"calendar.corner.selected" },
+	{	"calendar.bg.today",
+		"calendar.border.top.today",
+		"calendar.border.bottom.today",
+		"calendar.border.sides.today",
+		"calendar.corner.today" },
+	{	"calendar.bg.normal",
+		"calendar.border.top.normal",
+		"calendar.border.bottom.normal",
+		"calendar.border.sides.normal",
+		"calendar.corner.normal" },
+};
 
 /*
  * leap year -- account for gregorian reformation in 1752
@@ -123,8 +140,9 @@ static int is_leap_year(int yr);
  */
 static int calc_weekday(struct shown *shown);
 static void calendar_init();
-static void draw_headers(void);
-static void calendar_draw(int redraw, int last);
+static void clear_calendar();
+static void draw_headers();
+static void draw_calendar(int redraw, int last);
 
 static void next_month(struct shown *shown, int step);
 static void prev_month(struct shown *shown, int step);
@@ -151,51 +169,51 @@ static void cal_print_bmps(void)
 	}
 }*/
 
-static int
-calendar_do_keystroke(GR_EVENT * event)
+static int event_calendar( PzEvent *event )
 {
 	int ret = 0;
 	last_mday = shown.mday;
 	switch(event->type) {
-	case GR_EVENT_TYPE_KEY_DOWN:
-		switch (event->keystroke.ch) {
-		case 'w':
+	case PZ_EVENT_SCROLL:
+			TTK_SCROLLMOD( event->arg, 1 );
+			if( event->arg > 0 ) {
+				shown.mday++;
+				if (shown.mday > days_in_month[leap_year][shown.mon]) {
+					next_month(&shown, 1);
+				} else {
+					draw_calendar(0, -1);
+				}
+			} else {
+				shown.mday--;
+				if (shown.mday < 1) {
+					prev_month(&shown, 1);
+				} else {
+					draw_calendar(0, 1);
+				}
+			}
+			ret = 1;
+			event->wid->dirty = 1;
+		break;
+	case PZ_EVENT_BUTTON_DOWN:
+		switch (event->arg) {
+		case PZ_BUTTON_PREVIOUS:
 			prev_month(&shown, 0);
 			ret = 1;
 			break;
 
-		case 'f':
+		case PZ_BUTTON_NEXT:
 			next_month(&shown, 0);
 			ret = 1;
 			break;
 
-		case 'm':
-			pz_close_window(calendar_wid);
-			ret = 1;
-			break;
-
-		case 'r':
-			shown.mday++;
-			if (shown.mday > days_in_month[leap_year][shown.mon])
-				next_month(&shown, 1);
-			else {
-				calendar_draw(0, -1);
-			}
-			ret = 1;
-			break;
-
-		case 'l':
-			shown.mday--;
-			if (shown.mday < 1)
-				prev_month(&shown, 1);
-			else {
-				calendar_draw(0, 1);
-			}
+		case PZ_BUTTON_MENU:
+			pz_close_window (event->wid->win);
 			ret = 1;
 			break;
 		}
+		event->wid->dirty = 1;
 		break;
-
+		
 	}
 	return ret;
 }
@@ -204,8 +222,7 @@ calendar_do_keystroke(GR_EVENT * event)
 /*
  * leap year -- account for gregorian reformation in 1752
  */
-static int
-is_leap_year(int yr)
+static int is_leap_year(int yr)
 {
 	return ((yr) <= 1752 ? !((yr) % 4) :
 		(!((yr) % 4) && ((yr) % 100)) || !((yr) % 400)) ? 1 : 0;
@@ -215,15 +232,13 @@ is_leap_year(int yr)
  * searches the weekday of the first day in month, relative to the given
  * values
  */
-static int
-calc_weekday(struct shown *shown)
+static int calc_weekday(struct shown *shown)
 {
 	return (shown->wday + 36 - shown->mday) % 7;
 }
 
 
-static void
-calendar_init()
+static void calendar_init()
 {
 	time_t now;
 	struct tm *tm;
@@ -245,75 +260,122 @@ calendar_init()
 	leap_year = is_leap_year(shown.year);
 }
 
-static void
-draw_headers(void)
+static void draw_headers()
 {
 	int i;
-	int ws = XCALPOS;
+	int ws = xcalpos;
 	int clip[7][2] = { // dirty, dirty hack until fonts are supported.
 		{4, 9}, {4, 7}, {4, 9}, {4, 7}, {3, 9}, {4, 8}, {4, 8}
 	};
 	
 	for (i = 0; i < 7; i++) {
-		GrSetGCForeground(calendar_gc, BLACK);
-		if (screen_info.cols > 138) {
-		GrBitmap(calendar_wid, calendar_gc, ws, ycalpos-11, 22, 8,
-		         cal_header_font[i]);
+		if (ttk_screen->w > 138) {
+			ttk_bitmap (surface, ws, ycalpos-11, 22, 8, cal_header_font[i], ttk_ap_getx("window.fg")->color);
 		} else {
-			GrBitmap(calendar_wid, calendar_gc, ws+clip[i][0],
-			         ycalpos-11, 22, 8,
-			         cal_header_font[i]);
-			GrSetGCForeground(calendar_gc, WHITE);
-			GrFillRect(calendar_wid, calendar_gc, ws+clip[i][0]+clip[i][1],
-			           ycalpos-11, 22-clip[i][1], 8);
+			ttk_bitmap (surface, ws+clip[i][0], ycalpos-11, 22, 8, cal_header_font[i], ttk_ap_getx("window.fg")->color);
+			ttk_ap_fillrect (surface, ttk_ap_getx("window.bg"),
+					ws+clip[i][0]+clip[i][1], ycalpos-11,
+					(ws+clip[i][0]+clip[i][1]) + (22-clip[i][1]), (ycalpos-11) + 8);
 		}
 		ws += DaySpace;
 	}
 }
 
-static void
-cal_draw_number(const GR_COORD x, const GR_COORD y, const int number)
+static void cal_draw_number(const int x, const int y, const int number)
 {
 	int tens, units, off=2;
+	ttk_color col;
+	if(selected){
+		col = ttk_ap_getx("window.bg")->color;
+	} else {
+		col = ttk_ap_getx("window.fg")->color;
+	}
 	if (number<100) {
 		units = number%10;
 		if (number-units) {
 			tens = (number-units)/10;
-			GrBitmap(calendar_wid, calendar_gc, x, y, 5, 6, cal_font[tens]);
+			ttk_bitmap (surface, x, y, 5, 6, cal_font[tens], col);
 			off=5;
 		}
-		GrBitmap(calendar_wid, calendar_gc, x+off, y, 5, 6, cal_font[units]);
+		ttk_bitmap (surface, x+off, y, 5, 6, cal_font[units], col);
 	}
 }
 
-static void
-cal_draw_rect(const int xoff, const int row) {
-	GrFillRect(calendar_wid, calendar_gc,
-		xoff + 1, ycalpos + (row-1) * WeekSpace + 1,
-		DaySpace - 1, WeekSpace - 1);
+static void cal_draw_rect(int xoff, int row) {
+	if(ttk_screen->bpp == 16){
+		int app;
+		if (selected) {
+			app = 0;
+		} else if (istoday) {
+			app = 1;
+		} else {
+			app = 2;
+		}
+		ttk_ap_fillrect(surface, ttk_ap_getx(appearance[app][0]),
+				xoff + 1, ycalpos + (row-1) * WeekSpace + 1,
+				xoff + DaySpace, ycalpos + (row-1) * WeekSpace + WeekSpace);
+		ttk_ap_hline(surface, ttk_ap_getx(appearance[app][1]),
+				xoff + 1, xoff + DaySpace - 1,
+				ycalpos + (row-1) * WeekSpace + 1);
+		ttk_ap_hline(surface, ttk_ap_getx(appearance[app][2]),
+				xoff + 1, xoff + DaySpace - 1,
+				ycalpos + (row-1) * WeekSpace + WeekSpace - 1);
+		ttk_ap_fillrect(surface, ttk_ap_getx(appearance[app][3]),
+				xoff + 1, ycalpos + (row-1) * WeekSpace + 1,
+				xoff + 1, ycalpos + (row-1) * WeekSpace + WeekSpace);
+		ttk_ap_fillrect(surface, ttk_ap_getx(appearance[app][3]),
+				xoff + DaySpace - 1, ycalpos + (row-1) * WeekSpace + 1,
+				xoff + DaySpace - 1, ycalpos + (row-1) * WeekSpace + WeekSpace);
+		ttk_ap_fillrect(surface, ttk_ap_getx(appearance[app][4]),
+				xoff + 1, ycalpos + (row-1) * WeekSpace + 1,
+				xoff + 1, ycalpos + (row-1) * WeekSpace + 1);
+		ttk_ap_fillrect(surface, ttk_ap_getx(appearance[app][4]),
+				xoff + DaySpace - 1, ycalpos + (row-1) * WeekSpace + 1,
+				xoff + DaySpace - 1, ycalpos + (row-1) * WeekSpace + 1);
+		ttk_ap_fillrect(surface, ttk_ap_getx(appearance[app][4]),
+				xoff + 1, ycalpos + (row-1) * WeekSpace + WeekSpace - 1,
+				xoff + 1, ycalpos + (row-1) * WeekSpace + WeekSpace - 1);
+		ttk_ap_fillrect(surface, ttk_ap_getx(appearance[app][4]),
+				xoff + DaySpace - 1, ycalpos + (row-1) * WeekSpace + WeekSpace - 1,
+				xoff + DaySpace - 1, ycalpos + (row-1) * WeekSpace + WeekSpace - 1);
+	} else {
+		if (selected) {
+			ttk_fillrect(surface,
+				xoff + 1, ycalpos + (row-1) * WeekSpace + 1,
+				xoff + DaySpace, ycalpos + (row-1) * WeekSpace + WeekSpace, ttk_makecol(BLACK));
+		} else if (istoday) {
+			ttk_fillrect(surface,
+				xoff + 1, ycalpos + (row-1) * WeekSpace + 1,
+				xoff + DaySpace, ycalpos + (row-1) * WeekSpace + WeekSpace, ttk_makecol(192, 192, 192));
+		} else {
+			ttk_fillrect(surface,
+				xoff + 1, ycalpos + (row-1) * WeekSpace + 1,
+				xoff + DaySpace, ycalpos + (row-1) * WeekSpace + WeekSpace, ttk_makecol(WHITE));
+		}
+	}
 }
 
-static void
-calendar_do_draw()
+static void do_draw_calendar( PzWidget *wid, ttk_surface srf )
 {
-	calendar_draw(1, 0);
+	widget = wid;
+	surface = srf;
+	draw_calendar(1, 0);
 }
 
-static void
-calendar_draw(int redraw, int last)
+static void draw_calendar( int redraw, int last )
 {
-	int ws, row, pos, days_per_month, j, istoday, islast;
+	int ws, row, pos, days_per_month, j, islast;
 	char buffer[9];
 
 	if(redraw) {
 		clear_calendar();
 
-		GrSetGCForeground(calendar_gc, WHITE);
-		GrFillRect(calendar_wid, calendar_gc, XCALPOS, ycalpos,
-			screen_info.cols - XCALPOS, 2 * WeekSpace);
+		ttk_ap_fillrect (surface, ttk_ap_getx("window.bg"),
+				xcalpos, ycalpos,
+				xcalpos + (ttk_screen->w - xcalpos), ycalpos + (2 * WeekSpace));
 
 		snprintf(buffer, 9, "%s %04d", month_name[shown.mon - 1], shown.year);
-		pz_draw_header(buffer);
+		ttk_window_title(window, buffer);
 
 		draw_headers();
 
@@ -324,49 +386,40 @@ calendar_draw(int redraw, int last)
 	row = 1;
 	pos = shown.firstday;
 	days_per_month = days_in_month[leap_year][shown.mon];
-	ws = XCALPOS + (pos * DaySpace);
+	ws = xcalpos + (pos * DaySpace);
 
 	for (j = 1; j <= days_per_month; j++) {
 		if ((j == today.mday) && (shown.mon == today.mon)
-			&& (shown.year == today.year)) {
+			&& (shown.year == today.year)) {	
 			istoday=1;
 		} else {
 			istoday=0;
 		}
-		islast = (j == shown.mday + last) ? 1 : 0;
-		snprintf(buffer, 4, "%02d", j);
-		GrSetGCForeground(calendar_gc, GRAY);
-		GrLine(calendar_wid, calendar_gc,
-			ws, ycalpos + (row-1) * WeekSpace,
-			ws, ycalpos + row * WeekSpace);
-		GrLine(calendar_wid, calendar_gc,
-			ws, ycalpos + (row-1) * WeekSpace,
-			ws + DaySpace, ycalpos + (row-1) * WeekSpace);
-		if (j + 7 > days_per_month)
-			GrLine(calendar_wid, calendar_gc,
-				ws, ycalpos + (row) * WeekSpace,
-				ws + DaySpace, ycalpos + (row) * WeekSpace);
-
-		GrSetGCForeground(calendar_gc, BLACK);
 
 		if (j == shown.mday) {
-			GrSetGCForeground(calendar_gc, BLACK);
-			cal_draw_rect(ws, row);
-			GrSetGCForeground(calendar_gc, WHITE);
-			cal_draw_number(ws + 3, ycalpos + (row-1) * WeekSpace + 3, j);
-		} else if (istoday) {
-			GrSetGCForeground(calendar_gc,
-				(screen_info.bpp == 16)?  
-				GR_RGB( 135, 206, 250 ) : LTGRAY);
-			cal_draw_rect(ws, row);
-			GrSetGCForeground(calendar_gc, BLACK);
-			cal_draw_number(ws + 3, ycalpos + (row-1) * WeekSpace + 3, j);
-		} else if (redraw || islast) {
-			GrSetGCForeground(calendar_gc, WHITE);
-			cal_draw_rect(ws, row);
-			GrSetGCForeground(calendar_gc, BLACK);
-			cal_draw_number(ws + 3, ycalpos + (row-1) * WeekSpace + 3, j);
+			selected = 1;
+		} else {
+			selected = 0;
 		}
+
+		islast = (j == shown.mday + last) ? 1 : 0;
+		snprintf(buffer, 4, "%02d", j);
+		if(ttk_screen->bpp == 2){
+			ttk_line (surface,
+				ws, ycalpos + (row-1) * WeekSpace,
+				ws, ycalpos + row * WeekSpace, ttk_makecol(GREY));
+			ttk_line (surface,
+				ws, ycalpos + (row-1) * WeekSpace,
+				ws + DaySpace, ycalpos + (row-1) * WeekSpace, ttk_makecol(GREY));
+			if (j + 7 > days_per_month){
+				ttk_line (surface,
+				ws, ycalpos + (row) * WeekSpace,
+				ws + DaySpace, ycalpos + (row) * WeekSpace, ttk_makecol(GREY));
+			}
+		}
+
+		cal_draw_rect(ws, row);
+		cal_draw_number(ws + 3, ycalpos + (row-1) * WeekSpace + 3, j);
 		
 		if (shown.mday == j) {
 			shown.wday = pos;
@@ -374,26 +427,27 @@ calendar_draw(int redraw, int last)
 		ws += DaySpace;
 		pos++;
 		if (pos >= 7 && j != days_per_month) {
-			GrSetGCForeground(calendar_gc, GRAY);
-			GrLine(calendar_wid, calendar_gc,
-				ws, ycalpos + (row-1) * WeekSpace,
-				ws, ycalpos + row * WeekSpace);
+			if(ttk_screen->bpp == 2){
+				ttk_line (surface,
+					ws, ycalpos + (row-1) * WeekSpace,
+					ws, ycalpos + row * WeekSpace, ttk_makecol(GREY));
+			}
 			row++;
 			pos = 0;
-			ws = XCALPOS;
+			ws = xcalpos;
 		}
 	}
 
-	GrSetGCForeground(calendar_gc, GRAY);
-	GrLine(calendar_wid, calendar_gc,
-		ws, ycalpos + (row-1) * WeekSpace,
-		ws, ycalpos + row * WeekSpace);
+	if(ttk_screen->bpp == 2){
+		ttk_line (surface,
+			ws, ycalpos + (row-1) * WeekSpace,
+			ws, ycalpos + row * WeekSpace, ttk_makecol(GREY));
+	}
 
 	shown.lastday = pos;
 }
 
-static void
-next_month(struct shown *shown, int step)
+static void next_month(struct shown *shown, int step)
 {
 	shown->mon++;
 	if (shown->mon > 12) {
@@ -409,11 +463,10 @@ next_month(struct shown *shown, int step)
 		shown->mday = days_in_month[leap_year][shown->mon];
 	}
 	shown->firstday = shown->lastday;
-	calendar_draw(1, 0);
+	draw_calendar(1, 0);
 }
 
-static void
-prev_month(struct shown *shown, int step)
+static void prev_month(struct shown *shown, int step)
 {
 	shown->mon--;
 	if (shown->mon < 1) {
@@ -428,41 +481,73 @@ prev_month(struct shown *shown, int step)
 		shown->mday = days_in_month[leap_year][shown->mon];
 	}
 	shown->firstday += 7 - (days_in_month[leap_year][shown->mon] % 7);
-	calendar_draw(1, 0);
+	draw_calendar(1, 0);
 }
 
-static void
-clear_calendar()
+static void clear_calendar()
 {
-	GrSetGCForeground(calendar_gc, WHITE);
-	GrFillRect(calendar_wid, calendar_gc, 0, 0, screen_info.cols,
-	           screen_info.rows);
+	ttk_ap_fillrect (surface, ttk_ap_getx("window.bg"), 0, 0, ttk_screen->w, ttk_screen->h);
 }
 
-void
-new_calendar_window(void)
+PzWindow *new_calendar_window(void)
 {
 	calendar_init();
 
-	if (screen_info.cols < 160) {
-		DaySpace = 19;
-		WeekSpace = 15;
-		ycalpos = 12;
+	switch(ttk_get_podversion()){
+		case TTK_POD_MINI_1G:
+		case TTK_POD_MINI_2G:
+			DaySpace = 19;
+			WeekSpace = 15;
+			xcalpos = 2;
+			ycalpos = 12;
+			break;
+		case TTK_POD_1G:
+		case TTK_POD_2G:
+		case TTK_POD_3G:
+		case TTK_POD_4G:
+			DaySpace = 22;
+			WeekSpace = 15;
+			xcalpos = 2;
+			ycalpos = 13;
+			break;
+		case TTK_POD_PHOTO:
+			DaySpace = 30;
+			WeekSpace = 22;
+			xcalpos = 4;
+			ycalpos = 16;
+			break;
+		case TTK_POD_NANO:
+			DaySpace = 24;
+			WeekSpace = 15;
+			xcalpos = 3;
+			ycalpos = 15;
+			break;
+		case TTK_POD_VIDEO:
+			DaySpace = 44;
+			WeekSpace = 33;
+			ycalpos = 16;
+			xcalpos = 5;
+			break;
+		case TTK_POD_X11:
+		default:
+			DaySpace = 30;
+			WeekSpace = 22;
+			xcalpos = 4;
+			ycalpos = 16;
+			break;
 	}
 
-	calendar_gc = pz_get_gc(1);
-	GrSetGCUseBackground(calendar_gc, GR_FALSE);
-	GrSetGCForeground(calendar_gc, BLACK);
+	window = pz_new_window( "Calendar", PZ_WINDOW_NORMAL );
 
-	calendar_wid =
-	    pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols,
-			  screen_info.rows - (HEADER_TOPLINE + 1),
-			  calendar_do_draw, calendar_do_keystroke);
+	widget = pz_add_widget( window, do_draw_calendar, event_calendar );
 
-	GrSelectEvents(calendar_wid, GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_UP
-	               |GR_EVENT_MASK_KEY_DOWN);
-
-	GrMapWindow(calendar_wid);
+	return pz_finish_window( window );
 }
 
-PZ_SIMPLE_MOD ("calendar", new_calendar_window, "/Extras/Calendar")
+void load_calendar() 
+{
+    module = pz_register_module ("calendar", 0);
+    pz_menu_add_action ("/Extras/Calendar", new_calendar_window);
+}
+
+PZ_MOD_INIT (load_calendar)
