@@ -2,6 +2,8 @@
 VERSION = SVN-$(shell svnversion .)
 export VERSION
 
+DESTDIR ?= /mnt/ipod
+
 ifdef SUBDIRS
 do-it: buildmod
 endif
@@ -40,7 +42,7 @@ POD ?= ../../../podfile/pod # relative to two dirs down
 
 all-msg: all .message
 
-all: checktarget core modules contrib xpods pods
+all: checktarget core modules contrib
 	@echo
 	@echo "Linking podzilla."
 	@echo " LD      podzilla"
@@ -54,18 +56,27 @@ ifdef IPOD
 	@$(CROSS)-nm podzilla.elf | ./contrib/ucdl/symadd podzilla
 endif
 
+install:
+ifndef IPOD
+	@echo "No installation necessary on desktop."
+else
+ifeq ($(wildcard $(DESTDIR)/sbin),)
+$(error $(DESTDIR)/sbin does not exist. Please verify that you have correctly specified your iPod location)
+endif
+	@echo "Installing to $(DESTDIR)."
+	@echo " INST   podzilla"
+	@install -m 755 podzilla $(DESTDIR)/sbin/podzilla
+	@echo " INST   modules:"
+	@$(MAKE) install -sC modules DESTDIR=$(DESTDIR)
+endif
+
 .message:
 ifdef IPOD
 	@echo
 	@echo "-------------------------------------------------"
 	@echo "Podzilla and modules have been built. Do"
-	@echo "  cp podzilla <IPOD>/bin/podzilla"
-	@echo "  cp pods/* <IPOD>/usr/lib/"
-	@echo "to install it. If you don't want to use the PODs"
-	@echo "for some reason, directly copy the module dirs"
-	@echo "instead:"
-	@echo "  cp -R xpods/* <IPOD>/usr/lib/"
-	@echo "Enjoy."
+	@echo "  make install DESTDIR=/mnt/ipod IPOD=1"
+	@echo "to install it. Enjoy."
 	@echo "-------------------------------------------------"
 else
 	@echo
@@ -98,7 +109,7 @@ core:
 
 modules:
 	@echo
-	@echo "Building modules, stage 1."
+	@echo "Building modules."
 	@true > modules/.mods
 	@make -sC modules
 
