@@ -49,8 +49,6 @@ typedef struct _pz_Module
     char *name;
     char *longname;
     char *author;
-    char *signature;
-    int verified;
 
     struct _pz_Module **deps; // terminated with a 0 entry
     char *depsstr;
@@ -119,10 +117,9 @@ static int mount_pod (PzModule *mod)
 #else
     struct stat st;
 
-    mod->mountpt = malloc (strlen ("xpods/") + strlen (strrchr (mod->podpath, '/')) + 1);
-    sprintf (mod->mountpt, "xpods/%s", strrchr (mod->podpath, '/') + 1);
+    mod->mountpt = strdup (mod->podpath);
     if (strrchr (mod->mountpt, '.'))
-	*strrchr (mod->mountpt, '.') = 0;
+        *strrchr (mod->mountpt, '.') = 0;
     
     if (stat (mod->mountpt, &st) < 0 || !S_ISDIR (st.st_mode)) {
 	if (stat (mod->mountpt, &st) >= 0)
@@ -183,9 +180,6 @@ static void load_modinf (PzModule *mod)
             } else if (strcmp (key, "Author") == 0) {
                 mod->author = malloc (strlen (value) + 1);
                 strcpy (mod->author, value);
-            } else if (strcmp (key, "Signature") == 0) {
-                mod->signature = malloc (strlen (value) + 1);
-                strcpy (mod->signature, value);
             } else if (strcmp (key, "Dependencies") == 0) {
                 mod->depsstr = malloc (strlen (value) + 1);
                 strcpy (mod->depsstr, value);
@@ -239,8 +233,6 @@ static void load_modinf (PzModule *mod)
 	pz_warning (_("Unable to create %s's config dir %s: %s"), mod->name, mod->cfgpath,
 		    strerror (errno));
     }
-
-    // XXX. Check signature here.
 }
 
 // Turns the depsstr into a list of deps. returns 0 for success, -1 for failure
@@ -371,7 +363,6 @@ static void free_module (PzModule *mod)
     if (mod->name) free (mod->name);
     if (mod->longname) free (mod->longname);
     if (mod->author) free (mod->author);
-    if (mod->signature) free (mod->signature);
     
     if (mod->deps) free (mod->deps);
     if (mod->depsstr) free (mod->depsstr);
@@ -435,65 +426,48 @@ static void add_deps (PzModule *mod)
 // for use by check_version, which is called from module init funcs
 PzModule *current_module;
 
-void pz_modules_init() 
+static void find_modules (const char *dir)
 {
-#ifdef IPOD
-#define MODULEDIR "/usr/lib/"
-#else
-#ifdef MountPods
-#define MODULEDIR "pods/"
-#else
-#define MODULEDIR "xpods/"
-#endif
-#endif
-
-    struct stat st;
-    PzModule *last, *cur;
-    int nmods = 0;
+    char buf[256];
+    char *podpath = 0;
     struct dirent *d;
+    struct stat st;
+    PzModule *cur;
     DIR *dp;
-    int i;
-
-    dp = opendir (MODULEDIR);
+    
+    dp = opendir (dir);
     if (!dp) {
-	pz_perror (MODULEDIR);
+	pz_perror (dir);
 	return;
     }
 
-    if (module_head) {
-	pz_error (_("modules_init called more than once"));
-	closedir (dp);
-	return;
-    }
+    while ((d = readdir (dp)) != NULL) {
+        if (d->d_name[0] == '.') continue;
 
-    while ((d = readdir (dp)) != 0) {
-	char *podpath;
-	if (d->d_name[0] == '.') continue;
+        podpath = malloc (strlen (dir) + strlen (d->d_name) + 2);
+        sprintf (podpath, "%s/%s", dir, d->d_name);
 
-        podpath = malloc (strlen (MODULEDIR) + strlen (d->d_name) + 1);
-        strcpy (podpath, MODULEDIR);
-        strcat (podpath, d->d_name);
-        
-	if (strlen (d->d_name) < 4 || strcmp (d->d_name + strlen (d->d_name) - 4, ".pod") != 0) {
-            if (stat (podpath, &st) < 0 || !S_ISDIR (st.st_mode)) {
-                free (podpath);
-                continue;
-            }
+        if (stat (podpath, &st) < 0) {
+            pz_perror (podpath);
+            free (podpath);
+            continue;
         }
 
-#ifdef MountPods
-	if (stat (podpath, &st) < 0 || (!S_ISREG (st.st_mode) && !S_ISDIR (st.st_mode))) {
-	    pz_perror (podpath);
-	    free (podpath);
-	    continue;
-	}
-#endif
-	nmods++;
-	if (nmods > 120) {
-	    pz_error (_("Too many modules (120+). Trim down your podzilla. Please. Modules after 120 will be ignored."));
-	    break;
-	}
-
+        if (S_ISDIR (st.st_mode)) {
+            // Either a category dir (to search recursively)
+            // or a module dir. Check for the `Module' file.
+            sprintf (buf, "%s/" MODULE_INF_FILE, podpath);
+            if (stat (buf, &st) < 0) {
+                find_modules (podpath);
+                continue;
+            }
+            // Module dir - fall through
+        } else if (strcasecmp (d->d_name + strlen (d->d_name) - 4, ".pod") != 0) {
+            // Non-pod file - ignore it
+            free (podpath);
+            continue;
+        }
+        
 	if (module_head == 0) {
 	    cur = module_head = calloc (1, sizeof(PzModule));
 	} else {
@@ -503,25 +477,45 @@ void pz_modules_init()
 	    cur = cur->next;
 	}
 	cur->podpath = podpath;
-        if (stat (podpath, &st) >= 0 && S_ISDIR (st.st_mode))
+        if (S_ISDIR (st.st_mode))
             cur->extracted = 1;
 	cur->to_load = 1;
         cur->ordered = 0;
+        cur->next = 0;
     }
+
     closedir (dp);
+}
+
+void pz_modules_init() 
+{
+#ifdef IPOD
+#define MODULEDIR "/usr/lib"
+#else
+#define MODULEDIR "modules"
+#endif
+
+    PzModule *last, *cur;
+    int i;
+
+    if (module_head) {
+	pz_error (_("modules_init called more than once"));
+	return;
+    }
+
+    find_modules (MODULEDIR);
 
     for (i = 0; i < __pz_builtin_number_of_init_functions; i++) {
 	int found = 0;
-	char *name = malloc (strlen (__pz_builtin_names[i]) + 5);
+	const char *name = __pz_builtin_names[i];
 
-	sprintf (name, "%s.pod", __pz_builtin_names[i]);
 	cur = module_head;
 	while (cur) {
 	    char *p = strrchr (cur->podpath, '/');
 	    if (!p) p = cur->podpath;
 	    else p++;
 
-	    if (!strncmp (p, name, strlen (name))) {
+	    if (!strncmp (p, name, strlen (name)) && !isalpha (p[strlen (name)])) {
 		found = 1;
 		break;
 	    }
@@ -543,8 +537,6 @@ void pz_modules_init()
             cur->ordered = 0;
 	    cur->next = 0;
 	}
-
-	free (name);
     }
 
     if (!module_head) {

@@ -131,10 +131,6 @@ static const char *backlight_options[] = {
 	N_("30 secs"), N_("1 min"), N_("On"), 0
 };
 
-static const char *sample_rates[] = {
-    "8 kHz", "32 kHz", "44.1 kHz", "88.2 kHz", "96 kHz", 0
-};
-
 static const char *shuffle_options[] = {
     N_("Off"), N_("Songs"), 0
 };

@@ -1,5 +1,7 @@
 SUBDIRS := $(shell for dir in */; do if test -f $$dir/Module; then echo $$dir | sed 's|/$$||'; fi; done)
 
+DESTDIR ?= /mnt/ipod
+
 #SUBDIRS = mymodule pong wumpus calc calendar clocks cube dialer invaders ipobble \
 #          lights mandelpod matrix minesweeper othello poddraw tictactoe tunnel
 
@@ -21,6 +23,13 @@ all:
 		echo " LD      built-in.o"; \
 		find . -name built-in.o | xargs ld -r -o built-in.o; \
 	fi
+
+install: all
+	@set -e; for dir in $(SUBDIRS); do \
+		cd $$dir; \
+		make -sf ../../module.mk install DESTDIR=$(DESTDIR); \
+		cd ..; \
+	done
 
 xpods:
 	@set -e; for dir in `cat .mods`; do \

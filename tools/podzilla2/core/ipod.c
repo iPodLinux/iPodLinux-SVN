@@ -81,17 +81,6 @@ static int ipod_constrain( int min, int max, int val )
 	return( val );
 }
 
-static int ipod_get_contrast(void)
-{
-	int contrast;
-
-	if (ipod_ioctl(FBIOGET_CONTRAST, &contrast) < 0) {
-		return -1;
-	}
-
-	return contrast;
-}
-
 static int ipod_set_contrast(int contrast)
 {
 	contrast = ipod_constrain( 0, 128, contrast ); /* just in case */
@@ -100,17 +89,6 @@ static int ipod_set_contrast(int contrast)
 	}
 
 	return 0;
-}
-
-static int ipod_get_backlight(void)
-{
-	int backlight;
-
-	if (ipod_ioctl(FBIOGET_BACKLIGHT, &backlight) < 0) {
-		return -1;
-	}
-
-	return backlight;
 }
 
 static int ipod_set_backlight(int backlight)
