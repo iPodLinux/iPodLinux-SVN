@@ -53,17 +53,21 @@ textarea: bg => gray, fg => black
 
 calendar:       
 	bg.selected => white,
+        text.selected => black,
 	border.sides.selected => black,
 	border.top.selected => black,
 	border.bottom.selected => black,
 	corner.selected => gray,
 	bg.normal => blue,
+        text.normal => black,
 	border.sides.normal => black,
 	border.top.normal => black,
 	border.bottom.normal => black,
 	corner.normal => gray,
 	bg.today => blue, 
+        text.today => black
 	border.sides.today => white,
 	border.top.today => white,
 	border.bottom.today => white,
 	corner.today => gray
+
