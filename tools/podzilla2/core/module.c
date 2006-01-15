@@ -477,7 +477,7 @@ static void find_modules (const char *dir)
 	    cur = cur->next;
 	}
 	cur->podpath = podpath;
-        if (S_ISDIR (st.st_mode))
+        if ((stat (podpath, &st) >= 0) && S_ISDIR (st.st_mode))
             cur->extracted = 1;
 	cur->to_load = 1;
         cur->ordered = 0;
