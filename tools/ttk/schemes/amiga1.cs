@@ -50,3 +50,20 @@
   slider: border => white, bg => black, full => orange
 
 textarea: bg => blue, fg => white
+
+calendar:       
+	bg.selected => orange,
+	border.sides.selected => black,
+	border.top.selected => black,
+	border.bottom.selected => black,
+	corner.selected => blue,
+	bg.normal => blue,
+	border.sides.normal => white,
+	border.top.normal => white,
+	border.bottom.normal => white,
+	corner.normal => blue,
+	bg.today => blue, 
+	border.sides.today => black,
+	border.top.today => black,
+	border.bottom.today => black,
+	corner.today => blue
