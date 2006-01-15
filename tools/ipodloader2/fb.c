@@ -342,7 +342,7 @@ static void fb_565_bitblt(uint16 *x, int sx, int sy, int mx, int my) {
 
 void fb_update(uint16 *x) {
   if( ipod->lcd_format == IPOD_LCD_FORMAT_RGB565 ) 
-    fb_565_bitblt(x,0,0,ipod->lcd_width,ipod->lcd_height);
+    fb_565_bitblt(x,0,0,ipod->lcd_width-1,ipod->lcd_height-1);
   else
     fb_2bpp_bitblt(x,0,0,ipod->lcd_width-1,ipod->lcd_height-1);
 }
