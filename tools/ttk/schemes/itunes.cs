@@ -78,3 +78,19 @@
           icon0 => #3b79da, icon1 => #28503c, icon2 => #50a078, icon3 => #ffffff
   slider: border => #282828, bg => #e8ebd2, full => #acb098
 textarea: bg => #ffffff, fg => #000000
+
+calendar: 	bg.selected => #9e9e9e,
+		bg.normal => #e6e6e6,
+		bg.today => #5ea3ed,
+		border.sides.selected => #9e9e9e,
+		border.sides.normal => #e6e6e6,
+		border.sides.today => #5ea3ed,
+		border.top.selected => #9e9e9e, 
+		border.top.normal => #e6e6e6, 
+		border.top.today => #5ea3ed,
+		border.bottom.selected => #9e9e9e, 
+		border.bottom.normal => #e6e6e6, 
+		border.bottom.today => #5ea3ed,
+		corner.selected => #9e9e9e, 
+		corner.normal => #e6e6e6, 
+		corner.today => #5ea3ed

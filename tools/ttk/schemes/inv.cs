@@ -34,3 +34,19 @@
           icon0 => black, icon1 => dkgray, icon2 => gray, icon3 => white
   slider: border => black, bg => white, full => black
 textarea: bg => white, fg => black
+
+calendar: 	bg.selected => dkgray,
+		bg.normal => white,
+		bg.today => gray,
+		border.sides.selected => gray,
+		border.sides.normal => gray,
+		border.sides.today => gray,
+		border.top.selected => gray, 
+		border.top.normal => gray, 
+		border.top.today => gray,
+		border.bottom.selected => gray, 
+		border.bottom.normal => gray, 
+		border.bottom.today => gray,
+		corner.selected => white, 
+		corner.normal => white, 
+		corner.today => white
