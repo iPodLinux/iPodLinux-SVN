@@ -54,3 +54,20 @@
           icon0 => #3b79da, icon1 => #28503c, icon2 => #50a078, icon3 => #ffffff
   slider: border => #282828, bg => #e8ebd2, full => #acb098
 textarea: bg => #ffffff, fg => nearblack
+
+calendar: 	bg.selected => <vert #3f80de to #2f63d5 to #1e41cd>,
+		bg.normal => <vert #c3d6ff to #b4caf6 to #9dbaf6>,
+		bg.today => <vert #d5d6d5 to #d1cfd1 to #c5c6c5>,
+		border.sides.selected => <vert #3c77cc to #2d5fc7 to #1e3fbf>,
+		border.sides.normal => <vert #9cb3e4 to #98aee2 to #839edc>,
+		border.sides.today => <vert #bebdbe to #bbbabb to #b4b4b4>,
+		border.top.selected => #3d7bd2, 
+		border.top.normal => #7f95db, 
+		border.top.today => #939393,
+		border.bottom.selected => #183abe, 
+		border.bottom.normal => #89a7e7, 
+		border.bottom.today => #b9b9b9,
+		corner.selected => #9ab2da, 
+		corner.normal => #c3cbe8, 
+		corner.today => #cecece
+
