@@ -56,3 +56,20 @@
   slider: border => red, bg => black, full => black
 
 textarea: bg => black, fg => red
+calendar:
+        bg.selected => <orange to black>,
+        border.sides.selected => orange,
+        border.top.selected => orange,
+        border.bottom.selected => orange,
+        corner.selected => black,
+        bg.normal => <#600 to #400 to #000>,
+        border.sides.normal => dkred,
+        border.top.normal => dkred,
+        border.bottom.normal => dkred,
+        corner.normal => black,
+        bg.today => <#008 to #006 to #000>,
+        border.sides.today => #008,
+        border.top.today => #008,
+        border.bottom.today => #008,
+        corner.today => black
+
