@@ -90,3 +90,20 @@
 
 textarea: bg => black,
 	  fg => white
+
+calendar:
+        bg.selected => <#666 to #222>,
+        border.sides.selected => #f88,
+        border.top.selected => #f88,
+        border.bottom.selected => #f88
+        corner.selected => #844,
+        bg.normal => <#222 to #333 to #000>,
+        border.sides.normal => #444,
+        border.top.normal => #444,
+        border.bottom.normal => #444,
+        corner.normal => #222,
+        bg.today => <#005 to #006 to #002>,
+        border.sides.today => #008,
+        border.top.today => #008,
+        border.bottom.today => #008,
+        corner.today => #004
