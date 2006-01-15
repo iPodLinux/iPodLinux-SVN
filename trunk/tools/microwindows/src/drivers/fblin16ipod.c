@@ -210,7 +210,7 @@ linear16_blit(PSD dstpsd, MWCOORD dstx, MWCOORD dsty, MWCOORD w, MWCOORD h,
 			src += slinelen - w;
 		}
 	}
-	lcd_update_display(dstpsd, dstx, dsty, dstx+w, dsty+horig);
+	lcd_update_display(dstpsd, dstx, dsty, dstx+w-1, dsty+horig-1);
 	DRAWOFF;
 	return;
 stdblit:
@@ -242,7 +242,7 @@ stdblit:
 			src += slinelen - w;
 		}
 	}
-	lcd_update_display(dstpsd, dstx, dsty, dstx+w, dsty+horig);
+	lcd_update_display(dstpsd, dstx, dsty, dstx+w-1, dsty+horig-1);
 	DRAWOFF;
 }
 
