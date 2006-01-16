@@ -452,11 +452,13 @@ void ti_widget_draw(TWidget * wid, ttk_surface srf)
 	tmp = (char *)malloc(sw+1);
 	strcpy(tmp, ((TiBuffer *)wid->data)->text);
 	while (ttk_text_width(ttk_textfont, tmp) > (wid->w-10)) {
-		for (i=0; i<sw; i++) {
-			tmp[i] = tmp[i+1];
-		}
-		sw--;
-		cp--;
+		do {
+			for (i=0; i<sw; i++) {
+				tmp[i] = tmp[i+1];
+			}
+			sw--;
+			cp--;
+		} while ((tmp[0] & 0xC0) == 0x80);
 	}
 	
 	/* draw text */
