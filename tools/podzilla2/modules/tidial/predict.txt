@@ -761,30 +761,30 @@ zzlaziy
 
 ## Single Letter Predictions ##
 *antrls
-*beuloy
-*coatch
+*beluoa
+*coehat
 *deioas
-*enrstd
-*foeira
-*gagtce
-*heiaot
-*intosc
-*jueoai
+*ernsda
+*foierf
+*gehora
+*heaiot
+*intsoc
+*juoeai
 *keinsa
-*lelioa
-*meaoyi
-*ntdgeo
-*onrfum
+*leliay
+*meaoip
+*ndgteo
+*onrufm
 *peroal
-*quiase
-*reaoti
-*seatoi
-*thieot
-*uretsn
-*veiano
-*wiheao
-*xtepic
-*yoespt
+*quibas
+*reoias
+*steiho
+*thioea
+*urtsnl
+*veiaoy
+*waehio
+*xptiac
+*yoesim
 *zeaioz
 
 ## Default Case ##
