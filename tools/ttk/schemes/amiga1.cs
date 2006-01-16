@@ -51,22 +51,23 @@
 
 textarea: bg => blue, fg => white
 
-calendar:       
-	bg.selected => black,
-	text.selected => orange,
-	border.sides.selected => orange,
-	border.top.selected => orange,
-	border.bottom.selected => orange,
-	corner.selected => blue,
-	bg.normal => white,
-	text.normal => blue,
-	border.sides.normal => black,
-	border.top.normal => black,
-	border.bottom.normal => black,
-	corner.normal => blue,
-	bg.today => orange, 
-	text.today => black
-	border.sides.today => black,
-	border.top.today => black,
-	border.bottom.today => black,
-	corner.today => blue,
+# calendar uses "default" for most days, "selected" for selected (duh)
+#		"special" is 'today'
+box:
+	default.bg => white,
+	default.fg => blue,
+	default.border => black,
+	selected.bg => black,
+	selected.fg => orange,
+	selected.border => orange,
+	special.bg => orange,
+	special.fg => black,
+	special.border => black
+
+button:
+	default.bg => white,
+	default.fg => black,
+	default.border => white,
+	selected.bg => blue,
+	selected.fg => white,
+	selected.border => white
