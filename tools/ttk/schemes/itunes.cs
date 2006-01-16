@@ -79,22 +79,24 @@
   slider: border => #282828, bg => #e8ebd2, full => #acb098
 textarea: bg => #ffffff, fg => #000000
 
-calendar: 	bg.selected => #9e9e9e,
-		bg.normal => #e6e6e6,
-		bg.today => #5ea3ed,
-		border.sides.selected => #9e9e9e,
-		border.sides.normal => #e6e6e6,
-		border.sides.today => #5ea3ed,
-		border.top.selected => #9e9e9e, 
-		border.top.normal => #e6e6e6, 
-		border.top.today => #5ea3ed,
-		border.bottom.selected => #9e9e9e, 
-		border.bottom.normal => #e6e6e6, 
-		border.bottom.today => #5ea3ed,
-		corner.selected => #9e9e9e, 
-		corner.normal => #e6e6e6, 
-		corner.today => #5ea3ed,
-		text.selected => aquafg,
-		text.normal => aquafg,
-		text.today => aquafg
+# calendar uses "default" for most days, "selected" for selected (duh)
+#		"special" is 'today'
+box:
+	default.bg => #e6e6e6,
+	default.fg => aquafg,
+	default.border => #e6e6e6,
+	selected.bg => #9e9e9e,
+	selected.fg => aquafg,
+	selected.border => #e6e6e6,
+	special.bg => #5ea3ed,
+	special.fg => aquafg,
+	special.border => #5ea3ed
+
+button:
+	default.bg => <vert #f9f9f9 to #e3e3e3 to #ffffff>,
+	default.fg => aquafg,
+	default.border => aquabtnbdr,
+	selected.bg => <vert #c7d0ea to #61a2e4 to #8de4ff>,
+	selected.fg => aquafg,
+	selected.border => aquadbtnbdr
 

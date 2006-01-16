@@ -35,21 +35,23 @@
   slider: border => black, bg => white, full => black
 textarea: bg => white, fg => black
 
-calendar: 	bg.selected => black,
-		bg.normal => white,
-		bg.today => dkgray,
-		border.sides.selected => gray,
-		border.sides.normal => gray,
-		border.sides.today => gray,
-		border.top.selected => gray, 
-		border.top.normal => gray, 
-		border.top.today => gray,
-		border.bottom.selected => gray, 
-		border.bottom.normal => gray, 
-		border.bottom.today => gray,
-		corner.selected => white, 
-		corner.normal => white, 
-		corner.today => white,
-		text.selected => white,
-		text.normal => black,
-		text.today => white
+# calendar uses "default" for most days, "selected" for selected (duh)
+#		"special" is 'today'
+box:
+	default.bg => white,
+	default.fg => black,
+	default.border => gray,
+	selected.bg => dkgray,
+	selected.fg => black,
+	selected.border => gray,
+	special.bg => gray,
+	special.fg => black,
+	special.border => gray
+
+button:
+	default.bg => gray,
+	default.fg => black,
+	default.border => black,
+	selected.bg => dkgray,
+	selected.fg => white,
+	selected.border => black
