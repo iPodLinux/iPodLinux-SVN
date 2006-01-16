@@ -390,7 +390,7 @@ int ti_widget_input(TWidget * wid, int ch)
 		ti_buffer_input(((TiBuffer *)wid->data), ch);
 		wid->dirty = 1;
 	}
-	return TTK_EV_CLICK;
+	return 0;
 }
 
 int ti_widget_input_n(TWidget * wid, int ch)
@@ -413,7 +413,7 @@ int ti_widget_input_n(TWidget * wid, int ch)
 		ti_buffer_input(((TiBuffer *)wid->data), ch);
 		wid->dirty = 1;
 	}
-	return TTK_EV_CLICK;
+	return 0;
 }
 
 int ti_widget_input_ml(TWidget * wid, int ch)
@@ -428,7 +428,7 @@ int ti_widget_input_ml(TWidget * wid, int ch)
 		ti_buffer_input(((TiBuffer *)wid->data), ch);
 		wid->dirty = 1;
 	}
-	return TTK_EV_CLICK;
+	return 0;
 }
 
 void ti_widget_destroy(TWidget * wid)
