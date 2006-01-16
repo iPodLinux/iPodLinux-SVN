@@ -134,7 +134,7 @@ struct filebuffer {
 // PROTOS
 static void cop_wakeup();
 static void cop_initVideo();
-static void cop_setVideoParams(int, int, int);
+static void cop_setVideoParams(unsigned int, unsigned int, unsigned int);
 /*static void cop_waitReady(int);*/
 static void cop_presentFrames(int, struct framet *, int);
 static void cop_setPlay(int);
@@ -191,7 +191,7 @@ static void cop_initVideo()
 	}
 }
 
-static void cop_setVideoParams(int width, int height, int usecsPerFrame)
+static void cop_setVideoParams(unsigned int width, unsigned int height, unsigned int usecsPerFrame)
 {
 	outl(width, VAR_VIDEO_FRAME_WIDTH);
 	outl(height, VAR_VIDEO_FRAME_HEIGHT);
@@ -732,7 +732,7 @@ static int playVideo(char * filename)
 	struct framet frames[VIDEO_FILEBUFFER_COUNT][NUM_FRAMES_BUFFER];
 	int i;
 	int buffersProcessed = 0;
-	
+
 	curbuffer = 0;
 	if (hw_version < 0x4) {
 		video_screenWidth=160;
@@ -780,7 +780,9 @@ static int playVideo(char * filename)
 		audio_thread_start();
 	cop_setPlay(0);
 	cop_initVideo();
+
 	cop_setVideoParams(bitmapInfo.bmiHeader.biWidth, bitmapInfo.bmiHeader.biHeight, mainHeader.dwMicroSecPerFrame);
+
 	curframes = 1;
 	while ((curframes > 0)) {
 		while (inl(VAR_VIDEO_BUFFER_DONE + curbuffer * sizeof(unsigned int)) == 0) {
