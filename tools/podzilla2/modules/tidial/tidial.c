@@ -110,31 +110,38 @@ void ti_dial_togglecursor(void)
 	switch (ti_dial_mode) {
 	case -2:
 		ti_dial_mode = 1;
+		ti_dial_charlist_pos = 0;
 		break;
 	case -1:
 		ti_dial_mode = 0;
+		ti_dial_charlist_pos = 0;
 		break;
 	case 0:
 		ti_dial_mode = -1;
+		ti_dial_charlist_pos = -1;
 		break;
 	case 1:
 		ti_dial_mode = -2;
+		ti_dial_charlist_pos = -1;
 		break;
 	case 2:	case 3:	case 4:	case 5:
 	case 6:	case 7:	case 8:
 		ti_dial_mode = 9;
+		ti_dial_charlist_pos = -1;
 		break;
 	case 9:
 		ti_dial_mode = 2;
+		ti_dial_charlist_pos = 0;
 		break;
 	case 10:
 		ti_dial_mode = 11;
+		ti_dial_charlist_pos = -1;
 		break;
 	case 11:
 		ti_dial_mode = 10;
+		ti_dial_charlist_pos = 0;
 		break;
 	}
-	ti_dial_charlist_pos = 0;
 }
 
 int ti_dial_get_char(int w)
@@ -226,7 +233,11 @@ void ti_dial_prev_char(void)
 
 void ti_dial_reset(void)
 {
-	ti_dial_charlist_pos = 0;
+	if (ti_dial_cursormode()) {
+		ti_dial_charlist_pos = -1;
+	} else {
+		ti_dial_charlist_pos = 0;
+	}
 }
 
 int ti_dial_rotatechar(int a)
@@ -371,9 +382,9 @@ TWidget * ti_dial_create(int n, int s, int st)
 	if (st) {
 		wid->stap = ti_dial_stap;
 	}
-	ti_dial_reset();
 	ti_dial_mode = n;
 	ti_dial_snapback = s;
+	ti_dial_reset();
 	ti_dial_ppchar = 0;
 	ti_dial_pchar = 0;
 	return wid;
