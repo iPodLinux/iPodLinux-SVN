@@ -1,0 +1,4 @@
+Module: tikana
+Display-name: Kana Palette
+Author: Jonathan Bettencourt
+Dependencies: textinput
