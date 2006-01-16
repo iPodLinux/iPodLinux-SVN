@@ -511,12 +511,17 @@ static void clear_calendar()
 	ttk_ap_fillrect (surface, ttk_ap_getx("window.bg"), 0, 0, ttk_screen->w, ttk_screen->h);
 }
 
+
 PzWindow *new_calendar_window(void)
 {
 	calendar_init();
 
-	DaySpace = round(ttk_screen->w/7)-1;
-	WeekSpace = round((ttk_screen->h)/6)-7;
+	//DaySpace = round(ttk_screen->w/7)-1;
+	//WeekSpace = round((ttk_screen->h)/6)-7;
+
+	DaySpace = (int)((double)ttk_screen->w/7.0+0.5)-1;
+	WeekSpace = (int)((double)ttk_screen->h/6.0+0.5)-7;
+
 	xcalpos = (ttk_screen->w-(7*DaySpace))/2;
 	ycalpos = 16;
 
