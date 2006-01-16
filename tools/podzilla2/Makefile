@@ -60,9 +60,7 @@ install:
 ifndef IPOD
 	@echo "No installation necessary on desktop."
 else
-	ifeq ($(wildcard $(DESTDIR)/sbin),)
-		$(error $(DESTDIR)/sbin does not exist. Please verify that you have correctly specified your iPod location)
-	endif
+	@if [ -z "$(wildcard $(DESTDIR)/sbin)" ]; then echo "*** $(DESTDIR)/sbin does not exist. Please verify that you have correctly specified your iPod location. Stop."; false; fi
 	@echo "Installing to $(DESTDIR)."
 	@echo " INST   podzilla"
 	@install -m 755 podzilla $(DESTDIR)/sbin/podzilla
@@ -135,7 +133,7 @@ xpods:
 	@make xpods -sC modules
 
 ifdef IPOD
-pods:
+pods: xpods
 	@echo
 	@echo "Building modules, stage 3 (iPod)."
 	@mkdir -p pods
