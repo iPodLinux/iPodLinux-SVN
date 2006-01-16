@@ -91,23 +91,21 @@
 textarea: bg => black,
 	  fg => white
 
-calendar:
-        bg.selected => <#fff to #ccc to #000>,
-        border.sides.selected => #f88,
-        border.top.selected => #f88,
-        border.bottom.selected => #f88
-        corner.selected => #844,
-        text.selected => #000,
-        bg.normal => <#222 to #333 to #000>,
-        border.sides.normal => #444,
-        border.top.normal => #444,
-        border.bottom.normal => #444,
-        corner.normal => #222,
-        text.normal => #fff,
-        bg.today => <#005 to #006 to #002>,
-        border.sides.today => #008,
-        border.top.today => #008,
-        border.bottom.today => #008,
-        corner.today => #004,
-        text.today => white
+box:
+	default.bg => <#222 to #333 to #000>,
+	default.fg => #fff,
+	default.border => #444,
+	selected.bg => <#fff to #ccc to #000>,
+	selected.fg => #000,
+	selected.border => #fff,
+	special.bg => <#005 to #006 to #002>,
+	special.fg => #ccf,
+	special.border => #008
 
+button:
+	default.bg => black,
+	default.fg => #777,
+	default.border => #666,
+	selected.bg => #333,
+	selected.fg => white,
+	selected.border => #333
