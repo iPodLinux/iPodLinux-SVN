@@ -60,9 +60,9 @@ install:
 ifndef IPOD
 	@echo "No installation necessary on desktop."
 else
-ifeq ($(wildcard $(DESTDIR)/sbin),)
-$(error $(DESTDIR)/sbin does not exist. Please verify that you have correctly specified your iPod location)
-endif
+	ifeq ($(wildcard $(DESTDIR)/sbin),)
+		$(error $(DESTDIR)/sbin does not exist. Please verify that you have correctly specified your iPod location)
+	endif
 	@echo "Installing to $(DESTDIR)."
 	@echo " INST   podzilla"
 	@install -m 755 podzilla $(DESTDIR)/sbin/podzilla
