@@ -110,36 +110,28 @@ void ti_dial_togglecursor(void)
 	switch (ti_dial_mode) {
 	case -2:
 		ti_dial_mode = 1;
-		ti_dial_charlist_pos = 0;
 		break;
 	case -1:
 		ti_dial_mode = 0;
-		ti_dial_charlist_pos = 0;
 		break;
 	case 0:
 		ti_dial_mode = -1;
-		ti_dial_charlist_pos = -1;
 		break;
 	case 1:
 		ti_dial_mode = -2;
-		ti_dial_charlist_pos = -1;
 		break;
 	case 2:	case 3:	case 4:	case 5:
 	case 6:	case 7:	case 8:
 		ti_dial_mode = 9;
-		ti_dial_charlist_pos = -1;
 		break;
 	case 9:
 		ti_dial_mode = 2;
-		ti_dial_charlist_pos = 0;
 		break;
 	case 10:
 		ti_dial_mode = 11;
-		ti_dial_charlist_pos = -1;
 		break;
 	case 11:
 		ti_dial_mode = 10;
-		ti_dial_charlist_pos = 0;
 		break;
 	}
 }
@@ -233,11 +225,7 @@ void ti_dial_prev_char(void)
 
 void ti_dial_reset(void)
 {
-	if (ti_dial_cursormode()) {
-		ti_dial_charlist_pos = -1;
-	} else {
-		ti_dial_charlist_pos = 0;
-	}
+	ti_dial_charlist_pos = 0;
 }
 
 int ti_dial_rotatechar(int a)
@@ -284,12 +272,16 @@ void ti_dial_draw(TWidget * wid, ttk_surface srf)
 	ty = 0;
 	if (sc > (m-n) ) { sc = (m-n); }
 	if (sc < 0) { sc = 0; }
-	for (i = sc, j = 0; ((i<m) && (j<n)); i++, j++)
-	{
-		s[0] = ti_dial_get_char(i);
-		ttk_text_uc16(srf, ttk_menufont, wid->x+j*CW+(10-ttk_text_width_uc16(ttk_menufont, s))/2, wid->y+ty, ti_ap_get(1), s);
-		if (i == ti_dial_charlist_pos) {
-			ttk_rect(srf, wid->x+j*CW, wid->y, wid->x+j*CW+CW, wid->y+wid->h, ti_ap_get(1));
+	if (ti_dial_cursormode()) {
+		ttk_text(srf, ttk_menufont, wid->x+1, wid->y+ty, ti_ap_get(1), ti_dial_cmstring);
+	} else {
+		for (i = sc, j = 0; ((i<m) && (j<n)); i++, j++)
+		{
+			s[0] = ti_dial_get_char(i);
+			ttk_text_uc16(srf, ttk_menufont, wid->x+j*CW+(10-ttk_text_width_uc16(ttk_menufont, s))/2, wid->y+ty, ti_ap_get(1), s);
+			if (i == ti_dial_charlist_pos) {
+				ttk_rect(srf, wid->x+j*CW, wid->y, wid->x+j*CW+CW, wid->y+wid->h, ti_ap_get(1));
+			}
 		}
 	}
 }
