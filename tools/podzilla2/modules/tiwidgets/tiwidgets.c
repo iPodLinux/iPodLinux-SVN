@@ -273,34 +273,50 @@ void ti_multiline_text(ttk_surface srf, ttk_font fnt, int x, int y, int w, int h
 	}
 	while (*curtextptr != '\0') {
 		char * sol; /* start of line */
+		char ctp;
 		sol = curtextptr;
 		curline[0] = 0;
 		/* find the line break */
 		while (1) {
-			curline[curtextptr-sol]=(*curtextptr);
-			curline[curtextptr-sol+1]=0;
-			if ((*curtextptr == '\n')||(*curtextptr == '\r')) {
-				curline[curtextptr-sol]=0;
+			/* bring in the next character */
+			do {
+				ctp=curline[curtextptr-sol]=(*curtextptr);
+				curline[curtextptr-sol+1]=0;
 				curtextptr++;
+			} while ((*curtextptr & 0xC0) == 0x80);
+			/* if that was a newline, that's where the break is */
+			if ((ctp == '\n')||(ctp == '\r')) {
+				curline[curtextptr-sol-1]=0;
 				break;
-			} else if (*curtextptr == '\0') {
+			/* if that was a null, that's where the break is */
+			} else if (ctp == '\0') {
+				curtextptr--; /* need to decrease so that the next iteration sees that *curtextptr == 0 and exits */
 				break;
 			}
+			/* determine if we've gotten a few characters too many */
 			width = ttk_text_width(fnt, curline);
 			if (width > w) {
 				/* backtrack to the last word */
 				char *optr;
-				for (optr=curtextptr; optr>sol; optr--) {
+				int fndWrd = 0;
+				for (optr=curtextptr-1; optr>sol; optr--) {
 					if (isspace(*optr)||(*optr=='\t')||(*optr=='-')) {
-						curtextptr=optr;
-						curline[curtextptr-sol+1]=0;
-						curtextptr++;
+						curtextptr=optr+1;
+						curline[curtextptr-sol]=0;
+						fndWrd = 1;
 						break;
 					}
 				}
+				if (!fndWrd) {
+					/* it's one long string of letters, chop off the last one */
+					curtextptr--;
+					while ((*curtextptr & 0xC0) == 0x80) {
+						curtextptr--;
+					}
+					curline[curtextptr-sol]=0;
+				}
 				break;
 			}
-			curtextptr++;
 		}
 		/* if the line is in the viewable area, draw it */
 		if ( ((currentLine - scroll) >= 0) && ((currentLine - scroll) < screenlines) ) {
