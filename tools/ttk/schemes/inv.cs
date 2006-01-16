@@ -42,11 +42,11 @@ box:
 	default.fg => black,
 	default.border => gray,
 	selected.bg => dkgray,
-	selected.fg => black,
+	selected.fg => white,
 	selected.border => gray,
 	special.bg => gray,
 	special.fg => black,
-	special.border => gray
+	special.border => dkgray
 
 button:
 	default.bg => gray,
