@@ -273,7 +273,7 @@ void ti_dial_draw(TWidget * wid, ttk_surface srf)
 	if (sc > (m-n) ) { sc = (m-n); }
 	if (sc < 0) { sc = 0; }
 	if (ti_dial_cursormode()) {
-		ttk_text(srf, ttk_menufont, wid->x+1, wid->y+ty, ti_ap_get(1), ti_dial_cmstring);
+		ttk_text(srf, ttk_menufont, wid->x+(wid->w - ttk_text_width(ttk_menufont, ti_dial_cmstring))/2, wid->y+ty, ti_ap_get(1), ti_dial_cmstring);
 	} else {
 		for (i = sc, j = 0; ((i<m) && (j<n)); i++, j++)
 		{
