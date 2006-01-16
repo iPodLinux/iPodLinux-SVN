@@ -5,7 +5,7 @@ OBJCOPY = arm-uclinux-elf-objcopy
 
 all: loader.bin
 #	@echo "Building firmware image"
-	@./make_fw -g 4g -o my_sw.bin -i apple_os.bin $<
+#	@./make_fw -g 4g -o my_sw.bin -i apple_os.bin $<
 
 clean:
 	@echo "Cleaning up"
