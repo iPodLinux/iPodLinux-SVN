@@ -111,25 +111,34 @@ static char *month_name[] = {
 	"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 };
 
+#define CAP_BG		(0)
+#define CAP_BTOP	(1)
+#define CAP_BBOT	(2)
+#define CAP_BSIDE	(3)
+#define CAP_BCORN	(4)
+#define CAP_TEXT	(5)
+
 static char *appearance[3][6] = {
-	{	"calendar.bg.selected",
-		"calendar.border.top.selected",
-		"calendar.border.bottom.selected",
-		"calendar.border.sides.selected",
-		"calendar.corner.selected",
-		"calendar.text.selected" },
-	{	"calendar.bg.today",
-		"calendar.border.top.today",
-		"calendar.border.bottom.today",
-		"calendar.border.sides.today",
-		"calendar.corner.today",
-		"calendar.text.today" },
-	{	"calendar.bg.normal",
-		"calendar.border.top.normal",
-		"calendar.border.bottom.normal",
-		"calendar.border.sides.normal",
-		"calendar.corner.normal",
-		"calendar.text.normal" },
+	{	"box.selected.bg",
+		"box.selected.border",
+		"box.selected.border",
+		"box.selected.border",
+		"window.bg",
+		"box.selected.fg" },
+
+	{	"box.special.bg",
+		"box.special.border",
+		"box.special.border",
+		"box.special.border",
+		"window.bg",
+		"box.special.fg" },
+
+	{	"box.default.bg",
+		"box.default.border",
+		"box.default.border",
+		"box.default.border",
+		"window.bg",
+		"box.default.fg" },
 };
 
 /*
@@ -295,7 +304,7 @@ static void cal_draw_number(const int x, const int y, const int number)
 	} else {
 		app = 2;
 	}
-	col = ttk_ap_getx(appearance[app][5])->color;
+	col = ttk_ap_getx(appearance[app][CAP_TEXT])->color;
 	if (number<100) {
 		units = number%10;
 		if (number-units) {
@@ -317,31 +326,38 @@ static void cal_draw_rect(int xoff, int row) {
 		} else {
 			app = 2;
 		}
-		ttk_ap_fillrect(surface, ttk_ap_getx(appearance[app][0]),
+
+		/* background fill */
+		ttk_ap_fillrect(surface, ttk_ap_getx(appearance[app][CAP_BG]),
 				xoff + 1, ycalpos + (row-1) * WeekSpace + 1,
 				xoff + DaySpace, ycalpos + (row-1) * WeekSpace + WeekSpace);
-		ttk_ap_hline(surface, ttk_ap_getx(appearance[app][1]),
+		/* border - this should be a proper roundrect */
+			/* top */
+		ttk_ap_hline(surface, ttk_ap_getx(appearance[app][CAP_BTOP]),
 				xoff + 1, xoff + DaySpace - 1,
 				ycalpos + (row-1) * WeekSpace + 1);
-		ttk_ap_hline(surface, ttk_ap_getx(appearance[app][2]),
+			/* bottom */
+		ttk_ap_hline(surface, ttk_ap_getx(appearance[app][CAP_BBOT]),
 				xoff + 1, xoff + DaySpace - 1,
 				ycalpos + (row-1) * WeekSpace + WeekSpace - 1);
-		ttk_ap_fillrect(surface, ttk_ap_getx(appearance[app][3]),
+			/* sides */
+		ttk_ap_fillrect(surface, ttk_ap_getx(appearance[app][CAP_BSIDE]),
 				xoff + 1, ycalpos + (row-1) * WeekSpace + 1,
 				xoff + 1, ycalpos + (row-1) * WeekSpace + WeekSpace);
-		ttk_ap_fillrect(surface, ttk_ap_getx(appearance[app][3]),
+		ttk_ap_fillrect(surface, ttk_ap_getx(appearance[app][CAP_BSIDE]),
 				xoff + DaySpace - 1, ycalpos + (row-1) * WeekSpace + 1,
 				xoff + DaySpace - 1, ycalpos + (row-1) * WeekSpace + WeekSpace);
-		ttk_ap_fillrect(surface, ttk_ap_getx(appearance[app][4]),
+			/* corners */
+		ttk_ap_fillrect(surface, ttk_ap_getx(appearance[app][CAP_BCORN]),
 				xoff + 1, ycalpos + (row-1) * WeekSpace + 1,
 				xoff + 1, ycalpos + (row-1) * WeekSpace + 1);
-		ttk_ap_fillrect(surface, ttk_ap_getx(appearance[app][4]),
+		ttk_ap_fillrect(surface, ttk_ap_getx(appearance[app][CAP_BCORN]),
 				xoff + DaySpace - 1, ycalpos + (row-1) * WeekSpace + 1,
 				xoff + DaySpace - 1, ycalpos + (row-1) * WeekSpace + 1);
-		ttk_ap_fillrect(surface, ttk_ap_getx(appearance[app][4]),
+		ttk_ap_fillrect(surface, ttk_ap_getx(appearance[app][CAP_BCORN]),
 				xoff + 1, ycalpos + (row-1) * WeekSpace + WeekSpace - 1,
 				xoff + 1, ycalpos + (row-1) * WeekSpace + WeekSpace - 1);
-		ttk_ap_fillrect(surface, ttk_ap_getx(appearance[app][4]),
+		ttk_ap_fillrect(surface, ttk_ap_getx(appearance[app][CAP_BCORN]),
 				xoff + DaySpace - 1, ycalpos + (row-1) * WeekSpace + WeekSpace - 1,
 				xoff + DaySpace - 1, ycalpos + (row-1) * WeekSpace + WeekSpace - 1);
 	} else {
