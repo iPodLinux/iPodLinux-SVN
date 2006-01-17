@@ -49,8 +49,14 @@ int mpdc_status(mpd_Connection *con_fd)
 
 char mpdc_is_playing()
 {
-	if (mpdc_tickle() < 0) return 0;
-	return (mpdc_status(mpdz) == MPD_STATUS_STATE_PLAY);
+	int state;
+	if ((state = mpdc_status(mpdz)) == -1) {
+		if (mpdc_tickle() < 0)
+			return 0;
+		else
+			state = mpdc_status(mpdz);
+	}
+	return (state == MPD_STATUS_STATE_PLAY);
 }
 
 void mpdc_change_volume(mpd_Connection *con_fd, int volume)
