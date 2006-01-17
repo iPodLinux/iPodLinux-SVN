@@ -21,9 +21,9 @@ static int nextdef;
 static const char *filename;
 
 extern int yylineno;
-#define WARN(str...) do { fprintf(stderr, "%s:%d: warning: ", filename, yylineno); \
+#define WARN(str...) do { fprintf(stderr, "%s:%d: warning: ", filename, yylineno+1); \
                          fprintf(stderr, str); fprintf(stderr, "\n"); } while (0)
-#define ERR(str...)  do { fprintf(stderr, "%s:%d: error: ", filename, yylineno); \
+#define ERR(str...)  do { fprintf(stderr, "%s:%d: error: ", filename, yylineno+1); \
                          fprintf(stderr, str); fprintf(stderr, "\n"); return 1; } while(0)
 
 #define MAX_EXPANSION_DEPTH 10
