@@ -19,10 +19,10 @@
 #include <fcntl.h>
 #ifdef IPOD
 #include <linux/fb.h>
+#include <sys/ioctl.h>
 #else
 #include <time.h>
 #endif
-#include <sys/ioctl.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -34,11 +34,18 @@
 
 #include "pz.h"
 
+#ifdef IPOD
 #define FBIOGET_CONTRAST	_IOR('F', 0x22, int)
 #define FBIOSET_CONTRAST	_IOW('F', 0x23, int)
 
 #define FBIOGET_BACKLIGHT	_IOR('F', 0x24, int)
 #define FBIOSET_BACKLIGHT	_IOW('F', 0x25, int)
+#else
+#define FBIOGET_CONTRAST   0
+#define FBIOSET_CONTRAST   1
+#define FBIOGET_BACKLIGHT  2
+#define FBIOSET_BACKLIGHT  3
+#endif
 
 #define FB_DEV_NAME		"/dev/fb0"
 #define FB_DEVFS_NAME		"/dev/fb/0"
