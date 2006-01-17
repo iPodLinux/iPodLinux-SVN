@@ -51,10 +51,10 @@ char mpdc_is_playing()
 {
 	int state;
 	if ((state = mpdc_status(mpdz)) == -1) {
-		if (mpdc_tickle() < 0)
+		mpdc_destroy();
+		mpdc_init();
+		if ((state = mpdc_status(mpdz)) < 0)
 			return 0;
-		else
-			state = mpdc_status(mpdz);
 	}
 	return (state == MPD_STATUS_STATE_PLAY);
 }
