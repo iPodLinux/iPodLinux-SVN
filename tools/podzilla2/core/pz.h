@@ -474,7 +474,7 @@ void pz_reset_idle_timer();
 #define LOCALE
 #ifdef IPOD
 #ifndef __UCLIBC_HAS_LOCALE__
-#warning "You need to update your toolchain if you wish to have locale support. (http://ipodlinux.org/Toolchain)"
+// insert warning here
 #undef LOCALE
 #endif
 #define LOCALEDIR "/usr/share/locale"
