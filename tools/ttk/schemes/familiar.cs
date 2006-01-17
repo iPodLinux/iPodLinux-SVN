@@ -52,7 +52,7 @@
           selfg => white, selchoice => white,
 # WTF are these used for?
           icon0 => #3b79da, icon1 => #28503c, icon2 => #50a078, icon3 => #ffffff
-  slider: border => #282828, bg => #e8ebd2, full => #acb098
+  slider: border => black, bg => @familiar-(music.bar.bg).png , full => @familiar-(music.bar).png
 textarea: bg => #ffffff, fg => nearblack
 
 box:
