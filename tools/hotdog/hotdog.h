@@ -49,8 +49,17 @@ typedef struct hd_primitive {
 } hd_primitive;
 
 typedef struct hd_font {
-    int32   w,h;
-    uint32 *argb;
+    // Pixel data:
+    int32   pitch, h; // h = height of font; pitch = length of a scanline in bytes
+    void   *pixels;
+    int     bpp; // 1 or 8 or 32
+
+    // Char info:
+    int     firstchar;
+    unsigned long *offset; // offset[N-firstchar] = X-coord of char N in pixels
+    unsigned char *width;  // width[N-firstchar]  = width   "    "  "  "    "
+    int     defaultchar; // Char to use if req'd char doesn't exist
+    int    *charpos;
 } hd_font;
 
 typedef struct hd_canvas {
