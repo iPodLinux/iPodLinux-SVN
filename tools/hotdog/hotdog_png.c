@@ -139,13 +139,13 @@ void HD_PNG_Render_DOUBLE(hd_engine *eng,hd_object *obj) {
 }
 #endif
 
-hd_object *HD_PNG_Create(char *fname) {
+uint32 *HD_PNG_Load (const char *fname, int *retw, int *reth)
+{
 	FILE *in;
 	unsigned char header[8];
 	uint32 y,off;
-        hd_object *ret;
-	hd_png *png;
 	png_bytep *row_pointers;
+        uint32 w, h, *argb;
 	
 	in = fopen(fname,"rb");
 	if(in == NULL) {
@@ -158,10 +158,6 @@ hd_object *HD_PNG_Create(char *fname) {
 		printf("File is not a PNG\n");
 		return(NULL);
 	}
-	
-        ret = HD_New_Object();
-        ret->type = HD_TYPE_PNG;
-        ret->sub.png = png = (hd_png *)malloc (sizeof(hd_png));
 	
 	png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 	if(!png_ptr)
@@ -184,64 +180,78 @@ hd_object *HD_PNG_Create(char *fname) {
 	
 	png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
 	
-	ret->natw = png->w = png_get_image_width(png_ptr,info_ptr);
-	ret->nath = png->h = png_get_image_height(png_ptr,info_ptr);
+	w = png_get_image_width(png_ptr,info_ptr);
+	h = png_get_image_height(png_ptr,info_ptr);
 	
 	row_pointers = png_get_rows(png_ptr, info_ptr);
-	png->argb = (uint32*)malloc( png->w * png->h * 4 );
+	argb = (uint32*)malloc( w * h * 4 );
 	
 	//printf("Image dim: %ux%u\n",ret->w,ret->h);
 	
-	for(y=0;y<png->h;y++) {
-		memcpy( png->argb + y*png->w, row_pointers[y], png->w * 4 );
+	for(y=0;y<h;y++) {
+		memcpy( argb + y * w, row_pointers[y], w * 4 );
 
 		// Convert RGBA to ARGB8888 w/ premultiplied alpha
-		for(off=0;off<png->w;off++) {
-			uint16 argb[4];
+		for(off=0;off<w;off++) {
+			uint16 buf[4];
 
 #ifndef _BIG_ENDIAN		
-			*(uint32*)(png->argb + y*png->w + off) = 
-			  ((*(uint32*)(png->argb + y*png->w + off) & 0xFF000000) >> 24) |
-			  ((*(uint32*)(png->argb + y*png->w + off) & 0x00FF0000) >>  8) |
-			  ((*(uint32*)(png->argb + y*png->w + off) & 0x0000FF00) <<  8) |
-			  ((*(uint32*)(png->argb + y*png->w + off) & 0x000000FF) << 24);
+			*(uint32*)(argb + y*w + off) = 
+			  ((*(uint32*)(argb + y*w + off) & 0xFF000000) >> 24) |
+			  ((*(uint32*)(argb + y*w + off) & 0x00FF0000) >>  8) |
+			  ((*(uint32*)(argb + y*w + off) & 0x0000FF00) <<  8) |
+			  ((*(uint32*)(argb + y*w + off) & 0x000000FF) << 24);
 #endif
-			argb[1] = (*(uint32*)(png->argb + y*png->w + off) & 0xFF000000) >> 24;
-			argb[2] = (*(uint32*)(png->argb + y*png->w + off) & 0x00FF0000) >> 16;
-			argb[3] = (*(uint32*)(png->argb + y*png->w + off) & 0x0000FF00) >> 8;
-			argb[0] = (*(uint32*)(png->argb + y*png->w + off) & 0x000000FF);
+			buf[1] = (*(uint32*)(argb + y*w + off) & 0xFF000000) >> 24;
+			buf[2] = (*(uint32*)(argb + y*w + off) & 0x00FF0000) >> 16;
+			buf[3] = (*(uint32*)(argb + y*w + off) & 0x0000FF00) >> 8;
+			buf[0] = (*(uint32*)(argb + y*w + off) & 0x000000FF);
 		
-			argb[1] = ((argb[1] * argb[0]) / 255) & 0xFF;
-			argb[2] = ((argb[2] * argb[0]) / 255) & 0xFF;
-			argb[3] = ((argb[3] * argb[0]) / 255) & 0xFF;
+			buf[1] = ((buf[1] * buf[0]) / 255) & 0xFF;
+			buf[2] = ((buf[2] * buf[0]) / 255) & 0xFF;
+			buf[3] = ((buf[3] * buf[0]) / 255) & 0xFF;
 		
-			*(uint32*)(png->argb + y*png->w + off) = (argb[0] << 24) | (argb[1] << 16) | (argb[2] << 8) | argb[3];
+			*(uint32*)(argb + y*w + off) = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
 		}
 	}
 	
 	if( png_get_bit_depth(png_ptr,info_ptr) != 8 ) {
-		free(png->argb);
-		free(png);
-                free(ret);
+		free(argb);
 		printf("Not a 32 bit image\n");
 		return(NULL);
 	}
 	if( png_get_color_type(png_ptr,info_ptr) != PNG_COLOR_TYPE_RGB_ALPHA ) {
-		free(png->argb);
-		free(png);
-                free(ret);
+		free(argb);
 		printf("Not a RGBA image\n");
 		return(NULL);
 	}
 	
 	png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
-	ret->render = HD_PNG_Render;
-        ret->destroy = HD_PNG_Destroy;
 	
 	fclose(in);
 	
-	return(ret);
+        *retw = w;
+        *reth = h;
+	return(argb);
 	
+}
+
+hd_object *HD_PNG_Create(const char *fname) {
+        hd_object *ret;
+	hd_png *png;
+
+        ret = HD_New_Object();
+        ret->type = HD_TYPE_PNG;
+        ret->sub.png = png = (hd_png *)malloc (sizeof(hd_png));
+
+        ret->sub.png->argb = HD_PNG_Load (fname, &ret->sub.png->w, &ret->sub.png->h);
+        ret->natw = ret->sub.png->w;
+        ret->nath = ret->sub.png->h;
+
+	ret->render = HD_PNG_Render;
+        ret->destroy = HD_PNG_Destroy;
+
+        return ret;
 }
 
 void HD_PNG_Destroy (hd_object *obj) 

@@ -29,8 +29,10 @@
 
 #include "hotdog.h"
 
-hd_object *HD_PNG_Create(char *fname);
+hd_object *HD_PNG_Create(const char *fname);
 void       HD_PNG_Render(hd_engine *eng,hd_object *obj, int x, int y, int w, int h);
 void       HD_PNG_Destroy (hd_object *obj);
+
+uint32    *HD_PNG_Load (const char *fname, int *w, int *h);
 
 #endif
