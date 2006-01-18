@@ -14,7 +14,7 @@ typedef struct
     void (*done)(hd_object *);
 } anim_lineardata;
 
-void HD_DoLinearAnimation (hd_object *obj) 
+static void HD_DoLinearAnimation (hd_object *obj) 
 {
     anim_lineardata *a = (anim_lineardata *)obj->animdata;
     a->cur.x += a->delta.x; a->cur.y += a->delta.y;
@@ -56,7 +56,7 @@ void HD_AnimateLinear (hd_object *obj, int sx, int sy, int sw, int sh,
 /********** Sine table, for all circular-ish stuff. *************/
 
 // Units of index = rad*2048/pi. Units of result = 1.16 fixed-point ints.
-uint32 sine_table[1025] = {
+static uint32 sine_table[1025] = {
     0x0000, 0x0064, 0x00C9, 0x012D, 0x0192, 0x01F6, 0x025B, 0x02BF,
     0x0324, 0x0388, 0x03ED, 0x0451, 0x04B6, 0x051A, 0x057F, 0x05E3,
     0x0648, 0x06AC, 0x0711, 0x0775, 0x07DA, 0x083E, 0x08A3, 0x0907,
@@ -190,7 +190,7 @@ uint32 sine_table[1025] = {
 
 int32 fsin (int32 angle) 
 {
-    int32 corresp;
+    int32 corresp = 0;
     while (angle >= 4096) angle -= 4096;
     while (angle < 0) angle += 4096;
 
@@ -229,7 +229,7 @@ typedef struct
     int frames;
 } anim_circledata;
 
-void HD_DoCircleAnimation (hd_object *obj) 
+static void HD_DoCircleAnimation (hd_object *obj) 
 {
     anim_circledata *a = obj->animdata;
     a->angle += a->adelta;
