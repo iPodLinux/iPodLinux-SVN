@@ -8,6 +8,7 @@
 #include <ft2build.h>
 #include <freetype/freetype.h>
 
+#if 0
 static void HD_Font_RenderGlyph(hd_font *font, FT_Bitmap *ftmap, int32 x,int32 y, int32 w, int32 h ) {
   int32 fx,fy;
   uint8 luma;
@@ -21,10 +22,11 @@ static void HD_Font_RenderGlyph(hd_font *font, FT_Bitmap *ftmap, int32 x,int32 y
       font->argb[ (fy+y) * font->w + (fx+x) ] = (luma<<24) | (luma<<16) | (luma<<8) | luma;
     }
   }
-
 }
+#endif
 
 hd_object *HD_Font_Create(char *font,uint32 height,char *text) {
+#if 0
   hd_object *ret;
   hd_font *fsub;
   FT_Library library;
@@ -93,18 +95,24 @@ hd_object *HD_Font_Create(char *font,uint32 height,char *text) {
   ret->render = HD_Font_Render;
 
   return(ret);
+#endif
+  return 0;
 }
 
 void     HD_Font_Destroy(hd_object *obj) {
+#if 0
   if( obj->sub.font->argb != NULL) free(obj->sub.font->argb);
   free (obj->sub.font);
+#endif
 }
 
 void HD_Font_Render (hd_engine *eng, hd_object *obj, int x, int y, int w, int h) 
 {
+#if 0
     HD_ScaleBlendClip (obj->sub.font->argb, obj->sub.font->w, obj->sub.font->h,
                        x, y, w, h,
                        eng->buffer, eng->screen.width, eng->screen.height,
                        obj->x, obj->y, obj->w, obj->h);
+#endif
 }
 
