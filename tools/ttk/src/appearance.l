@@ -55,6 +55,8 @@ DEC	[0-9]+
     
     expansion_stack_ptr = yylineno = 0;
 
+<*>\r	/* ignore \r */
+
 <SKIP>[ \t]+
 <SKIP>\n	BEGIN nextstate;
 <SKIP>[^ \t]	yymore(); BEGIN nextstate;

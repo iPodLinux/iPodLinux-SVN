@@ -11,7 +11,7 @@
 \def aquawinbdr  #b8b8b8
 
 \def grapbot    #D0D8D8
-\def grapmid    #E8F4E8
+\def grapmid    #F0F4F8
 \def graptop    #F0F4F8
 \def grapbar    #F0F4F8
 
