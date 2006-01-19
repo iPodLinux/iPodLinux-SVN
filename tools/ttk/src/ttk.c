@@ -507,6 +507,9 @@ int ttk_run()
 		ttk_ap_rect (s->srf, ttk_ap_get ("window.border"), win->x, win->y,
 			     win->x + win->w, win->y + win->h);
 	    }
+
+	    ttk_ap_hline (s->srf, ttk_ap_get ("header.line"), 0, s->w, s->wy);
+
 	    ttk_dirty &= ~TTK_DIRTY_WINDOWAREA;
 	    ttk_dirty |= TTK_DIRTY_SCREEN;
 	}
