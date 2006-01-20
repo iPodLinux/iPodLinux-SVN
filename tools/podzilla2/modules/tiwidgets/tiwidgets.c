@@ -93,7 +93,7 @@ int ti_set_buffer(TiBuffer * buf, char * s)
 		buf->text = t;
 		buf->asize = l+1024;
 		buf->usize = l;
-		buf->cpos = strlen(s);
+		buf->cpos = l;
 		strcpy(buf->text, s);
 		return 1;
 	}
