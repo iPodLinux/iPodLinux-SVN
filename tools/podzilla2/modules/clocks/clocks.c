@@ -1,23 +1,8 @@
 /*
- * Various clocks 
- * Copyright (C) 2005 Scott Lawrence
+ * Clocks 2.0 - Clock engine with expandable clock faces for podzilla 2
+ *  
+ * Copyright (C) 2006 Scott Lawrence
  *
- *   Time setting routines
- *   Various clock display faces:
- *	Traditional Analog clock
- *	Nelson Ball-like Art Deco Analog clock (google for it)
- *	Oversized analog clock (looks nice fullscreen)
- *	Oversized analog watch (same, but with DOW, DOM )
- *	Vectorfont Clock (digital)
- *	Binary - Desktop BCD clock
- *	Binary - Binary Watch clock
- *	Digital Bedside clock
- *
- *   $Id$
- *
- */
-
-/*
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -36,830 +21,110 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 #include <time.h>
 #include <math.h>
 #include <sys/time.h>
-
-#define PZ_COMPAT
 #include "pz.h"
+#include "clocks.h"
 
-static GR_TIMER_ID 	Clocks_timer = 0;	/* our timer. 1000ms */
-static GR_GC_ID		Clocks_gc = 0;		/* graphics context */
-static GR_WINDOW_ID	Clocks_bufwid = 0;	/* second buffer */
-static GR_WINDOW_ID	Clocks_bakwid = 0;	/* third backup buffer */
-static GR_WINDOW_ID	Clocks_wid = 0;		/* screen window */
-static GR_SCREEN_INFO	Clocks_screen_info;	/* screen info */
-static int 		Clocks_height = 0;	/* visible screen height */
+/* global structure defined in clocks.h with a banana. */
+static clocks_globals cglob;
 
-/*
- *  to add another clock face...
- *  1. add another CLOCKS_STYLE_(face name) entry in this list
- *  2. set CLOCKS_STYLE_MAX to be the same value.
- *  -- be sure to understand how this works before you hack it.
- *  3. add in a hook in the valve (search on __3__ below)
- *  4. add in the face render routine
- *  -- many examples below, look to see how the other valved routines do it.
- */
-
-#define CLOCKS_STYLE_ANALOG	(0)	/* display a traditional analog */
-#define CLOCKS_STYLE_DECO	(1)	/* display a nelson ball clock */
-#define CLOCKS_STYLE_OVERSIZED	(2)	/* oversized analog clock */
-#define CLOCKS_STYLE_WATCH	(3)	/* oversized analog watch */
-#define CLOCKS_STYLE_VECTOR	(4)	/* display the vectorfont clock */
-#define CLOCKS_STYLE_BCD	(5)	/* BCD digital clock */
-#define CLOCKS_STYLE_BINARY	(6)	/* Binary digital clock */
-#define CLOCKS_STYLE_DIGITAL	(7)	/* stnadard 7-segment digital clock */
-#define CLOCKS_STYLE_MAX	(7)
-
-static int Clocks_style;	/* what kind of clock ? */
-static int Clocks_bak = 0; 			/* backup */
-
-
-#define CLOCKS_SEL_DISPLAY 	(0)	/* not editing */
-#define CLOCKS_SEL_HOURS	(1)	/* editing hours */
-#define CLOCKS_SEL_MINUTES	(2)	/* editing minutes */
-#define CLOCKS_SEL_SECONDS	(3)	/* editing seconds */
-#define CLOCKS_SEL_YEARS	(4)	/* editing year */
-#define CLOCKS_SEL_MONTHS	(5)	/* editing month */
-#define CLOCKS_SEL_DAYS		(6)	/* editing day */
-#define CLOCKS_SEL_MAX		(6)
-
-static int Clocks_sel = CLOCKS_SEL_DISPLAY;	/* how are we editing? */
-static int Clocks_set = 0;
-
-static int Clocks_offset = 0;		/* timezone offset for display */
 
 static int clocks_tz_offsets[] = { /* minutes associated with the above */
-           0,
+           0,  
           60,  120,  180,  210,  240,
          270,  300,  330,  345,  360,
          390,  420,  480,  525,  540,
          570,  600,  630,  660,  690,
-         720,  765,  780,  840,
+         720,  765,  780,  840, 
         -720, -660, -600, -570, -540,
         -480, -420, -360, -300, -240,
         -210, -180, -120, -60
 };
 
 static int clocks_dst_offsets[] = {
-	0, 30, 60
+        0, 30, 60
 };
 
 static int monthlens[] = {
-	31, 28, 31, 30, 31, 30,
-	31, 31, 30, 31, 30, 31 
+        31, 28, 31, 30, 31, 30,
+        31, 31, 30, 31, 30, 31
 };
 
-/* copy the buffer into place */
-static void Clocks_blit() 
+
+
+void clocks_register_face( draw_face fcn, char * name )
 {
-        GrCopyArea( Clocks_wid, Clocks_gc, 0, 0,
-                    Clocks_screen_info.cols, 
-                    Clocks_height,
-                    Clocks_bufwid, 0, 0, MWROP_SRCCOPY);
-}
-
-static void Clocks_buf2bak()
-{
-        GrCopyArea( Clocks_bakwid, Clocks_gc, 0, 0,
-                    Clocks_screen_info.cols,
-                    Clocks_height,
-                    Clocks_bufwid, 0, 0, MWROP_SRCCOPY);
-}
-
-static void Clocks_bak2buf()
-{
-        GrCopyArea( Clocks_bufwid, Clocks_gc, 0, 0,
-                    Clocks_screen_info.cols,
-                    Clocks_height,
-                    Clocks_bakwid, 0, 0, MWROP_SRCCOPY);
-}
-
-
-
-/* draw an angular line for the analog clock, with a ball at the end */
-
-static void Analog_angular_line_angle( int cx, int cy, 
-			double angle,
-			int length, int circdiam,
-			int selected, int thick  )
-{
-	int px, py;
-
-	px = cx + ( length * cos( angle ));
-	py = cy + ( length * sin( angle ));
-	if( thick ) {
-		GrLine( Clocks_bufwid, Clocks_gc, cx+1, cy  , px+1, py   );
-		GrLine( Clocks_bufwid, Clocks_gc, cx-1, cy  , px-1, py   );
-		GrLine( Clocks_bufwid, Clocks_gc, cx  , cy+1, px  , py+1 );
-		GrLine( Clocks_bufwid, Clocks_gc, cx  , cy-1, px  , py-1 );
-	}
-	GrLine( Clocks_bufwid, Clocks_gc, cx, cy, px, py );
-
-	if( circdiam ) {
-		GrFillEllipse( Clocks_bufwid, Clocks_gc, px, py, 
-				circdiam, circdiam); 
-	}
-	if( selected ) {
-	    GrEllipse( Clocks_bufwid, Clocks_gc, px, py, 
-				circdiam+2, circdiam+2); 
-	}
-}
-
-static void Analog_angular_line( int cx, int cy,
-			int val, int max, 
-			int length, int circdiam,
-			int selected, int thick  )
-{
-	double angle;
-
-	angle = (3.14159265 * ((( (val%max) * 360 ) / max) - 90)) / 180;
-
-	Analog_angular_line_angle( cx, cy,
-				angle, length, 
-				circdiam, selected, thick );
-}
-
-static void Analog_angular_line_offset( int cx, int cy, 
-			int val, int max, double da,
-			int length, int circdiam,
-			int selected, int thick  )
-{
-	double angle;
-
-	angle = (3.14159265 * ((( (val%max) * 360.0 ) / max) - 90.0 + da))
-					/ 180.0;
-
-	Analog_angular_line_angle( cx, cy,
-				angle, length, 
-				circdiam, selected, thick );
-}
-
-
-/* some helpers for drawing the second hand.  these aid in sproingy display */
-static void Clocks_secondhand( int cx, int cy, int pos, int max,
-                                double da, int sz )
-{
-        if( Clocks_screen_info.bpp == 16 )
-            GrSetGCForeground( Clocks_gc, GR_RGB( 96, 96, 0 ) );
-        else
-            GrSetGCForeground( Clocks_gc, GRAY );
-        Analog_angular_line_offset( cx, cy, pos, max, da,
-				sz, 2,
-                                (Clocks_sel == CLOCKS_SEL_SECONDS)?1:0, 0 );
-}
-
-static void Clocks_center( int cx, int cy, int cd )
-{
-        /* pretty-up the center */
-        if ( Clocks_style == CLOCKS_STYLE_OVERSIZED
-	  || Clocks_style == CLOCKS_STYLE_WATCH ) {
-            cd = 3;
-        }
-        GrSetGCForeground( Clocks_gc, GRAY );
-        GrFillEllipse( Clocks_bufwid, Clocks_gc, cx, cy, cd, cd );
-        GrSetGCForeground( Clocks_gc, BLACK );
-        GrFillEllipse( Clocks_bufwid, Clocks_gc, cx, cy, cd-1, cd-1 );
-}
-
-
-/* draw the analog or deco clock */
-static void Clocks_draw_analog_clocks( struct tm *dispTime )
-{
-	char buf[16];
-	int cx, cy;		/* center of clock */
-	int ls, lm, lh;
-	int x = 0;
-	int cd = 5;		/* diameter of center circle */
-
-        /* for the seconds hand sproingyness */
-        /* each timer tick, it draws the second hand at the timer position
-            plus each of these offsets (angles) in turn.  It simulates the
-            second hand mechanically settling into the correct location */
-        double sproingypos[2][3][5] = {
+	int c;
+	for( c=0 ; c<NCLOCK_FACES ; c++ )
 	{
-		/* for mini and mono iPod */
-		{ -1.2, 1.2, -0.6, 0.6, 0 },	/* analog clock 0 sproing */
-		{ -1.2, 1.2, -0.6, 0.6, 0 },	/* analog clock 1 sproing */
-		{ -0.6, 0.6, -0.3, 0.3, 0 }	/* analog clock 2 sproing */
-	}, {
-		/* for iPod photo */    /* XXXXXXX Untested XXXXXXX */
-		{ -1, 1, -0.5, 0.5, 0 },	/* analog clock 0 sproing */
-		{ -1, 1, -0.5, 0.5, 0 },	/* analog clock 1 sproing */
-		{ -0.4, 0.4, -0.2, 0.2, 0 }	/* analog clock 2 sproing */
-	}
-	};
-        int sproingy;
-	int sp = 0;
+		/* I'm in a cage.  Giant fish enraged! */
+		if( cglob.faces[c].routine == NULL ) {
+			/* copy the function pointer */
+			cglob.faces[c].routine = fcn;
 
-	cx = Clocks_screen_info.cols>>1;
-	cy = Clocks_height>>1;
+			/* copy the name over */
+			strncpy( cglob.faces[c].name, name, 32 );
+			cglob.faces[c].name[31] = '\0'; /* truncate */
 
-	ls = cy-12; 		/* second hand length */
-	lm = cy-12;		/* minute hand length */
-	lh = cy>>1;		/* hour hand length */
-
-	/* draw the face */
-	if( Clocks_style == CLOCKS_STYLE_DECO ) {
-// 210  95 100   red
-//  80 100  70   green
-//  50 100 170   blue
-		for( x=0 ; x<12 ; x++ )
-		{
-		    if( Clocks_screen_info.bpp == 16 )
-		    {
-			if( x%3 ) 
-			    GrSetGCForeground( Clocks_gc, GR_RGB( 50, 100, 170) );
-			else /* 12, 3, 6, 9 */
-			    GrSetGCForeground( Clocks_gc, GR_RGB( 80, 100, 70) );
-		    } else {
-			GrSetGCForeground( Clocks_gc, LTGRAY );
-		    }
-		    Analog_angular_line( cx, cy, x, 12, 
-				(x==0)?cy-6:	/* 12:00 */
-				(x==6)?cy-6:	/*  6:00 */
-				cy-5,		/* otherwise */
-				4, (x%3)?0:1, 0 );
+			/* bump the count */
+			cglob.nFaces++;
+			return;
 		}
-	} else if( Clocks_style == CLOCKS_STYLE_ANALOG ) {
-		/* give the illusion of anti-alisedness for the outer ring */
-		GrSetGCForeground( Clocks_gc, LTGRAY );
-		GrFillEllipse( Clocks_bufwid, Clocks_gc, cx, cy, cy-1, cy-1 );
-		GrSetGCForeground( Clocks_gc, GRAY );
-		GrFillEllipse( Clocks_bufwid, Clocks_gc, cx, cy, cy-2, cy-2 );
-
-		GrSetGCForeground( Clocks_gc, BLACK );
-		GrFillEllipse( Clocks_bufwid, Clocks_gc, cx, cy, cy-3, cy-3 );
-
-		GrSetGCForeground( Clocks_gc, GRAY );
-		GrFillEllipse( Clocks_bufwid, Clocks_gc, cx, cy, cy-4, cy-4 );
-		GrSetGCForeground( Clocks_gc, LTGRAY );
-		GrFillEllipse( Clocks_bufwid, Clocks_gc, cx, cy, cy-5, cy-5 );
-		GrSetGCForeground( Clocks_gc, WHITE );
-		GrFillEllipse( Clocks_bufwid, Clocks_gc, cx, cy, cy-6, cy-6 );
 	}
-
-	/* draw some tickmark thingies */
-	if( Clocks_screen_info.bpp == 16 )
-	    GrSetGCForeground( Clocks_gc, GR_RGB( 0, 128, 0 ));
-	else 
-	    GrSetGCForeground( Clocks_gc, LTGRAY );
-	if( Clocks_style == CLOCKS_STYLE_ANALOG ) {
-		/* horizontal */
-		GrLine( Clocks_bufwid, Clocks_gc, 
-					(cx-cy)+8, cy, (cx-cy)+16, cy );
-		GrLine( Clocks_bufwid, Clocks_gc, 
-					(cx+cy)-16, cy, (cx+cy)-8, cy );
-
-		/* vertical */
-		GrLine( Clocks_bufwid, Clocks_gc, 
-					cx, (cy-cy)+8, cx, (cy-cy)+16 );
-		GrLine( Clocks_bufwid, Clocks_gc, 
-					cx, (cy+cy)-16, cx, (cy+cy)-8 );
-	} else if ( Clocks_style == CLOCKS_STYLE_OVERSIZED 
-		 || Clocks_style == CLOCKS_STYLE_WATCH ) {
-		GrLine( Clocks_bufwid, Clocks_gc, 0, cy, Clocks_screen_info.cols, cy);
-		GrLine( Clocks_bufwid, Clocks_gc, cx, 0, cx, Clocks_height);
-	}
-
-	/* draw the DOW, DOM on the face, if we're watchface */
-	if( Clocks_style == CLOCKS_STYLE_WATCH ) {
-	    int wq = Clocks_screen_info.cols>>2;
-	    int wq3 = wq+wq+wq;
-	    int tw, tw2;
-
-	    strftime( buf, 16, "%a %d", dispTime );
-
-	    tw = vector_string_pixel_width( buf, 1, 1 );
-	    tw2 = tw>>1;
-
-	    /* draw the background-matching backing box */
-	    GrSetGCForeground( Clocks_gc, WHITE );
-	    GrFillRect( Clocks_bufwid, Clocks_gc, wq3-tw2-3, cy-7, tw+6, 15);
-
-	    /* draw a box the same color as the lines, like above */
-	    if( Clocks_screen_info.bpp == 16 )
-		GrSetGCForeground( Clocks_gc, GR_RGB( 0, 128, 0 ));
-	    else 
-		GrSetGCForeground( Clocks_gc, LTGRAY );
-	    GrRect( Clocks_bufwid, Clocks_gc, wq3-tw2-3, cy-7, tw+6, 15);
-
-	    /* and finally render the text */
-	    GrSetGCForeground( Clocks_gc, BLACK );
-	    vector_render_string_center( Clocks_bufwid, Clocks_gc, 
-			buf, 1, 1, wq3, cy );
-	}
-
-
-	/* draw the hands */
-	if ( Clocks_style == CLOCKS_STYLE_OVERSIZED
-	  || Clocks_style == CLOCKS_STYLE_WATCH ) {
-	    lh = cy*3/4;			/* hours */
-	    lm = Clocks_screen_info.cols<<1;	/* minutes */
-	    ls = Clocks_screen_info.cols<<1;	/* seconds */
-	}
-
-	/* -- minutes -- */
-	if( Clocks_screen_info.bpp == 16 )
-	    GrSetGCForeground( Clocks_gc, GR_RGB( 0, 45, 0 ) );
-	else
-	    GrSetGCForeground( Clocks_gc, GRAY );
-	Analog_angular_line( cx, cy,
-				(dispTime->tm_min*60)+dispTime->tm_sec, 60*60,
-				lm, 
-				(Clocks_style == CLOCKS_STYLE_DECO)?3:2 ,
-				(Clocks_sel == CLOCKS_SEL_MINUTES)?1:0, 1 );
-
-	if( Clocks_screen_info.bpp == 16 )
-	    GrSetGCForeground( Clocks_gc, GR_RGB( 0, 96, 0 ) );
-	else
-	    GrSetGCForeground( Clocks_gc, BLACK );
-	Analog_angular_line( cx, cy,
-				(dispTime->tm_min*60)+dispTime->tm_sec, 60*60,
-				lm, 
-				(Clocks_style == CLOCKS_STYLE_DECO)?3:2 ,
-				(Clocks_sel == CLOCKS_SEL_MINUTES)?1:0, 0 );
-
-	/* -- hours -- */
-	if( Clocks_screen_info.bpp == 16 )
-	    GrSetGCForeground( Clocks_gc, GR_RGB( 0, 45, 0 ) );
-	else
-	    GrSetGCForeground( Clocks_gc, GRAY );
-	Analog_angular_line( cx, cy, 
-				(dispTime->tm_hour*60)+dispTime->tm_min, 12*60,
-				lh, 
-				(Clocks_style == CLOCKS_STYLE_DECO)?4:
-				  (Clocks_style == CLOCKS_STYLE_ANALOG)?2:0,
-				(Clocks_sel == CLOCKS_SEL_HOURS)?1:0, 1 );
-
-	if( Clocks_screen_info.bpp == 16 )
-	    GrSetGCForeground( Clocks_gc, GR_RGB( 0, 96, 0 ) );
-	else
-	    GrSetGCForeground( Clocks_gc, BLACK );
-	Analog_angular_line( cx, cy, 
-				(dispTime->tm_hour*60)+dispTime->tm_min, 12*60,
-				lh, 
-				(Clocks_style == CLOCKS_STYLE_DECO)?4:
-				  (Clocks_style == CLOCKS_STYLE_ANALOG)?2:0,
-				(Clocks_sel == CLOCKS_SEL_HOURS)?1:0, 0 );
-	/* note in the above, the *60+mins is so that the hour hand slowly
-	    progresses from hour to hour appropriately, as time passes through
-	    the hour.  Otherwise, at 3:59, it will have the hours hand on 3,
-	    instead of almost on 4, where it should be. */
-
-	/* -- seconds -- */
-	/* do a little sproingyness */
-        Clocks_buf2bak(); /* store aside the backing screen */
-	for( sproingy = (Clocks_set)?4:0 ;
-	      sproingy<5 ;
-	      sproingy++ )
-        {
-            Clocks_bak2buf(); /* restore the backing screen */
-            Clocks_secondhand( cx, cy, dispTime->tm_sec, 60,
-                                sproingypos[sp][Clocks_style][sproingy],
-				ls );
-            Clocks_center( cx, cy, cd ); /* draw */
-            Clocks_blit(); /* blit */
-        }
-
-        // instead of the above seconds code, this will just draw it solid
-        // Clocks_secondhand( cx, cy, dispTime->tm_sec, 60, 0, ls );
-        // Clocks_center( cx, cy, cd );
+	fprintf( stderr, "ERROR: Unable to add clock face %s\n", name );
 }
 
 
-/* convert 24 hour time to 12 hour time */
-static int Clocks_c12( int hours )
+
+
+/* this basically just calls the current clock face routine */
+void draw_clocks( PzWidget *widget, ttk_surface srf )
 {
-	if( hours == 0 )
-		hours = 12;
-	else if( hours > 12 )
-		hours -= 12;
-	return( hours );
-}
-
-/* adjust for 12/24 hour time */
-static int Clocks_convert_to_12( int hours )
-{
-	if( pz_get_int_setting( pz_global_config, TIME_1224 ))
-		return( hours );
-	return( Clocks_c12( hours ));
-}
-
-
-/* draw the clock using my vector font... */
-static void Clocks_draw_vector_clock( struct tm *dispTime )
-{
-        char buf[80];
-        
-        int scale_time = 3; 
-        int scale_date = 2;
-        
-        int w = Clocks_screen_info.cols;
-        int h = Clocks_height;
-
-        /* figure out the correct ipod screen size/model */
-        if( w < 160 ) { /* MINI */
-            scale_time = 2;
-            scale_date = 1;
-        } else if ( w > 160 ) { /* PHOTO */
-            scale_time = 4; /* untested. */
-            scale_date = 3; /* untested. */
-        }
-
-        /* clear the screen */
-        GrSetGCForeground( Clocks_gc, WHITE);
-        GrFillRect( Clocks_bufwid, Clocks_gc, 0, 0, w, h);
-
-        /* draw some text */
-        GrSetGCForeground( Clocks_gc, BLACK);
-
-        sprintf( buf, "%02d:%02d:%02d",
-			Clocks_convert_to_12( dispTime->tm_hour ),
-			dispTime->tm_min,
-                        dispTime->tm_sec );
-        vector_render_string_center( Clocks_bufwid, Clocks_gc,
-                    buf, 1, scale_time, w/2, h/3 );
-
-	if( Clocks_sel != CLOCKS_SEL_DISPLAY ) {
-		char * fmtt = "";
-		char * fmtd = "";
-		GrSetGCForeground( Clocks_gc, GRAY );
-
-		if( Clocks_sel == CLOCKS_SEL_HOURS ) {
-			fmtt = "%c%c      ";
-		} else if( Clocks_sel == CLOCKS_SEL_MINUTES ) {
-			fmtt = "   %c%c   ";
-		} else if( Clocks_sel == CLOCKS_SEL_SECONDS ) {
-			fmtt = "      %c%c";
-		} else if( Clocks_sel == CLOCKS_SEL_YEARS ) {
-			fmtd = "%c%c%c%c       ";
-		} else if( Clocks_sel == CLOCKS_SEL_MONTHS ) {
-			fmtd = "     %c%c%c   ";
-		} else if( Clocks_sel == CLOCKS_SEL_DAYS ) {
-			fmtd = "         %c%c";
-		}
-
-		sprintf( buf, fmtt,
-			VECTORFONT_SPECIAL_UP, VECTORFONT_SPECIAL_UP  );
-		vector_render_string_center( Clocks_bufwid, Clocks_gc,
-			buf, 1, scale_time, w/2, (h/3) - (scale_time*8) - 2 );
-		sprintf( buf, fmtt,
-			VECTORFONT_SPECIAL_DOWN, VECTORFONT_SPECIAL_DOWN  );
-		vector_render_string_center( Clocks_bufwid, Clocks_gc,
-			buf, 1, scale_time, w/2, (h/3) + (scale_time*8) + 2 );
-
-		sprintf( buf, fmtd,
-			VECTORFONT_SPECIAL_UP, VECTORFONT_SPECIAL_UP,
-			VECTORFONT_SPECIAL_UP, VECTORFONT_SPECIAL_UP);
-		vector_render_string_center( Clocks_bufwid, Clocks_gc,
-			buf, 1, scale_date, w/2, (h*2/3) - (scale_date*8) - 2 );
-		sprintf( buf, fmtd,
-			VECTORFONT_SPECIAL_DOWN, VECTORFONT_SPECIAL_DOWN,
-			VECTORFONT_SPECIAL_DOWN, VECTORFONT_SPECIAL_DOWN );
-		vector_render_string_center( Clocks_bufwid, Clocks_gc,
-			buf, 1, scale_date, w/2, (h*2/3) + (scale_date*8) + 2 );
-
-	}
-
-	GrSetGCForeground( Clocks_gc, BLACK );
-	strftime( buf, 80, "%Y %b %d", dispTime );
-
-        vector_render_string_center( Clocks_bufwid, Clocks_gc,
-                    buf, 1, scale_date, w/2, (h*2)/3 );
-}
-
-/* draws a single light */
-static void Clocks_draw_light( int x, int y, int dia,
-				GR_COLOR mono_foreground,
-				GR_COLOR color_foreground,
-				GR_COLOR mono_container,
-				GR_COLOR color_container )
-{
-	/* draw fill */
-	GrSetGCForeground( Clocks_gc, 
-		(Clocks_screen_info.bpp == 16)?
-			  color_foreground
-			: mono_foreground );
-	GrFillEllipse( Clocks_bufwid, Clocks_gc, x, y, dia, dia );
-
-	/* draw container */
-	GrSetGCForeground( Clocks_gc, 
-		(Clocks_screen_info.bpp == 16)?
-			  color_container
-			: mono_container );
-	GrEllipse( Clocks_bufwid, Clocks_gc, x, y, dia, dia );
-}
-
-/* draws a nibble vertically */
-static void Clocks_draw_nibble_vert( int x, int val )
-{
-	int ld = Clocks_height/4-4;
-	int xv = Clocks_screen_info.cols/6;
-	int r = (xv-2)>>1;
-	int vc;
-
-	for( vc=0 ; vc<4 ; vc++ )
-	{
-		Clocks_draw_light( x+r, r+4+((ld+3)*vc), r-2,
-			(val & 0x08)? WHITE : BLACK,
-			(val & 0x08)? GR_RGB( 255, 0, 0 ) : BLACK,
-			GRAY, GR_RGB( 100, 0, 0 ) );
-		val = val << 1;
-	}
-}
-
-/* draw the BCD clock */
-static void Clocks_draw_bcd_clock( struct tm *dispTime )
-{
-	char buf[8];
-	int xv = Clocks_screen_info.cols/6;
-
-	/* render the lights */
-	snprintf( buf, 8, "%02d", dispTime->tm_hour );
-	Clocks_draw_nibble_vert( 2+0*xv, buf[0] - '0' );
-	Clocks_draw_nibble_vert( 2+1*xv, buf[1] - '0' );
-	snprintf( buf, 8, "%02d", dispTime->tm_min );
-	Clocks_draw_nibble_vert( 2+2*xv, buf[0] - '0' );
-	Clocks_draw_nibble_vert( 2+3*xv, buf[1] - '0' );
-	snprintf( buf, 8, "%02d", dispTime->tm_sec );
-	Clocks_draw_nibble_vert( 2+4*xv, buf[0] - '0' );
-	Clocks_draw_nibble_vert( 2+5*xv, buf[1] - '0' );
-}
-
-
-/* draws a 6-bit pseudobyte horizontally */
-static void Clocks_draw_6bit_horiz( int y, int val )
-{
-	int xv = Clocks_screen_info.cols/6;
-	int r = (xv-2)>>1;
-	int vc;
-
-	for( vc=0 ; vc<6 ; vc++ )
-	{
-		Clocks_draw_light( 2+r+vc*xv, y, r-2,
-			(val & 0x20)? WHITE : BLACK,
-			(val & 0x20)? GR_RGB( 255, 0, 0 ) : BLACK,
-			GRAY, GR_RGB( 100, 0, 0 ) );
-		val = val << 1;
-	}
-}
-
-/* draws a 4-bit nibble horizontally */
-static void Clocks_draw_4bit_horiz( int y, int val )
-{
-	int xv = Clocks_screen_info.cols/6;
-	int r = (xv-2)>>1;
-	int xv4 = (Clocks_screen_info.cols-(r*2))/3;
-	int vc;
-	int xp = 0;
-
-	/* note... there's a whole lot of magic going on in here to
-	   get the 4 and 6 light rows to look correct. */
-	for( vc=0 ; vc<4 ; vc++ )
-	{
-		switch( vc ) {
-		    case( 0 ):
-			xp = 2+r+0*xv;
-			break;
-		    case( 1 ):
-		    case( 2 ):
-			xp = r+ (vc*xv4);
-			break;
-		    case( 3 ):
-			xp = 2+r+5*xv;
-			break;
-		}
-
-		Clocks_draw_light( xp, y, r-2,
-			(val & 0x08)? WHITE : BLACK,
-			(val & 0x08)? GR_RGB( 255, 0, 0 ) : BLACK,
-			GRAY, GR_RGB( 100, 0, 0 ) );
-		val = val << 1;
-	}
-}
-
-
-/* draw the BINARY clock (like the watch my wonderful wife bought for me) */
-static void Clocks_draw_binary_clock( struct tm * dispTime )
-{
-	int h3 = Clocks_height/3;
-	int h32 = h3>>2;
-	int xv = Clocks_screen_info.cols/6;
-	int r = (xv-2)>>1;
-	int h = Clocks_c12( dispTime->tm_hour );
-
-	Clocks_draw_4bit_horiz( h32+r+h3*0, h );
-	Clocks_draw_6bit_horiz( h32+r+h3*1, dispTime->tm_min );
-
-	/* real watch doesn't have seconds, but we will.. */
-	Clocks_draw_6bit_horiz( h32+r+h3*2, dispTime->tm_sec );
-}
-
-
-/* 7-segment display 
- *      a
- *    f   b
- *      g
- *    e   c
- *      d
- *
- */
-
-static int ls7447[10] = {
-	/* #   - a b c  d e f g */
-	/* 0   0 1 1 1  1 1 1 0 */	0x7e,
-	/* 1   0 0 1 1  0 0 0 0 */	0x30,
- 	/* 2   0 1 1 0  1 1 0 1 */	0x6d,
- 	/* 3   0 1 1 1  1 0 0 1 */	0x79,
-	/* 4   0 0 1 1  0 0 1 1 */	0x33,
- 	/* 5   0 1 0 1  1 0 1 1 */	0x5b,
- 	/* 6   0 1 0 1  1 1 1 1 */	0x5f,
- 	/* 7   0 1 1 1  0 0 0 0 */	0x70,
- 	/* 8   0 1 1 1  1 1 1 1 */	0x7f,
- 	/* 9   0 1 1 1  1 0 1 1 */	0x7b
-};
-
-/* draw a 7-segment display digit */
-static void Clocks_draw_7segment( int x, int y, int w, int h, char value,
-				GR_COLOR dark, GR_COLOR bright )
-{
-	int mask = 0x00;
-	int h2 = h>>1;
-
-	if( value >= '0' && value <= '9' )  mask = ls7447[ value-'0' ];
-
-        GrSetGCForeground( Clocks_gc, (mask & 0x40)?bright:dark ); /* A */
-	GrLine( Clocks_bufwid, Clocks_gc, x+3, y  , x+w-3, y);
-	GrLine( Clocks_bufwid, Clocks_gc, x+4, y+1, x+w-4, y+1);
-	GrLine( Clocks_bufwid, Clocks_gc, x+5, y+2, x+w-5, y+2);
-
-        GrSetGCForeground( Clocks_gc, (mask & 0x20)?bright:dark ); /* B */
-	GrLine( Clocks_bufwid, Clocks_gc, x+w-1, y+2, x+w-1, y+h2-2);
-	GrLine( Clocks_bufwid, Clocks_gc, x+w-2, y+3, x+w-2, y+h2-3);
-	GrLine( Clocks_bufwid, Clocks_gc, x+w-3, y+4, x+w-3, y+h2-4);
-
-        GrSetGCForeground( Clocks_gc, (mask & 0x10)?bright:dark ); /* C */
-	GrLine( Clocks_bufwid, Clocks_gc, x+w-1, y+h2+2, x+w-1, y+h2+h2-2);
-	GrLine( Clocks_bufwid, Clocks_gc, x+w-2, y+h2+3, x+w-2, y+h2+h2-3);
-	GrLine( Clocks_bufwid, Clocks_gc, x+w-3, y+h2+4, x+w-3, y+h2+h2-4);
-
-        GrSetGCForeground( Clocks_gc, (mask & 0x08)?bright:dark ); /* D */
-	GrLine( Clocks_bufwid, Clocks_gc, x+3, y+h,   x+w-3, y+h);
-	GrLine( Clocks_bufwid, Clocks_gc, x+4, y+h-1, x+w-4, y+h-1);
-	GrLine( Clocks_bufwid, Clocks_gc, x+5, y+h-2, x+w-5, y+h-2);
-
-        GrSetGCForeground( Clocks_gc, (mask & 0x04)?bright:dark ); /* E */
-	GrLine( Clocks_bufwid, Clocks_gc, x,   y+h2+2, x,   y+h2+h2-2);
-	GrLine( Clocks_bufwid, Clocks_gc, x+1, y+h2+3, x+1, y+h2+h2-3);
-	GrLine( Clocks_bufwid, Clocks_gc, x+2, y+h2+4, x+2, y+h2+h2-4);
-
-        GrSetGCForeground( Clocks_gc, (mask & 0x02)?bright:dark ); /* F */
-	GrLine( Clocks_bufwid, Clocks_gc, x,   y+2, x,   y+h2-2);
-	GrLine( Clocks_bufwid, Clocks_gc, x+1, y+3, x+1, y+h2-3);
-	GrLine( Clocks_bufwid, Clocks_gc, x+2, y+4, x+2, y+h2-4);
-
-        GrSetGCForeground( Clocks_gc, (mask & 0x01)?bright:dark ); /* G */
-	GrLine( Clocks_bufwid, Clocks_gc, x+4, y+h2-1, x+w-4, y+h2-1);
-	GrLine( Clocks_bufwid, Clocks_gc, x+3, y+h2,   x+w-3, y+h2);
-	GrLine( Clocks_bufwid, Clocks_gc, x+4, y+h2+1, x+w-4, y+h2+1);
-}
-
-/* draw a Digital clock using the above 7-segment numbers */
-static void Clocks_draw_digital_clock( struct tm * dispTime )
-{
-	GR_COLOR dark  = (Clocks_screen_info.bpp == 16)?
-			GR_RGB( 60, 0, 0) : GRAY;
-	GR_COLOR light = (Clocks_screen_info.bpp == 16)?
-			GR_RGB( 255, 0, 0 ) : WHITE;
-	char buf[8];
-	int w2 = Clocks_screen_info.cols/2;
-	int w3 = Clocks_screen_info.cols/3;
-	int w5 = Clocks_screen_info.cols/5;
-	int w6 = Clocks_screen_info.cols/6;
-	int wA = Clocks_screen_info.cols/10;
-	int wC = Clocks_screen_info.cols/12;
-
-	int h2 = Clocks_height>>1;
-	int h2p = h2 - w6;
-
-	int h = Clocks_convert_to_12( dispTime->tm_hour );
-
-	if( Clocks_screen_info.bpp != 16 ) dark = BLACK;
-
-	snprintf( buf, 8, "%2d", h );
-	Clocks_draw_7segment( (w5*1)-wA-8, h2p, w5-3, w3,
-				buf[0], dark, light );
-	Clocks_draw_7segment( (w5*2)-wA-4, h2p, w5-3, w3, 
-				buf[1], dark, light );
-
-	snprintf( buf, 8, "%02d", dispTime->tm_min );
-	Clocks_draw_7segment( (w5*3)-wA+8, h2p, w5-3, w3, 
-				buf[0], dark, light );
-	Clocks_draw_7segment( (w5*4)-wA+12, h2p, w5-3, w3, 
-				buf[1], dark, light );
-
-	GrSetGCForeground( Clocks_gc, light );
-	if(    (dispTime->tm_sec&0x01)
-#ifdef CLOCK_ALTERNATE_BLINKING
-	    && (dispTime->tm_sec<30) 
-#endif
-	    )
-	    GrSetGCForeground( Clocks_gc, dark );
-	GrFillEllipse( Clocks_bufwid, Clocks_gc, w2, h2-wC, 3, 3 );
-
-	GrSetGCForeground( Clocks_gc, light );
-	if(    (dispTime->tm_sec&0x01)
-#ifdef CLOCK_ALTERNATE_BLINKING
-	    && (dispTime->tm_sec>=30)
-#endif
-	    )
-	    GrSetGCForeground( Clocks_gc, dark );
-	GrFillEllipse( Clocks_bufwid, Clocks_gc, w2, h2+wC, 3, 3 );
-}
-
-
-/* the main clock draw valve - decides who actually gets called */
-static void Clocks_draw( void )
-{
-	static time_t lastt = 0;
+	draw_face fcn;
 	time_t t;
-	struct tm * current_time;
 
+	/* setup the time in the global */
 	t = time( NULL );
-	if ( t == (time_t) - 1 ) return; /* error */
+	if( t==(time_t) -1 ) return; /* error */
+	t += cglob.offset;
+	cglob.dispTime = localtime( &t );
 
-	t += Clocks_offset; 	/* factor in the offset for the world clock */
-
-        current_time = localtime( &t );
-
-        /* start clear (WHITE) */
-	if( Clocks_style >= CLOCKS_STYLE_BCD )
-	    GrSetGCForeground( Clocks_gc, BLACK );
-	else
-	    GrSetGCForeground( Clocks_gc, WHITE );
-        GrFillRect( Clocks_bufwid, Clocks_gc, 0, 0,
-                    Clocks_screen_info.cols, Clocks_height );
-
-	switch( Clocks_style )
-	{
-	    case( CLOCKS_STYLE_ANALOG ):	/* traditional analog clock */
-	    case( CLOCKS_STYLE_DECO ):		/* art-deco analog clock */
-	    case( CLOCKS_STYLE_OVERSIZED ):	/* oversized analog clock */
-	    case( CLOCKS_STYLE_WATCH ):		/* oversized analog watch */
-		    Clocks_draw_analog_clocks( current_time );
-		    break;
-
-	    case( CLOCKS_STYLE_VECTOR ):	/* vectorfont clock */
-		    Clocks_draw_vector_clock( current_time );
-		    break;
-
-	    case( CLOCKS_STYLE_BCD ):		/* BCD binary clock */
-		    Clocks_draw_bcd_clock( current_time );
-		    break;
-
-	    case( CLOCKS_STYLE_BINARY ):	/* binary clock */
-		    Clocks_draw_binary_clock( current_time );
-		    break;
-
-	    case( CLOCKS_STYLE_DIGITAL ):	/* digital clock */
-		    Clocks_draw_digital_clock( current_time );
-		    break;
-
-	    /* __3__ Insert hooks to draw more faces here. */
+	/* call the current routine */
+	fcn = (draw_face) cglob.faces[cglob.cFace].routine;
+	if( fcn != NULL ) {
+		fcn( srf, &cglob );
+	} else {
+		/* this should never happen */
+		fprintf( stderr, "ERROR: no clock callback for slot %d\n",
+				cglob.cFace );
 	}
-
-	if( lastt != t )
-	{
-	    lastt = t;
-	    if( pz_get_int_setting( pz_global_config, TIME_TICKER ))
-		ttk_click();
-	}
-
-        /* copy the buffer into place */
-	Clocks_blit();
-}
-
-/* our draw event routine */
-static void Clocks_do_draw( void )
-{
-	pz_draw_header(_("Clock"));
-	Clocks_draw();
 }
 
 
-/* for time adjustment */
-static void Clocks_dec_time( void )
+void cleanup_clocks( void ) 
 {
-	int m;
-	int seconds_based = 0;
-	time_t t;
-	struct tm * current_time;
-	struct timeval tv_s;
+}
 
-	t = time( NULL );
-	if ( t == (time_t) - 1 ) return; /* error */
+
+/*
+   what makes a melonball bounce..
+   a melonball bounce.
+   a melonball bounce.
+   what makes a melonball bounce?
+	The ice tart taste of Sprite!
+*/
+
+static void clock_decrement_time( void )
+{
+        int m;
+        time_t t;
+        struct tm * current_time;
+        struct timeval tv_s;
+
+        t = time( NULL );
+        if ( t == (time_t) - 1 ) return; /* error */
 
         current_time = localtime( &t );
 
@@ -871,260 +136,191 @@ static void Clocks_dec_time( void )
    of 29 days.  Man, our calendar sucks.
 */
 
-	switch( Clocks_sel ) {
-	case( CLOCKS_SEL_YEARS ):
-		t -= 60*60*24*365;	/* wrongish */
-		seconds_based = 1;
-		break;
+        switch( cglob.editing ) {
+        case( CLOCKS_SEL_YEARS ):
+                t -= 60*60*24*365;      /* wrongish */
+                break;
 
-	case( CLOCKS_SEL_MONTHS ):
-		m = current_time->tm_mon-1;
-		if( m < 0 ) m=11;
-		t -= 60*60*24 * monthlens[ m ];
-		seconds_based = 1;
-		break;
+        case( CLOCKS_SEL_MONTHS ):
+                m = current_time->tm_mon-1;
+                if( m < 0 ) m=11;
+                t -= 60*60*24 * monthlens[ m ];
+                break;
 
-	case( CLOCKS_SEL_DAYS ):
-		t -= 60*60*24;
-		seconds_based = 1;
-		break;
+        case( CLOCKS_SEL_DAYS ):	t -= 60*60*24;	break;
+        case( CLOCKS_SEL_HOURS ):	t -= 60*60;	break;
+        case( CLOCKS_SEL_MINUTES ):	t -= 60;	break;
+        case( CLOCKS_SEL_SECONDS ):	t -= 1;		break;
+        }
 
-	case( CLOCKS_SEL_HOURS ):
-		t -= 60*60;
-		seconds_based = 1;
-		break;
-
-	case( CLOCKS_SEL_MINUTES ):
-		t -= 60;
-		seconds_based = 1;
-		break;
-
-	case( CLOCKS_SEL_SECONDS ):
-		t -= 1;
-		seconds_based = 1;
-		break;
-	}
-
-	if( seconds_based ) {
-		tv_s.tv_sec = t;
-		tv_s.tv_usec = 0;
-		settimeofday( &tv_s, NULL );
-	}
-	Clocks_draw();
+	tv_s.tv_sec = t;
+	tv_s.tv_usec = 0;
+	settimeofday( &tv_s, NULL );
 }
 
-/* for time adjustment */
-static void Clocks_inc_time( void )
+static void clock_increment_time( void )
 {
-	int seconds_based = 0;
-	time_t t;
-	struct tm * current_time;
-	struct timeval tv_s;
+        time_t t;
+        struct tm * current_time;
+        struct timeval tv_s;
 
-	t = time( NULL );
-	if ( t == (time_t) - 1 ) return; /* error */
+        t = time( NULL );
+        if ( t == (time_t) - 1 ) return; /* error */
 
         current_time = localtime( &t );
 
-	switch( Clocks_sel ) {
-	case( CLOCKS_SEL_YEARS ):
-		t += 60*60*24*365;	/* wrongish */
-		seconds_based = 1;
-		break;
+        switch( cglob.editing ) {
+        case( CLOCKS_SEL_YEARS ):
+                t += 60*60*24*365;      /* wrongish */
+                break;
 
-	case( CLOCKS_SEL_MONTHS ):
-		t += 60*60*24 * monthlens[ current_time->tm_mon ];
-		seconds_based = 1;
-		break;
+        case( CLOCKS_SEL_MONTHS ):
+                t += 60*60*24 * monthlens[ current_time->tm_mon ];
+                break;
 
-	case( CLOCKS_SEL_DAYS ):
-		t += 60*60*24;
-		seconds_based = 1;
-		break;
+        case( CLOCKS_SEL_DAYS ):	t += 60*60*24;	break;
+        case( CLOCKS_SEL_HOURS ):	t += 60*60;	break;
+        case( CLOCKS_SEL_MINUTES ):	t += 60;	break;
+        case( CLOCKS_SEL_SECONDS ):	t += 1;		break;
+        }
 
-	case( CLOCKS_SEL_HOURS ):
-		t += 60*60;
-		seconds_based = 1;
-		break;
-
-	case( CLOCKS_SEL_MINUTES ):
-		t += 60;
-		seconds_based = 1;
-		break;
-
-	case( CLOCKS_SEL_SECONDS ):
-		t += 1;
-		seconds_based = 1;
-		break;
-	}
-
-	if( seconds_based ) {
-		tv_s.tv_sec = t;
-		tv_s.tv_usec = 0;
-		settimeofday( &tv_s, NULL );
-	}
-	Clocks_draw();
+	tv_s.tv_sec = t;
+	tv_s.tv_usec = 0;
+	settimeofday( &tv_s, NULL );
 }
 
 
-/* shut them down.. shut them all down! */
-void Clocks_exit( void ) 
+/* event handler;
+	this does one of two things:
+	1. lets the user change the clock face / fullscreen
+	2. lets the user edit the time
+*/
+int event_clocks( PzEvent *ev )
 {
-	GrDestroyTimer( Clocks_timer );
-	GrDestroyGC( Clocks_gc );
-	pz_close_window( Clocks_wid );
-	GrDestroyWindow( Clocks_bufwid );
-	GrDestroyWindow( Clocks_bakwid );
-}
+	switch (ev->type) {
+	case PZ_EVENT_SCROLL:
+		if( cglob.editing ) {
+			TTK_SCROLLMOD( ev->arg, 5 );
 
-
-/* hold was switched on, grow the window... */
-static void Clocks_hold_press( void )
-{
-	/* bufwid is full size already, no need to change it */
-	GrResizeWindow( Clocks_wid, screen_info.cols, screen_info.rows );
-	GrMoveWindow( Clocks_wid, 0, 0 );
-	Clocks_height = screen_info.rows; /* adjust screen size ref */
-}
-
-/* hold was switched off, shrink the window... */
-static void Clocks_hold_release( void )
-{
-	/* we leave bufwid at the full size, no reason to change it */
-	GrResizeWindow( Clocks_wid, screen_info.cols, 
-			screen_info.rows - ttk_screen->wy);
-	GrMoveWindow( Clocks_wid, 0, ttk_screen->wy );
-	Clocks_height = (screen_info.rows - ttk_screen->wy);
-}
-
-
-/* event handler */
-static int Clocks_handle_event (GR_EVENT *event)
-{
-	switch( event->type )
-	{
-	    case GR_EVENT_TYPE_TIMER:
-		Clocks_draw();
+			if( ev->arg > 0 ) {
+				clock_increment_time();
+				ev->wid->dirty = 1;
+			} else {
+				clock_decrement_time();
+				ev->wid->dirty = 1;
+			}
+			/* restart the timer, since time got all wonky */
+			pz_widget_set_timer( cglob.widget, 1000 );
+		}
 		break;
 
-	    case GR_EVENT_TYPE_KEY_UP:
-		switch (event->keystroke.ch)
-		{
-		case 'h': // hold release
-			Clocks_hold_release();
+	case PZ_EVENT_BUTTON_DOWN:
+		switch( ev->arg ) {
+		case( PZ_BUTTON_HOLD ):
+			cglob.fullscreen = 1;
+			ttk_window_hide_header( cglob.window );
+			cglob.w = cglob.window->w;
+			cglob.h = cglob.window->h;
+			ev->wid->dirty = 1;
+		default:
 			break;
 		}
 		break;
 
-	    case GR_EVENT_TYPE_KEY_DOWN:
-		switch (event->keystroke.ch)
-		{
-		case IPOD_SWITCH_HOLD: // hold press
-		    Clocks_hold_press();
-		    break;
+	case PZ_EVENT_BUTTON_UP:
+		switch( ev->arg ) {
+		case( PZ_BUTTON_MENU ):
+			pz_close_window (ev->wid->win);
+			break;
 
+		case( PZ_BUTTON_HOLD ):
+			cglob.fullscreen = 0;
+			ttk_window_show_header( cglob.window );
+			cglob.w = cglob.window->w;
+			cglob.h = cglob.window->h;
+			ev->wid->dirty = 1;
+			break;
 
-		case IPOD_BUTTON_ACTION: // Wheel button
-		    if( Clocks_set )
-		    {
-			    int max = CLOCKS_SEL_MAX;
+		case( PZ_BUTTON_PLAY ):
+			break;
 
-			    if( Clocks_style == CLOCKS_STYLE_ANALOG)
-				    max = CLOCKS_SEL_SECONDS;
-			    Clocks_sel++;
-			    if( Clocks_sel > max )
-				    Clocks_sel = CLOCKS_SEL_HOURS;
-		    } else {
-			    Clocks_style++;
-			    if( Clocks_style > CLOCKS_STYLE_MAX )
-				    Clocks_style = 0;
-		    }
-		    Clocks_draw();
-		    break;
+		case( PZ_BUTTON_ACTION ):
+			if( cglob.editing ) {
+				/* advance to next selection */
+				cglob.editing++;
+				if( cglob.editing > CLOCKS_SEL_MAX )
+					cglob.editing = CLOCKS_SEL_HOURS;
+			} else {
+				/* advance to next clock face */
+				if( !cglob.fullscreen ) {
+					cglob.cFace++;
+					if( cglob.cFace >= cglob.nFaces )
+						cglob.cFace = 0;
+				}
+			}
+			ev->wid->dirty = 1;
+			break;
 
-		case IPOD_WHEEL_ANTICLOCKWISE: // Wheel left
-		    if( Clocks_set ) {
-			    Clocks_dec_time();
-			    Clocks_draw();
-			    /* since we screwed up the time, reset the timer */
-			    GrDestroyTimer( Clocks_timer );
-			    Clocks_timer = GrCreateTimer( Clocks_wid, 1000 ); 
-		    }
-		    break;
-
-		case IPOD_WHEEL_CLOCKWISE: // Wheel right
-		    if( Clocks_set ) {
-			    Clocks_inc_time();
-			    Clocks_draw();
-			    /* since we screwed up the time, reset the timer */
-			    GrDestroyTimer( Clocks_timer );
-			    Clocks_timer = GrCreateTimer( Clocks_wid, 1000 ); 
-		    }
-		    break;
-
-		case IPOD_BUTTON_MENU: // Menu button
-		case 'q': // (quit)
-		    Clocks_exit();
-		    break;
-
-		case IPOD_BUTTON_PLAY: // Play/pause button
-		case IPOD_BUTTON_REWIND: // Rewind button
-		case IPOD_BUTTON_FORWARD: // Fast forward button
 		default:
-		    return EVENT_UNUSED;
-		    break;
-		} // keystroke
-		break;   // key down
+			break;
+		}
+		break;
 
-	} // event type
+	case PZ_EVENT_DESTROY:
+		cleanup_clocks();
+		break;
 
-	return 1;
+	case PZ_EVENT_TIMER:
+		ev->wid->dirty = 1;
+		//if( pz_get_int_setting( pz_global_config, TIME_TICKER ))
+		ttk_click();
+		break;
+
+	default:
+		break;
+	}
+	return 0;
 }
 
 
-/* the main entry point */
-static void new_Clocks_window_common(void)
+/* create the window */
+static PzWindow *new_clock_window_common( char * title )
 {
-	GrGetScreenInfo(&Clocks_screen_info);
+	/* create the window */
+	cglob.window = pz_new_window( title, PZ_WINDOW_NORMAL );
 
-	Clocks_gc = GrNewGC();
-        GrSetGCUseBackground(Clocks_gc, GR_FALSE);
-        GrSetGCForeground(Clocks_gc, BLACK);
+	cglob.w = cglob.window->w;
+	cglob.h = cglob.window->h;
+	cglob.fullscreen = 0;
 
-	Clocks_height = (screen_info.rows - (ttk_screen->wy + 1));
+	cglob.cFace = 0;
 
-	Clocks_wid = pz_new_window( 0, ttk_screen->wy + 1,
-		    screen_info.cols, Clocks_height,
-		    Clocks_do_draw, Clocks_handle_event );
+	/* create the widget */
+	cglob.widget = pz_add_widget( cglob.window, 
+				draw_clocks, event_clocks );
 
-	Clocks_bufwid = GrNewPixmap( screen_info.cols, screen_info.rows, NULL );
-	Clocks_bakwid = GrNewPixmap( screen_info.cols, screen_info.rows, NULL );
+	/* 1 second timeout */
+	pz_widget_set_timer( cglob.widget, 1000 );
 
-        GrSelectEvents( Clocks_wid, GR_EVENT_MASK_TIMER
-					| GR_EVENT_MASK_EXPOSURE
-					| GR_EVENT_MASK_KEY_UP
-					| GR_EVENT_MASK_KEY_DOWN );
-
-	Clocks_timer = GrCreateTimer( Clocks_wid, 1000 ); /* 1 sec. */
-
-	GrMapWindow( Clocks_wid );
+	/* done in here! */
+	return pz_finish_window( cglob.window );
 }
 
-
-/* display the clock */
-void new_clock_window(void)
+PzWindow *new_set_clock_window()
 {
-	Clocks_style = Clocks_bak;
-	Clocks_set = 0;
-	Clocks_sel = CLOCKS_SEL_DISPLAY;
-	Clocks_offset = 0;
-
-	new_Clocks_window_common();
+	cglob.offset = 0;
+	cglob.editing = CLOCKS_SEL_HOURS;
+	return( new_clock_window_common( "Set Clock" ));
 }
 
+PzWindow *new_local_clock_window()
+{
+	cglob.offset = 0;
+	cglob.editing = CLOCKS_SEL_NOEDIT;
+	return( new_clock_window_common( "Clock" ));
+}
 
-/* display the world clock */
-void new_world_clock_window(void)
+PzWindow *new_world_clock_window()
 {
 	int locl_z_offs = clocks_tz_offsets[ pz_get_int_setting( pz_global_config, TIME_ZONE )];
 	int targ_z_offs = clocks_tz_offsets[ pz_get_int_setting( pz_global_config, TIME_WORLDTZ )];
@@ -1132,57 +328,162 @@ void new_world_clock_window(void)
 	int locl_d_offs = clocks_dst_offsets[ pz_get_int_setting( pz_global_config, TIME_DST )];
 	int targ_d_offs = clocks_dst_offsets[ pz_get_int_setting( pz_global_config, TIME_WORLDDST )];
 
-	Clocks_style = Clocks_bak;
-	Clocks_set = 0;
-	Clocks_sel = CLOCKS_SEL_DISPLAY;
-
 	/*  the way this works is that we look at the difference between
 	    the target zone, and the local zone.  That difference is the
-	    number of minutes of delta we need to deal with.  
-	    Once we have that, we multiply it by 60, and use it when we 
+	    number of minutes of delta we need to deal with.
+	    Once we have that, we multiply it by 60, and use it when we
 	    display the time.
 	    We do this for the timezone first, then the DST second.
 	*/
-	Clocks_offset = ( targ_z_offs - locl_z_offs )*60;
-	Clocks_offset += ( targ_d_offs - locl_d_offs )*60;
+	cglob.offset = ( targ_z_offs - locl_z_offs )*60;
+	cglob.offset += ( targ_d_offs - locl_d_offs )*60;
 
-	new_Clocks_window_common();
+	cglob.editing = CLOCKS_SEL_NOEDIT;
+
+	return( new_clock_window_common( "World Clock") );
 }
 
+/******************************************************************************
+** builtin clock faces
+*/
 
-/* let the user change the time */
-void new_Set_Time_window( void )
+/* convert 24 hour time to 12 hour time */
+static int clock_convert_12( int hours )
 {
-	if( !Clocks_set )
-		Clocks_bak = Clocks_style;
-	Clocks_style = CLOCKS_STYLE_ANALOG;
-	Clocks_set = 1;
-	Clocks_sel = CLOCKS_SEL_HOURS;
-
-	new_Clocks_window_common();
+        if( hours == 0 )
+                hours = 12;
+        else if( hours > 12 )
+                hours -= 12;
+        return( hours );
 }
 
-/* let the user change the time and date */
-void new_Set_DateTime_window( void )
+
+static int clock_convert_1224( int hours )
 {
-	if( !Clocks_set )
-		Clocks_bak = Clocks_style;
-	Clocks_style = CLOCKS_STYLE_VECTOR;
-	Clocks_set = 1;
-	Clocks_sel = CLOCKS_SEL_HOURS;
-
-	new_Clocks_window_common();
+        if( pz_get_int_setting( pz_global_config, TIME_1224 ))
+                return( hours );
+        return( clock_convert_12( hours ));
 }
 
+
+static void clock_draw_vector( ttk_surface srf, clocks_globals *glob )
+{
+	ttk_color bg = ttk_ap_get( "window.bg" )->color;
+	ttk_color fg = ttk_ap_get( "window.fg" )->color;
+	char buf[80];
+	int sX = (int)((float)glob->w/10.0);
+	int sY = sX<<1;
+
+	int sX2 = (int)((float)glob->w/20.0);
+	int sY2 = sX2<<1;
+
+	/* display the time */
+	snprintf( buf, 80, "%02d:%02d:%02d",
+			clock_convert_1224( glob->dispTime->tm_hour),
+			glob->dispTime->tm_min,
+			glob->dispTime->tm_sec );
+	pz_vector_string_center( srf,
+			buf, glob->w>>1, glob->h/3,
+			sX, sY, 1, fg );
+
+	/* display the date */
+	strftime( buf, 80, "%Y %b %d", glob->dispTime );
+	pz_vector_string_center( srf,
+			buf, glob->w>>1, (glob->h*3)>>2,
+			sX2, sY2, 1, fg );
+
+        if( glob->editing ) {
+                char * fmtt = "";
+                char * fmtd = "";
+                
+                if( glob->editing == CLOCKS_SEL_HOURS ) {
+                        fmtt = "%c%c      ";
+                } else if( glob->editing == CLOCKS_SEL_MINUTES ) {
+                        fmtt = "   %c%c   ";
+                } else if( glob->editing == CLOCKS_SEL_SECONDS ) {
+                        fmtt = "      %c%c";
+                } else if( glob->editing == CLOCKS_SEL_YEARS ) {
+                        fmtd = "%c%c%c%c       ";
+                } else if( glob->editing == CLOCKS_SEL_MONTHS ) {
+                        fmtd = "     %c%c%c   ";
+                } else if( glob->editing == CLOCKS_SEL_DAYS ) {
+                        fmtd = "         %c%c";
+                }
+
+		/* arrows for time */
+                snprintf( buf, 80, fmtt,
+                        VECTORFONT_SPECIAL_UP, VECTORFONT_SPECIAL_UP  );
+
+		pz_vector_string_center( srf,
+			buf, glob->w>>1, (glob->h/3) - sY - 2,
+			sX, sY, 1, fg );
+
+                snprintf( buf, 80, fmtt,
+                        VECTORFONT_SPECIAL_DOWN, VECTORFONT_SPECIAL_DOWN  );
+
+		pz_vector_string_center( srf,
+			buf, glob->w>>1, (glob->h/3) + sY + 2,
+			sX, sY, 1, fg );
+
+		/* arrows for date */
+                sprintf( buf, fmtd,
+                        VECTORFONT_SPECIAL_UP, VECTORFONT_SPECIAL_UP,
+                        VECTORFONT_SPECIAL_UP, VECTORFONT_SPECIAL_UP);
+
+		pz_vector_string_center( srf,
+			buf, glob->w>>1, ((glob->h*3)>>2) - sY2 - 2,
+			sX2, sY2, 1, fg );
+
+                sprintf( buf, fmtd,
+                        VECTORFONT_SPECIAL_DOWN, VECTORFONT_SPECIAL_DOWN,
+                        VECTORFONT_SPECIAL_DOWN, VECTORFONT_SPECIAL_DOWN );
+
+		pz_vector_string_center( srf,
+			buf, glob->w>>1, ((glob->h*3)>>2) + sY2 + 2,
+			sX2, sY2, 1, fg );
+	}
+
+}
+
+static void clock_draw_analog( ttk_surface srf, clocks_globals *glob )
+{
+}
+
+
+
+/******************************************************************************/
 extern const char *clocks_timezones[], *clocks_dsts[];
-static void init_clocks() 
+
+void init_clocks() 
 {
-    pz_menu_add_legacy ("/Settings/Date & Time/Set Time", new_Set_Time_window);
-    pz_menu_add_legacy ("/Settings/Date & Time/Set Time & Date", new_Set_DateTime_window);
-    pz_menu_add_legacy ("/Settings/Date & Time/Clock", new_clock_window);
-    pz_menu_add_legacy ("/Extras/Clock/Local Clock", new_clock_window);
-    pz_menu_add_legacy ("/Extras/Clock/World Clock", new_world_clock_window);
-    pz_menu_add_setting ("/Extras/Clock/TZ", TIME_WORLDTZ, pz_global_config, clocks_timezones);
-    pz_menu_add_setting ("/Extras/Clock/DST", TIME_WORLDDST, pz_global_config, clocks_dsts);
+	int c;
+
+	/* internal module name */
+	cglob.module = pz_register_module( "clocks", cleanup_clocks );
+
+	/* settings menu */
+	pz_menu_add_action( "/Settings/Date & Time/Set Time & Date", 
+				new_set_clock_window );
+
+	/* clock menu */
+	pz_menu_add_action( "/Extras/Clock/Local Clock", new_local_clock_window );
+	pz_menu_add_action( "/Extras/Clock/World Clock", new_world_clock_window );
+	pz_menu_add_setting( "/Extras/Clock/World TZ", TIME_WORLDTZ, 
+				pz_global_config, clocks_timezones);
+	pz_menu_add_setting("/Extras/Clock/World DST", TIME_WORLDDST, 
+				pz_global_config, clocks_dsts );
+
+
+	/* initialize the face list structure */
+	for( c=0 ; c<NCLOCK_FACES ; c++ ) {
+		cglob.faces[c].routine = NULL;
+		cglob.faces[c].name[0] = '\0';
+	}
+	cglob.nFaces = 0;
+
+	/* register internal clock faces */
+	clocks_register_face( clock_draw_vector, "Vector Clock" );
+	clocks_register_face( clock_draw_analog, "Analog Clock" );
 }
+
 PZ_MOD_INIT (init_clocks)
