@@ -535,7 +535,7 @@ PzWindow *new_calendar_window(void)
 void load_calendar() 
 {
     module = pz_register_module ("calendar", 0);
-    pz_menu_add_action ("/Extras/Calendar", new_calendar_window);
+    pz_menu_add_action ("/Extras/Utilities/Calendar", new_calendar_window);
 }
 
 PZ_MOD_INIT (load_calendar)

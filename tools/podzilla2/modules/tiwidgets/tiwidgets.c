@@ -653,10 +653,10 @@ PzWindow * new_multiline_text_demo_window()
 void init_textinput_demos()
 {
 	module = pz_register_module ("tiwidgets", 0);
-	pz_menu_add_action ("/Extras/Stuff/Text Input Demo/Standard", new_standard_text_demo_window);
-	pz_menu_add_action ("/Extras/Stuff/Text Input Demo/Numeric", new_numeric_text_demo_window);
-	pz_menu_add_action ("/Extras/Stuff/Text Input Demo/Password", new_password_text_demo_window);
-	pz_menu_add_action ("/Extras/Stuff/Text Input Demo/Multiline", new_multiline_text_demo_window);
+	pz_menu_add_action ("/Extras/Demos/Text Input Demo/Standard", new_standard_text_demo_window);
+	pz_menu_add_action ("/Extras/Demos/Text Input Demo/Numeric", new_numeric_text_demo_window);
+	pz_menu_add_action ("/Extras/Demos/Text Input Demo/Password", new_password_text_demo_window);
+	pz_menu_add_action ("/Extras/Demos/Text Input Demo/Multiline", new_multiline_text_demo_window);
 }
 
 PZ_MOD_INIT(init_textinput_demos)

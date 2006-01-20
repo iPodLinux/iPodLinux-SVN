@@ -106,7 +106,7 @@ void cleanup_mymodule()
 void init_mymodule() 
 {
     module = pz_register_module ("mymodule", cleanup_mymodule);
-    pz_menu_add_action ("/Extras/Stuff/MyModule", new_mymodule_window);
+    pz_menu_add_action ("/Extras/Demos/MyModule", new_mymodule_window);
     printf ("Hi! MyModule loaded, action set.\n");
 }
 

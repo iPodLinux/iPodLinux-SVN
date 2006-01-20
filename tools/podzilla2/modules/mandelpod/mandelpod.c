@@ -508,4 +508,4 @@ static int handle_event(GR_EVENT *event)
 }
 
 
-PZ_SIMPLE_MOD ("mandelpod", new_mandel_window, "/Extras/Stuff/MandelPod")
+PZ_SIMPLE_MOD ("mandelpod", new_mandel_window, "/Extras/Demos/MandelPod")

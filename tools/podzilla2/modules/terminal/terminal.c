@@ -868,7 +868,7 @@ void terminal_mod_init(void)
 {
 	module = pz_register_module("terminal", 0);
 	terminal_font = ttk_get_font("Unifont", 12);
-	pz_menu_add_action("/Extras/Terminal", new_terminal_window);
+	pz_menu_add_action("/Extras/Utilities/Terminal", new_terminal_window);
 }
 
 PZ_MOD_INIT(terminal_mod_init)
