@@ -199,7 +199,7 @@ static PzWindow *new_calculator()
 static void init_calculator()
 {
 	module = pz_register_module("calc", NULL);
-	pz_menu_add_action("/Extras/Calculator", new_calculator);
+	pz_menu_add_action("/Extras/Utilities/Calculator", new_calculator);
 }
 
 PZ_MOD_INIT(init_calculator)

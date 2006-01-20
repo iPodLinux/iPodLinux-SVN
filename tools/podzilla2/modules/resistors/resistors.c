@@ -257,7 +257,7 @@ void init_resistors()
 	rglob.module = pz_register_module( "resistors", cleanup_resistors );
 
 	/* menu item display name */
-	pz_menu_add_action( "/Extras/Stuff/Resistor Codes",
+	pz_menu_add_action( "/Extras/Utilities/Resistor Codes",
 				new_resistors_window );
 
 

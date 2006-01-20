@@ -808,4 +808,4 @@ int main( int argc, char ** argv )
 }
 #endif
 
-PZ_SIMPLE_MOD ("dialer", new_dialer_window, "/Extras/Stuff/Dialer")
+PZ_SIMPLE_MOD ("dialer", new_dialer_window, "/Extras/Utilities/Dialer")

@@ -902,7 +902,7 @@ void init_vortex()
 
 	/* menu item display name */
 	pz_menu_add_action ("/Extras/Games/Vortex", new_vortex_window);
-	pz_menu_add_action ("/Extras/Stuff/Stars", new_stars_window);
+	pz_menu_add_action ("/Extras/Demos/Stars", new_stars_window);
 
 	Vortex_Initialize();
 

@@ -409,4 +409,4 @@ void new_matrix_window( void )
 	running=1;
 }
 
-PZ_SIMPLE_MOD ("matrix", new_matrix_window, "/Extras/Stuff/Matrix")
+PZ_SIMPLE_MOD ("matrix", new_matrix_window, "/Extras/Demos/Matrix")
