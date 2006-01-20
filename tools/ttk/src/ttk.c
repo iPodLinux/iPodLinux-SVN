@@ -993,6 +993,7 @@ void ttk_show_window (TWindow *win)
 	    	ttk_blit_image_ex (win->srf, 0, 0, i * jump, oldwindow->h,
 	    	                   ttk_screen->srf, oldwindow->w - i*jump + ttk_screen->wx,
 	    	                   ttk_screen->wy);
+                ttk_ap_hline (ttk_screen->srf, ttk_ap_get ("header.line"), 0, ttk_screen->w, ttk_screen->wy);
 	    	ttk_gfx_update (ttk_screen->srf);
 #ifndef IPOD
 	    	ttk_delay (10);
@@ -1000,6 +1001,7 @@ void ttk_show_window (TWindow *win)
 	    }
 	    
 	    ttk_blit_image (win->srf, ttk_screen->srf, ttk_screen->wx, ttk_screen->wy);
+            ttk_ap_hline (ttk_screen->srf, ttk_ap_get ("header.line"), 0, ttk_screen->w, ttk_screen->wy);
 	    ttk_gfx_update (ttk_screen->srf);
 	}
     } else {
@@ -1104,6 +1106,7 @@ int ttk_hide_window (TWindow *win)
 	    	ttk_blit_image_ex (win->srf, 0, 0, i * jump, win->h,
 	    	                   ttk_screen->srf, win->w - i*jump + ttk_screen->wx,
 	    	                   ttk_screen->wy);
+                ttk_ap_hline (ttk_screen->srf, ttk_ap_get ("header.line"), 0, ttk_screen->w, ttk_screen->wy);
 	    	ttk_gfx_update (ttk_screen->srf);
 #ifndef IPOD
 	    	ttk_delay (10);
@@ -1111,6 +1114,7 @@ int ttk_hide_window (TWindow *win)
 	    }
 	    
 	    ttk_blit_image (newwindow->srf, ttk_screen->srf, ttk_screen->wx, ttk_screen->wy);
+            ttk_ap_hline (ttk_screen->srf, ttk_ap_get ("header.line"), 0, ttk_screen->w, ttk_screen->wy);
 	    ttk_gfx_update (ttk_screen->srf);
 	}
     }
