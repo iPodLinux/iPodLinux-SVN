@@ -170,6 +170,7 @@ static int calculator_events(PzEvent *e)
 		break;
 
 	case PZ_EVENT_SCROLL:
+		TTK_SCROLLMOD(e->arg, 5);
 		cur_button += e->arg;
 		WRAP(cur_button, 0, N_BUTTONS);
 		e->wid->dirty = 1;
