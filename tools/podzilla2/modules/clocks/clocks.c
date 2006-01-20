@@ -368,7 +368,7 @@ static int clock_convert_1224( int hours )
 
 static void clock_draw_vector( ttk_surface srf, clocks_globals *glob )
 {
-	ttk_color bg = ttk_ap_get( "window.bg" )->color;
+	/* xxxx ttk_color bg = ttk_ap_get( "window.bg" )->color; */
 	ttk_color fg = ttk_ap_get( "window.fg" )->color;
 	char buf[80];
 	int sX = (int)((float)glob->w/10.0);
@@ -445,10 +445,11 @@ static void clock_draw_vector( ttk_surface srf, clocks_globals *glob )
 
 }
 
+/*
 static void clock_draw_analog( ttk_surface srf, clocks_globals *glob )
 {
 }
-
+*/
 
 
 /******************************************************************************/
@@ -463,15 +464,15 @@ void init_clocks()
 
 	/* settings menu */
 	pz_menu_add_action( "/Settings/Date & Time/Set Time & Date", 
-				new_set_clock_window );
+					    new_set_clock_window );
 
 	/* clock menu */
 	pz_menu_add_action( "/Extras/Clock/Local Clock", new_local_clock_window );
 	pz_menu_add_action( "/Extras/Clock/World Clock", new_world_clock_window );
 	pz_menu_add_setting( "/Extras/Clock/World TZ", TIME_WORLDTZ, 
-				pz_global_config, clocks_timezones);
+					    pz_global_config, clocks_timezones);
 	pz_menu_add_setting("/Extras/Clock/World DST", TIME_WORLDDST, 
-				pz_global_config, clocks_dsts );
+					    pz_global_config, clocks_dsts );
 
 
 	/* initialize the face list structure */
@@ -483,7 +484,9 @@ void init_clocks()
 
 	/* register internal clock faces */
 	clocks_register_face( clock_draw_vector, "Vector Clock" );
+/* doesn't do anything yet...
 	clocks_register_face( clock_draw_analog, "Analog Clock" );
+*/
 }
 
 PZ_MOD_INIT (init_clocks)

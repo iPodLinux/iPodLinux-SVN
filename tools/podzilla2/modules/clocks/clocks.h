@@ -23,15 +23,16 @@
 #include <string.h>
 #include "pz.h"
 
-/* expandable clock face stuff... */
+/* this is the total number of registerable clock faces */
 #define NCLOCK_FACES (32)
 
-/* the clockface structure - one for each face */
+/* the clockface structure - one for each face - internal structure */
 typedef struct _clockface {
-        void * routine;
-        char name[32];
+        void * routine;		/* fcn pointer to a draw routine (see below) */
+        char name[32];		/* not used yet */
 } clockface;
 
+/* the 'editing' int for the globals can be one of these: */
 #define CLOCKS_SEL_NOEDIT       (0)     /* not editing */
 #define CLOCKS_SEL_HOURS        (1)     /* editing hours */
 #define CLOCKS_SEL_MINUTES      (2)     /* editing minutes */
@@ -41,7 +42,7 @@ typedef struct _clockface {
 #define CLOCKS_SEL_DAYS         (6)     /* editing day */
 #define CLOCKS_SEL_MAX          (6)
 
-/* the globals */
+/* the global struct */
 typedef struct _clocks_globals {
         /* pz meta stuff */
         PzModule * module;
