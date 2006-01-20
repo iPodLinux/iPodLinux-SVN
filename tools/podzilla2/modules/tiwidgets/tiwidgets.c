@@ -93,7 +93,7 @@ int ti_set_buffer(TiBuffer * buf, char * s)
 		buf->text = t;
 		buf->asize = l+1024;
 		buf->usize = l;
-		buf->cpos = 0;
+		buf->cpos = strlen(s);
 		strcpy(buf->text, s);
 		return 1;
 	}
@@ -216,6 +216,22 @@ void ti_buffer_cmove(TiBuffer * buf, int m)
 			m--;
 		}
 	}
+}
+
+void ti_buffer_cset(TiBuffer * buf, int c)
+{
+	if (c < 0) {
+		buf->cpos = 0;
+	} else if (c > buf->usize) {
+		buf->cpos = buf->usize;
+	} else {
+		buf->cpos = c;
+	}
+}
+
+int ti_buffer_cget(TiBuffer * buf)
+{
+	return buf->cpos;
 }
 
 void ti_buffer_input(TiBuffer * buf, int ch)
