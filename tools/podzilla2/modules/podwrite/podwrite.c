@@ -56,6 +56,7 @@ extern void ti_multiline_text(ttk_surface srf, ttk_font fnt, int x, int y, int w
 extern int ti_widget_start(TWidget * wid);
 extern int ti_set_buffer(TiBuffer * buf, char * s);
 extern void ti_buffer_cmove(TiBuffer * buf, int m);
+extern void ti_buffer_cset(TiBuffer * buf, int c);
 extern ttk_color ti_ap_get(int i);
 
 /* PodWrite Menu */
@@ -304,6 +305,7 @@ PzWindow * new_podwrite_window_with_text(char * dt)
 	PzWindow * ret;
 	TWidget * wid;
 	
+	/* set podwrite's state */
 	podwrite_mode = 0;
 	podwrite_linecount = 0;
 	podwrite_screenlines = 0;
@@ -311,14 +313,22 @@ PzWindow * new_podwrite_window_with_text(char * dt)
 	podwrite_cursor_out_of_bounds = 0;
 	podwrite_filename = 0;
 	
+	/* create the window, widget, and buffer */
 	podwrite_win = ret = pz_new_window(_("PodWrite"), PZ_WINDOW_NORMAL);
 	podwrite_wid = wid = ti_new_text_widget(0, 0, ret->w, ret->h, 1, dt, podwrite_callback, podwrite_widget_draw, podwrite_widget_input, 0);
 	podwrite_buf = (TiBuffer *)wid->data;
 	wid->scroll = podwrite_widget_scroll;
 	wid->button = podwrite_widget_button;
+	
+	/* move cursor to beginning */
+	ti_buffer_cset(podwrite_buf, 0);
+	
+	/* set up window */
 	ttk_add_widget(ret, wid);
 	ret = pz_finish_window(ret);
 	ti_widget_start(wid);
+	
+	/* return */
 	return ret;
 }
 
@@ -374,7 +384,10 @@ PzWindow * podwrite_open_handler(ttk_menu_item * item)
 
 void podwrite_mod_init(void)
 {
-	pz_menu_add_action("/Extras/Stuff/PodWrite", new_podwrite_window);
+	/* This menu path is canonically "/Extras/Productivity/PodWrite", */
+	/* but it may be different in the svn repository depending on the */
+	/* current structure of podzilla2's Extras menu.                  */
+	pz_menu_add_action("/Extras/Productivity/PodWrite", new_podwrite_window);
 	
 	podwrite_fbx.name = N_("Open with PodWrite");
 	podwrite_fbx.makesub = podwrite_open_handler;
