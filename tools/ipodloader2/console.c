@@ -82,6 +82,11 @@ void console_putchar(char ch) {
       console.cursor.y--;
     }
     fb_update(console.fb);
+#ifdef MSGDELAY
+    unsigned int start = inl (0x60005010);
+    while (inl (0x60005010) < start + MSGDELAY)
+        ;
+#endif
     return;
 #else
     if( (y+font_height) >= console.dimensions.h ) {

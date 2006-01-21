@@ -1,7 +1,8 @@
-CC      = arm-uclinux-elf-gcc
-CFLAGS  = -O2 -Wall -pedantic -std=c99 -ffreestanding -nostdinc -fomit-frame-pointer
-LDFLAGS = -Wl,-Tarm_elf_40.x -nostartfiles -fomit-frame-pointer
-OBJCOPY = arm-uclinux-elf-objcopy
+CROSS    ?= arm-uclinux-elf
+CC        = $(CROSS)-gcc
+MYCFLAGS  = -O2 -Wall -pedantic -std=c99 -ffreestanding -nostdinc -fomit-frame-pointer
+MYLDFLAGS = -Wl,-Tarm_elf_40.x -nostartfiles -fomit-frame-pointer
+OBJCOPY   = $(CROSS)-objcopy
 
 all: loader.bin
 #	@echo "Building firmware image"
@@ -17,12 +18,12 @@ loader.bin: loader.elf
 
 loader.elf: startup.o loader.o fb.o ipodhw.o console.o minilibc.o ata2.o vfs.o fat32.o ext2.o fwfs.o keypad.o menu.o config.o
 	@echo "Linking $@"
-	@$(CC) $(LDFLAGS) -o $@ $^
+	@$(CC) $(MYLDFLAGS) $(LDFLAGS) -o $@ $^
 
 %.o:%.c
 	@echo "Compiling $<"
-	@$(CC) $(CFLAGS) -c $< -o $@
+	@$(CC) $(MYCFLAGS) $(CFLAGS) -c $< -o $@
 
 %.o:%.s
 	@echo "Compiling $<"
-	@$(CC) $(CFLAGS) -c $< -o $@
+	@$(CC) $(MYCFLAGS) $(CFLAGS) -c $< -o $@
