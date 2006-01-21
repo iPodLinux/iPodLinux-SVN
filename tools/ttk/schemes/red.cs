@@ -3,6 +3,8 @@
 #  brought in from pz0 by bleullama
 #  originally conceived for the m-robe color scheme by Stuart Clark (Decipher)
 
+# this comment intentionally left blank
+
 \def black #000000
 \def red   #ff0000
 \def blue  #000044
