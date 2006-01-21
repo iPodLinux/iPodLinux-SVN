@@ -5,6 +5,7 @@
 
 #define CONFIG_IMAGE_BINARY  0x00
 #define CONFIG_IMAGE_SPECIAL 0x01
+#define CONFIG_IMAGE_ROCKBOX 0x02
 
 typedef struct {
   uint32 type;

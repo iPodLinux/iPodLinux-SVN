@@ -37,33 +37,38 @@ const char *kernnames[] = { "(hd0,1)/KERNEL.BIN", "(hd0,1)/kernel.bin",
 
 void      config_init(void) {
     char *configdata, *p;
-    int fd, len;
+    int fd, len, i;
     const char *confname = find_somewhere (confnames, "configuration file");
     if (!confname || (fd = vfs_open ((char *)confname)) < 0) {
-        config.image = (config_image_t *)mlc_malloc( sizeof(config_image_t) * 3 );
+        config.image = (config_image_t *)mlc_malloc( sizeof(config_image_t) * 4 );
         
         config.timeout = 10;
         config.def     =  0;
-        config.items   =  3;
-        
-        config.image[0].type  = CONFIG_IMAGE_BINARY;
-        config.image[0].title = "RetailOS";
-        config.image[0].path  = "(hd0,0)/osos";
-        
-        config.image[1].type  = CONFIG_IMAGE_BINARY;
-        config.image[1].title = "iPodLinux";
-        config.image[1].path  = (char *)find_somewhere (kernnames, "kernel");
-        
-        config.image[2].type  = CONFIG_IMAGE_SPECIAL;
-        config.image[2].title = "Diskmode";
-        config.image[2].path  = "diskmode";
+        config.items   =  0;
 
-        if (!config.image[1].path) {
-            config.image[1].type = config.image[2].type;
-            config.image[1].title = config.image[2].title;
-            config.image[1].path = config.image[2].path;
-            config.items = 2;
-        }
+        i = 0;
+ 
+        config.image[i].type  = CONFIG_IMAGE_BINARY;
+        config.image[i].title = "RetailOS";
+        config.image[i].path  = "(hd0,0)/osos";
+        i++;
+
+        config.image[i].type  = CONFIG_IMAGE_BINARY;
+        config.image[i].title = "iPodLinux";
+        config.image[i].path  = (char *)find_somewhere (kernnames, "kernel");
+        if (config.image[i].path) { i++; }
+
+        config.image[i].type  = CONFIG_IMAGE_ROCKBOX;
+        config.image[i].title = "Rockbox";
+        config.image[i].path  = "(hd0,1)/ROCKBO~1.IPO";
+        if (vfs_open (config.image[i].path) >= 0) i++;
+
+        config.image[i].type  = CONFIG_IMAGE_SPECIAL;
+        config.image[i].title = "Disk Mode";
+        config.image[i].path  = "diskmode";
+        i++;
+
+        config.items = i;
 
         return;
     }
