@@ -104,6 +104,115 @@ static void *loader_startImage(ipod_t *ipod,char *image) {
   return(entry);
 }
 
+static void load_rockbox(ipod_t *ipod,char *image) {
+  int fd;
+  unsigned char header[9];
+  unsigned long chksum;
+  unsigned long sum;
+  int i;
+  uint32 fsize,read;
+  void  *entry;
+
+  mlc_printf("File: %s\n",image);
+  mlc_printf("Entry: %x\n",ipod->mem_base);
+
+  /* Open the image-file */
+  fd = vfs_open(image);
+  if(fd == -1) return;
+
+  /* Get the size of the image-file */
+  vfs_seek(fd,0,VFS_SEEK_END);
+  fsize = vfs_tell(fd);
+  vfs_seek(fd,0,VFS_SEEK_SET);
+  read = 0;
+
+  mlc_printf("Size: %u\n",fsize);
+  mlc_printf("iPod: 0x%08x (0x%x)\n",ipod->hw_rev,ipod->hw_rev>>16);
+  fb_update(framebuffer);
+
+  entry = (void*)ipod->mem_base;
+
+  // Read Rockbox header
+  vfs_read(header,8,1,fd);
+
+  // The checksum is always stored in big-endian
+  chksum=(header[0]<<24)|(header[1]<<16)|(header[2]<<8)|header[3];
+  fsize -= 8;
+
+  header[9]=0;
+  mlc_printf("Model: %s\n",&header[4]);
+  mlc_printf("Checksum: 0x%08x\n",chksum);
+  fb_update(framebuffer);
+
+  // Check that we are running the correct version of Rockbox for this
+  // iPod.
+  switch(ipod->hw_rev >> 16) {
+    case 0x6: // Color/Photo
+      if (mlc_memcmp(&header[4],"ipco",4)!=0) {
+        mlc_printf("Invalid model.\n");
+        fb_update(framebuffer);
+        return;
+      }
+      sum=3;
+      break;
+    case 0xc: // Nano
+      if (mlc_memcmp(&header[4],"nano",4)!=0) {
+        mlc_printf("Invalid model.\n");
+        fb_update(framebuffer);
+        return;
+      }
+      sum=4;
+      break;
+    case 0xb: // 5g (Video)
+      if (mlc_memcmp(&header[4],"ipvd",4)!=0) {
+        mlc_printf("Invalid model.\n");
+        fb_update(framebuffer);
+        return;
+      }
+      sum=5;
+      break;
+    default: // Unsupported
+      mlc_printf("Invalid model.\n");
+      fb_update(framebuffer);
+      return;
+  }
+
+  // Read the rest of Rockbox
+  while(read < fsize) {
+    if( (fsize-read) > (128*1024) ) { /* More than 128K to read */
+      vfs_read( (void*)((uint8*)entry + read), 128*1024, 1, fd );
+      read += 128 * 1024;
+    } else { /* Last part of the file */
+      vfs_read( (void*)((uint8*)entry + read), fsize-read, 1, fd );
+      read = fsize;
+    }
+
+    menu_drawprogress(framebuffer,(read * 255) / fsize);
+    fb_update(framebuffer);
+  }
+
+  // Calculate checksum for loaded firmware and compare with header 
+  for(i = 0;i < fsize;i++) {
+      sum += ((uint8*)entry)[i];
+  }
+
+  if (sum == chksum) {
+    mlc_printf("Checksum OK - starting Rockbox.");
+    fb_update(framebuffer);
+  } else {
+    mlc_printf("Checksum error!  Aborting.");
+    return;
+  }
+
+  // Transfer execution directly to Rockbox - we don't want
+  // to run the rest of the bootloader startup code.
+
+  __asm__ volatile(
+    "mov   r0, #0x10000000    \n"
+    "mov   pc, r0             \n"
+  );
+}
+
 void *loader(void) {
   //void *entry;
     int menuPos,done,redraw;
@@ -204,6 +313,8 @@ void *loader(void) {
 	goto redoMenu;
       else
 	return(ret);
+    } else if( conf->image[menuPos].type == CONFIG_IMAGE_ROCKBOX ) {
+      load_rockbox(ipod,conf->image[menuPos].path);
     } else if( conf->image[menuPos].type == CONFIG_IMAGE_SPECIAL ) {
         if (!mlc_strcmp (conf->image[menuPos].path, "diskmode"))
             set_boot_action (ipod, "diskmode");
