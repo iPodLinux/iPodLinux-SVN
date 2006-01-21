@@ -471,71 +471,100 @@ void ti_widget_destroy(TWidget * wid)
 
 void ti_widget_draw(TWidget * wid, ttk_surface srf)
 {
-	int sw, cp, i;
+	int sw, cp; /* string width, cursor position */
+	int spw, cpw; /* string pixel width, cursor pixel width */
+	int h, blitx; /* height, blit source x */
 	char * tmp;
-	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
+	ttk_surface srf2;
 	
-	/* draw border */
+	/* background and border */
+	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
 	ttk_rect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(4));
 	
-	/* scroll horizontally if it doesn't fit */
+	/* get info */
 	sw = ((TiBuffer *)wid->data)->usize;
 	cp = ((TiBuffer *)wid->data)->cpos;
 	tmp = (char *)malloc(sw+1);
 	strcpy(tmp, ((TiBuffer *)wid->data)->text);
-	while (ttk_text_width(ttk_textfont, tmp) > (wid->w-10)) {
-		do {
-			for (i=0; i<sw; i++) {
-				tmp[i] = tmp[i+1];
-			}
-			sw--;
-			cp--;
-		} while ((tmp[0] & 0xC0) == 0x80);
-	}
+	spw = ttk_text_width(ttk_textfont, tmp);
+	h = ttk_text_height(ttk_textfont);
 	
-	/* draw text */
-	ttk_text(srf, ttk_textfont, wid->x+5, wid->y+5, ti_ap_get(1), tmp);
+	/* create graphics buffer */
+	srf2 = ttk_new_surface(spw+1, h, ttk_screen->bpp);
 	
-	/* draw cursor */
+	/* background */
+	ttk_fillrect(srf2, 0, 0, spw+1, h, ti_ap_get(0));
+	
+	/* text */
+	ttk_text(srf2, ttk_textfont, 0, 0, ti_ap_get(1), tmp);
+	
+	/* cursor */
 	tmp[cp]=0;
-	sw = ttk_text_width(ttk_textfont, tmp);
-	ttk_line(srf, wid->x+5+sw, wid->y+5, wid->x+5+sw, wid->y+5+ttk_text_height(ttk_textfont), ti_ap_get(5));
+	cpw = ttk_text_width(ttk_textfont, tmp);
+	ttk_line(srf2, cpw, 0, cpw, h, ti_ap_get(5));
 	
+	/* figure out where to blit it */
+	blitx = cpw - (wid->w - 10)/2;
+	if ((blitx + wid->w - 10) > (spw+1)) {
+		blitx = (spw+1) - wid->w + 10;
+	}
+	if (blitx < 0) blitx = 0;
+	
+	/* blit it */
+	ttk_blit_image_ex(srf2, blitx, 0, wid->w-10, h, srf, wid->x+5, wid->y+5);
+	
+	/* done */
+	ttk_free_surface(srf2);
 	free(tmp);
 }
 
 void ti_widget_draw_p(TWidget * wid, ttk_surface srf)
 {
-	int sw, cp, i;
+	int sw, cp, i; /* string width, cursor position */
+	int spw, cpw; /* string pixel width, cursor pixel width */
+	int h, blitx; /* height, blit source x */
 	char * tmp;
-	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
+	ttk_surface srf2;
 	
-	/* draw border */
+	/* background and border */
+	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
 	ttk_rect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(4));
 	
-	/* replace with stars */
+	/* get info */
 	sw = ((TiBuffer *)wid->data)->usize;
 	cp = ((TiBuffer *)wid->data)->cpos;
 	tmp = (char *)malloc(sw+1);
 	strcpy(tmp, ((TiBuffer *)wid->data)->text);
 	for (i=0; i<sw; i++) tmp[i]='*';
-	/* scroll horizontally if it doesn't fit */
-	while (ttk_text_width(ttk_textfont, tmp) > (wid->w-10)) {
-		for (i=0; i<sw; i++) {
-			tmp[i] = tmp[i+1];
-		}
-		sw--;
-		cp--;
-	}
+	spw = ttk_text_width(ttk_textfont, tmp);
+	h = ttk_text_height(ttk_textfont);
 	
-	/* draw text */
-	ttk_text(srf, ttk_textfont, wid->x+5, wid->y+5, ti_ap_get(1), tmp);
+	/* create graphics buffer */
+	srf2 = ttk_new_surface(spw+1, h, ttk_screen->bpp);
 	
-	/* draw cursor */
+	/* background */
+	ttk_fillrect(srf2, 0, 0, spw+1, h, ti_ap_get(0));
+	
+	/* text */
+	ttk_text(srf2, ttk_textfont, 0, 0, ti_ap_get(1), tmp);
+	
+	/* cursor */
 	tmp[cp]=0;
-	sw = ttk_text_width(ttk_textfont, tmp);
-	ttk_line(srf, wid->x+5+sw, wid->y+5, wid->x+5+sw, wid->y+5+ttk_text_height(ttk_textfont), ti_ap_get(5));
+	cpw = ttk_text_width(ttk_textfont, tmp);
+	ttk_line(srf2, cpw, 0, cpw, h, ti_ap_get(5));
 	
+	/* figure out where to blit it */
+	blitx = cpw - (wid->w - 10)/2;
+	if ((blitx + wid->w - 10) > (spw+1)) {
+		blitx = (spw+1) - wid->w + 10;
+	}
+	if (blitx < 0) blitx = 0;
+	
+	/* blit it */
+	ttk_blit_image_ex(srf2, blitx, 0, wid->w-10, h, srf, wid->x+5, wid->y+5);
+	
+	/* done */
+	ttk_free_surface(srf2);
 	free(tmp);
 }
 
