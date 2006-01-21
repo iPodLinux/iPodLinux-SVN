@@ -431,7 +431,7 @@ static TWindow *new_about_window()
 static void init_about() 
 {
     module = pz_register_module ("about", 0);
-    pz_menu_add_action ("/Extras/About", new_about_window);
+    pz_menu_add_action ("/Settings/About", new_about_window);
 }
 
 PZ_MOD_INIT(init_about)
