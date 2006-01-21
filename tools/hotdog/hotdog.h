@@ -48,18 +48,42 @@ typedef struct hd_primitive {
     uint32 color; // ARGB
 } hd_primitive;
 
+/* There are two commonly-used ways to store font character
+ * data in an array of pixels. One, which we'll call `pitched',
+ * is to have the surface laid out like a graphics program would
+ * if you just typed all the characters in a row; these surfaces
+ * have a defined width, which we'll call the `pitch'.
+ *
+ * The other is to just clump all the pixels for a font right
+ * next to each other, as if each character was its own mini-surface
+ * and they were laid out right on top of each other or something.
+ * This kind is called `clumped', and the pitch has a completely
+ * different meaning: it is now the number of bytes a character's
+ * in-memory width must be divisible by. For instance, for 32-bit
+ * clumped chars this would be 4; for Microwindows FNT files with
+ * their 16-bit bitmaps it would be 2; in most othe rcases it would be 1.
+ *
+ * SFonts are pitched.
+ *
+ * FNTs and PCFs are clumped.
+ */
+
+#define HD_FONT_CLUMPED  0
+#define HD_FONT_PITCHED  1
+
 typedef struct hd_font {
     // Pixel data:
+    int     bitstype; // PITCHED or CLUMPED
     int32   pitch, h; // h = height of font; pitch = length of a scanline in bytes
+    int32   pixbytes; // number of bytes in `pixels'
     void   *pixels;
     int     bpp; // 1 or 8 or 32
 
     // Char info:
-    int     firstchar;
-    unsigned long *offset; // offset[N-firstchar] = X-coord of char N in pixels
-    unsigned char *width;  // width[N-firstchar]  = width   "    "  "  "    "
+    int     firstchar, nchars;
+    uint32 *offset; // offset[N-firstchar] = X-coord of char N in pixels
+    uint8  *width;  // width[N-firstchar]  = width   "    "  "  "    "
     int     defaultchar; // Char to use if req'd char doesn't exist
-    int    *charpos;
 } hd_font;
 
 typedef struct hd_canvas {
