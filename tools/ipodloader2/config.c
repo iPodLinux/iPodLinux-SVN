@@ -11,6 +11,7 @@ static const char *find_somewhere (const char **names, const char *what)
     int fd = -1;
     mlc_printf (">> Looking for a %s...\n", what);
     for (; *names; names++) {
+        mlc_printf (">> Trying |%s|...\n", *names);
         fd = vfs_open ((char *)*names);
         if (fd >= 0) break;
     }
@@ -25,15 +26,16 @@ static const char *find_somewhere (const char **names, const char *what)
     return *names;
 }
 
+const char *confnames[] = { "(hd0,1)/LOADER.CFG", "(hd0,1)/loader.cfg",
+                            "(hd0,1)/IPODLO~1.CON", "(hd0,1)/ipodloader.conf",
+                            "(hd0,2)/ipodloader.conf", "(hd0,2)/loader.cfg", 0 };
+const char *kernnames[] = { "(hd0,1)/KERNEL.BIN", "(hd0,1)/kernel.bin",
+                            "(hd0,1)/LINUX.BIN", "(hd0,1)/linux.bin",
+                            "(hd0,1)/NOTES/KERNEL.BIN", "(hd0,1)/Notes/kernel.bin",
+                            "(hd0,1)/vmlinux", "(hd0,2)/kernel.bin",
+                            "(hd0,2)/linux.bin", "(hd0,2)/vmlinux", 0 };
+
 void      config_init(void) {
-    const char *confnames[] = { "(hd0,1)/LOADER.CFG", "(hd0,1)/loader.cfg",
-                                "(hd0,1)/IPODLO~1.CON", "(hd0,1)/ipodloader.conf",
-                                "(hd0,2)/ipodloader.conf", "(hd0,2)/loader.cfg", 0 };
-    const char *kernnames[] = { "(hd0,1)/KERNEL.BIN", "(hd0,1)/kernel.bin",
-                                "(hd0,1)/LINUX.BIN", "(hd0,1)/linux.bin",
-                                "(hd0,1)/NOTES/KERNEL.BIN", "(hd0,1)/Notes/kernel.bin",
-                                "(hd0,1)/vmlinux", "(hd0,2)/kernel.bin",
-                                "(hd0,2)/linux.bin", "(hd0,2)/vmlinux", 0 };
     char *configdata, *p;
     int fd, len;
     const char *confname = find_somewhere (confnames, "configuration file");

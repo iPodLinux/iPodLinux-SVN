@@ -184,6 +184,7 @@ static ext2_file *ext2_findfile(char *fname) {
   uint32     inode_num,nstr;
   uint8      dirname[1024];
   inode_t   *retnode;
+  char      *origname = fname;
 
   ret     = mlc_malloc( sizeof(ext2_file) );
   retnode = &ret->inode;
@@ -201,7 +202,7 @@ static ext2_file *ext2_findfile(char *fname) {
 
     inode_num = ext2_finddirentry(dirname,retnode);
     if(inode_num == 0) {
-        mlc_printf ("%s not found\n", fname);
+        mlc_printf ("%s not found\n", origname);
       return(NULL);
     }
     
