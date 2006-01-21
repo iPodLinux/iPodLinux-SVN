@@ -238,6 +238,12 @@ void *loader(void) {
     console_puts("iPL Bootloader 2.0\n");
     fb_update(framebuffer);
 
+    /*<DEBUG>*/
+    char ppver[9] = "????????";
+    mlc_memcpy (ppver, (char *)0x70000000, 8);
+    mlc_printf ("Running on a <%s>\n", ppver);
+    /*</DEBUG>*/
+
     ret = ata_init();
     if( ret ) {
       mlc_printf("ATAinit: %i\n",ret);
