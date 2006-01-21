@@ -239,8 +239,16 @@ void *loader(void) {
     fb_update(framebuffer);
 
     /*<DEBUG>*/
+    console_puts ("Another String\n");
     char ppver[9] = "????????";
-    mlc_memcpy (ppver, (char *)0x70000000, 8);
+    console_puts ("PPver set\n");
+    mlc_printf ("inl()ing...\n");
+    unsigned long pplo, pphi;
+    pplo = inl (0x70000000);
+    pphi = inl (0x70000004);
+    mlc_printf ("memcpy()ing...\n");
+    mlc_memcpy (ppver, &pplo, 4);
+    mlc_memcpy (ppver + 4, &pphi, 4);
     mlc_printf ("Running on a <%s>\n", ppver);
     /*</DEBUG>*/
 
