@@ -53,10 +53,13 @@ typedef struct _clocks_globals {
         int nFaces;	/* number of registered faces */
 	int cFace;	/* current face */
 	int editing;	/* are we setting the time? */
+	int timer;	/* internal timer */
 
 	/* for drawing */
         int w, h;
         int fullscreen;
+	ttk_color fg;
+	ttk_color bg;
 
 	/* for displaying the time */
 	int offset;		/* for world clock offset */
