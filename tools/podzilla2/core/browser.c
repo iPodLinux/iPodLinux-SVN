@@ -18,6 +18,7 @@
  */
 
 #include <fcntl.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -33,6 +34,22 @@
 #include <string.h>
 #include <errno.h>
 #include "pz.h"
+
+static void wait_on_sigchld(int signal)
+{ wait(NULL); }
+
+void setup_sigchld_handler()
+{
+	static char sigchld_handler;
+	struct sigaction act;
+
+	if (sigchld_handler) return;
+
+	act.sa_handler = wait_on_sigchld;
+	act.sa_flags = 0;
+	sigaction(SIGCHLD, &act, NULL);
+	sigchld_handler = 1;
+}
 
 void pz_exec(char *filename)
 {
@@ -166,17 +183,13 @@ static TWindow *browser_vt_exec (ttk_menu_item *item)
 
 static TWindow *browser_bg_exec (ttk_menu_item *item)
 {
+	setup_sigchld_handler();
 	switch (vfork()) {
 	case 0:
-		setsid();
-		switch (vfork()) {
-		case 0: execl((char *)item->data, (char *)item->data, NULL);
-		default: _exit(0);
-		}
-	case -1: break;
-	default:
-		wait(NULL);
-		break;
+		execl((char *)item->data, (char *)item->data, NULL);
+		pz_perror("execl");
+		_exit(0);
+	default: break;
 	}
 	return TTK_MENU_UPONE;
 }
