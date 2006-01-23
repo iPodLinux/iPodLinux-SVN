@@ -1,2 +1,2 @@
-obj-m = clocks.o
+obj-m = clocks.o analog.o
 MODULE = clocks

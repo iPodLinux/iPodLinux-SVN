@@ -27,11 +27,116 @@
 #include "pz.h"
 #include "clocks.h"
 
+
+/******************************************************************************
+** builtin clock faces
+*/
+
+/* convert 24 hour time to 12 hour time */
+static int clock_convert_12( int hours )
+{
+        if( hours == 0 )
+                hours = 12;
+        else if( hours > 12 )
+                hours -= 12;
+        return( hours );
+}
+
+
+static int clock_convert_1224( int hours )
+{
+        if( pz_get_int_setting( pz_global_config, TIME_1224 ))
+                return( hours );
+        return( clock_convert_12( hours ));
+}
+
+
+static void clock_draw_vector( ttk_surface srf, clocks_globals *glob )
+{
+	char buf[80];
+	int sX = (int)((float)glob->w/10.0);
+	int sY = sX<<1;
+
+	int sX2 = (int)((float)glob->w/20.0);
+	int sY2 = sX2<<1;
+
+	/* display the time */
+	snprintf( buf, 80, "%02d:%02d:%02d",
+			clock_convert_1224( glob->dispTime->tm_hour),
+			glob->dispTime->tm_min,
+			glob->dispTime->tm_sec );
+	pz_vector_string_center( srf,
+			buf, glob->w>>1, glob->h/3,
+			sX, sY, 1, glob->fg );
+
+	/* display the date */
+	strftime( buf, 80, "%Y %b %d", glob->dispTime );
+	pz_vector_string_center( srf,
+			buf, glob->w>>1, (glob->h*3)>>2,
+			sX2, sY2, 1, glob->fg );
+
+        if( glob->editing ) {
+                char * fmtt = "";
+                char * fmtd = "";
+                
+                if( glob->editing == CLOCKS_SEL_HOURS ) {
+                        fmtt = "%c%c      ";
+                } else if( glob->editing == CLOCKS_SEL_MINUTES ) {
+                        fmtt = "   %c%c   ";
+                } else if( glob->editing == CLOCKS_SEL_SECONDS ) {
+                        fmtt = "      %c%c";
+                } else if( glob->editing == CLOCKS_SEL_YEARS ) {
+                        fmtd = "%c%c%c%c       ";
+                } else if( glob->editing == CLOCKS_SEL_MONTHS ) {
+                        fmtd = "     %c%c%c   ";
+                } else if( glob->editing == CLOCKS_SEL_DAYS ) {
+                        fmtd = "         %c%c";
+                }
+
+		/* arrows for time */
+                snprintf( buf, 80, fmtt,
+                        VECTORFONT_SPECIAL_UP, VECTORFONT_SPECIAL_UP  );
+
+		pz_vector_string_center( srf,
+			buf, glob->w>>1, (glob->h/3) - sY - 2,
+			sX, sY, 1, glob->fg );
+
+                snprintf( buf, 80, fmtt,
+                        VECTORFONT_SPECIAL_DOWN, VECTORFONT_SPECIAL_DOWN  );
+
+		pz_vector_string_center( srf,
+			buf, glob->w>>1, (glob->h/3) + sY + 2,
+			sX, sY, 1, glob->fg );
+
+		/* arrows for date */
+                sprintf( buf, fmtd,
+                        VECTORFONT_SPECIAL_UP, VECTORFONT_SPECIAL_UP,
+                        VECTORFONT_SPECIAL_UP, VECTORFONT_SPECIAL_UP);
+
+		pz_vector_string_center( srf,
+			buf, glob->w>>1, ((glob->h*3)>>2) - sY2 - 2,
+			sX2, sY2, 1, glob->fg );
+
+                sprintf( buf, fmtd,
+                        VECTORFONT_SPECIAL_DOWN, VECTORFONT_SPECIAL_DOWN,
+                        VECTORFONT_SPECIAL_DOWN, VECTORFONT_SPECIAL_DOWN );
+
+		pz_vector_string_center( srf,
+			buf, glob->w>>1, ((glob->h*3)>>2) + sY2 + 2,
+			sX2, sY2, 1, glob->fg );
+	}
+
+}
+
+
+
+/******************************************************************************/
+
 /* global structure defined in clocks.h with a banana. */
 static clocks_globals cglob;
 
 
-static int clocks_tz_offsets[] = { /* minutes associated with the above */
+static int clocks_tz_offsets[] = { /* minutes associated with the strings */
            0,  
           60,  120,  180,  210,  240,
          270,  300,  330,  345,  360,
@@ -53,7 +158,7 @@ static int monthlens[] = {
 };
 
 
-
+/* add a new face callback onto the list... */
 void clocks_register_face( draw_face fcn, char * name )
 {
 	int c;
@@ -73,11 +178,12 @@ void clocks_register_face( draw_face fcn, char * name )
 			return;
 		}
 	}
-	fprintf( stderr, "ERROR: Unable to add clock face %s\n", name );
+	fprintf( stderr, "SHARK ATTACK: Unable to add clock face %s\n", name );
 }
 
 
 
+#define NAME_TIMEOUT	(3) 	/* number of seconds, approx */
 
 /* this basically just calls the current clock face routine */
 void draw_clocks( PzWidget *widget, ttk_surface srf )
@@ -97,8 +203,23 @@ void draw_clocks( PzWidget *widget, ttk_surface srf )
 		fcn( srf, &cglob );
 	} else {
 		/* this should never happen */
-		fprintf( stderr, "ERROR: no clock callback for slot %d\n",
+		fprintf( stderr, "SCHNIKIES: No clock callback for slot %d\n",
 				cglob.cFace );
+	}
+
+	/* display name */
+	if( cglob.timer < NAME_TIMEOUT ) {
+		ttk_fillrect( srf, 0, cglob.h-11, 
+			pz_vector_width( cglob.faces[cglob.cFace].name, 
+					 5, 9, 1 )+2, cglob.h,
+					cglob.bg );
+		ttk_rect( srf, -1, cglob.h-12, 
+			pz_vector_width( cglob.faces[cglob.cFace].name, 
+					 5, 9, 1 )+3, cglob.h+1,
+					cglob.fg );
+		pz_vector_string( srf,
+			cglob.faces[cglob.cFace].name, 
+			1, cglob.h-10, 5, 9, 1, cglob.fg );
 	}
 }
 
@@ -256,6 +377,7 @@ int event_clocks( PzEvent *ev )
 					cglob.cFace++;
 					if( cglob.cFace >= cglob.nFaces )
 						cglob.cFace = 0;
+					cglob.timer = 0;
 				}
 			}
 			ev->wid->dirty = 1;
@@ -273,6 +395,7 @@ int event_clocks( PzEvent *ev )
 	case PZ_EVENT_TIMER:
 		ev->wid->dirty = 1;
 		//if( pz_get_int_setting( pz_global_config, TIME_TICKER ))
+		cglob.timer++;
 		ttk_click();
 		break;
 
@@ -343,117 +466,14 @@ PzWindow *new_world_clock_window()
 	return( new_clock_window_common( "World Clock") );
 }
 
-/******************************************************************************
-** builtin clock faces
-*/
-
-/* convert 24 hour time to 12 hour time */
-static int clock_convert_12( int hours )
-{
-        if( hours == 0 )
-                hours = 12;
-        else if( hours > 12 )
-                hours -= 12;
-        return( hours );
-}
-
-
-static int clock_convert_1224( int hours )
-{
-        if( pz_get_int_setting( pz_global_config, TIME_1224 ))
-                return( hours );
-        return( clock_convert_12( hours ));
-}
-
-
-static void clock_draw_vector( ttk_surface srf, clocks_globals *glob )
-{
-	/* xxxx ttk_color bg = ttk_ap_get( "window.bg" )->color; */
-	ttk_color fg = ttk_ap_get( "window.fg" )->color;
-	char buf[80];
-	int sX = (int)((float)glob->w/10.0);
-	int sY = sX<<1;
-
-	int sX2 = (int)((float)glob->w/20.0);
-	int sY2 = sX2<<1;
-
-	/* display the time */
-	snprintf( buf, 80, "%02d:%02d:%02d",
-			clock_convert_1224( glob->dispTime->tm_hour),
-			glob->dispTime->tm_min,
-			glob->dispTime->tm_sec );
-	pz_vector_string_center( srf,
-			buf, glob->w>>1, glob->h/3,
-			sX, sY, 1, fg );
-
-	/* display the date */
-	strftime( buf, 80, "%Y %b %d", glob->dispTime );
-	pz_vector_string_center( srf,
-			buf, glob->w>>1, (glob->h*3)>>2,
-			sX2, sY2, 1, fg );
-
-        if( glob->editing ) {
-                char * fmtt = "";
-                char * fmtd = "";
-                
-                if( glob->editing == CLOCKS_SEL_HOURS ) {
-                        fmtt = "%c%c      ";
-                } else if( glob->editing == CLOCKS_SEL_MINUTES ) {
-                        fmtt = "   %c%c   ";
-                } else if( glob->editing == CLOCKS_SEL_SECONDS ) {
-                        fmtt = "      %c%c";
-                } else if( glob->editing == CLOCKS_SEL_YEARS ) {
-                        fmtd = "%c%c%c%c       ";
-                } else if( glob->editing == CLOCKS_SEL_MONTHS ) {
-                        fmtd = "     %c%c%c   ";
-                } else if( glob->editing == CLOCKS_SEL_DAYS ) {
-                        fmtd = "         %c%c";
-                }
-
-		/* arrows for time */
-                snprintf( buf, 80, fmtt,
-                        VECTORFONT_SPECIAL_UP, VECTORFONT_SPECIAL_UP  );
-
-		pz_vector_string_center( srf,
-			buf, glob->w>>1, (glob->h/3) - sY - 2,
-			sX, sY, 1, fg );
-
-                snprintf( buf, 80, fmtt,
-                        VECTORFONT_SPECIAL_DOWN, VECTORFONT_SPECIAL_DOWN  );
-
-		pz_vector_string_center( srf,
-			buf, glob->w>>1, (glob->h/3) + sY + 2,
-			sX, sY, 1, fg );
-
-		/* arrows for date */
-                sprintf( buf, fmtd,
-                        VECTORFONT_SPECIAL_UP, VECTORFONT_SPECIAL_UP,
-                        VECTORFONT_SPECIAL_UP, VECTORFONT_SPECIAL_UP);
-
-		pz_vector_string_center( srf,
-			buf, glob->w>>1, ((glob->h*3)>>2) - sY2 - 2,
-			sX2, sY2, 1, fg );
-
-                sprintf( buf, fmtd,
-                        VECTORFONT_SPECIAL_DOWN, VECTORFONT_SPECIAL_DOWN,
-                        VECTORFONT_SPECIAL_DOWN, VECTORFONT_SPECIAL_DOWN );
-
-		pz_vector_string_center( srf,
-			buf, glob->w>>1, ((glob->h*3)>>2) + sY2 + 2,
-			sX2, sY2, 1, fg );
-	}
-
-}
-
-/*
-static void clock_draw_analog( ttk_surface srf, clocks_globals *glob )
-{
-}
-*/
 
 
 /******************************************************************************/
+
 extern const char *clocks_timezones[], *clocks_dsts[];
+
+/* xxx other, external clocks xxx */
+void clock_draw_simple_analog( ttk_surface srf, clocks_globals *glob );
 
 void init_clocks() 
 {
@@ -482,11 +502,17 @@ void init_clocks()
 	}
 	cglob.nFaces = 0;
 
+	cglob.timer = 0;
+
+	/* initialize the colors */
+	cglob.bg = ttk_ap_get( "window.bg" )->color;
+	cglob.fg = ttk_ap_get( "window.fg" )->color;
+
 	/* register internal clock faces */
 	clocks_register_face( clock_draw_vector, "Vector Clock" );
-/* doesn't do anything yet...
-	clocks_register_face( clock_draw_analog, "Analog Clock" );
-*/
+
+	/* these are in other .c files in this module */
+	clocks_register_face( clock_draw_simple_analog, "Simple Analog Clock" );
 }
 
 PZ_MOD_INIT (init_clocks)
