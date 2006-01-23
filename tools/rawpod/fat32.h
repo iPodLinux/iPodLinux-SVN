@@ -10,7 +10,7 @@ class FATFS : public VFS::Filesystem
     
 public:
     FATFS (VFS::Device *d);
-    ~FATFS();
+    ~FATFS() {}
     int init();
     
     static int probe (VFS::Device *dev);
@@ -36,16 +36,15 @@ public:
     ~FATFile() {}
 
     virtual int read (void *buf, int n);
-    virtual int write (const void *buf, int n);
+    virtual int write (const void *buf, int n) { return -EROFS; }
     virtual s64 lseek (s64 off, int whence);
-    virtual int error() { return _err; }
-    virtual int close();
+    virtual int error() { if (_err < 0) return -_err; return _err; }
     
 protected:
     FATFS *_fat;
     VFS::Device *_device;
 
-    u32  findnextcluster (u32 prev);
+    s32  findnextcluster (u32 prev);
     int  findfile (u32 start,const char *name);
 
     int _err;

@@ -23,7 +23,7 @@ u8 *clusterBuffer = NULL;
  * Block-caching would help a lot as well
  *
  */
-u32 FATFile::findnextcluster(u32 prev) {
+s32 FATFile::findnextcluster(u32 prev) {
   u64 offset;
   u32 ret;
   u8  tmpBuff[512];
