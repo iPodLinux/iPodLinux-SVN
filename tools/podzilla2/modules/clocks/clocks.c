@@ -474,6 +474,7 @@ extern const char *clocks_timezones[], *clocks_dsts[];
 
 /* xxx other, external clocks xxx */
 void clock_draw_simple_analog( ttk_surface srf, clocks_globals *glob );
+void clock_draw_nelson_analog( ttk_surface srf, clocks_globals *glob );
 
 void init_clocks() 
 {
@@ -507,12 +508,14 @@ void init_clocks()
 	/* initialize the colors */
 	cglob.bg = ttk_ap_get( "window.bg" )->color;
 	cglob.fg = ttk_ap_get( "window.fg" )->color;
+	cglob.border = ttk_ap_get( "window.border" )->color;
 
 	/* register internal clock faces */
 	clocks_register_face( clock_draw_vector, "Vector Clock" );
 
 	/* these are in other .c files in this module */
 	clocks_register_face( clock_draw_simple_analog, "Simple Analog Clock" );
+	clocks_register_face( clock_draw_nelson_analog, "Nelson Ball Clock" );
 }
 
 PZ_MOD_INIT (init_clocks)

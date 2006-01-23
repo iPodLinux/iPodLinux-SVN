@@ -70,6 +70,7 @@ static void aclock_angular_line(
                                 circdiam, thick );
 }
 
+/*
 static void aclock_angular_line_offset(
 			ttk_surface srf, ttk_color col,
 			int cx, int cy,
@@ -86,6 +87,7 @@ static void aclock_angular_line_offset(
                                 angle, length,
                                 circdiam, thick );
 }
+*/
 
 #define ARM_NORMAL (0)
 #define ARM_THICK  (1)
@@ -95,29 +97,72 @@ void clock_draw_simple_analog( ttk_surface srf, clocks_globals *glob )
 	int cx = glob->w>>1;
 	int cy = glob->h>>1;
 	int cd = cy-5;
-	int hhd = cy-18;
-	int mhd = cy>>1;
+	int hhd = cy>>1;
+	int mhd = cy-20;
 	int shd = cy-22;
 
+	/* clock face .. do a thick AA, simulated... */
 	ttk_aaellipse( srf, cx, cy, cd, cd, glob->fg );
 	ttk_fillellipse( srf, cx, cy, cd, cd, glob->fg );
 	ttk_fillellipse( srf, cx, cy, cd-5, cd-5, glob->bg );
 	ttk_aaellipse( srf, cx, cy, cd-5, cd-5, glob->fg );
 	
 	/* hours */
-        aclock_angular_line_offset( srf, glob->fg, cx, cy,
+        aclock_angular_line( srf, glob->fg, cx, cy,
 				(glob->dispTime->tm_hour > 12)?
 					glob->dispTime->tm_hour-12:
 					glob->dispTime->tm_hour,
-				5, 0, hhd, 4, ARM_THICK );
+				12, hhd, 4, ARM_THICK );
 	
 	/* minutes */
-        aclock_angular_line_offset( srf, glob->fg, cx, cy,
-				glob->dispTime->tm_min, 60, 0, mhd, 
+        aclock_angular_line( srf, glob->fg, cx, cy,
+				glob->dispTime->tm_min, 60, mhd, 
 				5, ARM_THICK );
 
 	/* seconds */
-        aclock_angular_line_offset( srf, glob->fg, cx, cy,
-				glob->dispTime->tm_sec, 60, 0, shd, 
+        aclock_angular_line( srf, glob->fg, cx, cy,
+				glob->dispTime->tm_sec, 60, shd, 
 				2, ARM_NORMAL );
+}
+
+
+void clock_draw_nelson_analog( ttk_surface srf, clocks_globals *glob )
+{
+	int cx = glob->w>>1;
+	int cy = glob->h>>1;
+	int ld = cy-10;
+	int hhd = cy>>1;
+	int mhd = cy-20;
+	int shd = cy-22;
+	int cd = glob->h>>3;
+	int x;
+
+	
+	/* lollipops */
+	for( x=0 ; x<12 ; x++ ) {
+		aclock_angular_line( srf, glob->border, cx, cy,
+				x, 12, ld, 8, ARM_NORMAL );
+		
+	}
+
+	/* center region */
+	ttk_aaellipse( srf, cx, cy, cd, cd, glob->border );
+	ttk_fillellipse( srf, cx, cy, cd, cd, glob->border );
+	
+	/* hours */
+        aclock_angular_line( srf, glob->fg, cx, cy,
+				(glob->dispTime->tm_hour > 12)?
+					glob->dispTime->tm_hour-12:
+					glob->dispTime->tm_hour,
+				12, hhd, 4, ARM_THICK );
+	
+	/* minutes */
+        aclock_angular_line( srf, glob->fg, cx, cy,
+			    glob->dispTime->tm_min, 60, mhd, 5, ARM_THICK );
+
+	/* seconds */
+        aclock_angular_line( srf, glob->fg, cx, cy,
+			    glob->dispTime->tm_sec, 60, shd, 0, ARM_NORMAL );
+
+	/* more center region */
 }

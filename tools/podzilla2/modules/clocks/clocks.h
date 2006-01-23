@@ -60,6 +60,7 @@ typedef struct _clocks_globals {
         int fullscreen;
 	ttk_color fg;
 	ttk_color bg;
+	ttk_color border;
 
 	/* for displaying the time */
 	int offset;		/* for world clock offset */
