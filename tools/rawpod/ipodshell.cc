@@ -93,7 +93,7 @@ int main (int argc, char *argv[])
                     int len;
                     while ((len = fp->read (buf, 512)) > 0) {
                         buf[len] = 0;
-                        printf ("%s", buf);
+                        fwrite (buf, len, 1, stdout);
                     }
                     fp->close();
                     delete fp;
