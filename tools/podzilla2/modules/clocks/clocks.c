@@ -197,6 +197,11 @@ void draw_clocks( PzWidget *widget, ttk_surface srf )
 	t += cglob.offset;
 	cglob.dispTime = localtime( &t );
 
+	/* initialize the colors */
+	cglob.bg = ttk_ap_get( "window.bg" )->color;
+	cglob.fg = ttk_ap_get( "window.fg" )->color;
+	cglob.border = ttk_ap_get( "window.border" )->color;
+
 	/* call the current routine */
 	fcn = (draw_face) cglob.faces[cglob.cFace].routine;
 	if( fcn != NULL ) {
@@ -508,11 +513,6 @@ void init_clocks()
 	cglob.nFaces = 0;
 
 	cglob.timer = 0;
-
-	/* initialize the colors */
-	cglob.bg = ttk_ap_get( "window.bg" )->color;
-	cglob.fg = ttk_ap_get( "window.fg" )->color;
-	cglob.border = ttk_ap_get( "window.border" )->color;
 
 	/* register internal clock faces */
 	clocks_register_face( clock_draw_vector, "Vector Clock" );
