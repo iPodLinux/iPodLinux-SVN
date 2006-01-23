@@ -28,7 +28,7 @@ s32 FATFile::findnextcluster(u32 prev) {
   u32 ret;
   u8  tmpBuff[512];
 
-  offset = ((_fat->number_of_reserved_sectors)*512) + prev * 4;
+  offset = ((u64)_fat->number_of_reserved_sectors << 9) + prev * 4;
 
   _device->lseek (offset, SEEK_SET);
   _device->read (&ret, 4);
@@ -37,7 +37,8 @@ s32 FATFile::findnextcluster(u32 prev) {
 }
 
 int FATFile::findfile(u32 start, const char *fname) {
-  u32 done,i,j,dir_lba,new_offset;
+  u32 done,i,j,new_offset;
+  u64 dir_lba;
   u8  buffer[512];
   char filepart[32];
   const char *next;
@@ -45,13 +46,13 @@ int FATFile::findfile(u32 start, const char *fname) {
 
   /* "start" is in clusters, so lets translate to LBA */
   dir_lba  = _fat->number_of_reserved_sectors + (_fat->number_of_fats * _fat->sectors_per_fat);
-  dir_lba += (start - 2) * _fat->sectors_per_cluster;
+  dir_lba += (u64)(start - 2) * _fat->sectors_per_cluster;
 
   next = strchr( fname,'/' );
 
   done = 0;
   for(i=0;i<_fat->sectors_per_cluster;i++) {
-    _device->lseek ((u64)(dir_lba + i) << 9, SEEK_SET);
+    _device->lseek ((dir_lba + i) << 9, SEEK_SET);
     _device->read (buffer, 512);
     
     for(j=0;j<16;j++) { /* 16 dirents per sector */
@@ -111,7 +112,8 @@ FATFile::FATFile (FATFS *fat,const char *fname) {
 }
 
 int FATFile::read(void *ptr, int size) {
-  u32 read,toRead,lba,clusterNum,clust,i;
+  u32 read,toRead,clusterNum,clust,i;
+  u64 lba;
   u32 offsetInCluster, toReadInCluster;
 
   read   = 0;
@@ -136,7 +138,7 @@ int FATFile::read(void *ptr, int size) {
 
   /* Calculate LBA for the cluster */
   lba  = _fat->number_of_reserved_sectors + (_fat->number_of_fats * _fat->sectors_per_fat);
-  lba += (clust - 2) * _fat->sectors_per_cluster;
+  lba += (u64)(clust - 2) * (u64)_fat->sectors_per_cluster;
 
   toReadInCluster = (_fat->sectors_per_cluster * _fat->bytes_per_sector) - offsetInCluster;
 
@@ -155,7 +157,7 @@ int FATFile::read(void *ptr, int size) {
   while(read < ((toRead / _fat->clustersize)*_fat->clustersize) ) {
     clust = findnextcluster( clust );
     lba  = _fat->number_of_reserved_sectors + (_fat->number_of_fats * _fat->sectors_per_fat);
-    lba += (clust - 2) * _fat->sectors_per_cluster;
+    lba += (u64)(clust - 2) * (u64)_fat->sectors_per_cluster;
     if ((_err = _device->lseek (lba << 9, SEEK_SET)) < 0)
         return _err;
     if ((_err = _device->read (clusterBuffer, _fat->sectors_per_cluster << 9)) < 0)
@@ -170,7 +172,7 @@ int FATFile::read(void *ptr, int size) {
   if( read < toRead ) {
     clust = findnextcluster( clust );
     lba  = _fat->number_of_reserved_sectors + (_fat->number_of_fats * _fat->sectors_per_fat);
-    lba += (clust - 2) * _fat->sectors_per_cluster;
+    lba += (u64)(clust - 2) * (u64)_fat->sectors_per_cluster;
     if ((_err = _device->lseek (lba << 9, SEEK_SET)) < 0)
         return _err;
     if ((_err = _device->read (clusterBuffer, _fat->sectors_per_cluster << 9)) < 0)
