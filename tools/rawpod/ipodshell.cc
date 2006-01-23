@@ -8,10 +8,11 @@
 #include <string.h>
 
 #include "ext2.h"
+#include "fat32.h"
 #include "partition.h"
 using namespace VFS;
 
-Ext2FS *ext2;
+VFS::Filesystem *fs;
 
 int main (int argc, char *argv[]) 
 {
@@ -21,9 +22,15 @@ int main (int argc, char *argv[])
         return 1;
     }
     
-    VFS::Device *part = setup_partition (disknr, 3);
-    ext2 = new Ext2FS (part);
-    if (ext2->init() < 0) {
+    if (argv[1] && !strcmp (argv[1], "-fat32")) {
+        VFS::Device *part = setup_partition (disknr, 2);
+        fs = new FATFS (part);
+    } else {
+        VFS::Device *part = setup_partition (disknr, 3);
+        fs = new Ext2FS (part);
+    }
+    
+    if (fs->init() < 0) {
         // error already printed
         return 1;
     }
@@ -58,7 +65,7 @@ int main (int argc, char *argv[])
             if (nargs != 2) {
                 fprintf (stderr, "Usage: list <dir>\n");
             } else {
-                Dir *dp = ext2->opendir (args[1]);
+                Dir *dp = fs->opendir (args[1]);
                 if (!dp) {
                     fprintf (stderr, "%s: error\n", args[1]);
                 } else if (dp->error()) {
@@ -76,7 +83,7 @@ int main (int argc, char *argv[])
             if (nargs != 2) {
                 fprintf (stderr, "Usage: read <file>\n");
             } else {
-                File *fp = ext2->open (args[1], O_RDONLY);
+                File *fp = fs->open (args[1], O_RDONLY);
                 if (!fp) {
                     fprintf (stderr, "%s: error\n", args[1]);
                 } else if (fp->error()) {
@@ -97,7 +104,7 @@ int main (int argc, char *argv[])
             if (nargs != 2) {
                 fprintf (stderr, "Usage: write <file>\n");
             } else {
-                File *fp = ext2->open (args[1], O_WRONLY | O_CREAT);
+                File *fp = fs->open (args[1], O_WRONLY | O_CREAT);
                 if (!fp) {
                     fprintf (stderr, "%s: error\n", args[1]);
                 } else if (fp->error()) {
@@ -117,7 +124,7 @@ int main (int argc, char *argv[])
             if (nargs != 2) {
                 fprintf (stderr, "Usage: truncate <file>\n");
             } else {
-                File *fp = ext2->open (args[1], O_WRONLY);
+                File *fp = fs->open (args[1], O_WRONLY);
                 if (!fp) {
                     fprintf (stderr, "%s: error\n", args[1]);
                 } else if (fp->error()) {
@@ -132,7 +139,7 @@ int main (int argc, char *argv[])
             if (nargs != 3) {
                 fprintf (stderr, "Usage: chmod <file> <mode>\n");
             } else {
-                File *fp = ext2->open (args[1], O_WRONLY);
+                File *fp = fs->open (args[1], O_WRONLY);
                 if (!fp) {
                     fprintf (stderr, "%s: error\n", args[1]);
                 } else if (fp->error()) {
@@ -148,7 +155,7 @@ int main (int argc, char *argv[])
                 fprintf (stderr, "Usage: mkdir <dir>\n");
             } else {
                 int err;
-                if ((err = ext2->mkdir (args[1])) < 0) {
+                if ((err = fs->mkdir (args[1])) < 0) {
                     fprintf (stderr, "%s: %s\n", args[1], strerror (err));
                 }
             }
@@ -157,7 +164,7 @@ int main (int argc, char *argv[])
                 fprintf (stderr, "Usage: unlink <file>\n");
             } else {
                 int err;
-                if ((err = ext2->unlink (args[1])) < 0) {
+                if ((err = fs->unlink (args[1])) < 0) {
                     fprintf (stderr, "%s: %s\n", args[1], strerror (err));
                 }
             }
@@ -166,7 +173,7 @@ int main (int argc, char *argv[])
                 fprintf (stderr, "Usage: rmdir <dir>\n");
             } else {
                 int err;
-                if ((err = ext2->rmdir (args[1])) < 0) {
+                if ((err = fs->rmdir (args[1])) < 0) {
                     fprintf (stderr, "%s: %s\n", args[1], strerror (err));
                 }
             }
@@ -175,7 +182,7 @@ int main (int argc, char *argv[])
                 fprintf (stderr, "Usage: rename <old> <new>\n");
             } else {
                 int err;
-                if ((err = ext2->rename (args[1], args[2])) < 0) {
+                if ((err = fs->rename (args[1], args[2])) < 0) {
                     fprintf (stderr, "%s -> %s: %s\n", args[1], args[2], strerror (err));
                 }
             }
@@ -184,7 +191,7 @@ int main (int argc, char *argv[])
                 fprintf (stderr, "Usage: link <old> <new>\n");
             } else {
                 int err;
-                if ((err = ext2->link (args[1], args[2])) < 0) {
+                if ((err = fs->link (args[1], args[2])) < 0) {
                     fprintf (stderr, "%s <=> %s: %s\n", args[1], args[2], strerror (err));
                 }
             }
@@ -193,7 +200,7 @@ int main (int argc, char *argv[])
                 fprintf (stderr, "Usage: symlink <dest> <link>\n");
             } else {
                 int err;
-                if ((err = ext2->symlink (args[1], args[2])) < 0) {
+                if ((err = fs->symlink (args[1], args[2])) < 0) {
                     fprintf (stderr, "%s: %s\n", args[2], strerror (err));
                 }
             }
@@ -204,9 +211,9 @@ int main (int argc, char *argv[])
                 struct my_stat st;
                 int err;
                 if (!strcmp (args[0], "lstat"))
-                    err = ext2->lstat (args[1], &st);
+                    err = fs->lstat (args[1], &st);
                 else
-                    err = ext2->stat (args[1], &st);
+                    err = fs->stat (args[1], &st);
 
                 if (err) {
                     fprintf (stderr, "%s: %s\n", args[1], strerror (err));
