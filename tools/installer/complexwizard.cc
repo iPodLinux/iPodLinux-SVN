@@ -43,6 +43,35 @@ ComplexWizard::ComplexWizard(QWidget *parent)
     buttonLayout->addWidget(backButton);
     buttonLayout->addWidget(nextButton);
 
+    // nice generic titles for widgets that don't provide 'em
+    pageTitle = new QLabel (tr ("<b>iPodLinux Installer</b>"));
+    pageDesc = new QLabel (tr ("Follow the directions on this page and click Next."));
+    pageDesc->setAlignment (Qt::AlignLeft);
+    pageDesc->setIndent (20);
+
+    toptextLayout = new QVBoxLayout;
+    toptextLayout->addWidget (pageTitle);
+    toptextLayout->addSpacing (10);
+    toptextLayout->addWidget (pageDesc);
+
+    icon = new QLabel;
+    icon->setPixmap (QPixmap (":/icon.png"));
+    
+    topbarLayout = new QHBoxLayout;
+    topbarLayout->addLayout (toptextLayout);
+    topbarLayout->addStretch (1);
+    topbarLayout->addWidget (icon);
+
+    topbar = new QFrame;
+    topbar->setLayout (topbarLayout);
+    topbar->setFrameShape (QFrame::StyledPanel);
+    topbar->setFrameShadow (QFrame::Raised);
+    topbar->setLineWidth (2);
+
+    QPalette framePal = topbar->palette();
+    framePal.setColor (QPalette::Background, QColor (240, 240, 240));
+    topbar->setPalette (framePal);
+
     mainLayout = new QVBoxLayout;
     mainLayout->addLayout(buttonLayout);
     setLayout(mainLayout);
@@ -81,13 +110,19 @@ void ComplexWizard::switchPage(WizardPage *oldPage)
 {
     if (oldPage) {
         oldPage->hide();
+        mainLayout->removeWidget(topbar);
         mainLayout->removeWidget(oldPage);
         disconnect(oldPage, SIGNAL(completeStateChanged()),
                    this, SLOT(completeStateChanged()));
     }
 
     WizardPage *newPage = history.last();
-    mainLayout->insertWidget(0, newPage);
+    if (history.size() == 1) {
+        mainLayout->insertWidget(0, newPage);
+    } else {
+        mainLayout->insertWidget(0, topbar);
+        mainLayout->insertWidget(1, newPage);
+    }
     newPage->show();
     newPage->setFocus();
     connect(newPage, SIGNAL(completeStateChanged()),

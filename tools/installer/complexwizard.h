@@ -30,6 +30,8 @@
 class QHBoxLayout;
 class QPushButton;
 class QVBoxLayout;
+class QLabel;
+class QFrame;
 class WizardPage;
 
 class ComplexWizard : public QDialog
@@ -59,6 +61,10 @@ private:
     QPushButton *finishButton;
     QHBoxLayout *buttonLayout;
     QVBoxLayout *mainLayout;
+    QHBoxLayout *topbarLayout;
+    QVBoxLayout *toptextLayout;
+    QFrame *topbar;
+    QLabel *pageTitle, *pageDesc, *icon;
 };
 
 class WizardPage : public QWidget
