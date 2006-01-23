@@ -81,6 +81,7 @@ int FATFile::findfile(u32 start, const char *fname) {
 	}
       } else if( buffer[j*32+0xB] & (1<<4)) { /* Directory */
 	if (match) {
+          if (!next) return -EISDIR;
 	  new_offset  = (buffer[j*32+0x15]<<8) + buffer[j*32+0x14]; 
 	  new_offset  = new_offset << 16;
 	  new_offset |= (buffer[j*32+0x1B]<<8) + buffer[j*32+0x1A]; 
@@ -94,7 +95,7 @@ int FATFile::findfile(u32 start, const char *fname) {
     }
   }
 
-  if (match) return -EISDIR;
+  if (match) return -ENOTDIR;
   return -ENOENT;
 }
 
