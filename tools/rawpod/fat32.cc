@@ -39,6 +39,7 @@ s32 FATFile::findnextcluster(u32 prev) {
 int FATFile::findfile(u32 start, const char *fname) {
   u32 done,i,j,dir_lba,new_offset;
   u8  buffer[512];
+  char filepart[32];
   const char *next;
   int match;
 
@@ -54,10 +55,14 @@ int FATFile::findfile(u32 start, const char *fname) {
     _device->read (buffer, 512);
     
     for(j=0;j<16;j++) { /* 16 dirents per sector */
-      char *ext = strchr (fname, '.');
-      int extloc = ext? (ext - fname) : strlen (fname);
+      strncpy (filepart, fname, 31);
+      filepart[31] = 0;
+      if (strchr (filepart, '/')) *strchr (filepart, '/') = 0;
 
-      match = !strncasecmp ((char *)buffer + (j << 5), fname, extloc);
+      char *ext = strchr (filepart, '.');
+      int extloc = ext? (ext - filepart) : strlen (filepart);
+
+      match = !strncasecmp ((char *)buffer + (j << 5), filepart, extloc);
       if (ext)
         match = match && !strncasecmp ((char *)buffer + (j << 5) + 8,
                                        ext + 1, strlen (ext + 1));
