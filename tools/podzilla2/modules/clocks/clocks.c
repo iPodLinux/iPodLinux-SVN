@@ -351,6 +351,7 @@ int event_clocks( PzEvent *ev )
 	case PZ_EVENT_BUTTON_UP:
 		switch( ev->arg ) {
 		case( PZ_BUTTON_MENU ):
+			pz_set_priority(PZ_PRIORITY_IDLE); 
 			pz_close_window (ev->wid->win);
 			break;
 
@@ -424,6 +425,9 @@ static PzWindow *new_clock_window_common( char * title )
 
 	/* 1 second timeout */
 	pz_widget_set_timer( cglob.widget, 1000 );
+
+	/* we're waaaay more important than anyone else */
+	pz_set_priority(PZ_PRIORITY_VITAL); 
 
 	/* done in here! */
 	return pz_finish_window( cglob.window );
