@@ -125,12 +125,8 @@ class IntroductionPage : public InstallerPage
 public:
     IntroductionPage (Installer *wizard);
     
-#if 0
     bool isComplete() { return true; }
-    WizardPage *nextPage() { return wizard->podlocPage; }
-#else
-    bool isLastPage() { return true; }
-#endif
+    WizardPage *nextPage();
 
 private:
     QLabel *blurb;
@@ -140,13 +136,15 @@ class PodLocationPage : public InstallerPage
 {
     Q_OBJECT
 
-#if 0
 public:
     PodLocationPage (Installer *wizard);
     
     void resetPage();
     WizardPage *nextPage();
     bool isComplete();
+#if 1
+    bool isLastPage() { return 1; }
+#endif
     
 private:
     QLabel *blurb;
@@ -154,7 +152,7 @@ private:
     QRadioButton *upgradeRadio, *uninstallRadio; /* enabled only if already installed */
     QGroupBox *upgradeWhat; /* only for upgrade */
     QCheckBox *upgradeKernel, *upgradeUI; /* inside upgradeWhat */
-#endif
+    int stateOK;
 };
 
 class DownloadUpdatesPage : public InstallerPage

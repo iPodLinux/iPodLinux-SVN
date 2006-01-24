@@ -26,13 +26,13 @@
 #include "complexwizard.h"
 
 ComplexWizard::ComplexWizard(QWidget *parent)
-    : QDialog(parent)
+    : QWidget(parent)
 {
     cancelButton = new QPushButton(tr("Cancel"));
     backButton = new QPushButton(tr("< &Back"));
     nextButton = new QPushButton(tr("Next >"));
 
-    connect(cancelButton, SIGNAL(clicked()), this, SLOT(reject()));
+    connect(cancelButton, SIGNAL(clicked()), qApp, SLOT(closeAllWindows()));
     connect(backButton, SIGNAL(clicked()), this, SLOT(backButtonClicked()));
     // nextButton is connected in switchPage
 
@@ -67,6 +67,7 @@ ComplexWizard::ComplexWizard(QWidget *parent)
     topbar->setFrameShape (QFrame::StyledPanel);
     topbar->setFrameShadow (QFrame::Raised);
     topbar->setLineWidth (2);
+    topbar->setMaximumHeight (90);
 
     QPalette framePal = topbar->palette();
     framePal.setColor (QPalette::Background, QColor (240, 240, 240));
@@ -110,18 +111,20 @@ void ComplexWizard::switchPage(WizardPage *oldPage)
 {
     if (oldPage) {
         oldPage->hide();
-        mainLayout->removeWidget(topbar);
         mainLayout->removeWidget(oldPage);
         disconnect(oldPage, SIGNAL(completeStateChanged()),
                    this, SLOT(completeStateChanged()));
     }
+    mainLayout->removeWidget(topbar);
+    topbar->hide();
 
     WizardPage *newPage = history.last();
     if (history.size() == 1) {
         mainLayout->insertWidget(0, newPage);
     } else {
+        mainLayout->insertWidget(0, newPage);
         mainLayout->insertWidget(0, topbar);
-        mainLayout->insertWidget(1, newPage);
+        topbar->show();
     }
     newPage->show();
     newPage->setFocus();

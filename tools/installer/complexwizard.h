@@ -26,6 +26,7 @@
 
 #include <QDialog>
 #include <QList>
+#include <QLabel>
 
 class QHBoxLayout;
 class QPushButton;
@@ -34,12 +35,16 @@ class QLabel;
 class QFrame;
 class WizardPage;
 
-class ComplexWizard : public QDialog
+class ComplexWizard : public QWidget
 {
     Q_OBJECT
 
 public:
     ComplexWizard(QWidget *parent = 0);
+    void setInfoText (QString title, QString instructions) {
+        pageTitle->setText (title);
+        pageDesc->setText (instructions);
+    }
 
     QList<WizardPage *> historyPages() const { return history; }
 
