@@ -13,7 +13,7 @@ sub makeTTK($) {
     my($rev) = shift;
 
     chdir "/home/oremanj/dev/ipl/management/.svnc/ttk";
-    system "svn up >/dev/null 2>&1" and do { $conn->privmsg("#ipodlinux", "svn up in ttk failed $?"); return; };
+    system "svn up >svnerr 2>&1" and do { $conn->privmsg("#ipodlinux", "svn up in ttk failed $?"); return; };
     system "make distclean all >builderr 2>&1" and do { $conn->privmsg("#ipodlinux", "Someone just broke the TTK build."); return; };
     return 1;
 }
@@ -21,7 +21,7 @@ sub makeTTK($) {
 sub makeAP($) {
     my($rev) = shift;
     chdir "/home/oremanj/dev/ipl/management/.svnc/ttk";
-    system "svn up >/dev/null 2>&1" and do { $conn->privmsg("#ipodlinux", "svn up in ttk failed $?"); return; };
+    system "svn up >svnerr 2>&1" and do { $conn->privmsg("#ipodlinux", "svn up in ttk failed $?"); return; };
     system "zip -r /var/www/html/iplbuilds/appearance-$rev.zip fonts schemes >/dev/null";
 }
 
@@ -29,7 +29,7 @@ sub makePZcore($) {
     my($rev) = shift;
 
     chdir "/home/oremanj/dev/ipl/management/.svnc/podzilla2";
-    system "svn up >/dev/null 2>&1" and do { $conn->privmsg("#ipodlinux", "svn up in pz2 failed $?"); return; };
+    system "svn up >svnerr 2>&1" and do { $conn->privmsg("#ipodlinux", "svn up in pz2 failed $?"); return; };
     system "make clean all IPOD=1 >builderr 2>&1" and do { $conn->privmsg("#ipodlinux", "Someone just broke the PZ2 build."); return; };
     system "cat podzilla | gzip -9 > /var/www/html/iplbuilds/podzilla2-$rev.gz";
     return 1;
@@ -39,14 +39,16 @@ sub makePZmods($) {
     my($rev) = shift;
 
     chdir "/home/oremanj/dev/ipl/management/.svnc/podzilla2";
-    system "svn up >/dev/null 2>&1" and do { $conn->privmsg("#ipodlinux", "svn up in pz2 failed $?"); return; };
-    system "make IPOD=1 >builderr 2>&1" and do { $conn->privmsg("#ipodlinux", "Someone just broke the PZ2 build (modules)."); return; };
+    system "svn up >svnerr 2>&1" and do { $conn->privmsg("#ipodlinux", "svn up in pz2 failed $?"); return; };
+    system "make all xpods IPOD=1 >builderr 2>&1" and do { $conn->privmsg("#ipodlinux", "Someone just broke the PZ2 build (modules)."); return; };
     system "( cd xpods; zip -r /var/www/html/iplbuilds/pzmodules-$rev.zip * >/dev/null 2>&1 )";
     return 1;
 }
 
-sub parse_data($) {
+sub parse_data($;$) {
     my(@data) = split /\n/, $_[0];
+    my($send) = $_[1];
+    $send = 1 unless defined $send;
     my($headers) = 1;
     my($user,$date,@log,$tracurl);
     my($key) = "";
@@ -68,15 +70,20 @@ sub parse_data($) {
 		} elsif ($key eq "Trac view") {
 		    ($tracurl = $val) =~ s#https://OpenSVN.csie.org/traccgi/courtc/trac.cgi/changeset#http://tinyurl.com/bukaa#;
 		} elsif ($key eq "Changes") {
-		    /\s\s([A-Z])\s*\+\d+\s*-\d+\s*(.*)/ or print "Couldn't figure out email\n";
-		    my($flag,$file) = ($1,$2);
-		    if ($flag eq "A") {
-			push @files, "$file"."[+]";
-		    } elsif ($flag eq "R" or $flag eq "D") {
-			push @files, "$file"."[-]";
-		    } else {
-			push @files, $file;
-		    }
+		    /\s\s([A-Z_]{1,2})\s*\+\d+\s*-\d+\s*(.*)/ or print "Couldn't figure out email\n";
+		    my($flags,$file) = ($1,$2);
+                    my($mflag,$pflag) = (substr($flags,0,1), substr($flags,1));
+                    my($bits) = "";
+                    $bits .= "+" if $mflag eq "A";
+                    $bits .= "-" if $mflag eq "R" or $mflag eq "D";
+                    $bits .= "*" if $pflag eq "U";
+                    $bits .= "^" if $pflag eq "A";
+                    $bits .= "v" if $pflag eq "R" or $pflag eq "D";
+                    if ($bits ne "") {
+                        push @files, $file."[$bits]";
+                    } else {
+                        push @files, $file;
+                    }
 		}
 	    }
 	}
@@ -106,7 +113,8 @@ sub parse_data($) {
     }
 
     if (scalar @files == 1) {
-	($flist = $files[0]) =~ s#^((?:tools/)?[^/]+/)#10$1#;
+	$flist = $files[0];
+        $flist =~ s#^((?:tools/)?[^/]+/)#10$1# if $send;
     } else {
 	my(@fileparts) = map { [ split m|/| ] } @files;
 	my($samelevels) = 0;
@@ -120,14 +128,16 @@ sub parse_data($) {
 	$firstpart = "" unless defined $firstpart;
 	map { s|^$firstpart|| } @files;
 
+        $firstpart = "10$firstpart" if $send;
+
 	if (scalar @files > 4) {
 	    if (scalar @dirs > 1) {
-		$flist = "10".$firstpart . " (". scalar(@files) ." files in ". scalar(@dirs) ." directories)";
+		$flist = $firstpart . " (". scalar(@files) ." files in ". scalar(@dirs) ." directories)";
 	    } else {
-		$flist = "10".$firstpart . " (". scalar(@files) ." files)";
+		$flist = $firstpart . " (". scalar(@files) ." files)";
 	    }
 	} else {
-	    $flist = "10".$firstpart . " (@files)";
+	    $flist = $firstpart . " (@files)";
 	}
     }
 
@@ -136,7 +146,8 @@ sub parse_data($) {
 	$log = substr $log, 0, 255;
     }
 
-    $conn->privmsg ($CHANNEL, "03$user * $flist: $log ($tracurl)");
+    $conn->privmsg ($CHANNEL, "03$user * $flist: $log ($tracurl)") if $send;
+    return "$user * $flist: $log ($tracurl)";
 }
 
 sub on_msg {
@@ -194,6 +205,16 @@ if (defined($ARGV[0])) {
 	print FILE while <STDIN>;
 	close FILE;
 	exit 0;
+    } elsif ($ARGV[0] eq "-t") {
+        @newfiles = </home/oremanj/dev/ipl/management/.svnc/*.*.svn>;
+        for (@newfiles) {
+            local $/;
+            open THISF, $_;
+            my($data) = <THISF>;
+            close THISF;
+            print parse_data($data, 0), "\n";
+        }
+        exit 0;
     } elsif ($ARGV[0] eq "-f") {
 	$bg = 0;
     }
@@ -219,7 +240,7 @@ $SIG{'ALRM'} = sub {
 $SIG{'CHLD'} = sub { wait; };
 
 $CHANNEL = shift @ARGV || "#ipodlinux";
-$KEY = shift @ARGV || "rs232";
+$KEY = shift @ARGV || "";
 
 open PIDFILE, ">.svnc/svnbot.pid" or die "Can't open PID file; do you need to mkdir .svnc?\n";
 print PIDFILE getpid;
