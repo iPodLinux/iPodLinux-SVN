@@ -347,6 +347,7 @@ int Ext2FS::readiblocks (u8 *buf, u32 *iblock, int n)
         buf += _blocksize;
         n -= _blocksize;
     }
+    return 0;
 }
 int Ext2FS::readiiblocks (u8 *buf, u32 *diblock, int n)
 {
@@ -370,6 +371,7 @@ int Ext2FS::readiiblocks (u8 *buf, u32 *diblock, int n)
     }
 
     delete[] iblock;
+    return 0;
 }
 int Ext2FS::readiiiblocks (u8 *buf, u32 *tiblock, int n) 
 {
@@ -393,6 +395,7 @@ int Ext2FS::readiiiblocks (u8 *buf, u32 *tiblock, int n)
     }
 
     delete[] diblock;
+    return 0;
 }
 
 int Ext2FS::readfile (void *b, ext2_inode *inode) 
@@ -627,8 +630,6 @@ int Ext2FS::mkdir (const char *path)
     if (!_writable)
         return -EROFS;
 
-    ext2_inode *inode;
-    
     // Check to make sure the parent directory exists.
     char *dir = new char[strlen (path) + 1];
     
@@ -719,7 +720,6 @@ int Ext2FS::unlink (const char *path)
 
     char *dir = new char[strlen (path) + 1];
     const char *file;
-    int nlink_dec = 0;
     
     strcpy (dir, path);
     if (!strrchr (dir, '/')) {
@@ -781,6 +781,7 @@ int Ext2FS::unlink (const char *path)
         _device->write (_sb, sizeof(ext2_super_block));
         sb_to_cpu();
     }
+    return 0;
 }
 
 int Ext2FS::_unlink (u32 dirino, const char *name) 
@@ -814,6 +815,7 @@ int Ext2FS::_unlink (u32 dirino, const char *name)
                          // rewrite the name
     dirp->close();
     delete dirp;
+    return 0;
 }
 
 int Ext2FS::rename (const char *oldf, const char *newf) 
@@ -823,6 +825,7 @@ int Ext2FS::rename (const char *oldf, const char *newf)
         return err;
     if ((err = unlink (oldf)) < 0)
         return err;
+    return 0;
 }
 
 int Ext2FS::link (const char *dest, const char *src) 
@@ -908,7 +911,7 @@ int Ext2FS::readlink (const char *path, char *buf, int len)
         return -EINVAL;
     }
     if (!inode->i_blocks) { // fast symlink
-        if (len < inode->i_size) {
+        if ((u32)len < inode->i_size) {
             memcpy (buf, inode->i_block, len-1);
             buf[len-1] = 0;
         } else {
@@ -970,6 +973,7 @@ int Ext2File::close()
         _ext2->_device->write (_inode, _ext2->_sb->s_inode_size);
     }
     _open = 0;
+    return 0;
 }
 
 static int findfreebit (u8 *bitmap, int size) 
@@ -1097,8 +1101,6 @@ void Ext2File::kill_file (int clri)
             killblock (_inode->i_block[i]);
         }
         
-        int blk_per_blk = _blocksize >> 2;
-        
         if (_iblock)  killiblock (_iblock, _inode->i_block[EXT2_IND_BLOCK], clri);
         if (_diblock) killiiblock (_diblock, _inode->i_block[EXT2_DIND_BLOCK], clri);
         if (_tiblock) killiiiblock (_tiblock, _inode->i_block[EXT2_TIND_BLOCK], clri);
@@ -1122,7 +1124,7 @@ int Ext2File::writeblock (void *buf, u32 block)
         // Appending to a file, or filling in a sparse part. Alloc
         // a new block.
         int group = (_ino - 1) / _ext2->_ino_per_group;
-        int blk_per_blk = _blocksize >> 2;
+        u32 blk_per_blk = _blocksize >> 2;
         int newblk;
         
         pblk = balloc (group);
@@ -1205,12 +1207,14 @@ int Ext2File::writeblock (void *buf, u32 block)
 
                         u32 *iblock = new u32[blk_per_blk];
                         if (_ext2->readblocks (iblock, diblock[(block >> (_blocksize_bits - 2)) & (blk_per_blk - 1)], _blocksize) < 0) {
-                            delete[] iblock, diblock;
+                            delete[] iblock;
+                            delete[] diblock;
                             return -EIO;
                         }
                         iblock[block & (blk_per_blk - 1)] = pblk;
                         _ext2->writeblocks (iblock, diblock[(block >> (_blocksize_bits - 2)) & (blk_per_blk - 1)], _blocksize);
-                        delete[] iblock, diblock;
+                        delete[] iblock;
+                        delete[] diblock;
                     } else {
                         return -E2BIG;
                     }
@@ -1247,8 +1251,8 @@ int Ext2File::readblock (void *buf, u32 block)
 
 s32 Ext2File::translateblock (u32 lblock)
 {
-    s32 pblock;
-    int blk_per_blk = _blocksize >> 2;
+    s32 pblock = 0;
+    u32 blk_per_blk = _blocksize >> 2;
     
     if (lblock < EXT2_NDIR_BLOCKS) {
         pblock = _inode->i_block[lblock];
@@ -1418,7 +1422,7 @@ int Ext2FS::_link (u32 dirino, u32 ino, const char *name, int type)
     dirp->lseek (ofs, SEEK_SET);
     dirp->read (de, sizeof(ext2_dir_entry_2));
 
-    int totlen = de->rec_len;
+    u32 totlen = de->rec_len;
 
     // Check if the space we have is big enough
     if (((8 + strlen (name) + 3) & ~3) + ((8 + de->name_len + 3) & ~3) > totlen) {
@@ -1647,12 +1651,12 @@ VFS::Dir *Ext2FS::opendir (const char *path)
 }
 
 Ext2Dir::Ext2Dir (Ext2FS *ext2, u32 ino)
-    : VFS::Dir(), Ext2File (ext2, ino, 0), _off (0)
+    : Ext2File (ext2, ino, 0), VFS::Dir(), _off (0)
 {}
 
 int Ext2Dir::close() 
 {
-    Ext2File::close();
+    return Ext2File::close();
 }
 
 int Ext2Dir::readdir (struct VFS::dirent *d) 

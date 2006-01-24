@@ -18,7 +18,6 @@
 
 PartitionTable partCopyFromMBR (unsigned char *mbr) 
 {
-    int ptn;
     PartitionTable ret = new Partition[4];
 
     if (mbr[510] != 0x55 || mbr[511] != 0xaa)
@@ -52,7 +51,7 @@ int partShrinkAndAdd (PartitionTable t, int oldnr, int newnr, int newtype, int n
 {
     if (oldnr >= 4 || newnr >= 4)
         return EINVAL;
-    if (t[oldnr].length < newsize)
+    if (t[oldnr].length < (unsigned int)newsize)
         return ENOSPC;
     if (t[newnr].type != 0)
         return EEXIST;

@@ -453,15 +453,18 @@ public:
         if (!_rw) return -EROFS;
         if (uid >= 0) _inode->i_uid = uid;
         if (gid >= 0) _inode->i_gid = gid;
+        return 0;
     }
     virtual int chmod (int mode) {
         if (!_rw) return -EROFS;
         _inode->i_mode = (_inode->i_mode & ~07777) | (mode & 07777);
+        return 0;
     }
     virtual int truncate() {
         if (!_rw) return -EROFS;
         kill_file (1);
         _pos = _size = 0;
+        return 0;
     }
     virtual int stat (struct my_stat *st) {
         st->st_dev = 0;
