@@ -11,3 +11,11 @@ RESOURCES = installer.qrc
 # Input
 HEADERS += installer.h complexwizard.h
 SOURCES += installer.cc main.cc complexwizard.cc
+
+# Rawpod
+SOURCES += rawpod/device.cc rawpod/ext2.cc rawpod/fat32.cc \
+           rawpod/partition.cc rawpod/vfs.cc
+HEADERS += rawpod/device.h rawpod/errno.h rawpod/ext2.h \
+           rawpod/fat32.h rawpod/partition.h rawpod/vfs.h
+
+CONFIG += debug
