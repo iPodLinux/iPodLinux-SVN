@@ -26,7 +26,6 @@ u8 *clusterBuffer = NULL;
 s32 FATFile::findnextcluster(u32 prev) {
   u64 offset;
   u32 ret;
-  u8  tmpBuff[512];
 
   offset = ((u64)_fat->number_of_reserved_sectors << 9) + prev * 4;
 
@@ -42,7 +41,7 @@ int FATFile::findfile(u32 start, const char *fname) {
   u8  buffer[512];
   char filepart[32];
   const char *next;
-  int match;
+  int match = 1;
 
   /* "start" is in clusters, so lets translate to LBA */
   dir_lba  = _fat->number_of_reserved_sectors + (_fat->number_of_fats * _fat->sectors_per_fat);
@@ -191,18 +190,19 @@ int FATFile::read(void *ptr, int size) {
 s64 FATFile::lseek(s64 offset,int whence) {
   switch(whence) {
   case SEEK_SET:
-    position = offset;
+    position = (offset < 0)? 0 : offset;
     break;
   case SEEK_CUR:
-    position += offset;
+    if (offset < -position) position = 0;
+    else position += offset;
     break;
   case SEEK_END:
-    position = length - offset;
+    if (offset > length) position = 0;
+    else position = length - offset;
     break;
   }
 
   if (position > length) position = length - 1;
-  if (position < 0) position = 0;
   return position;
 }
 
@@ -249,6 +249,7 @@ int FATFS::probe (VFS::Device *dev)
 
 VFS::File *FATFS::open (const char *path, int flags) 
 {
+    (void)flags;
     while (*path == '/') path++;
     return new FATFile (this, path);
 }

@@ -109,7 +109,7 @@ namespace VFS
 	
 	virtual int read (void *buf, int n) = 0;
 	virtual int write (const void *buf, int n) = 0;
-	virtual s64 lseek (s64 off, int whence) { return -1; }
+	virtual s64 lseek (s64 off, int whence) { (void)off, (void)whence; return -1; }
     };
 
     class BlockDevice : public Device
@@ -158,22 +158,22 @@ namespace VFS
 	
 	virtual int read (void *buf, int n) = 0;
 	virtual int write (const void *buf, int n) = 0;
-	virtual s64 lseek (s64 off, int whence) { return -ESPIPE; }
+	virtual s64 lseek (s64 off, int whence) { (void)off, (void)whence; return -ESPIPE; }
         virtual int error() { return 0; }
-        virtual int chown (int uid, int gid = -1) { return -EPERM; }
-        virtual int chmod (int mode) { return -EPERM; }
+        virtual int chown (int uid, int gid = -1) { (void)uid, (void)gid; return -EPERM; }
+        virtual int chmod (int mode) { (void)mode; return -EPERM; }
         virtual int truncate() { return -EROFS; }
-        virtual int stat (struct my_stat *st) { return -ENOSYS; }
+        virtual int stat (struct my_stat *st) { (void)st; return -ENOSYS; }
 
-        virtual int close() {}
+        virtual int close() { return 0; }
     };
 
     class ErrorFile : public File
     {
     public:
         ErrorFile (int err) { _err = err; if (_err < 0) _err = -_err; }
-        int read (void *buf, int n) { return -EBADF; }
-        int write (const void *buf, int n) { return -EBADF; }
+        int read (void *buf, int n) { (void)buf, (void)n; return -EBADF; }
+        int write (const void *buf, int n) { (void)buf, (void)n; return -EBADF; }
         int error() { return _err; }
 
     private:
@@ -214,7 +214,7 @@ namespace VFS
 	virtual ~Dir() {}
 
 	virtual int readdir (struct dirent *buf) = 0;
-	virtual int close() {}
+	virtual int close() { return 0; }
         virtual int error() { return 0; }
     };
 
@@ -222,7 +222,7 @@ namespace VFS
     {
     public:
         ErrorDir (int err) { _err = err; if (_err < 0) _err = -_err; }
-        int readdir (struct dirent *de) { return -EBADF; }
+        int readdir (struct dirent *de) { (void)de; return -EBADF; }
         int error() { return _err; }
 
     private:
@@ -242,7 +242,7 @@ namespace VFS
         virtual int init() = 0;
 	
         // Sense function - returns 1 if dev contains this fs
-        static int probe (Device *dev) {};
+        static int probe (Device *dev) { return 0; };
         
 	// Opening functions - mandatory
 	virtual File *open (const char *path, int flags) = 0;
@@ -250,15 +250,15 @@ namespace VFS
 
 	// Creating/destroying functions - optional.
         // EPERM = "Filesystem does not support blah-blah."
-	virtual int mkdir (const char *path) { return -EPERM; }
-	virtual int rmdir (const char *path) { return -EPERM; }
-	virtual int unlink (const char *path) { return -EPERM; }
+	virtual int mkdir (const char *path) { (void)path; return -EPERM; }
+	virtual int rmdir (const char *path) { (void)path; return -EPERM; }
+	virtual int unlink (const char *path) { (void)path; return -EPERM; }
 
 	// Other functions - optional
-        virtual int rename (const char *oldpath, const char *newpath) { return -EROFS; }
-	virtual int link (const char *oldpath, const char *newpath) { return -EPERM; }
-	virtual int symlink (const char *dest, const char *path) { return -EPERM; }
-        virtual int readlink (const char *path, char *buf, int len) { return -EINVAL; }
+        virtual int rename (const char *oldpath, const char *newpath) { (void)oldpath, (void)newpath; return -EROFS; }
+	virtual int link (const char *oldpath, const char *newpath) { (void)oldpath, (void)newpath; return -EPERM; }
+	virtual int symlink (const char *dest, const char *path) { (void)dest, (void)path; return -EPERM; }
+        virtual int readlink (const char *path, char *buf, int len) { (void)path, (void)buf, (void)len; return -EINVAL; }
         virtual int stat (const char *path, struct my_stat *st) {
             File *fp = open (path, O_RDONLY);
             int err = 0;

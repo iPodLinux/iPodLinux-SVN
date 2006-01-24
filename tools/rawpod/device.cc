@@ -112,7 +112,7 @@ int LocalFile::error() {
 }
 int LocalFile::close() 
 {
-    ::close (_fd);
+    return ::close (_fd);
 }
 
 #endif

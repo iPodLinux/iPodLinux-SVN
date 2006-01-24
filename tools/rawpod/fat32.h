@@ -16,7 +16,7 @@ public:
     static int probe (VFS::Device *dev);
     
     virtual VFS::File *open (const char *path, int flags);
-    virtual VFS::Dir  *opendir (const char *path) { return 0; }
+    virtual VFS::Dir  *opendir (const char *path) { (void)path; return 0; }
 
 protected:
     u16 bytes_per_sector;
@@ -36,7 +36,7 @@ public:
     ~FATFile() {}
 
     virtual int read (void *buf, int n);
-    virtual int write (const void *buf, int n) { return -EROFS; }
+    virtual int write (const void *buf, int n) { (void)buf, (void)n; return -EROFS; }
     virtual s64 lseek (s64 off, int whence);
     virtual int error() { if (_err < 0) return -_err; return _err; }
     
