@@ -165,6 +165,8 @@ int ttk_slider_down (TWidget *this, int button)
 void ttk_slider_free (TWidget *this) 
 {
     _MAKETHIS;
+    ttk_free_surface (data->empty);
+    ttk_free_surface (data->full);
     free (data);
 }
 
