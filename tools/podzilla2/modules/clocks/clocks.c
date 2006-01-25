@@ -486,6 +486,8 @@ void clock_draw_simple_analog( ttk_surface srf, clocks_globals *glob );
 void clock_draw_nelson_analog( ttk_surface srf, clocks_globals *glob );
 void clock_draw_oversized( ttk_surface srf, clocks_globals *glob );
 void clock_draw_oversized_watch( ttk_surface srf, clocks_globals *glob );
+void clock_draw_bcd_red( ttk_surface srf, clocks_globals *glob );
+void clock_draw_bcd_blue( ttk_surface srf, clocks_globals *glob );
 
 void init_clocks() 
 {
@@ -524,6 +526,10 @@ void init_clocks()
 	clocks_register_face( clock_draw_nelson_analog, "Nelson Ball Clock" );
 	clocks_register_face( clock_draw_oversized, "Oversized" );
 	clocks_register_face( clock_draw_oversized_watch, "Oversized Watch" );
+	clocks_register_face( clock_draw_bcd_red, "BCD Binary Clock" );
+	if( ttk_screen->bpp >= 16 ) {
+	 clocks_register_face( clock_draw_bcd_blue, "BCD Binary Clock (blue)" );
+	}
 }
 
 PZ_MOD_INIT (init_clocks)
