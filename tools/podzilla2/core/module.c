@@ -487,6 +487,25 @@ static void find_modules (const char *dir)
     closedir (dp);
 }
 
+
+void updateprogress(TWindow * sliderwin,TWidget * slider,int newVal)
+{
+	static char firstrun = 1;
+	if(firstrun)
+	{
+		char * loading = "Loading modules.. Please wait.";
+		int textw =ttk_text_width(ttk_textfont,loading);
+		ttk_fillrect(sliderwin->srf,0,0,sliderwin->w,sliderwin->h,ttk_ap_getx("menu.bg")->color);
+		ttk_text(sliderwin->srf,ttk_textfont,ttk_screen->w/ 2 - textw/2,ttk_screen->h/2,ttk_ap_getx("menu.fg")->color,loading);
+		firstrun=0;
+	}
+	ttk_slider_set_val(slider,newVal);
+	ttk_slider_draw(slider,sliderwin->srf);
+	ttk_draw_window(sliderwin);
+	ttk_gfx_update(ttk_screen->srf);
+//	ttk_delay(10);  //useful for testing
+}
+
 void pz_modules_init() 
 {
 #ifdef IPOD
@@ -495,14 +514,19 @@ void pz_modules_init()
 #define MODULEDIR "modules"
 #endif
 
+    /* Used for the progress bar */
+    TWindow * sliderwin;
+    TWidget  * slider;
+    int sliderVal=0;
+
     PzModule *last, *cur;
     int i;
-
+    int modCount=0;
+    
     if (module_head) {
 	pz_error (_("modules_init called more than once"));
 	return;
     }
-
     find_modules (MODULEDIR);
 
     for (i = 0; i < __pz_builtin_number_of_init_functions; i++) {
@@ -538,6 +562,21 @@ void pz_modules_init()
 	    cur->next = 0;
 	}
     }
+    
+    /* Used to initialize the window + progressbar used in loading the modules*/
+    cur = module_head;
+    while (cur) {
+    	modCount++;
+	cur = cur->next;
+    }
+    sliderwin = ttk_new_window();
+    ttk_window_hide_header(sliderwin);
+    sliderwin->x = sliderwin->y = 0;
+    slider = ttk_new_slider_widget(2, ttk_screen->h/3, ttk_screen->w - 8, 0,
+		    modCount * 5, &sliderVal, 0);
+    slider->x = (sliderwin->w - slider->w)/2;
+    ttk_add_widget(sliderwin, slider);
+    updateprogress(sliderwin, slider, sliderVal);
 
     if (!module_head) {
 	pz_message_title (_("Warning"), _("No modules. podzilla will probably be very boring."));
@@ -548,6 +587,7 @@ void pz_modules_init()
     cur = module_head;
     last = 0;
     while (cur) {
+	updateprogress(sliderwin, slider, ++sliderVal);
         if (cur->podpath && cur->extracted) {
             cur->mountpt = strdup (cur->podpath);
             last = cur;
@@ -567,6 +607,7 @@ void pz_modules_init()
     // Load the module.inf's
     cur = module_head;
     while (cur) {
+	updateprogress(sliderwin, slider, ++sliderVal);
 	load_modinf (cur);
 	cur = cur->next;
     }
@@ -575,6 +616,7 @@ void pz_modules_init()
     cur = module_head;
     last = 0;
     while (cur) {
+	updateprogress(sliderwin, slider, ++sliderVal);
 	if (fix_dependencies (cur, 1) == -1) {
 	    if (last) last->next = cur->next;
 	    else module_head = cur->next;
@@ -590,6 +632,7 @@ void pz_modules_init()
     cur = module_head;
     last = 0;
     while (cur) {
+	updateprogress(sliderwin, slider, ++sliderVal);
 	for (i = 0; i < __pz_builtin_number_of_init_functions; i++) {
 	    if (!strcmp (__pz_builtin_names[i], cur->name)) {
 		cur->init = __pz_builtin_init_functions[i];
@@ -605,6 +648,7 @@ void pz_modules_init()
     // better solution.
     cur = module_head;
     while (cur) {
+	updateprogress(sliderwin, slider, ++sliderVal);
         add_deps (cur);
         cur = cur->next;
     }        
