@@ -37,14 +37,50 @@ typedef struct _slider_data
     int epoch;
 } slider_data;
 
+static int min_spacing()
+{
+#define SMIN(y,z) y < z ? y : z
+    int s;
+
+    s = SMIN(ttk_ap_getx("slider.border")->spacing, 0);
+    s = SMIN(ttk_ap_getx("slider.bg")->spacing, s);
+    s = SMIN(ttk_ap_getx("slider.full")->spacing, s);
+    return s;
+}
+
+static void ttk_slider_setup_surfaces(slider_data *data, int w, int h, int s)
+{
+    TApItem *ap;
+
+    if (data->empty) ttk_free_surface(data->empty);
+    if (data->full) ttk_free_surface(data->full);
+    data->empty = ttk_new_surface(w-s*2, h-s*2, ttk_screen->bpp);
+    data->full = ttk_new_surface(w-s*2, h-s*2, ttk_screen->bpp);
+
+    if ((ap = ttk_ap_get("window.bg"))) {
+    	ttk_fillrect(data->empty, 0, 0, w-s*2, h-s*2, ap->color);
+    	ttk_fillrect(data->full, 0, 0, w-s*2, h-s*2, ap->color);
+    }
+    if ((ap = ttk_ap_get("slider.bg")))
+	ttk_ap_fillrect(data->empty, ap, -s+1, -s+1, w-1-s, h-1-s);
+    if ((ap = ttk_ap_get("slider.border"))) {
+	ttk_ap_rect(data->empty, ap, -s, -s, w-s, h-s);
+	ttk_ap_rect(data->full, ap, -s, -s, w-s, h-s);
+    }
+    if ((ap = ttk_ap_get("slider.full")))
+	ttk_ap_fillrect(data->full, ap, -s+1, -s+1, w-1-s, h-1-s);
+}
+
 // *val must stay allocated until you either set a callback or destroy the widget.
-TWidget *ttk_new_slider_widget (int x, int y, int w, int minval, int maxval, int *val, const char *title)
+TWidget *ttk_new_special_slider_widget (int x, int y, int w, int h, int minval,
+		int maxval, int *val, const char *title)
 {
     TWidget *ret = ttk_new_widget (x, y);
     slider_data *data = calloc (sizeof(slider_data), 1);
+    int s = min_spacing();
     
-    ret->w = w;
-    ret->h = 11 + (15*!!title);
+    ret->w = w-s*2;
+    ret->h = (h-s*2) + (15*!!title);
     ret->data = data;
     ret->focusable = 1;
     ret->draw = ttk_slider_draw;
@@ -59,17 +95,15 @@ TWidget *ttk_new_slider_widget (int x, int y, int w, int minval, int maxval, int
     data->lastval = *val;
     data->callback = 0;
     data->epoch = ttk_epoch;
-    data->empty = ttk_new_surface (220, 11, ttk_screen->bpp);
-    data->full = ttk_new_surface (220, 11, ttk_screen->bpp);
-    
-    ttk_ap_fillrect (data->empty, ttk_ap_get ("slider.bg"), 0, 0, 220, 11);
-    ttk_ap_fillrect (data->full, ttk_ap_get ("slider.full"), 0, 0, 220, 11);
-    ttk_ap_rect (data->empty, ttk_ap_get ("slider.border"), 0, 0, 220, 11);
-    ttk_ap_rect (data->full, ttk_ap_get ("slider.border"), 0, 0, 220, 11);
+
+    ttk_slider_setup_surfaces(data, w, h, s);
 
     ret->dirty = 1;
     return ret;
 }
+
+TWidget *ttk_new_slider_widget (int x, int y, int w, int minval, int maxval, int *val, const char *title)
+{ return ttk_new_special_slider_widget(x,y, w,11, minval,maxval, val, title); }
 
 void ttk_slider_set_callback (TWidget *this, void (*callback)(int,int), int cdata) 
 {
@@ -89,17 +123,22 @@ void ttk_slider_set_bar (TWidget *this, ttk_surface empty, ttk_surface full)
     data->full = full;
 }
 
+void ttk_slider_set_val(TWidget * this, int newval)
+{
+    slider_data * sdata=this->data;
+    sdata->lastval=newval;
+    if (sdata->val) *(sdata->val) = newval;
+}
+
 void ttk_slider_draw (TWidget *this, ttk_surface srf)
 {
+    _MAKETHIS;
     int y = this->y;
     int X;
-    _MAKETHIS;
+    int h = this->h - (15*!!data->label);
 
     if (data->epoch < ttk_epoch) {
-	ttk_ap_fillrect (data->empty, ttk_ap_get ("slider.bg"), 0, 0, 220, 11);
-	ttk_ap_fillrect (data->full, ttk_ap_get ("slider.full"), 0, 0, 220, 11);
-	ttk_ap_rect (data->empty, ttk_ap_get ("slider.border"), 0, 0, 220, 11);
-	ttk_ap_rect (data->full, ttk_ap_get ("slider.border"), 0, 0, 220, 11);
+	ttk_slider_setup_surfaces(data, this->w, h, min_spacing());
     }
 
     if (data->label) {
@@ -111,9 +150,9 @@ void ttk_slider_draw (TWidget *this, ttk_surface srf)
     X = (data->lastval - data->min) * this->w / (data->max - data->min);
     if (!X) X = 1; // show left edge of the "full" graphic
 
-    ttk_blit_image_ex (data->full, 0, 0, X, 11, srf, this->x, y);
-    ttk_blit_image_ex (data->empty, 220 - (this->w - X), 0,
-		       this->w - X, 11, srf, this->x + X, y);
+    ttk_blit_image_ex (data->full, 0, 0, X, h, srf, this->x, y);
+    ttk_blit_image_ex (data->empty, this->w - (this->w - X), 0,
+		       this->w - X, h, srf, this->x + X, y);
 }
 
 int ttk_slider_scroll (TWidget *this, int dir)
