@@ -28,11 +28,17 @@
 #include "clocks.h"
 
 
+/* draw a single light */
 static void clock_draw_light( ttk_surface srf, int x, int y, int dia,
 				ttk_color light, ttk_color container )
 {
+	/* since there's no such thing as an aafillellipse, i need 
+	   to do the following hack... */
 	ttk_fillellipse( srf, x, y, dia, dia, light );	
 	ttk_aaellipse( srf, x, y, dia, dia, container );	
+
+	/* to smooth out the edges between the above, throw on an extra 
+	   aaellipse, slightly larger.  (dont do it on monopods.) */
 	if( ttk_screen->bpp >= 16 )
 		ttk_aaellipse( srf, x, y, dia+1, dia+1, container );	
 }
