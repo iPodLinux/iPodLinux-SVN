@@ -1,0 +1,4 @@
+Module: clocks7seg
+Display-name: Clocks 7 Segment Display
+Author: Scott Lawrence
+Dependencies: clocks
