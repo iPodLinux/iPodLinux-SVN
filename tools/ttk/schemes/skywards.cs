@@ -85,8 +85,8 @@
 	  icon3 => unwhite
 
   slider: border => #86898f -2,
-	  bg => unwhite,
-	  full => <vert #e0e1e4 to #b4b7bd to #aaacb2 with #80848e @:6,0,1,0>
+	  bg => #f7f7f7 -2,
+	  full => <vert #e0e1e4 to #b4b7bd to #aaacb2 with #80848e @:6,0,1,0> -1
 
 textarea: bg => unwhite,
 	  fg => black

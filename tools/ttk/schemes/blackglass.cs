@@ -85,8 +85,8 @@
 	  icon3 => black
 
   slider: border => #333 +3,
-	  bg => black,
-	  full => #333 +2
+	  bg => black -1,
+	  full => #333
 
 textarea: bg => black,
 	  fg => white
