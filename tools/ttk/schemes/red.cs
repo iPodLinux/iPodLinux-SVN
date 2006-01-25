@@ -55,7 +55,7 @@
           selbg => red, selfg => black, selchoice => dkred,
           icon0 => red, icon1 => ltred, icon2 => dkred, icon3 => black
 
-  slider: border => red, bg => black, full => black
+  slider: border => red, bg => black, full => <horiz dkred to red to yellow>
 
 textarea: bg => black, fg => red
 
