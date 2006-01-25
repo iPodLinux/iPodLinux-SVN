@@ -21,9 +21,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
-#include <math.h>
-#include <sys/time.h>
 #include "pz.h"
 #include "clocks.h"
 
@@ -85,7 +82,7 @@ static void clock_draw_bcd_common( ttk_surface srf, clocks_globals *glob,
 	} else {
 		light = ttk_makecol( WHITE );
 		dark = ttk_makecol( BLACK );
-		container = ttk_makecol( GREY );
+		container = ttk_makecol( DKGREY );
 	}
 
 	/* clear to black */
