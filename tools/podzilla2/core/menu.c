@@ -166,6 +166,7 @@ static TWindow *new_settings_slider_window (char *title, int setting,
     ttk_slider_set_callback (slider, slider_set_setting, setting);
     ttk_window_set_title (win, title);
     ttk_add_widget (win, slider);
+    win->data = 0x12345678;
     ttk_set_popup (win);
     return win;
 }
@@ -180,7 +181,6 @@ static TWindow *set_wheeldebounce()
 	pz_setting_debounce = 1;
 	ttk_set_scroll_multiplier (1, 1);
 	ret = new_settings_slider_window (_("Wheel Sensitivity"), WHEEL_DEBOUNCE, 0, 19);
-	ret->data = 0x12345678;
 	return ret;
 }
 
