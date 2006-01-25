@@ -118,6 +118,7 @@ static void calculate(int pos)
 		case MULT:
 		case SUBT:
 		case ADD:
+			if (op) number = operation(lastnumber, op, number);
 			op = p->math;
 			lastnumber = number;
 			stump = 1;
@@ -125,6 +126,7 @@ static void calculate(int pos)
 			break;
 		case EQL:
 			number = operation(lastnumber, op, number);
+			op = 0;
 			stump = 1;
 			e = 0;
 			break;
@@ -189,6 +191,7 @@ static PzWindow *new_calculator()
 	number = lastnumber = 0;
 	e = 0;
 	cur_button = 0;
+	op = 0;
 
 	ret = pz_new_window(_("Calculator"), PZ_WINDOW_NORMAL);
 	pz_add_widget(ret, calculator_draw, calculator_events);
