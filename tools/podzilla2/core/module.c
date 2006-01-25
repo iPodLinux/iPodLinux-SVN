@@ -493,7 +493,7 @@ void updateprogress(TWindow * sliderwin,TWidget * slider,int newVal)
 	static char firstrun = 1;
 	if(firstrun)
 	{
-		char * loading = "Loading modules.. Please wait.";
+		char * loading = _("Loading modules.. Please wait.");
 		int textw =ttk_text_width(ttk_textfont,loading);
 		ttk_fillrect(sliderwin->srf,0,0,sliderwin->w,sliderwin->h,ttk_ap_getx("menu.bg")->color);
 		ttk_text(sliderwin->srf,ttk_textfont,ttk_screen->w/ 2 - textw/2,ttk_screen->h/2,ttk_ap_getx("menu.fg")->color,loading);
