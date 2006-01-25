@@ -484,6 +484,8 @@ extern const char *clocks_timezones[], *clocks_dsts[];
 /* xxx other, external clocks xxx */
 void clock_draw_simple_analog( ttk_surface srf, clocks_globals *glob );
 void clock_draw_nelson_analog( ttk_surface srf, clocks_globals *glob );
+void clock_draw_oversized( ttk_surface srf, clocks_globals *glob );
+void clock_draw_oversized_watch( ttk_surface srf, clocks_globals *glob );
 
 void init_clocks() 
 {
@@ -520,6 +522,8 @@ void init_clocks()
 	/* these are in other .c files in this module */
 	clocks_register_face( clock_draw_simple_analog, "Simple Analog Clock" );
 	clocks_register_face( clock_draw_nelson_analog, "Nelson Ball Clock" );
+	clocks_register_face( clock_draw_oversized, "Oversized" );
+	clocks_register_face( clock_draw_oversized_watch, "Oversized Watch" );
 }
 
 PZ_MOD_INIT (init_clocks)
