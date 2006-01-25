@@ -24,6 +24,7 @@
 TWidget *ttk_new_slider_widget (int x, int y, int w, int min, int max, int *val, const char *title);
 void ttk_slider_set_bar (TWidget *_this, ttk_surface empty, ttk_surface full);
 void ttk_slider_set_callback (TWidget *_this, void (*cb)(int cdata, int val), int cdata);
+void ttk_slider_set_val (TWidget *_this, int newval);
 
 void ttk_slider_draw (TWidget *_this, ttk_surface srf);
 int ttk_slider_scroll (TWidget *_this, int dir);
