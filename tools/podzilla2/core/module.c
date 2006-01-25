@@ -491,9 +491,20 @@ static void find_modules (const char *dir)
 void updateprogress(TWindow * sliderwin,TWidget * slider,int newVal)
 {
 	static char firstrun = 1;
+	static char initting = 0;
+
+	char * loading = _("Loading modules.. Please wait.");
+
+	/* newVal < 0 is a switch to change into "initialization" mode */
+	if( newVal < 0 ) {
+		initting = 1;
+		newVal = 0;
+		firstrun = 1;
+		loading = _( "Initializing modules..." );
+	}
+
 	if(firstrun)
 	{
-		char * loading = _("Loading modules.. Please wait.");
 		int textw =ttk_text_width(ttk_textfont,loading);
 		ttk_fillrect(sliderwin->srf,0,0,sliderwin->w,sliderwin->h,ttk_ap_getx("menu.bg")->color);
 		ttk_text(sliderwin->srf,ttk_textfont,ttk_screen->w/ 2 - textw/2,ttk_screen->h/2,ttk_ap_getx("menu.fg")->color,loading);
@@ -661,7 +672,20 @@ void pz_modules_init()
 	c = c->next;        
     }
     c = load_order;
+
+	/* trigger the sliders to switch to init mode, restting the slider */
+	updateprogress(sliderwin, slider, -1);
+	sliderVal = 0;
+
+	/* initialize the modules */
     while (c) {
+	updateprogress(sliderwin, slider, sliderVal);
+
+	/* put in proper math in here to scale [0..sliderVal..nModules]
+	    to [0..currSliderWidth..maxSliderWidth]... but for now 
+	    just add 4 for each module initialized... */
+	sliderVal += 5;
+
         current_module = c->mod;
         do_init (c->mod);
         c = c->next;
