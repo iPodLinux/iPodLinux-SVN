@@ -21,9 +21,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
-#include <math.h>
-#include <sys/time.h>
 #include "pz.h"
 #include "clocks.h"
 

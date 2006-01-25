@@ -21,6 +21,8 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
+#include <sys/time.h>
 #include "pz.h"
 
 /* this is the total number of registerable clock faces */
@@ -77,4 +79,7 @@ typedef void (*draw_face)( ttk_surface srf, clocks_globals * glob );
 
 /* use this function to register more clock faces from new modules */
 void clocks_register_face( draw_face fcn, char * name );
+
+/* for doing the 12-24 conversion, based on user prefs */
+int clock_convert_1224( int hours );
 

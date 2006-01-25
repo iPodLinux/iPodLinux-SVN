@@ -21,9 +21,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
-#include <math.h>
-#include <sys/time.h>
 #include "pz.h"
 #include "clocks.h"
 
@@ -43,7 +40,7 @@ static int clock_convert_12( int hours )
 }
 
 
-static int clock_convert_1224( int hours )
+int clock_convert_1224( int hours )
 {
         if( pz_get_int_setting( pz_global_config, TIME_1224 ))
                 return( hours );
