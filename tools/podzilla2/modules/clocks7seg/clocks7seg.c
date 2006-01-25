@@ -80,10 +80,6 @@ static int ls7447[10] = {
 #define LS_G	(0x01)
 
 
-#define INSET (1)	/* how far in the segments are shortened */
-#define THICK (7)	/* how thick the segment bars are */
-#define THICKC (4)	/* how thick the center segment bar is */
-
 static void draw_number( ttk_surface srf,
 		int x1, int y1, int x2, int y2, /* screen coords for the num */
 		int value, /* value is actually an ascii character */
@@ -92,35 +88,51 @@ static void draw_number( ttk_surface srf,
 	int mask = 0x00;
 	int yc = y1+((y2-y1)>>1);
 
+	int inset = 1;	/* how far in the segments are shortened */
+	int thick = 7;	/* how thick the segment bars are */
+	int thickc = 3; /* how thick the center segment bar is */
+
+	/* heuristics for smaller displays */
+	if( ttk_screen->w < 220 ) {
+		thick = 5;
+		thickc = 3;
+	}
+
+	/* and for larger displays */
+	if( ttk_screen->w > 220 ) {
+		thick = 9;
+		thickc = 5;
+	}
+
 	/* A - top */
-	short polyAx[] = { x1+INSET, x2-INSET, x2-INSET-THICK, x1+INSET+THICK };
-	short polyAy[] = { y1, y1, y1+THICK, y1+THICK };
+	short polyAx[] = { x1+inset, x2-inset, x2-inset-thick, x1+inset+thick };
+	short polyAy[] = { y1, y1, y1+thick, y1+thick };
 
 	/* B - top right */
-	short polyBx[] = { x2, x2, x2-THICK, x2-THICK };
-	short polyBy[] = { y1+INSET, yc-INSET, yc-INSET-THICK, y1+INSET+THICK };
+	short polyBx[] = { x2, x2, x2-thick, x2-thick };
+	short polyBy[] = { y1+inset, yc-inset, yc-inset-thick, y1+inset+thick };
 
 	/* C - bottom right */
-	short polyCx[] = { x2, x2, x2-THICK, x2-THICK };
-	short polyCy[] = { yc+INSET, y2-INSET, y2-INSET-THICK, yc+INSET+THICK };
+	short polyCx[] = { x2, x2, x2-thick, x2-thick };
+	short polyCy[] = { yc+inset, y2-inset, y2-inset-thick, yc+inset+thick };
 
 	/* D - bottom */
-	short polyDx[] = { x1+INSET, x2-INSET, x2-INSET-THICK, x1+INSET+THICK };
-	short polyDy[] = { y2, y2, y2-THICK, y2-THICK };
+	short polyDx[] = { x1+inset, x2-inset, x2-inset-thick, x1+inset+thick };
+	short polyDy[] = { y2, y2, y2-thick, y2-thick };
 
 	/* E - bottom left */
-	short polyEx[] = { x1, x1, x1+THICK, x1+THICK };
-	short polyEy[] = { yc+INSET, y2-INSET, y2-INSET-THICK, yc+INSET+THICK };
+	short polyEx[] = { x1, x1, x1+thick, x1+thick };
+	short polyEy[] = { yc+inset, y2-inset, y2-inset-thick, yc+inset+thick };
 
 	/* F - top left */
-	short polyFx[] = { x1, x1, x1+THICK, x1+THICK };
-	short polyFy[] = { y1+INSET, yc-INSET, yc-INSET-THICK, y1+INSET+THICK };
+	short polyFx[] = { x1, x1, x1+thick, x1+thick };
+	short polyFy[] = { y1+inset, yc-inset, yc-inset-thick, y1+inset+thick };
 
 	/* G - center */
-	short polyGx[] = { x1+INSET, x1+INSET+THICK, x2-INSET-THICK, x2-INSET,
-			   x2-INSET-THICK, x1+INSET+THICK };
-	short polyGy[] = { yc, yc-THICKC, yc-THICKC, yc,
-			   yc+THICKC, yc+THICKC };
+	short polyGx[] = { x1+inset, x1+inset+thickc, x2-inset-thickc, x2-inset,
+			   x2-inset-thickc, x1+inset+thickc };
+	short polyGy[] = { yc, yc-thickc, yc-thickc, yc,
+			   yc+thickc, yc+thickc };
 
 	/* convert the value to the segment mask */
 	if( value >= 0 && value <= 9 ) mask = ls7447[ value ];
