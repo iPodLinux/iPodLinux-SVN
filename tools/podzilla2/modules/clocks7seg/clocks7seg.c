@@ -90,7 +90,7 @@ static void draw_number( ttk_surface srf,
 
 	int inset = 1;	/* how far in the segments are shortened */
 	int thick = 7;	/* how thick the segment bars are */
-	int thickc = 3; /* how thick the center segment bar is */
+	int thickc = 4; /* how thick the center segment bar is */
 
 	/* heuristics for smaller displays */
 	if( ttk_screen->w < 220 ) {
@@ -101,7 +101,7 @@ static void draw_number( ttk_surface srf,
 	/* and for larger displays */
 	if( ttk_screen->w > 220 ) {
 		thick = 9;
-		thickc = 5;
+		thickc = 6;
 	}
 
 	/* A - top */
