@@ -103,12 +103,12 @@ typedef struct _pz_Module PzModule;
 
 /* called from module */
 extern int _pz_mod_check_version (int ver); /* DO NOT call directly */
-#ifdef __PZ_BUILTIN_MOD
+#ifdef __PZ_BUILTIN_MODULE
 extern void (*__pz_builtin_init_functions[])();
 extern const char *__pz_builtin_names[];
 extern int __pz_builtin_number_of_init_functions;
 #define PZ_MOD_INIT(fn) \
-    static void __init__ __attribute__((constructor)) () { \
+    __attribute__((__constructor__)) static void __init_module__ () { \
         __pz_builtin_init_functions[__pz_builtin_number_of_init_functions] = fn; \
         __pz_builtin_names[__pz_builtin_number_of_init_functions++] = __PZ_MODULE_NAME; \
     }

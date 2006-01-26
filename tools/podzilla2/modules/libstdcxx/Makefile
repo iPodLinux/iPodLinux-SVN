@@ -1,3 +1,3 @@
 MODULE = libstdcxx
 obj-m =
-MODLIBS = -lstdc++
+MODLIBS = $(shell gcc -print-file-name=libstdc++.a)
