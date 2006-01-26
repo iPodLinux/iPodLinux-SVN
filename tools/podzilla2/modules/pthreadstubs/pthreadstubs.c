@@ -1,5 +1,6 @@
 #include <pz.h>
 
+#ifdef IPOD
 void pthread_create() 
 {
     pz_error ("pthread_create() attempt");
@@ -34,6 +35,7 @@ void pthread_setspecific()
 {
     pz_error ("pthread_setspecific() attempt");
 }
+#endif
 
 void no_init() {}
 PZ_MOD_INIT (no_init)

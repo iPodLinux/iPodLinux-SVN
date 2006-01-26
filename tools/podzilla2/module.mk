@@ -21,6 +21,11 @@ ifndef MODULE
 $(error You must define MODULE.)
 endif
 
+ifdef STATIC
+obj-y := $(obj-y) $(obj-m)
+obj-m =
+endif
+
 cobj-y  := $(patsubst %.c,%.o,$(wildcard $(patsubst %.o,%.c,$(obj-y))))
 ccobj-y := $(patsubst %.cc,%.o,$(wildcard $(patsubst %.o,%.cc,$(obj-y))))
 cobj-m  := $(patsubst %.c,%.o,$(wildcard $(patsubst %.o,%.c,$(obj-m))))
@@ -31,8 +36,10 @@ ifeq ($(strip $(obj)),)
 ifeq ($(strip $(MODLIBS)),)
 $(error You must specify some object files or libraries.)
 else
+ifneq ($(shell uname),Darwin)
 WA = -whole-archive
 NWA = -no-whole-archive
+endif
 obj-m = LIBRARY
 endif
 else
@@ -74,7 +81,6 @@ endif
 ## Case for single-file
 ifndef IPOD
 finalmod = $(MODULE).so
-onlyso = true
 $(MODULE).so: $(obj-m)
 	@echo " LD [SO] $(MODULE).so"
 	@$(MAKESO) $(LDFLAGS) -o $@ $(obj-m) $(MODLIBS)
@@ -86,33 +92,17 @@ $(MODULE).mod.o: $(obj-m)
 endif
 
 else
-## Case for multi-file
-ifndef IPOD
-finalmod = $(MODULE).so
-$(MODULE).so: $(obj-m)
-	@echo " LD [SO] $(MODULE).so"
-	@$(MAKESO) $(LDFLAGS) -o $@ $(obj-m) $(MODLIBS)
-else
-finalmod = $(MODULE).mod.o
-$(MODULE).mod.o: $(obj-m)
-	@echo " LD [M]  $(MODULE).mod.o"
-	@$(LD) -Ur -d -o $@ $(obj-m) $(WA) $(MODLIBS) $(NWA)
+finalmod =
 endif
 
-endif
-
-ifeq ($(onlyso),true)
-all: $(obj-y) $(built-in) $(finalmod)
-else
 #####
 all: $(obj-y) $(built-in) $(obj-m) $(finalmod)
 #####
-endif
 
 ifdef obj-y
 built-in.o: $(obj-y)
 	@echo " LD      $(MODULE)"
-	@$(LD) -r -o built-in.o $(obj-y)
+	@$(LD) -r -o built-in.o $(obj-y) -L/usr/lib $(WA) $(MODLIBS) $(NWA)
 
 $(cobj-y): %.o: %.c
 	@echo " CC     " $@
