@@ -40,7 +40,9 @@ ifneq ($(shell uname),Darwin)
 WA = -whole-archive
 NWA = -no-whole-archive
 endif
+ifndef STATIC
 obj-m = LIBRARY
+endif
 endif
 else
 WA =
@@ -52,6 +54,7 @@ CROSS ?= arm-uclinux-elf
 CC = $(CROSS)-gcc
 CXX = $(CROSS)-g++
 LD = $(CROSS)-ld
+OBJCOPY = $(CROSS)-objcopy
 TARGET = ipod
 PIC =
 MYCFLAGS = -mapcs -mcpu=arm7tdmi -DVERSION=\"$(VERSION)\" -Wall
@@ -59,6 +62,7 @@ else
 CC ?= cc
 CXX ?= c++
 LD ?= ld
+OBJCOPY ?= objcopy
 TARGET = x11
 ifeq ($(shell uname),Darwin)
 PIC = -dynamic
@@ -102,7 +106,13 @@ all: $(obj-y) $(built-in) $(obj-m) $(finalmod)
 ifdef obj-y
 built-in.o: $(obj-y)
 	@echo " LD      $(MODULE)"
-	@$(LD) -r -o built-in.o $(obj-y) -L/usr/lib $(WA) $(MODLIBS) $(NWA)
+ifdef IPOD
+	@$(LD) -r -o built-in.o.strong $(obj-y) -L$(dir $(shell $(CC) -print-file-name=libc.a)) $(WA) $(MODLIBS) $(NWA)
+	@$(OBJCOPY) --weaken built-in.o.strong built-in.o
+	@$(RM) -f built-in.o.strong
+else
+	@$(LD) -r -o built-in.o $(obj-y) -L$(dir $(shell $(CC) -print-file-name=libc.a)) $(WA) $(MODLIBS) $(NWA)
+endif
 
 $(cobj-y): %.o: %.c
 	@echo " CC     " $@
@@ -130,10 +140,10 @@ LIBRARY:
 #####
 
 semiclean:
-	@rm -f $(obj)
+	@rm -f $(obj) built-in.o
 
 clean:
-	@rm -f $(MODULE).mod.o $(MODULE).so $(obj)
+	@rm -f $(MODULE).mod.o $(MODULE).so $(obj) built-in.o
 
 distfiles:
 	@echo Module

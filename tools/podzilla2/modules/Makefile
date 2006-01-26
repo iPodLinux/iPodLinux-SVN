@@ -1,6 +1,12 @@
 SUBDIRS := $(shell for dir in */; do if test -f $$dir/Module; then echo $$dir | sed 's|/$$||'; fi; done)
 
 DESTDIR ?= /mnt/ipod
+ifdef IPOD
+CROSS ?= arm-uclinux-elf
+LD = $(CROSS)-ld
+else
+LD ?= ld
+endif
 
 #SUBDIRS = mymodule pong wumpus calc calendar clocks cube dialer invaders ipobble \
 #          lights mandelpod matrix minesweeper othello poddraw tictactoe tunnel
@@ -21,7 +27,7 @@ all:
 	@if find * -name built-in.o | grep '/built-in.o'; then \
 		rm -f built-in.o; \
 		echo " LD      built-in.o"; \
-		find . -name built-in.o | xargs ld -r -o built-in.o; \
+		find . -name built-in.o | xargs $(LD) -r -o built-in.o; \
 	fi
 
 install: all
@@ -48,4 +54,4 @@ clean:
 		make -sf ../../module.mk clean; \
 		cd ..; \
 	done
-
+	@rm -f built-in.o
