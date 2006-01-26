@@ -115,7 +115,7 @@ DEC	[0-9]+
     if (!topid) ERR ("first definition line missing top-level ID");
     if (!subid) ERR ("=> without key");
     
-    ap = malloc (sizeof(TApItem));
+    ap = calloc (1, sizeof(TApItem));
     if (!ap_head)
         ap_head = ap;
     else {
