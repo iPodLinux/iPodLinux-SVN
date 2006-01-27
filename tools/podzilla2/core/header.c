@@ -28,6 +28,8 @@
 static int decorations;			/* which decoration set to use */
 static int decoration_colors_dirty = 0; /* have the colors changed on us? */
 
+extern int ipod_read_apm(int *battery, int *charging);
+
 static int make_dirty (TWidget *this) { this->dirty++; ttk_dirty |= TTK_DIRTY_HEADER; return 0; }
 
 
@@ -39,8 +41,7 @@ static void battery_draw (TWidget *this, ttk_surface srf)
 	int battery_fill, battery_is_charging;
 	ttk_color c;
 
-	battery_fill = pz_ipod_get_battery_level();
-	battery_is_charging = pz_ipod_is_charging();
+	ipod_read_apm(&battery_fill, &battery_is_charging);
 
 	/* draw the level as digits/text if that's the user's setting */
 	if (pz_get_int_setting (pz_global_config, BATTERY_DIGITS)) {
