@@ -175,7 +175,7 @@ int ti_select(int id)
 
 TWindow * ti_ttkselect(ttk_menu_item * item)
 {
-	ti_select((int)item->data);
+	ti_select((long)item->data);
 	return TTK_MENU_UPONE;
 }
 
@@ -185,7 +185,7 @@ int ti_register(TWidget * (* create)(), TWidget * (* ncreate)(), char * name, in
 	ti_tim_creators[id] = create;
 	ti_tim_ncreators[id] = ncreate;
 	strcat(menupath, name);
-	pz_menu_add_ttkh(menupath, ti_ttkselect, (void *)id);
+	pz_menu_add_ttkh(menupath, ti_ttkselect, (void *)(long)id);
 	if (ti_selected_tim == id) {
 		ti_select(id);
 	}
