@@ -485,6 +485,7 @@ void clock_draw_oversized( ttk_surface srf, clocks_globals *glob );
 void clock_draw_oversized_watch( ttk_surface srf, clocks_globals *glob );
 void clock_draw_bcd_red( ttk_surface srf, clocks_globals *glob );
 void clock_draw_bcd_blue( ttk_surface srf, clocks_globals *glob );
+void clock_draw_alien( ttk_surface srf, clocks_globals *glob );
 
 void init_clocks() 
 {
@@ -527,6 +528,7 @@ void init_clocks()
 	if( ttk_screen->bpp >= 16 ) {
 	 clocks_register_face( clock_draw_bcd_blue, "BCD Binary Clock (blue)" );
 	}
+	clocks_register_face( clock_draw_alien, "Alien Clock" );
 }
 
 PZ_MOD_INIT (init_clocks)
