@@ -10,8 +10,14 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QPixmap>
+#include <QCheckBox>
+#include <QRadioButton>
 
 #include <string.h>
+
+enum { StandardInstall, AdvancedInstall,
+       NormalUpdate, UIChangeUpdate,
+       Uninstall } Mode;
 
 Installer::Installer (QWidget *parent)
     : ComplexWizard (parent)
@@ -20,7 +26,9 @@ Installer::Installer (QWidget *parent)
 
     setFirstPage (introPage);
     setWindowTitle (tr ("iPodLinux Installer"));
-    resize (450, 380);
+    resize (530, 410);
+    setMinimumSize (500, 410);
+    setMaximumSize (640, 500);
 }
 
 IntroductionPage::IntroductionPage (Installer *wizard)
@@ -49,8 +57,9 @@ IntroductionPage::IntroductionPage (Installer *wizard)
 #else
                         "an administrator"
 #endif
-                        ", and press Next to run a few checks.</p>\n"));
-    blurb->setMaximumWidth (350);
+                        ", and press Next to run a few checks. This may take a few seconds;"
+                        " be patient.</p>\n"));
+    blurb->setMaximumWidth (370);
 
     QLabel *pic = new QLabel;
     pic->setPixmap (QPixmap (":/installer.png"));
@@ -82,7 +91,16 @@ PodLocationPage::PodLocationPage (Installer *wizard)
     int rev = 0;
     VFS::Device *part = 0;
     FATFS *fat32 = 0;
+
+    blurb = subblurb = 0;
+    advancedCheck = changeUICheck = 0;
+    upgradeRadio = uninstallRadio = 0;
+    stateOK = 0;
     
+    wizard->resize (530, 410);
+    wizard->setMinimumSize (500, 410);
+    wizard->setMaximumSize (640, 500);
+
     if (podloc < 0) { status = CantFindIPod; goto err; }
     if (devReadMBR (podloc, mbr) != 0) { status = InvalidPartitionTable; goto err; }
     ptbl = partCopyFromMBR (mbr);
@@ -173,64 +191,70 @@ PodLocationPage::PodLocationPage (Installer *wizard)
         QString err;
         switch (status) {
         case CantFindIPod:
-            err = ("<p><b>Could not find your iPod.</b> I checked all the drives "
-                   "in your system for something that looks like an iPod, but "
-                   "I didn't find anything. Please verify the following.</p>\n"
-                   "<ul><li>Verify that you have administrator privileges on the "
-                   "system. If not, you will probably not be able to access raw "
-                   "devices, and so this installer will not work.</li>\n"
-                   "<li>Make sure you have exactly <i>one</i> iPod plugged in.</li>\n"
-                   "<li>Make sure your iPod is a WinPod, not a MacPod. Use the Apple "
-                   "restore utility if you need to convert it.</li>\n"
-                   "<li>Make sure your iPod is indeed plugged in.</li>\n"
-                   "<li>Be sure your iPod is not ejected; on Linux, it's okay to run "
-                   "<tt>umount</tt> but not <tt>eject</tt>. On Windows, don't do anything "
-                   "except exit programs that are using the iPod.</li></ul>\n"
-                   "<i>If you've followed all these directions and nothing works, this "
-                   "is a bug. Report it.</i>");
+            err = tr("<p><b>Could not find your iPod.</b> I checked all the drives "
+                     "in your system for something that looks like an iPod, but "
+                     "I didn't find anything. Please verify the following.</p>\n"
+                     "<ul><li>Make sure you have administrator privileges on the "
+                     "system. You need them.</li>\n"
+                     "<li>Make sure your iPod is a WinPod, not a MacPod. Use the Apple "
+                     "restore utility if you need to convert it.</li>\n"
+                     "<li>Make sure exactly one iPod is indeed plugged in.</li>\n"
+                     "<li>Be sure your iPod is not ejected; "
+#ifdef __linux__
+                     "it's okay to run <tt>umount</tt> but not <tt>eject</tt>."
+#else
+                     "just exit programs that are using the iPod."
+#endif
+                     "</li></ul>\n"
+                     "<i>If you've followed all these directions and nothing works, this "
+                     "is a bug. Report it.</i>");
             break;
         case InvalidPartitionTable:
-            err = ("<p><b>Invalid partition table.</b> The iPod I found didn't look "
-                   "like it had a valid partition table. It's probably a MacPod; those don't "
-                   "work.</p>");
+            err = tr("<p><b>Invalid partition table.</b> The iPod I found didn't look "
+                     "like it had a valid partition table. It's probably a MacPod; those don't "
+                     "work.</p>");
             break;
         case FSErr:
-            err = ("<p><b>Error accessing filesystem.</b> I was unable to properly access "
-                   "the <tt>SysInfo</tt> file on your iPod; either it didn't exist, there's "
-                   "something wrong with your iPod's filesystem, or (most likely) there's "
-                   "a bug in the installer. Check if the file exists at "
-                   "<i>iPod</i><tt>/iPod_Control/Device/SysInfo</tt>; if it does, report a bug. "
-                   "If not, try restarting your iPod.</p>");
+            err = tr("<p><b>Error accessing filesystem.</b> I was unable to properly access "
+                     "the <tt>SysInfo</tt> file on your iPod; either it didn't exist, there's "
+                     "something wrong with your iPod's filesystem, or (most likely) there's "
+                     "a bug in the installer. Check if the file exists at "
+                     "<i>iPod</i><tt>/iPod_Control/Device/SysInfo</tt>; if it does, report a bug. "
+                     "If not, try restarting your iPod.</p>");
             break;
         case BadSysInfo:
-            err = ("<p><b>Invalid SysInfo file.</b> There was something wrong with the syntax "
-                   "of your SysInfo file; try restarting your iPod.</p>");
+            err = tr("<p><b>Invalid SysInfo file.</b> There was something wrong with the syntax "
+                     "of your SysInfo file; try restarting your iPod.</p>");
             break;
         case NotAnIPod:
-            err = ("<p><b>Not an iPod.</b> The iPod I identified turned out not to be an iPod "
-                   "at all. This shouldn't happen; did you unplug your iPod in the middle of "
-                   "detection? If not, it's a bug.</p>");
+            err = tr("<p><b>Not an iPod.</b> The iPod I identified turned out not to be an iPod "
+                     "at all. This shouldn't happen; did you unplug your iPod in the middle of "
+                     "detection? If not, it's a bug.</p>");
             break;
         case MacPod:
-            err = ("<p><b>iPod is a MacPod.</b> Sorry, but those aren't supported for Windows "
-                   "and Linux installations. You may want to use the iPod Updater to convert it "
-                   "to a WinPod.</p>");
+            err = tr("<p><b>iPod is a MacPod.</b> Sorry, but those aren't supported for Windows "
+                     "and Linux installations. You may want to use the iPod Updater to convert it "
+                     "to a WinPod.</p>");
             break;
         case SLinPod:
-            err = ("<p><b>Invalid preexisting iPodLinux installation.</b> You have a 5G or nano "
-                   "and you did not install Linux correctly when you installed it. Sorry, "
-                   "but I don't know enough to fix the problem myself. Run the iPod Updater or "
-                   "restore your backup, then re-run this installer.</p>");
+            err = tr("<p><b>Invalid preexisting iPodLinux installation.</b> You have a 5G or nano "
+                     "and you did not install Linux correctly when you installed it. Sorry, "
+                     "but I don't know enough to fix the problem myself. Run the iPod Updater or "
+                     "restore your backup, then re-run this installer.</p>");
             break;
         default:
-            err = ("<p><b>Unknown error: Success.</b> Something's up. Report a bug.</p>");
+            err = tr("<p><b>Unknown error: Success.</b> Something's up. Report a bug.</p>");
             break;
         }
         stateOK = 0;
-        err = QString ("<p><b><font color=\"red\">Sorry, but an error occurred. Installation "
-                       "cannot continue.</font></b></p>\n") + err;
+        emit completeStateChanged();
+        err = QString (tr ("<p><b><font color=\"red\">Sorry, but an error occurred. Installation "
+                           "cannot continue.</font></b></p>\n")) + err +
+              QString (tr ("<p>Error code: %1 (%2)</p>")).arg (errno).arg (errno? strerror (errno) :
+                                                                           tr ("Success?!"));
         blurb->setText (err);
-        wizard->setInfoText ("Error", "Read the message below and press Cancel to exit.");
+        wizard->setInfoText (tr ("<b>Error</b>"),
+                             tr ("Read the message below and press Cancel to exit."));
 
         QVBoxLayout *layout = new QVBoxLayout;
         layout->addWidget (blurb);
@@ -238,15 +262,143 @@ PodLocationPage::PodLocationPage (Installer *wizard)
         return;
     }
 
+    blurb = new QLabel;
+    blurb->setWordWrap (true);
+    blurb->setAlignment (Qt::AlignTop | Qt::AlignLeft);
+    if (status == WinPod) {
+        blurb->setText (tr ("<p>You do not appear to have iPodLinux installed. If you continue, "
+                            "it will be installed. If you already have iPodLinux installed, "
+                            "<i>do not continue</i>.</p>\n"));
+        if (hw_ver >= 0xA) {
+            blurb->setText (blurb->text() +
+                            tr ("<p><font color=\"red\">You seem to have a Nano or Video. Due to some "
+                                "complicated suspend-to-disk logic in the Apple firmware, I will have to "
+                                "shrink your music partition to make room for iPodLinux. Thus, "
+                                "<b>all data on the iPod will be lost!</b></font></p>\n"));
+        } else {
+            if (hw_ver >= 0x4) {
+                blurb->setText (blurb->text() +
+                                tr ("<p>You seem to have a fourth-generation or newer iPod. While these iPods "
+                                    "should work, be aware that they are <b>UNSUPPORTED</b>.</p>\n"));
+            }
+            blurb->setText (blurb->text() +
+                            tr ("<p>Due to the layout of your iPod's hard drive, I should be able to install "
+                                "Linux without erasing anything on it. However, if this goes wrong, you may need "
+                                "to use the Apple updater to \"restore\" the iPod, which <i>does</i> erase data. "
+                                "Thus, <b>please</b> ensure that you have a backup of all data on your iPod!</p>\n"));
+        }
+        wizard->setInfoText (tr ("<b>Installation Information</b>"),
+                             tr ("Read the information below and choose your installation type."));
+        advancedCheck = new QCheckBox (tr ("Advanced installation (experienced users only)"));
+        upgradeRadio = uninstallRadio = 0;
+        changeUICheck = 0; subblurb = 0;
+
+        QVBoxLayout *layout = new QVBoxLayout;
+        layout->addWidget (blurb);
+        layout->addStretch (1);
+        layout->addWidget (advancedCheck);
+        layout->addSpacing (5);
+        setLayout (layout);
+        stateOK = 1;
+        emit completeStateChanged();
+    } else {
+        blurb->setText (tr ("It appears that you already have iPodLinux installed."));
+        wizard->setInfoText (tr ("<b>What to do?</b>"), tr ("Select an action below."));
+        
+        advancedCheck = changeUICheck = 0;
+        upgradeRadio = new QRadioButton (tr ("Update my existing installation"));
+        uninstallRadio = new QRadioButton (tr ("Uninstall iPodLinux"));
+        changeUICheck = new QCheckBox (tr ("Change user interface too"));
+        //changeUICheck->hide();
+        subblurb = new QLabel (tr ("Please choose either an update or an uninstall "
+                                   "so I can display something more informative here."));
+        //subblurb->setAlignment (Qt::AlignTop | Qt::AlignLeft);
+        //subblurb->setIndent (10);
+        subblurb->setWordWrap (true);
+        subblurb->resize (width(), 100);
+
+        connect (upgradeRadio, SIGNAL(clicked(bool)), this, SLOT(upgradeRadioClicked(bool)));
+        connect (uninstallRadio, SIGNAL(clicked(bool)), this, SLOT(uninstallRadioClicked(bool)));
+
+        QVBoxLayout *layout = new QVBoxLayout;
+        layout->addWidget (blurb);
+        layout->addSpacing (10);
+        layout->addWidget (upgradeRadio);
+        layout->addWidget (uninstallRadio);
+        layout->addWidget (changeUICheck);
+        layout->addStretch (1);
+        layout->addWidget (subblurb);
+        setLayout (layout);
+        stateOK = 0;
+        emit completeStateChanged();
+    }
+}
+
+void PodLocationPage::uninstallRadioClicked (bool clicked) 
+{
+    (void)clicked;
+    
+    changeUICheck->hide();
+    subblurb->setText (tr ("<p>OK, I guess you really do want to uninstall iPodLinux. "
+                           "Please be sure you have the backup you made handy if you "
+                           "want an easy uninstall. If you've lost it, I'll make do, "
+                           "but I might not get everything right.</p>"
+                           "<p>Press Next when you're ready.</p>"));
     stateOK = 1;
+    emit completeStateChanged();
+}
+
+void PodLocationPage::upgradeRadioClicked (bool clicked) 
+{
+    (void)clicked;
+    
+    changeUICheck->show();
+    subblurb->setText (tr ("<p>The update will check for new versions of the kernel and "
+                           "the podzilla you have installed; you will be given the chance "
+                           "to install them if new versions are present. "
+                           "You will also be able to change the packages you have installed.</p>\n"
+                           "<p>If you want to switch to a completely different user interface, "
+                           "check the box.</p>\n"
+                           "<p>Press Next to continue.</p>"));
+    stateOK = 1;
+    emit completeStateChanged();
 }
 
 void PodLocationPage::resetPage() 
-{}
+{
+    if (advancedCheck) advancedCheck->setChecked (0);
+    if (changeUICheck) changeUICheck->setChecked (0);
+    if (upgradeRadio) upgradeRadio->setChecked (0);
+    if (uninstallRadio) uninstallRadio->setChecked (0);
+    if (subblurb) subblurb->setText (tr ("Please choose either an update or an uninstall "
+                                         "so I can display something more informative here."));
+    stateOK = !upgradeRadio;
+    emit completeStateChanged();
+}
 
 WizardPage *PodLocationPage::nextPage() 
 {
-    return 0;
+    if (upgradeRadio) {
+        if (upgradeRadio->isChecked()) {
+            if (changeUICheck && changeUICheck->isChecked()) {
+                Mode = UIChangeUpdate;
+            } else {
+                Mode = NormalUpdate;
+            }
+        } else {
+            Mode = Uninstall;
+        }
+    } else {
+        if (advancedCheck && advancedCheck->isChecked()) {
+            Mode = AdvancedInstall;
+        } else {
+            Mode = StandardInstall;
+        }
+    }
+
+    if (Mode != Uninstall)
+        return wizard->dlupPage;
+    return wizard->restorePage;
 }
 
 bool PodLocationPage::isComplete() 
