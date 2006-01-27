@@ -236,7 +236,7 @@ void ipod_beep(void)
 #endif
 }
 
-static int ipod_read_apm(int *battery, int *charging)
+int ipod_read_apm(int *battery, int *charging)
 {
 #ifdef IPOD
 	FILE *file;
