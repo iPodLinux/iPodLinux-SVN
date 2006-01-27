@@ -239,16 +239,21 @@ void ipod_beep(void)
 int ipod_read_apm(int *battery, int *charging)
 {
 #ifdef IPOD
-	FILE *file;
+	static FILE *file;
 	int ac_line_status = 0xff;
 	int battery_status = 0xff;
 	int battery_flag = 0xff;
 	int percentage = -1;
 	int time_units = -1;
 
-	if ((file = fopen("/proc/apm", "r")) != NULL) {
+	if (!file) {
+		file = fopen("/proc/apm", "r");
+	} else {
+		rewind(file);
+	}
+
+	if (file) {
 		fscanf(file, "%*s %*d.%*d 0x%*02x 0x%02x 0x%02x 0x%02x %d%% %d", &ac_line_status, &battery_status, &battery_flag, &percentage, &time_units);
-		fclose(file);
 
 		if (battery) {
 			*battery = time_units;
