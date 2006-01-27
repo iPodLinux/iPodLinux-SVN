@@ -309,11 +309,11 @@ PodLocationPage::PodLocationPage (Installer *wizard)
         upgradeRadio = new QRadioButton (tr ("Update my existing installation"));
         uninstallRadio = new QRadioButton (tr ("Uninstall iPodLinux"));
         changeUICheck = new QCheckBox (tr ("Change user interface too"));
-        //changeUICheck->hide();
+        changeUICheck->hide();
         subblurb = new QLabel (tr ("Please choose either an update or an uninstall "
                                    "so I can display something more informative here."));
-        //subblurb->setAlignment (Qt::AlignTop | Qt::AlignLeft);
-        //subblurb->setIndent (10);
+        subblurb->setAlignment (Qt::AlignTop | Qt::AlignLeft);
+        subblurb->setIndent (10);
         subblurb->setWordWrap (true);
         subblurb->resize (width(), 100);
 
