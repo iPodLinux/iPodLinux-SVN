@@ -35,7 +35,7 @@ static void queue_song(ttk_menu_item *item)
 
 	if (mpdc_tickle() < 0)
 		return;
-	mpd_sendSearchCommand(mpdz, (int)item->data, item->name);
+	mpd_sendSearchCommand(mpdz, (long)item->data, item->name);
 
 	if (mpdz->error) {
 		mpdc_tickle();
@@ -136,7 +136,7 @@ TWidget *populate_songs(char *search)
 		item->free_name = 1;
 		item->makesub = open_song;
 		item->cdata = song->track ? atoi(song->track) : 0;
-		item->data = (void *)(song->title ?
+		item->data = (void *)(long)(song->title ?
 				MPD_TABLE_TITLE : MPD_TABLE_FILENAME);
 		ttk_menu_append(ret, item);
 	}
