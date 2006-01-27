@@ -146,12 +146,16 @@ public:
     bool isLastPage() { return 1; }
 #endif
     
+protected slots:
+    void uninstallRadioClicked (bool clicked);
+    void upgradeRadioClicked (bool clicked);
+    
 private:
     QLabel *blurb;
     QCheckBox *advancedCheck; /* enabled only for install */
     QRadioButton *upgradeRadio, *uninstallRadio; /* enabled only if already installed */
-    QGroupBox *upgradeWhat; /* only for upgrade */
-    QCheckBox *upgradeKernel, *upgradeUI; /* inside upgradeWhat */
+    QCheckBox *changeUICheck; /* enabled only for upgrade */
+    QLabel *subblurb;
     int stateOK;
 };
 

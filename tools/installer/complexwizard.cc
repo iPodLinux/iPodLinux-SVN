@@ -136,7 +136,7 @@ void ComplexWizard::switchPage(WizardPage *oldPage)
     nextButton->setEnabled(false);
     if (newPage->isLastPage()) {
         disconnect (nextButton, SIGNAL(clicked()), this, 0);
-        connect(nextButton, SIGNAL(clicked()), this, SLOT(accept()));
+        connect(nextButton, SIGNAL(clicked()), qApp, SLOT(closeAllWindows()));
         nextButton->setText (tr ("&Finish"));
     } else {
         disconnect (nextButton, SIGNAL(clicked()), this, 0);
