@@ -1,5 +1,5 @@
 Module: vortex
-Description: A Tempest-like game. Ask BleuLlama, I have no clue how it works.
-Category: Games
-Display-name: Vortex WIP
+Description: A Tempest-like game.  Move around the outside, fire at the aliens coming up from the center.
+Category: Games/Arcade
+Display-name: Vortex
 Author: Scott Lawrence
