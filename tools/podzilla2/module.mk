@@ -184,7 +184,9 @@ real-install:
 	@rm -rf $(DESTDIR)/usr/lib/$(MODULE)
 	@install -d -m 755 $(DESTDIR)/usr/lib/$(MODULE)
 	@install -m 644 Module $(DESTDIR)/usr/lib/$(MODULE)/Module
+ifneq ($(MODULE_$(MODULE)),y)
 	@install -m 755 $(MODULE).mod.o $(DESTDIR)/usr/lib/$(MODULE)/$(MODULE).mod.o
+endif
 	@for file in $(DATA); do \
 		install -m 755 $$file $(DESTDIR)/usr/lib/$(MODULE)/; \
 	done
