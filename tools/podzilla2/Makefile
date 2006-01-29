@@ -170,6 +170,7 @@ clean:
 	@echo " CLEAN  modules:"
 	@make clean -sC modules
 	@rm -f .message .target modules/.mods Config.in menu-strings.c
+	@rm -f podzilla.o podzilla.elf
 	@make clean -sC Kconfig
 
 mrproper: clean
