@@ -67,24 +67,6 @@ static void aclock_angular_line(
                                 circdiam, thick );
 }
 
-/*
-static void aclock_angular_line_offset(
-			ttk_surface srf, ttk_color col,
-			int cx, int cy,
-                        int val, int max, double da,
-                        int length, int circdiam,
-                        int thick  )
-{
-        double angle;
-
-        angle = (3.14159265 * ((( (val%max) * 360.0 ) / max) - 90.0 + da))
-                                        / 180.0;
-
-        aclock_angular_line_angle( srf, col, cx, cy,
-                                angle, length,
-                                circdiam, thick );
-}
-*/
 
 #define ARM_NORMAL (0)
 #define ARM_THICK  (1)
