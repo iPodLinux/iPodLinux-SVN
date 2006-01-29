@@ -1,6 +1,6 @@
 config MODULE_browser
   tristate "File browser"
-  default y
+  default m
   ---help---
     This is the file browser. It is very *strongly recommended* that you
     enable this, since a good deal of podzilla's functionality is useless

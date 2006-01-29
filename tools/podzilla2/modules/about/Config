@@ -1,6 +1,6 @@
 config MODULE_about
   tristate "About screen"
-  default y
+  default m
   ---help---
     This is an About box, much like the one in the Apple firmware. Please
     enable it, as it contains version information that will be very useful

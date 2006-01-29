@@ -1,6 +1,6 @@
 config MODULE_sleep
-  bool "Sleep support (NOT FULLY IMPLEMENTED)"
-  default y
+  tristate "Sleep support (NOT FULLY IMPLEMENTED)"
+  default m
   ---help---
     This is a module that handles all the stuff that happens when you aren't
     doing anything. Its main purpose in life is to put the iPod to sleep, but
