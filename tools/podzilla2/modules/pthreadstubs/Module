@@ -1,5 +1,5 @@
 Module: pthreadstubs
 Description: Pthread stubs to satisfy libstdc++. These will put up an error if you actually try to use them.
 Category: Libraries
-Display-name: ptreads stubs
+Display-name: pthreads stubs
 Author: Joshua Oreman
