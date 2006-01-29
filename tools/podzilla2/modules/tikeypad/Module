@@ -1,4 +1,6 @@
 Module: tikeypad
 Display-name: Telephone & Four-Button Keypad
+Description: A collection of text input methods that allow you to use the click wheel as a telephone keypad to select the character you want.
+Category: Text Input/Text Input Methods
 Author: Jonathan Bettencourt
 Dependencies: textinput

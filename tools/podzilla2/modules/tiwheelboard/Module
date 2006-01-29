@@ -1,4 +1,6 @@
 Module: tiwheelboard
 Display-name: Wheelboard
+Description: A text input method that allows you to scroll left or right, dividing the character list in half, to select the character you want.
+Category: Text Input/Text Input Methods
 Author: Stefan Lange-Hegermann & Jonathan Bettencourt
 Dependencies: textinput

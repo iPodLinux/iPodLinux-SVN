@@ -1,4 +1,6 @@
 Module: tiunihex
 Display-name: Unicode Hex Input
+Description: A text input method that allows you to enter Unicode code points in hexadecimal to input the corresponding character.
+Category: Text Input/Text Input Methods
 Author: Jonathan Bettencourt
 Dependencies: textinput
