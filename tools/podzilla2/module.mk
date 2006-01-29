@@ -22,7 +22,7 @@ ifndef MODULE
 $(error You must define MODULE.)
 endif
 
-ifndef MODULE_$(MODULE)
+ifneq ($(MODULE_$(MODULE)),)
 all-check:
 	@echo " (Skipping $(MODULE).)"
 	@rm -f built-in.o
