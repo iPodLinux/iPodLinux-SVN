@@ -1,0 +1,8 @@
+config MODULE_sleep
+  bool "Sleep support (NOT FULLY IMPLEMENTED)"
+  default y
+  ---help---
+    This is a module that handles all the stuff that happens when you aren't
+    doing anything. Its main purpose in life is to put the iPod to sleep, but
+    it doesn't do that yet; it does, however, switch to "Now Playing" if music
+    is playing. Enable this--it'll get more useful later.
