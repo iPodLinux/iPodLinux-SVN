@@ -145,10 +145,10 @@ endif
 ifdef obj-m
 $(cobj-m): %.o: %.c $(PZPATH)/config.h
 	@echo " CC [M] " $@
-	@$(CC) $(CFLAGS) $(MYCFLAGS) $(PIC) -c -o $@ $< -I$(PZPATH)/core `$(TTKCONF) --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD -I/sw/include -L/sw/lib
+	@$(CC) $(CFLAGS) $(MYCFLAGS) $(PIC) -c -o $@ $< -I$(PZPATH) -I$(PZPATH)/core `$(TTKCONF) --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD -I/sw/include -L/sw/lib
 $(ccobj-m): %.o: %.cc $(PZPATH)/config.h
 	@echo " CXX [M]" $@
-	@$(CXX) $(CFLAGS) $(MYCFLAGS) $(PIC) -c -o $@ $< -I$(PZPATH)/core `$(TTKCONF) --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD -I/sw/include -L/sw/lib
+	@$(CXX) $(CFLAGS) $(MYCFLAGS) $(PIC) -c -o $@ $< -I$(PZPATH) -I$(PZPATH)/core `$(TTKCONF) --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD -I/sw/include -L/sw/lib
 endif
 
 LIBRARY:
