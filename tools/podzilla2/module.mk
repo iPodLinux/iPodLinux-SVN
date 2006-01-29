@@ -25,8 +25,13 @@ endif
 ifndef MODULE_$(MODULE)
 all-check:
 	@echo " (Skipping $(MODULE).)"
+	@rm -f built-in.o
+distfiles:
+install:
 else
 all-check: all
+distfiles: real-distfiles
+install: real-install
 endif
 
 ifeq ($(MODULE_$(MODULE)),y)
@@ -157,7 +162,7 @@ semiclean:
 clean:
 	@rm -f $(MODULE).mod.o $(MODULE).so $(obj) built-in.o
 
-distfiles:
+real-distfiles:
 	@echo Module
 ifdef IPOD
 	@echo $(MODULE).mod.o
@@ -172,7 +177,7 @@ endif
 
 DESTDIR ?= /mnt/ipod
 
-install:
+real-install:
 	@echo " INST    $(MODULE)"
 	@rm -rf $(DESTDIR)/usr/lib/$(MODULE)
 	@install -d -m 755 $(DESTDIR)/usr/lib/$(MODULE)
