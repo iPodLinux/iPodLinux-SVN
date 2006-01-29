@@ -3,3 +3,4 @@ Display-name: Terminal
 Description: A terminal emulator allowing the use of any text input method to input commands. Also provides vt102 emulation.
 Category: Applications
 Author: Jonathan Bettencourt
+Dependencies: textinput
