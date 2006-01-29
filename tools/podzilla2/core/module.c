@@ -136,7 +136,7 @@ static int mount_pod (PzModule *mod)
 #define MODULE_INF_FILE "Module"
 static void load_modinf (PzModule *mod) 
 {
-    char buf[80];
+    char *buf = malloc (512);
     FILE *fp;
 
     if (!mod->podpath) { // static mod, no POD
@@ -151,7 +151,7 @@ static void load_modinf (PzModule *mod)
     if (!fp) {
 	pz_perror (buf);
     } else {
-        while (fgets (buf, 79, fp)) {
+        while (fgets (buf, 511, fp)) {
             char *key, *value;
             
             if (buf[strlen (buf) - 1] == '\n')
@@ -237,6 +237,8 @@ static void load_modinf (PzModule *mod)
 	pz_warning (_("Unable to create %s's config dir %s: %s"), mod->name, mod->cfgpath,
 		    strerror (errno));
     }
+
+    free (buf);
 }
 
 // Turns the depsstr into a list of deps. returns 0 for success, -1 for failure
