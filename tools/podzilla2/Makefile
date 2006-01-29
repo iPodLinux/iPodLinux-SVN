@@ -169,8 +169,11 @@ clean:
 	@make clean -sC core
 	@echo " CLEAN  modules:"
 	@make clean -sC modules
-	@rm -f .message .target modules/.mods .config config.h Config.in
+	@rm -f .message .target modules/.mods Config.in
 	@make clean -sC Kconfig
+
+mrproper: clean
+	@rm -f .config config.h
 
 dev-env:
 	mkdir -p config pods xpods
