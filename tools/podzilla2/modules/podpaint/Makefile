@@ -1,0 +1,3 @@
+obj-m = podpaint.o
+MODULE = podpaint
+DATA = arc.png arcf.png arcfi.png arci.png brush.png brushi.png curve.png curvef.png curvefi.png curvei.png eraser.png eraseri.png eyedropper.png eyedropperi.png fill.png filli.png hand.png handi.png lasso.png lassoi.png line.png lineaa.png lineaai.png linei.png marquee.png marqueei.png oval.png ovalaa.png ovalaai.png ovalf.png ovalfaa.png ovalfaai.png ovalfi.png ovali.png pencil.png pencili.png poly.png polyaa.png polyaai.png polyf.png polyfaa.png polyfaai.png polyfi.png polyi.png rect.png rectf.png rectfi.png recti.png rpoly.png rpolyaa.png rpolyaai.png rpolyf.png rpolyfaa.png rpolyfaai.png rpolyfi.png rpolyi.png rrect.png rrectf.png rrectfi.png rrecti.png spraypaint.png spraypainti.png text.png texti.png zoom.png zoomi.png
