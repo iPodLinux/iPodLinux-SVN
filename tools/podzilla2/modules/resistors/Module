@@ -1,3 +1,5 @@
 Module: resistors
+Description: Resistor color code lookup thing.
+Category: Utilities
 Display-name: Resistor Codes
 Author: Scott Lawrence

@@ -1,3 +1,5 @@
 Module: cube
 Display-name: Cube
+Description: A cool rotating 3D cube.
+Category: Demos
 Author: Damien Teney
