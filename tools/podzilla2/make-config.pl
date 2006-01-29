@@ -149,10 +149,18 @@ EOF
 sub write_menu {
     my($fh) = shift;
     my($root) = shift;
+    my($topvals) = 0;
 
-    print $fh $root->{'.'} if defined $root->{'.'};
+    if (defined $root->{'.'}) {
+        print $fh $root->{'.'};
+        $topvals++;
+    }
     for (keys %$root) {
         /^\.$/ and next;
+        if ($topvals) {
+            print $fh "\ncomment \"\"";
+            $topvals = 0;
+        }
         print $fh "\nmenu \"$_\"\n";
         write_menu($fh, $root->{$_});
         print $fh "endmenu\n";

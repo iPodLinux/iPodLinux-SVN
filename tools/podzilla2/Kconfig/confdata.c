@@ -296,12 +296,7 @@ int conf_write(const char *name)
 		fprintf(out_h, "/*\n"
 			     " * Automatically generated C config: don't edit\n"
 			     " */\n"
-			     "#define AUTOCONF_INCLUDED\n\n"
-			     "/*\n"
-			     " * Version Number\n"
-			     " */\n"
-                        "#define __VERSION__ %s\n",
-                        getenv("VERSION"));
+                        "#define AUTOCONF_INCLUDED\n\n");
 
 	if (!sym_change_count)
 		sym_clear_all_valid();
@@ -340,17 +335,17 @@ int conf_write(const char *name)
 				case no:
 					fprintf(out, "# %s is not set\n", sym->name);
 					if (out_h)
-						fprintf(out_h, "#undef __%s__\n", sym->name);
+						fprintf(out_h, "#undef CONFIG_%s\n", sym->name);
 					break;
 				case mod:
 					fprintf(out, "%s=m\n", sym->name);
 					if (out_h)
-						fprintf(out_h, "#define %s_MODULE 1\n", sym->name);
+						fprintf(out_h, "#define CONFIG_%s_MODULE 1\n", sym->name);
 					break;
 				case yes:
 					fprintf(out, "%s=y\n", sym->name);
 					if (out_h)
-						fprintf(out_h, "#define __%s__ 1\n", sym->name);
+						fprintf(out_h, "#define CONFIG_%s 1\n", sym->name);
 					break;
 				}
 				break;
@@ -359,7 +354,7 @@ int conf_write(const char *name)
 				str = sym_get_string_value(sym);
 				fprintf(out, "%s=\"", sym->name);
 				if (out_h)
-					fprintf(out_h, "#define __%s__ \"", sym->name);
+					fprintf(out_h, "#define CONFIG_%s \"", sym->name);
 				do {
 					l = strcspn(str, "\"\\");
 					if (l) {
@@ -384,14 +379,14 @@ int conf_write(const char *name)
 				if (str[0] != '0' || (str[1] != 'x' && str[1] != 'X')) {
 					fprintf(out, "%s=%s\n", sym->name, str);
 					if (out_h)
-						fprintf(out_h, "#define __%s__ 0x%s\n", sym->name, str);
+						fprintf(out_h, "#define CONFIG_%s 0x%s\n", sym->name, str);
 					break;
 				}
 			case S_INT:
 				str = sym_get_string_value(sym);
 				fprintf(out, "%s=%s\n", sym->name, str);
 				if (out_h)
-					fprintf(out_h, "#define __%s__ %s\n", sym->name, str);
+					fprintf(out_h, "#define CONFIG_%s %s\n", sym->name, str);
 				break;
 			}
 		}
