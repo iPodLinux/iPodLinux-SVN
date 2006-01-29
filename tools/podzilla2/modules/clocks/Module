@@ -1,3 +1,5 @@
 Module: clocks
 Display-name: Clocks
+Description: A bunch of clocks.
+Category: Utilities/Clocks
 Author: Scott Lawrence

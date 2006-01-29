@@ -1,4 +1,6 @@
 Module: clocks7seg
 Display-name: Clocks 7 Segment Display
+Description: A module for Clocks that implements an LCD-looking clock.
+Category: Utilities/Clocks
 Author: Scott Lawrence
 Dependencies: clocks

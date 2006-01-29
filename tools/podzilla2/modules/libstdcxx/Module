@@ -1,4 +1,6 @@
 Module: libstdcxx
+Description: The C++ standard library. This is required to write STL-using C++ applications in podzilla; it's also *very large*.
+Category: Libraries
 Display-name: C++ standard library
 Author: GNU
 Dependencies: pthreadstubs

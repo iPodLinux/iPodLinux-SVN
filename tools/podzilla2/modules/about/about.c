@@ -19,6 +19,7 @@
 
 
 #include "pz.h"
+#include "config.h"
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -277,7 +278,9 @@ static void populate_stats()
     cur = new_kvstat (_("HW Version"));
     sprintf (cur->value, "%05lx", pz_ipod_get_hw_version());
     
+#ifdef CONFIG_ABOUT_SHOW_SN
     new_kvstat_sysinfo (_("S/N"), "pszSerialNumber");
+#endif
     new_kvstat_sysinfo (_("Model"), "ModelNumStr");
     new_kvstat_sysinfo (_("Apple FW Ver"), "buildID");
 
