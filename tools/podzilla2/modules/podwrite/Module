@@ -1,4 +1,6 @@
 Module: podwrite
 Display-name: PodWrite
+Description: A text processor which allows the creation and editing of plain text files.
+Category: Applications
 Author: Jonathan Bettencourt
 Dependencies: textinput,tiwidgets
