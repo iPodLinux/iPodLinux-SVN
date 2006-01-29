@@ -1,0 +1,6 @@
+Module: tiptext
+Display-name: Predictive Text
+Description: Adds predictive text input to the Telephone Keypad text input methods.
+Category: Text Input/Text Input Methods
+Author: Jonathan Bettencourt
+Dependencies: textinput
