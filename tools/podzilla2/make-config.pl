@@ -50,8 +50,15 @@ sub parse_menu_stuff {
     }
 }
 
+# Layout:
+# each element is a hashref
+# $Modules{name} => { name => <name>, dir => <dir the module is in>, modinf => { modinf file },
+#                    ordered => <0 or 1> }
+our %Modules;
+
 sub process_file {
-    if (m[/Module$]) {
+    if (m[/([^/]+)/Module$]) {
+        my($name) = $1;
         my(%modfile);
         open MODFILE, $File::Find::name or die "$!";
         while (<MODFILE>) {
@@ -64,35 +71,68 @@ sub process_file {
             $modfile{$prop} = $val;
         }
 
-        if (open KCF, "$File::Find::dir/Config") {
-            parse_menu_stuff *KCF{IO}, \%MenuStructure;
-            close KCF;
-        } else {
-            $modfile{Category} = "Miscellaneous" unless defined $modfile{Category};
+        $Modules{$name} = { name => $name, dir => $File::Find::dir, modinf => \%modfile, ordered => 0 };
+    }
+}
 
-            my($cat) = $modfile{Category};
-            my(@tree) = split /\//, $cat;
-            my($menuptr) = \%MenuStructure;
+find { wanted => \&process_file, no_chdir => 1 }, 'modules';
 
-            while (scalar @tree) {
-                my($nextent) = shift @tree;
-                $menuptr->{$nextent} = {} unless defined $menuptr->{$nextent};
-                $menuptr = $menuptr->{$nextent};
+our(@Modules) = sort {$a cmp $b} keys %Modules;
+our(@OrderedModules) = ();
+
+sub add_deps {
+    my($mod) = shift;
+    my($name) = $mod->{name};
+    return if $mod->{ordered};
+    $mod->{ordered} = 1;
+
+    push @OrderedModules, $mod;
+
+    for (@Modules) {
+        next unless defined $Modules{$_}{modinf}{Dependencies};
+        if ($Modules{$_}{modinf}{Dependencies} =~ /\b$name\b/) {
+            add_deps($Modules{$_});
+        }
+    }
+}
+
+for (@Modules) {
+    add_deps $Modules{$_};
+}
+
+for (@OrderedModules) {
+    my($mod) = $_;
+    my(%modfile) = %{$mod->{modinf}};
+    my($dir) = $mod->{dir};
+    if (open KCF, "$dir/Config") {
+        parse_menu_stuff *KCF{IO}, \%MenuStructure;
+        close KCF;
+    } else {
+        $modfile{Category} = "Miscellaneous" unless defined $modfile{Category};
+
+        my($cat) = $modfile{Category};
+        my(@tree) = split /\//, $cat;
+        my($menuptr) = \%MenuStructure;
+
+        while (scalar @tree) {
+            my($nextent) = shift @tree;
+            $menuptr->{$nextent} = {} unless defined $menuptr->{$nextent};
+            $menuptr = $menuptr->{$nextent};
+        }
+
+        my($deps) = "";
+        if (defined $modfile{Dependencies}) {
+            my(@deps) = split /,/ => $modfile{Dependencies};
+            for (@deps) {
+                $deps .= "\n    depends on MODULE_$_";
             }
+        }
 
-            my($deps) = "";
-            if (defined $modfile{Dependencies}) {
-                my(@deps) = split /,/ => $modfile{Dependencies};
-                for (@deps) {
-                    $deps .= "\n    select MODULE_$_";
-                }
-            }
+        $modfile{Displayname} = $modfile{Module} unless defined $modfile{Displayname};
+        $modfile{Description} = $modfile{Displayname} unless defined $modfile{Description};
 
-            $modfile{Displayname} = $modfile{Module} unless defined $modfile{Displayname};
-            $modfile{Description} = $modfile{Displayname} unless defined $modfile{Description};
-
-            $menuptr->{'.'} = "" unless defined $menuptr->{'.'};
-            $menuptr->{'.'} .= <<EOF;
+        $menuptr->{'.'} = "" unless defined $menuptr->{'.'};
+        $menuptr->{'.'} .= <<EOF;
 config MODULE_$modfile{Module}
     tristate "$modfile{Displayname}"
     default m$deps
@@ -103,11 +143,8 @@ config MODULE_$modfile{Module}
       information about it, check http://ipodlinux.org/Special:Module/$modfile{Module}.
 
 EOF
-        }
     }
 }
-
-find { wanted => \&process_file, no_chdir => 1 }, 'modules';
 
 sub write_menu {
     my($fh) = shift;
