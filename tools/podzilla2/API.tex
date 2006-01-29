@@ -50,12 +50,19 @@ Modules are used to implement practically everything useful in \pzt; as such, th
 is highly flexible. Modules are {\it not} tied to one particular menu item or even one particular
 application; a loaded module is basically just an extension of the \pz\ core.
 
-Modules consist of three things: a {\sl module description file}, the {\sl code}, and optional {\sl data
-files}. The module description file, a simple ASCII text file named \verb|Module|, contains
+Modules consist of four things: a {\sl module description file}, the {\sl code}, optional {\sl data
+files}, and an optional {\sl configuration description}. The module description file,
+a simple ASCII text file named \verb|Module|, contains
 metadata about the module: name, author, dependencies, etc.; its format is as described in
 section \ref{moddesc}. The code is compiled into an object file for loading with the dynamic
 loader for iPodLinux (uCdl).
 The data files can be whatever you want.
+
+The configuration description is used to allow the user to select compile-time options for your
+module, with an interface very similar to the Linux kernel configurator. If you do not provide
+one---and you don't need to, unless your module has special needs---a sensible default will be
+used (one option specifying whether the module should be compiled in, made as a module, or
+not compiled at all).
 
 Every module must have a {\it unique} ``shortname'', which is the only one ever used programmatically.
 The shortname should be all lowercase letters, with no spaces. It is used in pathnames,
@@ -821,11 +828,12 @@ You can unregister the hold handler with \verb|pz_unregister_global_hold_button(
 whenever the button \verb|ch| is released and the event is not handled.
 \verb|pz_|\hskip0pt\verb|unregister_|\hskip0pt\verb|global_unused_handler()| removes this association.
 
-\chapter{\texttt{Module} Files and the Build System}
+\chapter{\texttt{Module} and \texttt{Config} Files and the Build System}
 Here you'll find out about all the non-coding stuff related to making a build of \pzt\ tick.
 
 \section{\texttt{Module} Files}\label{moddesc}
-\verb|Module| files are files containing metadata that is used in loading modules.
+\verb|Module| files are files containing metadata that is used in loading modules and in managing
+them host-side.
 The metadata is a separate file instead of being embedded in the module itself because it contains information
 that must be parsed before the module is even loaded---for instance, a module's dependencies
 must be loaded before the module itself.
@@ -835,17 +843,28 @@ Here's a complete example.
 \begin{verbatim}
 Module: tidial
 Display-name: Scroll Through & Dial Type
+Description: A text input method that allows you to scroll \
+  through a list of characters to select the one you want.
+Category: Text Input
 Author: Jonathan Bettencourt
 Dependencies: textinput
 \end{verbatim}
-Comments are supported, as are blank lines, but lines consisting solely of spaces will not work.
-Case matters for the directives.
+Comments are supported (they start with \verb|#|),
+as are blank lines, but lines consisting solely of spaces will not work.
+Case matters for the directives. (The continuation with \verb|\| above is used
+only to prevent running the text off the edge of the page; in the file, the
+value should be all on one line.)
 
 Here are all the recognized directives:
 \begin{description}
 \item[Module:] The short name of the module. Remember, this should be all lowercase letters, and
 it must be {\it unique}.
 \item[Display-name:] The long/display name of the module.
+\item[Description:] A one-line description of the module's function. Used by the configuration
+system.
+\item[Category:] The ``category'' the module should be displayed in in the configuration system.
+For subcategories, use \verb|/|; for example, \verb|Games/Strategy|. If you have a \verb|Config|
+file, this line is ignored.
 \item[Author:] The author; if this is omitted the author will be listed as ``Anonymous.''
 \item[Signature:] A signature for the past three fields, intended to be used in the future to verify
 uniqueness of name. Not implemented yet.
@@ -857,6 +876,89 @@ may be loaded at once. Not implemented yet.
 randomly.''
 \end{description}
 Any unrecognized directives will be warned about.
+
+\section{\texttt{Config} Files}
+\verb|Config| files give information about compile-time configuration options that
+can be selected by the user. They are in the exact same format used by the Linux kernel
+and uClibc configuration systems, mainly because the configuration program is nearly the
+same too. {\it You don't need a Config file unless you need to specify compile-time configuration options.
+Most modules don't.}
+
+The file is composed of a set of directives, one per line. Each directive can have arguments.
+A {\it partial} list of the recognized directives is below; for a full list, see
+\verb|Kconfig/|\discretionary{}{}{}\verb|Kconfig|-\discretionary{}{}{}\verb|language.txt| in
+the \pzt\ source tree.
+
+\begin{description}
+\item[{\tt menu}] specifies the start of a submenu, which should probably have configuration directives
+(\verb|config|) inside it. It takes one argument, a quoted name for the menu. The menu ends with an 
+\verb|endmenu| directive. The \pzt\ build system does some trickery behind the scenes so that
+multiple \verb|menu| sections referring ultimately to the same menu get amalgamated together, so your
+file will probably start with \verb|menu "Games"| or something.
+\item[{\tt config}] specifies the start of a configuration directive---something you want to be
+configurable. It has one argument, the name of the configuration directive, which must be
+a valid identifier. A directive named \verb|MODULE_shortname| where \verb|shortname| is the
+shortname of your module determines whether your module is to be compiled in, made as a module,
+or not compiled at all. A configuration directive ends at the next \verb|config| or \verb|endmenu|
+directive; it is customary to indent the lines that are ``under'' the directive, like \verb|bool|
+and \verb|default|.
+\item[{\tt bool}] specifies that this is a ``yes or no'' symbol. It needs no arguments, but it can take
+one to use as a \verb|prompt| (see below).
+\item[{\tt tristate}] specifies that this is a symbol that can be one of \verb|y|, \verb|m|, or \verb|n|;
+that is, compiled in statically, compiled as a module, or not compiled. You'll probably only use
+this for the config option determining whether your module is built at all.
+\item[{\tt string}] specifies that this is a symbol that should be a user-enterable string. Like
+the other type definitions, it can take a \verb|prompt| argument as its own arg. (See below.)
+\item[{\tt integer} and {\tt hex}] allow the user to enter those specific types of values.
+\item[{\tt prompt}] takes one argument---the user-visible prompt for the parameter; for example,
+``Use the new high-efficiency frobulator (UNSTABLE)''. The argument should be enclosed in quotes.
+Optionally, you can put the prompt argument after one of the past few type declarations; for instance,
+\verb|bool "Do foo"|.
+\item[{\tt default}] specifies the default value for this parameter. For a bool, this can be
+\verb|y| or \verb|n| (without quotes); for a tristate, \verb|y| or \verb|m| or \verb|n|; for
+a string, a string in quotes; for an integer, an integer. If you don't specify one, something
+sensible will be used.
+\item[{\tt depends on} or {\tt requires}] indicates another option that must be selected for
+this one to become visible.
+\item[{\tt select}] is a reverse dependency---if you select this one, that one will get set too.
+\item[{\tt help}] has no arguments, but it indicates the start of the help. The help follows, on
+as many lines as you want. \emph{Each must be indented by a fixed amount}; the help ends with the first
+line that isn't indented by at least this amount.
+\end{description}
+
+An overly complex example:
+\begin{verbatim}
+menu "Games"
+menu "Classic"
+config MODULE_blackjack
+    tristate "Blackjack"
+    default m
+    help
+      A blackjack module. You can set options in the "Blackjack
+      Options" menu.
+
+menu "Blackjack Options"
+    depends on MODULE_blackjack
+
+config BLACKJACK_ALLOW_CHEATING
+    bool "Allow cheating"
+    default n
+    help
+      Allow cheating with a special key sequence. Blah blah blah.
+
+config BLACKJACK_VALUE
+    integer "Value you have to get to win"
+    default 21
+    range 1 100
+    help
+      The value your cards must sum to in order for you to win.
+      Of course, if you change this, it won't really be blackjack
+      anymore...
+
+endmenu
+endmenu
+endmenu
+\end{verbatim}
 
 \section{Build System}
 A module Makefile looks like this:
@@ -878,8 +980,6 @@ obj-$(CONFIG_MYMODULE) := mymodule.o
 \begin{comment}
 $ Let's appease XEmacs!
 \end{comment}
-Since the podzilla configuration system hasn't been implemented yet, I shouldn't be seeing
-any modules with Makefiles like this {\tt :-)}
 
 \subsection{Compiling it}
 To compile the module, you have two choices: place it in the podzilla tree, or compile it

@@ -42,7 +42,55 @@ POD ?= ../../../podfile/pod # relative to two dirs down
 
 all-msg: all .message
 
-all: checktarget core modules contrib
+.config:
+	@$(MAKE) -s silentdefconfig
+
+Config.in:
+	@perl make-config.pl > Config.in
+
+Kconfig/conf:
+	@echo
+	@echo Building text-based configuration utility.
+	@$(MAKE) -sC Kconfig conf
+Kconfig/mconf:
+	@echo
+	@echo Building graphical configuration utility.
+	@$(MAKE) -sC Kconfig mconf
+
+config: Kconfig/conf Config.in
+	@echo " CONF"
+	@./Kconfig/conf Config.in
+
+menuconfig: Kconfig/mconf Config.in
+	@echo " MCONF"
+	@./Kconfig/mconf Config.in
+
+defconfig: Kconfig/conf Config.in
+	@echo " CONF    [def]"
+	@./Kconfig/conf -d Config.in
+
+oldconfig: Kconfig/conf Config.in
+	@echo " CONF    [old]"
+	@./Kconfig/conf -o Config.in
+
+silentdefconfig: Kconfig/conf Config.in
+	@echo " CONF    [def]"
+	@./Kconfig/conf -d Config.in >/dev/null
+
+# Everything in one executable
+fatconfig: Kconfig/conf Config.in
+	@echo " CONF    [fat]"
+	@./Kconfig/conf -y Config.in
+
+# Everything as modules
+chunkyconfig: defconfig
+
+# No modules
+slimconfig: Kconfig/conf Config.in
+	@echo " CONF    [slim]"
+	@./Kconfig/conf -n Config.in
+
+all: .config checktarget core modules contrib
 	@echo
 	@echo "Linking podzilla."
 	@echo " LD      podzilla"
@@ -102,6 +150,7 @@ else
 endif
 
 core:
+	@echo
 	@echo "Building core."
 	@make -sC core
 
@@ -114,11 +163,14 @@ modules:
 clean:
 	@echo " CLEAN  podzilla"
 	@rm -f podzilla podzilla.gdb
+	@echo " CLEAN  config"
+	@make clean -sC Kconfig
 	@echo " CLEAN  core"
 	@make clean -sC core
 	@echo " CLEAN  modules:"
 	@make clean -sC modules
-	@rm -f .message .target modules/.mods
+	@rm -f .message .target modules/.mods .config config.h Config.in
+	@make clean -sC Kconfig
 
 dev-env:
 	mkdir -p config pods xpods
@@ -180,4 +232,4 @@ translate:
 	@echo " documentation at http://ipodlinux.org/Internationalization"
 	@echo "---------------------------------------------------------------"
 
-.PHONY: core modules clean pods xpods dev-env contrib translate .curtgt
+.PHONY: core modules clean pods xpods dev-env contrib translate .curtgt Config.in

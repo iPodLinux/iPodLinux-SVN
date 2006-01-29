@@ -14,11 +14,23 @@ endif
 endif
 endif
 
-default: all
+default: all-check
 
 include Makefile
+-include $(PZPATH)/.config
 ifndef MODULE
 $(error You must define MODULE.)
+endif
+
+ifndef MODULE_$(MODULE)
+all-check:
+	@echo " (Skipping $(MODULE).)"
+else
+all-check: all
+endif
+
+ifeq ($(MODULE_$(MODULE)),y)
+STATIC := 1
 endif
 
 ifdef STATIC
@@ -114,11 +126,11 @@ else
 	@$(LD) -r -o built-in.o $(obj-y) -L$(dir $(shell $(CC) -print-file-name=libc.a)) $(WA) $(MODLIBS) $(NWA)
 endif
 
-$(cobj-y): %.o: %.c
+$(cobj-y): %.o: %.c $(PZPATH)/config.h
 	@echo " CC     " $@
 	@$(CC) $(CFLAGS) $(MYCFLAGS) -c -o $@ $< -I$(PZPATH)/core `$(TTKCONF) --$(TARGET) --sdl --cflags` -D__PZ_BUILTIN_MODULE -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD -I/sw/include -L/sw/lib
 
-$(ccobj-y): %.o: %.cc
+$(ccobj-y): %.o: %.cc $(PZPATH)/config.h
 	@echo " CXX    " $@
 	@$(CXX) $(CFLAGS) $(MYCFLAGS) -c -o $@ $< -I$(PZPATH)/core `$(TTKCONF) --$(TARGET) --sdl --cflags` -D__PZ_BUILTIN_MODULE -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD -I/sw/include -L/sw/lib
 endif
@@ -126,10 +138,10 @@ endif
 #####
 
 ifdef obj-m
-$(cobj-m): %.o: %.c
+$(cobj-m): %.o: %.c $(PZPATH)/config.h
 	@echo " CC [M] " $@
 	@$(CC) $(CFLAGS) $(MYCFLAGS) $(PIC) -c -o $@ $< -I$(PZPATH)/core `$(TTKCONF) --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD -I/sw/include -L/sw/lib
-$(ccobj-m): %.o: %.cc
+$(ccobj-m): %.o: %.cc $(PZPATH)/config.h
 	@echo " CXX [M]" $@
 	@$(CXX) $(CFLAGS) $(MYCFLAGS) $(PIC) -c -o $@ $< -I$(PZPATH)/core `$(TTKCONF) --$(TARGET) --sdl --cflags` -D__PZ_MODULE_NAME=\"$(MODULE)\" -DPZ_MOD -I/sw/include -L/sw/lib
 endif

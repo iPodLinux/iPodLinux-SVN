@@ -24,7 +24,9 @@ all:
 		make -sf ../../module.mk; \
 		cd ..; \
 	done
-	@if find * -name built-in.o | grep '/built-in.o'; then \
+	@if find * -name built-in.o | grep -q '/built-in.o'; then \
+		echo; \
+		echo "`find . -name built-in.o | grep /built-in.o | wc -l` modules compiled in."; \
 		rm -f built-in.o; \
 		echo " LD      built-in.o"; \
 		find . -name built-in.o | xargs $(LD) -r -o built-in.o; \
