@@ -1,4 +1,6 @@
 Module: tifbk
 Display-name: Four-Button Keyboard
+Description: A text input method that allows you to navigate through a hierarchy of characters to select the one you want.
+Category: Text Input/Text Input Methods
 Author: Jonathan Bettencourt
 Dependencies: textinput

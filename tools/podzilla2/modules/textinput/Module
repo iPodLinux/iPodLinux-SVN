@@ -1,3 +1,5 @@
 Module: textinput
 Display-name: Text Input
+Description: Provides the initialization, menu, and configuration system for text input methods.
+Category: Text Input
 Author: Jonathan Bettencourt

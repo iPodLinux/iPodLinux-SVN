@@ -1,4 +1,6 @@
 Module: timorse
 Display-name: Morse Code
+Description: A text input method that allows you to tap the center button like a telegraph key to input characters using Morse code.
+Category: Text Input/Text Input Methods
 Author: Jonathan Bettencourt
 Dependencies: textinput

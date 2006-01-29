@@ -1,4 +1,6 @@
 Module: ticursive
 Display-name: Cursive
+Description: A text input method that allows you to "write" on the wheel in pseudo-cursive to input characters.
+Category: Text Input/Text Input Methods
 Author: Jonathan Bettencourt
 Dependencies: textinput
