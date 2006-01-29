@@ -159,16 +159,6 @@ print_buttons (WINDOW *win, int height, int width, int selected)
     wrefresh (win);
 }
 
-int
-sort_dialog_item (const void *a, const void *b) 
-{
-    struct dialog_list_item
-        **A = (struct dialog_list_item **)a,
-        **B = (struct dialog_list_item **)b;
-
-    return strcmp ((*A)->name, (*B)->name);
-}
-
 /*
  * Display a menu for choosing among a number of options
  */
@@ -181,8 +171,6 @@ dialog_menu (const char *title, const char *prompt, int height, int width,
     int key = 0, button = 0, scroll = 0, choice = 0, first_item = 0, max_choice;
     WINDOW *dialog, *menu;
     FILE *f;
-
-    qsort (items, item_no, sizeof(struct dialog_list_item *), sort_dialog_item);
 
     max_choice = MIN (menu_height, item_no);
 
