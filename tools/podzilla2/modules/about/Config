@@ -1,0 +1,16 @@
+config MODULE_about
+  tristate "About screen"
+  default y
+  ---help---
+    This is an About box, much like the one in the Apple firmware. Please
+    enable it, as it contains version information that will be very useful
+    to us if you have a problem.
+
+config ABOUT_SHOW_SN
+  bool "Show serial number in About box"
+  depends on MODULE_about
+  default y
+  ---help---
+    If you're uncomfortable having your iPod's serial number plainly visible
+    in the About box, feel free to say `n' here and it won't show up. (I don't
+    know *why* you'd want this, but it's there if you're paranoid.)

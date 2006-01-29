@@ -1,0 +1,4 @@
+menu "Miscellaneous"
+config MODULE_mymodule
+  tristate "Simple test/example module (`mymodule')"
+  default n
