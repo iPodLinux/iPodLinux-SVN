@@ -815,7 +815,7 @@ int terminal_pty_open(int * master, int * slave, char * pty_name, struct termios
 #define TERMINAL_EXEC_NAME ("sh")
 #endif
 
-PzWindow * new_terminal_window(void)
+PzWindow * new_terminal_window_with(char * path, char * argv0)
 {
 	PzWindow * ret;
 	TWidget * wid;
@@ -851,7 +851,7 @@ PzWindow * new_terminal_window(void)
 	terminal_escape_seq[0]=0;
 	
 	/* - - open the pseudoterminal - - */
-	p = terminal_pty_open(&terminal_master, &terminal_slave, terminal_pty_name, 0, &terminal_win, "vt102", _("Welcome to iPodLinux!"), TERMINAL_EXEC_PATH, TERMINAL_EXEC_NAME, 0);
+	p = terminal_pty_open(&terminal_master, &terminal_slave, terminal_pty_name, 0, &terminal_win, "vt102", _("Welcome to iPodLinux!"), path, argv0, 0);
 	if (p < 0) {
 		pz_error("Could not open a pseudoterminal.");
 		terminal_child = 0;
@@ -862,6 +862,11 @@ PzWindow * new_terminal_window(void)
 	}
 	
 	return ret;
+}
+
+PzWindow * new_terminal_window(void)
+{
+	return new_terminal_window_with(TERMINAL_EXEC_PATH, TERMINAL_EXEC_NAME);
 }
 
 void terminal_mod_init(void)
