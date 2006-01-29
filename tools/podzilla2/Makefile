@@ -169,7 +169,7 @@ clean:
 	@make clean -sC core
 	@echo " CLEAN  modules:"
 	@make clean -sC modules
-	@rm -f .message .target modules/.mods Config.in
+	@rm -f .message .target modules/.mods Config.in menu-strings.c
 	@make clean -sC Kconfig
 
 mrproper: clean
