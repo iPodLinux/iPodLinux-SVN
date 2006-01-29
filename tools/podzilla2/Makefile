@@ -237,3 +237,22 @@ translate:
 	@echo "---------------------------------------------------------------"
 
 .PHONY: core modules clean pods xpods dev-env contrib translate .curtgt Config.in
+
+help:
+	@echo === Useful makefile targets ===
+	@echo ""
+	@echo == general targets ==
+	@echo all .......... build the entire thing
+	@echo install ...... build and install to your ipod
+	@echo clean ........ remove all generated binaries
+	@echo ""
+	@echo == language ==
+	@echo translate .... make the translation strings files
+	@echo ""
+	@echo == module config ==
+	@echo defconfig .... generate a default configuration file
+	@echo mrproper ..... something else
+	@echo config ....... text-based module configuration
+	@echo menuconfig ... curses-based module configuration
+
+.PHONY: help
