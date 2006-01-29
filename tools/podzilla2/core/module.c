@@ -188,6 +188,10 @@ static void load_modinf (PzModule *mod)
                 strcpy (mod->providesstr, value);
             } else if (strcmp (key, "Contact") == 0) {
                 // nothing
+            } else if (strcmp (key, "Category") == 0) {
+                // nothing
+            } else if (strcmp (key, "Description") == 0) {
+                // nothing
             } else if (strcmp (key, "Unstable") == 0) {
                 // You can override "beta" with secret=testing but you can't
                 // override other things, e.g. "alpha" or "does not work".

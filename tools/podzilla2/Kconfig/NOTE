@@ -1,0 +1,5 @@
+NOTE:
+I did not write this app. It was taken from uClibc, with minor changes
+to the Makefile and a completely different Config.in.
+
+-- Joshua Oreman, 2006-01-27
