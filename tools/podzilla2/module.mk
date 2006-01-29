@@ -164,10 +164,12 @@ clean:
 
 real-distfiles:
 	@echo Module
+ifneq ($(MODULE_$(MODULE)),y)
 ifdef IPOD
 	@echo $(MODULE).mod.o
 else
 	@echo $(MODULE).so
+endif
 endif
 ifdef DATA
 	@for file in $(DATA); do \
