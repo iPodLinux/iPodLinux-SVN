@@ -18,10 +18,10 @@
 	  accent => medium
 	  shadow => lightish,
 	  shine => light,
-	  gradient.top => #light,
-	  gradient.middle => #medium,
-	  gradient.bottom => #lightish,
-	  gradient.bar => #medium +1
+	  gradient.top => light,
+	  gradient.middle => medium,
+	  gradient.bottom => lightish,
+	  gradient.bar => medium +1
 
    music: bar.bg => <vert white to ltgray to white>,
 	  bar => <vert light to medium to lightish> +1
