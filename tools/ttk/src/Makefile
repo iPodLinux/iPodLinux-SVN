@@ -155,7 +155,7 @@ libttk.a: $(OBJS)
 endif
 
 clean:
-	rm -f *.o libttk.a $(EXAMPLES) *.gdb
+	rm -f *.o lex.yy.c libttk.a $(EXAMPLES) *.gdb
 endif
 
 .PHONY: clean
