@@ -41,10 +41,10 @@
 	  fg => black,
 	  line => #9fa2a7,
 	  title.fg => black,	
-	  button.bg => <#e0e0e0, #e0e0e0, #d6d6d6 with #f2f2f2 @:1,0,10,0>,
+	  button.bg => <#e0e0e0, #e0e0e0, #d6d6d6 with #f2f2f2 @:1,0,50%,0>,
 	  button.fg => black,
 	  button.border => #9fa2a7,
-	  button.sel.bg => <#c0c0c0, #c0c0c0, #b6b6b6 with #d2d2d2 @:1,0,10,0>,
+	  button.sel.bg => <#c0c0c0, #c0c0c0, #b6b6b6 with #d2d2d2 @:1,0,50%,0>,
 	  button.sel.fg => black,
 	  button.sel.border => #86898f,
 	  button.sel.inner => #86898f
@@ -53,17 +53,17 @@
 	  fg => black,
 	  line => #9fa2a7,
 	  title.fg => black,
-	  button.bg => <#e0e0e0, #e0e0e0, #d6d6d6 with #f2f2f2 @:1,0,10,0>,
+	  button.bg => <#e0e0e0, #e0e0e0, #d6d6d6 with #f2f2f2 @:1,0,50%,0>,
 	  button.fg => black,
 	  button.border => #9fa2a7,
-	  button.sel.bg => <#c0c0c0, #c0c0c0, #b6b6b6 with #d2d2d2 @:1,0,10,0>,
+	  button.sel.bg => <#c0c0c0, #c0c0c0, #b6b6b6 with #d2d2d2 @:1,0,50%,0>,
 	  button.sel.fg => black,
 	  button.sel.border => #86898f,
 	  button.sel.inner => #86898f
 
   scroll: box => #86898f -1,
 	  bg => #f7f7f7,
-	  bar => <horiz #cdcfd3 to #b4b7bd to #aaacb2 with #80848e @:0,1,0,4> +1
+	  bar => <horiz #cdcfd3 to #b4b7bd to #aaacb2 with #80848e @:0,1,0,50%> +1
 
    input: bg => unwhite,
 	  fg => black,
@@ -76,7 +76,7 @@
 	  fg => black,
 	  choice => black,
 	  icon => black,
-	  selbg => <vert #9599a3 to #9599a3 to #aaacb2 with #a0a2a8 @:1,0,9,0>,
+	  selbg => <vert #9599a3 to #9599a3 to #aaacb2 with #a0a2a8 @:1,0,50%,0>,
 	  selfg => black,
 	  selchoice => unwhite,
 	  icon0 => #aaacb2,
@@ -84,26 +84,26 @@
 	  icon2 => #cbcbcb,
 	  icon3 => unwhite
 
-  slider: border => #86898f -2,
-	  bg => #f7f7f7 -2,
-	  full => <vert #e0e1e4 to #b4b7bd to #aaacb2 with #80848e @:6,0,1,0> -1
+  slider: border => #86898f -3,
+	  bg => #f7f7f7 -3,
+	  full => <vert #d5d7db to #b4b7bd to #aaacb2 with #858993 @:50%,0,1,0> -1
 
 textarea: bg => unwhite,
 	  fg => black
 
-     box: default.bg => <#e0e0e0, #e0e0e0, #d6d6d6 with #f2f2f2 @:1,0,10,0>,
+     box: default.bg => <#e0e0e0, #e0e0e0, #d6d6d6 with #f2f2f2 @:1,0,56%,0>,
 	  default.fg => black,
 	  default.border => #9fa2a7,
-	  selected.bg => <#c0c0c0, #c0c0c0, #b6b6b6 with #d2d2d2 @:1,0,10,0>,
+	  selected.bg => <#c0c0c0, #c0c0c0, #b6b6b6 with #d2d2d2 @:1,0,56%,0>,
 	  selected.fg => black,
 	  selected.border => #86898f,
-	  special.bg =>  <#d0d0d0, #d0d0d0, #c6c6c6 with #e2e2e2 @:1,0,10,0>,
+	  special.bg =>  <#d0d0d0, #d0d0d0, #c6c6c6 with #e2e2e2 @:1,0,56%,0>,
 	  special.fg => black,
 	  special.border => #333
 
-  button: default.bg => <#e0e0e0, #e0e0e0, #d6d6d6 with #f2f2f2 @:1,0,10,0>,
+  button: default.bg => <#e0e0e0, #e0e0e0, #d6d6d6 with #f2f2f2 @:1,0,68%,0>,
 	  default.fg => black,
 	  default.border => #9fa2a7,
-	  selected.bg => <#c0c0c0, #c0c0c0, #b6b6b6 with #d2d2d2 @:1,0,10,0>,
+	  selected.bg => <#c0c0c0, #c0c0c0, #b6b6b6 with #d2d2d2 @:1,0,68%,0>,
 	  selected.fg => black,
 	  selected.border => #86898f
