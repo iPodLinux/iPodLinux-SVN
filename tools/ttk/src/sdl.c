@@ -184,7 +184,9 @@ int ttk_get_event (int *arg)
 	    else if (ev.key.keysym.sym == SDLK_KP8) *arg = '8';
 	    else if (ev.key.keysym.sym == SDLK_KP9) *arg = '9';
 #endif
+#ifdef WARN_UNRECOG_KEYS
 	    else fprintf (stderr, "Unrecognized key\n"), *arg = ev.key.keysym.sym;
+#endif
 	    return tev;
 	}
     }
