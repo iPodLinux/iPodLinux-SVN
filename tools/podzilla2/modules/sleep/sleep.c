@@ -20,30 +20,79 @@
 
 static PzModule *module;
 
+static void ipod_goto_sleep(void)
+{
+	/* Nothing happening yet */
+}
+
+
+static char mpdc_is_playing(void)
+{
+	char (* local_mpdc_is_playing)(void);
+	local_mpdc_is_playing = pz_module_softdep("mpdc", "mpdc_is_playing");
+	return (local_mpdc_is_playing && local_mpdc_is_playing());
+}
+
+
 static int idle_handler(void *d)
 {
 	PzWindow *(* local_mpd_currently_playing)(void);
-	char (* local_mpdc_is_playing)(void);
 	char (* local_mcp_active)(void);
-	
-	local_mpdc_is_playing = pz_module_softdep("mpdc", "mpdc_is_playing");
-	if (local_mpdc_is_playing && local_mpdc_is_playing()) {
+
+
+	if (mpdc_is_playing()) {
 		local_mcp_active = pz_module_softdep("mpdc", "mcp_active");
 		if (!local_mcp_active || local_mcp_active())
 			return 0;
 		if ((local_mpd_currently_playing = pz_module_softdep("mpdc",
 				"mpd_currently_playing")))
 			ttk_show_window(local_mpd_currently_playing());
-		
 	}
-	else {/* this is where the actual sleeping stuff would go */}
+	else { 
+		ipod_goto_sleep();	
+	}
 	return 0;
 }
 
+static void stop_mpdc(void)
+{
+	void (* local_mpdc_playpause)(void);
+
+	if (mpdc_is_playing()) {	
+		local_mpdc_playpause = pz_module_softdep("mpdc", 
+							"mpdc_playpause");
+
+		/* pause the music if we're currently playing */
+		if (local_mpdc_playpause)
+			local_mpdc_playpause();
+	}
+}
+
+
+
+static void sleep_forced(void)
+{
+	/* kill the timer + handle the button first
+	 * because we'll be out for a while */
+	pz_handled_hold (PZ_BUTTON_PLAY); 
+
+	/* take down mpd if its currently playing */
+	stop_mpdc();
+
+	/* sleep it! */
+	ipod_goto_sleep();
+
+}
 static void init_sleep()
 {
+
 	module = pz_register_module("sleep", NULL);
+
+	/* register us as an idle handler */
 	pz_register_idle(idle_handler, NULL);
+
+	/* register the play button as the sleep key */
+	pz_register_global_hold_button(PZ_BUTTON_PLAY, 5000, sleep_forced);
 }
 
 PZ_MOD_INIT(init_sleep)
