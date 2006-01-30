@@ -1,3 +1,17 @@
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
 # The next line is for SVN. Change if you do a release!
 VERSION = SVN-$(shell svnversion .)
 export VERSION
@@ -239,20 +253,23 @@ translate:
 .PHONY: core modules clean pods xpods dev-env contrib translate .curtgt Config.in
 
 help:
+	@echo ""
 	@echo === Useful makefile targets ===
 	@echo ""
 	@echo == general targets ==
 	@echo all .......... build the entire thing
 	@echo install ...... build and install to your ipod
 	@echo clean ........ remove all generated binaries
+	@echo dev-env ...... links ttk directories over for desktop dev
 	@echo ""
 	@echo == language ==
 	@echo translate .... make the translation strings files
 	@echo ""
 	@echo == module config ==
 	@echo defconfig .... generate a default configuration file
-	@echo mrproper ..... something else
+	@echo mrproper ..... a more complete 'clean' which wipes config stuff
 	@echo config ....... text-based module configuration
 	@echo menuconfig ... curses-based module configuration
+	@echo ""
 
 .PHONY: help
