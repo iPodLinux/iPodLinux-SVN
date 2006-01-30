@@ -17,10 +17,11 @@ endif
 default: all-check
 
 include Makefile
--include $(PZPATH)/.config
+include $(PZPATH)/.config
 ifndef MODULE
 $(error You must define MODULE.)
 endif
+MODULE := $(strip $(MODULE))
 
 ifeq ($(MODULE_$(MODULE)),)
 all-check:

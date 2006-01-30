@@ -60,7 +60,7 @@ all-msg: all .message
 	@$(MAKE) -s silentdefconfig
 
 Config.in:
-	@perl make-config.pl > Config.in
+	@perl make-config.pl
 
 Kconfig/conf:
 	@echo
