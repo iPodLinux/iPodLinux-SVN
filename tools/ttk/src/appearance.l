@@ -188,31 +188,40 @@ DEC	[0-9]+
     ap->type |= TTK_AP_GRAD_BAR;
     BEGIN GRADWITH;
 }
-<GRADWITH>"@":?[ \t]*[0-9]+(","[ \t]*[0-9]+(","[ \t]*[0-9]+","[ \t]*[0-9]+)?)? {
+<GRADWITH>"@":?[ \t]*[0-9]+"%"?(","[ \t]*[0-9]+"%"?(","[ \t]*[0-9]+"%"?","[ \t]*[0-9]+"%"?)?)? {
     // extract the values
     int t, r, b, l;
+    int tp, rp, bp, lp;
     char *str = (char *)yytext;
     t = r = b = l = 0;
+    tp = rp = bp = lp = 0;
     while (*str == '@' || *str == ':' || isspace (*str)) str++;
     t = strtol (str, (char **)&str, 10);
+    if (*str == '%') tp = 1, str++;
     while (*str && *str != ',') str++;
     if (!*str) {
         r = b = l = t;
+        rp = bp = lp = tp;
     } else {
         while (*str == ',' || isspace (*str)) str++;
         r = strtol (str, (char **)&str, 10);
+        if (*str == '%') rp = 1, str++;
         while (*str && *str != ',') str++;
         if (!*str) {
             b = t, l = r;
+            bp = tp, lp = rp;
         } else {
             while (*str == ',' || isspace (*str)) str++;
             b = strtol (str, (char **)&str, 10);
+            if (*str == '%') bp = 1, str++;
             while (*str && *str != ',') str++;
             if (!*str) {
                 l = r;
+                lp = rp;
             } else {
                 while (*str == ',' || isspace (*str)) str++;
                 l = strtol (str, (char **)&str, 10);
+                if (*str == '%') lp = 1, str++;
             }
         }
     }
@@ -221,6 +230,10 @@ DEC	[0-9]+
     ap->gbr = r;
     ap->gbb = b;
     ap->gbl = l;
+    if (lp) ap->type |= TTK_AP_GRAD_LPERC;
+    if (rp) ap->type |= TTK_AP_GRAD_RPERC;
+    if (tp) ap->type |= TTK_AP_GRAD_TPERC;
+    if (bp) ap->type |= TTK_AP_GRAD_BPERC;
 }
 <GRADEND,GRADWITH>">"	BEGIN VALUE;
 
@@ -480,8 +493,17 @@ void ttk_ap_dorect (ttk_surface srf, TApItem *ap, int x1, int y1, int x2, int y2
             gradfn (srf, x1, y1, x2, y2, ap->gradstart, ap->gradend);
         }
 
-        if ((ap->type & TTK_AP_GRAD_BAR) && (x1 + ap->gbl < x2 - ap->gbr) && (y1 + ap->gbt < y2 - ap->gbb))
-            ttk_fillrect (srf, x1 + ap->gbl, y1 + ap->gbt, x2 - ap->gbr, y2 - ap->gbb, ap->gradwith);
+        if (ap->type & TTK_AP_GRAD_BAR) {
+            int t, r, b, l;
+            int w = x2-x1, h = y2-y1;
+            t = (ap->type & TTK_AP_GRAD_TPERC)? ap->gbt * h / 100 : ap->gbt;
+            r = (ap->type & TTK_AP_GRAD_RPERC)? ap->gbr * w / 100 : ap->gbr;
+            b = (ap->type & TTK_AP_GRAD_BPERC)? ap->gbb * h / 100 : ap->gbb;
+            l = (ap->type & TTK_AP_GRAD_LPERC)? ap->gbl * w / 100 : ap->gbl;
+
+            if ((x1 + l < x2 - r) && (y1 + t < y2 - b))
+                ttk_fillrect (srf, x1 + l, y1 + t, x2 - r, y2 - b, ap->gradwith);
+        }
     }
 
     if (img) {
