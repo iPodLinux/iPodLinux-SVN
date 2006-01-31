@@ -44,7 +44,7 @@
 #include "vgamobjs.h"
 
 /* version number */
-#define VORTEX_VERSION	"05122301"
+#define VORTEX_VERSION	"06012916"
 
 /* change this #define to an #undef if you want the header bar to show */
 #define VORTEX_FULLSCREEN
