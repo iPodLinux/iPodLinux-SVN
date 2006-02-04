@@ -170,6 +170,8 @@ int ti_select(int id)
 	pz_register_input_method(ti_tim_creators[id]);
 	pz_register_input_method_n(ti_tim_ncreators[id]);
 	ti_selected_tim = id;
+	pz_set_int_setting(ti_conf, TI_SETTING_SEL_TIM, ti_selected_tim);
+	pz_save_config(ti_conf);
 	return 0;
 }
 
@@ -194,16 +196,10 @@ int ti_register(TWidget * (* create)(), TWidget * (* ncreate)(), char * name, in
 
 /* main text input module initialization */
 
-void ti_free()
-{
-	pz_set_int_setting(ti_conf, TI_SETTING_SEL_TIM, ti_selected_tim);
-	pz_save_config(ti_conf);
-}
-
 void ti_init()
 {
 	int i;
-	ti_module = pz_register_module("textinput", ti_free);
+	ti_module = pz_register_module("textinput", 0);
 	ti_conf = pz_load_config(pz_module_get_cfgpath(ti_module, "textinput.conf"));
 	for (i=0; i<64; i++) {
 		ti_tim_creators[i]=0;
