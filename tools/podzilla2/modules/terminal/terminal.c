@@ -99,25 +99,25 @@ void terminal_render(TWidget * wid, ttk_surface srf)
 	int cc = 0;
 	int p = terminal_y*terminal_cols + terminal_x;
 	int i, a;
-	ttk_color bg = ttk_ap_getx("window.bg")->color;
-	ttk_color fg = ttk_ap_getx("window.fg")->color;
-	ttk_color cu = ttk_ap_getx("input.cursor")->color;
-	ttk_fillrect(srf, x, y, x+wid->w, y+wid->h, bg);
+	TApItem * bg = ttk_ap_getx("window.bg");
+	TApItem * fg = ttk_ap_getx("window.fg");
+	TApItem * cu = ttk_ap_getx("input.cursor");
+	ttk_ap_fillrect(srf, bg, x, y, x+wid->w, y+wid->h);
 	for (i=0; i<terminal_cells; i++) {
 		uc[0] = (terminal_buf[i] & 0xFFFF);
 		a = (terminal_buf[i] >> 16);
 		if (a & 0x01) {
-			ttk_fillrect(srf, x, y, x+terminal_cw, y+terminal_ch, fg);
-			ttk_text_uc16(srf, terminal_font, x, y, bg, uc);
-			if (a & 0x02) { ttk_text_uc16(srf, terminal_font, x+1, y, bg, uc); }
-			if (a & 0x04) { ttk_line(srf, x, y+terminal_ch-1, x+terminal_cw, y+terminal_ch-1, bg); }
+			ttk_ap_fillrect(srf, fg, x, y, x+terminal_cw, y+terminal_ch);
+			ttk_text_uc16(srf, terminal_font, x, y, bg->color, uc);
+			if (a & 0x02) { ttk_text_uc16(srf, terminal_font, x+1, y, bg->color, uc); }
+			if (a & 0x04) { ttk_line(srf, x, y+terminal_ch-1, x+terminal_cw, y+terminal_ch-1, bg->color); }
 		} else {
-			ttk_text_uc16(srf, terminal_font, x, y, fg, uc);
-			if (a & 0x02) { ttk_text_uc16(srf, terminal_font, x+1, y, fg, uc); }
-			if (a & 0x04) { ttk_line(srf, x, y+terminal_ch-1, x+terminal_cw, y+terminal_ch-1, fg); }
+			ttk_text_uc16(srf, terminal_font, x, y, fg->color, uc);
+			if (a & 0x02) { ttk_text_uc16(srf, terminal_font, x+1, y, fg->color, uc); }
+			if (a & 0x04) { ttk_line(srf, x, y+terminal_ch-1, x+terminal_cw, y+terminal_ch-1, fg->color); }
 		}
 		if (i == p) {
-			ttk_fillrect(srf, x, y+terminal_ch-2, x+terminal_cw, y+terminal_ch, cu);
+			ttk_ap_fillrect(srf, cu, x, y+terminal_ch-2, x+terminal_cw, y+terminal_ch);
 		}
 		cc++;
 		if (cc >= terminal_cols) {
