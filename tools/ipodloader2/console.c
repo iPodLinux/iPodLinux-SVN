@@ -67,9 +67,9 @@ void console_putchar(char ch) {
     console.cursor.x = 0;
     console.cursor.y++;
 
-#if 1
     /* Check if we need to scroll the display up */
     if(console.cursor.y >= (console.dimensions.h/font_height) ) {
+#if 0
       int i;
       mlc_memcpy(console.fb,
 		 console.fb+(console.dimensions.w*font_height),
@@ -80,6 +80,11 @@ void console_putchar(char ch) {
       }
       
       console.cursor.y--;
+#else
+      console.cursor.y = 0;
+      x = y = 0;
+      fb_cls (console.fb, console.bgcolor);
+#endif
     }
     fb_update(console.fb);
 #ifdef MSGDELAY
@@ -88,16 +93,6 @@ void console_putchar(char ch) {
         ;
 #endif
     return;
-#else
-    if( (y+font_height) >= console.dimensions.h ) {
-      console.cursor.x = 0;
-      console.cursor.y = 0;
-      x = 0;
-      y = 0;
-    }
-    fb_update (console.fb);
-    return;
-#endif
   }
   if(ch == '\r') { console.cursor.x = 0; return; }
 
