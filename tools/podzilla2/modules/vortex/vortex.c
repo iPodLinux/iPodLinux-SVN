@@ -32,6 +32,13 @@
  *	Scott Lawrence yorgle@gmail.com
  */
 
+/* known bugs:
+
+    play game, go back to menu, go back to game, bolts not rendered properly
+
+    sometimes 'ouch' appears on startup
+*/
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -181,12 +188,12 @@ void Vortex_initLevel( void )
 	if( vglob.state == VORTEX_STATE_DEATH ) return;
 	if( vglob.state == VORTEX_STATE_DEAD ) return;
 
-	Vortex_newLevelCompute();
 	Vortex_Powerup_clear();
 	Vortex_Bolt_clear();
 	Vortex_Enemy_clear();
-	Vortex_clawGeometryCompute();
 	Vortex_player_clear();
+	Vortex_newLevelCompute();
+	Vortex_clawGeometryCompute();
 
 	if( vglob.state == VORTEX_STATE_STARTUP ) return;
 	if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
@@ -275,6 +282,7 @@ void Vortex_selectLevel( int l )
 
 void Vortex_newWebSelected( void )
 {
+	Star_GenerateStars();
 	Vortex_newLevelCompute();
         Vortex_clawGeometryCompute();
         Vortex_player_clear();
@@ -297,6 +305,11 @@ void Vortex_newClawPosition( void )
     five thousand dollars in cash!
 */
 
+
+/* just some stuff for printouting of stuffthings */
+#define XXdbgprnt( A ) 	printf( A )
+#define dbgprnt( A ) 	(void)( A )
+
 void Vortex_stateChange( int newState )
 {
 	/* common */
@@ -307,8 +320,6 @@ void Vortex_stateChange( int newState )
 	/* Exit from state */
 	switch( vglob.state ){
 	case( VORTEX_STATE_STARTUP ):
-		/* clear all globals */
-		/* initialize game setup structs */
 		break;
 
 	case( VORTEX_STATE_STYLESEL ):
@@ -318,8 +329,6 @@ void Vortex_stateChange( int newState )
 		break;
 
 	case( VORTEX_STATE_GAME ):
-		Vortex_Console_HiddenStatic( 0 );
-		/* ::new web selection */
 		break;
 
 	case( VORTEX_STATE_ADVANCE ):
@@ -335,31 +344,54 @@ void Vortex_stateChange( int newState )
 	/* the new state... */
 	vglob.state = newState;
 
+dbgprnt( "  To " );
 	/* entry into the new state */
 	switch( vglob.state ){
 	case( VORTEX_STATE_STARTUP ):
+dbgprnt( "STARTUP" );
 		/* clear all globals */
 		/* initialize game setup structs */
+		Vortex_initLevel();
 		break;
 
 	case( VORTEX_STATE_STYLESEL ):
+dbgprnt( "STYLE SEL" );
+		Vortex_initLevel();
+		Vortex_clawGeometryCompute();
+		Vortex_newWebSelected();
 		break;
 
 	case( VORTEX_STATE_LEVELSEL ):
+		vglob.wPosMajor = 8;
+		Vortex_initLevel();
+		Vortex_clawGeometryCompute();
+		Vortex_newWebSelected();
+dbgprnt( "LEVEL SEL" );
 		break;
 
 	case( VORTEX_STATE_GAME ):
+		Vortex_Console_HiddenStatic( 0 );
+		vglob.wPosMajor = 8;
+		vglob.wPosMinor = 0;
+		Vortex_initLevel();
+		Vortex_clawGeometryCompute();
+		Vortex_newWebSelected();
+dbgprnt( "GAME" );
 		break;
 
 	case( VORTEX_STATE_ADVANCE ):
+dbgprnt( "ADVANCE" );
 		break;
 
 	case( VORTEX_STATE_DEATH ):
+dbgprnt( "DEATH" );
 		break;
 
 	case( VORTEX_STATE_DEAD ):
+dbgprnt( "DEAD" );
 		break;
 	}
+dbgprnt( "\n" );
 }
 
 void Vortex_timerTick( PzEvent * ev )
@@ -407,7 +439,7 @@ void Vortex_timerTick( PzEvent * ev )
 		break;
 
 	case( VORTEX_STATE_ADVANCE ):
-		if( vglob.timer == 0 ) 
+		if( vglob.timer <= 1 ) 
 			Vortex_Console_AddItem( "SUPERZAPPER", 0, 0, 
 				VORTEX_STYLE_NORMAL, vglob.color.sz_text1 );
 
@@ -417,7 +449,6 @@ void Vortex_timerTick( PzEvent * ev )
 
 		if( vglob.timer > 60 ) {
 			Vortex_selectLevel( vglob.currentLevel + 1 );
-			Vortex_initLevel();
 			Vortex_stateChange( VORTEX_STATE_GAME );
 		}
 		break;
@@ -426,6 +457,10 @@ void Vortex_timerTick( PzEvent * ev )
 		if( vglob.timer < 5 )
 	    		Vortex_Console_AddItem( "GAME OVER", 0, 0, 
 				VORTEX_STYLE_NORMAL, vglob.color.title );
+		if( Vortex_Console_GetZoomCount() == 0 ) {
+			Vortex_stateChange( VORTEX_STATE_DEAD );
+			pz_close_window( vglob.window );
+		}
 		break;
 
 	case( VORTEX_STATE_DEAD ):
@@ -656,8 +691,8 @@ int event_vortex (PzEvent *ev)
 		    if( !vglob.paused ) {
 			if( vglob.state == VORTEX_STATE_STARTUP ) {
 				Vortex_stateChange( VORTEX_STATE_STYLESEL );
-				Vortex_initLevel();
 				vglob.wPosMajor = 8;
+				Vortex_initLevel();
 			} else if( vglob.state == VORTEX_STATE_STYLESEL ) {
 				Vortex_stateChange( VORTEX_STATE_LEVELSEL );
 				vglob.startLevel = 0;
@@ -734,6 +769,7 @@ PzWindow *new_vortex_window()
 				VORTEX_STYLE_BOLD, vglob.color.title );
 	Star_SetStyle( STAR_MOTION_STATIC );
 	Star_GenerateStars();
+
 
 	return pz_finish_window( vglob.window );
 }
