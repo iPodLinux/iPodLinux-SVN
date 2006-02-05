@@ -19,10 +19,10 @@
 #include "pz.h"
 #include <ctype.h>
 #include <string.h>
-#include <unistd.h>
 
 /* dependent on textinput module */
 extern ttk_color ti_ap_get(int);
+extern TApItem * ti_ap_getx(int);
 
 static PzModule * module;
 
@@ -129,7 +129,7 @@ void ti_buffer_insert_byte(TiBuffer * buf, int pos, char ch)
 void ti_buffer_remove_byte(TiBuffer * buf, int pos)
 {
 	int i;
-	if (pos < 0) return;
+	if ((pos < 0) || (pos >= (buf->usize))) return;
 	for (i=pos; i<(buf->usize); i++) {
 		buf->text[i] = buf->text[i+1];
 	}
@@ -277,7 +277,7 @@ void ti_multiline_text(ttk_surface srf, ttk_font fnt, int x, int y, int w, int h
 	int screenlines = 0;
 	int coob = 0; /* Cursor Out Of Bounds, or iPodLinux dev; you decide */
 	int width, height;
-	ttk_color curcol = ti_ap_get(5);
+	TApItem * curcol = ti_ap_getx(5);
 	height = ttk_text_height(fnt);
 	screenlines = h / height;
 
@@ -285,7 +285,7 @@ void ti_multiline_text(ttk_surface srf, ttk_font fnt, int x, int y, int w, int h
 	curtextptr = (char *)t;
 	if ((cursorpos >= 0) && (*curtextptr == '\0')) {
 		/* text is empty, draw the cursor at initial position */
-		ttk_line(srf, x, y, x, y+height, curcol);
+		ttk_ap_vline(srf, curcol, x, y, y+height);
 	}
 	while (*curtextptr != '\0') {
 		char * sol; /* start of line */
@@ -345,19 +345,18 @@ void ti_multiline_text(ttk_surface srf, ttk_font fnt, int x, int y, int w, int h
 					curline[cursorpos-(sol-sot)] = 0;
 					width = ttk_text_width(fnt, curline);
 				}
-				ttk_line(srf, x+width, y+((currentLine-scroll)*height), x+width, y+((currentLine-scroll+1)*height), curcol);
+				ttk_ap_vline(srf, curcol, x+width, y+((currentLine-scroll)*height), y+((currentLine-scroll+1)*height));
 			} else if ((cursorpos == curtextptr-sot) && (*curtextptr == '\0')) {
 				/* cursor is not only at the very end of the line, but the very end of the text */
 				if ((*(curtextptr-1) == '\n')||(*(curtextptr-1) == '\r')) {
 					/* last character of the text is a newline, so display the cursor on the next line */
-					ttk_line(srf, x, y+((currentLine-scroll+1)*height), x, y+((currentLine-scroll+2)*height), curcol);
+					ttk_ap_vline(srf, curcol, x, y+((currentLine-scroll+1)*height), y+((currentLine-scroll+2)*height));
 					if ((currentLine - scroll + 1) == screenlines) { coob = 1; }
 				} else {
 					/* display the cursor normally */
-					/*GrGetGCTextSize(gc, sol, cursorpos-(sol-sot), GR_TFUTF8, &width, &height, &base);*/
 					curline[cursorpos-(sol-sot)] = 0;
 					width = ttk_text_width(fnt, curline);
-					ttk_line(srf, x+width, y+((currentLine-scroll)*height), x+width, y+((currentLine-scroll+1)*height), curcol);
+					ttk_ap_vline(srf, curcol, x+width, y+((currentLine-scroll)*height), y+((currentLine-scroll+1)*height));
 				}
 			}
 			
@@ -477,31 +476,27 @@ void ti_widget_draw(TWidget * wid, ttk_surface srf)
 	char * tmp;
 	ttk_surface srf2;
 	
-	/* background and border */
-	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
-	ttk_rect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(4));
-	
 	/* get info */
 	sw = ((TiBuffer *)wid->data)->usize;
 	cp = ((TiBuffer *)wid->data)->cpos;
 	tmp = (char *)malloc(sw+1);
 	strcpy(tmp, ((TiBuffer *)wid->data)->text);
 	spw = ttk_text_width(ttk_textfont, tmp);
-	h = ttk_text_height(ttk_textfont);
+	h = wid->h; /*ttk_text_height(ttk_textfont);*/
 	
 	/* create graphics buffer */
 	srf2 = ttk_new_surface(spw+1, h, ttk_screen->bpp);
 	
 	/* background */
-	ttk_fillrect(srf2, 0, 0, spw+1, h, ti_ap_get(0));
+	ttk_ap_fillrect(srf2, ti_ap_getx(0), 0, 0, spw+1, h);
 	
 	/* text */
-	ttk_text(srf2, ttk_textfont, 0, 0, ti_ap_get(1), tmp);
+	ttk_text(srf2, ttk_textfont, 0, 5, ti_ap_get(1), tmp);
 	
 	/* cursor */
 	tmp[cp]=0;
 	cpw = ttk_text_width(ttk_textfont, tmp);
-	ttk_line(srf2, cpw, 0, cpw, h, ti_ap_get(5));
+	ttk_ap_vline(srf2, ti_ap_getx(5), cpw, 5, h-5);
 	
 	/* figure out where to blit it */
 	blitx = cpw - (wid->w - 10)/2;
@@ -510,8 +505,12 @@ void ti_widget_draw(TWidget * wid, ttk_surface srf)
 	}
 	if (blitx < 0) blitx = 0;
 	
+	/* background and border */
+	ttk_ap_fillrect(srf, ti_ap_getx(0), wid->x, wid->y, wid->x+wid->w, wid->y+wid->h);
 	/* blit it */
-	ttk_blit_image_ex(srf2, blitx, 0, wid->w-10, h, srf, wid->x+5, wid->y+5);
+	ttk_blit_image_ex(srf2, blitx, 0, wid->w-10, h, srf, wid->x+5, wid->y);
+	/* border */
+	ttk_ap_rect(srf, ti_ap_getx(4), wid->x, wid->y, wid->x+wid->w, wid->y+wid->h);
 	
 	/* done */
 	ttk_free_surface(srf2);
@@ -526,10 +525,6 @@ void ti_widget_draw_p(TWidget * wid, ttk_surface srf)
 	char * tmp;
 	ttk_surface srf2;
 	
-	/* background and border */
-	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
-	ttk_rect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(4));
-	
 	/* get info */
 	sw = ((TiBuffer *)wid->data)->usize;
 	cp = ((TiBuffer *)wid->data)->cpos;
@@ -537,21 +532,21 @@ void ti_widget_draw_p(TWidget * wid, ttk_surface srf)
 	strcpy(tmp, ((TiBuffer *)wid->data)->text);
 	for (i=0; i<sw; i++) tmp[i]='*';
 	spw = ttk_text_width(ttk_textfont, tmp);
-	h = ttk_text_height(ttk_textfont);
+	h = wid->h; /*ttk_text_height(ttk_textfont);*/
 	
 	/* create graphics buffer */
 	srf2 = ttk_new_surface(spw+1, h, ttk_screen->bpp);
 	
 	/* background */
-	ttk_fillrect(srf2, 0, 0, spw+1, h, ti_ap_get(0));
+	ttk_ap_fillrect(srf2, ti_ap_getx(0), 0, 0, spw+1, h);
 	
 	/* text */
-	ttk_text(srf2, ttk_textfont, 0, 0, ti_ap_get(1), tmp);
+	ttk_text(srf2, ttk_textfont, 0, 5, ti_ap_get(1), tmp);
 	
 	/* cursor */
 	tmp[cp]=0;
 	cpw = ttk_text_width(ttk_textfont, tmp);
-	ttk_line(srf2, cpw, 0, cpw, h, ti_ap_get(5));
+	ttk_ap_vline(srf2, ti_ap_getx(5), cpw, 5, h-5);
 	
 	/* figure out where to blit it */
 	blitx = cpw - (wid->w - 10)/2;
@@ -560,8 +555,12 @@ void ti_widget_draw_p(TWidget * wid, ttk_surface srf)
 	}
 	if (blitx < 0) blitx = 0;
 	
+	/* background and border */
+	ttk_ap_fillrect(srf, ti_ap_getx(0), wid->x, wid->y, wid->x+wid->w, wid->y+wid->h);
 	/* blit it */
-	ttk_blit_image_ex(srf2, blitx, 0, wid->w-10, h, srf, wid->x+5, wid->y+5);
+	ttk_blit_image_ex(srf2, blitx, 0, wid->w-10, h, srf, wid->x+5, wid->y);
+	/* border */
+	ttk_ap_rect(srf, ti_ap_getx(4), wid->x, wid->y, wid->x+wid->w, wid->y+wid->h);
 	
 	/* done */
 	ttk_free_surface(srf2);
@@ -570,10 +569,10 @@ void ti_widget_draw_p(TWidget * wid, ttk_surface srf)
 
 void ti_widget_draw_ml(TWidget * wid, ttk_surface srf)
 {
-	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
+	ttk_ap_fillrect(srf, ti_ap_getx(0), wid->x, wid->y, wid->x+wid->w, wid->y+wid->h);
 	
 	/* draw border */
-	ttk_rect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(4));
+	ttk_ap_rect(srf, ti_ap_getx(4), wid->x, wid->y, wid->x+wid->w, wid->y+wid->h);
 	
 	ti_multiline_text(srf, ttk_textfont, wid->x+5, wid->y+5, wid->w-10, wid->h-10-(((TiBuffer *)wid->data)->idata[2]),
 		ti_ap_get(1), ((TiBuffer *)wid->data)->text, ((TiBuffer *)wid->data)->cpos, 0, 0, 0, 0);

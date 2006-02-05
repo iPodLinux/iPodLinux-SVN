@@ -28,7 +28,9 @@ static PzModule * module;
 
 /* dependent on textinput module */
 extern ttk_color ti_ap_get(int);
+extern TApItem * ti_ap_getx(int);
 extern int ti_register(TWidget *(* cr)(), TWidget *(* ncr)(), char *, int);
+extern TWidget * ti_create_tim_widget(int ht, int wd);
 
 const unsigned long int ti_fbk_MSlongs[] = {
 	0x01020304, 0x05060708, 0x090A0B0C, 0x0D0E0F10, 0x11000012, 0x00000000, 0x00000000,
@@ -82,7 +84,6 @@ static unsigned long int ti_fbk_CurrModeSwitch = 0x01020304;
 static unsigned long int ti_fbk_CurrCharOutput = 0;
 static int ti_fbk_numeric = 0;
 
-extern TWidget * ti_create_tim_widget(int ht, int wd);
 
 void ti_fbk_draw(TWidget * wid, ttk_surface srf)
 {
@@ -92,7 +93,7 @@ void ti_fbk_draw(TWidget * wid, ttk_surface srf)
 	x = y = 0;
 	m = ti_fbk_CurrModeSwitch;
 	c = ti_fbk_CurrCharOutput;
-	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
+	ttk_ap_fillrect(srf, ti_ap_getx(0), wid->x, wid->y, wid->x+wid->w, wid->y+wid->h);
 	
 	if (ttk_get_podversion() & TTK_POD_3G) {
 		cw = (wid->w/4);

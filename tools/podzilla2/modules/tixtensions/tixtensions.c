@@ -142,7 +142,7 @@ PzWindow * tix_cut_handler(ttk_menu_item * item)
 
 void tix_mkdir_draw(TWidget * wid, ttk_surface srf)
 {
-	ttk_fillrect(srf, wid->x, wid->y, wid->w, wid->h, ttk_ap_getx("window.bg")->color);
+	ttk_ap_fillrect(srf, ttk_ap_getx("window.bg"), wid->x, wid->y, wid->w, wid->h);
 	ttk_text(srf, ttk_menufont, wid->x, wid->y, ttk_ap_getx("window.fg")->color, _("Make directory named:"));
 }
 
@@ -179,7 +179,7 @@ PzWindow * new_mkdir_window(ttk_menu_item * item)
 
 void tix_rename_draw(TWidget * wid, ttk_surface srf)
 {
-	ttk_fillrect(srf, wid->x, wid->y, wid->w, wid->h, ttk_ap_getx("window.bg")->color);
+	ttk_ap_fillrect(srf, ttk_ap_getx("window.bg"), wid->x, wid->y, wid->w, wid->h);
 	ttk_text(srf, ttk_menufont, wid->x, wid->y, ttk_ap_getx("window.fg")->color, _("Rename file to:"));
 }
 
@@ -218,7 +218,7 @@ PzWindow * new_rename_window(ttk_menu_item * item)
 
 void tix_run_draw(TWidget * wid, ttk_surface srf)
 {
-	ttk_fillrect(srf, wid->x, wid->y, wid->w, wid->h, ttk_ap_getx("window.bg")->color);
+	ttk_ap_fillrect(srf, ttk_ap_getx("window.bg"), wid->x, wid->y, wid->w, wid->h);
 	if (ttk_screen->w < 160) {
 		ti_multiline_text(srf, ttk_textfont, wid->x, wid->y, wid->w, wid->h, ttk_ap_getx("window.fg")->color,
 			_("Type the name of a file to open."), -1, 0, 0, 0, 0);

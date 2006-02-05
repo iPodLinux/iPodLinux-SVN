@@ -28,7 +28,9 @@ static PzModule * module;
 
 /* dependent on textinput module */
 extern ttk_color ti_ap_get(int);
+extern TApItem * ti_ap_getx(int);
 extern int ti_register(TWidget *(* cr)(), TWidget *(* ncr)(), char *, int);
+extern TWidget * ti_create_tim_widget(int ht, int wd);
 
 const char ti_wlb_lowercase[]=  "abcdefghijklmnopqrstuvwxyz";
 const char ti_wlb_uppercase[]=  "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -45,7 +47,6 @@ static int ti_wlb_startpos=0;
 static int ti_wlb_limit=13;
 static int ti_wlb_position=3;
 
-extern TWidget * ti_create_tim_widget(int ht, int wd);
 
 void ti_wlb_reset(void)
 {
@@ -134,10 +135,10 @@ void ti_wlb_draw(TWidget * wid, ttk_surface srf)
 {
 	ttk_color tcol;
 	char disp[14];
-	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
+	ttk_ap_fillrect(srf, ti_ap_getx(0), wid->x, wid->y, wid->x+wid->w, wid->y+wid->h);
 	
 	if (ti_wlb_position<1) {
-		ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w/2, wid->y+wid->h, ti_ap_get(2));
+		ttk_ap_fillrect(srf, ti_ap_getx(2), wid->x, wid->y, wid->x+wid->w/2, wid->y+wid->h);
 		tcol = ti_ap_get(3);
 	} else {
 		tcol = ti_ap_get(1);
@@ -148,7 +149,7 @@ void ti_wlb_draw(TWidget * wid, ttk_surface srf)
 	ttk_text_lat1(srf, ttk_menufont, wid->x+1, wid->y, tcol, disp);
 		   
 	if (ti_wlb_position>5) {
-		ttk_fillrect(srf, wid->x+wid->w/2, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(2));
+		ttk_ap_fillrect(srf, ti_ap_getx(2), wid->x+wid->w/2, wid->y, wid->x+wid->w, wid->y+wid->h);
 		tcol = ti_ap_get(3);
 	} else {
 		tcol = ti_ap_get(1);

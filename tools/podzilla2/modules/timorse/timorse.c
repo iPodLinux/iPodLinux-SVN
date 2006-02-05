@@ -31,7 +31,9 @@ static PzModule * module;
 
 /* dependent on textinput module */
 extern ttk_color ti_ap_get(int);
+extern TApItem * ti_ap_getx(int);
 extern int ti_register(TWidget *(* cr)(), TWidget *(* ncr)(), char *, int);
+extern TWidget * ti_create_tim_widget(int ht, int wd);
 
 #define NUM_MORSE_SYMBOLS 79
 #define MORSE_MAX_SYMBOL_LENGTH 10
@@ -138,7 +140,6 @@ static char ti_morse_sym[MORSE_MAX_SYMBOL_LENGTH];
 static int  ti_morse_symlen = 0;
 static int  ti_morse_lowercase = 1;
 
-extern TWidget * ti_create_tim_widget(int ht, int wd);
 
 unsigned char ti_morse_decode(char * symbol)
 {
@@ -162,19 +163,19 @@ void ti_morse_draw(TWidget * wid, ttk_surface srf)
 	int x = wid->x + 2;
 	int y = wid->y + 2;
 	int i;
-	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
+	ttk_ap_fillrect(srf, ti_ap_getx(0), wid->x, wid->y, wid->x+wid->w, wid->y+wid->h);
 	for (i=0; i<ti_morse_symlen; i++) {
 		if (ti_morse_sym[i] == '.') {
-			ttk_fillrect(srf, x, y, x+2, y+2, ti_ap_get(1));
+			ttk_ap_fillrect(srf, ti_ap_getx(1), x, y, x+2, y+2);
 			x += 4;
 		} else {
-			ttk_fillrect(srf, x, y, x+8, y+2, ti_ap_get(1));
+			ttk_ap_fillrect(srf, ti_ap_getx(1), x, y, x+8, y+2);
 			x += 10;
 		}
 	}
 	if (!ti_morse_lowercase) {
 		x = wid->x + wid->w - 10;
-		ttk_fillrect(srf, x, y, x+8, y+2, ti_ap_get(2));
+		ttk_ap_fillrect(srf, ti_ap_getx(2), x, y, x+8, y+2);
 	}
 }
 

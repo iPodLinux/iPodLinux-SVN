@@ -38,45 +38,67 @@ static TWidget * (* ti_tim_ncreators[TI_MAX_TIMS])();
 
 /* API calls for TIM widgets */
 
-ttk_color ti_ap_get(int i)
+TApItem * ti_ap_getx(int i)
 {
 	TApItem * tai;
 	switch (i) {
 	case 0:
 		tai = ttk_ap_get("input.bg");
-		if (!tai) { tai = ttk_ap_get("window.bg"); }
-		if (!tai) { return ttk_makecol(WHITE); }
-		return tai->color;
+		if (!tai) { tai = ttk_ap_getx("window.bg"); }
+		return tai;
 		break;
 	case 1:
 		tai = ttk_ap_get("input.fg");
-		if (!tai) { tai = ttk_ap_get("window.fg"); }
-		if (!tai) { return ttk_makecol(BLACK); }
-		return tai->color;
+		if (!tai) { tai = ttk_ap_getx("window.fg"); }
+		return tai;
 		break;
 	case 2:
 		tai = ttk_ap_get("input.selbg");
-		if (!tai) { return ttk_makecol(DKGREY); }
-		return tai->color;
+		if (!tai) { tai = ttk_ap_getx("menu.selbg"); }
+		return tai;
 		break;
 	case 3:
 		tai = ttk_ap_get("input.selfg");
-		if (!tai) { return ttk_makecol(WHITE); }
-		return tai->color;
+		if (!tai) { tai = ttk_ap_getx("menu.selfg"); }
+		return tai;
 		break;
 	case 4:
 		tai = ttk_ap_get("input.border");
-		if (!tai) { tai = ttk_ap_get("window.border"); }
-		if (!tai) { return ttk_makecol(GREY); }
-		return tai->color;
+		if (!tai) { tai = ttk_ap_getx("window.border"); }
+		return tai;
 		break;
 	case 5:
 		tai = ttk_ap_get("input.cursor");
-		if (!tai) { return ttk_makecol(GREY); }
-		return tai->color;
+		if (!tai) { tai = ttk_ap_getx("window.border"); }
+		return tai;
 		break;
 	}
-	return ttk_makecol(BLACK);
+	return 0;
+}
+
+ttk_color ti_ap_get(int i)
+{
+	TApItem * tai = ti_ap_getx(i);
+	if (!tai) {
+		switch (i) {
+		case 0:
+		case 3:
+			return ttk_makecol(WHITE);
+			break;
+		case 4:
+		case 5:
+			return ttk_makecol(GREY);
+			break;
+		case 2:
+			return ttk_makecol(DKGREY);
+			break;
+		default:
+			return ttk_makecol(BLACK);
+			break;
+		}
+	} else {
+		return tai->color;
+	}
 }
 
 TWidget * ti_create_tim_widget(int ht, int wd)
@@ -143,7 +165,7 @@ TWidget * ti_serial_create()
  *  5 - Cursive
  *  6 - Wheelboard
  *  7 - Four-Button Keyboard
- *  8 - Dial Type
+ *  8 - Scroll Through with Return
  *  9 - Telephone Keypad
  * 10 - Thumbscript
  * 11 - Four-Button Keypad
@@ -155,8 +177,8 @@ TWidget * ti_serial_create()
  * 17 - Kana Palette
  * 18 - Multilingual Wheelboard
  * 19 - Reserved
- * 20 - Reserved
- * 21 - Reserved
+ * 20 - Scroll Through with Fixed Layout
+ * 21 - Scroll Through with Prediction
  * 22 - Reserved
  * 23 - Reserved
  *

@@ -27,7 +27,9 @@
 
 /* dependent on textinput module */
 extern ttk_color ti_ap_get(int);
+extern TApItem * ti_ap_getx(int);
 extern int ti_register(TWidget *(* cr)(), TWidget *(* ncr)(), char *, int);
+extern TWidget * ti_create_tim_widget(int ht, int wd);
 
 static PzModule * module;
 
@@ -98,8 +100,6 @@ static char ti_cursive_buffer[6];
 static int ti_cursive_buffer_pos = 0;
 static int ti_cursive_shift = 0;
 
-extern TWidget * ti_create_tim_widget(int ht, int wd);
-
 void ti_cursive_reset(void)
 {
 	ti_cursive_buffer[0] = 0;
@@ -139,7 +139,7 @@ void ti_cursive_draw(TWidget * wid, ttk_surface srf)
 	w = wid->w;
 	y = wid->y;
 	
-	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
+	ttk_ap_fillrect(srf, ti_ap_getx(0), wid->x, wid->y, wid->x+wid->w, wid->y+wid->h);
 	ttk_text_lat1(srf, ttk_menufont, x+2, y, ti_ap_get(1), ti_cursive_buffer);
 	s[0] = ti_cursive_get_char();
 	s[1] = 0;

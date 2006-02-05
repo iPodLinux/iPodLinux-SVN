@@ -32,7 +32,9 @@
 
 /* dependent on textinput module */
 extern ttk_color ti_ap_get(int);
+extern TApItem * ti_ap_getx(int);
 extern int ti_register(TWidget *(* cr)(), TWidget *(* ncr)(), char *, int);
+extern TWidget * ti_create_tim_widget(int ht, int wd);
 
 static PzModule * module;
 
@@ -70,8 +72,6 @@ static int ti_dial_snapback = 0;
 static int ti_dial_ppchar = 0;
 static int ti_dial_pchar = 0;
 static char ti_dial_predict[64][64][5];
-
-extern TWidget * ti_create_tim_widget(int ht, int wd);
 
 
 #define C2N(c) (((c)<32)?(0):(((c)<96)?((c)-32):(((c)<127)?((c)-64):(0))))
@@ -266,7 +266,7 @@ void ti_dial_draw(TWidget * wid, ttk_surface srf)
 	int sc, n, i, j, ty;
 	int m = ti_dial_max()+1;
 	uc16 s[2] = {0,0};
-	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
+	ttk_ap_fillrect(srf, ti_ap_getx(0), wid->x, wid->y, wid->x+wid->w, wid->y+wid->h);
 	n = wid->w / CW;
 	sc = ti_dial_charlist_pos - n/2;
 	ty = 0;
@@ -278,9 +278,11 @@ void ti_dial_draw(TWidget * wid, ttk_surface srf)
 		for (i = sc, j = 0; ((i<m) && (j<n)); i++, j++)
 		{
 			s[0] = ti_dial_get_char(i);
-			ttk_text_uc16(srf, ttk_menufont, wid->x+j*CW+(10-ttk_text_width_uc16(ttk_menufont, s))/2, wid->y+ty, ti_ap_get(1), s);
 			if (i == ti_dial_charlist_pos) {
-				ttk_rect(srf, wid->x+j*CW, wid->y, wid->x+j*CW+CW, wid->y+wid->h, ti_ap_get(1));
+				ttk_ap_fillrect(srf, ti_ap_getx(2), wid->x+j*CW, wid->y, wid->x+j*CW+CW, wid->y+wid->h);
+				ttk_text_uc16(srf, ttk_menufont, wid->x+j*CW+(10-ttk_text_width_uc16(ttk_menufont, s))/2, wid->y+ty, ti_ap_get(3), s);
+			} else {
+				ttk_text_uc16(srf, ttk_menufont, wid->x+j*CW+(10-ttk_text_width_uc16(ttk_menufont, s))/2, wid->y+ty, ti_ap_get(1), s);
 			}
 		}
 	}

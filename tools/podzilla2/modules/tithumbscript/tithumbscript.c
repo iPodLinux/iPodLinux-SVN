@@ -24,7 +24,9 @@
 
 /* dependent on textinput module */
 extern ttk_color ti_ap_get(int);
+extern TApItem * ti_ap_getx(int);
 extern int ti_register(TWidget *(* cr)(), TWidget *(* ncr)(), char *, int);
+extern TWidget * ti_create_tim_widget(int ht, int wd);
 
 static PzModule * module;
 
@@ -103,7 +105,6 @@ static int ti_thumbscript_mode = 0;
 static int ti_thumbscript_last = 0;
 static int ti_thumbscript_lastch = 0;
 
-extern TWidget * ti_create_tim_widget(int ht, int wd);
 
 void ti_thumbscript_reset(void)
 {
@@ -115,7 +116,7 @@ void ti_thumbscript_reset(void)
 void ti_thumbscript_draw(TWidget * wid, ttk_surface srf)
 {
 	char s[2];
-	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
+	ttk_ap_fillrect(srf, ti_ap_getx(0), wid->x, wid->y, wid->x+wid->w, wid->y+wid->h);
 	switch (ti_thumbscript_mode) {
 	case 1:
 		ttk_text_lat1(srf, ttk_menufont, wid->x+wid->w/2, wid->y, ti_ap_get(1), "shift");
