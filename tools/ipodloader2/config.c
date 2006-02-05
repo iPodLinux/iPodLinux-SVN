@@ -123,6 +123,10 @@ void      config_init(void) {
             config.image[config.items].path  = value;
             if (!mlc_strcmp (value, "diskmode") || !mlc_strcmp (value, "diskscan") || !mlc_strcmp (value, "reboot"))
                 config.image[config.items].type = CONFIG_IMAGE_SPECIAL;
+            else if (!mlc_strncasecmp (value, "rb:")) {
+                config.image[config.items].path += 3;
+                config.image[config.items].type = CONFIG_IMAGE_ROCKBOX;
+            }
             config.items++;
             if (config.items >= 8)
                 break;
