@@ -22,7 +22,9 @@
 
 /* dependent on textinput module */
 extern ttk_color ti_ap_get(int);
+extern TApItem * ti_ap_getx(int);
 extern int ti_register(TWidget *(* cr)(), TWidget *(* ncr)(), char *, int);
+extern TWidget * ti_create_tim_widget(int ht, int wd);
 
 static PzModule * module;
 
@@ -79,19 +81,18 @@ int ti_kana_numeric = 0;
 int ti_kana_mode = 0;
 int ti_kana_sel = 0;
 
-extern TWidget * ti_create_tim_widget(int ht, int wd);
 
 void ti_kana_drawcell(ttk_surface srf, int bx, int by, int x, int y, int w, int i, const uc16 * c)
 {
 	int cx = bx + CW*x;
 	int cy = by + CH*y;
 	int tx = cx + (CW*w - ttk_text_width_uc16(ttk_menufont, c) + 1)/2;
-	int ty = cy + (CH*w - ttk_text_height(ttk_menufont) + 1)/2;
+	int ty = cy + (CH   - ttk_text_height(ttk_menufont) + 1)/2;
 	if (ti_kana_sel == i) {
-		ttk_fillrect(srf, cx, cy, cx+CW*w+1, cy+CH+1, ti_ap_get(2));
+		ttk_ap_fillrect(srf, ti_ap_getx(2), cx, cy, cx+CW*w+1, cy+CH+1);
 		ttk_text_uc16(srf, ttk_menufont, tx, ty, ti_ap_get(3), c);
 	} else {
-		ttk_fillrect(srf, cx, cy, cx+CW*w+1, cy+CH+1, ti_ap_get(0));
+		/* ttk_ap_fillrect(srf, ti_ap_getx(0), cx, cy, cx+CW*w+1, cy+CH+1); */
 		ttk_text_uc16(srf, ttk_menufont, tx, ty, ti_ap_get(1), c);
 	}
 	ttk_rect(srf, cx, cy, cx+CW*w+1, cy+CH+1, ti_ap_get(1));
@@ -103,6 +104,7 @@ void ti_kana_draw(TWidget * wid, ttk_surface srf)
 	int by = wid->y + 1;
 	int i;
 	uc16 c[2] = {0, 0};
+	ttk_ap_fillrect(srf, ti_ap_getx(0), wid->x, wid->y, wid->x+wid->w, wid->y+wid->h);
 	for (i=0; i<100; i++) {
 		switch (ti_kana_mode) {
 		case 0:

@@ -26,7 +26,9 @@
 
 /* dependent on textinput module */
 extern ttk_color ti_ap_get(int);
+extern TApItem * ti_ap_getx(int);
 extern int ti_register(TWidget *(* cr)(), TWidget *(* ncr)(), char *, int);
+extern TWidget * ti_create_tim_widget(int ht, int wd);
 
 static PzModule * module;
 static ttk_font ti_osk_font;
@@ -123,7 +125,6 @@ static int ti_osk_dead_key_state = 0;
 static int ti_osk_current_key = 0;
 static int ti_osk_numeric = 0;
 
-extern TWidget * ti_create_tim_widget(int ht, int wd);
 
 void ti_osk_reset(void)
 {
@@ -166,7 +167,8 @@ void ti_osk_draw_keyboard(ttk_surface srf, int x, int y, int gridsize, int sel)
 	if (ti_osk_numeric) {
 		for (i=0; i<ti_osk_cell_count_n; i++) {
 			if (i == sel) {
-				ttk_fillrect(srf, x+gridsize*ti_osk_key_x_n[i], y+gridsize*ti_osk_key_y_n[i], x+gridsize*ti_osk_key_x_n[i]+gridsize*ti_osk_key_width_n[i]+1, y+gridsize*ti_osk_key_y_n[i]+gridsize*2+1, ti_ap_get(2));
+				ttk_ap_fillrect(srf, ti_ap_getx(2), x+gridsize*ti_osk_key_x_n[i], y+gridsize*ti_osk_key_y_n[i],
+					x+gridsize*ti_osk_key_x_n[i]+gridsize*ti_osk_key_width_n[i]+1, y+gridsize*ti_osk_key_y_n[i]+gridsize*2+1);
 				kc = ti_ap_get(3);
 			} else {
 				kc = ti_ap_get(1);
@@ -192,7 +194,8 @@ void ti_osk_draw_keyboard(ttk_surface srf, int x, int y, int gridsize, int sel)
 	} else {
 		for (i=0; i<ti_osk_cell_count; i++) {
 			if (i == sel) {
-				ttk_fillrect(srf, x+gridsize*ti_osk_key_x[i], y+gridsize*ti_osk_key_y[i], x+gridsize*ti_osk_key_x[i]+gridsize*ti_osk_key_width[i]+1, y+gridsize*ti_osk_key_y[i]+gridsize*2+1, ti_ap_get(2));
+				ttk_ap_fillrect(srf, ti_ap_getx(2), x+gridsize*ti_osk_key_x[i], y+gridsize*ti_osk_key_y[i],
+					x+gridsize*ti_osk_key_x[i]+gridsize*ti_osk_key_width[i]+1, y+gridsize*ti_osk_key_y[i]+gridsize*2+1);
 				kc = ti_ap_get(3);
 			} else {
 				kc = ti_ap_get(1);
@@ -273,7 +276,7 @@ void ti_osk_push_key(int k)
 void ti_osk_draw(TWidget * wid, ttk_surface srf)
 {
 	int x, y;
-	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
+	ttk_ap_fillrect(srf, ti_ap_getx(0), wid->x, wid->y, wid->x+wid->w, wid->y+wid->h);
 	if (ti_osk_numeric) {
 		x = wid->x + wid->w/2 - 17;
 		y = wid->y + 1;

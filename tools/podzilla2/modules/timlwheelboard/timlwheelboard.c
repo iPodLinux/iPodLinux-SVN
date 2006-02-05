@@ -35,7 +35,9 @@ static PzModule * module;
 
 /* dependent on textinput module */
 extern ttk_color ti_ap_get(int);
+extern TApItem * ti_ap_getx(int);
 extern int ti_register(TWidget *(* cr)(), TWidget *(* ncr)(), char *, int);
+extern TWidget * ti_create_tim_widget(int ht, int wd);
 
 const ti_mlwlb_cset ti_mlwlb_numericmode = {
 	{ '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '-', '+', '-', '*', 'E',
@@ -59,7 +61,6 @@ static int ti_mlwlb_startpos=0;
 static int ti_mlwlb_limit=16;
 static int ti_mlwlb_position=3;
 
-extern TWidget * ti_create_tim_widget(int ht, int wd);
 
 void ti_mlwlb_load_language(char * fn)
 {
@@ -223,10 +224,10 @@ void ti_mlwlb_draw(TWidget * wid, ttk_surface srf)
 {
 	ttk_color tcol;
 	unsigned short disp[33];
-	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
+	ttk_ap_fillrect(srf, ti_ap_getx(0), wid->x, wid->y, wid->x+wid->w, wid->y+wid->h);
 	
 	if (ti_mlwlb_position<1) {
-		ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w/2, wid->y+wid->h, ti_ap_get(2));
+		ttk_ap_fillrect(srf, ti_ap_getx(2), wid->x, wid->y, wid->x+wid->w/2, wid->y+wid->h);
 		tcol = ti_ap_get(3);
 	} else {
 		tcol = ti_ap_get(1);
@@ -237,7 +238,7 @@ void ti_mlwlb_draw(TWidget * wid, ttk_surface srf)
 	ttk_text_uc16(srf, ttk_menufont, wid->x+1, wid->y, tcol, disp);
 	
 	if (ti_mlwlb_position>5) {
-		ttk_fillrect(srf, wid->x+wid->w/2, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(2));
+		ttk_ap_fillrect(srf, ti_ap_getx(2), wid->x+wid->w/2, wid->y, wid->x+wid->w, wid->y+wid->h);
 		tcol = ti_ap_get(3);
 	} else {
 		tcol = ti_ap_get(1);

@@ -20,7 +20,9 @@
 
 /* dependent on textinput module */
 extern ttk_color ti_ap_get(int);
+extern TApItem * ti_ap_getx(int);
 extern int ti_register(TWidget *(* cr)(), TWidget *(* ncr)(), char *, int);
+extern TWidget * ti_create_tim_widget(int ht, int wd);
 
 static PzModule * module;
 
@@ -31,7 +33,6 @@ static int ti_unihex_numeric = 0;
 static int ti_unihex_digit[4] = {0, 0, 0, 0};
 static int ti_unihex_pos = 0;
 
-extern TWidget * ti_create_tim_widget(int ht, int wd);
 
 void ti_unihex_draw(TWidget * wid, ttk_surface srf)
 {
@@ -40,7 +41,7 @@ void ti_unihex_draw(TWidget * wid, ttk_surface srf)
 	int h = wid->h;
 	int cw = ttk_text_width_lat1(ttk_menufont, "0123456789ABCDEF")/16+1;
 	int i;
-	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
+	ttk_ap_fillrect(srf, ti_ap_getx(0), wid->x, wid->y, wid->x+wid->w, wid->y+wid->h);
 	if (ti_unihex_numeric) {
 		ttk_text_lat1(srf, ttk_menufont, x-ttk_text_width_lat1(ttk_menufont, ti_unihex_numbers[ti_unihex_pos])/2, y, ti_ap_get(1), ti_unihex_numbers[ti_unihex_pos]);
 	} else {

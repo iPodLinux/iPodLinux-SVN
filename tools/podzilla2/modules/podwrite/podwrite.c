@@ -58,6 +58,7 @@ extern int ti_set_buffer(TiBuffer * buf, char * s);
 extern void ti_buffer_cmove(TiBuffer * buf, int m);
 extern void ti_buffer_cset(TiBuffer * buf, int c);
 extern ttk_color ti_ap_get(int i);
+extern TApItem * ti_ap_getx(int i);
 
 /* PodWrite Menu */
 
@@ -215,7 +216,7 @@ void podwrite_widget_draw(TWidget * wid, ttk_surface srf)
 {
 	int h = wid->h - (((TiBuffer *)wid->data)->idata[2]) - 1;
 	
-	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
+	ttk_ap_fillrect(srf, ti_ap_getx(0), wid->x, wid->y, wid->x+wid->w, wid->y+wid->h);
 	ti_multiline_text(srf, ttk_textfont, wid->x+5, wid->y+5, wid->w-15, wid->h-10-(((TiBuffer *)wid->data)->idata[2]),
 		ti_ap_get(1), ((TiBuffer *)wid->data)->text, ((TiBuffer *)wid->data)->cpos,
 		((podwrite_linecount > podwrite_screenlines)?podwrite_scroll:0),

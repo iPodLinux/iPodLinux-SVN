@@ -25,7 +25,9 @@
 
 /* dependent on textinput module */
 extern ttk_color ti_ap_get(int);
+extern TApItem * ti_ap_getx(int);
 extern int ti_register(TWidget *(* cr)(), TWidget *(* ncr)(), char *, int);
+extern TWidget * ti_create_tim_widget(int ht, int wd);
 
 static PzModule * module;
 
@@ -54,13 +56,11 @@ static int (*ti_keypad_ptext_predict)(char * buf, int pos, int method) = 0;
 
 #define TI_KEYPAD_PTEXT (ti_keypad_ptext_inited && ti_keypad_ptext_init && ti_keypad_ptext_free && ti_keypad_ptext_predict)
 
-extern TWidget * ti_create_tim_widget(int ht, int wd);
-
 void ti_keypad_fbdraw(TWidget * wid, ttk_surface srf)
 {
 	int i;
 	char s[2];
-	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
+	ttk_ap_fillrect(srf, ti_ap_getx(0), wid->x, wid->y, wid->x+wid->w, wid->y+wid->h);
 	if (ti_keypad_numeric) {
 		for (i=0; i<3; i++) {
 			ttk_text_lat1(srf, ttk_menufont, wid->x+(wid->w/4)*i+1, wid->y, ti_ap_get(1), (char *)ti_keypad_buttons_short_n[ti_keypad_row*3 + i]);
@@ -98,7 +98,7 @@ void ti_keypad_fbdraw(TWidget * wid, ttk_surface srf)
 void ti_keypad_4gdraw(TWidget * wid, ttk_surface srf)
 {
 	char s[2];
-	ttk_fillrect(srf, wid->x, wid->y, wid->x+wid->w, wid->y+wid->h, ti_ap_get(0));
+	ttk_ap_fillrect(srf, ti_ap_getx(0), wid->x, wid->y, wid->x+wid->w, wid->y+wid->h);
 	if (ti_keypad_ptext && TI_KEYPAD_PTEXT) {
 		ttk_text_lat1(srf, ttk_menufont, wid->x+1, wid->y, ti_ap_get(1), ti_keypad_ptext_buffer);
 		ttk_text_lat1(srf, ttk_menufont, wid->x+wid->w-10, wid->y, ti_ap_get(1), "P");
