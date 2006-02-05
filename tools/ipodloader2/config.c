@@ -123,7 +123,7 @@ void      config_init(void) {
             config.image[config.items].path  = value;
             if (!mlc_strcmp (value, "diskmode") || !mlc_strcmp (value, "diskscan") || !mlc_strcmp (value, "reboot"))
                 config.image[config.items].type = CONFIG_IMAGE_SPECIAL;
-            else if (!mlc_strncasecmp (value, "rb:")) {
+            else if (!mlc_strncasecmp (value, "rb:", 3)) {
                 config.image[config.items].path += 3;
                 config.image[config.items].type = CONFIG_IMAGE_ROCKBOX;
             }

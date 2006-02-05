@@ -256,6 +256,7 @@ void *loader(void) {
     console_puts("iPL Bootloader 2.0\n");
     fb_update(framebuffer);
 
+#ifdef DEBUG
     /*<DEBUG>*/
     console_puts ("Another String\n");
     char ppver[9] = "????????";
@@ -269,6 +270,7 @@ void *loader(void) {
     mlc_memcpy (ppver + 4, &pphi, 4);
     mlc_printf ("Running on a <%s>\n", ppver);
     /*</DEBUG>*/
+#endif
 
     ret = ata_init();
     if( ret ) {
