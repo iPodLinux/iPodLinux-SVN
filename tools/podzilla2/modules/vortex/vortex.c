@@ -42,9 +42,10 @@
 #include "levels.h"
 #include "vstars.h"
 #include "vgamobjs.h"
+#include "render.h"
 
 /* version number */
-#define VORTEX_VERSION	"06012916"
+#define VORTEX_VERSION	"06020422"
 
 /* change this #define to an #undef if you want the header bar to show */
 #define VORTEX_FULLSCREEN
@@ -65,343 +66,14 @@ char *confusing[][4] = {
 	{ NULL },
 };
 
-void Vortex_initLevel( void );
 
+/* utility random function */
 int Vortex_Rand( int max )
 {
         return (int)((float)max * rand() / (RAND_MAX + 1.0));
 }
 
-
-void Vortex_ChangeToState( int st )
-{
-	Vortex_Console_WipeAllText();
-	Vortex_Console_HiddenStatic( 0 );
-	vglob.timer = 0;
-	vglob.state = st;
-	if( vglob.gameStyle != VORTEX_STYLE_CLASSIC ) Star_GenerateStars();
-}
-
-
-void Vortex_DrawWeb( ttk_surface srf )
-{
-	short xx[5];
-	short yy[5];
-	LEVELDATA * lv = &vortex_levels[ vglob.currentLevel ];
-	int p, n;
-	int maxP = 15;
-
-	if( vortex_levels[ vglob.currentLevel ].flags & LF_CLOSEDWEB ) maxP++;
-
-	/* fill the web */
-	if( vglob.gameStyle != VORTEX_STYLE_CLASSIC ) {
-		for( p=0 ; p<maxP ; p++ )
-		{
-			n = (p+1)&0x0f;
-			xx[0] = lv->rx[p];	yy[0] = lv->ry[p];
-			xx[1] = lv->fx[p];	yy[1] = lv->fy[p];
-			xx[2] = lv->fx[n];	yy[2] = lv->fy[n];
-			xx[3] = lv->rx[n];	yy[3] = lv->ry[n];
-
-			ttk_fillpoly( srf, 4, xx, yy, vglob.color.web_fill );
-		}
-	}
-
-	/* draw the back */
-	for( p=0 ; p<maxP ; p++ ) {
-		n = (p+1)&0x0f;
-		ttk_aaline( srf,    lv->rx[p], lv->ry[p],
-				    lv->rx[n], lv->ry[n],
-				    vglob.color.web_bot );
-	}
-
-	/* draw the arms */
-	for( p=0 ; p<16 ; p++ )
-		ttk_aaline( srf,    lv->fx[p], lv->fy[p],
-				    lv->rx[p], lv->ry[p],
-				    vglob.color.web_mid );
-
-	/* draw the vector simulation dots */
-	for( p=0 ; p<16 ; p++ )
-	    ttk_pixel( srf, lv->rx[p], lv->ry[p], vglob.color.web_bot_dot );
-
-	/* draw the front */
-	for( p=0 ; p<maxP ; p++ ) {
-		n = (p+1)&0x0f;
-		ttk_aaline( srf,    lv->fx[p], lv->fy[p],
-				    lv->fx[n], lv->fy[n],
-				    vglob.color.web_top );
-	}
-
-	/* draw the top vector simulation dots */
-	for( p=0 ; p<16 ; p++ )
-	    ttk_pixel( srf, lv->fx[p], lv->fy[p], vglob.color.web_top_dot );
-}
-
-void Vortex_DrawPlayer( ttk_surface srf )
-{
-	if( vglob.gameStyle == VORTEX_STYLE_CLASSIC )
-	{
-		ttk_aapoly( srf, 4, vglob.px, vglob.py,
-				vglob.color.player_fill );
-	} else {
-		ttk_fillpoly( srf, 4, vglob.px, vglob.py, 
-				vglob.color.player_fill );
-		ttk_aapoly( srf, 4, vglob.px, vglob.py,
-				vglob.color.player );
-	}
-}
-
-
-void Vortex_OutlinedTextCenter( ttk_surface srf, const char *string, 
-			int x, int y, int cw, int ch, int kern, 
-			ttk_color col, ttk_color olc )
-{
-	/* first the outline */
-	/* cardinals */
-	pz_vector_string_center( srf, string, x+1, y, cw, ch, kern, olc );
-	pz_vector_string_center( srf, string, x-1, y, cw, ch, kern, olc );
-	pz_vector_string_center( srf, string, x, y-1, cw, ch, kern, olc );
-	pz_vector_string_center( srf, string, x, y+1, cw, ch, kern, olc );
-	/* diagonals */
-	pz_vector_string_center( srf, string, x+1, y-1, cw, ch, kern, olc );
-	pz_vector_string_center( srf, string, x+1, y+1, cw, ch, kern, olc );
-	pz_vector_string_center( srf, string, x-1, y-1, cw, ch, kern, olc );
-	pz_vector_string_center( srf, string, x-1, y+1, cw, ch, kern, olc );
-
-	/* now the fg color */
-	pz_vector_string_center( srf, string, x, y, cw, ch, kern, col );
-}
-
-void Vortex_DrawAvailableBase( ttk_surface srf, int x, int y )
-{
-	short xx[4], yy[4];
-	xx[0] = x; 	yy[0] = y+9;
-	xx[1] = x+5;	yy[1] = y;
-	xx[2] = x+10;	yy[2] = y+9;
-	xx[3] = x+5;	yy[3] = y+6;
-
-	if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
-	{
-		ttk_fillpoly( srf, 4, xx, yy, vglob.color.baseind_fill );
-		ttk_aapoly( srf, 4, xx, yy, vglob.color.baseind );
-	} else {
-		ttk_aapoly( srf, 4, xx, yy, vglob.color.baseind_fill );
-	}
-}
-
-void Vortex_DrawAvailableBases( ttk_surface srf )
-{
-	char buf[16];
-	int x;
-
-	if( vglob.lives > 4 ) {
-		snprintf( buf, 15, "%d", vglob.lives );
-		pz_vector_string( srf, buf, 1, 1,
-			5, 9, 1, vglob.color.baseind);
-		Vortex_DrawAvailableBase( srf, 8, 1 );
-		
-	} else {
-		for( x=0 ; x<vglob.lives ; x++ ) {
-			Vortex_DrawAvailableBase( srf, 1+(x*12), 1 );
-		}
-	}
-}
-
-
-void draw_vortex (PzWidget *widget, ttk_surface srf) 
-{
-	char buf[16];
-	char * word = NULL;
-	char * credit = NULL;
-
-	ttk_fillrect( srf, 0, 0, ttk_screen->w, ttk_screen->h, vglob.color.bg );
-
-	if( vglob.paused ) {
-		Vortex_OutlinedTextCenter( srf, "VORTEX",
-			vglob.usableW>>1, (vglob.usableH>>1)-20,
-			10, 18, 1, vglob.color.title, vglob.color.bg );
-
-		Vortex_OutlinedTextCenter( srf, "\xFD\xFDpaused\xFB\xFB",
-			vglob.usableW>>1, (vglob.usableH>>1)+5,
-			10, 18, 1, vglob.color.select, vglob.color.bg );
-
-		Vortex_OutlinedTextCenter( srf, "Coded By", 
-			vglob.usableW>>1, vglob.usableH-22,
-			5, 9, 1, vglob.color.credits,
-			vglob.color.bg );
-
-		Vortex_OutlinedTextCenter( srf, "BleuLlama", 
-			vglob.usableW>>1, vglob.usableH-10,
-			5, 9, 1, vglob.color.credits,
-			vglob.color.bg );
-		return;
-	}
-
-	switch( vglob.state ) {
-	case VORTEX_STATE_STARTUP:
-		if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
-			Star_DrawStars( srf );
-		Vortex_Console_Render( srf );
-		if( Vortex_Console_GetZoomCount() == 0 )
-			Vortex_ChangeToState( VORTEX_STATE_STYLESEL );
-			Vortex_initLevel();
-			vglob.wPosMajor = 8;
-		break;
-
-	case VORTEX_STATE_STYLESEL:
-	case VORTEX_STATE_LEVELSEL:
-		if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
-			Star_DrawStars( srf );
-		Vortex_DrawWeb( srf );
-
-		if( vglob.state == VORTEX_STATE_STYLESEL ) {
-			Vortex_DrawPlayer( srf );
-			Vortex_Bolt_draw( srf );
-
-/*
-			for( x=0 ; x<vglob.lives ; x++ ) {
-				Vortex_DrawAvailableBase( srf, 1+(x*12), 1 );
-			}
-*/
-			Vortex_DrawAvailableBases( srf );
-
-			/* let the user select what style to play with */
-			switch((vglob.timer>>4) & 0x03 ) {
-			case 0: word = "SELECT"; break;
-			case 1: word = "GAME";   break;
-			case 2: word = "STYLE";  break;
-			case 3: word = "";       break;
-			}
-		} else {
-			/* let the user select what level to start on */
-			switch((vglob.timer>>4) & 0x03 ) {
-			case 0: word = "SELECT"; break;
-			case 1: word = "START";  break;
-			case 2: word = "LEVEL";  break;
-			case 3: word = "";       break;
-			}
-		}
-
-		Vortex_OutlinedTextCenter( srf, word,
-			    vglob.usableW>>1, 20,
-			    10, 18, 1, vglob.color.select, vglob.color.bg );
-
-		if( vglob.state == VORTEX_STATE_STYLESEL ) {
-			if( vglob.gameStyle == VORTEX_STYLE_CLASSIC )
-				snprintf( buf, 16, "CLASSIC %c", 
-						VECTORFONT_SPECIAL_RIGHT );
-			else if( vglob.gameStyle == VORTEX_STYLE_2K5 )
-				snprintf( buf, 16, "%c 2K5", 
-						VECTORFONT_SPECIAL_LEFT );
-			else
-				snprintf( buf, 16, "BURRITO" );
-		} else {
-			/* level number */
-			snprintf( buf, 15, "%c %d %c", 
-				(vglob.startLevel>0)?
-						VECTORFONT_SPECIAL_LEFT:' ',
-				vglob.startLevel,
-				(vglob.startLevel<=(NLEVELS-2))?
-						VECTORFONT_SPECIAL_RIGHT:' ');
-		}
-		Vortex_OutlinedTextCenter( srf, buf,
-			vglob.usableW>>1, 50,
-			10, 18, 1, vglob.color.sellevel, vglob.color.bg );
-
-		/* display some props to the masters */
-		switch((vglob.timer>>5) & 0x03 ) {
-		case 0: credit = "ALL THANKS TO";    break;
-		case 1: credit = "DAVE THEURER"; break;
-		case 2: credit = "JEFF MINTER";  break;
-		case 3: credit = "";             break;
-		}
-		Vortex_OutlinedTextCenter( srf, credit, 
-			    vglob.usableW>>1, vglob.usableH-10,
-			    5, 9, 1, vglob.color.credits,
-			    vglob.color.bg );
-
-		/* and the version number */
-		pz_vector_string( srf, VORTEX_VERSION, 1,
-			    vglob.usableH-6, 3, 5, 1, vglob.color.version );
-		break;
-
-	case VORTEX_STATE_GAME:
-		/* draw some stars */
-		if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
-			Star_DrawStars( srf );
-
-		/* draw the playfield */
-		Vortex_DrawWeb( srf );
-
-		/* draw powerups */
-		Vortex_Powerup_draw( srf );
-
-		/* draw the player */
-		Vortex_DrawPlayer( srf );
-
-		/* draw bolts */
-		Vortex_Bolt_draw( srf );
-
-		/* draw enemies */
-		Vortex_Enemy_draw( srf );
-
-		/* draw any console text over all of that */
-		Vortex_Console_Render( srf );
-
-		/* plop down the score */
-		snprintf( buf, 15, "%04d", vglob.score );
-		pz_vector_string( srf, buf,
-			    vglob.usableW - pz_vector_width( buf, 7, 13, 1 ) -1,
-			    1, 7, 13, 1, vglob.color.score );
-
-		/* and lives left */
-		Vortex_DrawAvailableBases( srf );
-
-		/* and superzapper indicator, if applicable */
-		if( vglob.hasSuperZapper )
-			pz_vector_string( srf, "SZ", 1, 12, 5, 9, 1, 
-					vglob.color.super );
-
-		/* and current level */
-		snprintf( buf, 15, "L%d", vglob.startLevel );
-		pz_vector_string( srf, buf, 
-			    vglob.usableW -
-			     pz_vector_width( buf, 5, 9, 1 ) -1,
-			    vglob.usableH-10,
-                            5, 9, 1, vglob.color.level );
-		break;
-
-	case VORTEX_STATE_ADVANCE:
-		/* XXX this needs a lot more code - animations */
-		if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
-			Star_DrawStars( srf );
-		Vortex_Console_Render( srf );
-		break;
-
-	case VORTEX_STATE_DEATH:
-		if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
-			Star_DrawStars( srf );
-		Vortex_Console_Render( srf );
-		if( Vortex_Console_GetZoomCount() == 0 )
-		{
-			Vortex_ChangeToState( VORTEX_STATE_DEAD );
-			pz_close_window( vglob.window );
-		}
-		break;
-
-	case VORTEX_STATE_DEAD:
-		break;
-
-	}
-}
-
-
-void cleanup_vortex( void ) 
-{
-}
-
-
+/******************************************************************************/
 
 /* finds the x/y position along [vect]or (point on outer edge of web)  
    at depth z (128 == outer edge of web), from the [center] 
@@ -592,6 +264,334 @@ void Vortex_selectLevel( int l )
 	}
 }
 
+
+/******************************************************************************/
+
+
+/*
+   All of this has happened before
+   And it will all happen again
+*/
+
+void Vortex_newWebSelected( void )
+{
+	Vortex_newLevelCompute();
+        Vortex_clawGeometryCompute();
+        Vortex_player_clear();
+        Vortex_initLevel();
+}
+
+void Vortex_newClawPosition( void )
+{
+	Vortex_clawGeometryCompute();
+}
+
+
+/*
+    five thousand dollars...
+    five thousand dollars...
+    five thousand dollars...
+	take it, take it
+    five thousand dollars...
+    five thousand dollars...
+    five thousand dollars in cash!
+*/
+
+void Vortex_stateChange( int newState )
+{
+	/* common */
+	Vortex_Console_WipeAllText();
+	Vortex_Console_HiddenStatic( 1 );
+	vglob.timer = 0;
+
+	/* Exit from state */
+	switch( vglob.state ){
+	case( VORTEX_STATE_STARTUP ):
+		/* clear all globals */
+		/* initialize game setup structs */
+		break;
+
+	case( VORTEX_STATE_STYLESEL ):
+		break;
+
+	case( VORTEX_STATE_LEVELSEL ):
+		break;
+
+	case( VORTEX_STATE_GAME ):
+		Vortex_Console_HiddenStatic( 0 );
+		/* ::new web selection */
+		break;
+
+	case( VORTEX_STATE_ADVANCE ):
+		break;
+
+	case( VORTEX_STATE_DEATH ):
+		break;
+
+	case( VORTEX_STATE_DEAD ):
+		break;
+	}
+
+	/* the new state... */
+	vglob.state = newState;
+
+	/* entry into the new state */
+	switch( vglob.state ){
+	case( VORTEX_STATE_STARTUP ):
+		/* clear all globals */
+		/* initialize game setup structs */
+		break;
+
+	case( VORTEX_STATE_STYLESEL ):
+		break;
+
+	case( VORTEX_STATE_LEVELSEL ):
+		break;
+
+	case( VORTEX_STATE_GAME ):
+		break;
+
+	case( VORTEX_STATE_ADVANCE ):
+		break;
+
+	case( VORTEX_STATE_DEATH ):
+		break;
+
+	case( VORTEX_STATE_DEAD ):
+		break;
+	}
+}
+
+void Vortex_timerTick( PzEvent * ev )
+{
+	if( !vglob.paused ){
+		Vortex_Powerup_poll();
+		Vortex_Bolt_poll();
+		Vortex_Enemy_poll();
+		Vortex_Console_Tick();
+
+		vglob.timer++;
+	}
+
+	/* check for change of state */
+	switch( vglob.state ){
+	case( VORTEX_STATE_STARTUP ):
+		/* pseudo animated title screen */
+		if( vglob.timer < 5 )
+			Vortex_Console_AddItem( "VORTEX", 0, 0,
+				    VORTEX_STYLE_NORMAL, vglob.color.title );
+		if( Vortex_Console_GetZoomCount() == 0 )
+			Vortex_stateChange( VORTEX_STATE_STYLESEL );
+		break;
+
+	case( VORTEX_STATE_STYLESEL ):
+		/* just toggle some stuff to make it look interesting */
+		if( (vglob.timer & 0x1f) == 0x1f ) 
+			vglob.hasParticleLaser ^= 1;
+		if( (vglob.timer & 0x1f) == 0x1f ) 
+			Vortex_decPosition( 1 );
+		else if( (vglob.timer & 0x0f) == 0x0f)
+			Vortex_incPosition( 1 );
+		if( (vglob.timer & 0x0f) == 0x0f )
+			Vortex_Bolt_add();
+		break;
+
+	case( VORTEX_STATE_LEVELSEL ):
+		break;
+
+	case( VORTEX_STATE_GAME ):
+		Vortex_CollisionDetection();
+		if( vglob.lives <= 0 ) {
+			vglob.state = VORTEX_STATE_DEATH;
+		}
+		break;
+
+	case( VORTEX_STATE_ADVANCE ):
+		if( vglob.timer == 0 ) 
+			Vortex_Console_AddItem( "SUPERZAPPER", 0, 0, 
+				VORTEX_STYLE_NORMAL, vglob.color.sz_text1 );
+
+		if( vglob.timer == 20 )
+			Vortex_Console_AddItem( "RECHARGE", 0, 0, 
+				VORTEX_STYLE_NORMAL, vglob.color.sz_text2 );
+
+		if( vglob.timer > 60 ) {
+			Vortex_selectLevel( vglob.currentLevel + 1 );
+			Vortex_initLevel();
+			Vortex_stateChange( VORTEX_STATE_GAME );
+		}
+		break;
+
+	case( VORTEX_STATE_DEATH ):
+		if( vglob.timer < 5 )
+	    		Vortex_Console_AddItem( "GAME OVER", 0, 0, 
+				VORTEX_STYLE_NORMAL, vglob.color.title );
+		break;
+
+	case( VORTEX_STATE_DEAD ):
+		break;
+	}
+	
+	/* every timer tick should cause a redraw */
+	ev->wid->dirty = 1;
+}
+
+
+/*
+    Are you over the sea?
+	And will you come, come back to me?
+*/
+
+
+void Vortex_draw( PzWidget *widget, ttk_surface srf )
+{
+	char buf[16];
+	int classic = (vglob.gameStyle == VORTEX_STYLE_CLASSIC )?1:0;
+
+	/* backfill! */
+	ttk_fillrect( srf, 0, 0, ttk_screen->w, ttk_screen->h, vglob.color.bg );
+
+	/* if we're paused, just render the paused screen and return */
+	if( vglob.paused ) {
+		Vortex_OutlinedTextCenter( srf, "VORTEX",
+			vglob.usableW>>1, (vglob.usableH>>1)-20,
+			10, 18, 1, vglob.color.title, vglob.color.bg );
+
+		Vortex_OutlinedTextCenter( srf, "\xFD\xFDpaused\xFB\xFB",
+			vglob.usableW>>1, (vglob.usableH>>1)+5,
+			10, 18, 1, vglob.color.select, vglob.color.bg );
+
+		Vortex_OutlinedTextCenter( srf, "Coded By", 
+			vglob.usableW>>1, vglob.usableH-22,
+			5, 9, 1, vglob.color.credits,
+			vglob.color.bg );
+
+		Vortex_OutlinedTextCenter( srf, "BleuLlama", 
+			vglob.usableW>>1, vglob.usableH-10,
+			5, 9, 1, vglob.color.credits,
+			vglob.color.bg );
+		return;
+	}
+
+	switch( vglob.state ){
+	case( VORTEX_STATE_STARTUP ):
+		if( !classic ) Star_DrawStars( srf );
+		Vortex_Console_Render( srf );
+		break;
+
+	case( VORTEX_STATE_STYLESEL ):
+		if( !classic ) Star_DrawStars( srf );
+		Vortex_RenderWeb( srf );
+		Vortex_RenderPlayer( srf );
+		Vortex_Bolt_draw( srf );
+		Vortex_RenderAvailableBases( srf );
+
+		Vortex_RenderTimedQuad( srf, "SELECT", "GAME", "STYLE", "",
+			vglob.usableW>>1, 20, 10, 18, vglob.color.select );
+		Vortex_RenderTimedQuad( srf,
+			"ALL THANKS TO", "DAVE THEURER", "JEFF MINTER", "",
+			vglob.usableW>>1, vglob.usableH-10,
+			5, 9, vglob.color.credits );
+
+		pz_vector_string( srf, VORTEX_VERSION, 1,
+			    vglob.usableH-6, 3, 5, 1, vglob.color.version );
+
+		if( vglob.gameStyle == VORTEX_STYLE_CLASSIC )
+			snprintf( buf, 16, "CLASSIC %c", 
+					VECTORFONT_SPECIAL_RIGHT );
+		else if( vglob.gameStyle == VORTEX_STYLE_2K5 )
+			snprintf( buf, 16, "%c 2K5", 
+					VECTORFONT_SPECIAL_LEFT );
+		else
+			snprintf( buf, 16, "BURRITO" );
+
+		Vortex_OutlinedTextCenter( srf, buf,
+			vglob.usableW>>1, 50,
+			10, 18, 1, vglob.color.sellevel, vglob.color.bg );
+		break;
+
+	case( VORTEX_STATE_LEVELSEL ):
+		if( !classic ) Star_DrawStars( srf );
+		Vortex_RenderWeb( srf );
+
+		Vortex_RenderTimedQuad( srf, "SELECT", "START", "LEVEL", "",
+			vglob.usableW>>1, 20, 10, 18, vglob.color.select );
+		Vortex_RenderTimedQuad( srf,
+			"ALL THANKS TO", "DAVE THEURER", "JEFF MINTER", "",
+			vglob.usableW>>1, vglob.usableH-10,
+			5, 9, vglob.color.credits );
+
+		pz_vector_string( srf, VORTEX_VERSION, 1,
+			    vglob.usableH-6, 3, 5, 1, vglob.color.version );
+
+		/* render level number */
+		snprintf( buf, 15, "%c %d %c", 
+			(vglob.startLevel>0)?  VECTORFONT_SPECIAL_LEFT:' ',
+			vglob.startLevel,
+			(vglob.startLevel<=(NLEVELS-2))?
+						VECTORFONT_SPECIAL_RIGHT:' ');
+		Vortex_OutlinedTextCenter( srf, buf,
+			vglob.usableW>>1, 50,
+			10, 18, 1, vglob.color.sellevel, vglob.color.bg );
+		break;
+
+	case( VORTEX_STATE_GAME ):
+		if( !classic ) Star_DrawStars( srf );
+		Vortex_RenderWeb( srf );
+		Vortex_Powerup_draw( srf );
+		Vortex_RenderPlayer( srf );
+		Vortex_Bolt_draw( srf );
+		Vortex_Enemy_draw( srf );
+		Vortex_Console_Render( srf );
+
+		/* score */
+		snprintf( buf, 15, "%04d", vglob.score );
+		pz_vector_string( srf, buf,
+			    vglob.usableW - pz_vector_width( buf, 7, 13, 1 ) -1,
+			    1, 7, 13, 1, vglob.color.score );
+
+		/* lives left */
+		Vortex_RenderAvailableBases( srf );
+
+		/* superzapper indicator */
+		if( vglob.hasSuperZapper )
+			pz_vector_string( srf, "SZ", 1, 12, 5, 9, 1, 
+					vglob.color.super );
+
+		/* render level number */
+		snprintf( buf, 15, "L%d", vglob.startLevel );
+		pz_vector_string( srf, buf, 
+			    vglob.usableW -
+			     pz_vector_width( buf, 5, 9, 1 ) -1,
+			    vglob.usableH-10,
+                            5, 9, 1, vglob.color.level );
+		break;
+
+	case( VORTEX_STATE_ADVANCE ):
+		if( !classic ) Star_DrawStars( srf );
+		Vortex_Console_Render( srf );
+		break;
+
+	case( VORTEX_STATE_DEATH ):
+		if( !classic ) Star_DrawStars( srf );
+		Vortex_Console_Render( srf );
+		break;
+
+	case( VORTEX_STATE_DEAD ):
+		break;
+	}
+}
+
+/* MUSIC PROFESSOR! */
+
+
+/******************************************************************************/
+
+void cleanup_vortex( void ) 
+{
+}
+
+
 int event_vortex (PzEvent *ev) 
 {
 	switch (ev->type) {
@@ -649,22 +649,22 @@ int event_vortex (PzEvent *ev)
 			break;
 
 		case( PZ_BUTTON_PLAY ):
-			Vortex_ChangeToState( VORTEX_STATE_ADVANCE );
+			Vortex_stateChange( VORTEX_STATE_ADVANCE );
 			break;
 
 		case( PZ_BUTTON_ACTION ):
 		    if( !vglob.paused ) {
 			if( vglob.state == VORTEX_STATE_STARTUP ) {
-				Vortex_ChangeToState( VORTEX_STATE_STYLESEL );
+				Vortex_stateChange( VORTEX_STATE_STYLESEL );
 				Vortex_initLevel();
 				vglob.wPosMajor = 8;
 			} else if( vglob.state == VORTEX_STATE_STYLESEL ) {
-				Vortex_ChangeToState( VORTEX_STATE_LEVELSEL );
+				Vortex_stateChange( VORTEX_STATE_LEVELSEL );
 				vglob.startLevel = 0;
 				vglob.currentLevel = 0;
 				Vortex_initLevel();
 			} else if( vglob.state == VORTEX_STATE_LEVELSEL ) {
-				Vortex_ChangeToState( VORTEX_STATE_GAME );
+				Vortex_stateChange( VORTEX_STATE_GAME );
 				Vortex_initLevel();
 			} else if( vglob.state == VORTEX_STATE_GAME ) {
 				Vortex_Bolt_add();
@@ -682,86 +682,7 @@ int event_vortex (PzEvent *ev)
 		break;
 
 	case PZ_EVENT_TIMER:
-		switch( vglob.state ){
-		case( VORTEX_STATE_STARTUP ):
-			/* generate a splash screen */
-			if( vglob.timer < 5 )
-				Vortex_Console_AddItem( "VORTEX", 0, 0, 
-				    VORTEX_STYLE_NORMAL, vglob.color.title );
-			break;
-
-		case( VORTEX_STATE_STYLESEL ):
-			/* just move stuff around */
-			if( (vglob.timer & 0x3f) == 0x3f ) {
-				if( vglob.startLevel > 16 ) 
-					vglob.startLevel = -1;
-				Vortex_selectLevel( vglob.startLevel + 1 );
-				Vortex_initLevel();
-			}
-
-			if( (vglob.timer & 0x1f) == 0x1f ) 
-				vglob.hasParticleLaser ^= 1;
-
-			if( (vglob.timer & 0x1f) == 0x1f ) 
-				Vortex_decPosition( 1 );
-			else if( (vglob.timer & 0x0f) == 0x0f)
-				Vortex_incPosition( 1 );
-			if( (vglob.timer & 0x0f) == 0x0f )
-				Vortex_Bolt_add();
-			break;
-
-		case( VORTEX_STATE_ADVANCE ):
-			/* xxx */
-			if( vglob.timer == 0 ) {
-			    Vortex_Console_WipeAllText();
-			    Vortex_Console_HiddenStatic( 1 );
-			    Vortex_Console_AddItem( "SUPERZAPPER", 0, 0, 
-				VORTEX_STYLE_NORMAL, vglob.color.sz_text1 );
-			}
-
-			if( vglob.timer == 20 ) {
-			    Vortex_Console_AddItem( "RECHARGE", 0, 0, 
-				VORTEX_STYLE_NORMAL, vglob.color.sz_text2 );
-			}
-
-			if( vglob.timer > 60 ) {
-				Vortex_ChangeToState( VORTEX_STATE_GAME );
-				Vortex_selectLevel( vglob.currentLevel + 1 );
-				Vortex_initLevel();
-				Vortex_Console_WipeAllText();
-				Vortex_Console_HiddenStatic( 0 );
-			}
-			break;
-
-		case( VORTEX_STATE_DEATH ):
-			if( vglob.timer < 5 )
-				Vortex_Console_AddItem( "GAME OVER", 0, 0, 
-				    VORTEX_STYLE_NORMAL, vglob.color.title );
-			break;
-		}
-
-		if( !vglob.paused ) {
-			if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
-				Star_Poll();
-
-			Vortex_Powerup_poll();
-			Vortex_Bolt_poll();
-			Vortex_Enemy_poll();
-			Vortex_Console_Tick();
-			Vortex_CollisionDetection();
-
-			/* generate a death screen - state changer */
-			if( (vglob.lives <= 0)
-			    && (vglob.state != VORTEX_STATE_DEATH) ) {
-				Vortex_ChangeToState( VORTEX_STATE_DEATH );
-				Vortex_Console_HiddenStatic( 1 );
-				Vortex_Console_AddItem( "GAME OVER", 0, 0, 
-					VORTEX_STYLE_NORMAL, vglob.color.title );
-			}
-
-			vglob.timer++;
-		}
-		ev->wid->dirty = 1;
+		Vortex_timerTick( ev );
 		break;
 	}
 	return 0;
@@ -783,7 +704,7 @@ static void Vortex_Initialize( void )
 	vglob.wPosMinor = 0;
 	vglob.paused = 0;
 
-	Vortex_ChangeToState( VORTEX_STATE_STARTUP );
+	Vortex_stateChange( VORTEX_STATE_STARTUP );
 }
 
 
@@ -803,7 +724,7 @@ PzWindow *new_vortex_window()
 #endif
 	Vortex_Console_Init();
 
-	vglob.widget = pz_add_widget( vglob.window, draw_vortex, event_vortex );
+	vglob.widget = pz_add_widget( vglob.window, Vortex_draw, event_vortex );
 	pz_widget_set_timer( vglob.widget, 30 );
 
 	vglob.gameStyle = VORTEX_STYLE_2K5;
@@ -893,6 +814,16 @@ PzWindow *new_stars_window()
 
 
 
+/* this will help simplify the creation of colors for mono or color */
+
+ttk_color mc_color( cr, cg, cb,  mr, mg, mb )
+{
+	if( ttk_screen->bpp >= 16 ) {
+		return( ttk_makecol( cr, cg, cb ));
+	}
+	return( ttk_makecol( mr, mg, mb ));
+}
+
 void init_vortex() 
 {
 	int p,q;
@@ -907,76 +838,39 @@ void init_vortex()
 	Vortex_Initialize();
 
 	/* setup colors */
-	if( ttk_screen->bpp >= 16 ) {
-		/* full color! */
-		vglob.color.bg          = ttk_makecol(   0,   0,   0 );
-		vglob.color.title       = ttk_makecol( 128, 255, 255 );
-		vglob.color.select      = ttk_makecol( 255, 255,   0 );
-		vglob.color.sellevel    = ttk_makecol(   0, 255,   0 );
-		vglob.color.credits     = ttk_makecol(   0,   0, 255 );
-		vglob.color.version     = ttk_makecol(  64,  32,  32 );
-		vglob.color.con         = ttk_makecol( 255, 255,   0 );
-		vglob.color.bonus       = ttk_makecol( 255,   0,   0 );
-		vglob.color.web_top     = ttk_makecol(   0, 128, 255 );
-		vglob.color.web_mid     = ttk_makecol(   0,   0, 255 );
-		vglob.color.web_bot     = ttk_makecol(   0,   0, 128 );
-		vglob.color.web_top_sel = ttk_makecol( 128, 255, 255 );
-		vglob.color.web_top_dot = ttk_makecol( 128, 255, 255 );
-		vglob.color.web_bot_dot = ttk_makecol(   0, 128, 255 );
-		vglob.color.web_fill    = ttk_makecol(   0,   0,  30 );
-		vglob.color.baseind     = ttk_makecol( 255, 128,   0 );
-		vglob.color.baseind_fill= ttk_makecol( 255, 255,   0 );
-		vglob.color.score       = ttk_makecol(   0, 255,   0 );
-		vglob.color.level       = ttk_makecol(   0,   0, 128 );
-		vglob.color.player      = ttk_makecol( 255, 128,   0 );
-		vglob.color.player_fill = ttk_makecol( 255, 255,   0 );
-		vglob.color.bolts       = ttk_makecol( 255, 255, 255 );
-		vglob.color.plaser      = ttk_makecol( 255, 128,   0 );
-		vglob.color.super       = ttk_makecol( 128, 128, 128 );
-		vglob.color.flippers    = ttk_makecol( 255,   0,   0 );
-		vglob.color.edeath      = ttk_makecol( 255, 255,   0 );
-		vglob.color.powerup	= ttk_makecol(  64, 225,  64 );
-		vglob.color.sz_text1	= ttk_makecol(   0, 255, 128 );
-		vglob.color.sz_text2	= ttk_makecol( 128, 255,   0 );
-		vglob.color.spikers	= ttk_makecol(   0, 255, 128 );
-		vglob.color.spikes	= ttk_makecol(   0, 255,   0 );
-		vglob.color.spike_death	= ttk_makecol( 255, 255, 255 );
-	} else {
-		/* monochrome iPod */
-		vglob.color.bg          = ttk_makecol( WHITE );
-		vglob.color.title       = ttk_makecol( BLACK );
-		vglob.color.select      = ttk_makecol( BLACK );
-		vglob.color.sellevel    = ttk_makecol( BLACK );
-		vglob.color.credits     = ttk_makecol( DKGREY );
-		vglob.color.version     = ttk_makecol( GREY );
-		vglob.color.con         = ttk_makecol( BLACK );
-		vglob.color.bonus       = ttk_makecol( DKGREY );
-		vglob.color.web_top     = ttk_makecol( BLACK );
-		vglob.color.web_mid     = ttk_makecol( DKGREY );
-		vglob.color.web_bot     = ttk_makecol( GREY );
-		vglob.color.web_top_sel = ttk_makecol( GREY );
-		vglob.color.web_top_dot = ttk_makecol( BLACK );
-		vglob.color.web_bot_dot = ttk_makecol( GREY );
-		vglob.color.web_fill    = ttk_makecol( WHITE );
-		vglob.color.baseind     = ttk_makecol( BLACK );
-		vglob.color.baseind_fill= ttk_makecol( BLACK );
-		vglob.color.score       = ttk_makecol( BLACK );
-		vglob.color.level       = ttk_makecol( BLACK );
-		vglob.color.player      = ttk_makecol( DKGREY );
-		vglob.color.player_fill = ttk_makecol( GREY );
-		vglob.color.bolts       = ttk_makecol( BLACK );
-		vglob.color.plaser      = ttk_makecol( BLACK );
-		vglob.color.super       = ttk_makecol( DKGREY );
-		vglob.color.flippers    = ttk_makecol( BLACK );
-		vglob.color.edeath      = ttk_makecol( GREY );
-		vglob.color.powerup     = ttk_makecol( DKGREY );
-		vglob.color.sz_text1	= ttk_makecol( BLACK );
-		vglob.color.sz_text2	= ttk_makecol( BLACK );
-		vglob.color.spikers	= ttk_makecol( BLACK );
-		vglob.color.spikes	= ttk_makecol( BLACK );
-		vglob.color.spike_death	= ttk_makecol( GREY );
-	}
+	vglob.color.bg           = mc_color(   0,   0,   0,  WHITE );
+	vglob.color.title        = mc_color( 128, 255, 255,  BLACK );
+	vglob.color.select       = mc_color( 255, 255,   0,  BLACK );
+	vglob.color.sellevel     = mc_color(   0, 255,   0,  BLACK );
+	vglob.color.credits      = mc_color(   0,   0, 255,  DKGREY );
+	vglob.color.version      = mc_color(  64,  32,  32,  GREY );
+	vglob.color.con          = mc_color( 255, 255,   0,  BLACK );
+	vglob.color.bonus        = mc_color( 255,   0,   0,  DKGREY );
+	vglob.color.web_top      = mc_color(   0, 128, 255,  BLACK );
+	vglob.color.web_mid      = mc_color(   0,   0, 255,  DKGREY );
+	vglob.color.web_bot      = mc_color(   0,   0, 128,  GREY );
+	vglob.color.web_top_sel  = mc_color( 128, 255, 255,  GREY );
+	vglob.color.web_top_dot  = mc_color( 128, 255, 255,  BLACK );
+	vglob.color.web_bot_dot  = mc_color(   0, 128, 255,  GREY );
+	vglob.color.web_fill     = mc_color(   0,   0,  30,  WHITE );
+	vglob.color.baseind      = mc_color( 255, 128,   0,  BLACK );
+	vglob.color.baseind_fill = mc_color( 255, 255,   0,  BLACK );
+	vglob.color.score        = mc_color(   0, 255,   0,  BLACK );
+	vglob.color.level        = mc_color(   0,   0, 128,  BLACK );
+	vglob.color.player       = mc_color( 255, 128,   0,  DKGREY );
+	vglob.color.player_fill  = mc_color( 255, 255,   0,  GREY );
+	vglob.color.bolts        = mc_color( 255, 255, 255,  BLACK );
 
+	vglob.color.plaser       = mc_color( 255, 128,   0,  BLACK );
+	vglob.color.super        = mc_color( 128, 128, 128,  DKGREY );
+	vglob.color.flippers     = mc_color( 255,   0,   0,  BLACK );
+	vglob.color.edeath       = mc_color( 255, 255,   0,  GREY );
+	vglob.color.powerup	 = mc_color(  64, 225,  64,  DKGREY );
+	vglob.color.sz_text1	 = mc_color(   0, 255, 128,  BLACK );
+	vglob.color.sz_text2	 = mc_color( 128, 255,   0,  BLACK );
+	vglob.color.spikers	 = mc_color(   0, 255, 128,  BLACK );
+	vglob.color.spikes	 = mc_color(   0, 255,   0,  BLACK );
+	vglob.color.spike_death	 = mc_color( 255, 255, 255,  GREY );
 
 	/* precompute all of the web scaling... */
 	/* convert from rom coordinates to screen coordinates */
