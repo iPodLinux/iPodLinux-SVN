@@ -422,6 +422,24 @@ int mlc_strncmp(const char *s1,const char *s2,size_t length) {
   return(-1);
 }
 
+#define toupper(ch) ((((ch)>='a')&&((ch)<='z'))?((ch)+'A'-'a'):(ch))
+
+int mlc_strncasecmp(const char *s1,const char *s2,size_t length) {
+  while(length && *s1 != 0 && *s2 != 0) {
+    if(toupper(*s1) != toupper(*s2))
+      return( (toupper(*s2) - toupper(*s1)) );
+
+    length--;
+    s1++;
+    s2++;
+  }
+
+  if(!length || (*s1 == 0 && *s2 == 0))
+    return(0);
+  
+  return(-1);
+}
+
 int mlc_strcmp(const char *s1,const char *s2) {
 	size_t i1,i2,max;
 
@@ -431,6 +449,17 @@ int mlc_strcmp(const char *s1,const char *s2) {
 	else          max = i2;
 
 	return( mlc_strncmp( s1,s2,max ) );
+}
+
+int mlc_strcasecmp(const char *s1,const char *s2) {
+	size_t i1,i2,max;
+
+	i1 = mlc_strlen(s1);
+	i2 = mlc_strlen(s2);
+	if( i1 > i2 ) max = i1;
+	else          max = i2;
+
+	return( mlc_strncasecmp( s1,s2,max ) );
 }
 
 char  *mlc_strncpy(char *dest,const char *src,size_t count) {
@@ -510,3 +539,15 @@ char *mlc_strchr(const char *s,int c) {
 
   return(ret);
 }
+
+char *mlc_strrchr(const char *s,int c) {
+  char *ret;
+
+  ret = (char*)s + mlc_strlen (s);
+  while( (*ret != c) && (ret != s) ) ret--;
+
+  if( ret == s ) return(NULL);
+
+  return(ret);
+}
+

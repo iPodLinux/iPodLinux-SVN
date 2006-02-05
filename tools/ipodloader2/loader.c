@@ -171,6 +171,24 @@ static void load_rockbox(ipod_t *ipod,char *image) {
       }
       sum=5;
       break;
+    case 0x1:
+    case 0x2:
+    case 0x3:
+      if (mlc_memcmp(&header[4],"ip3g",4)!=0) {
+        mlc_printf("Invalid model.\n");
+        fb_update(framebuffer);
+        return;
+      }
+      sum=7;
+      break;
+    case 0x5:
+      if (mlc_memcmp(&header[4],"ip4g",4)!=0) {
+        mlc_printf("Invalid model.\n");
+        fb_update(framebuffer);
+        return;
+      }
+      sum=8;
+      break;
     default: // Unsupported
       mlc_printf("Invalid model.\n");
       fb_update(framebuffer);
