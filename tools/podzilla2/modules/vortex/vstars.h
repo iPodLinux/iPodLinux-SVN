@@ -46,4 +46,7 @@ void Star_DrawStars( ttk_surface srf );	/* will draw the stars to srf */
 void Star_Poll( void );			/* update the starfield */
 void Star_SetStyle( int kind );		/* set the kind of star motion */
 
+PzWindow *StarsDemo_NewWindow( void );	/* for the demo */
+
+
 #endif

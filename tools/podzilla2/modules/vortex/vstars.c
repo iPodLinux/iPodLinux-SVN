@@ -109,3 +109,78 @@ void Star_Poll( void )
         		Star_bang( p );
 	}
 }
+
+/* ****************************** */ 
+
+void StarsDemo_Draw (PzWidget *widget, ttk_surface srf)
+{       
+        ttk_fillrect( srf, 0, 0, ttk_screen->w, ttk_screen->h, vglob.color.bg );
+        Star_DrawStars( srf );
+}
+
+void StarsDemo_Cleanup( void )
+{
+}
+
+int StarsDemo_Event (PzEvent *ev) 
+{
+        static int kind = 0;
+        switch (ev->type) {
+        case PZ_EVENT_BUTTON_UP:
+                switch( ev->arg ) {
+                case( PZ_BUTTON_MENU ):
+                        pz_close_window (ev->wid->win);
+                        break;
+
+                case( PZ_BUTTON_PLAY ):
+                        if( kind )
+                                Star_SetStyle( STAR_MOTION_RANDOM );
+                        else
+                                Star_SetStyle( STAR_MOTION_STATIC );
+                        kind ^= 1;
+                        Star_GenerateStars();
+                        ev->wid->dirty = 1;
+                        break;
+                }
+                break;
+
+        case PZ_EVENT_DESTROY:
+                StarsDemo_Cleanup();
+                break;
+
+        case PZ_EVENT_TIMER:
+                Star_Poll();
+                ev->wid->dirty = 1;
+                break;
+        }
+        return 0;
+}
+
+PzWindow *StarsDemo_NewWindow( void )
+{
+        srand( time( NULL ));
+
+        vglob.window = pz_new_window( "Stars", PZ_WINDOW_NORMAL );
+
+        /* make it full screen */
+#ifdef VORTEX_FULLSCREEN
+        ttk_window_hide_header( vglob.window );
+        vglob.window->x = 0;
+        vglob.window->y = 0;
+        vglob.window->w = ttk_screen->w;
+        vglob.window->h = ttk_screen->h;
+#endif
+
+        vglob.widget = pz_add_widget( vglob.window, StarsDemo_Draw, StarsDemo_Event );
+        pz_widget_set_timer( vglob.widget, 30 );
+
+        vglob.gameStyle = VORTEX_STYLE_STARS;
+        vglob.timer = 0;
+        vglob.state = VORTEX_STATE_STARS;
+        Star_SetStyle( STAR_MOTION_RANDOM );
+        Star_GenerateStars();
+
+        return pz_finish_window( vglob.window );
+}
+
+
