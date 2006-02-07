@@ -3,6 +3,23 @@
 #include <ttk.h>
 #include <string.h>
 #define NUM_DEFS	(16)
+
+extern void ttk_do_gradient(ttk_surface srf, char horiz, int b_rad, int e_rad,
+	int x1, int y1, int x2, int y2, ttk_color begin, ttk_color end);
+
+unsigned char ttk_chamfering[10][10] = {
+    {1},
+    {2, 1},
+    {3, 2, 1},
+    {4, 2, 1, 1},
+    {5, 3, 2, 1, 1},
+    {6, 4, 3, 2, 1, 1},
+    {7, 5, 3, 2, 2, 1, 1},
+    {8, 6, 4, 3, 2, 2, 1, 1},
+    {9, 7, 5, 4, 3, 2, 2, 1, 1},
+    {10, 7, 5, 4, 3, 2, 2, 1, 1, 1}
+};
+
 static TApItem *ap_head = 0;
 
 static int hex2nyb (char c) 
@@ -244,7 +261,22 @@ DEC	[0-9]+
     ap->spacing = atoi (yytext);
 }
 
-<VALUE>@[^ \t\n]+ {
+<VALUE>\*[0-9]+ {
+    if (ap->type & TTK_AP_ROUNDING)
+        WARN ("overriding rounding for %s (%d) with %s", ap->name, ap->rounding, yytext);
+    ap->type |= TTK_AP_ROUNDING;
+    ap->rounding = atoi (yytext + 1);
+    if (ap->rounding > 10) {
+        WARN ("%s exceeds the maximum allowed rounding. setting rounding to 10", ap->name);
+        ap->rounding = 10;
+    }
+    else if (ap->rounding < 0) {
+        WARN ("negative rounding is not possible. removing rounding for %s", ap->name);
+        ap->rounding = 0;
+    }
+}
+
+<VALUE>@[^ \t\n,]+ {
     char *path;
 
     if (ap->type & TTK_AP_IMAGE)
@@ -434,6 +466,7 @@ void ttk_ap_dorect (ttk_surface srf, TApItem *ap, int x1, int y1, int x2, int y2
 {
     ttk_color col;
     ttk_surface img;
+    int rad;
     int iscol = 1;
     int tmp;
 
@@ -451,6 +484,8 @@ void ttk_ap_dorect (ttk_surface srf, TApItem *ap, int x1, int y1, int x2, int y2
 	col = ap->color;
     else
 	iscol = 0;
+
+    rad = (ap->type & TTK_AP_ROUNDING) ? ap->rounding : 0;
 
     if (ap->type & TTK_AP_SPACING) {
         int ox1 = x1, ox2 = x2, oy1 = y1, oy2 = y2;
@@ -477,20 +512,21 @@ void ttk_ap_dorect (ttk_surface srf, TApItem *ap, int x1, int y1, int x2, int y2
     if (y2 <= y1) y2 = y1 + 1;
     
     if (ap->type & TTK_AP_GRADIENT) {
-        void (*gradfn)(ttk_surface, int, int, int, int, ttk_color, ttk_color) = ttk_vgradient;
-        if (ap->type & TTK_AP_GRAD_HORIZ)
-            gradfn = ttk_hgradient;
-        
         if (ap->type & TTK_AP_GRAD_MID) {
-            if (gradfn == ttk_hgradient) {
-                gradfn (srf, x1, y1, (x1 + x2) >> 1, y2, ap->gradstart, ap->gradmid);
-                gradfn (srf, (x1 + x2) >> 1, y1, x2, y2, ap->gradmid, ap->gradend);
+            if (ap->type & TTK_AP_GRAD_HORIZ) {
+                ttk_do_gradient (srf, 1, rad, 0, x1, y1, (x1 + x2) >> 1, y2,
+                         ap->gradstart, ap->gradmid);
+                ttk_do_gradient (srf, 1, 0, rad, (x1 + x2) >> 1, y1, x2, y2,
+                         ap->gradmid, ap->gradend);
             } else {
-                gradfn (srf, x1, y1, x2, (y1 + y2) >> 1, ap->gradstart, ap->gradmid);
-                gradfn (srf, x1, (y1 + y2) >> 1, x2, y2, ap->gradmid, ap->gradend);
+                ttk_do_gradient (srf, 0, rad, 0, x1, y1, x2, (y1 + y2) >> 1,
+                         ap->gradstart, ap->gradmid);
+                ttk_do_gradient (srf, 0, 0, rad, x1, (y1 + y2) >> 1, x2, y2,
+                         ap->gradmid, ap->gradend);
             }
         } else {
-            gradfn (srf, x1, y1, x2, y2, ap->gradstart, ap->gradend);
+            ttk_do_gradient (srf, ap->type & TTK_AP_GRAD_HORIZ, rad, rad,
+                     x1, y1, x2, y2, ap->gradstart, ap->gradend);
         }
 
         if (ap->type & TTK_AP_GRAD_BAR) {
@@ -720,8 +756,35 @@ void ttk_ap_dorect (ttk_surface srf, TApItem *ap, int x1, int y1, int x2, int y2
     }
     
     if (iscol) {
-	if (filled)
+	if (filled) {
+	    if (rad) {
+		int i, c;
+		for(i = 0; i < rad; i++) {
+		    c = ttk_chamfering[rad - 1][i];
+		    ttk_line (srf, x1 + c, y1 + i, x2-1 - c, y1 + i, col);
+		    ttk_line (srf, x1 + c, y2-1 - i, x2-1 - c, y2-1 - i, col);
+		}
+		y1 += rad;
+		y2 -= rad;
+	    }
 	    ttk_fillrect (srf, x1, y1, x2, y2, col);
+	}
+	else if (rad) {
+	    int i, c, lc;
+	    ttk_line (srf, x1 + rad, y1, x2-1 - rad, y1, col);
+	    ttk_line (srf, x1 + rad, y2-1, x2-1 - rad, y2-1, col);
+	    ttk_line (srf, x1, y1 + rad, x1, y2-1 - rad, col);
+	    ttk_line (srf, x2-1, y1 + rad, x2-1, y2-1 - rad, col);
+	    for (i = 1; i < rad; i++) {
+		c = ttk_chamfering[rad - 1][i];
+		lc = ttk_chamfering[rad - 1][i - 1];
+		if (c == lc) ++lc;
+		ttk_line (srf, x1 + c, y1 + i, x1 + lc-1, y1 + i, col);
+		ttk_line (srf, x2-1 - c, y1 + i, x2-1 - lc+1, y1 + i, col);
+		ttk_line (srf, x1 + c, y2-1 - i, x1 + lc-1, y2-1 - i, col);
+		ttk_line (srf, x2-1 - c, y2-1 - i, x2-1 - lc+1, y2-1 - i, col);
+	    }
+	}
 	else
 	    ttk_rect (srf, x1, y1, x2, y2, col);
     }
