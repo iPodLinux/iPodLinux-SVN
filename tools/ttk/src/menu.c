@@ -137,11 +137,12 @@ static void render (TWidget *this, int first, int n)
 					     data->itemheight, ttk_screen->bpp);
 	if (ttk_ap_getx("menu.selbg")->type & TTK_AP_GRADIENT &&
 			!(ttk_ap_getx("menu.selbg")->type & TTK_AP_GRAD_HORIZ))
-		ttk_ap_rect (data->itemsrfI[xi], ttk_ap_getx ("menu.selbg"), 0, 0,
-						data->menu[xi]->textwidth + 6, data->itemheight); 
+	    ttk_ap_rect (data->itemsrfI[xi], ttk_ap_getx ("menu.selbg"), 0,
+				0, data->menu[xi]->textwidth + 6 +
+				ttk_ap_getx("menu.selbg")->rounding, data->itemheight); 
 	else
-		ttk_fillrect (data->itemsrfI[xi], 0, 0, data->menu[xi]->textwidth + 6,
-						data->itemheight, ttk_ap_getx ("menu.selbg") -> color);
+	    ttk_fillrect (data->itemsrfI[xi], 0, 0, data->menu[xi]->textwidth + 6,
+				data->itemheight, ttk_ap_getx ("menu.selbg") -> color);
         if (data->i18nable)
             ttk_text (data->itemsrfI[xi], data->font, 3, ofs, ttk_ap_getx ("menu.selfg") -> color, gettext (data->menu[xi]->name));
         else
