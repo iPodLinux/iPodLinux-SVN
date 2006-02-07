@@ -93,10 +93,10 @@ box:
 	special.border => #5ea3ed
 
 button:
-	default.bg => <vert #f9f9f9 to #e3e3e3 to #ffffff>,
+	default.bg => <vert #f9f9f9 to #e3e3e3 to #ffffff> *5,
 	default.fg => aquafg,
-	default.border => aquabtnbdr,
-	selected.bg => <vert #c7d0ea to #61a2e4 to #8de4ff>,
+	default.border => aquabtnbdr *6,
+	selected.bg => <vert #c7d0ea to #61a2e4 to #8de4ff> *5,
 	selected.fg => aquafg,
-	selected.border => aquadbtnbdr
+	selected.border => aquadbtnbdr *6
 
