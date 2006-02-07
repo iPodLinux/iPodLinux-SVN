@@ -62,8 +62,8 @@ static void draw_button(PzWidget *wid, ttk_surface srf, int row, int col)
 	int x = (XOFF + BPAD/2) + col*(BW + BPAD);
 	int y = (YOFF + BPAD/2) + row*(BH + BPAD);
 
-	ttk_ap_rect(srf, ttk_ap_get(text[ap+4]), x, y, x + BW, y + BH);
 	ttk_ap_fillrect(srf, ttk_ap_get(text[ap+2]), x+1, y+1, x+BW-1, y+BH-1);
+	ttk_ap_rect(srf, ttk_ap_get(text[ap+4]), x, y, x + BW, y + BH);
 	ttk_text(srf, ttk_textfont, x+(BW-ttk_text_width(ttk_textfont, "8"))/2,
 			y+(BH-ttk_text_height(ttk_textfont))/2,
 			ttk_ap_getx(text[ap])->color, buttons[pos].ch);
