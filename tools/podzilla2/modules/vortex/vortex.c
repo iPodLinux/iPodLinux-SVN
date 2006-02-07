@@ -668,6 +668,11 @@ int event_vortex (PzEvent *ev)
 
 	case PZ_EVENT_BUTTON_DOWN:
 		switch( ev->arg ) {
+		case( PZ_BUTTON_ACTION ):
+			if( vglob.state == VORTEX_STATE_GAME ) {
+				vglob.actionDown = 1;
+			}
+			break;
 		case( PZ_BUTTON_HOLD ):
 			vglob.paused = 1;
 			break;
@@ -705,6 +710,7 @@ int event_vortex (PzEvent *ev)
 				Vortex_stateChange( VORTEX_STATE_GAME );
 				Vortex_initLevel();
 			} else if( vglob.state == VORTEX_STATE_GAME ) {
+				vglob.actionDown = 0;
 				Vortex_Bolt_add();
 			}
 		    }
@@ -720,6 +726,7 @@ int event_vortex (PzEvent *ev)
 		break;
 
 	case PZ_EVENT_TIMER:
+		if( vglob.actionDown ) Vortex_Bolt_add();
 		Vortex_timerTick( ev );
 		break;
 	}
@@ -737,6 +744,7 @@ static void Vortex_Initialize( void )
 	vglob.lives = 3;
 	vglob.hasParticleLaser = 0;
 	vglob.hasSuperZapper = 1;
+	vglob.actionDown = 0;
 
 	vglob.wPosMajor = 0;
 	vglob.wPosMinor = 0;
