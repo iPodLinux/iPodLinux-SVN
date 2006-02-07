@@ -100,6 +100,7 @@ typedef struct vortex_globals {
 
 	int hasParticleLaser;
 	int hasSuperZapper;
+	int actionDown;
 
 	int score;
 	int lives;
