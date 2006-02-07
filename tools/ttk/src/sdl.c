@@ -428,37 +428,59 @@ void ttk_fillrect_gc (ttk_surface srf, ttk_gc gc, int x, int y, int w, int h)
     }
 }
 
+extern unsigned char ttk_chamfering[][10];
+
+void ttk_do_gradient(ttk_surface srf, char horiz, int b_rad, int e_rad,
+		int x1, int y1, int x2, int y2, ttk_color begin, ttk_color end)
+{
+	gradient_node *gn = ttk_gradient_find_or_add(begin, end);
+	int steps = horiz ? x2-x1 : y2-y1;
+	int line, bc, ec, i;
+
+	if (!gn) return;
+
+	if (steps < 0) steps *= -1;
+
+	if (horiz) {
+		for (line = 0, i = steps; line<i &&(b_rad||e_rad); line++,i--) {
+			bc = (line < b_rad)? ttk_chamfering[b_rad - 1][line]:0;
+			ec = (line < e_rad)? ttk_chamfering[e_rad - 1][line]:0;
+			if (bc == 0 && ec == 0) break;
+			ttk_line(srf, x1 + line, y1 + bc, x1 + line, y2-1 - bc,
+					gn->gradient[(line * 256)/steps]);
+			ttk_line(srf, x2-1 - line, y1 + ec, x2-1 - line,
+					y2-1 - ec,
+					gn->gradient[((i-1) * 256)/steps]);
+		}
+		for (; line < i; line++) {
+			ttk_line(srf, x1+line, y1, x1+line, y2-1,
+					gn->gradient[(line * 256)/steps]);
+		}
+	}
+	else {
+		for (line = 0, i = steps; line<i &&(b_rad||e_rad); line++,i--) {
+			bc = (line < b_rad)? ttk_chamfering[b_rad - 1][line]:0;
+			ec = (line < e_rad)? ttk_chamfering[e_rad - 1][line]:0;
+			if (bc == 0 && ec == 0) break;
+			ttk_line(srf, x1 + bc, y1 + line, x2-1 - bc, y1 + line,
+					gn->gradient[(line * 256)/steps]);
+			ttk_line(srf, x1 + ec, y2-1 - line, x2-1 - ec,
+					y2-1 - line,
+					gn->gradient[((i-1) * 256)/steps]);
+		}
+		for (; line < i; line++)
+			ttk_line(srf, x1, y1+line, x2-1, y1+line,
+					gn->gradient[(line * 256)/steps]);
+	}
+}
+
 void ttk_hgradient( ttk_surface srf, int x1, int y1, int x2, int y2, 
 			ttk_color left, ttk_color right )
-{
-	gradient_node * gn = ttk_gradient_find_or_add( left, right );
-	int steps = x2-x1;
-	int column;
-
-	if( !gn ) return;
-
-	if( steps < 0 ) steps*=-1;
-
-	for( column=0 ; column<steps; column++ )
-		ttk_line( srf, x1+column, y1, x1+column, y2-1, 
-		    gn->gradient[ (column * 256)/steps  ] );
-}
+{ ttk_do_gradient(srf, 1, 0, 0, x1, y1, x2, y2, left, right); }
 
 void ttk_vgradient(ttk_surface srf, int x1, int y1, int x2, int y2, 
 			ttk_color top, ttk_color bottom )
-{
-	gradient_node * gn = ttk_gradient_find_or_add( top, bottom );
-	int steps = y2-y1;
-	int row;
-
-	if( !gn ) return;
-
-	if( steps < 0 ) steps*=-1;
-
-	for( row=0 ; row<steps; row++ )
-		ttk_line( srf, x1, y1+row, x2-1, y1+row, 
-		    gn->gradient[ (row * 256)/steps  ] );
-}
+{ ttk_do_gradient(srf, 0, 0, 0, x1, y1, x2, y2, top, bottom); }
 
 
 void ttk_poly (ttk_surface srf, int nv, short *vx, short *vy, ttk_color col)
