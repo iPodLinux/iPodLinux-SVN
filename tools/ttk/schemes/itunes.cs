@@ -63,12 +63,12 @@
   window: bg => aquabg, fg => aquafg, border => aquawinbdr -3
   dialog: bg => aquabg, fg => aquafg, line => #8b8b8b,
           title.fg => aquafg,
-          button.bg => <vert #f9f9f9 to #e3e3e3 to #ffffff>, button.fg => aquafg, button.border => aquabtnbdr,
-	  button.sel.bg => <vert #c7d0ea to #61a2e4 to #8de4ff>, button.sel.fg => aquafg, button.sel.border => aquadbtnbdr, button.sel.inner => aquadbtn +1
+          button.bg => <vert #f9f9f9 to #e3e3e3 to #ffffff> *6, button.fg => aquafg, button.border => aquabtnbdr *6,
+	  button.sel.bg => <vert #c7d0ea to #61a2e4 to #8de4ff> *6, button.sel.fg => aquafg, button.sel.border => aquadbtnbdr *6, button.sel.inner => aquadbtn +1 *5
    error: bg => aquabg, fg => aquafg, line => #8b8b8b,
           title.fg => aquafg,
-          button.bg => <vert #f9f9f9 to #e3e3e3 to #ffffff>, button.fg => aquafg, button.border => aquabtnbdr,
-	  button.sel.bg => <vert #c7d0ea to #61a2e4 to #8de4ff>, button.sel.fg => aquafg, button.sel.border => aquadbtnbdr, button.sel.inner => aquadbtn +1
+          button.bg => <vert #f9f9f9 to #e3e3e3 to #ffffff> *6, button.fg => aquafg, button.border => aquabtnbdr *6,
+	  button.sel.bg => <vert #c7d0ea to #61a2e4 to #8de4ff> *6, button.sel.fg => aquafg, button.sel.border => aquadbtnbdr *6, button.sel.inner => aquadbtn +1 *5
   scroll: box => #b8b8b8, bg => <horiz #b8b8b8 to #efefef> +1,
           bar => @familiar-(scroll.bar).png
    input: bg => aquabg, fg => aquafg, selbg => aquadbtn, selfg => aquafg, border => aquawinbdr, cursor => #808080
