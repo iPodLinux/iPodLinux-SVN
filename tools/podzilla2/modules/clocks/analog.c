@@ -31,12 +31,12 @@ static void aclock_angular_line_angle(
 			ttk_surface srf, ttk_color col,
 			int cx, int cy,
                         double angle,
-                        int length, int circdiam, int thick  )
+                        int radius, int circdiam, int thick  )
 {
         int px, py;
 
-        px = cx + ( length * cos( angle ));
-        py = cy + ( length * sin( angle ));
+        px = cx + ( radius * cos( angle ));
+        py = cy + ( radius * sin( angle ));
 
         if( thick ) {
 		ttk_aaline( srf, cx+1, cy   , px+1, py   , col );
@@ -57,13 +57,13 @@ static void aclock_angular_line(
 			ttk_surface srf, ttk_color col,
 			int cx, int cy,
                         int val, int max,
-                        int length, int circdiam, int thick  )
+                        int radius, int circdiam, int thick  )
 {
         double angle;
 
         angle = (3.14159265 * ((( (val%max) * 360 ) / max) - 90)) / 180;
 
-	aclock_angular_line_angle( srf, col, cx, cy, angle, length,
+	aclock_angular_line_angle( srf, col, cx, cy, angle, radius,
                                 circdiam, thick );
 }
 
@@ -73,27 +73,27 @@ static void aclock_angular_line(
 
 void clock_draw_simple_analog( ttk_surface srf, clocks_globals *glob )
 {
-	int cx = glob->w>>1;
-	int cy = glob->h>>1;
-	int cd = cy-5;
-	int hhd = cy>>1;
-	int mhd = cy-20;
-	int shd = cy-22;
+	int cx = glob->w>>1;	/* X center */
+	int cy = glob->h>>1;	/* Y center */
+	int cr = cy-5;		/* backing circle radius */
+	int hhr = cy>>1;	/* hour hand radius */
+	int mhr = cy-20;	/* minute hand radius */
+	int shr = cy-22;	/* second hand radius */
 
 	/* clock face .. do a thick AA, simulated... */
-	ttk_aaellipse( srf, cx, cy, cd, cd, glob->fg );
-	ttk_fillellipse( srf, cx, cy, cd, cd, glob->fg );
-	ttk_fillellipse( srf, cx, cy, cd-5, cd-5, glob->bg );
-	ttk_aaellipse( srf, cx, cy, cd-5, cd-5, glob->fg );
+	ttk_aaellipse( srf, cx, cy, cr, cr, glob->fg );
+	ttk_fillellipse( srf, cx, cy, cr, cr, glob->fg );
+	ttk_fillellipse( srf, cx, cy, cr-5, cr-5, glob->bg );
+	ttk_aaellipse( srf, cx, cy, cr-5, cr-5, glob->fg );
 
 	/* 12:00 dot */
-	ttk_fillellipse( srf, cx, cy-cd+10, 3, 3, glob->border );
-	ttk_aaellipse( srf, cx, cy-cd+10, 3, 3, glob->border );
+	ttk_fillellipse( srf, cx, cy-cr+10, 3, 3, glob->border );
+	ttk_aaellipse( srf, cx, cy-cr+10, 3, 3, glob->border );
 	
 	/* minutes */
         aclock_angular_line( srf, glob->fg, cx, cy,
 			(glob->dispTime->tm_min*60)+glob->dispTime->tm_sec,
-			60*60, mhd, 4, ARM_THICK );
+			60*60, mhr, 4, ARM_THICK );
 
 	/* hours */
         aclock_angular_line( srf, glob->fg, cx, cy,
@@ -101,42 +101,52 @@ void clock_draw_simple_analog( ttk_surface srf, clocks_globals *glob )
 					glob->dispTime->tm_hour-12:
 					glob->dispTime->tm_hour) *60 ) + 
 				    glob->dispTime->tm_min,
-				12*60, hhd, 3, ARM_THICK );
+				12*60, hhr, 3, ARM_THICK );
 
 	/* seconds */
         aclock_angular_line( srf, glob->fg, cx, cy,
-				glob->dispTime->tm_sec, 60, shd, 
+				glob->dispTime->tm_sec, 60, shr, 
 				2, ARM_NORMAL );
 }
 
 
 void clock_draw_nelson_analog( ttk_surface srf, clocks_globals *glob )
 {
-	int cx = glob->w>>1;
-	int cy = glob->h>>1;
-	int ld = cy-10;
-	int hhd = cy>>1;
-	int mhd = cy-20;
-	int shd = cy-22;
-	int cd = glob->h>>3;
+	int cx = glob->w>>1;	/* X center */
+	int cy = glob->h>>1;	/* Y center */
+	int lr = cy-10;		/* lollipop radius */
+	int hhr = cy>>1;	/* hour hand radius */
+	int mhr = cy-20;	/* minute hand radius */
+	int shr = cy-22;	/* second hand radius */
+	int cr = glob->h>>3;	/* center circle radius */
 	int x;
 
+	int lollipop_r = 8;	/* radius of the lollipop circles */
+	int minutes_r  = 5;	/* radius of the minute hand circles */
+	int hours_r    = 4;	/* radius of the hour hand circles */
+
+	/* make it look non-stupid on small screens Mini/Nano/1g-4g */
+	if( glob->w < 200 ) {
+		lollipop_r = 6;
+		minutes_r = 4;
+		hours_r = 4;
+	}
 	
 	/* lollipops */
 	for( x=0 ; x<12 ; x++ ) {
 		aclock_angular_line( srf, glob->border, cx, cy,
-				x, 12, ld, 8, ARM_NORMAL );
+				x, 12, lr, lollipop_r, ARM_NORMAL );
 		
 	}
 
 	/* center region */
-	ttk_aaellipse( srf, cx, cy, cd, cd, glob->border );
-	ttk_fillellipse( srf, cx, cy, cd, cd, glob->border );
+	ttk_aaellipse( srf, cx, cy, cr, cr, glob->border );
+	ttk_fillellipse( srf, cx, cy, cr, cr, glob->border );
 	
 	/* minutes */
         aclock_angular_line( srf, glob->fg, cx, cy,
 			(glob->dispTime->tm_min*60)+glob->dispTime->tm_sec,
-			60*60, mhd, 5, ARM_THICK );
+			60*60, mhr, minutes_r, ARM_THICK );
 
 	/* hours */
         aclock_angular_line( srf, glob->fg, cx, cy,
@@ -144,11 +154,11 @@ void clock_draw_nelson_analog( ttk_surface srf, clocks_globals *glob )
 					glob->dispTime->tm_hour-12:
 					glob->dispTime->tm_hour) *60 )+ 
 				    glob->dispTime->tm_min,
-				12*60, hhd, 4, ARM_THICK );
+				12*60, hhr, hours_r, ARM_THICK );
 
 	/* seconds */
         aclock_angular_line( srf, glob->fg, cx, cy,
-			    glob->dispTime->tm_sec, 60, shd, 0, ARM_NORMAL );
+			    glob->dispTime->tm_sec, 60, shr, 0, ARM_NORMAL );
 }
 
 
@@ -160,9 +170,9 @@ void clock_draw_nelson_analog( ttk_surface srf, clocks_globals *glob )
 static void clock_common_oversized( ttk_surface srf, clocks_globals *glob,
 					int showdate )
 {
-	int cx = glob->w>>1;
-	int cy = glob->h>>1;
-	int hlen = (cy*3)>>2;
+	int cx = glob->w>>1;	/* X center */
+	int cy = glob->h>>1;	/* Y center */
+	int hlen = (cy*3)>>2;	/* hand length */
 	char buf[16];	/* should be big enough for the format */
 
 	/* draw the crosshairs */
