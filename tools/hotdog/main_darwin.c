@@ -33,7 +33,6 @@
 #include <math.h>
 
 #include "hotdog.h"
-#include "hotdog_png.h"
 
 #include "SDL.h"
 

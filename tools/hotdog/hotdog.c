@@ -31,9 +31,6 @@
 #include <assert.h>
 
 #include "hotdog.h"
-#include "hotdog_primitive.h"
-#include "hotdog_png.h"
-#include "hotdog_font.h"
 
 hd_engine *HD_Initialize(uint32 width,uint32 height,uint8 bpp, void *framebuffer, void (*update)(struct hd_engine*, int, int, int, int)) {
 	hd_engine *eng;
@@ -41,7 +38,7 @@ hd_engine *HD_Initialize(uint32 width,uint32 height,uint8 bpp, void *framebuffer
 	eng = (hd_engine *)malloc( sizeof(hd_engine) );
 	assert(eng != NULL);
 
-	eng->buffer = (uint32 *)malloc( width * height * 4 );
+	eng->buffer = HD_NewSurface (width, height);
 	assert(eng->buffer != NULL);
 
 	eng->screen.width  = width;
@@ -144,13 +141,13 @@ void HD_Render(hd_engine *eng) {
 
 #ifndef PRECISE_DIRTIES
         // Clear FB
-        memset (eng->buffer, 0, eng->screen.width * eng->screen.height * 4);
+        memset (HD_SRF_PIXELS (eng->buffer), 0, eng->screen.width * eng->screen.height * 4);
 #else
         // Clear dirties
         rect = dirties;
         while (rect) {
-            uint32 *p = eng->buffer + rect->y*eng->screen.width + rect->x;
-            uint32 *endp = p + rect->h*eng->screen.width;
+            uint32 *p = HD_SRF_PIXPTR (eng->buffer, rect->x, rect->y);
+            uint32 *endp = HD_SRF_END (eng->buffer);
             while (p < endp) {
                 memset (p, 0, rect->w*4);
                 p += eng->screen.width;
@@ -164,6 +161,11 @@ void HD_Render(hd_engine *eng) {
         cur = eng->list;
         while (cur) {
             cur->obj->render (eng, cur->obj, 0, 0, cur->obj->natw, cur->obj->nath);
+            cur->obj->last.x = cur->obj->x;
+            cur->obj->last.y = cur->obj->y;
+            cur->obj->last.w = cur->obj->w;
+            cur->obj->last.h = cur->obj->h;
+            cur->obj->dirty = 0;
             cur = cur->next;
         }
 #else //// STILL BUGGY! ////
@@ -254,7 +256,7 @@ void HD_Render(hd_engine *eng) {
 		uint16 dPix;
 
 		for(off=0;off<(eng->screen.width*eng->screen.height);off++) {
-			sPix = eng->buffer[off];
+                	sPix = HD_SRF_PIXELS(eng->buffer)[off];
 
 			dPix  = ((sPix & 0x00FF0000) >> (16+3)) << 11; // R
 			dPix |= ((sPix & 0x0000FF00) >> (8+2)) << 5;  // G
@@ -266,7 +268,7 @@ void HD_Render(hd_engine *eng) {
                 uint32 * srcptr;
                 uint16 * dstptr;
                 
-                srcptr = eng->buffer;
+                srcptr = HD_SRF_PIXELS (eng->buffer);
                 dstptr = eng->screen.framebuffer;
                 
                 uint32 count = eng->screen.width*eng->screen.height / 2 + 1;
@@ -320,8 +322,8 @@ void HD_Render(hd_engine *eng) {
 	}
         // Translate to Y2
         if (eng->screen.fb2bpp) {
-            uint32 *sPix = eng->buffer;
-            uint32 *endPix = eng->buffer + eng->screen.width * eng->screen.height;
+            uint32 *sPix = HD_SRF_PIXELS (eng->buffer);
+            uint32 *endPix = HD_SRF_END (eng->buffer);
             uint8 *dPix = eng->screen.fb2bpp;
             
 #ifndef IPOD
@@ -413,9 +415,12 @@ void HD_Render(hd_engine *eng) {
 #endif
 }
 
-void HD_ScaleBlendClip (uint32 *sbuf, int stw, int sth, int sx, int sy, int sw, int sh,
-                        uint32 *dbuf, int dtw, int dth, int dx, int dy, int dw, int dh) 
+void HD_ScaleBlendClip (hd_surface ssrf, int sx, int sy, int sw, int sh,
+                        hd_surface dsrf, int dx, int dy, int dw, int dh)
 {
+  int stw = HD_SRF_WIDTH (ssrf), sth = HD_SRF_HEIGHT (ssrf),
+      dtw = HD_SRF_WIDTH (dsrf), dth = HD_SRF_HEIGHT (dsrf);
+  uint32 *sbuf = HD_SRF_PIXELS (ssrf), *dbuf = HD_SRF_PIXELS (dsrf);
   int32 fp_step_x,fp_step_y,fp_ix,fp_iy,fp_initial_ix,fp_initial_iy;
   int32 x,y;
   int32 startx,starty,endx,endy;

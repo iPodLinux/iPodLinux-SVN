@@ -1,3 +1,5 @@
+/*** The stuff in this file needs to be updated! ***/
+
 /*
  * Copyright (c) 2005, James Jacobsson
  * All rights reserved.

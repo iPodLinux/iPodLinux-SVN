@@ -28,14 +28,13 @@
 #ifndef _HOTDOG_H_
 #define _HOTDOG_H_
 
-#define HD_TYPE_PRIMITIVE 0x00
-#define HD_TYPE_PNG       0x01
-#define HD_TYPE_FONT      0x02
-#define HD_TYPE_CANVAS    0x03
-#define HD_TYPE_USERDEF   0x100
+#define HD_TYPE_CANVAS    0x01
+#define HD_TYPE_PRIMITIVE 0x02
+#define HD_TYPE_OTHER     0x03
 
 #define HD_PRIM_RECTANGLE 0x00
 
+/**** Basic typedefs ****/
 typedef unsigned int   uint32;
 typedef   signed int    int32;
 typedef unsigned short uint16;
@@ -43,10 +42,78 @@ typedef   signed short  int16;
 typedef unsigned char  uint8;
 typedef   signed char   int8;
 
+/**** Primitives [xxx] ****/
 typedef struct hd_primitive {
     uint32 type;
     uint32 color; // ARGB
 } hd_primitive;
+
+/**** Surfaces ****/
+
+/* Surfaces are just things for drawing graphics.
+ * However, the actual pixels don't start until (h+2)*4
+ * bytes in. The first uint32 is the width, and the second
+ * is the height. After that come <h> uint32's, each giving the
+ * offset (in 4-byte blocks from the beginning of the surface)
+ * of the beginning of the respective row. All pixels are stored
+ * in ARGB8888 format. For instance, a 4x4 surface would look like
+ * this.
+ *
+ * [ofs] value
+ *   [0] 4
+ *   [1] 4
+ *   [2] 6   (beginning of row 0)
+ *   [3] 10  (beginning of row 1)
+ *   [4] 14  (beginning of row 2)
+ *   [5] 18  (beginning of row 3)
+ *   [6] pixel at (0, 0)
+ *   [7] pixel at (0, 1)
+ *   [8] pixel at (0, 2)
+ *   [9] pixel at (0, 3)
+ *  [10] pixel at (1, 0)
+ *   ..
+ *  [13] pixel at (1, 3)
+ *  [14] pixel at (2, 0)
+ *   ..
+ *  [18] pixel at (3, 0)
+ *   ..
+ *  [21] pixel at (3, 3)
+ */
+typedef uint32 *hd_surface;
+
+/* "F" variants are (F)ast and need to be pre-clipped. */
+#define HD_SRF_WIDTH(srf) ((srf)[0])
+#define HD_SRF_HEIGHT(srf) ((srf)[1])
+#define HD_SRF_ROW(srf,y) (((y)<((srf)[1]))?((srf) + ((srf)[2 + (y)])):0)
+#define HD_SRF_ROWF(srf,y) ((srf) + ((srf)[2 + (y)]))
+#define HD_SRF_PIXF(srf,x,y) ((srf)[((srf)[2 + (y)]) + (x)])
+#define HD_SRF_SETPIX(srf,x,y,pix) (((x)<((srf)[0]))&&((y)<((srf)[1]))? (HD_SRF_PIXELF(srf,x,y) = (pix)) : (pix))
+#define HD_SRF_GETPIX(srf,x,y) (((x)<((srf)[0]))&&((y)<((srf)[1]))? HD_SRF_PIXELF(srf,x,y) : 0)
+#define HD_SRF_PIXPTR(srf,x,y) (((x)<((srf)[0]))&&((y)<((srf)[1]))? &HD_SRF_PIXELF(srf,x,y) : 0)
+#define HD_SRF_PIXELS(srf) ((srf) + 2 + ((srf)[1]))
+#define HD_SRF_END(srf) ((srf) + 2 + ((srf)[1]) + (((srf)[0]) * ((srf)[1])))
+
+/* HD_SurfaceFrom* will _copy_ the pixels, not just reference them.
+ * Thus, you still need to free argb or pixels.
+ */
+hd_surface HD_SurfaceFromARGB (uint32 *argb, int32 width, int32 height);
+
+/* If [pixels] contains an alpha channel and is not premultiplied,
+ * it's YOUR RESPONSIBILITY to call PremultiplyAlpha on the returned
+ * surface.
+ */
+hd_surface HD_SurfaceFromPixels (void *pixels, int32 width, int32 height, int bpp,
+                                 uint32 Rmask, uint32 Gmask, uint32 Bmask, uint32 Amask);
+
+/* NewSurface fills the surface with black. */
+hd_surface HD_NewSurface (int32 width, int32 height);
+
+void HD_FreeSurface (hd_surface srf); // you can just use free if you want
+
+/* Premultiplies the alpha in [srf]. You must be careful to only call this once. */
+void HD_PremultiplyAlpha (hd_surface srf);
+
+/**** Fonts ****/
 
 /* There are two commonly-used ways to store font character
  * data in an array of pixels. One, which we'll call `pitched',
@@ -61,7 +128,7 @@ typedef struct hd_primitive {
  * different meaning: it is now the number of bytes a character's
  * in-memory width must be divisible by. For instance, for 32-bit
  * clumped chars this would be 4; for Microwindows FNT files with
- * their 16-bit bitmaps it would be 2; in most othe rcases it would be 1.
+ * their 16-bit bitmaps it would be 2; in most other cases it would be 1.
  *
  * SFonts are pitched.
  *
@@ -86,15 +153,22 @@ typedef struct hd_font {
     int     defaultchar; // Char to use if req'd char doesn't exist
 } hd_font;
 
-typedef struct hd_canvas {
-    int32   w,h;
-    uint32 *argb;
-} hd_canvas;
+hd_font *HD_Font_LoadHDF (const char *filename);
+int      HD_Font_SaveHDF (hd_font *font, const char *filename);
+hd_font *HD_Font_LoadFNT (const char *filename);
+hd_font *HD_Font_LoadPCF (const char *filename);
 
-typedef struct hd_png {
-    int32   w,h;
-    uint32 *argb;
-} hd_png;
+int HD_Font_TextWidth (hd_font *font, const char *str);
+/* TextHeight is just font->h */
+
+/** Draws with the TOP LEFT CORNER at (x,y) */
+void HD_Font_Draw (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str);
+/* Fast = no blending. May have unpredictable results for AA fonts on non-white surfaces. */
+void HD_Font_DrawFast (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str);
+
+struct hd_object *HD_Font_MakeObject (hd_font *font, const char *str);
+
+/**** Compositing [need to implement per-object alpha] ****/
 
 struct hd_engine;
 struct hd_object;
@@ -113,12 +187,10 @@ typedef struct hd_object {
     /* private */ int dirty;
     
     union {
-        hd_png       *png;
-        hd_primitive *prim;
-        hd_font      *font;
-        hd_canvas    *canvas;
+        hd_surface   canvas;
+        hd_primitive *primitive;
         void       *data;
-    } sub;
+    };
     
     struct hd_engine *eng;
     
@@ -145,11 +217,13 @@ typedef struct hd_engine {
         void (*update)(struct hd_engine *, int, int, int, int);
     } screen;
     
-    uint32  currentTime;
-    uint32 *buffer;
+    uint32      currentTime;
+    hd_surface  buffer;
     
     hd_obj_list *list;
 } hd_engine;
+
+/**** Optimized ops [need some more, plus ARM ASM optim versions] ****/
 
 #define BLEND_ARGB8888_ON_ARGB8888(dst_argb, src_argb)         \
 {                                                              \
@@ -169,9 +243,29 @@ void HD_Register(hd_engine *eng,hd_object *obj);
 void HD_Render(hd_engine *eng);
 void HD_Animate(hd_engine *eng);
 void HD_Destroy(hd_object *obj);
-void HD_ScaleBlendClip (uint32 *sbuf, int stw, int sth, int sx, int sy, int sw, int sh,
-                        uint32 *dbuf, int dtw, int dth, int dx, int dy, int dw, int dh);
+void HD_ScaleBlendClip (hd_surface sbuf, int sx, int sy, int sw, int sh,
+                        hd_surface dbuf, int dx, int dy, int dw, int dh);
+
 hd_object *HD_New_Object();
 hd_obj_list *HD_StackObjects (hd_obj_list *head);
+
+/****** Animation ******/
+void HD_AnimateLinear (hd_object *obj, int sx, int sy, int sw, int sh,
+                       int dx, int dy, int dw, int dh, int frames, void (*done)(hd_object *));
+void HD_AnimateCircle (hd_object *obj, int x, int y, int r, int32 fbot, int32 ftop,
+                       int astart, int adist, int frames);
+int32 fsin (int32 angle); // angle is in units of 1024 per pi/2 radians - that is, rad*2048/pi
+                          // ret is a 16.16 fixpt - 0x10000 is 1, 0x0000 is 0
+int32 fcos (int32 angle); // same
+
+/****** Canvasses ******/
+/* Canvas_Create() takes ownership of srf; it'll free it when the object is freed. */
+hd_object *HD_Canvas_CreateFrom(hd_surface srf);
+void       HD_Canvas_Destroy(hd_object *obj);
+void       HD_Canvas_Render(hd_engine *eng,hd_object *obj, int x, int y, int w, int h);
+
+/****** PNGs ******/
+hd_object *HD_PNG_Create(const char *fname);
+hd_surface HD_PNG_Load (const char *fname, int *w, int *h);
 
 #endif
