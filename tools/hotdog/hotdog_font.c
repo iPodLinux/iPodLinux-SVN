@@ -5,9 +5,45 @@
 #include <netinet/in.h>
 
 #include "hotdog.h"
-#include "hotdog_font.h"
 
 #define HDF_MAGIC 0x676f6448
+
+/************ Drawing and objecting ****************/
+static void _do_draw (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str,
+                      int blend_all, int blend_parts) 
+{
+    /* ... */
+}
+void HD_Font_Draw (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str) 
+{
+    _do_draw (srf, font, x, y, color, str, (color & 0xff000000) != 0xff000000, 1);
+}
+void HD_Font_DrawFast (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str) 
+{
+    _do_draw (srf, font, x, y, color, str, 0, 0);
+}
+
+int HD_Font_TextWidth (hd_font *font, const char *str) 
+{
+    const char *p = str;
+    int ret = 0;
+    
+    if (!font || !str || !font->width) return -1;
+
+    while (*p) {
+        if (*p - font->firstchar <= font->nchars)
+            ret += font->width[*p - font->firstchar];
+        p++;
+    }
+
+    return ret;
+}
+
+hd_object *HD_Font_MakeObject (hd_font *font, const char *str) 
+{
+    /* ... */
+    return 0;
+}
 
 /*********************** HDF ***********************/
 
@@ -302,7 +338,7 @@ static uint32 toc_size;
 #define PCF_LSB_FIRST		0
 #define PCF_MSB_FIRST		1
 
-#if SDL_BYTE_ORDER != SDL_BIG_ENDIAN
+#ifndef _BIG_ENDIAN
 
 /* little endian - no action required */
 # define wswap(x)       (x)
@@ -502,7 +538,7 @@ pcf_readbitmaps(FILE *file, unsigned char **bits, int *bits_size,
 
 	/* convert bitmaps*/
 	bit_order_invert(b, *bits_size);
-#if SDL_BYTE_ORDER == SDL_BIG_ENDIAN
+#ifdef _BIG_ENDIAN
 	if (endian == PCF_LSB_FIRST)
 		two_byte_swap(b, *bits_size);
 #else

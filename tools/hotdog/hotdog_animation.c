@@ -3,7 +3,6 @@
 #include <assert.h>
 
 #include "hotdog.h"
-#include "hotdog_animation.h"
 
 /********* Linear animation *********/
 
@@ -200,7 +199,7 @@ int32 fsin (int32 angle)
         if (angle == 1024) return  (1 << 16);
         if (angle == 2048) return  (0 << 16);
         if (angle == 3072) return -(1 << 16);
-        assert (("mysterious error", 0));
+        assert ("mysterious error" == NULL);
     }
     
     if (angle < 1024) corresp = angle;

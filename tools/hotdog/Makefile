@@ -9,7 +9,8 @@ ifeq ($(OSTYPE),Darwin)
 endif
 ifeq ($(OSTYPE),Linux)
 	PREFIX =
-	CFLAGS = -O3 -fomit-frame-pointer -funroll-loops
+#	CFLAGS = -O3 -fomit-frame-pointer -funroll-loops
+	CFLAGS = -g
 	LDFLAGS = -lc
 endif
 ifneq ($(IPOD),)
@@ -31,7 +32,7 @@ AR2=$(PREFIX)ranlib
 
 CFLAGS+= -Wall
 LIB = libhotdog.a
-LIBOBJS=  hotdog.o hotdog_png.o hotdog_primitive.o hotdog_font.o hotdog_animation.o hotdog_canvas.o zsort.o
+LIBOBJS=  hotdog.o hotdog_png.o hotdog_font.o hotdog_animation.o hotdog_canvas.o hotdog_surface.o zsort.o
 
 DEMO = hd-demo
 

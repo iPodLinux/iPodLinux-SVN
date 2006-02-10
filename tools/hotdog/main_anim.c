@@ -33,7 +33,6 @@
 #include <math.h>
 
 #include "hotdog.h"
-#include "hotdog_png.h"
 
 #include "SDL.h"
 
@@ -139,6 +138,8 @@ int main(int argc, char *argv[]) {
 	  case SDLK_ESCAPE:
 	    done = 1;
 	    break;
+          default:
+            break;
 	  }
 	break;
       case SDL_QUIT:
