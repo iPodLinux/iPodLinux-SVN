@@ -25,14 +25,24 @@ else
 	DEMOCFLAGS = `sdl-config --cflags`
 endif
 
-CC=$(PREFIX)gcc
-LD=$(PREFIX)ld
-AR=$(PREFIX)ar rc
-AR2=$(PREFIX)ranlib
+ifdef IPOD
+CROSS ?= arm-uclinux-elf
+CC = $(CROSS)-gcc
+LD = $(CROSS)-ld
+AR = $(CROSS)-ar rc
+AR2 = $(CROSS)-ranlib
+AS = $(CROSS)-as -DIPOD
+else
+CC ?= gcc
+LD ?= ld
+AR = ar rc
+AR2 = ranlib
+AS = as
+endif
 
 CFLAGS+= -Wall
 LIB = libhotdog.a
-LIBOBJS=  hotdog.o hotdog_png.o hotdog_font.o hotdog_animation.o hotdog_canvas.o hotdog_surface.o zsort.o
+LIBOBJS=  hotdog.o hotdog_png.o hotdog_font.o hotdog_animation.o hotdog_canvas.o hotdog_surface.o hotdog_ops.o zsort.o
 
 DEMO = hd-demo
 
