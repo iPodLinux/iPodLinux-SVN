@@ -135,7 +135,7 @@ _HD_ARM_Convert2:
 	add	r5, r5, r2		@    + blue/8
 	@ r0-r2 are free now too.
 	sub	r0, r4, r5, lsr #6	@ r0 = 3 - (Y>>6)
-	orr	r3, r0, lsr #2		@ put this pixel into spot #2 of r3
+	orr	r3, r3, r0, lsr #2	@ put this pixel into spot #2 of r3
 
 	@@ Third pixel (r6). 8 cyc.
 	and	r0, r8, r6, lsr #18	@ r0 = red/4
@@ -145,7 +145,7 @@ _HD_ARM_Convert2:
 	add	r5, r5, r0		@    + red/4
 	add	r5, r5, r2		@    + blue/8
 	sub	r0, r4, r5, lsr #6	@ r0 = 3 - (Y>>6)
-	orr	r3, r0, lsr #4		@ put this pixel into spot #3 of r3
+	orr	r3, r3, r0, lsr #4	@ put this pixel into spot #3 of r3
 
 	@@ Fourth pixel (r7). 8 cyc.
 	and	r0, r8, r7, lsr #18	@ r0 = red/4
@@ -155,7 +155,7 @@ _HD_ARM_Convert2:
 	add	r5, r5, r0		@    + red/4
 	add	r5, r5, r2		@    + blue/8
 	sub	r0, r4, r5, lsr #6	@ r0 = 3 - (Y>>6)
-	orr	r3, r0, lsr #6		@ put this pixel into spot #4 of r3
+	orr	r3, r3, r0, lsr #6	@ put this pixel into spot #4 of r3
 
 	@@ Dec the counter, store the 4 pixels, and loop.
 	subs	r14, r14, #1		@ dec the counter
@@ -175,32 +175,31 @@ _HD_ARM_Convert2:
 	@@                         uint32 delty)
 
 _HD_ARM_LowerBlit:
-	@@ This function takes 58 + 42*h + 28*w*h cycles to execute.
+	@@ This function takes 51 + 48*h + 27*w*h cycles to execute.
 	
 	stmfd	sp!, {r0-r12, lr}	@ 14 registers, 15 cyc.
 	
-	@@           src at [sp, #0]
-	@@ fp_initial_ix at [sp, #4]
-	@@ fp_initial_iy at [sp, #8]
+	@@           src at [sp,  #0]
+	@@ fp_initial_ix at [sp,  #4]
+	@@ fp_initial_iy at [sp,  #8] <-- updated as fp_iy
 	@@     fp_step_x at [sp, #12]
 	@@     fp_step_y at [sp, #56]
 	@@          dest at [sp, #60]
 	@@        startx at [sp, #64]
 	@@         deltx at [sp, #68]
-	@@        starty at [sp, #72]
-	@@         delty at [sp, #76]
+	@@        starty at [sp, #72] <-- updated as y
+	@@         delty at [sp, #76] <-- updated
 
 	@@ fp_initial_iy and starty are only accessed once.
 	@@ fp_iy is only accessed once per row, so we'll
 	@@ keep it on the stack at [sp, #8] (replacing fp_initial_iy).
 
-	@@  r0 = x
 	@@  r1 = src+imgOff
 	@@  r2 = deltx
 	@@  r3 = fp_ix
 	@@  r4 = fp_step_x
-	@@  r5 = dest+buffOff
-	@@  r6, r7, r8, r11 (4 regs) = scratch
+	@@  r5 = dest+buffOff+x
+	@@  r0, r6, r7, r8, r11 (5 regs) = scratch
 	@@  r9 = 0x00ff00ff
 	@@ r10 = 0x00800080
 	@@ r12 = 0xff
@@ -223,13 +222,16 @@ _HD_ARM_LowerBlit:
 	orr	r9, r12, #0xff0000
 	bic	r10, r9, r9, lsr #1
 	
-	@@ r5 = dest + starty*dtw. 7 cyc.
-	ldr	r7, [sp, #72]		@ r7 = starty
-	ldr	r7, [r5, r7, lsl #2]	@ r7 = offset of starty'th row
+	@@ Outer loop. 48 + 27*w cycles.
+1:	
+	@@ Load y, figure out buffOff, increment y and store it back. 13 cyc.
+	ldr	r5, [sp, #60]		@ r5 = dest + 2
+	ldr	r7, [sp, #72]		@ r7 = y
+	add	r6, r7, #1		@ inc it -> r6
+	str	r6, [sp, #72]		@ and store back
+	ldr	r7, [r5, r7, lsl #2]!	@ r7 = offset of starty'th row
 	add	r5, r5, r7, lsl #2	@ r5 = pointer to row in dest
 
-	@@ Outer loop. 42 + 28*w cycles.
-1:	
 	@@ Load fp_iy, figure out imgOff, increment fp_iy and store it back. 17 cyc.
 	ldr	r1, [sp, #0]		@ r1 = src + 2
 	ldr	r7, [sp, #8]		@ r7 = fp_iy
@@ -242,12 +244,13 @@ _HD_ARM_LowerBlit:
 
 	@@ Set up some stuff for the inner loop. 9 cyc.
 	ldr	r3, [sp, #4]		@ r3 = fp_initial_ix
-	ldr	r0, [sp, #64]		@ r0 = startx
+	ldr	r6, [sp, #64]		@ r6 = startx
 	ldr	r2, [sp, #68]		@ r2 = deltx
+	add	r5, r5, r6, lsl #2	@ r5 += startx
 
 	@@ Inner loop. 28 cycles.
 2:
-	@@ Blend [r1, r3, lsr #16 lsl #2] on [r5, r0, lsl #2]
+	@@ Blend [r1, r3, lsr #16 lsl #2] on [r5].
 	@@ The C code:
 	@ uint32 alpha, dst[2];
 	@ uint32 idst = (dst_argb), isrc = (src_argb);
@@ -257,39 +260,34 @@ _HD_ARM_LowerBlit:
 	@ (dst_argb) = (dst[0]>>8) + dst[1] + isrc;
 
 	@@ Do the blend. 22 cyc. Thanks aegray!
+	@ r0 = scratch
 	@ r6 = idst
 	@ r7 = isrc, accumulator
 	@ r8 = alpha
 	@ r9 = 0x00ff00ff (preloaded above)
 	@ r10 = 0x00800080 (preloaded above)
 	@ r11 = scratch
-	ldr	r6,  [r5, r0, lsl #2]	@ r6 = idst
+	ldr	r6,  [r5]		@ r6 = idst, x++
 	mov	r7,  r3, lsr #16	@ r7 = ix
 	ldr	r7,  [r1, r7, lsl #2]	@ r7 = isrc
 	sub	r8,  r12, r7, lsr #24	@ r8 = 255-AA
 					@ r7 is now accumulator
-	and	r11, r9,  r6, lsr#8	@ r11 = (idst >> 8) & 0x00ff00ff
-	mla	r11, r11, r8, r10	@ r11 = r11 * alpha + 0x00800080
+	and	r0,  r9,  r6, lsr#8	@ r0 = (idst >> 8) & 0x00ff00ff
+	mla	r11, r0,  r8, r10	@ r11 = r0 * alpha + 0x00800080
 	bic	r11, r11, r9		@ r11 &= 0xff00ff00
 	add	r7,  r7,  r11, lsr#8	@ r7 += that whole thing >> 8
-	and	r6,  r6,  r9		@ r6 = idst & 0x00ff00ff
-	mla	r6,  r6,  r8, r10	@ r6 = r6 * alpha + 0x00800080
+	and	r11, r9,  r6		@ r11 = idst & 0x00ff00ff
+	mla	r6,  r11, r8, r10	@ r6 = r11 * alpha + 0x00800080
 	bic	r6,  r6,  r9		@ r6 &= 0xff00ff00
 	add	r7,  r7,  r6		@ r7 += that whole thing
-	str	r7,  [r5, r0, lsl #2]	@ store the pixel
+	str	r7,  [r5], #4		@ store the pixel
 	
-	@@ Increment and test. 6 cyc.
+	@@ Increment and test. 5 cyc.
 	add	r3, r3, r4		@ fp_ix += fp_step_x
-	add	r0, r0, #1		@ x++
 	subs	r2, r2, #1		@ dec the counter
 	bne	2b			@ loop while != 0
 	@@ End of inner loop.
 	
-	@@ buffOff += dtw. 7 cyc.
-	ldr	r6, [sp, #60]		@ r6 = dest + 2
-	ldr	r6, [r6, #-8]		@ r6 = width of dest
-	add	r5, r5, r6		@ r5 now points to the next line
-
 	@@ Test. 9 cyc.
 	ldr	r6, [sp, #76]		@ r6 = delty
 	subs	r6, r6, #1		@ dec it
