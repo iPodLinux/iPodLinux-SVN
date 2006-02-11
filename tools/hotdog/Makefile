@@ -4,25 +4,32 @@ endif
 
 ifeq ($(OSTYPE),Darwin)
 	PREFIX =
-	CFLAGS = -DDARWIN -g -mcpu=750 -maltivec -mabi=altivec -fomit-frame-pointer -funroll-loops
+	CFLAGS = -DDARWIN -O3 -mcpu=750 -maltivec -mabi=altivec -fomit-frame-pointer -funroll-loops
 	LDFLAGS = -framework Foundation -framework Cocoa
 endif
 ifeq ($(OSTYPE),Linux)
-	PREFIX =
-#	CFLAGS = -O3 -fomit-frame-pointer -funroll-loops
+ifdef DEBUG
 	CFLAGS = -g
+else
+	CFLAGS = -O3 -fomit-frame-pointer -funroll-loops
+endif
 	LDFLAGS = -lc
 endif
 ifneq ($(IPOD),)
-	PREFIX = arm-uclinux-elf-
-	LDFLAGS = -elf2flt
-	CFLAGS = -DIPOD -I./xc/include -fomit-frame-pointer -funroll-loops
-	DEMOCFLAGS = -I./xc/include/SDL
-	DEMOLDFLAGS = ./xc/lib/libSDL.a ./xc/lib/libpng.a ./xc/lib/libz.a ./xc/lib/libfreetype.a -lm
+PNGINCLUDE ?= ./libs/libpng
+PNGLIB ?= ./libs/libpng
+ZINCLUDE ?= ./libs/zlib
+ZLIB ?= ./libs/zlib
+SDLINCLUDE ?= /usr/include/SDL
+SDLLIB ?= ../ttk/libs/SDL
+LDFLAGS = -elf2flt
+CFLAGS = -DIPOD -I$(PNGINCLUDE) -I$(ZINCLUDE) -O3 -fomit-frame-pointer -funroll-loops
+DEMOCFLAGS = -I$(SDLINCLUDE)
+DEMOLDFLAGS = $(SDLLIB)/libSDL.a $(PNGLIB)/libpng.a $(ZLIB)/libz.a -lm
 else
-	CFLAGS+= `libpng-config --cflags` `freetype-config --cflags`
-	DEMOLDFLAGS = `sdl-config --libs` `libpng-config --ldflags` `freetype-config --libs`
-	DEMOCFLAGS = `sdl-config --cflags`
+CFLAGS+= `libpng-config --cflags` `freetype-config --cflags`
+DEMOLDFLAGS = `sdl-config --libs` `libpng-config --ldflags` `freetype-config --libs`
+DEMOCFLAGS = `sdl-config --cflags`
 endif
 
 ifdef IPOD
@@ -31,7 +38,7 @@ CC = $(CROSS)-gcc
 LD = $(CROSS)-ld
 AR = $(CROSS)-ar rc
 AR2 = $(CROSS)-ranlib
-AS = $(CROSS)-as -DIPOD
+CPPFLAGS = -DIPOD
 else
 CC ?= gcc
 LD ?= ld
