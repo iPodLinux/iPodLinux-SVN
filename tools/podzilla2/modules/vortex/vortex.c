@@ -37,8 +37,6 @@
     play game, go back to menu, go back to game, bolts not rendered properly
 
     sometimes 'ouch' appears on startup
-
-    this comment is incorrect
 */
 
 #include <stdio.h>
@@ -54,7 +52,7 @@
 #include "render.h"
 
 /* version number */
-#define VORTEX_VERSION	"06020422"
+#define VORTEX_VERSION	"06021218"
 
 /* change this #define to an #undef if you want the header bar to show */
 #define VORTEX_FULLSCREEN
@@ -75,12 +73,22 @@ char *confusing[][4] = {
 	{ NULL },
 };
 
+/******************************************************************************/
+
+/* protos to be cleaned up later... */
+
+void Vortex_player_clear( void );
+void Vortex_initLevel( void );
+
+
+/******************************************************************************/
 
 /* utility random function */
 int Vortex_Rand( int max )
 {
         return (int)((float)max * rand() / (RAND_MAX + 1.0));
 }
+
 
 /******************************************************************************/
 
@@ -177,13 +185,35 @@ void Vortex_newLevelCompute( void )
 	}
 }
 
-void Vortex_player_clear( void )
+
+/* update for a new level... */
+void Vortex_selectLevel( int l )
 {
-	vglob.hasParticleLaser = 0;
-	vglob.hasSuperZapper = 1;
-	vglob.wPosMajor = 0;
-	vglob.wPosMinor = 0;
+	vglob.startLevel = l;
+
+	/* and clip */
+	if( vglob.startLevel < 0 ) 
+		vglob.startLevel = 0;
+	if( vglob.startLevel >= (NLEVELS-1) ) 
+		vglob.startLevel = NLEVELS-1;
+
+	if( vglob.currentLevel != vglob.startLevel ) {
+		vglob.currentLevel = vglob.startLevel;
+		if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
+			Star_GenerateStars();
+	}
 }
+
+/* update for a.. um.  new level? */
+void Vortex_newWebSelected( void )
+{
+	Star_GenerateStars();
+	Vortex_newLevelCompute();
+        Vortex_clawGeometryCompute();
+        Vortex_player_clear();
+        Vortex_initLevel();
+}
+
 
 /* all of the stuff that needs to get reset at the beginning of a new level */
 void Vortex_initLevel( void )
@@ -206,9 +236,24 @@ void Vortex_initLevel( void )
 }
 
 
+/******************************************************************************/
+/* player adjustments - new level stuff */
+
+void Vortex_player_clear( void )
+{
+	vglob.hasParticleLaser = 0;
+	vglob.hasSuperZapper = 1;
+	vglob.wPosMajor = 0;
+	vglob.wPosMinor = 0;
+}
+
+/******************************************************************************/
+/* player movement */
+
 /* number of minor steps per web.  0, 2, etc */
 #define MINOR_MAX (0)
 
+/* incPosition - the user moves one tick positive */
 void Vortex_incPosition( int steps )
 {
 	if( steps > 1 ) Vortex_incPosition( steps-1 );
@@ -234,6 +279,7 @@ void Vortex_incPosition( int steps )
 	Vortex_clawGeometryCompute();
 }
 
+/* decPosition - the user moves one tick negative */
 void Vortex_decPosition( int steps )
 {
 	if( steps > 1 ) Vortex_incPosition( steps-1 );
@@ -258,26 +304,11 @@ void Vortex_decPosition( int steps )
 	}
 }
 
-
-void Vortex_selectLevel( int l )
+void Vortex_newClawPosition( void )
 {
-	vglob.startLevel = l;
-
-	/* and clip */
-	if( vglob.startLevel < 0 ) 
-		vglob.startLevel = 0;
-	if( vglob.startLevel >= (NLEVELS-1) ) 
-		vglob.startLevel = NLEVELS-1;
-
-	if( vglob.currentLevel != vglob.startLevel ) {
-		vglob.currentLevel = vglob.startLevel;
-		if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
-			Star_GenerateStars();
-	}
+	Vortex_clawGeometryCompute();
 }
 
-
-/******************************************************************************/
 
 
 /*
@@ -285,35 +316,14 @@ void Vortex_selectLevel( int l )
    And it will all happen again
 */
 
-void Vortex_newWebSelected( void )
-{
-	Star_GenerateStars();
-	Vortex_newLevelCompute();
-        Vortex_clawGeometryCompute();
-        Vortex_player_clear();
-        Vortex_initLevel();
-}
 
-void Vortex_newClawPosition( void )
-{
-	Vortex_clawGeometryCompute();
-}
-
-
-/*
-    five thousand dollars...
-    five thousand dollars...
-    five thousand dollars...
-	take it, take it
-    five thousand dollars...
-    five thousand dollars...
-    five thousand dollars in cash!
-*/
+/******************************************************************************/
+/* State based stuff */
 
 
 /* just some stuff for printouting of stuffthings */
 #define XXdbgprnt( A ) 	printf( A )
-#define dbgprnt( A ) 	(void)( A )
+#define dbgprnt( ... )
 
 void Vortex_stateChange( int newState )
 {
@@ -482,7 +492,7 @@ void Vortex_timerTick( PzEvent * ev )
 	And will you come, come back to me?
 */
 
-
+/* draw valve routine */
 void Vortex_draw( PzWidget *widget, ttk_surface srf )
 {
 	char buf[16];
@@ -632,6 +642,7 @@ void cleanup_vortex( void )
 }
 
 
+/* event valve routine */
 int event_vortex (PzEvent *ev) 
 {
 	switch (ev->type) {
@@ -735,6 +746,7 @@ int event_vortex (PzEvent *ev)
 	return 0;
 }
 
+/* initialize for when the user first instantiates vortex */
 static void Vortex_Initialize( void )
 {
 	/* globals init */
@@ -756,6 +768,7 @@ static void Vortex_Initialize( void )
 }
 
 
+/* create the vortex window, etc */
 PzWindow *new_vortex_window()
 {
 	srand( time( NULL ));
@@ -783,7 +796,6 @@ PzWindow *new_vortex_window()
 	Star_SetStyle( STAR_MOTION_STATIC );
 	Star_GenerateStars();
 
-
 	return pz_finish_window( vglob.window );
 }
 
@@ -800,6 +812,7 @@ ttk_color mc_color( cr, cg, cb,  mr, mg, mb )
 	return( ttk_makecol( mr, mg, mb ));
 }
 
+/* initialize at module init time */
 void init_vortex() 
 {
 	int p,q;
