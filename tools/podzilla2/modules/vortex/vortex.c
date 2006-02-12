@@ -37,6 +37,8 @@
     play game, go back to menu, go back to game, bolts not rendered properly
 
     sometimes 'ouch' appears on startup
+
+    this comment is incorrect
 */
 
 #include <stdio.h>
