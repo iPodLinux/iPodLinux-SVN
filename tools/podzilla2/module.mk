@@ -23,7 +23,7 @@ $(error You must define MODULE.)
 endif
 MODULE := $(strip $(MODULE))
 
-ifeq ($(MODULE_$(MODULE)),)
+ifeq ($(MODULE_$(MODULE)),n)
 all-check:
 	@echo " (Skipping $(MODULE).)"
 	@rm -f built-in.o

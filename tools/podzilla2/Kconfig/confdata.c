@@ -333,7 +333,7 @@ int conf_write(const char *name)
 			case S_TRISTATE:
 				switch (sym_get_tristate_value(sym)) {
 				case no:
-					fprintf(out, "# %s is not set\n", sym->name);
+					fprintf(out, "%s=n\n", sym->name);
 					if (out_h)
 						fprintf(out_h, "#undef CONFIG_%s\n", sym->name);
 					break;
