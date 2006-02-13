@@ -191,14 +191,6 @@ static void codec_wm8758_init_pb(void)
 	/* output control - enable DACs to Mixer paths - enable VREF */
 	wm_write(WM8758_OUTPUTCTRL, 0, (0x3 << 5) | 1);
 
-//	/* mixer controls - set volumes */
-//	wm_write(WM8758_LMIXCTRL, 
-
-	
-
-
-
-
 	/* unmute (SOFTMUTE = 0)  
 	 * NOTE: This is contradicting in the doc - but SOFTMUTE=0 
 	 * disables mute 
