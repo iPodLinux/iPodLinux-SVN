@@ -64,6 +64,8 @@ static int codec_chip;
 #define WM8758_PWRMGMT3		0x3
 #define WM8758_AUDIOIFCE	0x4
 #define WM8758_CLOCKCTRL	0x6
+#define WM8758_SRATECTRL	0x7
+
 #define WM8758_DACCTRL		0xA
 #define WM8758_LDACVOL		0xB
 #define WM8758_RDACVOL		0xC
@@ -77,6 +79,10 @@ static int codec_chip;
 #define WM8758_LOUT2VOL		0x36
 #define WM8758_ROUT2VOL		0x37
 
+#define WM8758_PLLN		0x24
+#define WM8758_PLLK1		0x25
+#define WM8758_PLLK2		0x26
+#define WM8758_PLLK3		0x27
 
 static void wm_write(uint8_t reg, uint8_t data_high, uint8_t data_low)
 {
@@ -99,64 +105,156 @@ static void codec_set_active(int active)
 static int codec_set_sample_rate(int rate)
 {
 	int sampling_control;
-	if (codec_chip >=WM8758)
-		return; /* TODO: NOT IMPLEMENTED */
-
-	if (rate <= 8000) {
-		if (codec_chip >= WM8731) {
+	if (codec_chip < WM8758)
+	{
+		if (rate <= 8000) {
+			if (codec_chip >= WM8731) {
 			/* set CLKIDIV2=1 SR=0011 BOSR=0 USB/NORM=1 (USB) */
-			sampling_control = 0x4d;
-		} else {
+				sampling_control = 0x4d;
+			} else {
 			/* set CLKIDIV2=1 SR=0001 BOSR=0 USB/NORM=1 (USB) */
-			sampling_control = 0x45;
+				sampling_control = 0x45;
+			}
+			rate = 8000;
+		} else if (rate <= 12000 && codec_chip >= WM8975) {
+			/* set CLKIDIV2=1 SR=1000 BOSR=0 USB/NORM=1 (USB) */
+			sampling_control = 0x61;
+			rate = 12000;
+		} else if (rate <= 16000 && codec_chip >= WM8975) {
+			/* set CLKIDIV2=1 SR=1010 BOSR=1 USB/NORM=1 (USB) */
+			sampling_control = 0x55;
+			rate = 16000;
+		} else if (rate <= 22050 && codec_chip >= WM8975) {
+			/* set CLKIDIV2=1 SR=1101 BOSR=1 USB/NORM=1 (USB) */
+			sampling_control = 0x77;
+			rate = 22050;
+		} else if (rate <= 24000 && codec_chip >= WM8975) {
+			/* set CLKIDIV2=1 SR=1110 BOSR=0 USB/NORM=1 (USB) */
+			sampling_control = 0x79;
+			rate = 24000;
+		} else if (rate <= 32000) {
+			/* set CLKIDIV2=1 SR=0110 BOSR=0 USB/NORM=1 (USB) */
+			sampling_control = 0x59;
+			rate = 32000;
+		} else if (rate <= 44100) {
+			/* set CLKIDIV2=1 SR=1000 BOSR=1 USB/NORM=1 (USB) */
+			sampling_control = 0x63;
+			rate = 44100;
+		} else if (rate <= 48000) {
+			/* set CLKIDIV2=1 SR=0000 BOSR=0 USB/NORM=1 (USB) */
+			sampling_control = 0x41;
+			rate = 48000;
+		} else if (rate <= 88200) {
+			/* set CLKIDIV2=1 SR=1111 BOSR=1 USB/NORM=1 (USB) */
+			sampling_control = 0x7f;
+			rate = 88200;
+		} else {
+			/* set for 96kHz */
+			/* set CLKIDIV2=1 SR=0111 BOSR=0 USB/NORM=1 (USB) */
+			sampling_control = 0x5d;
+			rate = 96000;
 		}
-		rate = 8000;
-	} else if (rate <= 12000 && codec_chip >= WM8975) {
-		/* set CLKIDIV2=1 SR=1000 BOSR=0 USB/NORM=1 (USB) */
-		sampling_control = 0x61;
-		rate = 12000;
-	} else if (rate <= 16000 && codec_chip >= WM8975) {
-		/* set CLKIDIV2=1 SR=1010 BOSR=1 USB/NORM=1 (USB) */
-		sampling_control = 0x55;
-		rate = 16000;
-	} else if (rate <= 22050 && codec_chip >= WM8975) {
-		/* set CLKIDIV2=1 SR=1101 BOSR=1 USB/NORM=1 (USB) */
-		sampling_control = 0x77;
-		rate = 22050;
-	} else if (rate <= 24000 && codec_chip >= WM8975) {
-		/* set CLKIDIV2=1 SR=1110 BOSR=0 USB/NORM=1 (USB) */
-		sampling_control = 0x79;
-		rate = 24000;
-	} else if (rate <= 32000) {
-		/* set CLKIDIV2=1 SR=0110 BOSR=0 USB/NORM=1 (USB) */
-		sampling_control = 0x59;
-		rate = 32000;
-	} else if (rate <= 44100) {
-		/* set CLKIDIV2=1 SR=1000 BOSR=1 USB/NORM=1 (USB) */
-		sampling_control = 0x63;
-		rate = 44100;
-	} else if (rate <= 48000) {
-		/* set CLKIDIV2=1 SR=0000 BOSR=0 USB/NORM=1 (USB) */
-		sampling_control = 0x41;
-		rate = 48000;
-	} else if (rate <= 88200) {
-		/* set CLKIDIV2=1 SR=1111 BOSR=1 USB/NORM=1 (USB) */
-		sampling_control = 0x7f;
-		rate = 88200;
+	
+		codec_set_active(0x0);
+		ipod_i2c_send(0x1a, 0x10, sampling_control);
+		codec_set_active(0x1);
+
+		ipod_sample_rate = rate;
+
+		return ipod_sample_rate;
 	} else {
-		/* set for 96kHz */
-		/* set CLKIDIV2=1 SR=0111 BOSR=0 USB/NORM=1 (USB) */
-		sampling_control = 0x5d;
-		rate = 96000;
+		/* 0 = 11.2896  1 = 12.288 */
+		uint8_t sysclock = 0;
+		uint16_t srate, mclkdiv;	
+		
+		if (rate <= 8000) {
+			rate = 8000;
+			mclkdiv = 7;
+			srate = 2;
+			sysclock=1;	
+
+		} else if (rate <= 12000) {
+			rate = 12000;
+			mclkdiv = 6;
+			srate = 4;
+			sysclock=1;
+		} else if (rate <= 16000) {
+			rate = 16000;
+			mclkdiv = 5;
+			srate = 3;
+			sysclock = 1;
+		} else if (rate <= 22050) {
+			rate = 22050;
+			mclkdiv = 4;
+			srate = 2;
+			sysclock = 0;
+		} else if (rate <= 24000) {
+			rate = 24000;
+			mclkdiv = 4;	
+			srate = 2;
+			sysclock = 1;
+		} else if (rate <= 32000) {
+			rate = 32000;
+			mclkdiv = 3;
+			sysclock = 1;
+			srate = 1;
+		} else if (rate <= 44100) {
+			rate = 44100;
+			mclkdiv = 2;
+			sysclock = 0;
+			srate = 0;
+		} else if (rate <= 48000) {
+			rate = 48000;
+			mclkdiv = 2;
+			sysclock = 1;
+			srate =	0;
+		} else if (rate <= 88200) {
+			rate = 88200;
+			mclkdiv = 0;
+			sysclock = 0;
+			srate = 0;
+
+		} else {
+			rate = 96000;
+			mclkdiv = 0;
+			sysclock = 1;
+			srate = 0;
+
+		}
+		
+
+		/* set clock div */
+		wm_write(WM8758_CLOCKCTRL, 0, 1 | (0 << 2) | (2 << 5));
+		if (sysclock == 0) {
+
+			/* setup PLL for MHZ=11.2896 */
+			wm_write(WM8758_PLLN, 0, (1 << 4) | 0x7);
+			wm_write(WM8758_PLLK1, 0, 0x21);
+			wm_write(WM8758_PLLK2, 1, 0x61);
+			wm_write(WM8758_PLLK3, 0, 0x26);
+		} else {
+
+			/* setup PLL for MHZ=12.288 */
+			wm_write(WM8758_PLLN, 0, (1 << 4) | 0x8);
+			wm_write(WM8758_PLLK1, 0, 0xC);
+			wm_write(WM8758_PLLK2, 0, 0x93);
+			wm_write(WM8758_PLLK3, 0, 0xE9);
+		}
+
+
+		/* set clock div */
+		wm_write(WM8758_CLOCKCTRL, 1, 1 | (0 << 2) | (mclkdiv << 5));
+
+		/* set srate */
+		wm_write(WM8758_SRATECTRL, 0, (srate << 1));
+	
+
+
+		ipod_sample_rate = rate;
+
+		return ipod_sample_rate;
+
 	}
-
-	codec_set_active(0x0);
-	ipod_i2c_send(0x1a, 0x10, sampling_control);
-	codec_set_active(0x1);
-
-	ipod_sample_rate = rate;
-
-	return ipod_sample_rate;
 }
 
 
@@ -172,8 +270,9 @@ static void codec_wm8758_init_pb(void)
 	wm_write(WM8758_RESET, 0, 0x1);	
 
 
-	/* VMID=11, BIASEN=1 */
-	wm_write(WM8758_PWRMGMT1, 0, 0x3 | (1 << 3));
+
+	/* Set Master Mode, Clock from pll base for 44100HZ */
+	wm_write(WM8758_CLOCKCTRL, 1, 1 | (1 << 2) | (0 << 5));
 
 	/* Enable LOUT1, ROUT1 */
 	wm_write(WM8758_PWRMGMT2, 1, (1 << 7));
@@ -183,10 +282,12 @@ static void codec_wm8758_init_pb(void)
 
 	/* FORMAT=10 (I2S)  WL=00 (16 bit data width) */
 	wm_write(WM8758_AUDIOIFCE, 0, (1 << 4));
+	
+	/* set the sample rate */	
+	codec_set_sample_rate(ipod_sample_rate);
 
-	/* Set Master Mode */
-	wm_write(WM8758_CLOCKCTRL, 0, 1);
-
+	/* VMID=11, BIASEN=1 PLLon */
+	wm_write(WM8758_PWRMGMT1, 0, 0x3 | (1 << 3) | (1 << 5));
 
 	/* output control - enable DACs to Mixer paths - enable VREF */
 	wm_write(WM8758_OUTPUTCTRL, 0, (0x3 << 5) | 1);
@@ -228,6 +329,7 @@ static void codec_wm8975_init_pb(void)
 	/* BCLKINV=0(Dont invert BCLK) MS=1(Enable Master) LRSWAP=0 LRP=0 */
        	/* IWL=00(16 bit) FORMAT=10(I2S format) */
 	ipod_i2c_send(0x1a, 0xe, 0x42);
+
 
 	codec_set_sample_rate(ipod_sample_rate);
 
@@ -737,7 +839,7 @@ static int ipodaudio_open(struct inode *inode, struct file *filep)
 
 	ipodaudio_isopen = 1;
 	ipod_sample_rate = 44100;
-	*ipodaudio_stereo = 1;
+	*ipodaudio_stereo = 0;
 
 	/* reset the I2S controller into known state */
 	i2s_reset();
@@ -1421,6 +1523,7 @@ static void __init ipodaudio_hw_init(void)
 
 		/* external dev clock to 24MHz */
 		outl(inl(0x70000018) & ~0xc, 0x70000018);
+
 	} else {
 		/* PP500x */
 
