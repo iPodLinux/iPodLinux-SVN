@@ -87,9 +87,9 @@ typedef uint32 *hd_surface;
 #define HD_SRF_ROW(srf,y) (((y)<((srf)[1]))?((srf) + ((srf)[2 + (y)])):0)
 #define HD_SRF_ROWF(srf,y) ((srf) + ((srf)[2 + (y)]))
 #define HD_SRF_PIXF(srf,x,y) ((srf)[((srf)[2 + (y)]) + (x)])
-#define HD_SRF_SETPIX(srf,x,y,pix) (((x)<((srf)[0]))&&((y)<((srf)[1]))? (HD_SRF_PIXELF(srf,x,y) = (pix)) : (pix))
-#define HD_SRF_GETPIX(srf,x,y) (((x)<((srf)[0]))&&((y)<((srf)[1]))? HD_SRF_PIXELF(srf,x,y) : 0)
-#define HD_SRF_PIXPTR(srf,x,y) (((x)<((srf)[0]))&&((y)<((srf)[1]))? &HD_SRF_PIXELF(srf,x,y) : 0)
+#define HD_SRF_SETPIX(srf,x,y,pix) (((x)<((srf)[0]))&&((y)<((srf)[1]))? (HD_SRF_PIXF(srf,x,y) = (pix)) : (pix))
+#define HD_SRF_GETPIX(srf,x,y) (((x)<((srf)[0]))&&((y)<((srf)[1]))? HD_SRF_PIXF(srf,x,y) : 0)
+#define HD_SRF_PIXPTR(srf,x,y) (((x)<((srf)[0]))&&((y)<((srf)[1]))? &HD_SRF_PIXF(srf,x,y) : 0)
 #define HD_SRF_PIXELS(srf) ((srf) + 2 + ((srf)[1]))
 #define HD_SRF_END(srf) ((srf) + 2 + ((srf)[1]) + (((srf)[0]) * ((srf)[1])))
 
@@ -186,11 +186,9 @@ typedef struct hd_object {
     int animating;
     /* private */ int dirty;
     
-    union {
-        hd_surface   canvas;
-        hd_primitive *primitive;
-        void       *data;
-    };
+    hd_surface   canvas;
+    hd_primitive *primitive;
+    void       *data;
     
     struct hd_engine *eng;
     
@@ -254,6 +252,7 @@ void HD_AnimateLinear (hd_object *obj, int sx, int sy, int sw, int sh,
                        int dx, int dy, int dw, int dh, int frames, void (*done)(hd_object *));
 void HD_AnimateCircle (hd_object *obj, int x, int y, int r, int32 fbot, int32 ftop,
                        int astart, int adist, int frames);
+void HD_StopAnimation (hd_object *obj);
 int32 fsin (int32 angle); // angle is in units of 1024 per pi/2 radians - that is, rad*2048/pi
                           // ret is a 16.16 fixpt - 0x10000 is 1, 0x0000 is 0
 int32 fcos (int32 angle); // same

@@ -29,6 +29,14 @@ static void HD_DoLinearAnimation (hd_object *obj)
     }
 }
 
+void HD_StopAnimation (hd_object *obj) 
+{
+    if (obj->animdata) free (obj->animdata);
+    obj->animdata = 0;
+    obj->animate = 0;
+    obj->animating = 0;
+}
+
 void HD_AnimateLinear (hd_object *obj, int sx, int sy, int sw, int sh,
                        int dx, int dy, int dw, int dh, int frames, void (*done)(hd_object *))
 {
