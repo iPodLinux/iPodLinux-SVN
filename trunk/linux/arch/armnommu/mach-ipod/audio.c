@@ -49,6 +49,40 @@ static int codec_chip;
 #define WM8721	1
 #define WM8731	2
 #define WM8975	3
+#define WM8758	4
+
+
+
+
+
+
+/* WM8758 Regs */
+
+#define WM8758_RESET		0x0
+#define WM8758_PWRMGMT1		0x1
+#define WM8758_PWRMGMT2		0x2
+#define WM8758_PWRMGMT3		0x3
+#define WM8758_AUDIOIFCE	0x4
+#define WM8758_CLOCKCTRL	0x6
+#define WM8758_DACCTRL		0xA
+#define WM8758_LDACVOL		0xB
+#define WM8758_RDACVOL		0xC
+#define WM8758_JDTCTCTRL1	0x9
+#define WM8758_JDTCTCTRL2	0xD
+#define WM8758_OUTPUTCTRL	0x31
+#define WM8758_LMIXCTRL		0x32
+#define WM8758_RMIXCTRL		0x33
+#define WM8758_LOUT1VOL		0x34
+#define WM8758_ROUT1VOL		0x35
+#define WM8758_LOUT2VOL		0x36
+#define WM8758_ROUT2VOL		0x37
+
+
+static void wm_write(uint8_t reg, uint8_t data_high, uint8_t data_low)
+{
+	ipod_i2c_send(0x1A, (reg << 1) | (data_high & 0x1), data_low);
+}
+
 
 static void codec_set_active(int active)
 {
@@ -65,6 +99,8 @@ static void codec_set_active(int active)
 static int codec_set_sample_rate(int rate)
 {
 	int sampling_control;
+	if (codec_chip >=WM8758)
+		return; /* TODO: NOT IMPLEMENTED */
 
 	if (rate <= 8000) {
 		if (codec_chip >= WM8731) {
@@ -122,6 +158,55 @@ static int codec_set_sample_rate(int rate)
 
 	return ipod_sample_rate;
 }
+
+
+
+
+/*
+ * Init the WM8758 for playback via headphone and line out.
+ * I'm using the WM8983 datasheet - seems to be right.
+ */
+static void codec_wm8758_init_pb(void)
+{
+	/* reset the chip to a known state */
+	wm_write(WM8758_RESET, 0, 0x1);	
+
+
+	/* VMID=11, BIASEN=1 */
+	wm_write(WM8758_PWRMGMT1, 0, 0x3 | (1 << 3));
+
+	/* Enable LOUT1, ROUT1 */
+	wm_write(WM8758_PWRMGMT2, 1, (1 << 7));
+
+	/* Enable LOUT2, ROUT2, RMIX, LMIX, DACR, DACL */
+	wm_write(WM8758_PWRMGMT3, 0, (0x3 << 5) | (0x3 << 2) | 0x3);
+
+	/* FORMAT=10 (I2S)  WL=00 (16 bit data width) */
+	wm_write(WM8758_AUDIOIFCE, 0, (1 << 4));
+
+	/* Set Master Mode */
+	wm_write(WM8758_CLOCKCTRL, 0, 1);
+
+
+	/* output control - enable DACs to Mixer paths - enable VREF */
+	wm_write(WM8758_OUTPUTCTRL, 0, (0x3 << 5) | 1);
+
+//	/* mixer controls - set volumes */
+//	wm_write(WM8758_LMIXCTRL, 
+
+	
+
+
+
+
+	/* unmute (SOFTMUTE = 0)  
+	 * NOTE: This is contradicting in the doc - but SOFTMUTE=0 
+	 * disables mute 
+	 */
+	wm_write(WM8758_DACCTRL, 0, 0x0);
+}
+
+
 
 /*
  * Initialise the WM8975 for playback via headphone and line out.
@@ -263,6 +348,9 @@ static void codec_init_pb(void)
 	case WM8975:
 		codec_wm8975_init_pb();
 		break;
+	case WM8758:
+		codec_wm8758_init_pb();
+		break;
 	}
 }
 
@@ -304,6 +392,9 @@ static void codec_activate_mic(void)
 		break;
 	case WM8975:
 		codec_wm8975_init_mic();
+		break;
+	case WM8758:
+		/* TODO: implement */
 		break;
 	}
 }
@@ -347,9 +438,28 @@ static void codec_activate_linein(void)
 		// TODO
 		codec_wm8975_init_mic();
 		break;
+	case WM8758:
+		/* TODO: implement */
+		break;
 	}
 }
 
+static void codec_wm8758_deinit(void)
+{
+
+	/* Softmute DAC */
+	wm_write(WM8758_DACCTRL, 0, (1 << 6));
+
+	/* output + dac disables */
+	wm_write(WM8758_PWRMGMT3, 0, 0x00);
+
+	/* output diable */
+	wm_write(WM8758_PWRMGMT1, 0, 0x00);
+
+	/* output + disable + SLEEP MODE */
+	wm_write(WM8758_PWRMGMT2, 0, (1 << 6));
+
+}
 static void codec_wm8975_deinit(void)
 {
 	/* 1. Set DACMU = 1 to soft-mute the audio DACs. */
@@ -392,6 +502,9 @@ static void codec_deinit(void)
 		break;
 	case WM8975:
 		codec_wm8975_deinit();
+		break;
+	case WM8758:
+		codec_wm8758_deinit();
 		break;
 	}
 }
@@ -1080,7 +1193,7 @@ static int ipod_mixer_ioctl(struct inode *inode, struct file *filp, unsigned int
 		mixer_info info;
 		unsigned char *codec;
 	       
-		codec = (codec_chip == WM8731 ? "WM8731" : (codec_chip == WM8721 ? "WM8721" : "WM8975"));
+		codec = (codec_chip == WM8731 ? "WM8731" : (codec_chip == WM8721 ? "WM8721" : (codec_chip==WM8975 ? "WM8975" : "WM8758")));
 
 		strncpy(info.id, codec, sizeof(info.id));
 		strncpy(info.name, "Wolfson WM", sizeof(info.name));
@@ -1166,7 +1279,18 @@ static int ipod_mixer_ioctl(struct inode *inode, struct file *filp, unsigned int
 			if (right > 100) right = 100;
 
 			ipod_pcm_level = (left * 80 / 100) + 0x2f;
-			if (codec_chip >= WM8975) {
+			if (codec_chip >= WM8758) {
+				right = (right * 80 / 100) + 0x2f;
+
+				/* OUT1 */
+				wm_write(WM8758_LOUT1VOL, 0, ipod_pcm_level);
+				wm_write(WM8758_ROUT1VOL, 1, right);
+
+				/* OUT2 */
+				wm_write(WM8758_LOUT2VOL, 0, ipod_pcm_level);
+				wm_write(WM8758_ROUT2VOL, 1, right);
+
+			} else if (codec_chip >= WM8975) {
 				right = (right * 80 / 100) + 0x2f;
 
 				/* OUT1 */
@@ -1273,9 +1397,12 @@ static void __init ipodaudio_hw_init(void)
 	case 0xc:	/* nano */
 		codec_chip = WM8975;
 		break;
+	case 0xb:	/* 5g */
+		codec_chip = WM8758;
+		break;
 	}
 
-	printk(KERN_ERR "codec %s\n", (codec_chip == WM8731 ? "WM8731" : (codec_chip == WM8721 ? "WM8721" : "WM8975")));
+	printk(KERN_ERR "codec %s\n", (codec_chip == WM8731 ? "WM8731" : (codec_chip == WM8721 ? "WM8721" : (codec_chip==WM8975 ? "WM8975" : "WM8758"))));
 
 	/* reset I2C */
 	ipod_i2c_init();
