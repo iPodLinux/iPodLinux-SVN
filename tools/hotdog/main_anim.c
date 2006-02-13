@@ -115,6 +115,7 @@ int main(int argc, char *argv[]) {
         HD_AnimateCircle (obj[1], 80, 50, 50, (50 << 16) / obj[1]->w, (70 << 16) / obj[1]->w, 1024, 4096, -100);
         HD_AnimateCircle (obj[2], 80, 50, 50, (50 << 16) / obj[2]->w, (70 << 16) / obj[2]->w, 2048, 4096, -100);
         HD_AnimateCircle (obj[3], 80, 50, 50, (50 << 16) / obj[3]->w, (70 << 16) / obj[3]->w, 3072, 4096, -100);
+        HD_StopAnimation (obj[2]);
 
   while(!done) {
     SDL_Event event;

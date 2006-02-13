@@ -32,6 +32,11 @@
 
 #include "hotdog.h"
 
+#ifndef MIN
+#define MIN(x,y) (((x)<(y))?(x):(y))
+#define MAX(x,y) (((x)>(y))?(x):(y))
+#endif
+
 hd_engine *HD_Initialize(uint32 width,uint32 height,uint8 bpp, void *framebuffer, void (*update)(struct hd_engine*, int, int, int, int)) {
 	hd_engine *eng;
 
@@ -90,6 +95,32 @@ void HD_Animate(hd_engine *eng) {
     }
 }
 
+
+static void cvt16 (hd_engine *eng) 
+{
+    uint32 off,sPix;
+    uint16 dPix;
+    
+    for(off=0;off<(eng->screen.width*eng->screen.height);off++) {
+        sPix = HD_SRF_PIXELS(eng->buffer)[off];
+        
+        dPix  = ((sPix & 0x00FF0000) >> (16+3)) << 11; // R
+        dPix |= ((sPix & 0x0000FF00) >> (8+2)) << 5;  // G
+        dPix |= ((sPix & 0x000000FF) >> (3));    // B
+        
+        eng->screen.framebuffer[off] = dPix;
+    }
+}
+
+// We support three "dirty modes" until we decide which one gives
+// the best speed. They are:
+// - Conservative dirties (default): Redraw everything, but only update() dirty areas.
+// - Object dirties (-DOBJECT_DIRTIES): Redraw all dirty objects. If a dirty touches
+//   a non-dirty, redraw all of the non-dirty, unless the non-dirty completely
+//   envelops the dirty and the dirty is stacked on top of it, in which case
+//   redraw only the covered part.
+// - Precise dirties (-DPRECISE_DIRTIES): Redraw all dirty objects. If a dirty touches
+//   a non-dirty, redraw only the touched part. Tends to produce subtle artifacts.
 void HD_Render(hd_engine *eng) {
 	hd_obj_list *cur = eng->list;
         hd_rect *dirties = 0, *rect = 0;
@@ -98,11 +129,78 @@ void HD_Render(hd_engine *eng) {
 
         // Make a list of all dirty rects. Rects are clipped
         // to screen from the beginning.
+#ifdef OBJECT_DIRTIES
+        // Magic dirty values:
+        // 1+ - dirty, not rected
+        // 0 - not dirty
+        // -1 - dirty and rected, will be fully redrawn
+        // -2 - dirty, not rected, will be redrawn where covered
+        int dirtied;
+        do {
+            dirtied = 0;
+            cur = eng->list;
+            while (cur) {
+                hd_object *obj = cur->obj;
+                if ((obj->last.x != obj->x || obj->last.y != obj->y ||
+                     obj->last.w != obj->w || obj->last.h != obj->h ||
+                     obj->last.z != obj->z || obj->dirty) && (obj->dirty >= 0)) {
+                    needrender = 1;
+                    // One rect: current position
+                    if (!rect) {
+                        rect = dirties = malloc (sizeof(hd_rect));
+                    } else {
+                        rect->next = malloc (sizeof(hd_rect));
+                        rect = rect->next;
+                    }
+                    rect->x = (obj->x < 0)? 0 : obj->x;
+                    rect->y = (obj->y < 0)? 0 : obj->y;
+                    rect->w = (obj->x + obj->w > eng->screen.width)? eng->screen.width - obj->x : obj->w;
+                    rect->h = (obj->y + obj->h > eng->screen.height)? eng->screen.height-obj->y : obj->h;
+                    rect->z = obj->z;
+                    // Next rect: old position
+                    rect->next = malloc (sizeof(hd_rect));
+                    rect = rect->next;
+                    
+                    rect->x = (obj->last.x < 0)? 0 : obj->last.x;
+                    rect->y = (obj->last.y < 0)? 0 : obj->last.y;
+                    rect->w = (obj->last.x + obj->last.w > eng->screen.width)? eng->screen.width - obj->last.x : obj->last.w;
+                    rect->h = (obj->last.y + obj->last.h > eng->screen.height)? eng->screen.height - obj->last.y : obj->last.h;
+                    rect->z = obj->last.z;
+                    
+                    rect->next = 0;
+
+                    dirtied++;
+                    obj->dirty = -1;
+
+                    if (obj->last.z != obj->z) needsort = 1;
+
+                    hd_obj_list *rlap = eng->list;
+                    while (rlap) {
+                        if ((rlap->obj->dirty != -1) &&
+                            (obj->x + obj->w > rlap->obj->x) && (obj->y + obj->h > rlap->obj->y) &&
+                            (obj->x < rlap->obj->x + rlap->obj->w) && (obj->y < rlap->obj->y + rlap->obj->h)) {
+                            if ((rlap->obj->x <= MAX (obj->x, 0)) && (rlap->obj->y <= MAX (obj->y, 0)) &&
+                                (rlap->obj->x + rlap->obj->w >= MIN (obj->x + obj->w, eng->screen.width)) &&
+                                (rlap->obj->y + rlap->obj->h >= MIN (obj->y + obj->h, eng->screen.height)) && // fully envelops
+                                (rlap->obj->z > obj->z)) { // and is below
+                                rlap->obj->dirty = -2;
+                            } else {
+                                rlap->obj->dirty = 1;
+                                dirtied++;
+                            }
+                        }
+                        rlap = rlap->next;
+                    }
+                }
+                cur = cur->next;
+            }
+        } while (dirtied != 0);
+#else
         while (cur) {
             hd_object *obj = cur->obj;
             if (obj->last.x != obj->x || obj->last.y != obj->y ||
                 obj->last.w != obj->w || obj->last.h != obj->h ||
-                obj->last.z != obj->z) {
+                obj->last.z != obj->z || obj->dirty) {
                 needrender = 1;
                 // One rect: current position
                 if (!rect) {
@@ -132,6 +230,7 @@ void HD_Render(hd_engine *eng) {
             }
             cur = cur->next;
         }
+#endif
 
         // Sort 'em if necessary
         if (needsort)
@@ -156,26 +255,49 @@ void HD_Render(hd_engine *eng) {
         }
 #endif
 
-#ifndef PRECISE_DIRTIES
-        // Draw everything
+#if defined(OBJECT_DIRTIES)
+        // Draw -2 dirties
         cur = eng->list;
         while (cur) {
-            cur->obj->render (eng, cur->obj, 0, 0, cur->obj->natw, cur->obj->nath);
+            if (cur->obj->dirty == -2) {
+                rect = dirties;
+                while (rect) {
+                    if ((rect->x >= cur->obj->x) && (rect->y >= cur->obj->y) &&
+                        (rect->x + rect->w <= cur->obj->x + cur->obj->w) &&
+                        (rect->y + rect->h <= cur->obj->y + cur->obj->h)) {
+                        int32 fx = (cur->obj->natw << 16) / cur->obj->w, fy = (cur->obj->nath << 16) / cur->obj->h;
+                        cur->obj->render (eng, cur->obj, ((rect->x - cur->obj->x) * fx) >> 16,
+                                          ((rect->y - cur->obj->y) * fy) >> 16, 
+                                          (rect->w * fx) >> 16, (rect->h * fy) >> 16);
+                    }
+                    rect = rect->next;
+                }
+            }
+            cur = cur->next;
+        }
+
+        // Draw -1 dirties
+        cur = eng->list;
+        while (cur) {
+            if (cur->obj->dirty == -1) {
+                cur->obj->render (eng, cur->obj, 0, 0, cur->obj->natw, cur->obj->nath);
+            }
             cur->obj->last.x = cur->obj->x;
             cur->obj->last.y = cur->obj->y;
             cur->obj->last.w = cur->obj->w;
             cur->obj->last.h = cur->obj->h;
+            cur->obj->last.z = cur->obj->z;
             cur->obj->dirty = 0;
             cur = cur->next;
         }
-#else //// STILL BUGGY! ////
-        // Draw objects, and parts of any others that overlap/underlap
-        cur = eng->list;
-        while (cur) {
-            hd_object *obj = cur->obj;
-            if (!obj->dirty) {
-                rect = dirties;
-                while (rect) {
+#elif defined(PRECISE_DIRTIES)
+        // Draw all parts of objects that are touched by rects
+        rect = dirties;
+        while (rect) {
+            cur = eng->list;
+            while (cur) {
+                hd_object *obj = cur->obj;
+                if (!obj->dirty) {
                     // Just check if it overlaps at all for now. The conditional
                     // will be executed N*M times, so keep it quick.
                     if ((obj->x + obj->w > rect->x) && (obj->y + obj->h > rect->y) &&
@@ -185,61 +307,84 @@ void HD_Render(hd_engine *eng) {
                         // In these diagrams, < > is the object and [ ] is the dirty rect.
                         if (rect->x > obj->x) {
                             // <[>] or <[]>
-                            x = rect->x - obj->x;
+                            x = rect->x;
                             if (rect->x + rect->w < obj->x + obj->w) {
                                 // <[]>
                                 w = rect->w;
                             } else {
                                 // <[>]
-                                w = obj->w - x;
+                                w = obj->w - rect->x + obj->x;
                             }
                         } else {
                             // [<]> or [<>]
-                            x = obj->x - rect->x;
+                            x = obj->x;
                             if (obj->x + obj->w < rect->x + rect->w) {
                                 // [<>]
                                 w = obj->w;
                             } else {
                                 // [<]>
-                                w = rect->w - x;
+                                w = rect->w - obj->x + rect->x;
                             }
                         }
                         
                         // Similar for the Y coordinates.
                         if (rect->y > obj->y) {
-                            y = rect->y - obj->y;
+                            y = rect->y;
                             if (rect->y + rect->h < obj->y + obj->h)
                                 h = rect->h;
                             else
-                                h = obj->h - y;
+                                h = obj->h - rect->y + obj->y;
                         } else {
-                            y = obj->y - rect->y;
+                            y = obj->y;
                             if (obj->y + obj->h < rect->y + rect->h) {
                                 h = obj->h;
                             } else {
-                                h = rect->h - y;
+                                h = rect->h - obj->y + rect->y;
                             }
                         }
 
                         // Draw it.
                         if (obj->natw + obj->nath) {
                             int32 fx = (obj->natw << 16) / obj->w, fy = (obj->nath << 16) / obj->h;
-                            obj->render (eng, obj, (x * fx) >> 16, (y * fy) >> 16, (w * fx) >> 16, (h * fy) >> 16);
+                            obj->render (eng, obj, ((x - obj->x) * fx) >> 16,
+                                         ((y - obj->y) * fy) >> 16, ((w * fx) >> 16) + 1,
+                                         ((h * fy) >> 16) + 1);
                         } else {
                             obj->render (eng, obj, x, y, w, h);
                         }
                     }
-                    rect = rect->next;
                 }
-            } else {
+                cur = cur->next;
+            }
+            rect = rect->next;
+        }
+        
+        cur = eng->list;
+        while (cur) {
+            hd_object *obj = cur->obj;
+            if (obj->dirty) {
                 // This is the dirty one. Draw it and update last.
                 obj->render (eng, obj, 0, 0, obj->natw, obj->nath);
                 obj->last.x = obj->x;
                 obj->last.y = obj->y;
                 obj->last.w = obj->w;
                 obj->last.h = obj->h;
+                obj->last.z = obj->z;
                 obj->dirty = 0;
             }
+            cur = cur->next;
+        }
+#else
+        // Draw everything
+        cur = eng->list;
+        while (cur) {
+            cur->obj->render (eng, cur->obj, 0, 0, cur->obj->natw, cur->obj->nath);
+            cur->obj->last.x = cur->obj->x;
+            cur->obj->last.y = cur->obj->y;
+            cur->obj->last.w = cur->obj->w;
+            cur->obj->last.h = cur->obj->h;
+            cur->obj->last.z = cur->obj->z;
+            cur->obj->dirty = 0;
             cur = cur->next;
         }
 #endif

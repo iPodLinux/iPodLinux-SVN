@@ -24,8 +24,6 @@
 #include <math.h>
 
 #include "hotdog.h"
-#include "hotdog_png.h"
-/* #include "hotdog_font.h" */
 
 #include "SDL.h"
 
@@ -94,7 +92,6 @@ int main(int argc, char *argv[]) {
 	bg->w = WIDTH;
 	bg->h = HEIGHT;
 	bg->z = 3;
-	bg->type = HD_TYPE_PNG;
 	
 	lbat = HD_PNG_Create("bat.png");
 	lbat->x = 0;
@@ -102,7 +99,6 @@ int main(int argc, char *argv[]) {
 	lbat->w = BATW;
 	lbat->h = BATH;
 	lbat->z = 2;
-	lbat->type = HD_TYPE_PNG;
 	
 	rbat = HD_PNG_Create("bat.png");
 	rbat->x = WIDTH-BATW;
@@ -110,14 +106,12 @@ int main(int argc, char *argv[]) {
 	rbat->w = BATW;
 	rbat->h = BATH;
 	rbat->z = 2;
-	rbat->type = HD_TYPE_PNG;
 
 	ball = HD_PNG_Create("ball.png");
 	ball->x = WIDTH/2-BALLR;
 	ball->y = HEIGHT/2-BALLR;
 	ball->w = ball->h = BALLD;
 	ball->z = 1;
-	ball->type = HD_TYPE_PNG;
 
 /*
 	lscore.y = 2;
