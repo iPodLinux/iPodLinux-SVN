@@ -96,22 +96,6 @@ void HD_Animate(hd_engine *eng) {
 }
 
 
-static void cvt16 (hd_engine *eng) 
-{
-    uint32 off,sPix;
-    uint16 dPix;
-    
-    for(off=0;off<(eng->screen.width*eng->screen.height);off++) {
-        sPix = HD_SRF_PIXELS(eng->buffer)[off];
-        
-        dPix  = ((sPix & 0x00FF0000) >> (16+3)) << 11; // R
-        dPix |= ((sPix & 0x0000FF00) >> (8+2)) << 5;  // G
-        dPix |= ((sPix & 0x000000FF) >> (3));    // B
-        
-        eng->screen.framebuffer[off] = dPix;
-    }
-}
-
 // We support three "dirty modes" until we decide which one gives
 // the best speed. They are:
 // - Conservative dirties (default): Redraw everything, but only update() dirty areas.
