@@ -167,14 +167,14 @@ _HD_ARM_Convert2:
 
 
 
-	@@ _HD_ARM_LowerBlit - the core of the ScaleBlendClip function.
+	@@ _HD_ARM_LowerBlit_AS - the core of the ScaleBlendClip function.
 	@@ This is NOT intended to be called from user code!
-	@@ void _HD_ARM_LowerBlit (hd_surface src, uint32 fp_initial_ix, uint32 fp_initial_iy,
-	@@                         uint32 fp_step_x, uint32 fp_step_y,
-	@@                         hd_surface dest, uint32 startx, uint32 deltx, uint32 starty,
-	@@                         uint32 delty)
+	@@ void _HD_ARM_LowerBlit_AS (hd_surface src, uint32 fp_initial_ix, uint32 fp_initial_iy,
+	@@                            uint32 fp_step_x, uint32 fp_step_y,
+	@@                            hd_surface dest, uint32 startx, uint32 deltx, uint32 starty,
+	@@                            uint32 delty)
 
-_HD_ARM_LowerBlit:
+_HD_ARM_LowerBlit_ScaleBlend:
 	@@ This function takes 51 + 48*h + 27*w*h cycles to execute.
 	
 	stmfd	sp!, {r0-r12, lr}	@ 14 registers, 15 cyc.
@@ -229,14 +229,16 @@ _HD_ARM_LowerBlit:
 	ldr	r7, [sp, #72]		@ r7 = y
 	add	r6, r7, #1		@ inc it -> r6
 	str	r6, [sp, #72]		@ and store back
-	ldr	r7, [r5, r7, lsl #2]!	@ r7 = offset of starty'th row
+	ldr	r7, [r5, r7, lsl #2]	@ r7 = offset of starty'th row
+	sub	r7, r7, #8		@ compensate for the +2
 	add	r5, r5, r7, lsl #2	@ r5 = pointer to row in dest
 
-	@@ Load fp_iy, figure out imgOff, increment fp_iy and store it back. 17 cyc.
+	@@ Load fp_iy, figure out imgOff, increment fp_iy and store it back. 18 cyc.
 	ldr	r1, [sp, #0]		@ r1 = src + 2
 	ldr	r7, [sp, #8]		@ r7 = fp_iy
 	mov	r8, r7, lsr #16		@ r8 = row in image
 	ldr	r8, [r1, r8, lsl #2]	@ r8 = offset of row in src
+	sub	r8, r8, #8		@ compensate for the +2
 	add	r1, r1, r8, lsl #2	@ r1 = pointer to row in src
 	ldr	r8, [sp, #56]		@ r8 = fp_step_y
 	add	r7, r7, r8		@ fp_iy += fp_step_y
@@ -296,6 +298,88 @@ _HD_ARM_LowerBlit:
 	@@ End of outer loop.
 
 	ldmia	sp!, {r0-r12, pc}	@ return, 18 cyc.
+
+	
+	
+	@@ _HD_ARM_LowerBlit_f - The core of blit, non-alpha non-scaling.
+	@@ Nice and fast.
+	@@ void _HD_ARM_LowerBlit_f (hd_surface src, uint32 sx, uint32 sy,
+	@@                           hd_surface dest, uint32 dx, uint32 dy, uint32 dw, uint32 dh)
+	
+_HD_ARM_LowerBlit_Fast:
+	stmdb	sp!, {r4-r12, lr}	@ save 12 regs, 2N + 11S cyc.
+
+	@@ Stack layout:
+	@@    dx at [sp, #48]
+	@@    dy at [sp, #52]
+	@@    dw at [sp, #56]
+	@@    dh at [sp, #60]
+
+	@@ Register usage:
+	@@     r0  current row + sx in src
+	@@     r1  current row + dx in dest
+	@@     r2  current pixel in src
+	@@     r3  current pixel in dest
+	@@     r4  width of the blitted region (dw)
+	@@     r5  address of dest(dx,dy+dh)
+	@@     r6  width of src (src[0])
+	@@     r7  width of dest (dest[0])
+	@@ r8-r11  transfer regs
+	@@    r12  number of pixels left to transfer in this row
+	@@    r14  scratch
+
+	@@ r0 is already loaded with src - set it up to point to (sx,sy). 2N + 5S + 2I cyc.
+	ldr	r6, [r0]		@ load width. 1N+1I+1S
+	add	r8, r0, #8		@ r8 = beginning of row offset pointers
+	ldr	r8, [r8, r2, lsl #2]	@ load offset of sy'th row. 1N+1I+1S
+	add	r0, r0, r8, lsl #2	@ r0 = beginning of sy'th row
+	add	r0, r0, r1, lsl #2	@ r0 = address of pixel (sx,sy)
+
+	@@ set r1 up to point to (dx,dy) in dest - currently r3=dest. 3N + 10S + 3I cyc.
+	ldr	r7, [r3]		@ load width. 1N+1I+1S
+	add	r8, sp, #48		@ r8 = beginning of dx,dy,dw,dh on stack
+	ldmia	r8, {r1, r2, r4, r5}	@ r1=dx, r2=dy, (r3=dest), r4=dw, r5=dh. 1N + 1I + 4S.
+	add	r8, r3, #8		@ r8 = beginning of row offset pointers
+	ldr	r8, [r8, r2, lsl #2]	@ load offset of dy'th row. 1N+1I+1S
+	add	r3, r3, r8, lsl #2	@ r3 = beginning of dy'th row
+	add	r1, r3, r1, lsl #2	@ r1 = address of pixel (dx,dy)
+
+	@@ set r5 up - this one's easy, it's quicker to do a mla here than
+	@@ load the row offset ptr. 2S + 2I cyc.
+	mov	r5, r5, lsl #2
+	mla	r5, r7, r5, r1		@ r5 = (dtw * dh * 4) + r1
+
+	@@ Ok, r0-r7 are set up. Let's transfer some pixels.
+1:
+	@@ Inits - 3S.
+	mov	r2, r0
+	mov	r3, r1
+	mov	r12, r4
+	
+	@@ First copy as many 16-byte units as we can. 6S if <16 bytes left,
+	@@ 10S + 3N + 1I if =16, 12S + 4N + 1I if >16.
+2:	sub	r8, r4, r12		@ r8 = number of pixels left
+	cmp	r8, #16
+	ldmhsia	r2!, {r8-r11}		@ If it was >= 16, transfer 16 bytes. Read (1N + 1I + 4S),
+	stmhsia	r3!, {r8-r11}		@ write (2N + 3S),
+	subhs	r12, r12, #16		@ and update r12.
+	bhi	2b			@ If there's more, go back now and skip the rest of this stuff.
+	@@ Then copy 4-byte units till we're done. 4S if done, 3N + 2I + 5S if not done
+3:	ldrne	r8, [r2], #4		@ If r8 was != 16, and we're still here (so it's < 16),
+	strne	r8, [r3], #4		@ transfer 4 bytes. 2N+2I+2S for these two.
+	subnes	r12, r12, #4		@ and update r12.
+	bne	3b			@ If we're now <16 bytes, just repeat the word-copying part till
+					@ we're done.
+	@@ Update r0, r1. 2S.
+	add	r0, r0, r4, lsl #2
+	add	r1, r1, r4, lsl #2
+
+	@@ Test and branch. 3S + 1N.
+	cmp	r1, r5
+	blo	1b
+
+	ldmia	sp!, {r4-r12, lr}	@ return - 10S + 1I + 1N
+	@@ ...
 	
 @ Local Variables:
 @ asm-comment-char: ?@
