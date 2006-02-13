@@ -163,13 +163,50 @@ u32 readPPver (machine_t *mach, u32 addr)
 #define IPOD_PP5022  IPOD_MINI2G|IPOD_5G|IPOD_NANO
 #define IPOD_PP502X  IPOD_PP5020|IPOD_PP5022
 
+u32 debugRead (machine_t *mach, u32 addr) 
+{
+    u32 ret;
+    printf (">>< Please enter a 32-bit hex value for a read from %08x: ", addr);
+    scanf ("%x", &ret);
+    return ret;
+}
+
+// The debug interface is:
+// 0x6ffffff0 - write a 4-char constant
+// 0x6ffffff4 - write a string address
+// 0x6ffffff8 - write a delay
+// 0x6ffffffc - write a number
+void debugWrite (machine_t *mach, u32 addr, u32 value) 
+{
+    char *ptr;
+    switch (addr) {
+    case 0x6ffffff0:
+        printf (">>> 4-char str: %c%c%c%c\n", value & 0xff,
+                (value >> 8) & 0xff, (value >> 16) & 0xff, value >> 24);
+        break;
+    case 0x6ffffff4:
+        ptr = resolve_addr (mach, value);
+        if (memchr (ptr, '\0', 512))
+            printf (">>> %s\n", ptr);
+        else
+            printf (">>> invalid or >512c string %08x output\n", value);
+        break;
+    case 0x6ffffff8:
+        usleep (value);
+        break;
+    case 0x6ffffffc:
+        printf (">>> Number: %d (%08x)\n", value, value);
+        break;
+    }
+}
+
 struct mmio {
     int pods;
     u32 addr;
     int elemsize; // 1 for byte reads, 2 for word, 4 for dword
     int totalsize; // number of [size] elements it covers
     u32 (*readfn)(machine_t *mach, u32 addr); // if 0, returns 0x55555555 on the CPU and 0xAAAAAAAA on the COP
-    u32 (*writefn)(machine_t *mach, u32 addr, u32 value);
+    void (*writefn)(machine_t *mach, u32 addr, u32 value);
 } mmios[] = {
     /* CPU/COP ID */
     { IPOD_PP5002, 0xc4000000, 4, 4, 0, 0 },
@@ -177,6 +214,9 @@ struct mmio {
 
     /* PP5020/5022 version */
     { IPOD_PP502X, 0x70000000, 4, 8, readPPver, 0 },
+
+    /* Our debug stuffs */
+    { IPOD_PP502X, 0x6ffffff0, 4, 16, debugRead, debugWrite },
 
     { 0, 0, 0, 0, 0, 0 },
 };
