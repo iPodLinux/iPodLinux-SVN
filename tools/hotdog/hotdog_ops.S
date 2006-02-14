@@ -305,7 +305,7 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	ldr	r7,  [r1, r7, lsl #2]	@ r7 = isrc
 	movs	r8,  r7, lsr #24	@ r8 = A
 	mulne	r8,  r14, r8		@ multiply by the opacity (unless A=0)
-	movne	r8,  r8,  shr #8	@ divide by 256 (unless A=0)
+	movne	r8,  r8,  lsr #8	@ divide by 256 (unless A=0)
 	addne	r8,  r8,  #1		@ and add 1 (unless A=0)
 	sub	r8,  r7,  r8		@ r8 = 255 - adjusted A
 					@ r7 is now accumulator
@@ -439,7 +439,7 @@ _HD_ARM_LowerBlit_Blend:
 	ldr	r7,  [r0], #4		@ r7 = isrc
 	movs	r8,  r7, lsr #24	@ r8 = A
 	mulne	r8,  r14, r8		@ multiply by the opacity (unless A=0)
-	movne	r8,  r8,  shr #8	@ divide by 256 (unless A=0)
+	movne	r8,  r8,  lsr #8	@ divide by 256 (unless A=0)
 	addne	r8,  r8,  #1		@ and add 1 (unless A=0)
 	sub	r8,  r7,  r8		@ r8 = 255 - adjusted A
 					@ r7 is now accumulator
