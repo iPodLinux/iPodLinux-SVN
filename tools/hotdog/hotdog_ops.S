@@ -172,10 +172,10 @@ _HD_ARM_Convert2:
 	@@ void _HD_ARM_LowerBlit_AS (hd_surface src, uint32 fp_initial_ix, uint32 fp_initial_iy,
 	@@                            uint32 fp_step_x, uint32 fp_step_y,
 	@@                            hd_surface dest, uint32 startx, uint32 deltx, uint32 starty,
-	@@                            uint32 delty)
+	@@                            uint32 delty, uint8 opacity)
 
 _HD_ARM_LowerBlit_ScaleBlend:
-	@@ This function takes 51 + 48*h + 27*w*h cycles to execute.
+	@@ This function takes 51 + 53*h + (27+(5*(opacity != 0xff)))*w*h cycles to execute.
 	
 	stmfd	sp!, {r0-r12, lr}	@ 14 registers, 15 cyc.
 	
@@ -189,6 +189,7 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	@@         deltx at [sp, #68]
 	@@        starty at [sp, #72] <-- updated as y
 	@@         delty at [sp, #76] <-- updated
+	@@       opacity at [sp, #80]
 
 	@@ fp_initial_iy and starty are only accessed once.
 	@@ fp_iy is only accessed once per row, so we'll
@@ -203,7 +204,7 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	@@  r9 = 0x00ff00ff
 	@@ r10 = 0x00800080
 	@@ r12 = 0xff
-	@@ r14 is currently unused.
+	@@ r14 = opacity
 
 	@@ Increment the src and dest pointers on the stack by 8,
 	@@ so you can do e.g. [<srf>, <row>, lsl #2] to load a
@@ -217,10 +218,11 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	
 	ldr	r4, [sp, #12]		@ r4 = fp_step_x. 3 cyc.
 
-	@@ Set up the constants. 3 cyc.
+	@@ Setup. 7 cyc.
 	mov	r12, #0xff
 	orr	r9, r12, #0xff0000
 	bic	r10, r9, r9, lsr #1
+	ldr	r14, [sp, #80]
 	
 	@@ Outer loop. 48 + 27*w cycles.
 1:	
@@ -250,6 +252,10 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	ldr	r2, [sp, #68]		@ r2 = deltx
 	add	r5, r5, r6, lsl #2	@ r5 += startx
 
+	@@ Pick the no-opacity or the opacity version. 2-4 cyc.
+	cmp	r14, #0xff
+	bne	3f
+	
 	@@ Inner loop. 28 cycles.
 2:
 	@@ Blend [r1, r3, lsr #16 lsl #2] on [r5].
@@ -269,7 +275,7 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	@ r9 = 0x00ff00ff (preloaded above)
 	@ r10 = 0x00800080 (preloaded above)
 	@ r11 = scratch
-	ldr	r6,  [r5]		@ r6 = idst, x++
+	ldr	r6,  [r5]		@ r6 = idst
 	mov	r7,  r3, lsr #16	@ r7 = ix
 	ldr	r7,  [r1, r7, lsl #2]	@ r7 = isrc
 	sub	r8,  r12, r7, lsr #24	@ r8 = 255-AA
@@ -289,9 +295,38 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	subs	r2, r2, #1		@ dec the counter
 	bne	2b			@ loop while != 0
 	@@ End of inner loop.
+	b	4f			@ skip the other version - 3 cyc.
+
+	@@ Inner loop 2 - opacity version. 4-5 extra cycles per loop iteration.
+	@@ We skip the adjustment if A=0 because it results in A=1, which is wrong.
+3:	
+	ldr	r6,  [r5]		@ r6 = idst
+	mov	r7,  r3, lsr #16	@ r7 = ix
+	ldr	r7,  [r1, r7, lsl #2]	@ r7 = isrc
+	movs	r8,  r7, lsr #24	@ r8 = A
+	mulne	r8,  r14, r8		@ multiply by the opacity (unless A=0)
+	movne	r8,  r8,  shr #8	@ divide by 256 (unless A=0)
+	addne	r8,  r8,  #1		@ and add 1 (unless A=0)
+	sub	r8,  r7,  r8		@ r8 = 255 - adjusted A
+					@ r7 is now accumulator
+	and	r0,  r9,  r6, lsr#8	@ r0 = (idst >> 8) & 0x00ff00ff
+	mla	r11, r0,  r8, r10	@ r11 = r0 * alpha + 0x00800080
+	bic	r11, r11, r9		@ r11 &= 0xff00ff00
+	add	r7,  r7,  r11, lsr#8	@ r7 += that whole thing >> 8
+	and	r11, r9,  r6		@ r11 = idst & 0x00ff00ff
+	mla	r6,  r11, r8, r10	@ r6 = r11 * alpha + 0x00800080
+	bic	r6,  r6,  r9		@ r6 &= 0xff00ff00
+	add	r7,  r7,  r6		@ r7 += that whole thing
+	str	r7,  [r5], #4		@ store the pixel
+	
+	@@ Increment and test. 5 cyc.
+	add	r3, r3, r4		@ fp_ix += fp_step_x
+	subs	r2, r2, #1		@ dec the counter
+	bne	2b			@ loop while != 0
+	@@ End of inner loop, option 2.
 	
 	@@ Test. 9 cyc.
-	ldr	r6, [sp, #76]		@ r6 = delty
+4:	ldr	r6, [sp, #76]		@ r6 = delty
 	subs	r6, r6, #1		@ dec it
 	str	r6, [sp, #76]		@ and store it back
 	bne	1b			@ loop while != 0
@@ -300,6 +335,141 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	ldmia	sp!, {r0-r12, pc}	@ return, 18 cyc.
 
 	
+
+	@@ _HD_ARM_LowerBlit_Blend - Non-scaling blend blit.
+	@@ Kinda-sorta fast. Not really, compared to _Fast.
+	@@ void _HD_ARM_LowerBlit_Blend (hd_surface src, uint32 sx, uint32 sy,
+	@@                               hd_surface dest, uint32 dx, uint32 dy, uint32 dw, uint32 dh,
+	@@                               uint8 opacity)
+_HD_ARM_LowerBlit_Blend:
+	stmdb	sp!, {r4-r12, lr}	@ save 10 regs, 2N + 9S cyc.
+
+	@@ Stack layout:
+	@@    dx at [sp, #48]
+	@@    dy at [sp, #52]
+	@@    dw at [sp, #56]
+	@@    dh at [sp, #60]
+	@@ opaci at [sp, #64]
+
+	@@ Register usage:
+	@@     r0  current pixel in src
+	@@     r1  current pixel in dest
+	@@     r2  width of the blitted region (dw)
+	@@     r3  address of dest(dx,dy+dh)
+	@@     r4  width of src (src[0])
+	@@     r5  width of dest (dest[0])
+	@@     r6  idst (alpha blit)
+	@@     r7  isrc, accumulator (alpha blit)
+	@@     r8  alpha (alpha blit)
+	@@     r9  0x00ff00ff (preloaded above)
+	@@    r10  0x00800080 (preloaded above)
+	@@    r11  scratch
+	@@    r12  number of pix left in this row
+	@@    r14  opacity
+
+	@@ r0 is already loaded with src - set it up to point to (sx,sy). 2N + 5S + 2I cyc.
+	ldr	r4, [r0]		@ load width. 1N+1I+1S
+	add	r8, r0, #8		@ r8 = beginning of row offset pointers
+	ldr	r8, [r8, r2, lsl #2]	@ load offset of sy'th row. 1N+1I+1S
+	add	r0, r0, r8, lsl #2	@ r0 = beginning of sy'th row
+	add	r0, r0, r1, lsl #2	@ r0 = address of pixel (sx,sy)
+
+	@@ set r1 up to point to (dx,dy) in dest - currently r3=dest. 3N + 10S + 3I cyc.
+	ldr	r5, [r3]		@ load width. 1N+1I+1S
+	add	r8, sp, #48		@ r8 = beginning of dx,dy,dw,dh on stack
+	ldmia	r8, {r1, r2, r6, r7}	@ r1=dx, r2=dy, (r3=dest), r6=dw, r7=dh. 1N + 1I + 4S.
+	add	r8, r3, #8		@ r8 = beginning of row offset pointers
+	ldr	r8, [r8, r2, lsl #2]	@ load offset of dy'th row. 1N+1I+1S
+	add	r3, r3, r8, lsl #2	@ r3 = beginning of dy'th row
+	add	r1, r3, r1, lsl #2	@ r1 = address of pixel (dx,dy)
+
+	@@ set r3 up - this one's easy, it's quicker to do a mla here than
+	@@ load the row offset ptr. 2S + 2I cyc.
+	@@ also setup r2 (1 cyc) and r14 (3 cyc incl 1N) and constants (3 cyc)
+	mov	r7, r7, lsl #2
+	mla	r3, r7, r5, r1		@ r3 = (dtw * dh * 4) + r1
+	mov	r2, r6
+	ldr	r14, [sp, #64]
+	mov	r9, #0xff		@ r9 = 0xff
+	orr	r9, r9, r9, lsl #16	@ r9 = 0xff00ff
+	bic	r10, r9, r9, lsr #1	@ r10 = 0x800080
+
+	@@ Outer loop.
+1:	mov	r12, r2
+	
+	@@ Pick the no-opacity or the opacity version. 2-4 cyc.
+	cmp	r14, #0xff
+	bne	3f
+	
+	@@ Inner loop. 28 cycles.
+2:
+	@@ Do the blend. 23 cyc. Thanks aegray!
+	@ r6 = idst
+	@ r7 = isrc, accumulator
+	@ r8 = alpha
+	@ r9 = 0x00ff00ff (preloaded above)
+	@ r10 = 0x00800080 (preloaded above)
+	@ r11 = scratch
+	ldr	r6,  [r1]		@ r6 = idst, x++
+	ldr	r7,  [r0], #4		@ r7 = isrc
+	sub	r8,  r12, r7, lsr #24	@ r8 = 255-AA
+					@ r7 is now accumulator
+	and	r11, r9,  r6, lsr#8	@ r11 = (idst >> 8) & 0x00ff00ff
+	mla	r11, r8,  r11, r10	@ r11 = r11 * alpha + 0x00800080. This is non-optimal;
+					@ it should be mla r11,r11,r8,r10 (2 cyc quicker) but
+					@ ARM requires Rd!=Rs and we don't have a reg to spare.
+	bic	r11, r11, r9		@ r11 &= 0xff00ff00
+	add	r7,  r7,  r11, lsr#8	@ r7 += that whole thing >> 8
+	and	r11, r9,  r6		@ r11 = idst & 0x00ff00ff
+	mla	r6,  r11, r8, r10	@ r6 = r11 * alpha + 0x00800080
+	bic	r6,  r6,  r9		@ r6 &= 0xff00ff00
+	add	r7,  r7,  r6		@ r7 += that whole thing
+	str	r7,  [r1], #4		@ store the pixel
+	
+	@@ Increment and test. 4 cyc.
+	subs	r12, r12, #1		@ dec the counter
+	bne	2b			@ loop while != 0
+	@@ End of inner loop.
+	b	4f			@ skip the other version - 3 cyc.
+
+	@@ Inner loop 2 - opacity version. 4-5 extra cycles per loop iteration.
+	@@ We skip the adjustment if A=0 because it results in A=1, which is wrong.
+3:	
+	ldr	r6,  [r1]		@ r6 = idst, x++
+	ldr	r7,  [r0], #4		@ r7 = isrc
+	movs	r8,  r7, lsr #24	@ r8 = A
+	mulne	r8,  r14, r8		@ multiply by the opacity (unless A=0)
+	movne	r8,  r8,  shr #8	@ divide by 256 (unless A=0)
+	addne	r8,  r8,  #1		@ and add 1 (unless A=0)
+	sub	r8,  r7,  r8		@ r8 = 255 - adjusted A
+					@ r7 is now accumulator
+	and	r11, r9,  r6, lsr#8	@ r11 = (idst >> 8) & 0x00ff00ff
+	mla	r11, r8,  r11, r10	@ r11 = r11 * alpha + 0x00800080. This is non-optimal;
+					@ it should be mla r11,r11,r8,r10 (2 cyc quicker) but
+					@ ARM requires Rd!=Rs and we don't have a reg to spare.
+	bic	r11, r11, r9		@ r11 &= 0xff00ff00
+	add	r7,  r7,  r11, lsr#8	@ r7 += that whole thing >> 8
+	and	r11, r9,  r6		@ r11 = idst & 0x00ff00ff
+	mla	r6,  r11, r8, r10	@ r6 = r11 * alpha + 0x00800080
+	bic	r6,  r6,  r9		@ r6 &= 0xff00ff00
+	add	r7,  r7,  r6		@ r7 += that whole thing
+	str	r7,  [r1], #4		@ store the pixel
+	
+	@@ Increment and test. 4 cyc.
+	subs	r12, r12, #1		@ dec the counter
+	bne	2b			@ loop while != 0
+	@@ End of inner loop, option 2.
+	
+	@@ Update, test, jump.
+4:	sub	r0, r0, r2, lsl #2	@ back to sx
+	sub	r1, r1, r2, lsl #2	@ back to dx
+	add	r0, r0, r4, lsl #2	@ on to next row
+	add	r1, r1, r5, lsl #2	@ ditto
+	cmp	r1, r3			@ are we there yet?
+	blo	1b			@ nope - keep looping
+
+	ldmia	sp!, {r4-r12, lr}	@ return, some inordinately large number of cycles
+	
 	
 	@@ _HD_ARM_LowerBlit_f - The core of blit, non-alpha non-scaling.
 	@@ Nice and fast.
@@ -307,7 +477,7 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	@@                           hd_surface dest, uint32 dx, uint32 dy, uint32 dw, uint32 dh)
 	
 _HD_ARM_LowerBlit_Fast:
-	stmdb	sp!, {r4-r12, lr}	@ save 12 regs, 2N + 11S cyc.
+	stmdb	sp!, {r4-r12, lr}	@ save 19 regs, 2N + 9S cyc.
 
 	@@ Stack layout:
 	@@    dx at [sp, #48]
@@ -358,8 +528,7 @@ _HD_ARM_LowerBlit_Fast:
 	
 	@@ First copy as many 16-byte units as we can. 6S if <16 bytes left,
 	@@ 10S + 3N + 1I if =16, 12S + 4N + 1I if >16.
-2:	sub	r8, r4, r12		@ r8 = number of pixels left
-	cmp	r8, #16
+2:	cmp	r12, #16		@ at least 16 bytes left?
 	ldmhsia	r2!, {r8-r11}		@ If it was >= 16, transfer 16 bytes. Read (1N + 1I + 4S),
 	stmhsia	r3!, {r8-r11}		@ write (2N + 3S),
 	subhs	r12, r12, #16		@ and update r12.
@@ -371,14 +540,14 @@ _HD_ARM_LowerBlit_Fast:
 	bne	3b			@ If we're now <16 bytes, just repeat the word-copying part till
 					@ we're done.
 	@@ Update r0, r1. 2S.
-	add	r0, r0, r4, lsl #2
-	add	r1, r1, r4, lsl #2
+	add	r0, r0, r6, lsl #2
+	add	r1, r1, r7, lsl #2
 
 	@@ Test and branch. 3S + 1N.
 	cmp	r1, r5
 	blo	1b
 
-	ldmia	sp!, {r4-r12, lr}	@ return - 10S + 1I + 1N
+	ldmia	sp!, {r4-r12, lr}	@ return - 11S + 1I + 2N
 	@@ ...
 	
 @ Local Variables:
