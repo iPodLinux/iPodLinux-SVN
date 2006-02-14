@@ -37,6 +37,7 @@ typedef struct
 } dialog_data;
 
 extern FILE *errout;
+extern void pz_set_backlight_timer(int sec);
 
 #define _MAKETHIS dialog_data *data = (dialog_data *)this->data
 
@@ -408,6 +409,8 @@ int pz_default_do_dialog (const char *title, const char *text,
     int ret;
 
     ttk_add_widget (dialog, dwid);
+    pz_set_backlight_timer (PZ_BL_RESET);
+    pz_reset_idle_timer();
     ttk_popup_window (dialog);
     ret = ttk_run();
     ttk_popdown_window (dialog);
