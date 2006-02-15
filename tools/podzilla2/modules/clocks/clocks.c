@@ -442,10 +442,34 @@ PzWindow *new_set_clock_window()
 	return( new_clock_window_common( "Set Clock" ));
 }
 
+/* find out if the ipod stores its time in FTZ */
+/* FTZ: f'ed time zone */
+static int iPodHasFTZ( void )
+{
+#ifdef IPOD
+	if( pz_ipod_get_hw_version() >= 0x000B0000 ) {
+		return( 1 );
+	}
+#endif
+	return( 0 );
+}
+
+
 PzWindow *new_local_clock_window()
 {
+	int locl_z_offs = clocks_tz_offsets[ pz_get_int_setting( pz_global_config, TIME_ZONE )];
+	int locl_d_offs = clocks_dst_offsets[ pz_get_int_setting( pz_global_config, TIME_DST )];
+
 	cglob.offset = 0;
+
+	if( iPodHasFTZ() ) {
+		cglob.offset = ( -locl_z_offs )*60;
+		cglob.offset += ( -locl_d_offs )*60;
+		cglob.offset -= ((12*60)+30)*60;	/*  Huh?  */
+	}
 	cglob.editing = CLOCKS_SEL_NOEDIT;
+
+	/* adjust for time zone */
 	return( new_clock_window_common( "Clock" ));
 }
 
@@ -464,8 +488,16 @@ PzWindow *new_world_clock_window()
 	    display the time.
 	    We do this for the timezone first, then the DST second.
 	*/
+	if( !iPodHasFTZ() ) {
+		locl_z_offs = 0;
+		locl_d_offs = 0;
+	}
 	cglob.offset = ( targ_z_offs - locl_z_offs )*60;
 	cglob.offset += ( targ_d_offs - locl_d_offs )*60;
+
+	if( iPodHasFTZ() ) {
+		cglob.offset -= ((5*60)+30)*60;	/*  Huh?  */
+	}
 
 	cglob.editing = CLOCKS_SEL_NOEDIT;
 
