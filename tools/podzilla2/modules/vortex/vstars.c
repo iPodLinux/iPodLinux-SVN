@@ -21,6 +21,7 @@
  *
  */
 
+#include <time.h>	/* for time() */
 #include "vstars.h"
 
 static int motion = STAR_MOTION_STATIC;		/* default motion */
