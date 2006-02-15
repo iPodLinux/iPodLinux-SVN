@@ -45,13 +45,12 @@ static void clock_bcd_nibble_vert( ttk_surface srf, clocks_globals *glob,
 				    ttk_color light, ttk_color dark, 
 				    ttk_color container )
 {
-	int ld = glob->h/4-4;
-	int xv = glob->w/6;
-	int r = (xv-2)>>1;
+	int ld = (glob->h>>2)-1;	/* y space per light */
+	int r = (glob->w/7)>>1;		/* radius per light */
 	int vc;
 
 	for( vc=0 ; vc<4 ; vc++ ){
-		clock_draw_light( srf, x+r, r+4+((ld+3)*vc), r-2,
+		clock_draw_light( srf, x+r, r+4+(ld*vc), r,
 				(val & 0x08)?light:dark, container );
 		val = val << 1;
 	}
