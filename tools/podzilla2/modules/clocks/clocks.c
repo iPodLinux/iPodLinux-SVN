@@ -397,9 +397,9 @@ int event_clocks( PzEvent *ev )
 
 	case PZ_EVENT_TIMER:
 		ev->wid->dirty = 1;
-		//if( pz_get_int_setting( pz_global_config, TIME_TICKER ))
 		cglob.timer++;
-		ttk_click();
+		if( pz_get_int_setting( pz_global_config, TIME_TICKER ))
+			ttk_click();
 		break;
 
 	default:
