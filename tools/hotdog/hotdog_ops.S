@@ -471,7 +471,7 @@ _HD_ARM_LowerBlit_Blend:
 	cmp	r1, r3			@ are we there yet?
 	blo	1b			@ nope - keep looping
 
-	ldmia	sp!, {r4-r12, lr}	@ return, some inordinately large number of cycles
+	ldmia	sp!, {r4-r12, pc}	@ return, some inordinately large number of cycles
 	
 	
 	@@ _HD_ARM_LowerBlit_f - The core of blit, non-alpha non-scaling.
@@ -551,7 +551,7 @@ _HD_ARM_LowerBlit_Fast:
 	cmp	r1, r5
 	blo	1b
 
-	ldmia	sp!, {r4-r12, lr}	@ return - 11S + 1I + 2N
+	ldmia	sp!, {r4-r12, pc}	@ return - 11S + 1I + 2N
 
 	
 	
@@ -621,8 +621,7 @@ _HD_ARM_Update5G:
 	bcmr32	r8, r9			@ and read 0x1fc again
 	
 	@@ We've stored 10 registers, so h is at [sp, #40].
-1:	ldmia	sp!, {r4-r12, lr}	@ return - DEBUG
-	ldr	r4, [sp, #40]		@ 3 cyc
+1:	ldr	r4, [sp, #40]		@ 3 cyc
 
 	@@ Register usage: r0 = fb, r1 = x, r2 = y, r3 = w, r4 = h, r5 = count (for now)
 	@@ r12 = 0x30000000, r8-r11 = temp, r5 = beginning of current row (later on)
@@ -680,7 +679,7 @@ _HD_ARM_Update5G:
 	beq	1b			@ loop until set
 	
 	@@ Set up pointers for the write.
-	mov	r10, #640		@ r8 = lcd width * 2 [bytes per pixel]
+	mov	r8, #640		@ r8 = lcd width * 2 [bytes per pixel]
 	mla	r5, r2, r8, r0		@ r5 = fb + 320*y
 	add	r0, r5, r1, lsl #1	@    + x
 	mov	r5, r0			@ r5 = r0 = pointer to first pixel
@@ -712,7 +711,7 @@ _HD_ARM_Update5G:
 	@@ Ok, we're done. Advance the pointer to the next row.
 	add	r0, r5, #320*2		@ next row
 	mov	r5, r0			@ for r5 too
-	subs	r2, r2, #1		@ dec y
+	subs	r4, r4, #1		@ dec h
 	bne	1b			@ and keep looping if it's nonzero
 
 	@@ Store a value to say we need a finishup next time we're called.
@@ -720,7 +719,7 @@ _HD_ARM_Update5G:
 	ldr	r1, =need_finishup
 	str	r0, [r1]
 	
-	ldmia	sp!, {r4-r12, lr}	@ return
+	ldmia	sp!, {r4-r12, pc}	@ return
 
 
 
