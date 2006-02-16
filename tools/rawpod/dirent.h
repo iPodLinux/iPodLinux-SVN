@@ -18,10 +18,12 @@ struct dirent
     char *d_name;
 };
 
+extern "C" {
 DIR           *opendir(const char *);
 int           closedir(DIR *);
 struct dirent *readdir(DIR *);
 void          rewinddir(DIR *);
+};
 
 /*
 

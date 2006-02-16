@@ -1,3 +1,7 @@
+#ifdef __CYGWIN32__
+#define WIN32
+#endif
+
 #ifndef WIN32
 #ifndef linux
 #error Unknown platform

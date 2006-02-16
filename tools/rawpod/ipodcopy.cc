@@ -4,6 +4,7 @@
 #include "ext2.h"
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #ifdef WIN32
 #include "dirent.h"

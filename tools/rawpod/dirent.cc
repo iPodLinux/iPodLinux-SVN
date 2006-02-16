@@ -26,6 +26,7 @@ struct DIR
 
 static int my_errno;
 
+extern "C" {
 DIR *opendir(const char *name)
 {
     DIR *dir = 0;
@@ -122,6 +123,7 @@ void rewinddir(DIR *dir)
     {
         my_errno = EBADF;
     }
+}
 }
 
 /*
