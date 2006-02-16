@@ -501,10 +501,7 @@ static void ipod_update_photo(struct display *p, int sx, int sy, int mx, int my)
 		/* start drawing */
 		lcd_send_lo(0x0);
 		lcd_send_lo(0x22);
-	} else {
-		unsigned count = (width * height) << 1;
-		lcd_bcm_setup_rect(0x34, rect1, rect2, rect3, rect4, count);
-	}
+	} 
 
 	addr += startx * p->line_length + starty;
 
@@ -513,22 +510,18 @@ static void ipod_update_photo(struct display *p, int sx, int sy, int mx, int my)
 		int h, pixels_to_write;
 		unsigned curpixel = 0;
 
-		if (ipod_hw_ver != 0xb) {
-			pixels_to_write = (width * height) * 2;
+		pixels_to_write = (width * height) * 2;
 
-			/* calculate how much we can do in one go */
-			h = height;
-			if (pixels_to_write > 64000) {
-				h = (64000/2) / width;
-				pixels_to_write = (width * h) * 2;
-			}
-	
-			outl(0x10000080, 0x70008a20);
-			outl((pixels_to_write - 1) | 0xc0010000, 0x70008a24);
-			outl(0x34000000, 0x70008a20);
-		} else {
-			h = height;
+		/* calculate how much we can do in one go */
+		h = height;
+		if (pixels_to_write > 64000) {
+			h = (64000/2) / width;
+			pixels_to_write = (width * h) * 2;
 		}
+
+		outl(0x10000080, 0x70008a20);
+		outl((pixels_to_write - 1) | 0xc0010000, 0x70008a24);
+		outl(0x34000000, 0x70008a20);
 
 		/* for each row */
 		for (x = 0; x < h; x++) {
@@ -539,34 +532,21 @@ static void ipod_update_photo(struct display *p, int sx, int sy, int mx, int my)
 				two_pixels = addr[0] | (addr[1] << 16);
 				addr += 2;
 
-				if (ipod_hw_ver != 0xb) {
-					while ((inl(0x70008a20) & 0x1000000) == 0);
+				while ((inl(0x70008a20) & 0x1000000) == 0);
 
-					/* output 2 pixels */
-					outl(two_pixels, 0x70008b00);
-				} else {
-					/* output 2 pixels */
-					lcd_bcm_write32(0xE0020 + (curpixel << 2), two_pixels);
-					curpixel++;	
-				}
+				/* output 2 pixels */
+				outl(two_pixels, 0x70008b00);
 			}
 
 			addr += lcd_width - width;
 		}
-		if (ipod_hw_ver != 0xb) {
-			while ((inl(0x70008a20) & 0x4000000) == 0);
-		
-			outl(0x0, 0x70008a24);
+		while ((inl(0x70008a20) & 0x4000000) == 0);
+	
+		outl(0x0, 0x70008a24);
 
-			height = height - h;
-		} else {
-			height = 0;
-		}
+		height = height - h;
 	}
 
-	if (ipod_hw_ver == 0xb) {
-		lcd_bcm_finishup();
-	}
 }
 
 
@@ -594,6 +574,8 @@ static void ipod_update_video(struct display *p, int sx, int sy, int mx, int my)
 
 	outw((0xE0020 & 0xffff), 0x30010000);
 	outw((0xE0020 >> 16), 0x30010000);
+
+	while ((inw(0x3003000) & 0x2)==0);
 
 	for (y = 0; y < height; y++) {
 		for (x = 0; x < width; x+=2) {
