@@ -572,7 +572,7 @@ _HD_ARM_LowerBlit_Fast:
 	tst	r10, #2			@ check the ready bit
 	beq	9b			@ loop until it's set
 	strh	\value, [r12]		@ store low hword of value to 0x30000000
-	mov	r10, \value, lsl #16	@ get the high hword
+	mov	r10, \value, lsr #16	@ get the high hword
 	strh	r10, [r12]		@ and store it
 .endm
 
@@ -603,23 +603,24 @@ _HD_ARM_Update5G:
 	cmp	r4, #0
 	beq	1f
 	@@ OK, we need it. Do it.
-	mov	r12, #0x30000000
-	mov	r11, #0x31
-	strh	r11, [r12]
+	mov	r12, #0x30000000	@ r12 = 0x30000000
+	orr	r11, r12, #0x30000	@ r11 = 0x30030000
+	mov	r10, #0x31
+	strh	r10, [r11]		@ store the 0x31 thing
 	mvn	r5, #0			@ r5 = 0xFFFFFFFF
 	and	r5, r5, r5, lsr #16	@ r5 = 0x0000FFFF
 	mvn	r6, #0x50000		@ r6 = 0xFFFAFFFF
 	bic	r6, r6, r6, lsr #16	@ r6 = 0xFFFA0005
-	mov	r7, #0x1FC
+	mov	r7, #0x1F8
 	mov	r8, #0x1FC
 	bcmr32	r8, r9
 2:	bcmr32	r7, r9			@ read some reg
 	cmp	r9, r6			@ is it 0xFFFA0005?
 	cmpne	r9, r5			@ is it 0xFFFF?
-	beq	2b			@ if not, keep looping
+	beq	2b			@ if either, keep looping
 	bcmr32	r8, r9			@ and read 0x1fc again
 	
-	@@ We've stored 10 registers, so my is at [sp, #40].
+	@@ We've stored 10 registers, so h is at [sp, #40].
 1:	ldr	r4, [sp, #40]		@ 3 cyc
 
 	@@ Register usage: r0 = fb, r1 = x, r2 = y, r3 = w, r4 = h, r5 = count (for now)
