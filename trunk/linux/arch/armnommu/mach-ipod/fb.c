@@ -569,6 +569,48 @@ static void ipod_update_photo(struct display *p, int sx, int sy, int mx, int my)
 	}
 }
 
+
+static void ipod_update_video(struct display *p, int sx, int sy, int mx, int my)
+{
+	int startx = sy * fontheight(p);
+	int starty = sx * fontwidth(p);
+	int height = (my - sy) * fontheight(p);
+	int width = (mx - sx) * fontwidth(p);
+	int rect1, rect2, rect3, rect4;
+	int x, y;
+	unsigned short *addr = (unsigned short *)ipod_scr;
+
+	/* calculate the drawing region */
+	rect1 = starty;			/* start horiz */
+	rect2 = startx;			/* start vert */
+	rect3 = (starty + width) - 1;	/* max horiz */
+	rect4 = (startx + height) - 1;	/* max vert */
+	
+
+	/* setup the drawing region */
+	lcd_bcm_setup_rect(0x34, rect1, rect2, rect3, rect4, (width*height)<<1);
+
+	addr += startx * p->line_length + starty;
+
+	outw((0xE0020 & 0xffff), 0x30010000);
+	outw((0xE0020 >> 16), 0x30010000);
+
+	for (y = 0; y < height; y++) {
+		for (x = 0; x < width; x+=2) {
+			outw(*(addr++), 0x30000000);
+			outw(*(addr++), 0x30000000);
+		}
+		addr += (lcd_width - width);
+	}
+	
+	
+	lcd_bcm_finishup();
+}
+
+
+
+
+
 struct ipodfb_info {
 	/*
 	 *  Choose _one_ of the two alternatives:
@@ -663,34 +705,51 @@ void ipod_fb16_bmove(struct display *p, int sy, int sx, int dy, int dx,
 		     int height, int width)
 {
 	fbcon_cfb16.bmove(p, sy, sx, dy, dx, height, width);
-	ipod_update_photo(p, 0, 0, lcd_width/fontwidth(p), lcd_height/fontheight(p));
+	if (ipod_hw_ver!=0xb)	
+		ipod_update_photo(p, 0, 0, lcd_width/fontwidth(p), lcd_height/fontheight(p));
+	else
+		ipod_update_video(p, 0, 0, lcd_width/fontwidth(p), lcd_height/fontheight(p));
+
 }
 
 void ipod_fb16_clear(struct vc_data *conp, struct display *p, int sy, int sx,
 		     int height, int width)
 {
 	fbcon_cfb16.clear(conp, p, sy, sx, height, width);
-	ipod_update_photo(p, sx, sy, sx+width, sy+height);
+	if (ipod_hw_ver!=0xb)
+		ipod_update_photo(p, sx, sy, sx+width, sy+height);
+	else
+		ipod_update_video(p, sx, sy, sx+width, sy+height);
 }
 
 void ipod_fb16_putc(struct vc_data *conp, struct display *p, int c, int yy,
 		    int xx)
 {
 	fbcon_cfb16.putc(conp, p, c, yy, xx);
-	ipod_update_photo(p, xx, yy, xx+1, yy+1);
+	if (ipod_hw_ver!=0xb)
+		ipod_update_photo(p, xx, yy, xx+1, yy+1);
+	else
+		ipod_update_video(p, xx, yy, xx+1, yy+1);
 }
 
 void ipod_fb16_putcs(struct vc_data *conp, struct display *p, 
 		     const unsigned short *s, int count, int yy, int xx)
 {
 	fbcon_cfb16.putcs(conp, p, s, count, yy, xx);
-	ipod_update_photo(p, xx, yy, xx+count, yy+1);
+	if (ipod_hw_ver!=0xb)
+		ipod_update_photo(p, xx, yy, xx+count, yy+1);
+	else
+		ipod_update_video(p, xx, yy, xx+count, yy+1);
 }
 
 void ipod_fb16_revc(struct display *p, int xx, int yy)
 {
 	fbcon_cfb16.revc(p, xx, yy);
-	ipod_update_photo(p, xx, yy, xx+1, yy+1);
+	if (ipod_hw_ver!=0xb)
+		ipod_update_photo(p, xx, yy, xx+1, yy+1);
+	else
+		ipod_update_video(p, xx, yy, xx+1, yy+1);
+		
 }
 
 
