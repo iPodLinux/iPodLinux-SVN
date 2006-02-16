@@ -143,7 +143,7 @@ typedef struct hd_font {
     int     bitstype; // PITCHED or CLUMPED
     int32   pitch, h; // h = height of font; pitch = length of a scanline in bytes
     int32   pixbytes; // number of bytes in `pixels'
-    void   *pixels;
+    void   *pixels; // 32-bit AARRGGBB values are NOT premultiplied-alpha!
     int     bpp; // 1 or 8 or 32
 
     // Char info:
@@ -223,7 +223,7 @@ typedef struct hd_engine {
 
 /**** Optimized ops [need some more, plus ARM ASM optim versions] ****/
 
-#define BLEND_ARGB8888_ON_ARGB8888(dst_argb, src_argb)         \
+#define _HD_ALPHA_BLEND(dst_argb, src_argb, ret_argb)         \
 {                                                              \
  uint32 alpha,dst[2];                                          \
  uint32 idst = (dst_argb);                                      \
@@ -231,10 +231,17 @@ typedef struct hd_engine {
  alpha = (uint32)(255 - (int32)(isrc >> 24));      \
  dst[0] = ((idst & 0x00FF00FF) * alpha + 0x00800080) & 0xFF00FF00;          \
  dst[1] = (((idst>>8) & 0x00FF00FF) * alpha + 0x00800080) & 0xFF00FF00;          \
- (dst_argb) = (dst[0]>>8) + dst[1] + isrc;                      \
+ (ret_argb) = (dst[0]>>8) + dst[1] + isrc;                      \
 }
 
+#define BLEND_ARGB8888_ON_ARGB8888(dst_argb, src_argb) _HD_ALPHA_BLEND(dst_argb, src_argb, dst_argb)
 
+#define HD_SRF_BLENDPIX(srf,x,y,pix) do \
+{ \
+ uint32 p; \
+ _HD_ALPHA_BLEND (HD_SRF_GETPIX (srf,x,y), pix, p); \
+ HD_SRF_SETPIX (srf,x,y,pix); \
+} while(0)
 
 hd_engine *HD_Initialize(uint32 width,uint32 height,uint8 bpp, void *framebuffer, void (*update)(struct hd_engine*, int, int, int, int));
 void HD_Register(hd_engine *eng,hd_object *obj);

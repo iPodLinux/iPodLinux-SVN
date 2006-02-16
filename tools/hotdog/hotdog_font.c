@@ -9,18 +9,108 @@
 #define HDF_MAGIC 0x676f6448
 
 /************ Drawing and objecting ****************/
-static void _do_draw (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str,
-                      int blend_all, int blend_parts) 
+static void _do_draw_char8 (hd_surface srf, hd_font *font, int x, int y, uint32 color, uint16 ch, int cblend) {}
+static void _do_draw_char8_fast (hd_surface srf, hd_font *font, int x, int y, uint32 color, uint16 ch, int cblend) {}
+static void _do_draw_char32 (hd_surface srf, hd_font *font, int x, int y, uint32 color, uint16 ch, int cblend) {}
+static void _do_draw_char32_fast (hd_surface srf, hd_font *font, int x, int y, uint32 color, uint16 ch, int cblend) {}
+static void _do_draw_char1 (hd_surface srf, hd_font *font, int x, int y, uint32 color, uint16 ch, int cblend) 
 {
-    /* ... */
+    uint8 *pixels = (uint8 *)font->pixels + font->offset[ch];
+    int ofs = 0;
+    int width = font->width[ch];
+    int sx = x, ex = x + width, ey = y + font->h;
+
+    // Ack - assumes CLUMPED. Need PITCHED support, which is basically just a 1bpp blit.
+
+    while (y < ey) {
+        int byte = 0;
+        x = sx;
+        ofs = 0;
+
+        // Read this row.
+        while (x < ex) {
+            if (!(ofs & 7)) byte = *pixels++;
+            if (byte & 0x80) {
+                if (cblend)
+                    HD_SRF_BLENDPIX (srf, x, y, color);
+                else
+                    HD_SRF_SETPIX (srf, x, y, color);
+            }
+            byte >>= 1;
+            ofs++;
+            x++;
+        }
+        
+        // Align to multiple of pitch.
+        ofs = (ofs + 7) & ~7;
+        while (ofs & (font->pitch - 1)) {
+            ofs++;
+            pixels++;
+        }
+        y++;
+    }
 }
+
+typedef void draw_func (hd_surface srf, hd_font *font, int x, int y, uint32 color, uint16 ch, int blend_all);
+
+static inline draw_func *_do_pick_draw_func (int bpp, int blend_parts) 
+{
+    switch (bpp + !blend_parts) {
+    case 1:
+    case 2:
+        return _do_draw_char1;
+    case 8:
+        return _do_draw_char8;
+    case 9:
+        return _do_draw_char8_fast;
+    case 32:
+        return _do_draw_char32;
+    case 33:
+        return _do_draw_char32_fast;
+    default:
+        fprintf (stderr, "Invalid bpp in font!\n");
+        abort();
+    }
+    return 0;
+}
+
+static void _do_draw_lat8 (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str,
+                           int blend_all, int blend_parts) 
+{
+    int cx = x;
+    const char *p = str;
+    draw_func *func = _do_pick_draw_func (font->bpp, blend_parts);
+
+    while (*p) {
+        if (*p > font->firstchar && *p < font->firstchar + font->nchars) {
+            (*func)(srf, font, cx, y, color, *p, blend_all);
+            cx += font->width[*p - font->firstchar];
+        }
+    }
+}
+
+static void _do_draw_uc16 (hd_surface srf, hd_font *font, int x, int y, uint32 color, const uint16 *str,
+                           int blend_all, int blend_parts)
+{
+    int cx = x;
+    const uint16 *p = str;
+    draw_func *func = _do_pick_draw_func (font->bpp, blend_parts);
+
+    while (*p) {
+        if (*p > font->firstchar && *p < font->firstchar + font->nchars) {
+            (*func)(srf, font, cx, y, color, *p, blend_all);
+            cx += font->width[*p - font->firstchar];
+        }
+    }
+}
+
 void HD_Font_Draw (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str) 
 {
-    _do_draw (srf, font, x, y, color, str, (color & 0xff000000) != 0xff000000, 1);
+    _do_draw_lat8 (srf, font, x, y, color, str, (color & 0xff000000) != 0xff000000, 1);
 }
 void HD_Font_DrawFast (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str) 
 {
-    _do_draw (srf, font, x, y, color, str, 0, 0);
+    _do_draw_lat8 (srf, font, x, y, color, str, 0, 0);
 }
 
 int HD_Font_TextWidth (hd_font *font, const char *str) 
@@ -60,6 +150,7 @@ typedef struct HDF_header
     uint32  pitch;              /* width in bytes of a scanline in the data surface, for PITCHED fonts.
                                    Has a different meaning for CLUMPED fonts; see hotdog.h. */
     uint32  nbytes;             /* Number of bytes of character data to read */
+    /* 32-bit AARRGGBB bytes are NOT premultiplied! */
 } __attribute__ ((packed)) HDF_header;
 
 /* Following the header are <nchars> 32-bit BE values indicating the offset
