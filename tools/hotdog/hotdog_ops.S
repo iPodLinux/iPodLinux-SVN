@@ -345,11 +345,11 @@ _HD_ARM_LowerBlit_Blend:
 	stmdb	sp!, {r4-r12, lr}	@ save 10 regs, 2N + 9S cyc.
 
 	@@ Stack layout:
-	@@    dx at [sp, #48]
-	@@    dy at [sp, #52]
-	@@    dw at [sp, #56]
-	@@    dh at [sp, #60]
-	@@ opaci at [sp, #64]
+	@@    dx at [sp, #40]
+	@@    dy at [sp, #44]
+	@@    dw at [sp, #48]
+	@@    dh at [sp, #52]
+	@@ opaci at [sp, #56]
 
 	@@ Register usage:
 	@@     r0  current pixel in src
@@ -376,7 +376,7 @@ _HD_ARM_LowerBlit_Blend:
 
 	@@ set r1 up to point to (dx,dy) in dest - currently r3=dest. 3N + 10S + 3I cyc.
 	ldr	r5, [r3]		@ load width. 1N+1I+1S
-	add	r8, sp, #48		@ r8 = beginning of dx,dy,dw,dh on stack
+	add	r8, sp, #40		@ r8 = beginning of dx,dy,dw,dh on stack
 	ldmia	r8, {r1, r2, r6, r7}	@ r1=dx, r2=dy, (r3=dest), r6=dw, r7=dh. 1N + 1I + 4S.
 	add	r8, r3, #8		@ r8 = beginning of row offset pointers
 	ldr	r8, [r8, r2, lsl #2]	@ load offset of dy'th row. 1N+1I+1S
@@ -389,7 +389,7 @@ _HD_ARM_LowerBlit_Blend:
 	mov	r7, r7, lsl #2
 	mla	r3, r7, r5, r1		@ r3 = (dtw * dh * 4) + r1
 	mov	r2, r6
-	ldr	r14, [sp, #64]
+	ldr	r14, [sp, #56]
 	mov	r9, #0xff		@ r9 = 0xff
 	orr	r9, r9, r9, lsl #16	@ r9 = 0xff00ff
 	bic	r10, r9, r9, lsr #1	@ r10 = 0x800080
@@ -480,10 +480,10 @@ _HD_ARM_LowerBlit_Fast:
 	stmdb	sp!, {r4-r12, lr}	@ save 19 regs, 2N + 9S cyc.
 
 	@@ Stack layout:
-	@@    dx at [sp, #48]
-	@@    dy at [sp, #52]
-	@@    dw at [sp, #56]
-	@@    dh at [sp, #60]
+	@@    dx at [sp, #40]
+	@@    dy at [sp, #44]
+	@@    dw at [sp, #48]
+	@@    dh at [sp, #52]
 
 	@@ Register usage:
 	@@     r0  current row + sx in src
@@ -507,7 +507,7 @@ _HD_ARM_LowerBlit_Fast:
 
 	@@ set r1 up to point to (dx,dy) in dest - currently r3=dest. 3N + 10S + 3I cyc.
 	ldr	r7, [r3]		@ load width. 1N+1I+1S
-	add	r8, sp, #48		@ r8 = beginning of dx,dy,dw,dh on stack
+	add	r8, sp, #40		@ r8 = beginning of dx,dy,dw,dh on stack
 	ldmia	r8, {r1, r2, r4, r5}	@ r1=dx, r2=dy, (r3=dest), r4=dw, r5=dh. 1N + 1I + 4S.
 	add	r8, r3, #8		@ r8 = beginning of row offset pointers
 	ldr	r8, [r8, r2, lsl #2]	@ load offset of dy'th row. 1N+1I+1S
@@ -548,7 +548,177 @@ _HD_ARM_LowerBlit_Fast:
 	blo	1b
 
 	ldmia	sp!, {r4-r12, lr}	@ return - 11S + 1I + 2N
-	@@ ...
+
+	
+	
+	@@ Update the LCD on the 5g (video) iPod.
+	@@ We ASM this because gcc is braindead and emits one function
+	@@ call per outl etc., and we need every cycle we can get here.
+	@@ void _HD_ARM_Update5G (uint16 *fb, int x, int y, int w, int h)
+
+	@@ Write a 32-bit value to the BCM. Uses r10-r11 for temp, needs r12 to be loaded with 0x30000000.
+	@@ Takes 8S + 10N + 1I cycles.
+.macro	bcmw32	addr, value
+	orr	r11, r12, #0x10000	@ r11 = 0x30010000
+	strh	\addr, [r11]		@ store the low hword
+	mov	r10, \addr, lsr #16	@ get the high one in r10
+	strh	r10, [r11]		@ and store it
+	orr	r11, r12, #0x30000	@ r11 = 0x30030000
+9:	ldrh	r10, [r11]		@ read status
+	tst	r10, #2			@ check the ready bit
+	beq	9b			@ loop until it's set
+	strh	\value, [r12]		@ store low hword of value to 0x30000000
+	mov	r10, \value, lsl #16	@ get the high hword
+	strh	r10, [r12]		@ and store it
+.endm
+
+.macro	bcmr32	addr, value
+	orr	r11, r12, #0x20000	@ r11 = 0x30020000
+9:	ldrh	r10, [r11]		@ load address reg
+	tst	r10, #1			@ test bit 0
+	beq	1b			@ loop until set
+	strh	\addr, [r11]		@ store the low hword
+	mov	r10, \addr, lsr #16	@ get the high hword
+	strh	r10, [r11]		@ and store it
+	orr	r11, r12, #0x30000	@ r12 = 0x30030000
+9:	ldrh	r10, [r11]		@ load status reg
+	tst	r10, #16		@ test bit 4
+	beq	1b			@ loop until set
+	ldrh	\value, [r12]		@ read the low hword
+	ldrh	r10, [r12]		@ and the high one
+	orr	\value, \value, r10, lsl #16	@ put the high hword in place
+.endm
+	
+_HD_ARM_Update5G:
+	stmdb	sp!, {r4-r12, lr}
+
+	@@ Do a finishup if we need one.
+	ldr	r4, =need_finishup
+	ldr	r4, [r4]
+	cmp	r4, #0
+	beq	1f
+	@@ OK, we need it. Do it.
+	mov	r12, #0x30000000
+	mov	r11, #0x31
+	strh	r11, [r12]
+	mvn	r5, #0			@ r5 = 0xFFFFFFFF
+	bic	r5, r5, r5, lsl #16	@ r5 = 0xFFFF0000
+	mvn	r6, #0x50000		@ r6 = 0xFFFAFFFF
+	bic	r6, r6, r6, lsr #16	@ r6 = 0xFFFA0005
+	mov	r7, #0x1FC
+	mov	r8, #0x1FC
+	bcmr32	r8, r9
+1:	bcmr32	r7, r9			@ read some reg
+	cmp	r9, r6			@ is it 0xFFFA0005?
+	cmpne	r9, r5			@ is it 0xFFFF?
+	beq	1b			@ if not, keep looping
+	bcmr32	r8, r9			@ and read 0x1fc again
+	
+	@@ We've stored 10 registers, so my is at [sp, #40].
+1:	ldr	r4, [sp, #40]		@ 3 cyc
+
+	@@ Register usage: r0 = fb, r1 = x, r2 = y, r3 = w, r4 = h, r5 = count (for now)
+	@@ r12 = 0x30000000, r8-r11 = temp, r5 = beginning of current row (later on)
+	@@ r6 = x+w-1, r7 = y+h-1
+	
+	@@ Align x and w to a 2-byte boundary. 5S cyc.
+	tst	r1, #1			@ is x aligned?
+	subne	r1, r1, #1		@ align it down if so
+	addne	r3, r3, #1		@ and inc the width to compensate
+	tst	r3, #1			@ is w aligned?
+	addne	r3, r3, #1		@ inc it if not
+
+	@@ Set up the drawing region.
+	mul	r5, r4, r3		@ r5 (count) = width * height
+	add	r5, r5, r5		@ r5 *= 2
+	add	r6, r1, r3		@ r6 = x + width
+	sub	r6, r6, #1		@ minus 1
+	add	r7, r2, r4		@ r7 = y + height
+	sub	r7, r7, #1		@ minus 1
+
+	@@ Send the commands to set up the rect.
+	mov	r12, #0x30000000	@ load r12 for the bcmw32 macro
+	mov	r8, #0x1F8
+	mvn	r9, #0x50000		@ r9 = 0xFFFAFFFF
+	bic	r9, r9, r9, lsr #16	@ r9 = 0xFFFAFFFF & 0xFFFF0005 = 0xFFFA0005 = what we want
+	bcmw32	r8, r9
+	mov	r8, #0xE0000		@ load first addr
+	mov	r9, #0x34
+	bcmw32	r8, r9			@ send command (addr = 0xE0000)
+	add	r8, r8, #4
+	bcmw32	r8, r1			@ start_horiz (@0xE0004)
+	add	r8, r8, #4
+	bcmw32	r8, r2			@ start_vert (@0xE0008)
+	add	r8, r8, #4
+	bcmw32	r8, r6			@ max_horiz (@0xE000C)
+	add	r8, r8, #4
+	bcmw32	r8, r7			@ max_vert (@0xE0010)
+	add	r8, r8, #4
+	bcmw32	r8, r5			@ count (@0xE0014)
+	add	r8, r8, #4
+	bcmw32	r8, r5			@ count (@0xE0018)
+	add	r8, r8, #4
+	mov	r9, #0
+	bcmw32	r8, r9			@ zero (@0xE001C)
+
+	@@ Write the destination address out as two 16-bit values.
+	mov	r9, #0x20		@ r9 = low hword of address (0xE0020)
+	orr	r8, r12, #0x10000	@ r8 = 0x30010000
+	strh	r9, [r8]		@ and store it
+	mov	r9, #0xE		@ high hword of 0xE0020
+	strh	r9, [r8]		@ and store it
+	orr	r8, r12, #0x30000	@ r8 = 0x30030000
+1:	ldrh	r9, [r8]		@ read status
+	tst	r9, #2			@ test ready bit
+	beq	1b			@ loop until set
+	
+	@@ Set up pointers for the write.
+	mov	r10, #640		@ r8 = lcd width * 2 [bytes per pixel]
+	mla	r5, r2, r8, r0		@ r5 = fb + 320*y
+	add	r0, r5, r1, lsl #1	@    + x
+	mov	r5, r0			@ r5 = r0 = pointer to first pixel
+					@ we'll increment r0 and keep r5 pointing to the first
+	@@ In the inner loop we'll use r11 as a counter (number of pixels on this row).
+1:	mov	r11, r3			@ r11 = width
+2:	cmp	r11, #8			@ at least eight pixels left?
+	ldmhsia	r0!, {r6, r7, r8, r9}	@ if so: load 8,
+	strhsh	r6, [r12]		@ store #1
+	movhs	r6, r6, lsr #16		@ shift in #2
+	strhsh	r6, [r12]		@ store #2
+	strhsh	r7, [r12]		@ store #3
+	movhs	r7, r7, lsr #16		@ shift in #4
+	strhsh	r7, [r12]		@ store #4
+	strhsh	r8, [r12]		@ store #5
+	movhs	r8, r8, lsr #16		@ shift in #6
+	strhsh	r8, [r12]		@ store #6
+	strhsh	r9, [r12]		@ store #7
+	movhs	r9, r9, lsr #16		@ shift in #8
+	strhsh	r9, [r12]		@ store #8
+	subhs	r11, r11, #8		@ update count
+	bhi	2b			@ keep going if there's more
+3:	ldrne	r8, [r0], #4		@ if not (at least eight left): load 2,
+	strneh	r8, [r12]		@ store #1
+	movne	r8, r8, lsr #16		@ shift in #2
+	strneh	r8, [r12]		@ store #2
+	subnes	r11, r11, #2		@ update the counter. r11 had better be even!
+	bne	3b			@ and keep going (in two-at-a-time mode)
+	@@ Ok, we're done. Advance the pointer to the next row.
+	add	r0, r5, #320*2		@ next row
+	mov	r5, r0			@ for r5 too
+	subs	r2, r2, #1		@ dec y
+	bne	1b			@ and keep looping if it's nonzero
+
+	@@ Store a value to say we need a finishup next time we're called.
+	mov	r0, #1
+	ldr	r1, =need_finishup
+	str	r0, [r1]
+	
+	ldmia	sp!, {r4-r12, lr}	@ return
+
+
+
+	.section .data
+need_finishup:	.long 0
 	
 @ Local Variables:
 @ asm-comment-char: ?@
