@@ -621,7 +621,8 @@ _HD_ARM_Update5G:
 	bcmr32	r8, r9			@ and read 0x1fc again
 	
 	@@ We've stored 10 registers, so h is at [sp, #40].
-1:	ldr	r4, [sp, #40]		@ 3 cyc
+1:	ldmia	sp!, {r4-r12, lr}	@ return - DEBUG
+	ldr	r4, [sp, #40]		@ 3 cyc
 
 	@@ Register usage: r0 = fb, r1 = x, r2 = y, r3 = w, r4 = h, r5 = count (for now)
 	@@ r12 = 0x30000000, r8-r11 = temp, r5 = beginning of current row (later on)

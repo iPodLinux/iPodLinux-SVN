@@ -60,6 +60,7 @@ static void update (hd_engine *eng, int x, int y, int w, int h)
     printf ("Updating\n");
     _HD_ARM_Update5G (eng->screen.framebuffer, x, y, w, h);
     printf ("done\n");
+    exit (0);
 }
 #else
 static void update (hd_engine *eng, int x, int y, int w, int h) 
