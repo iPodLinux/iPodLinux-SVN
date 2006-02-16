@@ -36,9 +36,10 @@
 
 #include "SDL.h"
 
-#define WIDTH  220
-#define HEIGHT 176
+#define WIDTH  320
+#define HEIGHT 240
 
+#ifndef IPOD
 SDL_Surface *screen;
 
 uint32 GetTimeMillis(void) {
@@ -48,11 +49,24 @@ uint32 GetTimeMillis(void) {
 
   return(millis);
 }
+#else
+uint32 *screen;
+#endif
 
+#ifdef IPOD
+extern void _HD_ARM_Update5G (uint16 *fb, int x, int y, int w, int h);
+static void update (hd_engine *eng, int x, int y, int w, int h)
+{
+    printf ("Updating\n");
+    _HD_ARM_Update5G (eng->screen.framebuffer, x, y, w, h);
+    printf ("done\n");
+}
+#else
 static void update (hd_engine *eng, int x, int y, int w, int h) 
 {
     SDL_UpdateRect (SDL_GetVideoSurface(), x, y, w, h);
 }
+#endif
 
 int main(int argc, char *argv[]) {
   uint32  done = 0;
@@ -61,6 +75,7 @@ int main(int argc, char *argv[]) {
 	hd_object *obj[5];
 	double f = 0.0;
 
+#ifndef IPOD
   if( SDL_Init(SDL_INIT_VIDEO) < 0 ) {
     fprintf(stderr,"Unable to init SDL: %s\n",SDL_GetError());
     exit(1);
@@ -72,9 +87,12 @@ int main(int argc, char *argv[]) {
     fprintf(stderr,"Unable to init SDL video: %s\n",SDL_GetError());
     exit(1);
   }
+  engine = HD_Initialize (WIDTH, HEIGHT, 16, screen->pixels, update);
+#else
+  screen = malloc (WIDTH * HEIGHT * 2);
+  engine = HD_Initialize (WIDTH, HEIGHT, 16, screen, update);
+#endif
   
-	engine = HD_Initialize(WIDTH,HEIGHT,16, screen->pixels, update);
-
         obj[4]    = HD_PNG_Create ("bg.png");
         obj[4]->x = 0;
         obj[4]->y = 0;
@@ -118,6 +136,7 @@ int main(int argc, char *argv[]) {
         HD_StopAnimation (obj[2]);
 
   while(!done) {
+#ifndef IPOD
     SDL_Event event;
 
     while(SDL_PollEvent(&event)) {
@@ -152,15 +171,20 @@ int main(int argc, char *argv[]) {
     }
 
     SDL_Delay (30);
+#endif
     HD_Animate (engine);
 
+#ifndef IPOD
     if( SDL_MUSTLOCK(screen) ) 
       SDL_LockSurface(screen);
+#endif
 
 		HD_Render(engine);
 
+#ifndef IPOD
     if( SDL_MUSTLOCK(screen) ) 
       SDL_UnlockSurface(screen);
+#endif
   }
 
   return(0);
