@@ -7,6 +7,10 @@
 #ifndef _VFS_H_
 #define _VFS_H_
 
+#ifdef __CYGWIN32__
+#define WIN32
+#endif
+
 #define _FILE_OFFSET_BITS 64
 #ifndef _LARGEFILE64_SOURCE
 #define _LARGEFILE64_SOURCE
