@@ -174,6 +174,7 @@ _HD_ARM_Convert2:
 	@@                            hd_surface dest, uint32 startx, uint32 deltx, uint32 starty,
 	@@                            uint32 delty, uint8 opacity)
 
+	.globl	_HD_ARM_LowerBlit_ScaleBlend
 _HD_ARM_LowerBlit_ScaleBlend:
 	@@ This function takes 51 + 53*h + (27+(5*(opacity != 0xff)))*w*h cycles to execute.
 	
@@ -341,6 +342,8 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	@@ void _HD_ARM_LowerBlit_Blend (hd_surface src, uint32 sx, uint32 sy,
 	@@                               hd_surface dest, uint32 dx, uint32 dy, uint32 dw, uint32 dh,
 	@@                               uint8 opacity)
+
+	.globl	_HD_ARM_LowerBlit_Blend
 _HD_ARM_LowerBlit_Blend:
 	stmdb	sp!, {r4-r12, lr}	@ save 10 regs, 2N + 9S cyc.
 
@@ -476,6 +479,7 @@ _HD_ARM_LowerBlit_Blend:
 	@@ void _HD_ARM_LowerBlit_f (hd_surface src, uint32 sx, uint32 sy,
 	@@                           hd_surface dest, uint32 dx, uint32 dy, uint32 dw, uint32 dh)
 	
+	.globl	_HD_ARM_LowerBlit_Fast
 _HD_ARM_LowerBlit_Fast:
 	stmdb	sp!, {r4-r12, lr}	@ save 19 regs, 2N + 9S cyc.
 
@@ -576,19 +580,20 @@ _HD_ARM_LowerBlit_Fast:
 	orr	r11, r12, #0x20000	@ r11 = 0x30020000
 9:	ldrh	r10, [r11]		@ load address reg
 	tst	r10, #1			@ test bit 0
-	beq	1b			@ loop until set
+	beq	9b			@ loop until set
 	strh	\addr, [r11]		@ store the low hword
 	mov	r10, \addr, lsr #16	@ get the high hword
 	strh	r10, [r11]		@ and store it
 	orr	r11, r12, #0x30000	@ r12 = 0x30030000
 9:	ldrh	r10, [r11]		@ load status reg
 	tst	r10, #16		@ test bit 4
-	beq	1b			@ loop until set
+	beq	9b			@ loop until set
 	ldrh	\value, [r12]		@ read the low hword
 	ldrh	r10, [r12]		@ and the high one
 	orr	\value, \value, r10, lsl #16	@ put the high hword in place
 .endm
 	
+	.globl	_HD_ARM_Update5G
 _HD_ARM_Update5G:
 	stmdb	sp!, {r4-r12, lr}
 
@@ -602,16 +607,16 @@ _HD_ARM_Update5G:
 	mov	r11, #0x31
 	strh	r11, [r12]
 	mvn	r5, #0			@ r5 = 0xFFFFFFFF
-	bic	r5, r5, r5, lsl #16	@ r5 = 0xFFFF0000
+	and	r5, r5, r5, lsr #16	@ r5 = 0x0000FFFF
 	mvn	r6, #0x50000		@ r6 = 0xFFFAFFFF
 	bic	r6, r6, r6, lsr #16	@ r6 = 0xFFFA0005
 	mov	r7, #0x1FC
 	mov	r8, #0x1FC
 	bcmr32	r8, r9
-1:	bcmr32	r7, r9			@ read some reg
+2:	bcmr32	r7, r9			@ read some reg
 	cmp	r9, r6			@ is it 0xFFFA0005?
 	cmpne	r9, r5			@ is it 0xFFFF?
-	beq	1b			@ if not, keep looping
+	beq	2b			@ if not, keep looping
 	bcmr32	r8, r9			@ and read 0x1fc again
 	
 	@@ We've stored 10 registers, so my is at [sp, #40].
