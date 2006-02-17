@@ -233,7 +233,7 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	add	r6, r7, #1		@ inc it -> r6
 	str	r6, [sp, #72]		@ and store back
 	ldr	r7, [r5, r7, lsl #2]	@ r7 = offset of starty'th row
-	sub	r7, r7, #8		@ compensate for the +2
+	sub	r7, r7, #2		@ compensate for the +2
 	add	r5, r5, r7, lsl #2	@ r5 = pointer to row in dest
 
 	@@ Load fp_iy, figure out imgOff, increment fp_iy and store it back. 18 cyc.
@@ -241,7 +241,7 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	ldr	r7, [sp, #8]		@ r7 = fp_iy
 	mov	r8, r7, lsr #16		@ r8 = row in image
 	ldr	r8, [r1, r8, lsl #2]	@ r8 = offset of row in src
-	sub	r8, r8, #8		@ compensate for the +2
+	sub	r8, r8, #2		@ compensate for the +2
 	add	r1, r1, r8, lsl #2	@ r1 = pointer to row in src
 	ldr	r8, [sp, #56]		@ r8 = fp_step_y
 	add	r7, r7, r8		@ fp_iy += fp_step_y
@@ -284,11 +284,11 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	and	r0,  r9,  r6, lsr#8	@ r0 = (idst >> 8) & 0x00ff00ff
 	mla	r11, r0,  r8, r10	@ r11 = r0 * alpha + 0x00800080
 	bic	r11, r11, r9		@ r11 &= 0xff00ff00
-	add	r7,  r7,  r11, lsr#8	@ r7 += that whole thing >> 8
+	add	r7,  r7,  r11		@ r7 += that whole thing
 	and	r11, r9,  r6		@ r11 = idst & 0x00ff00ff
 	mla	r6,  r11, r8, r10	@ r6 = r11 * alpha + 0x00800080
 	bic	r6,  r6,  r9		@ r6 &= 0xff00ff00
-	add	r7,  r7,  r6		@ r7 += that whole thing
+	add	r7,  r7,  r6, lsr #8	@ r7 += that whole thing >> 8
 	str	r7,  [r5], #4		@ store the pixel
 	
 	@@ Increment and test. 5 cyc.
@@ -313,11 +313,11 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	and	r0,  r9,  r6, lsr#8	@ r0 = (idst >> 8) & 0x00ff00ff
 	mla	r11, r0,  r8, r10	@ r11 = r0 * alpha + 0x00800080
 	bic	r11, r11, r9		@ r11 &= 0xff00ff00
-	add	r7,  r7,  r11, lsr#8	@ r7 += that whole thing >> 8
+	add	r7,  r7,  r11		@ r7 += that whole thing
 	and	r11, r9,  r6		@ r11 = idst & 0x00ff00ff
 	mla	r6,  r11, r8, r10	@ r6 = r11 * alpha + 0x00800080
 	bic	r6,  r6,  r9		@ r6 &= 0xff00ff00
-	add	r7,  r7,  r6		@ r7 += that whole thing
+	add	r7,  r7,  r6, lsr #8	@ r7 += that whole thing >> 8
 	str	r7,  [r5], #4		@ store the pixel
 	
 	@@ Increment and test. 5 cyc.
@@ -422,11 +422,11 @@ _HD_ARM_LowerBlit_Blend:
 					@ it should be mla r11,r11,r8,r10 (2 cyc quicker) but
 					@ ARM requires Rd!=Rs and we don't have a reg to spare.
 	bic	r11, r11, r9		@ r11 &= 0xff00ff00
-	add	r7,  r7,  r11, lsr#8	@ r7 += that whole thing >> 8
+	add	r7,  r7,  r11		@ r7 += that whole thing
 	and	r11, r9,  r6		@ r11 = idst & 0x00ff00ff
 	mla	r6,  r11, r8, r10	@ r6 = r11 * alpha + 0x00800080
 	bic	r6,  r6,  r9		@ r6 &= 0xff00ff00
-	add	r7,  r7,  r6		@ r7 += that whole thing
+	add	r7,  r7,  r6, lsr #8	@ r7 += that whole thing >> 8
 	str	r7,  [r1], #4		@ store the pixel
 	
 	@@ Increment and test. 4 cyc.
@@ -451,11 +451,11 @@ _HD_ARM_LowerBlit_Blend:
 					@ it should be mla r11,r11,r8,r10 (2 cyc quicker) but
 					@ ARM requires Rd!=Rs and we don't have a reg to spare.
 	bic	r11, r11, r9		@ r11 &= 0xff00ff00
-	add	r7,  r7,  r11, lsr#8	@ r7 += that whole thing >> 8
+	add	r7,  r7,  r11		@ r7 += that whole thing
 	and	r11, r9,  r6		@ r11 = idst & 0x00ff00ff
 	mla	r6,  r11, r8, r10	@ r6 = r11 * alpha + 0x00800080
 	bic	r6,  r6,  r9		@ r6 &= 0xff00ff00
-	add	r7,  r7,  r6		@ r7 += that whole thing
+	add	r7,  r7,  r6, lsr #8	@ r7 += that whole thing >> 8
 	str	r7,  [r1], #4		@ store the pixel
 	
 	@@ Increment and test. 4 cyc.
@@ -604,16 +604,11 @@ _HD_ARM_Update5G:
 	beq	1f
 	@@ OK, we need it. Do it.
 	mov	r12, #0x30000000	@ r12 = 0x30000000
-	orr	r11, r12, #0x30000	@ r11 = 0x30030000
-	mov	r10, #0x31
-	strh	r10, [r11]		@ store the 0x31 thing
 	mvn	r5, #0			@ r5 = 0xFFFFFFFF
 	and	r5, r5, r5, lsr #16	@ r5 = 0x0000FFFF
 	mvn	r6, #0x50000		@ r6 = 0xFFFAFFFF
 	bic	r6, r6, r6, lsr #16	@ r6 = 0xFFFA0005
 	mov	r7, #0x1F8
-	mov	r8, #0x1FC
-	bcmr32	r8, r9
 2:	bcmr32	r7, r9			@ read some reg
 	cmp	r9, r6			@ is it 0xFFFA0005?
 	cmpne	r9, r5			@ is it 0xFFFF?
@@ -714,7 +709,14 @@ _HD_ARM_Update5G:
 	subs	r4, r4, #1		@ dec h
 	bne	1b			@ and keep looping if it's nonzero
 
-	@@ Store a value to say we need a finishup next time we're called.
+	@@ Start the finishup, and remember to finish it next tme.
+	mov	r12, #0x30000000	@ r12 = 0x30000000
+	orr	r11, r12, #0x30000	@ r11 = 0x30030000
+	mov	r10, #0x31
+	strh	r10, [r11]		@ store the 0x31 thing
+	mov	r8, #0x1FC
+	bcmr32	r8, r9			@ read 0x1FC to start it
+		
 	mov	r0, #1
 	ldr	r1, =need_finishup
 	str	r0, [r1]

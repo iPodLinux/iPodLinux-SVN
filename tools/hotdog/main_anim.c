@@ -57,10 +57,7 @@ uint32 *screen;
 extern void _HD_ARM_Update5G (uint16 *fb, int x, int y, int w, int h);
 static void update (hd_engine *eng, int x, int y, int w, int h)
 {
-    printf ("Updating\n");
     _HD_ARM_Update5G (eng->screen.framebuffer, x, y, w, h);
-    printf ("done\n");
-    exit (0);
 }
 #else
 static void update (hd_engine *eng, int x, int y, int w, int h) 
@@ -94,31 +91,31 @@ int main(int argc, char *argv[]) {
   engine = HD_Initialize (WIDTH, HEIGHT, 16, screen, update);
 #endif
   
-        obj[4]    = HD_PNG_Create ("bg.png");
+        obj[4]    = HD_PNG_Create ("/mnt/bg.png");
         obj[4]->x = 0;
         obj[4]->y = 0;
         obj[4]->w = 220;
         obj[4]->h = 176;
 
-        obj[0]    = HD_PNG_Create ("photos.png");
+        obj[0]    = HD_PNG_Create ("/mnt/photos.png");
         obj[0]->x = 0;
         obj[0]->y = 0;
         obj[0]->w = 75;
         obj[0]->h = 150;
 
-        obj[1]    = HD_PNG_Create ("music.png");
+        obj[1]    = HD_PNG_Create ("/mnt/music.png");
         obj[1]->x = 0;
         obj[1]->y = 0;
         obj[1]->w = 75;
         obj[1]->h = 150;
 
-        obj[2]    = HD_PNG_Create ("dvd.png");
+        obj[2]    = HD_PNG_Create ("/mnt/dvd.png");
         obj[2]->x = 0;
         obj[2]->y = 0;
         obj[2]->w = 75;
         obj[2]->h = 150;
 
-        obj[3]    = HD_PNG_Create ("movies.png");
+        obj[3]    = HD_PNG_Create ("/mnt/movies.png");
         obj[3]->x = 0;
         obj[3]->y = 0;
         obj[3]->w = 75;
@@ -134,7 +131,6 @@ int main(int argc, char *argv[]) {
         HD_AnimateCircle (obj[1], 80, 50, 50, (50 << 16) / obj[1]->w, (70 << 16) / obj[1]->w, 1024, 4096, -100);
         HD_AnimateCircle (obj[2], 80, 50, 50, (50 << 16) / obj[2]->w, (70 << 16) / obj[2]->w, 2048, 4096, -100);
         HD_AnimateCircle (obj[3], 80, 50, 50, (50 << 16) / obj[3]->w, (70 << 16) / obj[3]->w, 3072, 4096, -100);
-        HD_StopAnimation (obj[2]);
 
   while(!done) {
 #ifndef IPOD
