@@ -163,7 +163,8 @@ void HD_Render(hd_engine *eng) {
                         if ((rlap->obj->dirty != -1) &&
                             (obj->x + obj->w > rlap->obj->x) && (obj->y + obj->h > rlap->obj->y) &&
                             (obj->x < rlap->obj->x + rlap->obj->w) && (obj->y < rlap->obj->y + rlap->obj->h)) {
-                            if ((rlap->obj->x <= MAX (obj->x, 0)) && (rlap->obj->y <= MAX (obj->y, 0)) &&
+                            if ((rlap->obj->dirty != 1) &&
+                                (rlap->obj->x <= MAX (obj->x, 0)) && (rlap->obj->y <= MAX (obj->y, 0)) &&
                                 (rlap->obj->x + rlap->obj->w >= MIN (obj->x + obj->w, eng->screen.width)) &&
                                 (rlap->obj->y + rlap->obj->h >= MIN (obj->y + obj->h, eng->screen.height)) && // fully envelops
                                 (rlap->obj->z > obj->z)) { // and is below
