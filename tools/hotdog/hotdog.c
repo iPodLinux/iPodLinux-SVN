@@ -222,7 +222,7 @@ void HD_Render(hd_engine *eng) {
 
         if (!needrender) return;
 
-#ifndef PRECISE_DIRTIES
+#if !defined(PRECISE_DIRTIES) && !defined(OBJECT_DIRTIES)
         // Clear FB
         memset (HD_SRF_PIXELS (eng->buffer), 0, eng->screen.width * eng->screen.height * 4);
 #else
