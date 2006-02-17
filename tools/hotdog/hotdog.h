@@ -198,6 +198,12 @@ typedef struct hd_object {
     void (*animate)(struct hd_object *obj);
     void *animdata;
 
+#define HD_SPEED_NOALPHA   1   /* every pixel is opaque, alpha ignored - major speedup */
+#define HD_SPEED_BINALPHA  2   /* any nonzero alpha is like 0xFF - medium speedup */
+#define HD_SPEED_NOSCALE   4   /* it's always a 1:1 scale - minor speedup */
+#define HD_SPEED_CSPRITE   8   /* compile the sprite - ignored currently, would be major speedup if it was impl */
+    int speed;
+
     /* private */ hd_rect last;
 } hd_object;
 
@@ -249,7 +255,7 @@ void HD_Render(hd_engine *eng);
 void HD_Animate(hd_engine *eng);
 void HD_Destroy(hd_object *obj);
 void HD_ScaleBlendClip (hd_surface sbuf, int sx, int sy, int sw, int sh,
-                        hd_surface dbuf, int dx, int dy, int dw, int dh);
+                        hd_surface dbuf, int dx, int dy, int dw, int dh, int speed);
 
 hd_object *HD_New_Object();
 hd_obj_list *HD_StackObjects (hd_obj_list *head);

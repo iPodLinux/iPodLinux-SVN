@@ -556,7 +556,7 @@ extern void _HD_ARM_LowerBlit_Fast (hd_surface, uint32, uint32,
 #endif
 
 void HD_ScaleBlendClip (hd_surface ssrf, int sx, int sy, int sw, int sh,
-                        hd_surface dsrf, int dx, int dy, int dw, int dh)
+                        hd_surface dsrf, int dx, int dy, int dw, int dh, int speed)
 {
   int stw = HD_SRF_WIDTH (ssrf), sth = HD_SRF_HEIGHT (ssrf),
       dtw = HD_SRF_WIDTH (dsrf), dth = HD_SRF_HEIGHT (dsrf);
@@ -623,8 +623,15 @@ void HD_ScaleBlendClip (hd_surface ssrf, int sx, int sy, int sw, int sh,
 #ifdef IPOD
   (void)sbuf; (void)dbuf; (void)fp_ix; (void)fp_iy;
   (void)x; (void)y; (void)buffOff; (void)imgOff;
-  _HD_ARM_LowerBlit_ScaleBlend (ssrf, fp_initial_ix, fp_initial_iy, fp_step_x, fp_step_y,
-                                dsrf, startx, endx - startx, starty, endy - starty, 0xff);
+  if (speed & HD_SPEED_NOALPHA)
+      _HD_ARM_LowerBlit_Fast (ssrf, fp_initial_ix >> 16, fp_initial_iy >> 16,
+                              dsrf, startx, starty, endx - startx, endy - starty);
+  else if (speed & HD_SPEED_NOSCALE)
+      _HD_ARM_LowerBlit_Blend (ssrf, fp_initial_ix >> 16, fp_initial_iy >> 16,
+                               dsrf, startx, starty, endx - startx, endy - starty, 0xff);
+  else
+      _HD_ARM_LowerBlit_ScaleBlend (ssrf, fp_initial_ix, fp_initial_iy, fp_step_x, fp_step_y,
+                                    dsrf, startx, endx - startx, starty, endy - starty, 0xff);
 #else
   buffOff = starty * dtw;// + startx;
   
