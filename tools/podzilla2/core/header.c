@@ -32,10 +32,6 @@ extern int ipod_read_apm(int *battery, int *charging);
 
 static int make_dirty (TWidget *this) { this->dirty++; ttk_dirty |= TTK_DIRTY_HEADER; return 0; }
 
-/* for header text justification... */
-#define TITLE_JUSTIFY_CENTER (0)
-#define TITLE_JUSTIFY_LEFT   (1)
-#define TITLE_JUSTIFY_RIGHT  (2)
 
 static void battery_draw (TWidget *this, ttk_surface srf) 
 {
@@ -400,7 +396,7 @@ void pz_header_colors_dirty( void )
 /** Decorations: **/
 static void draw_decorations (TWidget *this, ttk_surface srf)
 {
-	int just = TITLE_JUSTIFY_CENTER; //pz_get_int_setting (pz_global_config, TITLE_JUSTIFY);
+	enum ttk_justification just = TTK_TEXT_CENTER;
 	int xp = 0;
 	int width = ttk_text_width (ttk_menufont, ttk_windows->w->title);
 	int boff = 0;
@@ -408,6 +404,29 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 	if( pz_get_int_setting( pz_global_config, BATTERY_UPDATE ) 
 	    == BATTERY_UPDATE_OFF ) {
 		boff++;
+	}
+
+	/* set up text positioning */
+	just = (int) pz_get_int_setting (pz_global_config, TITLE_JUSTIFY);
+	ttk_header_set_text_justification( just );
+	ttk_header_set_text_position( -1 );	/* default */
+
+	switch( just ) {
+	case( TTK_TEXT_LEFT ):
+		/* XX probably need to adjust this based on left widgets */
+		if( pz_hold_is_on) 
+			ttk_header_set_text_position( ttk_screen->wy + 4 );
+		else
+			ttk_header_set_text_position( 4 );
+		break;
+	case( TTK_TEXT_RIGHT ):
+		if( boff )	ttk_header_set_text_position( ttk_screen->w - 2 );
+		else		ttk_header_set_text_position( hwid_right[hwid_rnext-1]-9 );
+		break;
+	case( TTK_TEXT_CENTER ):
+	default:
+		ttk_header_set_text_position( ttk_screen->w >>1 );
+		break;
 	}
 
 	/* draw the decorations */
@@ -441,16 +460,6 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 			}
 		}
 
-		/* vertical widget separators */
-		ttk_ap_fillrect( srf, ttk_ap_get ("header.fg"), 
-			    ttk_screen->wy-1, 0,
-			    ttk_screen->wy+1, ttk_screen->wy - 1 );
-
-		if( !boff )
-			ttk_ap_fillrect( srf, ttk_ap_get ("header.fg"), 
-			    hwid_right[hwid_rnext-1] - 4, 0,
-			    hwid_right[hwid_rnext-1] - 6, ttk_screen->wy - 1 );
-
 		/* faux close widget */
 		if ( !pz_get_int_setting (pz_global_config, DISPLAY_LOAD) 
 			&& !pz_hold_is_on) {
@@ -470,27 +479,44 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 					(int) (xo*4.8), (int) (yo*4.8) );
 		}
 
+
 		/* clear text area */
 		if (ttk_ap_getx ("header.bg") -> type & TTK_AP_COLOR) {
 			switch( just ) {
-			case( TITLE_JUSTIFY_LEFT ):
-				xp = ttk_screen->wy+2;
+			case( TTK_TEXT_LEFT ):
+				xp = ttk_screen->wy+1;
+				ttk_header_set_text_position( 11 + hwid_left[hwid_lnext-1] );
 				break;
 
-			case( TITLE_JUSTIFY_RIGHT ):
-				xp = ttk_screen->w - width - 8;
-				if( boff ) xp -= (hwid_right[hwid_rnext-1] + 4);
+			case( TTK_TEXT_RIGHT ):
+				xp = hwid_right[hwid_rnext-1] - width - 12;
+				ttk_header_set_text_position( hwid_right[hwid_rnext-1] - 8 );
+
+				if( boff ) {
+					xp = ttk_screen->w - width - 6;
+					ttk_header_set_text_position( ttk_screen->w -2 );
+				}
 				break;
 
-			case( TITLE_JUSTIFY_CENTER ):
+			case( TTK_TEXT_CENTER ):
 			default:
 				xp = ((ttk_screen->w - width)>>1) - 4;
+				ttk_header_set_text_position( ttk_screen->w >>1 );
 			}
 
 			ttk_ap_fillrect( srf, ttk_ap_get ("header.bg"),
 				xp, 0, xp + width + 8,
 				ttk_screen->wy - 2 );
 		}
+
+		/* vertical widget separators */
+		ttk_ap_fillrect( srf, ttk_ap_get ("header.fg"), 
+			    ttk_screen->wy-1, 0,
+			    ttk_screen->wy+1, ttk_screen->wy - 1 );
+		if( !boff )
+			ttk_ap_fillrect( srf, ttk_ap_get ("header.fg"), 
+			    hwid_right[hwid_rnext-1] - 4, 0,
+			    hwid_right[hwid_rnext-1] - 6, ttk_screen->wy - 1 );
 
     } else if (decorations == PZ_DEC_AMIGA20) {
 		/* top */
@@ -533,6 +559,11 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 			ttk_rect( srf, xo*2.6, yo*2, xo*4.4, yo*5,
 				ttk_ap_getx( "header.shadow" )->color );
 		}
+
+		/* tweak the text for the closebox */
+		if( just == TTK_TEXT_LEFT ) 
+			ttk_header_set_text_position( ttk_screen->wy + 4 );
+
 
     } else if (decorations == PZ_DEC_MROBE) {
 	// . X X X .
