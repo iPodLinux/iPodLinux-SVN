@@ -463,8 +463,8 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 					(int) (xo*1),  (int) (yo*1),
 					(int) (xo*7),  (int) (yo*7) );
 			ttk_ap_fillrect( srf, ttk_ap_get ("header.bg"),
-					(int) (xo*1.5),  (int) (yo*1.5),
-					(int) (xo*6.5), (int) (yo*6.5) );
+					(int) (xo*1.6), (int) (yo*1.6),
+					(int) (xo*6.4), (int) (yo*6.4) );
 			ttk_ap_fillrect (srf, ttk_ap_get ("header.accent"), 
 					(int) (xo*3.1), (int) (yo*3.1),
 					(int) (xo*4.8), (int) (yo*4.8) );
