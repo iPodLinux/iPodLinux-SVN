@@ -565,7 +565,7 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 			ttk_header_set_text_position( ttk_screen->wy + 4 );
 
 
-    } else if (decorations == PZ_DEC_MROBE) {
+    } else if (decorations == PZ_DEC_DOTS) {
 	// . X X X .
 	// X X X X X
 	// X X X X X

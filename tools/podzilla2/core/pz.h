@@ -327,7 +327,7 @@ void pz_header_fix_hold (void);
 #define PZ_DEC_AMIGA11      (1)
 #define PZ_DEC_AMIGA13      (2)
 #define PZ_DEC_AMIGA20      (3)
-#define PZ_DEC_MROBE        (4)
+#define PZ_DEC_DOTS         (4)
 #define PZ_DEC_BIGRAD       (5)
 #define PZ_DEC_TRIGRAD      (6)
 #define PZ_DEC_BIGRADBAR    (7)
