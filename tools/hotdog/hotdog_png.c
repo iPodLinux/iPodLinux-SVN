@@ -171,6 +171,17 @@ hd_object *HD_PNG_Create(const char *fname) {
         ret->natw = ret->w = w;
         ret->nath = ret->h = h;
 
+        /* Check alpha values, set speed appropriately. */
+        ret->speed = HD_SPEED_NOALPHA | HD_SPEED_BINALPHA;
+        uint32 *pp = HD_SRF_PIXELS (ret->canvas);
+        while (pp < HD_SRF_END (ret->canvas)) {
+            if ((*pp >> 24) != 0xff) {
+                ret->speed &= ~HD_SPEED_NOALPHA;
+                if ((*pp >> 24) != 0) ret->speed &= ~HD_SPEED_BINALPHA;
+            }
+            pp++;
+        }
+
 	ret->render = HD_Canvas_Render;
         ret->destroy = HD_Canvas_Destroy;
 
