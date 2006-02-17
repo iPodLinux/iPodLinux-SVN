@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <errno.h>
 
 #include "png.h"
 
@@ -49,7 +50,7 @@ hd_surface HD_PNG_Load (const char *fname, int *retw, int *reth)
 	
 	in = fopen(fname,"rb");
 	if(in == NULL) {
-		printf("Unable to open %s\n",fname);
+		printf("Unable to open %s: %s\n",fname, strerror(errno));
                 goto done;
 	}
 	fread(header, 1, 8, in);
