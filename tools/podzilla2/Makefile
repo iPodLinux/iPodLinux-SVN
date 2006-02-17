@@ -22,11 +22,11 @@ ifdef SUBDIRS
 do-it: buildmod
 endif
 
-ifeq ($(shell which ttk-config 2>/dev/null >/dev/null && echo yes),yes)
-TTKCONF = ttk-config
-else
 ifdef TTKDIR
 TTKCONF = $(TTKDIR)/ttk-config-here
+else
+ifeq ($(shell which ttk-config 2>/dev/null >/dev/null && echo yes),yes)
+TTKCONF = ttk-config
 else
 ifneq ($(wildcard ../ttk/ttk-config-here),)
 TTKCONF = ../ttk/ttk-config-here
