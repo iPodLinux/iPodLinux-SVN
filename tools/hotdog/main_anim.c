@@ -132,14 +132,20 @@ static void circle_rotate(circle_object *circle, int dir)
 int main(int argc, char *argv[]) {
 	int i, t = 0;
 	uint32 done = 0;
-	char ch, benchmark = 0;
+	char ch, benchmark = 0, noinput = 0;
 	hd_engine *engine;
 	circle_object obj[5];
 
-	for (i = 1; i < argc; i++)
-		if (*argv[i] == '-')
+	for (i = 1; i < argc; i++) {
+		if (*argv[i] == '-') {
 			if (strcmp("benchmark", argv[i]+1) == 0)
 				benchmark = 1;
+			if (strcmp("noinput", argv[i]+1) == 0)
+				noinput = 1;
+		}
+	}
+
+	noinput = noinput && benchmark;
 
 #ifndef IPOD
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -364,3 +370,11 @@ int main(int argc, char *argv[]) {
 #endif
 	return(0);
 }
+
+/*
+ * Local Variables:
+ * indent-tabs-mode: t
+ * c-basic-offset: 8
+ * End:
+ */
+
