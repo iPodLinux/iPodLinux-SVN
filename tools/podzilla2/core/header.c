@@ -546,18 +546,22 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 	ttk_gc gc = ttk_new_gc();
 	ttk_gc_set_foreground (gc, ttk_ap_getx ("header.accent") -> color);
 	TWindow *pixmap = malloc (sizeof(TWindow)); pixmap->srf = srf;
+	int nits = 0;
+	int n2 = 0;
 	
 	/* draw left side */
 	for (i = ((ttk_screen->w - width) >> 1) - 10;
 	     i > hwid_left[hwid_lnext-1] + 6;
 	     i -= 11) {
-	    t_GrBitmap (pixmap, gc, i - 2, (ttk_screen->wy >> 1) - 2, 5, 5, circle);
+		t_GrBitmap (pixmap, gc, i - 2, 
+				(ttk_screen->wy >> 1) - 2, 5, 5, circle);
+		nits++;
 	}
 
 	/* draw right side */
-	for (i = ((ttk_screen->w + width) >> 1) + 7;
-	     i < hwid_right[hwid_rnext-1] - 6;
-	     i += 11) {
+	for (i = ((ttk_screen->w + width) >> 1) + 7, n2=0;
+	     (boff)? (n2 < nits ) : (i < hwid_right[hwid_rnext-1] - 6) ;
+	     i += 11, n2++) {
 	    t_GrBitmap (pixmap, gc, i - 2, (ttk_screen->wy >> 1) - 2, 5, 5, circle);
 	}
 
