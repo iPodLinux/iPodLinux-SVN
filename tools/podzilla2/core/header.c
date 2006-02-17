@@ -38,10 +38,30 @@ static void battery_draw (TWidget *this, ttk_surface srf)
 	TApItem fill;
 	TApItem *ap;
 	char buf[32];
-	int battery_fill, battery_is_charging;
+	static int battery_fill = 0;
+	static int battery_is_charging = 0;
 	ttk_color c;
 
-	ipod_read_apm(&battery_fill, &battery_is_charging);
+	/* for the timer update rate */
+	int update_rate;
+	static int ticks = 0;
+	static int secs[] = { 1, 5, 15, 30, 60, -1 };	/* ref: menu.c */
+
+	ticks++;
+	update_rate = pz_get_int_setting( pz_global_config, BATTERY_UPDATE );
+
+	/* battery indicator is off? */
+	if( update_rate >= BATTERY_UPDATE_OFF ) return;
+
+	/* turn it into number of seconds */
+	update_rate = secs[ update_rate ];
+
+	/* we need *2, since we get called twice per time tick... */
+	if( ticks >= (update_rate *2) ) {	
+		/* reset tick counter, read the value */
+		ticks = 0;
+		ipod_read_apm(&battery_fill, &battery_is_charging);
+	}
 
 	/* draw the level as digits/text if that's the user's setting */
 	if (pz_get_int_setting (pz_global_config, BATTERY_DIGITS)) {
