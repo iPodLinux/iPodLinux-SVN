@@ -533,16 +533,27 @@ void HD_Render(hd_engine *eng) {
         while (rect) {
             hd_rect *next;
 #ifndef DARWIN /* for some reason updating rect's is incredibly slow on OS X */
+#ifndef IPOD
             eng->screen.update (eng, rect->x, rect->y, rect->w, rect->h);
+#endif
 #endif
             next = rect->next;
             free (rect);
             rect = next;
         }
-#ifdef DARWIN
+#if defined(DARWIN) || defined(IPOD)
         eng->screen.update (eng, 0, 0, eng->screen.width, eng->screen.height);
 #endif
 }
+
+#ifdef IPOD
+extern void _HD_ARM_LowerBlit_ScaleBlend (hd_surface, uint32, uint32, uint32, uint32,
+                                          hd_surface, uint32, uint32, uint32, uint32, uint8);
+extern void _HD_ARM_LowerBlit_Blend (hd_surface, uint32, uint32,
+                                     hd_surface, uint32, uint32, uint32, uint32, uint8);
+extern void _HD_ARM_LowerBlit_Fast (hd_surface, uint32, uint32,
+                                    hd_surface, uint32, uint32, uint32, uint32);
+#endif
 
 void HD_ScaleBlendClip (hd_surface ssrf, int sx, int sy, int sw, int sh,
                         hd_surface dsrf, int dx, int dy, int dw, int dh)
@@ -608,7 +619,13 @@ void HD_ScaleBlendClip (hd_surface ssrf, int sx, int sy, int sw, int sh,
     fp_initial_ix += (sx << 16);
     fp_initial_iy += (sy << 16);
   }
-  
+
+#ifdef IPOD
+  (void)sbuf; (void)dbuf; (void)fp_ix; (void)fp_iy;
+  (void)x; (void)y; (void)buffOff; (void)imgOff;
+  _HD_ARM_LowerBlit_ScaleBlend (ssrf, fp_initial_ix, fp_initial_iy, fp_step_x, fp_step_y,
+                                dsrf, startx, endx - startx, starty, endy - starty, 0xff);
+#else
   buffOff = starty * dtw;// + startx;
   
   fp_iy = fp_initial_iy;
@@ -625,6 +642,7 @@ void HD_ScaleBlendClip (hd_surface ssrf, int sx, int sy, int sw, int sh,
     buffOff += dtw;
     fp_iy += fp_step_y;
   }
+#endif
 }
 
 void HD_Destroy (hd_object *obj) 
