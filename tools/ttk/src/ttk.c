@@ -477,20 +477,17 @@ int ttk_run()
 
 	    /* Draw title */
 	    /* autocenter if unset */
-	    if( header_text_pos < 0 ) { textpos = s->w/2; }
+	    textpos = ((header_text_pos>=0)?header_text_pos:((s->w)>>1));
 
 	    switch( header_text_justification ) {
 	    case( TTK_TEXT_LEFT ):
-		    textpos = header_text_pos;
 		    break;
 	    case( TTK_TEXT_RIGHT ):
-		    textpos = header_text_pos 
-			    - ttk_text_width( ttk_menufont, win->title);
+		    textpos -= ttk_text_width( ttk_menufont, win->title);
 		    break;
 	    case( TTK_TEXT_CENTER ):
 	    default:
-		    textpos = header_text_pos 
-			    - (ttk_text_width( ttk_menufont, win->title)>>1);
+		    textpos -= (ttk_text_width( ttk_menufont, win->title)>>1);
 		    break;
 	    }
 
