@@ -532,15 +532,15 @@ _HD_ARM_LowerBlit_Fast:
 	
 	@@ First copy as many 16-byte units as we can. 6S if <16 bytes left,
 	@@ 10S + 3N + 1I if =16, 12S + 4N + 1I if >16.
-2:	cmp	r12, #16		@ at least 16 bytes left?
+2:	cmp	r12, #4		@ at least 16 bytes left?
 	ldmhsia	r2!, {r8-r11}		@ If it was >= 16, transfer 16 bytes. Read (1N + 1I + 4S),
 	stmhsia	r3!, {r8-r11}		@ write (2N + 3S),
-	subhs	r12, r12, #16		@ and update r12.
+	subhs	r12, r12, #4		@ and update r12.
 	bhi	2b			@ If there's more, go back now and skip the rest of this stuff.
 	@@ Then copy 4-byte units till we're done. 4S if done, 3N + 2I + 5S if not done
 3:	ldrne	r8, [r2], #4		@ If r8 was != 16, and we're still here (so it's < 16),
 	strne	r8, [r3], #4		@ transfer 4 bytes. 2N+2I+2S for these two.
-	subnes	r12, r12, #4		@ and update r12.
+	subnes	r12, r12, #1		@ and update r12.
 	bne	3b			@ If we're now <16 bytes, just repeat the word-copying part till
 					@ we're done.
 	@@ Update r0, r1. 2S.
