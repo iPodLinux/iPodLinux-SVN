@@ -534,6 +534,9 @@ void pz_reset_idle_timer();
 #define TEXT_FONT	(48)
 #define SLIDE_TRANSIT	(49)
 #define MENU_FONT	(50)
+#define BATTERY_UPDATE	(51)	/* appearance */
+
+#define 	BATTERY_UPDATE_OFF (5)
 
 #if defined(PZ_COMPAT) && !defined(LEGACY_DOT_C)
 #define pz_new_window(x,y,w,h,d,k) pz_old_window(x,y,w,h,d,k) /* hopefully no conflict with new_win(title,XYWH,x,y,w,h) */
