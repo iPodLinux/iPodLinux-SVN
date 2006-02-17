@@ -248,6 +248,14 @@ void ttk_window_title (TWindow *win, const char *str);
 void ttk_window_show_header (TWindow *win);
 void ttk_window_hide_header (TWindow *win);
 
+enum ttk_justification {
+        TTK_TEXT_CENTER = 0,
+        TTK_TEXT_LEFT,
+        TTK_TEXT_RIGHT
+};
+void ttk_header_set_text_position( int x );
+void ttk_header_set_text_justification( enum ttk_justification j );
+
 TWidget *ttk_new_widget (int x, int y);
 void ttk_free_widget (TWidget *wid);
 TWindow *ttk_add_widget (TWindow *win, TWidget *wid); // returns win
