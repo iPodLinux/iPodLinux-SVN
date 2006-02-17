@@ -189,6 +189,7 @@ clean:
 
 mrproper: clean
 	@rm -f .config config.h
+	@rm -f podzilla2.pot
 
 dev-env:
 	mkdir -p config pods xpods
