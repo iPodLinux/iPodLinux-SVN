@@ -730,6 +730,27 @@ to be either shown or not shown, respectively, when this window is at the top of
 for screensavers, and for widgets that need as much screen space as possible.
 \end{description}
 
+\begin{verbatim}
+enum ttk_justification {
+        TTK_TEXT_CENTER = 0,
+        TTK_TEXT_LEFT,
+        TTK_TEXT_RIGHT
+};
+void ttk_header_set_text_position( int x );
+void ttk_header_set_text_justification( enum ttk_justification j );
+\end{verbatim}
+
+These two functions set the behavior of the text rendering for the header bar.
+
+\begin{description}
+\item[{\tt ttk\_header\_set\_text\_justification}] sets how the text is 
+positioned with relation of the position.  Use the values defined in the 
+enum as parameters for this. Read the next item for more description.
+\item[{\tt ttk\_header\_set\_text\_position}] sets where the text gets drawn
+from.  If Centered, this is the center point of the text.  If Left justified,
+this is the leftmost point of the text.  If Right justified, this is the rightmost point of the text.
+\end{description}
+
 \section{Widget Management}
 \begin{verbatim}
 TWidget *ttk_new_widget (int x, int y);
