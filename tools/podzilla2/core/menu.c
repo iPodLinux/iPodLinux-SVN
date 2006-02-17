@@ -147,7 +147,7 @@ static const char * transit_options[] = { N_("Off"), N_("Slow"), N_("Fast"), 0 }
 
 static const char * appearance_decorations[] = { "Plain",
 		"Amiga 1.1", "Amiga 1.3", "Amiga 2.0",
-		"m:robe",
+		"Dots",
 		"Grad", "Tri-Grad", "Grad/Bar", "Tri-Grad/Bar", 0 };
 
 /* be sure to keep the "Off" entry lined up with BATTERY_UPDATE_OFF in pz.h */
