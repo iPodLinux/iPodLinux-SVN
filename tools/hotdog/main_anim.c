@@ -132,6 +132,9 @@ int main(int argc, char *argv[]) {
         HD_AnimateCircle (obj[2], 80, 50, 50, (50 << 16) / obj[2]->w, (70 << 16) / obj[2]->w, 2048, 4096, -100);
         HD_AnimateCircle (obj[3], 80, 50, 50, (50 << 16) / obj[3]->w, (70 << 16) / obj[3]->w, 3072, 4096, -100);
 
+        uint32 srtc = *(volatile uint32 *)0x60005010;
+        int t = 0;
+
   while(!done) {
 #ifndef IPOD
     SDL_Event event;
@@ -168,6 +171,9 @@ int main(int argc, char *argv[]) {
     }
 
     SDL_Delay (30);
+#else
+    t++;
+    if (t >= 200) break;
 #endif
     HD_Animate (engine);
 
@@ -183,6 +189,10 @@ int main(int argc, char *argv[]) {
       SDL_UnlockSurface(screen);
 #endif
   }
-
+  uint32 ertc = *(volatile uint32 *)0x60005010;
+  printf ("%d frames in %d microseconds = %d.%02d frames/sec\n",
+          t, ertc - srtc, 1000000 * t / (ertc - srtc),
+          (1000000 * t / ((ertc - srtc) / 100)) % 100);
+  sleep (5);
   return(0);
 }
