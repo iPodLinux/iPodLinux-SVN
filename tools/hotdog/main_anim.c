@@ -129,10 +129,16 @@ static void circle_rotate(circle_object *circle, int dir)
 }
 
 int main(int argc, char *argv[]) {
+	int i, t = 0;
 	uint32 done = 0;
-	char ch;
+	char ch, benchmark = 0;
 	hd_engine *engine;
 	circle_object obj[5];
+
+	for (i = 1; i < argc; i++)
+		if (*argv[i] == '-')
+			if (strcmp("benchmark", argv[i]+1) == 0)
+				benchmark = 1;
 
 #ifndef IPOD
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -149,7 +155,6 @@ int main(int argc, char *argv[]) {
 	engine = HD_Initialize (WIDTH, HEIGHT, 16, screen->pixels, update);
 #define IMGPREFIX ""
 #else
-	int t = 0;
 
 	screen = malloc (WIDTH * HEIGHT * 2);
 	engine = HD_Initialize (WIDTH, HEIGHT, 16, screen, update);
@@ -193,13 +198,30 @@ int main(int argc, char *argv[]) {
 	HD_Register(engine,obj[3].object);
 
 	obj[0].position = 0;
-	circle_rotate(&obj[0], 1);
 	obj[1].position = 1024;
-	circle_rotate(&obj[1], 1);
 	obj[2].position = 2048;
-	circle_rotate(&obj[2], 1);
 	obj[3].position = 3072;
-	circle_rotate(&obj[3], 1);
+
+	if (benchmark) {
+		HD_AnimateCircle(obj[0].object, 80, 50, 50, (50 << 16) /
+				obj[0].object->w, (70 << 16) / obj[0].object->w,
+				obj[0].position, 4096, -100);
+		HD_AnimateCircle(obj[1].object, 80, 50, 50, (50 << 16) /
+				obj[1].object->w, (70 << 16) / obj[1].object->w,
+				obj[1].position, 4096, -100);
+		HD_AnimateCircle(obj[2].object, 80, 50, 50, (50 << 16) /
+				obj[2].object->w, (70 << 16) / obj[2].object->w,
+				obj[2].position, 4096, -100);
+		HD_AnimateCircle(obj[3].object, 80, 50, 50, (50 << 16) /
+				obj[3].object->w, (70 << 16) / obj[3].object->w,
+				obj[3].position, 4096, -100);
+	}
+	else {
+		circle_rotate(&obj[0], 1);
+		circle_rotate(&obj[1], 1);
+		circle_rotate(&obj[2], 1);
+		circle_rotate(&obj[3], 1);
+	}
 
 #ifdef IPOD
 	uint32 srtc = *(volatile uint32 *)0x60005010;
@@ -212,7 +234,8 @@ int main(int argc, char *argv[]) {
 #endif
 
 	while(!done) {
-		if ((ch = check_pending()) && !obj[0].object->animating) {
+		if (!benchmark && (ch = check_pending()) &&
+				!obj[0].object->animating) {
 			circle_rotate(&obj[0], ch);
 			circle_rotate(&obj[1], ch);
 			circle_rotate(&obj[2], ch);
@@ -231,6 +254,7 @@ int main(int argc, char *argv[]) {
 				case SDLK_UP:
 					break;
 				case SDLK_LEFT:
+					if (benchmark) break;
 					if (obj[0].object->animating) {
 						add_pending(1);
 						break;
@@ -241,6 +265,7 @@ int main(int argc, char *argv[]) {
 					circle_rotate(&obj[3], 1);
 					break;
 				case SDLK_RIGHT:
+					if (benchmark) break;
 					if (obj[0].object->animating) {
 						add_pending(-1);
 						break;
@@ -281,6 +306,7 @@ int main(int argc, char *argv[]) {
 				done = 1;
 				break;
 			case 'r':
+				if (benchmark) break;
 				if (obj[0].object->animating) {
 					add_pending(1);
 					break;
@@ -291,6 +317,7 @@ int main(int argc, char *argv[]) {
 				circle_rotate(&obj[3], 1);
 				break;
 			case 'l':
+				if (benchmark) break;
 				if (obj[0].object->animating) {
 					add_pending(-1);
 					break;
@@ -307,8 +334,11 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 		}
-		t++;
 #endif
+		t++;
+		if (benchmark && t > 200)
+			done = 1;
+
 		HD_Animate (engine);
 
 #ifndef IPOD
