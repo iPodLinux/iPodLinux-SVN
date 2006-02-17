@@ -46,6 +46,9 @@ static int ttk_started = 0;
 static int ttk_podversion = -1;
 static int ttk_scroll_num = 1, ttk_scroll_denom = 1;
 
+static enum ttk_justification header_text_justification = TTK_TEXT_CENTER;
+static int header_text_pos = -1;
+
 #ifdef IPOD
 #define outl(datum,addr) (*(volatile unsigned long *)(addr) = (datum))
 #define inl(addr) (*(volatile unsigned long *)(addr))
@@ -93,6 +96,18 @@ int ttk_version_check (int otherver)
              "recompile this program.\n", otherver, myver);
     return 0;
 }
+
+
+void ttk_header_set_text_position( int x )
+{
+	header_text_pos = x;
+}
+
+void ttk_header_set_text_justification( enum ttk_justification j )
+{
+	header_text_justification = j;
+}
+
 
 static void ttk_parse_fonts_list() 
 {
@@ -365,6 +380,7 @@ int ttk_run()
     static int sofar = 0;
     int time = 0, hs;
     ttk_timer ctim;
+    int textpos = 0;
     TWidget *pf;
 
     ttk_started = 1;
@@ -460,8 +476,25 @@ int ttk_run()
 	    }
 
 	    /* Draw title */
-	    ttk_text (s->srf, ttk_menufont,
-		      (s->w - ttk_text_width (ttk_menufont, win->title)) / 2,
+	    /* autocenter if unset */
+	    if( header_text_pos < 0 ) { textpos = s->w/2; }
+
+	    switch( header_text_justification ) {
+	    case( TTK_TEXT_LEFT ):
+		    textpos = header_text_pos;
+		    break;
+	    case( TTK_TEXT_RIGHT ):
+		    textpos = header_text_pos 
+			    - ttk_text_width( ttk_menufont, win->title);
+		    break;
+	    case( TTK_TEXT_CENTER ):
+	    default:
+		    textpos = header_text_pos 
+			    - (ttk_text_width( ttk_menufont, win->title)>>1);
+		    break;
+	    }
+
+	    ttk_text (s->srf, ttk_menufont, textpos,
 		      (s->wy - ttk_text_height (ttk_menufont)) / 2,
 		      ttk_ap_getx ("header.fg") -> color,
 		      win->title);
