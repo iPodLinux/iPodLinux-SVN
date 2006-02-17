@@ -155,6 +155,11 @@ static const char * battery_update_rates[] = {
 		N_("1s"), N_("5s"), N_("15s"),
 		N_("30s"), N_("1m"), N_("Off"), 0 };
 
+/*
+static const char * title_justifications[] = {
+		N_("Center"), N_("Left"), N_("Right"), 0 };
+*/
+
 static void slider_set_setting (int set, int val) 
 {
 	pz_ipod_set (set, val);
@@ -217,6 +222,9 @@ void pz_menu_init()
     pz_menu_add_setting ("/Settings/Clicker", CLICKER, pz_global_config, 0);
     pz_menu_add_action ("/Settings/Appearance/Color Scheme", pz_select_color_scheme);
     pz_menu_add_setting ("/Settings/Appearance/Decorations", DECORATIONS, pz_global_config, appearance_decorations);
+/*
+    pz_menu_add_setting ("/Settings/Appearance/Justification", TITLE_JUSTIFY, pz_global_config, title_justifications);
+*/
     pz_menu_add_setting ("/Settings/Appearance/Battery Update", BATTERY_UPDATE, pz_global_config, battery_update_rates);
     pz_menu_add_setting ("/Settings/Appearance/Battery Digits", BATTERY_DIGITS, pz_global_config, 0);
     pz_menu_add_setting ("/Settings/Appearance/Display Load Average", DISPLAY_LOAD, pz_global_config, 0);

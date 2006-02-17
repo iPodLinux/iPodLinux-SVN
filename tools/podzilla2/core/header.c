@@ -32,6 +32,10 @@ extern int ipod_read_apm(int *battery, int *charging);
 
 static int make_dirty (TWidget *this) { this->dirty++; ttk_dirty |= TTK_DIRTY_HEADER; return 0; }
 
+/* for header text justification... */
+#define TITLE_JUSTIFY_CENTER (0)
+#define TITLE_JUSTIFY_LEFT   (1)
+#define TITLE_JUSTIFY_RIGHT  (2)
 
 static void battery_draw (TWidget *this, ttk_surface srf) 
 {
@@ -396,7 +400,15 @@ void pz_header_colors_dirty( void )
 /** Decorations: **/
 static void draw_decorations (TWidget *this, ttk_surface srf)
 {
+	int just = TITLE_JUSTIFY_CENTER; //pz_get_int_setting (pz_global_config, TITLE_JUSTIFY);
+	int xp = 0;
 	int width = ttk_text_width (ttk_menufont, ttk_windows->w->title);
+	int boff = 0;
+
+	if( pz_get_int_setting( pz_global_config, BATTERY_UPDATE ) 
+	    == BATTERY_UPDATE_OFF ) {
+		boff++;
+	}
 
 	/* draw the decorations */
 	if (decorations == PZ_DEC_AMIGA13 || decorations == PZ_DEC_AMIGA11) {
@@ -407,11 +419,13 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 			ttk_ap_fillrect (srf, ttk_ap_get ("header.fg"),
 					ttk_screen->wy + o,
 					o,
+					(boff)?ttk_screen->w-4:
 					hwid_right[hwid_rnext-1]-6 - o + 1,
 					o*2-1 );
 			ttk_ap_fillrect (srf, ttk_ap_get ("header.fg"), 
 					ttk_screen->wy + o,
 					ttk_screen->wy - o*2 + 1,
+					(boff)?ttk_screen->w-4:
 					hwid_right[hwid_rnext-1]-6 - o + 1,
 					ttk_screen->wy - o);
 	
@@ -421,6 +435,7 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 			for (i = 1; i < ttk_screen->wy; i += 2) {
 				ttk_line (srf, 
 					ttk_screen->wy, i,
+					(boff)?ttk_screen->w:
 					hwid_right[hwid_rnext-1]-6, i,
 					ttk_ap_getx ("header.fg") -> color);
 			}
@@ -430,7 +445,9 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 		ttk_ap_fillrect( srf, ttk_ap_get ("header.fg"), 
 			    ttk_screen->wy-1, 0,
 			    ttk_screen->wy+1, ttk_screen->wy - 1 );
-		ttk_ap_fillrect( srf, ttk_ap_get ("header.fg"), 
+
+		if( !boff )
+			ttk_ap_fillrect( srf, ttk_ap_get ("header.fg"), 
 			    hwid_right[hwid_rnext-1] - 4, 0,
 			    hwid_right[hwid_rnext-1] - 6, ttk_screen->wy - 1 );
 
@@ -455,10 +472,24 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 
 		/* clear text area */
 		if (ttk_ap_getx ("header.bg") -> type & TTK_AP_COLOR) {
+			switch( just ) {
+			case( TITLE_JUSTIFY_LEFT ):
+				xp = ttk_screen->wy+2;
+				break;
+
+			case( TITLE_JUSTIFY_RIGHT ):
+				xp = ttk_screen->w - width - 8;
+				if( boff ) xp -= (hwid_right[hwid_rnext-1] + 4);
+				break;
+
+			case( TITLE_JUSTIFY_CENTER ):
+			default:
+				xp = ((ttk_screen->w - width)>>1) - 4;
+			}
+
 			ttk_ap_fillrect( srf, ttk_ap_get ("header.bg"),
-				 (ttk_screen->w - width) / 2 - 4, 0,
-				 (ttk_screen->w + width) / 2 + 4, 
-				 ttk_screen->wy - 2 );
+				xp, 0, xp + width + 8,
+				ttk_screen->wy - 2 );
 		}
 
     } else if (decorations == PZ_DEC_AMIGA20) {
@@ -475,12 +506,14 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 				ttk_ap_getx( "header.shadow" )->color );
 
 		/* right widget vertical border bar */
-		ttk_line( srf, hwid_right[hwid_rnext-1]-5, 1,
+		if( !boff ) {
+			ttk_line( srf, hwid_right[hwid_rnext-1]-5, 1,
 			       hwid_right[hwid_rnext-1]-5, ttk_screen->wy - 1,
 			       ttk_ap_getx( "header.shadow" )->color );
-		ttk_line( srf, hwid_right[hwid_rnext-1]-4, 1,
+			ttk_line( srf, hwid_right[hwid_rnext-1]-4, 1,
 			       hwid_right[hwid_rnext-1]-4, ttk_screen->wy - 1,
 			       ttk_ap_getx( "header.shine" )->color );
+		}
 
 		/* left widget vertical border bar */
 		ttk_line( srf, ttk_screen->wy-2, 0,

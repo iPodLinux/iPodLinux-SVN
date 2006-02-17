@@ -535,6 +535,7 @@ void pz_reset_idle_timer();
 #define SLIDE_TRANSIT	(49)
 #define MENU_FONT	(50)
 #define BATTERY_UPDATE	(51)	/* appearance */
+#define TITLE_JUSTIFY	(52)	/* appearance */
 
 #define 	BATTERY_UPDATE_OFF (5)
 
