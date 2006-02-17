@@ -518,7 +518,7 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 			    hwid_right[hwid_rnext-1] - 4, 0,
 			    hwid_right[hwid_rnext-1] - 6, ttk_screen->wy - 1 );
 
-    } else if (decorations == PZ_DEC_AMIGA20) {
+	} else if (decorations == PZ_DEC_AMIGA20) {
 		/* top */
 		ttk_line( srf, 0, 0, this->w, 0,
 				ttk_ap_getx( "header.shine" )->color );
@@ -565,47 +565,61 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 			ttk_header_set_text_position( ttk_screen->wy + 4 );
 
 
-    } else if (decorations == PZ_DEC_DOTS) {
-	// . X X X .
-	// X X X X X
-	// X X X X X
-	// X X X X X
-	// . X X X .
-	unsigned short circle[] = { 0x7000, 0xf800, 0xf800, 0xf800, 0x7000 };
-	int i;
-	// Ugh. TTK doesn't export a proper bitmap function. Yet.
-	ttk_gc gc = ttk_new_gc();
-	ttk_gc_set_foreground (gc, ttk_ap_getx ("header.accent") -> color);
-	TWindow *pixmap = malloc (sizeof(TWindow)); pixmap->srf = srf;
-	int nits = 0;
-	int n2 = 0;
-	
-	/* draw left side */
-	for (i = ((ttk_screen->w - width) >> 1) - 10;
-	     i > hwid_left[hwid_lnext-1] + 6;
-	     i -= 11) {
-		t_GrBitmap (pixmap, gc, i - 2, 
-				(ttk_screen->wy >> 1) - 2, 5, 5, circle);
-		nits++;
-	}
+	} else if (decorations == PZ_DEC_DOTS) {
+		// . X X X .
+		// X X X X X
+		// X X X X X
+		// X X X X X
+		// . X X X .
+		unsigned short circle[] = { 0x7000, 0xf800, 0xf800, 0xf800, 0x7000 };
+		// Ugh. TTK doesn't export a proper bitmap function. Yet.
+		ttk_gc gc = ttk_new_gc();
+		ttk_gc_set_foreground (gc, ttk_ap_getx ("header.accent") -> color);
+		TWindow *pixmap = malloc (sizeof(TWindow)); pixmap->srf = srf;
+		int pL, pR;
+		int xL, xR;
+		int sxL, sxR;
+		
+		/* starting values */
+		xL = 0;
+		xR = ttk_screen->w;
 
-	/* draw right side */
-	for (i = ((ttk_screen->w + width) >> 1) + 7, n2=0;
-	     (boff)? (n2 < nits ) : (i < hwid_right[hwid_rnext-1] - 6) ;
-	     i += 11, n2++) {
-	    t_GrBitmap (pixmap, gc, i - 2, (ttk_screen->wy >> 1) - 2, 5, 5, circle);
-	}
+		sxL = (ttk_screen->w>>1)+2; /* account for radius */
+		sxR = (ttk_screen->w>>1)-2;
 
-	ttk_free_gc (gc);
-	free (pixmap);
+		/* account for visible widgets */
+		if( pz_hold_is_on ) xL = ttk_screen->wy;
+		if( !boff ) xR = hwid_right[hwid_rnext-1] - 4;
 
-	/* clear text area */
-	if (ttk_ap_getx ("header.bg") -> type & TTK_AP_COLOR) {
-	    ttk_ap_fillrect (srf, ttk_ap_get ("header.bg"),
-			     (ttk_screen->w - width) / 2, 0,
-			     (ttk_screen->w + width) / 2, ttk_screen->wy - 2);
-	}
-    } else if(  (decorations == PZ_DEC_BIGRAD) ||
+		/* account for text */
+		if( just == TTK_TEXT_LEFT )
+			xL += (width + 6);
+		else if( just == TTK_TEXT_RIGHT )
+			xR -= (width + 6);
+		else {
+			sxL -= ((width>>1) + 6);
+			sxR += ((width>>1) + 6);
+		}
+
+		/* draw the dots, from the center out */
+		for( pL = (ttk_screen->w)>>1, pR = (ttk_screen->w)>>1;
+		     pL > 1;
+		     pL -= 11, pR += 11 ){
+
+			if( pL>xL && pL <= sxL ) {
+				t_GrBitmap (pixmap, gc, pL - 2, 
+					(ttk_screen->wy >> 1) - 2, 5, 5, circle);
+			}
+			if( pR<xR && pR >= sxR ) {
+				t_GrBitmap (pixmap, gc, pR - 2, 
+					(ttk_screen->wy >> 1) - 2, 5, 5, circle);
+			}
+		}
+
+		ttk_free_gc (gc);
+		free (pixmap);
+
+	} else if(  (decorations == PZ_DEC_BIGRAD) ||
 		(decorations == PZ_DEC_TRIGRAD) ||
 		(decorations == PZ_DEC_BIGRADBAR) ||
 		(decorations == PZ_DEC_TRIGRADBAR) ){
