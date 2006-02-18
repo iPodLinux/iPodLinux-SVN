@@ -14,9 +14,9 @@
 
   header: bg => light,
 	  fg => black,
-	  line => gray -1,
+	  line => gray,
 	  accent => medium
-	  shadow => lightish,
+	  shadow => dark,
 	  shine => pink,
 	  gradient.top => light,
 	  gradient.middle => medium,
