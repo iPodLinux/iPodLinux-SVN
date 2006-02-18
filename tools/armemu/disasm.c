@@ -44,10 +44,10 @@ struct insn
     /* MRS, MSR */
     { 0x0fff0fff, 0x010f0000, "mrs%c\t%12r, cpsr" },
     { 0x0fff0fff, 0x014f0000, "mrs%c\t%12r, spsr" },
-    { 0x0ffffff0, 0x0129f000, "msr%c\tcpsr_all, %r" },
-    { 0x0ffffff0, 0x0169f000, "msr%c\tspsr_all, %r" },
-    { 0x0dfff000, 0x0128f000, "msr%c\tcpsr_flg, %o" },
-    { 0x0dfff000, 0x0168f000, "msr%c\tspsr_flg, %o" },
+    { 0x0db1f000, 0x0121f000, "msr%c\tcpsr_all, %r" },
+    { 0x0db1f000, 0x0161f000, "msr%c\tspsr_all, %r" },
+    { 0x0db1f000, 0x0120f000, "msr%c\tcpsr_flg, %o" },
+    { 0x0db1f000, 0x0160f000, "msr%c\tspsr_flg, %o" },
 
     /* LDR, STR, LDRB, STRB */
     { 0x0c100000, 0x04100000, "ldr%c%b\t%12r, %a" },
