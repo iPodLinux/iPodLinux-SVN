@@ -5,6 +5,7 @@
 \def yellow    #F9C822
 \def dkyellow  #B57C14
 \def ltyellow  #ff0
+\def midyellow #EBA91D
 \def black     #000
 
 \def white     #fff
@@ -17,8 +18,8 @@
 \def ltgray    #ededed
 
 
-  header: bg => yellow, fg => black, line => black, accent => dkyellow
-	  shine => ltyellow, shade => dkyellow,
+  header: bg => yellow, fg => black, line => gray, accent => midyellow
+	  shine => ltyellow, shadow => dkyellow,
 	  gradient.top => ltyellow,
 	  gradient.middle => yellow,
 	  gradient.bottom => dkyellow,
@@ -33,9 +34,11 @@
 	  selchoice => white, 
 	  icon0 => black, icon1 => dkgray, icon2 => gray, icon3 => ltgray
 
- battery: border => black, bg => yellow, fill.normal => <green to black>, 
-		fill.low => <blue to black>, fill.charge => <blue to black>,
-		bg.low => <red to black>, bg.charging => <blue to black>
+ battery: border => dkyellow, bg => <dkgray to gray>,
+		fill.normal => <ltyellow to dkyellow>,
+		fill.low => red, fill.charge => <ltyellow to yellow>,
+		bg.low => <dkyellow to white>,
+		bg.charging => <dkgray to gray>
 
     lock: border => dkyellow, fill => black
 
