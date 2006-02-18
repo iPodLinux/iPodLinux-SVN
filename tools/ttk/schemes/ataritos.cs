@@ -29,7 +29,7 @@
 
  loadavg: bg => white, fg => green, spike => black
 
-  window: bg => white, fg => black, border => green -3
+  window: bg => green, fg => black, border => white -3
 
 
   dialog: bg => white, fg => black, line => green,
@@ -47,7 +47,7 @@
    input: bg => white, fg => black, selbg => green, selfg => black,
 	  border => black, cursor => green
 
-  slider: border => white, bg => black, full => green
+  slider: border => black, bg => white, full => green
 
 textarea: bg => black, fg => white
 
