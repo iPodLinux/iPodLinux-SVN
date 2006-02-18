@@ -52,8 +52,8 @@ void execute (machine_t *mach, cpu_t *cpu)
 
     // MSR, MRS
     else if (((instr & 0x0fbf0fff) == 0x010f0000) || // MRS
-             ((instr & 0x0fbffff0) == 0x0129f000) || // MSR_cxsf
-             ((instr & 0x0dbff000) == 0x0128f000)) { // MSR_f
+             ((instr & 0x0fb1fff0) == 0x0121f000) || // MSR_cxsf
+             ((instr & 0x0db1f000) == 0x0120f000)) { // MSR_f
         if ((instr & 0x0fbf0fff) == 0x010f0000) { // MRS
             int src;
             if (instr & (1 << 22))
@@ -497,10 +497,10 @@ void execute (machine_t *mach, cpu_t *cpu)
                            ((Nflag != -1) << CPSR_Nbits));
                 
                 cpu->r[CPSR] = ((cpu->r[CPSR] & ~flgmask) |
-                                (((Cflag << CPSR_Cbits) |
-                                  (Vflag << CPSR_Vbits) |
-                                  (Zflag << CPSR_Zbits) |
-                                  (Nflag << CPSR_Nbits)) & flgmask));
+                                ((((Cflag & 1) << CPSR_Cbits) |
+                                  ((Vflag & 1) << CPSR_Vbits) |
+                                  ((Zflag & 1) << CPSR_Zbits) |
+                                  ((Nflag & 1) << CPSR_Nbits)) & flgmask));
             }
         }
         
