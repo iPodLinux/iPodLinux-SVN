@@ -15,12 +15,12 @@
 \def yellow #ffff00
 \def white #ffffff
 
-  header: bg => black, fg => red, line => red -1, accent => red
-	  shadow => black, shine => red,
-	  gradient.top => red,
-	  gradient.middle => yellow,
-	  gradient.bottom => dkred,
-	  gradient.bar => white -1 
+  header: bg => black, fg => red, line => red, accent => red,
+	  shadow => medred, shine => ltred,
+	  gradient.top => ltred,
+	  gradient.middle => dkred,
+	  gradient.bottom => medred,
+	  gradient.bar => white -1
 
    music: bar => ltred +2
   
@@ -50,9 +50,8 @@
 
    input: bg => black, fg => red, selbg => red, selfg => black, border => dkred, cursor => red
 
-
     menu: bg => black, fg => red, choice => red, icon => red,
-          selbg => red, selfg => black, selchoice => dkred,
+          selbg => dkred, selfg => red, selchoice => dkred,
           icon0 => red, icon1 => ltred, icon2 => dkred, icon3 => black
 
   slider: border => red, bg => black, full => <horiz dkred to red to yellow>
