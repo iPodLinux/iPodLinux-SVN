@@ -17,7 +17,7 @@
 	  line => gray -1,
 	  accent => medium
 	  shadow => lightish,
-	  shine => light,
+	  shine => pink,
 	  gradient.top => light,
 	  gradient.middle => medium,
 	  gradient.bottom => lightish,
