@@ -67,10 +67,21 @@ static void battery_draw (TWidget *this, ttk_surface srf)
 	if (pz_get_int_setting (pz_global_config, BATTERY_DIGITS)) {
 		battery_fill = battery_fill * 1000 / 512;
 	    
+		/* grab the color, but not gradient */
+		TApItem *ap;
 		if( battery_fill < 100 ) 
-			c = ttk_ap_getx( "battery.fill.low" )->color;
+			ap = ttk_ap_get( "battery.fill.low" );
 		else
-			c = ttk_ap_getx( "battery.fill.normal" )->color;
+			ap = ttk_ap_get( "battery.fill.normal" );
+		if( ap ) {
+			if( ap->type & TTK_AP_GRADIENT ) { 
+				c = ap->gradstart;
+			} else {
+				c = ap->color;
+			}
+		} else {
+			c = ttk_makecol( GREY );
+		}
 
 		if (battery_fill >= 1000) 
 			strcpy (buf, "Chrg");
