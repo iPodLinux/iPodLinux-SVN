@@ -383,11 +383,7 @@ void execute (machine_t *mach, cpu_t *cpu)
                 if (r == PC)
                     PCup = 1;
                 
-                if (PUSWL & (1 << 3)) { // up
-                    taddr += 4;
-                } else {
-                    taddr -= 4;
-                }
+                taddr += 4;
             }
         }
 
