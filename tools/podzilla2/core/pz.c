@@ -89,9 +89,11 @@ static void check_connection()
         pz_dialog (_("USB Connect"), _("Go to disk mode?"), 2, 10, "No", "Yes"))
         pz_ipod_go_to_diskmode();
 
-    if (this_fw_conn && !fw_connected &&
-        pz_dialog (_("FireWire Connect"), _("Go to disk mode?"), 2, 10, "No", "Yes"))
-        pz_ipod_go_to_diskmode();
+    if( pz_ipod_get_hw_version() < 0x000B0000 ) {
+	if (this_fw_conn && !fw_connected &&
+	    pz_dialog (_("FireWire Connect"), _("Go to disk mode?"), 2, 10, "No", "Yes"))
+	    pz_ipod_go_to_diskmode();
+    }
 
     usb_connected = this_usb_conn;
     fw_connected = this_fw_conn;
