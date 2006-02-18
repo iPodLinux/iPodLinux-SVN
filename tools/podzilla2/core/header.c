@@ -565,6 +565,59 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 			ttk_header_set_text_position( ttk_screen->wy + 4 );
 
 
+	} else if (decorations == PZ_DEC_BEOS) {
+		int www = ttk_screen->wy + width + 10;
+
+		/* always force left justification */
+		ttk_header_set_text_justification( TTK_TEXT_LEFT );
+		ttk_header_set_text_position( ttk_screen->wy + 4 );
+
+		/* faux close widget */
+		if ( !pz_get_int_setting (pz_global_config, DISPLAY_LOAD) 
+			&& !pz_hold_is_on) {
+
+			/* fill gradient */
+			/* unfortunately, we have no diagonal gradient... */
+			ttk_vgradient( srf, 4, 4, 
+				    ttk_screen->wy-4, ttk_screen->wy-4,
+				    ttk_ap_getx( "header.shine" )->color,
+				    ttk_ap_getx( "header.accent" )->color );
+
+			/* draw these to get the NE/SW corners */
+			ttk_ap_hline( srf, ttk_ap_get( "header.shadow" ),
+			    4, ttk_screen->wy-4, 4 );
+			ttk_ap_vline( srf, ttk_ap_get( "header.shadow" ),
+			    4, 4, ttk_screen->wy-4 );
+
+			/* and the main container boxes... */
+			ttk_rect( srf, 4, 4, 
+				    ttk_screen->wy-4, ttk_screen->wy-4,
+				    ttk_ap_getx( "header.shadow" )->color );
+			ttk_rect( srf, 5, 5, 
+				    ttk_screen->wy-3, ttk_screen->wy-3,
+				    ttk_ap_getx( "header.shine" )->color );
+		}
+
+		/* 3d effect */
+		/* top */
+		ttk_line( srf, 0, 0, www, 0,
+				ttk_ap_getx( "header.shine" )->color );
+		/* left */
+		ttk_line( srf, 0, 0, 0, ttk_screen->wy,
+				ttk_ap_getx( "header.shine" )->color );
+		/* bottom - handled by header.line */
+		/* right */
+		ttk_line( srf, www-1, 1,
+				www-1, ttk_screen->wy,
+				ttk_ap_getx( "header.shadow" )->color );
+		
+
+		/* tabify! */
+		ttk_fillrect( srf, www, 0,
+				    ttk_screen->w, ttk_screen->wy, 
+				    ttk_makecol( 0, 0, 0 ) );
+
+
 	} else if (decorations == PZ_DEC_DOTS) {
 		// . X X X .
 		// X X X X X

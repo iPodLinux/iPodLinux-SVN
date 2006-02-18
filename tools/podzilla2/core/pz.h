@@ -327,11 +327,12 @@ void pz_header_fix_hold (void);
 #define PZ_DEC_AMIGA11      (1)
 #define PZ_DEC_AMIGA13      (2)
 #define PZ_DEC_AMIGA20      (3)
-#define PZ_DEC_DOTS         (4)
-#define PZ_DEC_BIGRAD       (5)
-#define PZ_DEC_TRIGRAD      (6)
-#define PZ_DEC_BIGRADBAR    (7)
-#define PZ_DEC_TRIGRADBAR   (8)
+#define PZ_DEC_BEOS         (4)
+#define PZ_DEC_DOTS         (5)
+#define PZ_DEC_BIGRAD       (6)
+#define PZ_DEC_TRIGRAD      (7)
+#define PZ_DEC_BIGRADBAR    (8)
+#define PZ_DEC_TRIGRADBAR   (9)
 void pz_header_set_decorations (int decor);
 void pz_header_colors_dirty( void );
 
