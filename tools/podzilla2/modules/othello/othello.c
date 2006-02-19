@@ -315,6 +315,7 @@ static int othello_event(PzEvent *e)
 		break;
 	case PZ_EVENT_SCROLL:
 		if (check_nomove() || othello_state != WAITING) break;
+		TTK_SCROLL_MOD(5);
 		do {
 			cur_bit += e->arg;
 			WRAP(cur_bit, 0, 63);
