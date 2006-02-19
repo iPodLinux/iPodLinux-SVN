@@ -175,6 +175,7 @@ _HD_ARM_Convert2:
 	@@                            uint32 delty, uint8 opacity)
 
 	.globl	_HD_ARM_LowerBlit_ScaleBlend
+_HD_ARM_LowerBlit_ScaleBlend_StoreSP:	.long 0
 _HD_ARM_LowerBlit_ScaleBlend:
 	@@ This function takes 51 + 53*h + (27+(5*(opacity != 0xff)))*w*h cycles to execute.
 	
@@ -204,7 +205,6 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	@@  r0, r6, r7, r8, r11 (5 regs) = scratch
 	@@  r9 = 0x00ff00ff
 	@@ r10 = 0x00800080
-	@@ r12 = 0xff
 	@@ r14 = opacity
 
 	@@ Increment the src and dest pointers on the stack by 8,
@@ -220,8 +220,8 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	ldr	r4, [sp, #12]		@ r4 = fp_step_x. 3 cyc.
 
 	@@ Setup. 7 cyc.
-	mov	r12, #0xff
-	orr	r9, r12, #0xff0000
+	mov	r9, #0xff
+	orr	r9, r9, #0xff0000
 	bic	r10, r9, r9, lsr #1
 	ldr	r14, [sp, #80]
 	
@@ -253,49 +253,98 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	ldr	r2, [sp, #68]		@ r2 = deltx
 	add	r5, r5, r6, lsl #2	@ r5 += startx
 
+	@@ Store SP so we can use it for calculations.
+	adr	r6, _HD_ARM_LowerBlit_ScaleBlend_StoreSP
+	str	sp, [r6]
+	
 	@@ Pick the no-opacity or the opacity version. 2-4 cyc.
 	cmp	r14, #0xff
 	bne	3f
 	
 	@@ Inner loop. 28 cycles.
-2:
-	@@ Blend [r1, r3, lsr #16 lsl #2] on [r5].
-	@@ The C code:
-	@ uint32 alpha, dst[2];
-	@ uint32 idst = (dst_argb), isrc = (src_argb);
-	@ alpha = 255 - (isrc >> 24);
-	@ dst[0] = ((idst & 0x00ff00ff) * alpha + 0x00800080) & 0xff00ff00;
-	@ dst[1] = (((idst>>8) & 0x00ff00ff) * alpha + 0x00800080) & 0xff00ff00;
-	@ (dst_argb) = (dst[0]>>8) + dst[1] + isrc;
 
-	@@ Do the blend. 22 cyc. Thanks aegray!
-	@ r0 = scratch
-	@ r6 = idst
-	@ r7 = isrc, accumulator
-	@ r8 = alpha
-	@ r9 = 0x00ff00ff (preloaded above)
-	@ r10 = 0x00800080 (preloaded above)
-	@ r11 = scratch
-	ldr	r6,  [r5]		@ r6 = idst
-	mov	r7,  r3, lsr #16	@ r7 = ix
-	ldr	r7,  [r1, r7, lsl #2]	@ r7 = isrc
-	sub	r8,  r12, r7, lsr #24	@ r8 = 255-AA
+.macro	ablend	src, dst, opac=0
+	@@ Blends src on dst and stores the result in dst.
+	@@ Clobbers src, r8, r11. Clobbers r0 unless dst is r0.
+	@@ Requires r14 = opacity unless opac=0, r9 = 0xff00ff, r10 = 0x800080.
+	@@ Time: 14 cyc for opac=0 dst!=r0,
+	@@       16 cyc for opac=0 dst=r0,
+	@@       18 cyc for opac=1 dst!=r0,
+	@@       20 cyc for opac=1 dst=r0
+	movs	r8, \src, lsr #24	@ r8 = alpha
+.if \opac
+	mulne	r8, r14, r8		@ multiply by the opacity (unless A=0)
+	addne	r8, r8, #0x80		@ make it work (unless A=0)
+	movne	r8, r8, lsr #8		@ and divide by 256 (unless A=0)
+.endif
+	rsb	r8, r8, #0xff		@ r8 = 255 - alpha
 					@ r7 is now accumulator
-	and	r0,  r9,  r6, lsr#8	@ r0 = (idst >> 8) & 0x00ff00ff
-	mla	r11, r0,  r8, r10	@ r11 = r0 * alpha + 0x00800080
+	@@ Use r0, so we can put r8 last in mla so it can take only 3 cycles.
+	and	r0, r9, \dst, lsr #8	@ r0 = (idst >> 8) & 0x00ff00ff
+	mla	r11, r0, r8, r10	@ r11 = r0 * alpha + 0x00800080
 	bic	r11, r11, r9		@ r11 &= 0xff00ff00
-	add	r7,  r7,  r11		@ r7 += that whole thing
-	and	r11, r9,  r6		@ r11 = idst & 0x00ff00ff
-	mla	r6,  r11, r8, r10	@ r6 = r11 * alpha + 0x00800080
-	bic	r6,  r6,  r9		@ r6 &= 0xff00ff00
-	add	r7,  r7,  r6, lsr #8	@ r7 += that whole thing >> 8
-	str	r7,  [r5], #4		@ store the pixel
+	add	\src, \src, r11		@ r7 += that whole thing
+	and	r11, r9, \dst		@ r11 = idst & 0x00ff00ff
+	mla	\dst, r11, r8, r10	@ r6 = r11 * alpha + 0x00800080
+	bic	\dst, \dst, r9		@ r6 &= 0xff00ff00
+	add	\dst, \src, \dst, lsr#8	@ r7 += that whole thing >> 8
+.endm
+
+.macro	ablndne	src, dst
+	@@ Blends src on dst and stores the result in dst.
+	@@ All instructions are conditionalized `ne'.
+	@@ Does not support opacity.
+	@@ Requirements and clobbers are the same as for ablend.
+	@@ Always takes 14 S+I cyc.
+	movne	r8, \src, lsr #24
+	rsbne	r8, r8, #0xff
+	andne	r0, r9, \dst, lsr #8
+	mlane	r11, r0, r8, r10
+	bicne	r11, r11, r9
+	addne	\src, \src, r11
+	andne	r11, r9, \dst
+	mlane	\dst, r11, r8, r10
+	bicne	\dst, \dst, r9
+	addne	\dst, \src, \dst, lsr #8
+.endm
 	
-	@@ Increment and test. 5 cyc.
-	add	r3, r3, r4		@ fp_ix += fp_step_x
-	subs	r2, r2, #1		@ dec the counter
-	bne	2b			@ loop while != 0
+	@@ Simple no-overall-opacity 4x unrolled blend loop.
+2:	ldmia	r5, {r6, r12, r13, r14}	@ load dst #1, #2, #3, #4	 4S 1N 1I
+	mov	r7, r3, lsr #16		@ figure src #1 offset		 1S
+	ldr	r7, [r1, r7, lsl #2]	@ load src #1			 1S 1N 1I
+	ablend	r7, r6			@ blend #1			16S
+	add	r3, r3, r4		@ update r3			 1S
+	subs	r2, r2, #1		@ update counter		 1S
+	
+	movne	r7, r3, lsr #16		@ figure src #2 offset		 1S
+	ldrne	r7, [r1, r7, lsl #2]	@ load src #2			 1S 1N 1I
+	ablndne r7, r12			@ blend #2			14S
+	addne	r3, r3, r4		@ update r3			 1S
+	subnes	r2, r2, #1		@ update counter		 1S
+	
+	movne	r7, r3, lsr #16		@ figure src #3 offset		 1S
+	ldrne	r7, [r1, r7, lsl #2]	@ load src #3			 1S 1N 1I
+	ablndne	r7, r13			@ blend #3			14S
+	addne	r3, r3, r4		@ update r3			 1S
+	subnes	r2, r2, #1		@ update counter		 1S
+	
+	movne	r7, r3, lsr #16		@ figure src #4 offset		 1S
+	ldrne	r7, [r1, r7, lsl #2]	@ load src #4			 1S 1N 1I
+	ablndne	r7, r14			@ blend #4			14S
+	addne	r3, r3, r4		@ update r3			 1S
+	subnes	r2, r2, #1		@ update counter		 1S
+
+	@@ We store all 4 pixels, even if there weren't 4 left,
+	@@ because the ones we shouldn't be touching weren't
+	@@ touched - they're the same as they were when we
+	@@ loaded them above, and it's much quicker to do a
+	@@ block store than 4 compares and individual stores.
+	stmia	r5!, {r6, r12, r13, r14} @ store the four pixels	 3S 2N
+	bne	2b			@ keep looping while some left	 2S 1N
+	@@ Cycle total per 4px:						83S 8N 5I	104
+	@@ 26 cycles per pixel.
 	@@ End of inner loop.
+	mov	r14, #0xff		@ restore the 0xff opacity, since r14 got clobbered.
 	b	4f			@ skip the other version - 3 cyc.
 
 	@@ Inner loop 2 - opacity version. 4-5 extra cycles per loop iteration.
@@ -325,9 +374,13 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	subs	r2, r2, #1		@ dec the counter
 	bne	2b			@ loop while != 0
 	@@ End of inner loop, option 2.
+
+	@@ Load SP. 1S+2N cyc.
+4:	adr	r6, _HD_ARM_LowerBlit_ScaleBlend_StoreSP
+	ldr	sp, [r6]
 	
 	@@ Test. 9 cyc.
-4:	ldr	r6, [sp, #76]		@ r6 = delty
+	ldr	r6, [sp, #76]		@ r6 = delty
 	subs	r6, r6, #1		@ dec it
 	str	r6, [sp, #76]		@ and store it back
 	bne	1b			@ loop while != 0
