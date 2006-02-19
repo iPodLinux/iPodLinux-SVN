@@ -21,7 +21,7 @@
 \def accentred	#338
 
 
-  header: bg => gray, fg => black, line => black, accent => accentred
+  header: bg => gray, fg => black, line => black-1, accent => accentred
 	  shine => ltgray, shadow => dkgray,
 	  gradient.top => gray,
 	  gradient.middle => white,
