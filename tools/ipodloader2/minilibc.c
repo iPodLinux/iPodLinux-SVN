@@ -529,6 +529,12 @@ void *mlc_memcpyX(void *dest,const void *src,size_t n) {
   return(dest);
 }
 #endif
+void *mlc_memset (void *dest, int c, size_t n) 
+{
+    uint8 *d = dest;
+    while (n--) *d++ = c;
+    return dest;
+}
 char *mlc_strchr(const char *s,int c) {
   char *ret;
 
