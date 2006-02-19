@@ -786,7 +786,7 @@ _HD_ARM_Update5G:
 	beq	1b			@ loop until set
 	
 	@@ Set up pointers for the write.
-	mov	r8, #640		@ r8 = lcd width * 2 [bytes per pixel]
+	mov	r8, #320*2		@ r8 = lcd width * 2 [bytes per pixel]
 	mla	r5, r2, r8, r0		@ r5 = fb + 320*y
 	add	r0, r5, r1, lsl #1	@    + x
 	mov	r5, r0			@ r5 = r0 = pointer to first pixel
