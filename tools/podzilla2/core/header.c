@@ -654,10 +654,9 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 		ttk_gc_set_foreground (gc, ttk_ap_getx ("header.accent") -> color);
 		TWindow *pixmap = malloc (sizeof(TWindow)); pixmap->srf = srf;
 
-
-		for( x=0 ; x<ttk_screen->w ; x += 8 ) {
-			for( y=1 ; y<ttk_screen->wy ; y += 4 )
-			    t_GrBitmap( pixmap, gc, x, y, 8, 4, dots );
+		for( x=ttk_screen->wy+4 ; x<ttk_screen->w ; x += 8 ) {
+			for( y=1 ; y<ttk_screen->wy ; y ++ )
+			    if( y&0x02 ) t_GrBitmap( pixmap, gc, x, y, 8, 1, dots );
 		}
 
 		ttk_free_gc (gc);
@@ -666,25 +665,30 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 		/* draw the closebox */
 		if ( !pz_get_int_setting (pz_global_config, DISPLAY_LOAD) 
 			&& !pz_hold_is_on) {
+			int v = ttk_screen->wy-1;
+			int offs = v>>2;
+
 			c = ttk_ap_getx( "header.bg" )->color;
-			ttk_fillrect( srf, 0, 0, ttk_screen->wy, ttk_screen->wy, c );
-			ttk_fillrect( srf, 2, 2, ttk_screen->wy-2, ttk_screen->wy-2,
+			ttk_fillrect( srf, 0, 0, v, v, c );
+			ttk_fillrect( srf, offs, offs, 
+				( (offs&1)?1:0 ) + v-offs,
+				( (offs&1)?1:0 ) + v-offs,
 				ttk_ap_getx( "header.fg" )->color );
 
 			/* TL-BR */
-			ttk_line( srf,  0, 0,  ttk_screen->wy, ttk_screen->wy,    c );
-			ttk_line( srf,  0, 1,  ttk_screen->wy-1, ttk_screen->wy,  c );
-			ttk_line( srf,  1, 0,  ttk_screen->wy, ttk_screen->wy-1,  c );
+			ttk_line( srf,  0, 0,  v,   v,  c );
+			ttk_line( srf,  0, 1,  v-1, v,  c );
+			ttk_line( srf,  1, 0,  v, v-1,  c );
 
 			/* BL-TR */
-			ttk_line( srf,  0, ttk_screen->wy,    ttk_screen->wy, 0,   c );
-			ttk_line( srf,  0, ttk_screen->wy-1,  ttk_screen->wy-1, 0, c );
-			ttk_line( srf,  1, ttk_screen->wy,    ttk_screen->wy, 1,   c );
+			ttk_line( srf,  0, v,    v, 0,   c );
+			ttk_line( srf,  0, v-1,  v-1, 0, c );
+			ttk_line( srf,  1, v,    v, 1,   c );
 		}
 
 		/* draw the separator */
 		ttk_fillrect( srf, ttk_screen->wy, 0, 
-				   ttk_screen->wy+2, ttk_screen->wy,
+				   ttk_screen->wy+2, ttk_screen->wy-1,
 				ttk_ap_getx( "header.fg" )->color );
 				
 
