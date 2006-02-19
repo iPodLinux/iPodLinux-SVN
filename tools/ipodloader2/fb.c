@@ -263,14 +263,11 @@ static void fb_565_bitblt(uint16 *x, int sx, int sy, int mx, int my) {
     lcd_bcm_setup_rect(0x34, rect1, rect2, rect3, rect4, count);
   }
   
-  addr += startx * (ipod->lcd_width*2) + starty;
+  addr += startx * ipod->lcd_width + starty;
   
   while (height > 0) {
     int x, y;
     int h, pixels_to_write;
-    uint32 curpixel;
-    
-    curpixel = 0;
 
     if( ipod->lcd_type != 5 ) {
       pixels_to_write = (width * height) * 2;
@@ -287,12 +284,15 @@ static void fb_565_bitblt(uint16 *x, int sx, int sy, int mx, int my) {
       outl(0x34000000, 0x70008a20);
     } else {
       h = height;
+      outw ((0xE0020 & 0xffff), 0x30010000);
+      outw ((0xE0020 >> 16), 0x30010000);
+      while ((inw (0x30030000) & 0x2) == 0);
     }
 
     /* for each row */
-    for (x = 0; x < h; x++) {
+    for (y = 0; y < h; y++) {
       /* for each column */
-      for (y = 0; y < width; y += 2) {
+      for (x = 0; x < width; x += 2) {
 	unsigned two_pixels;
 
 	if( ipod->lcd_type != 5 ) {
@@ -302,22 +302,21 @@ static void fb_565_bitblt(uint16 *x, int sx, int sy, int mx, int my) {
 	  two_pixels = (addr[1]<<16) | addr[0];
 	}
 	
-	addr += 2;
-	
 	if( ipod->lcd_type != 5 ) {
 
 	  while ((inl(0x70008a20) & 0x1000000) == 0);
 	  
 	  /* output 2 pixels */
 	  outl(two_pixels, 0x70008b00);
+          addr += 2;
 	} else {
 	  /*two_pixels = ((two_pixels&0xFF000000)>>24) | ((two_pixels&0xFF0000)>>8) | 
 	    ((two_pixels&0xFF00) << 8) | ((two_pixels&0xFF)<<24);*/
 
 
           /* output 2 pixels */
-          lcd_bcm_write32(0xE0020 + (curpixel << 2), two_pixels);
-          curpixel++;	
+          outw (*addr++, 0x30000000);
+          outw (*addr++, 0x30000000);
 	}
       }
       
