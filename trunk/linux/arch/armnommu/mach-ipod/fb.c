@@ -575,7 +575,7 @@ static void ipod_update_video(struct display *p, int sx, int sy, int mx, int my)
 	outw((0xE0020 & 0xffff), 0x30010000);
 	outw((0xE0020 >> 16), 0x30010000);
 
-	while ((inw(0x3003000) & 0x2)==0);
+	while ((inw(0x30030000) & 0x2)==0);
 
 	for (y = 0; y < height; y++) {
 		for (x = 0; x < width; x+=2) {

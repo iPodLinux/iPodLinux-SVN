@@ -147,6 +147,10 @@ ipod_init_cache(void)
 void
 ipod_set_cpu_speed(void)
 {
+#if 0
+	if ((ipod_get_hw_version() >> 16) == 0xb)
+		return;
+#endif
 	if ((ipod_get_hw_version() >> 16) > 0x3) {
 		outl(inl(0x70000020) | (1<<30), 0x70000020);
 
