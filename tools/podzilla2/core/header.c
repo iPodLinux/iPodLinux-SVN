@@ -409,8 +409,10 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 {
 	enum ttk_justification just = TTK_TEXT_CENTER;
 	int xp = 0;
+	int xw = 0;
 	int width = ttk_text_width (ttk_menufont, ttk_windows->w->title);
 	int boff = 0;
+	ttk_color c;
 
 	if( pz_get_int_setting( pz_global_config, BATTERY_UPDATE ) 
 	    == BATTERY_UPDATE_OFF ) {
@@ -422,21 +424,32 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 	ttk_header_set_text_justification( just );
 	ttk_header_set_text_position( -1 );	/* default */
 
+	xw = width + 8;
 	switch( just ) {
 	case( TTK_TEXT_LEFT ):
 		/* XX probably need to adjust this based on left widgets */
-		if( pz_hold_is_on) 
+		if( pz_hold_is_on) {
 			ttk_header_set_text_position( ttk_screen->wy + 4 );
-		else
+			xp = ttk_screen->wy + 4;
+		} else {
 			ttk_header_set_text_position( 4 );
+			xp = 0;
+		}
 		break;
 	case( TTK_TEXT_RIGHT ):
-		if( boff )	ttk_header_set_text_position( ttk_screen->w - 2 );
-		else		ttk_header_set_text_position( hwid_right[hwid_rnext-1]-9 );
+		if( boff ) {
+			ttk_header_set_text_position( ttk_screen->w - 2 );
+			xp = (ttk_screen->w - width) -4 -3;
+		} else {
+			ttk_header_set_text_position( hwid_right[hwid_rnext-1]-9 );
+			xp = (hwid_right[hwid_rnext-1] - width) - 14;
+		}
 		break;
 	case( TTK_TEXT_CENTER ):
 	default:
 		ttk_header_set_text_position( ttk_screen->w >>1 );
+		xp = ((ttk_screen->w - width) >> 1) - 4;
+		xw += 3; /* account for the other side */
 		break;
 	}
 
@@ -629,13 +642,121 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 				    ttk_makecol( 0, 0, 0 ) );
 
 
+	} else if (decorations == PZ_DEC_STTOS) {
+		// X X . . X X . .
+		// X X . . X X . . 
+		unsigned short dots[] = {
+			0xcccc, 0xcccc, 0x0000, 0x0000
+		};
+
+		int x,y;
+		ttk_gc gc = ttk_new_gc();
+		ttk_gc_set_foreground (gc, ttk_ap_getx ("header.accent") -> color);
+		TWindow *pixmap = malloc (sizeof(TWindow)); pixmap->srf = srf;
+
+
+		for( x=0 ; x<ttk_screen->w ; x += 8 ) {
+			for( y=1 ; y<ttk_screen->wy ; y += 4 )
+			    t_GrBitmap( pixmap, gc, x, y, 8, 4, dots );
+		}
+
+		ttk_free_gc (gc);
+		free (pixmap);
+
+		/* draw the closebox */
+		if ( !pz_get_int_setting (pz_global_config, DISPLAY_LOAD) 
+			&& !pz_hold_is_on) {
+			c = ttk_ap_getx( "header.bg" )->color;
+			ttk_fillrect( srf, 0, 0, ttk_screen->wy, ttk_screen->wy, c );
+			ttk_fillrect( srf, 2, 2, ttk_screen->wy-2, ttk_screen->wy-2,
+				ttk_ap_getx( "header.fg" )->color );
+
+			/* TL-BR */
+			ttk_line( srf,  0, 0,  ttk_screen->wy, ttk_screen->wy,    c );
+			ttk_line( srf,  0, 1,  ttk_screen->wy-1, ttk_screen->wy,  c );
+			ttk_line( srf,  1, 0,  ttk_screen->wy, ttk_screen->wy-1,  c );
+
+			/* BL-TR */
+			ttk_line( srf,  0, ttk_screen->wy,    ttk_screen->wy, 0,   c );
+			ttk_line( srf,  0, ttk_screen->wy-1,  ttk_screen->wy-1, 0, c );
+			ttk_line( srf,  1, ttk_screen->wy,    ttk_screen->wy, 1,   c );
+		}
+
+		/* draw the separator */
+		ttk_fillrect( srf, ttk_screen->wy, 0, 
+				   ttk_screen->wy+2, ttk_screen->wy,
+				ttk_ap_getx( "header.fg" )->color );
+				
+
+		/* tweak the text for the closebox */
+		if( just == TTK_TEXT_LEFT ) {
+			ttk_header_set_text_position( ttk_screen->wy + 6 );
+			xp = ttk_screen->wy +2;
+		}
+
+		ttk_fillrect( srf, xp, 0, xp+xw, ttk_screen->wy,
+				ttk_ap_getx( "header.bg" )->color );
+
+
+	} else if (decorations == PZ_DEC_LISA) {
+		int xL, xR;
+		ttk_header_set_text_justification( TTK_TEXT_CENTER );
+		xp = ((ttk_screen->w - width)>>1) - 5;
+		ttk_header_set_text_position( ttk_screen->w >>1 );
+
+		/* center */
+		c = ttk_ap_getx( "header.accent" )->color;
+		ttk_fillrect( srf, xp, 0, xp+xw, ttk_screen->wy, c);
+
+		xL = xp;  xR = xp + xw;
+
+		/* four-bars */
+		ttk_fillrect( srf, xL-5, 0, xL-1, ttk_screen->wy, c );
+		ttk_fillrect( srf, xR+1, 0, xR+5, ttk_screen->wy, c );
+
+		/* three-bars */
+		ttk_fillrect( srf, xL-9, 0, xL-6, ttk_screen->wy, c );
+		ttk_fillrect( srf, xR+6, 0, xR+9, ttk_screen->wy, c );
+
+		/* two-bars */
+		ttk_fillrect( srf, xL-12, 0, xL-10, ttk_screen->wy, c );
+		ttk_fillrect( srf, xR+10, 0, xR+12, ttk_screen->wy, c );
+
+		/* lines */
+		ttk_line( srf, xL-14, 0, xL-14, ttk_screen->wy, c );
+		ttk_line( srf, xL-16, 0, xL-16, ttk_screen->wy, c );
+		ttk_line( srf, xL-18, 0, xL-18, ttk_screen->wy, c );
+
+		ttk_line( srf, xR+13, 0, xR+13, ttk_screen->wy, c );
+		ttk_line( srf, xR+15, 0, xR+15, ttk_screen->wy, c );
+		ttk_line( srf, xR+17, 0, xR+17, ttk_screen->wy, c );
+
+	} else if (decorations == PZ_DEC_MACOS7) {
+		ttk_header_set_text_justification( TTK_TEXT_CENTER );
+		xp = ((ttk_screen->w - width)>>1) - 4;
+		ttk_header_set_text_position( ttk_screen->w >>1 );
+
+		c = ttk_ap_getx( "header.accent" )->color;
+		ttk_fillrect( srf, xp, 0, xp+xw, ttk_screen->wy, c);
+
+
+	} else if (decorations == PZ_DEC_MACOS8) {
+		ttk_header_set_text_justification( TTK_TEXT_CENTER );
+		xp = ((ttk_screen->w - width)>>1) - 4;
+		ttk_header_set_text_position( ttk_screen->w >>1 );
+
+		c = ttk_ap_getx( "header.accent" )->color;
+		ttk_fillrect( srf, xp, 0, xp+xw, ttk_screen->wy, c);
+
+
 	} else if (decorations == PZ_DEC_DOTS) {
 		// . X X X .
 		// X X X X X
 		// X X X X X
 		// X X X X X
 		// . X X X .
-		unsigned short circle[] = { 0x7000, 0xf800, 0xf800, 0xf800, 0x7000 };
+		unsigned short circle[] = { 
+			0x7000, 0xf800, 0xf800, 0xf800, 0x7000 };
 		// Ugh. TTK doesn't export a proper bitmap function. Yet.
 		ttk_gc gc = ttk_new_gc();
 		ttk_gc_set_foreground (gc, ttk_ap_getx ("header.accent") -> color);
