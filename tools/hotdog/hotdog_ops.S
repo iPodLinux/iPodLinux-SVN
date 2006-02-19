@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005-06 James Jacobsson, Joshua Oreman, and David Carne.
+ * Copyright (c) 2005-06 James Jacobsson, Adam Johnston, Joshua Oreman, and David Carne.
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without modification,
@@ -259,35 +259,53 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	
 	@@ Pick the no-opacity or the opacity version. 2-4 cyc.
 	cmp	r14, #0xff
-	bne	3f
+	bne	7f
 	
 	@@ Inner loop. 28 cycles.
+	@@ Local labels:
+	@@   1:	beginning of outer loop
+	@@   2:	beginning of no-opacity varied-alpha inner loop
+	@@   3:	jump point into no-opacity varied-alpha inner loop from simple-alpha inner loop
+	@@   4:	beginning of simple-alpha inner loop
+	@@   5:	jump point into simple-alpha inner loop from no-opacity varied-alpha inner loop
+	@@   6:	update of simple-alpha inner loop
+	@@   7:	beginning of opacity inner loop
+	@@   8:	after end of opacity inner loop
+	@@   9:	used by ablend macro
 
 .macro	ablend	src, dst, opac=0
 	@@ Blends src on dst and stores the result in dst.
 	@@ Clobbers src, r8, r11. Clobbers r0 unless dst is r0.
 	@@ Requires r14 = opacity unless opac=0, r9 = 0xff00ff, r10 = 0x800080.
-	@@ Time: 14 cyc for opac=0 dst!=r0,
-	@@       16 cyc for opac=0 dst=r0,
-	@@       18 cyc for opac=1 dst!=r0,
-	@@       20 cyc for opac=1 dst=r0
+	@@ Time:  4 cyc for alpha=0 opac=anything,
+	@@        7 cyc for alpha=255 opac=0,
+	@@       17 cyc for all other alphas opac=0,
+	@@       19 cyc for any nonzero alpha opac=1.
+	@@ On exit from the macro, Z flag is set iff alpha was 0 or 255.
+	
 	movs	r8, \src, lsr #24	@ r8 = alpha
+	beq	9f			@ skip everything if alpha is 0
 .if \opac
-	mulne	r8, r14, r8		@ multiply by the opacity (unless A=0)
-	addne	r8, r8, #0x80		@ make it work (unless A=0)
-	movne	r8, r8, lsr #8		@ and divide by 256 (unless A=0)
-.endif
+	mul	r8, r14, r8		@ multiply by the opacity (unless A=0)
+	add	r8, r8, #0x80		@ make it work (unless A=0)
+	mov	r8, r8, lsr #8		@ and divide by 256 (unless A=0)
 	rsb	r8, r8, #0xff		@ r8 = 255 - alpha
+.else
+	rsbs	r8, r8, #0xff		@ r8 = 255 - alpha
+	moveq	\dst, \src		@ if alpha was 255, just copy the pixel
+	beq	9f			@ and skip the rest
+.endif
 					@ r7 is now accumulator
 	@@ Use r0, so we can put r8 last in mla so it can take only 3 cycles.
 	and	r0, r9, \dst, lsr #8	@ r0 = (idst >> 8) & 0x00ff00ff
 	mla	r11, r0, r8, r10	@ r11 = r0 * alpha + 0x00800080
 	bic	r11, r11, r9		@ r11 &= 0xff00ff00
-	add	\src, \src, r11		@ r7 += that whole thing
+	add	\src, \src, r11		@ r7 += that whole thing.
 	and	r11, r9, \dst		@ r11 = idst & 0x00ff00ff
-	mla	\dst, r11, r8, r10	@ r6 = r11 * alpha + 0x00800080
+	mlas	\dst, r11, r8, r10	@ r6 = r11 * alpha + 0x00800080. S so Z=0.
 	bic	\dst, \dst, r9		@ r6 &= 0xff00ff00
 	add	\dst, \src, \dst, lsr#8	@ r7 += that whole thing >> 8
+9:
 .endm
 
 .macro	ablndne	src, dst
@@ -312,8 +330,9 @@ _HD_ARM_LowerBlit_ScaleBlend:
 2:	ldmia	r5, {r6, r12, r13, r14}	@ load dst #1, #2, #3, #4	 4S 1N 1I
 	mov	r7, r3, lsr #16		@ figure src #1 offset		 1S
 	ldr	r7, [r1, r7, lsl #2]	@ load src #1			 1S 1N 1I
-	ablend	r7, r6			@ blend #1			16S
-	add	r3, r3, r4		@ update r3			 1S
+	ablend	r7, r6			@ blend #1			17S
+	beq	5f			@ go to the easy-stuff loop	 1S (unless taken)
+3:	add	r3, r3, r4		@ update r3			 1S
 	subs	r2, r2, #1		@ update counter		 1S
 	
 	movne	r7, r3, lsr #16		@ figure src #2 offset		 1S
@@ -343,13 +362,53 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	bne	2b			@ keep looping while some left	 2S 1N
 	@@ Cycle total per 4px:						83S 8N 5I	104
 	@@ 26 cycles per pixel.
-	@@ End of inner loop.
+	@@ End of first inner loop.
 	mov	r14, #0xff		@ restore the 0xff opacity, since r14 got clobbered.
-	b	4f			@ skip the other version - 3 cyc.
+	b	8f			@ skip the other 2 versions - 3 cyc.
+
+	@@ This is the `easy-stuff' loop, taken if the first pixel was blended easily,
+	@@ because probably the others will be too. This speeds up long runs of
+	@@ all fully-opaque or fully-transparent pixels.
+4:	ldmia	r5, {r6, r12, r13, r14}	@ load dst #1, #2, #3, #4	 4S 1N 1I
+	mov	r7, r3, lsr #16		@ figure src #1 offset		 1S
+	ldr	r7, [r1, r7, lsl #2]	@ load src #1			 1S 1N 1I
+	ablend	r7, r6			@ blend #1		       4-7S
+	bne	3b			@ go to the general loop if nec	 1S (unless taken)
+5:	add	r3, r3, r4		@ update r3			 1S
+	subs	r2, r2, #1		@ update counter		 1S
+	beq	6f			@ skip if we're done		 1S
+	
+	mov	r7, r3, lsr #16		@ figure src #2 offset		 1S
+	ldr	r7, [r1, r7, lsl #2]	@ load src #2			 1S 1N 1I
+	ablend	r7, r12			@ blend #2		       4-7S
+	add	r3, r3, r4		@ update r3			 1S
+	subs	r2, r2, #1		@ update counter		 1S
+	beq	6f			@ skip if we're done		 1S
+	
+	mov	r7, r3, lsr #16		@ figure src #3 offset		 1S
+	ldr	r7, [r1, r7, lsl #2]	@ load src #3			 1S 1N 1I
+	ablend	r7, r13			@ blend #3		       4-7S
+	add	r3, r3, r4		@ update r3			 1S
+	subs	r2, r2, #1		@ update counter		 1S
+	beq	6f			@ skip if we're done
+	
+	mov	r7, r3, lsr #16		@ figure src #4 offset		 1S
+	ldr	r7, [r1, r7, lsl #2]	@ load src #4			 1S 1N 1I
+	ablend	r7, r14			@ blend #4		       4-7S
+	add	r3, r3, r4		@ update r3			 1S
+	subs	r2, r2, #1		@ update counter		 1S
+
+6:	stmia	r5!, {r6, r12, r13, r14} @ store the four pixels	 3S 2N
+	bne	4b			@ keep looping while some left	 2S 1N
+	@@ Cycle total per 4px:					     40-52S 8N 5I	53-65
+	@@ 13 cycles per fully transparent pixel, 16 per fully opaque one.	
+	@@ End of second inner loop.
+	mov	r14, #0xff		@ restore the 0xff opacity, since r14 got clobbered.
+	b	8f			@ skip the other version - 3 cyc.
 
 	@@ Inner loop 2 - opacity version. 4-5 extra cycles per loop iteration.
 	@@ We skip the adjustment if A=0 because it results in A=1, which is wrong.
-3:	
+7:	
 	ldr	r6,  [r5]		@ r6 = idst
 	mov	r7,  r3, lsr #16	@ r7 = ix
 	ldr	r7,  [r1, r7, lsl #2]	@ r7 = isrc
@@ -372,11 +431,11 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	@@ Increment and test. 5 cyc.
 	add	r3, r3, r4		@ fp_ix += fp_step_x
 	subs	r2, r2, #1		@ dec the counter
-	bne	2b			@ loop while != 0
+	bne	3b			@ loop while != 0
 	@@ End of inner loop, option 2.
 
 	@@ Load SP. 1S+2N cyc.
-4:	adr	r6, _HD_ARM_LowerBlit_ScaleBlend_StoreSP
+8:	adr	r6, _HD_ARM_LowerBlit_ScaleBlend_StoreSP
 	ldr	sp, [r6]
 	
 	@@ Test. 9 cyc.
