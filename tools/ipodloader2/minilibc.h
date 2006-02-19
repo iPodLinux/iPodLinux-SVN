@@ -47,6 +47,7 @@ int    mlc_strncmp(const char *s1,const char *s2,size_t maxlen);
 int    mlc_strncasecmp (const char *s1,const char *s2,size_t maxlen);
 char  *mlc_strncpy(char *dest,const char *src,size_t count);
 void  *mlc_memcpy(void *dest,const void *src,size_t n);
+void  *mlc_memset(void *dest,int c,size_t n);
 char  *mlc_strchr(const char *s,int c);
 int    mlc_memcmp(const void *sv1,const void *sv2,size_t length);
 
