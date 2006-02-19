@@ -712,7 +712,7 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 
 		/* center */
 		c = ttk_ap_getx( "header.accent" )->color;
-		ttk_fillrect( srf, xp, 0, xp+xw, v, c);
+		ttk_fillrect( srf, xp, 0, xp+xw, v+1, c);
 
 		xL = xp;  xR = xp + xw;
 
