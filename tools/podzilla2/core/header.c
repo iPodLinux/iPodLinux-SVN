@@ -717,16 +717,16 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 		xL = xp;  xR = xp + xw;
 
 		/* four-bars */
-		ttk_fillrect( srf, xL-5, 0, xL-1, v, c );
-		ttk_fillrect( srf, xR+1, 0, xR+5, v, c );
+		ttk_fillrect( srf, xL-5, 0, xL-1, v+1, c );
+		ttk_fillrect( srf, xR+1, 0, xR+5, v+1, c );
 
 		/* three-bars */
-		ttk_fillrect( srf, xL-9, 0, xL-6, v, c );
-		ttk_fillrect( srf, xR+6, 0, xR+9, v, c );
+		ttk_fillrect( srf, xL-9, 0, xL-6, v+1, c );
+		ttk_fillrect( srf, xR+6, 0, xR+9, v+1, c );
 
 		/* two-bars */
-		ttk_fillrect( srf, xL-12, 0, xL-10, v, c );
-		ttk_fillrect( srf, xR+10, 0, xR+12, v, c );
+		ttk_fillrect( srf, xL-12, 0, xL-10, v+1, c );
+		ttk_fillrect( srf, xR+10, 0, xR+12, v+1, c );
 
 		/* lines */
 		ttk_line( srf, xL-14, 0, xL-14, v, c );
@@ -763,10 +763,8 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 		if ( !pz_get_int_setting (pz_global_config, DISPLAY_LOAD) 
 			&& !pz_hold_is_on) {
 
-			/* fill gradient */
-			/* unfortunately, we have no diagonal gradient... */
-			ttk_fillrect( srf, 6, 4, 
-				    ttk_screen->wy-1, ttk_screen->wy-4,
+			ttk_fillrect( srf, 6, 2, 
+				    ttk_screen->wy-1, ttk_screen->wy-2,
 				    ttk_ap_getx( "header.bg" )->color );
 
 			/* draw these to get the NE/SW corners */
