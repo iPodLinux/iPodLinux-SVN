@@ -15,7 +15,7 @@
 
 \def gray      #bbb
 \def dkgray    #888
-\def ltgray    #ccc
+\def ltgray    #ddd
 
 # this defines the color tint for the stuff.
 \def accentred	#338
