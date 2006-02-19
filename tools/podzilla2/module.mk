@@ -1,7 +1,11 @@
 PZPATH ?= ../..
 
 ifdef TTKDIR
+ifeq ($(wildcard $(TTKDIR)),)
+TTKCONF = $(PZPATH)/$(TTKDIR)/ttk-config-here
+else
 TTKCONF = $(TTKDIR)/ttk-config-here
+endif
 else
 ifeq ($(shell which ttk-config 2>/dev/null >/dev/null && echo yes),yes)
 TTKCONF = ttk-config
