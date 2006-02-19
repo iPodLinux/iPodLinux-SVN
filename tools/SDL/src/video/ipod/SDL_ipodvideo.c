@@ -290,6 +290,13 @@ static int iPod_VideoInit (_THIS, SDL_PixelFormat *vformat)
 	    vformat->Bmask = 0x001F;
 	    lcd_width = 176;
 	    lcd_height = 132;
+	} else if ((generation >> 16) == 0xb) {
+	    vformat->BitsPerPixel = 16;
+	    vformat->Rmask = 0xF800;
+	    vformat->Gmask = 0x07E0;
+	    vformat->Bmask = 0x001F;
+	    lcd_width = 320;
+	    lcd_height = 240;
 	} else {
 	    vformat->BitsPerPixel = 8;
 	    vformat->Rmask = vformat->Gmask = vformat->Bmask = 0;
@@ -309,6 +316,9 @@ static int iPod_VideoInit (_THIS, SDL_PixelFormat *vformat)
                     lcd_type = 1;   
                 }
             }
+	    else if ((generation >> 16) == 0xb) {
+		lcd_type = 5;
+	    }
             else if ((generation >> 16) == 0xc) {
                 lcd_type = 1;
             }      
@@ -665,6 +675,7 @@ static void C_lcd_cmd_data(int cmd, int data)
     }
 }
 
+
 static void C_update_display(int sx, int sy, int mx, int my)
 {
 	int height = (my - sy) + 1;
@@ -777,11 +788,119 @@ static void C_update_display(int sx, int sy, int mx, int my)
 	}
 }
 
+
+
+
+
+
+/* 5g functions!  */
+#define outw(v, p) (*(volatile unsigned short *)(p) = (v))
+#define inw(p) (*(volatile unsigned short *)(p))
+static void lcd_bcm_write32(unsigned address, unsigned value) {
+	outw(address, 0x30010000);
+	outw((address >> 16), 0x30010000);
+
+	while ((inw(0x30030000) & 0x2) == 0);
+
+	outw(value, 0x30000000);
+	outw((value >> 16), 0x30000000);
+}
+
+
+static void lcd_bcm_setup_rect(unsigned cmd, unsigned start_horiz, unsigned start_vert, unsigned max_horiz, unsigned max_vert, unsigned count) {
+	lcd_bcm_write32(0x1F8, 0xFFFA0005);
+	lcd_bcm_write32(0xE0000, cmd);
+	lcd_bcm_write32(0xE0004, start_horiz);
+	lcd_bcm_write32(0xE0008, start_vert);
+	lcd_bcm_write32(0xE000C, max_horiz);
+	lcd_bcm_write32(0xE0010, max_vert);
+	lcd_bcm_write32(0xE0014, count);
+	lcd_bcm_write32(0xE0018, count);
+	lcd_bcm_write32(0xE001C, 0);
+}
+
+static unsigned lcd_bcm_read32(unsigned address) {
+	while ((inw(0x30020000) & 1) == 0);
+
+	outw(address, 0x30020000);
+	outw((address >> 16), 0x30020000);
+
+	while ((inw(0x30030000) & 0x10) == 0);
+
+	return inw(0x30000000) | inw(0x30000000) << 16;
+}
+
+
+static void lcd_bcm_finishup(void) {
+	unsigned data;
+
+	outw(0x31, 0x30030000);
+
+	lcd_bcm_read32(0x1FC);
+	do {
+		data = lcd_bcm_read32(0x1F8);
+	} while (data == 0xFFFA0005 || data == 0xFFFF);
+
+	lcd_bcm_read32(0x1FC);
+}
+
+
+
+
+static void C_update_display_5g(int sx, int sy, int mx, int my)
+{
+	int height = (my - sy) + 1;
+	int width = (mx - sx) + 1;
+        int rect1, rect2, rect3, rect4;
+	int x, y;
+	unsigned short *addr = (unsigned short *)SDL_VideoSurface->pixels;
+
+	if (width & 1) width++;
+
+	/* calculate the drawing region */
+	rect1 = sx;
+	rect2 = sy;
+	rect3 = (sx + width) - 1;
+	rect4 = (sy + height) - 1;
+
+	lcd_bcm_setup_rect(0x34, rect1, rect2, rect3, rect4, (width*height)<<1);
+
+        addr += sy * lcd_width + sx;
+        
+	outw((0xE0020 & 0xffff), 0x30010000);
+	outw((0xE0020 >> 16), 0x30010000);
+
+	while ((inw(0x30030000) & 0x2) == 0);
+
+
+
+
+	for (y = 0; y < height; y++) {
+		for (x = 0; x < width; x+=2) {
+			outw(*(addr++), 0x30000000);
+			outw(*(addr++), 0x30000000);
+		}
+		addr += (lcd_width - width);
+	}
+	lcd_bcm_finishup();
+
+}
+
+
+
+
+
+
+
+
 // Should work with photo. However, I don't have one, so I'm not sure.
 static void iPod_UpdateRects (_THIS, int nrects, SDL_Rect *rects) 
 {
     if (SDL_VideoSurface->format->BitsPerPixel == 16) {
-	C_update_display (0, 0, lcd_width - 1, lcd_height - 1);
+	if ((generation >> 16)==0xb)
+	    C_update_display_5g (0, 0, lcd_width - 1, lcd_height - 1);
+	else
+            C_update_display (0, 0, lcd_width - 1, lcd_height - 1);
     } else {
 #ifndef IPOD
 #error Cant get here from there
