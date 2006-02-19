@@ -5,7 +5,7 @@
 \def green #0f0
 
 
-  header: bg => white, fg => black, line => black, accent => black
+  header: bg => white, fg => black, line => black-1, accent => black
 	  shine => black, shadow => black,
 	  gradient.top => green,
 	  gradient.middle => white,
