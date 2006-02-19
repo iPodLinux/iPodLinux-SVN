@@ -1,6 +1,6 @@
 CROSS    ?= arm-uclinux-elf
 CC        = $(CROSS)-gcc
-MYCFLAGS  = -O2 -Wall -pedantic -std=c99 -ffreestanding -nostdinc -fomit-frame-pointer
+MYCFLAGS  = -O2 -Wall -std=gnu99 -ffreestanding -nostdinc -fomit-frame-pointer
 MYLDFLAGS = -Wl,-Tarm_elf_40.x -nostartfiles -fomit-frame-pointer
 OBJCOPY   = $(CROSS)-objcopy
 

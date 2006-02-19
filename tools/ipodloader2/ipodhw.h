@@ -21,9 +21,20 @@
 #define IPOD_LCD_FORMAT_2BPP   0x00
 #define IPOD_LCD_FORMAT_RGB565 0x01
 
-#define IPOD_KEYPAD_UP   0x10
-#define IPOD_KEYPAD_DOWN 0x08
-#define IPOD_KEYPAD_OK   0x01
+/* bitmasks for 4g+; SCRL and SCRR are my own invention. */
+#define IPOD_KEYPAD_SCRL   0x80
+#define IPOD_KEYPAD_SCRR   0x40
+#define IPOD_KEYPAD_MENU   0x10
+#define IPOD_KEYPAD_PLAY   0x08
+#define IPOD_KEYPAD_PREV   0x04
+#define IPOD_KEYPAD_NEXT   0x02
+#define IPOD_KEYPAD_ACTION 0x01
+
+/* buttons returned by keypad_getkey() */
+#define IPOD_KEY_NONE    0
+#define IPOD_KEY_UP      1
+#define IPOD_KEY_DOWN    2
+#define IPOD_KEY_SELECT  3
 
 typedef struct {
   uint32 hw_rev;
