@@ -313,19 +313,28 @@ void *loader(void) {
     menuPos = conf->def;
     done    = 0;
     redraw  = 1;
-    while(!done ) {
+#ifdef DEBUG
+    int key;
+    while (1) {
+        key = keypad_getkey();
+        if (key == IPOD_KEY_UP) mlc_printf ("up\n");
+        if (key == IPOD_KEY_DOWN) mlc_printf ("down\n");
+        if (key == IPOD_KEY_SELECT) mlc_printf ("select\n");
+    }
+#endif
+    while(!done) {
       int key;
 
-      key = keypad_getstate();
-      if( key == IPOD_KEYPAD_UP ) {
+      key = keypad_getkey();
+      if( key == IPOD_KEY_UP ) {
 	if(menuPos>0)
 	  menuPos--;
 	redraw = 1;
-      } else if( key == IPOD_KEYPAD_DOWN ) {
+      } else if( key == IPOD_KEY_DOWN ) {
 	if(menuPos<(conf->items-1))
 	  menuPos++;
 	redraw = 1;
-      } else if( key == IPOD_KEYPAD_OK ) {
+      } else if( key == IPOD_KEY_SELECT ) {
 	done = 1;
       }
 
