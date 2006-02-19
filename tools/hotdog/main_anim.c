@@ -37,6 +37,8 @@
 #define WIDTH  320
 #define HEIGHT 240
 
+static uint32 object_topwid, object_bottomwid;
+
 #ifdef IPOD
 #include <termios.h> 
 #include <sys/time.h>
@@ -119,9 +121,10 @@ static int add_pending(int dir)
 	
 static void circle_rotate(circle_object *circle, int dir)
 {
-	HD_AnimateCircle(circle->object, 80, 50, 50, (50 << 16) /
-			circle->object->w, (70 << 16) / circle->object->w,
-			circle->position, dir*1024, 25);
+	circle->object->w = 75 * WIDTH / 220;
+	circle->object->h = 150 * WIDTH / 220;
+	HD_AnimateCircle(circle->object, 80 * WIDTH / 220, 50 * HEIGHT / 176, 50 * HEIGHT / 176,
+			 object_topwid, object_bottomwid, circle->position, dir*1024, 25);
 	if (dir < 0) {
 		circle->position = (circle->position - 1024);
 		if (circle->position < 0) circle->position += 4096;
@@ -171,32 +174,32 @@ int main(int argc, char *argv[]) {
 	obj[4].object    = HD_PNG_Create (IMGPREFIX "bg.png");
 	obj[4].object->x = 0;
 	obj[4].object->y = 0;
-	obj[4].object->w = 220;
-	obj[4].object->h = 176;
+	obj[4].object->w = WIDTH;
+	obj[4].object->h = HEIGHT;
 
 	obj[0].object    = HD_PNG_Create (IMGPREFIX "photos.png");
 	obj[0].object->x = 0;
 	obj[0].object->y = 0;
-	obj[0].object->w = 75;
-	obj[0].object->h = 150;
+	obj[0].object->w = 75 * WIDTH / 220;
+	obj[0].object->h = 150 * WIDTH / 220;
 
 	obj[1].object    = HD_PNG_Create (IMGPREFIX "music.png");
 	obj[1].object->x = 0;
 	obj[1].object->y = 0;
-	obj[1].object->w = 75;
-	obj[1].object->h = 150;
+	obj[1].object->w = 75 * WIDTH / 220;
+	obj[1].object->h = 150 * WIDTH / 220;
 
 	obj[2].object    = HD_PNG_Create (IMGPREFIX "dvd.png");
 	obj[2].object->x = 0;
 	obj[2].object->y = 0;
-	obj[2].object->w = 75;
-	obj[2].object->h = 150;
+	obj[2].object->w = 75 * WIDTH / 220;
+	obj[2].object->h = 150 * WIDTH / 220;
 
 	obj[3].object    = HD_PNG_Create (IMGPREFIX "movies.png");
 	obj[3].object->x = 0;
 	obj[3].object->y = 0;
-	obj[3].object->w = 75;
-	obj[3].object->h = 150;
+	obj[3].object->w = 75 * WIDTH / 220;
+	obj[3].object->h = 150 * WIDTH / 220;
 
 	HD_Register(engine,obj[4].object);
 	HD_Register(engine,obj[0].object);
@@ -209,19 +212,18 @@ int main(int argc, char *argv[]) {
 	obj[2].position = 2048;
 	obj[3].position = 3072;
 
+	object_topwid = ((50 * WIDTH / 220) << 16) / obj[0].object->w;
+	object_bottomwid = ((70 * WIDTH / 220) << 16) / obj[0].object->w;
+
 	if (benchmark) {
-		HD_AnimateCircle(obj[0].object, 80, 50, 50, (50 << 16) /
-				obj[0].object->w, (70 << 16) / obj[0].object->w,
-				obj[0].position, 4096, -100);
-		HD_AnimateCircle(obj[1].object, 80, 50, 50, (50 << 16) /
-				obj[1].object->w, (70 << 16) / obj[1].object->w,
-				obj[1].position, 4096, -100);
-		HD_AnimateCircle(obj[2].object, 80, 50, 50, (50 << 16) /
-				obj[2].object->w, (70 << 16) / obj[2].object->w,
-				obj[2].position, 4096, -100);
-		HD_AnimateCircle(obj[3].object, 80, 50, 50, (50 << 16) /
-				obj[3].object->w, (70 << 16) / obj[3].object->w,
-				obj[3].position, 4096, -100);
+		HD_AnimateCircle(obj[0].object, 80 * WIDTH / 220, 50 * HEIGHT / 176, 50 * HEIGHT / 176,
+				 object_topwid, object_bottomwid, obj[0].position, 4096, -100);
+		HD_AnimateCircle(obj[1].object, 80 * WIDTH / 220, 50 * HEIGHT / 176, 50 * HEIGHT / 176,
+				 object_topwid, object_bottomwid, obj[1].position, 4096, -100);
+		HD_AnimateCircle(obj[2].object, 80 * WIDTH / 220, 50 * HEIGHT / 176, 50 * HEIGHT / 176,
+				 object_topwid, object_bottomwid, obj[2].position, 4096, -100);
+		HD_AnimateCircle(obj[3].object, 80 * WIDTH / 220, 50 * HEIGHT / 176, 50 * HEIGHT / 176,
+				 object_topwid, object_bottomwid, obj[3].position, 4096, -100);
 	}
 	else {
 		circle_rotate(&obj[0], 1);
@@ -237,7 +239,6 @@ int main(int argc, char *argv[]) {
 	fd_set rd;
 	struct timeval tv;
 	int n;
-
 #endif
 
 	while(!done) {
