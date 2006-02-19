@@ -783,16 +783,53 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 
 
 	} else if (decorations == PZ_DEC_MACOS8) {
+		int yb, v;
 		ttk_header_set_text_justification( TTK_TEXT_CENTER );
 		xp = ((ttk_screen->w - width)>>1) - 4;
 		ttk_header_set_text_position( ttk_screen->w >>1 );
 
-		c = ttk_ap_getx( "header.accent" )->color;
-		ttk_fillrect( srf, xp, 0, xp+xw, ttk_screen->wy, c);
+		/* outer box */
+		ttk_rect( srf, 0, 0, ttk_screen->w, ttk_screen->wy, 
+				ttk_ap_getx( "header.shine" )->color);
+
+		v = ttk_screen->wy;
+
+		/* dragbars */
+		for ( yb=4; yb<ttk_screen->wy-6 ; yb +=2 ) {
+			/* left side */
+			ttk_ap_hline( srf, ttk_ap_get( "header.shine" ), v, xp-3, yb );
+			ttk_ap_hline( srf, ttk_ap_get( "header.shadow" ), v+1, xp-2, yb+1 );
+
+			/* right side */
+			ttk_ap_hline( srf, ttk_ap_get( "header.shine" ), 
+					width+xp+10,
+					(boff)? ttk_screen->w-8 : ttk_screen->w-v-9, 
+					yb );
+			ttk_ap_hline( srf, ttk_ap_get( "header.shadow" ), 
+					width+xp+11,
+					(boff)? ttk_screen->w-7 : ttk_screen->w-v-8,
+					yb+1 );
+			
+		}
 
 		/* draw the closebox */
 		if ( !pz_get_int_setting (pz_global_config, DISPLAY_LOAD) 
 			&& !pz_hold_is_on) {
+
+			ttk_vgradient( srf, 4, 4, 
+				    ttk_screen->wy-4, ttk_screen->wy-4,
+				    ttk_ap_getx( "header.shadow" )->color,
+				    ttk_ap_getx( "header.shine" )->color );
+
+			/* outer recess */
+			ttk_rect( srf, 4, 4, v-5, v-5, ttk_ap_get( "header.shadow" )->color);
+			ttk_rect( srf, 5, 5, v-4, v-4, ttk_ap_get( "header.shine" )->color);
+			ttk_rect( srf, 5, 5, v-5, v-5, 0 );
+
+			/* inner button */
+			ttk_rect( srf, 6, 6, v-6, v-6, ttk_ap_get( "header.shine" )->color);
+			ttk_line( srf, 7, v-7, v-7, v-7, ttk_ap_get( "header.shadow" )->color);
+			ttk_line( srf, v-7, 7, v-7, v-7, ttk_ap_get( "header.shadow" )->color);
 		}
 
 
