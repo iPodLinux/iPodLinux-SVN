@@ -34,8 +34,12 @@
 
 #include "hotdog.h"
 
-#define WIDTH  320
-#define HEIGHT 240
+/* width/height of the region we draw */
+#define WIDTH   320
+#define HEIGHT  240
+/* width/height of the screen */
+#define SWIDTH  320
+#define SHEIGHT 240
 
 static uint32 object_topwid, object_bottomwid;
 
@@ -68,7 +72,7 @@ void reset_keypress(void)
 extern void _HD_ARM_Update5G (uint16 *fb, int x, int y, int w, int h);
 static void update (hd_engine *eng, int x, int y, int w, int h)
 {
-	_HD_ARM_Update5G (eng->screen.framebuffer, x, y, w, h);
+	_HD_ARM_Update5G (eng->screen.framebuffer, 0, 0, WIDTH, HEIGHT);
 }
 
 uint32 GetTimeMillis(void)
@@ -157,17 +161,17 @@ int main(int argc, char *argv[]) {
 	}
 	atexit(SDL_Quit);
 
-	screen = SDL_SetVideoMode(WIDTH,HEIGHT,16,SDL_SWSURFACE);
+	screen = SDL_SetVideoMode(SWIDTH, SHEIGHT,16,SDL_SWSURFACE);
 	if (screen == NULL) {
 		fprintf(stderr,"Unable to init SDL video: %s\n",SDL_GetError());
 		exit(1);
 	}
-	engine = HD_Initialize (WIDTH, HEIGHT, 16, screen->pixels, update);
+	engine = HD_Initialize (SWIDTH, SHEIGHT, 16, screen->pixels, update);
 #define IMGPREFIX ""
 #else
 
-	screen = malloc (WIDTH * HEIGHT * 2);
-	engine = HD_Initialize (WIDTH, HEIGHT, 16, screen, update);
+	screen = malloc (SWIDTH * SHEIGHT * 2);
+	engine = HD_Initialize (SWIDTH, SHEIGHT, 16, screen, update);
 #define IMGPREFIX "/mnt/"
 #endif
 
