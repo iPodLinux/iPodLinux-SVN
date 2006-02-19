@@ -738,12 +738,50 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 		ttk_line( srf, xR+17, 0, xR+17, v, c );
 
 	} else if (decorations == PZ_DEC_MACOS7) {
+		int yb;
+		int r,g,b;
+
 		ttk_header_set_text_justification( TTK_TEXT_CENTER );
 		xp = ((ttk_screen->w - width)>>1) - 4;
 		ttk_header_set_text_position( ttk_screen->w >>1 );
 
-		c = ttk_ap_getx( "header.accent" )->color;
-		ttk_fillrect( srf, xp, 0, xp+xw, ttk_screen->wy, c);
+		ttk_unmakecol_ex( ttk_ap_getx( "header.accent" )->color,
+						&r, &g, &b, srf);
+
+		for( yb = 5 ; yb < ttk_screen->wy-3 ; yb += 2 ) {
+			ttk_ap_hline( srf, ttk_ap_getx( "header.shadow" ),
+					1, ttk_screen->w-2, yb );
+		}
+
+		/* draw a lighter box around it, accent color */
+		c = ttk_makecol( (r+255)>>1, (g+255)>>1, (b+255)>>1 );
+		ttk_fillrect( srf, xp, 0, xp+xw, ttk_screen->wy, 
+				ttk_ap_getx( "header.bg" )->color);
+		ttk_rect( srf, 0, 0, ttk_screen->w, ttk_screen->wy, c );
+
+		/* draw the closebox */
+		if ( !pz_get_int_setting (pz_global_config, DISPLAY_LOAD) 
+			&& !pz_hold_is_on) {
+
+			/* fill gradient */
+			/* unfortunately, we have no diagonal gradient... */
+			ttk_fillrect( srf, 6, 4, 
+				    ttk_screen->wy-1, ttk_screen->wy-4,
+				    ttk_ap_getx( "header.bg" )->color );
+
+			/* draw these to get the NE/SW corners */
+			ttk_ap_hline( srf, ttk_ap_get( "header.accent" ),
+			    7, ttk_screen->wy-3, 5 );
+			ttk_ap_vline( srf, ttk_ap_get( "header.accent" ),
+			    7, 5, ttk_screen->wy-5 );
+
+			/* and the main container boxes... */
+			ttk_rect( srf, 7, 5, 
+				    ttk_screen->wy-3, ttk_screen->wy-5,
+				    ttk_ap_getx( "header.accent" )->color );
+			ttk_rect( srf, 8, 6, 
+				    ttk_screen->wy-2, ttk_screen->wy-4, c );
+		}
 
 
 	} else if (decorations == PZ_DEC_MACOS8) {
@@ -753,6 +791,11 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 
 		c = ttk_ap_getx( "header.accent" )->color;
 		ttk_fillrect( srf, xp, 0, xp+xw, ttk_screen->wy, c);
+
+		/* draw the closebox */
+		if ( !pz_get_int_setting (pz_global_config, DISPLAY_LOAD) 
+			&& !pz_hold_is_on) {
+		}
 
 
 	} else if (decorations == PZ_DEC_DOTS) {
