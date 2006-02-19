@@ -6,7 +6,7 @@
 
 
   header: bg => white, fg => black, line => black, accent => black
-	  shine => black, shade => black,
+	  shine => black, shadow => black,
 	  gradient.top => green,
 	  gradient.middle => white,
 	  gradient.bottom => black,
