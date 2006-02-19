@@ -10,7 +10,7 @@
 
 
   header: bg => white, fg => blue, line => blue -1, accent => black
-	  shine => orange, shade => black,
+	  shine => orange, shadow => black,
 	  gradient.top => white,
 	  gradient.middle => orange,
 	  gradient.bottom => white,
