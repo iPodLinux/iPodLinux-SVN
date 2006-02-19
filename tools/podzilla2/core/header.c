@@ -704,36 +704,38 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 
 	} else if (decorations == PZ_DEC_LISA) {
 		int xL, xR;
+		int v = ttk_screen->wy -1;
+
 		ttk_header_set_text_justification( TTK_TEXT_CENTER );
 		xp = ((ttk_screen->w - width)>>1) - 5;
 		ttk_header_set_text_position( ttk_screen->w >>1 );
 
 		/* center */
 		c = ttk_ap_getx( "header.accent" )->color;
-		ttk_fillrect( srf, xp, 0, xp+xw, ttk_screen->wy, c);
+		ttk_fillrect( srf, xp, 0, xp+xw, v, c);
 
 		xL = xp;  xR = xp + xw;
 
 		/* four-bars */
-		ttk_fillrect( srf, xL-5, 0, xL-1, ttk_screen->wy, c );
-		ttk_fillrect( srf, xR+1, 0, xR+5, ttk_screen->wy, c );
+		ttk_fillrect( srf, xL-5, 0, xL-1, v, c );
+		ttk_fillrect( srf, xR+1, 0, xR+5, v, c );
 
 		/* three-bars */
-		ttk_fillrect( srf, xL-9, 0, xL-6, ttk_screen->wy, c );
-		ttk_fillrect( srf, xR+6, 0, xR+9, ttk_screen->wy, c );
+		ttk_fillrect( srf, xL-9, 0, xL-6, v, c );
+		ttk_fillrect( srf, xR+6, 0, xR+9, v, c );
 
 		/* two-bars */
-		ttk_fillrect( srf, xL-12, 0, xL-10, ttk_screen->wy, c );
-		ttk_fillrect( srf, xR+10, 0, xR+12, ttk_screen->wy, c );
+		ttk_fillrect( srf, xL-12, 0, xL-10, v, c );
+		ttk_fillrect( srf, xR+10, 0, xR+12, v, c );
 
 		/* lines */
-		ttk_line( srf, xL-14, 0, xL-14, ttk_screen->wy, c );
-		ttk_line( srf, xL-16, 0, xL-16, ttk_screen->wy, c );
-		ttk_line( srf, xL-18, 0, xL-18, ttk_screen->wy, c );
+		ttk_line( srf, xL-14, 0, xL-14, v, c );
+		ttk_line( srf, xL-16, 0, xL-16, v, c );
+		ttk_line( srf, xL-18, 0, xL-18, v, c );
 
-		ttk_line( srf, xR+13, 0, xR+13, ttk_screen->wy, c );
-		ttk_line( srf, xR+15, 0, xR+15, ttk_screen->wy, c );
-		ttk_line( srf, xR+17, 0, xR+17, ttk_screen->wy, c );
+		ttk_line( srf, xR+13, 0, xR+13, v, c );
+		ttk_line( srf, xR+15, 0, xR+15, v, c );
+		ttk_line( srf, xR+17, 0, xR+17, v, c );
 
 	} else if (decorations == PZ_DEC_MACOS7) {
 		ttk_header_set_text_justification( TTK_TEXT_CENTER );
