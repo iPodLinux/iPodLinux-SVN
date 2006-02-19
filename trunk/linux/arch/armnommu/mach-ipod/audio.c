@@ -243,7 +243,7 @@ static int codec_set_sample_rate(int rate)
 
 
 		/* set clock div */
-		wm_write(WM8758_CLOCKCTRL, 1, 1 | (0 << 2) | (mclkdiv << 5));
+		wm_write(WM8758_CLOCKCTRL, 1, 1 | (1 << 2) | (mclkdiv << 5));
 
 		/* set srate */
 		wm_write(WM8758_SRATECTRL, 0, (srate << 1));
@@ -297,6 +297,7 @@ static void codec_wm8758_init_pb(void)
 	 * disables mute 
 	 */
 	wm_write(WM8758_DACCTRL, 0, 0x0);
+
 }
 
 
