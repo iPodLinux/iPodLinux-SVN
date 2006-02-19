@@ -392,6 +392,7 @@ void ttk_ap_load (const char *file)
     for(;nextdef>0;nextdef--)
         if(defines[nextdef-1].key!=NULL)
             free(defines[nextdef-1].key);
+    fclose(f);
 }
 
 TApItem *ttk_ap_get (const char *prop) 
