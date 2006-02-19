@@ -299,46 +299,48 @@ int main(int argc, char *argv[]) {
 
 		SDL_Delay (30);
 #else
-		FD_ZERO(&rd);
-		FD_SET(0, &rd);
-
-		tv.tv_sec = 0;
-		tv.tv_usec = 100;
-
-		n = select(0+1, &rd, NULL, NULL, &tv);
-		if (FD_ISSET(0, &rd) && (n > 0)) {
-			read(0, &ch, 1);
-			switch(ch) {
-			case 'm':
-				done = 1;
-				break;
-			case 'r':
-				if (benchmark) break;
-				if (obj[0].object->animating) {
-					add_pending(1);
+		if (!noinput) {
+			FD_ZERO(&rd);
+			FD_SET(0, &rd);
+			
+			tv.tv_sec = 0;
+			tv.tv_usec = 100;
+			
+			n = select(0+1, &rd, NULL, NULL, &tv);
+			if (FD_ISSET(0, &rd) && (n > 0)) {
+				read(0, &ch, 1);
+				switch(ch) {
+				case 'm':
+					done = 1;
+					break;
+				case 'r':
+					if (benchmark) break;
+					if (obj[0].object->animating) {
+						add_pending(1);
+						break;
+					}
+					circle_rotate(&obj[0], 1);
+					circle_rotate(&obj[1], 1);
+					circle_rotate(&obj[2], 1);
+					circle_rotate(&obj[3], 1);
+					break;
+				case 'l':
+					if (benchmark) break;
+					if (obj[0].object->animating) {
+						add_pending(-1);
+						break;
+					}
+					circle_rotate(&obj[0], -1);
+					circle_rotate(&obj[1], -1);
+					circle_rotate(&obj[2], -1);
+					circle_rotate(&obj[3], -1);
+					break;
+				case 'w':
+				case 'f':
+				case 'd':
+				default:
 					break;
 				}
-				circle_rotate(&obj[0], 1);
-				circle_rotate(&obj[1], 1);
-				circle_rotate(&obj[2], 1);
-				circle_rotate(&obj[3], 1);
-				break;
-			case 'l':
-				if (benchmark) break;
-				if (obj[0].object->animating) {
-					add_pending(-1);
-					break;
-				}
-				circle_rotate(&obj[0], -1);
-				circle_rotate(&obj[1], -1);
-				circle_rotate(&obj[2], -1);
-				circle_rotate(&obj[3], -1);
-				break;
-			case 'w':
-			case 'f':
-			case 'd':
-			default:
-				break;
 			}
 		}
 #endif
