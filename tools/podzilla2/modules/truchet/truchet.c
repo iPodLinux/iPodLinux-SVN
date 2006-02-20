@@ -69,30 +69,55 @@ static void twiddle_buffer()
 void draw_truchet( PzWidget *widget, ttk_surface srf )
 {
 	int x,y;
-	unsigned short back[] = {
-	    0x0080, 0x0040, 0x0020, 0x0010,
-	    0x0008, 0x0004, 0x0002, 0x0001,
-	    0x8000, 0x4000, 0x2000, 0x1000,
-	    0x0800, 0x0400, 0x0200, 0x0100,
+	unsigned short slash1[] = {
+		0x0080, 0x0040, 0x0020, 0x0010,
+		0x0008, 0x0004, 0x0002, 0x0001,
+		0x8000, 0x4000, 0x2000, 0x1000,
+		0x0800, 0x0400, 0x0200, 0x0100,
 	};
 
-	unsigned short forw[] = {
-	    0x0100, 0x0200, 0x0400, 0x0800,
-	    0x1000, 0x2000, 0x4000, 0x8000,
-	    0x0001, 0x0002, 0x0004, 0x0008,
-	    0x0010, 0x0020, 0x0040, 0x0080,
+	unsigned short slash2[] = {
+		0x0100, 0x0200, 0x0400, 0x0800,
+		0x1000, 0x2000, 0x4000, 0x8000,
+		0x0001, 0x0002, 0x0004, 0x0008,
+		0x0010, 0x0020, 0x0040, 0x0080,
 	};
+
+	unsigned short curve1[] = {
+		0x0180, 0x0180, 0x01c0, 0x01c0,
+		0x00e0, 0x00f0, 0x007c, 0xf03f,
+		0xfc0f, 0x3e00, 0x0f00, 0x0700,
+		0x0380, 0x0380, 0x0180, 0x0180,
+	};
+
+	unsigned short curve2[] = {
+		0x0180, 0x0180, 0x0380, 0x0380,
+		0x0700, 0x0f00, 0x3e00, 0xfc0f,
+		0xf03f, 0x003c, 0x00f0, 0x00e0,
+		0x01c0, 0x01c0, 0x0180, 0x0180,
+	    
+	};
+
+	unsigned short *tile1 = curve1;
+	unsigned short *tile2 = curve2;
 
 	ttk_gc gc = ttk_new_gc();
 	TWindow *pixmap = malloc (sizeof(TWindow)); pixmap->srf = srf;
 
-	/* initialize the colors */
+	/* deal with user input */
+	if( tglob.clicks > 3 ) tglob.clicks = 0;
+
 	if( tglob.clicks & 1 ) {
 		tglob.bg = ttk_ap_get( "window.bg" )->color;
 		tglob.fg = ttk_ap_get( "window.fg" )->color;
 	} else {
 		tglob.bg = ttk_ap_get( "window.fg" )->color;
 		tglob.fg = ttk_ap_get( "window.bg" )->color;
+	}
+
+	if( tglob.clicks & 2 ) {
+		tile1 = slash1;
+		tile2 = slash2;
 	}
 	tglob.border = ttk_ap_get( "window.border" )->color;
 
@@ -102,9 +127,9 @@ void draw_truchet( PzWidget *widget, ttk_surface srf )
 
 	for( x=0 ; x<tglob.bw ; x++ ) for( y=0 ; y<tglob.bh ; y++ ) {
 		if( tglob.buf[x][y] & 1 ) {
-			t_GrBitmap( pixmap, gc, x*16, y*16, 16, 16, back );
+			t_GrBitmap( pixmap, gc, x*16, y*16, 16, 16, tile1 );
 		} else {
-			t_GrBitmap( pixmap, gc, x*16, y*16, 16, 16, forw );
+			t_GrBitmap( pixmap, gc, x*16, y*16, 16, 16, tile2 );
 		}
 	}
 
@@ -161,10 +186,7 @@ int event_truchet( PzEvent *ev )
 			break;
 
 		case( PZ_BUTTON_ACTION ):
-			if( !tglob.fullscreen ) {
-				tglob.clicks++;
-				if( tglob.clicks > 1 ) tglob.clicks = 0;
-			}
+			if( !tglob.fullscreen ) tglob.clicks++;
 			ev->wid->dirty = 1;
 			break;
 
@@ -174,7 +196,7 @@ int event_truchet( PzEvent *ev )
 		break;
 
 	case PZ_EVENT_DESTROY:
-		cleanup_clocks();
+		cleanup_truchet();
 		break;
 
 	case PZ_EVENT_TIMER:
@@ -208,7 +230,7 @@ static PzWindow *new_truchet_window_common( )
 				draw_truchet, event_truchet );
 
 	/* 1 second timeout */
-	pz_widget_set_timer( tglob.widget, 50 );
+	pz_widget_set_timer( tglob.widget, 25 );
 
 	/* we're waaaay more important than anyone else */
 	pz_set_priority(PZ_PRIORITY_VITAL); 
@@ -222,9 +244,6 @@ static PzWindow *new_truchet_window_common( )
 
 void init_truchet() 
 {
-	int x,y;
-	int c;
-
 	/* internal module name */
 	tglob.module = pz_register_module( "truchet", cleanup_truchet );
 
