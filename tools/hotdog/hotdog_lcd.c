@@ -234,6 +234,13 @@ void HD_LCD_Update (uint16 *fb, int x, int y, int w, int h)
 	}
 }
 
+void HD_LCD_Quit() 
+{
+	int fd = open("/dev/console", O_NONBLOCK);
+	ioctl(fd, KDSETMODE, KD_TEXT);
+	close(fd);
+}
+
 /*
  * Local Variables:
  * indent-tabs-mode: t

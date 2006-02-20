@@ -386,6 +386,7 @@ int main(int argc, char *argv[]) {
 #endif
 	}
 #ifdef IPOD
+	HD_LCD_Quit();
 	uint32 ertc = *(volatile uint32 *)0x60005010;
 	printf ("%d frames in %d microseconds = %d.%02d frames/sec\n",
 		t, ertc - srtc, 1000000 * t / (ertc - srtc),

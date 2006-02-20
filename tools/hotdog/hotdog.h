@@ -285,6 +285,7 @@ hd_surface HD_PNG_Load (const char *fname, int *w, int *h);
 /****** LCD ******/
 void HD_LCD_Init();
 void HD_LCD_Update (uint16 *fb, int x, int y, int w, int h);
+void HD_LCD_Quit(); // restore to text mode before quitting
 #endif
 
 #endif
