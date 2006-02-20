@@ -18,10 +18,10 @@
 \def ltgray    #ddd
 
 # this defines the color tint for the stuff.
-\def accentred	#338
+\def accentblue	#313163
 
 
-  header: bg => gray, fg => black, line => black-1, accent => accentred
+  header: bg => gray, fg => black, line => black-1, accent => accentblue
 	  shine => ltgray, shadow => dkgray,
 	  gradient.top => gray,
 	  gradient.middle => white,
