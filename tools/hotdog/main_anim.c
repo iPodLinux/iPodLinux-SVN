@@ -87,19 +87,10 @@ void reset_keypress(void)
 	tcsetattr(0,TCSANOW,&stored_settings);
 }
 
-#if defined(NANO) || defined(PHOTO) || defined(COLOR)
-extern void _HD_ARM_UpdatePhoto (uint16 *fb, int x, int y, int w, int h, int type);
-static void update (hd_engine *eng, int x, int y, int w, int h)
+static void update (hd_engine *eng, int x, int y, int w, int h) 
 {
-	_HD_ARM_UpdatePhoto (eng->screen.framebuffer, 0, 0, SWIDTH, SHEIGHT, LCD_TYPE);
+	HD_LCD_Update (eng->screen.framebuffer, 0, 0, SWIDTH, SHEIGHT);
 }
-#else
-extern void _HD_ARM_Update5G (uint16 *fb, int x, int y, int w, int h);
-static void update (hd_engine *eng, int x, int y, int w, int h)
-{
-	_HD_ARM_Update5G (eng->screen.framebuffer, 0, 0, SWIDTH, SHEIGHT);
-}
-#endif
 
 uint32 GetTimeMillis(void)
 {
@@ -198,6 +189,7 @@ int main(int argc, char *argv[]) {
 
 	screen = malloc (SWIDTH * SHEIGHT * 2);
 	engine = HD_Initialize (SWIDTH, SHEIGHT, 16, screen, update);
+	HD_LCD_Init();
 #define IMGPREFIX "/mnt/"
 #endif
 

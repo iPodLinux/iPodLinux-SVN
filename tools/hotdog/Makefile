@@ -61,6 +61,9 @@ endif
 MYCFLAGS+= -Wall
 LIB = libhotdog.a
 LIBOBJS=  hotdog.o hotdog_png.o hotdog_font.o hotdog_animation.o hotdog_canvas.o hotdog_surface.o hotdog_ops.o zsort.o
+ifdef IPOD
+LIBOBJS += hotdog_lcd.o
+endif
 
 DEMO = hd-demo
 
