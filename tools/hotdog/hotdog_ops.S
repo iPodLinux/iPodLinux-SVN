@@ -958,9 +958,9 @@ _HD_ARM_UpdatePhoto:
 	ldmia	r4, {r4, r5}		@ load 'em
 
 	@@ Load 0x70008A0C -> r12.
-	mov	r12,      #0x70000000
-	orr	r12, r12, #0x00008A00
-	orr	r12, r12, #0x0000000C
+	mov	r12,  #0x70000000
+	orr	r12, r12, #0x8A00
+	orr	r12, r12, #0x000C
 
 	@@ Figure out rect1, rect2, rect3, rect4 in r6,r7,r8,r9.
 	cmp	r5, #2			@ nano?
