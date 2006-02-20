@@ -208,7 +208,7 @@ static PzWindow *new_truchet_window_common( )
 				draw_truchet, event_truchet );
 
 	/* 1 second timeout */
-	pz_widget_set_timer( tglob.widget, 100 );
+	pz_widget_set_timer( tglob.widget, 50 );
 
 	/* we're waaaay more important than anyone else */
 	pz_set_priority(PZ_PRIORITY_VITAL); 
