@@ -255,7 +255,8 @@ void HD_Render(hd_engine *eng);
 void HD_Animate(hd_engine *eng);
 void HD_Destroy(hd_object *obj);
 void HD_ScaleBlendClip (hd_surface sbuf, int sx, int sy, int sw, int sh,
-                        hd_surface dbuf, int dx, int dy, int dw, int dh, int speed);
+                        hd_surface dbuf, int dx, int dy, int dw, int dh,
+                        int speed, uint8 opacity);
 
 hd_object *HD_New_Object();
 hd_obj_list *HD_StackObjects (hd_obj_list *head);
