@@ -91,7 +91,7 @@ void reset_keypress(void)
 extern void _HD_ARM_UpdatePhoto (uint16 *fb, int x, int y, int w, int h, int type);
 static void update (hd_engine *eng, int x, int y, int w, int h)
 {
-	_HD_ARM_Update5G (eng->screen.framebuffer, 0, 0, SWIDTH, SHEIGHT, LCD_TYPE);
+	_HD_ARM_UpdatePhoto (eng->screen.framebuffer, 0, 0, SWIDTH, SHEIGHT, LCD_TYPE);
 }
 #else
 extern void _HD_ARM_Update5G (uint16 *fb, int x, int y, int w, int h);
