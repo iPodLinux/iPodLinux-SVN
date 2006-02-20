@@ -281,4 +281,10 @@ void       HD_Canvas_Render(hd_engine *eng,hd_object *obj, int x, int y, int w, 
 hd_object *HD_PNG_Create(const char *fname);
 hd_surface HD_PNG_Load (const char *fname, int *w, int *h);
 
+#ifdef IPOD
+/****** LCD ******/
+void HD_LCD_Init();
+void HD_LCD_Update (uint16 *fb, int x, int y, int w, int h);
+#endif
+
 #endif
