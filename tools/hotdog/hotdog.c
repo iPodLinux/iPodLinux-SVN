@@ -95,6 +95,10 @@ void HD_Animate(hd_engine *eng) {
     }
 }
 
+#ifdef IPOD
+extern void _HD_ARM_Convert16 (uint32 *src, uint16 *dst, uint32 count);
+extern void _HD_ARM_ClearScreen (uint32 *fb, uint32 pixels);
+#endif
 
 // We support three "dirty modes" until we decide which one gives
 // the best speed. They are:
@@ -225,7 +229,11 @@ void HD_Render(hd_engine *eng) {
 
 #if !defined(PRECISE_DIRTIES) && !defined(OBJECT_DIRTIES)
         // Clear FB
+#ifdef IPOD
+        _HD_ARM_ClearScreen (HD_SRF_PIXELS (eng->buffer), eng->screen.width * eng->screen.height);
+#else
         memset (HD_SRF_PIXELS (eng->buffer), 0, eng->screen.width * eng->screen.height * 4);
+#endif
 #else
         // Clear dirties
         rect = dirties;
@@ -401,53 +409,8 @@ void HD_Render(hd_engine *eng) {
                 srcptr = HD_SRF_PIXELS (eng->buffer);
                 dstptr = eng->screen.framebuffer;
                 
-                uint32 count = eng->screen.width*eng->screen.height / 2 + 1;
-                
-                
-                // %0 = counter
-                // %1 = dst ptr
-                // %2 = src ptr
-                
-                // R0 = src val
-                // R1 = dst accum
-                // R2 = dst tmp
-                // R3 = dst tmp 2
-                // R4, R5, R6 - Various mask constants
-                // R7 another temp
-                asm volatile(
-                "               LDR     R4, =0x0000F800     \n"  // R is 5 Bits
-                "               LDR     R5, =0x000007E0     \n"  // G is 6 Bits
-                "               LDR     R6, =0x0000001F     \n"  // B is 5 bits
-                
-                "LOOP_START:                                \n"
-                "               LDR     R0, [%2], #4        \n" // Get the source value, Skip the src ptr to the next pixel
-                "               AND     R1, R4, R0, LSR #8  \n" // Red pixel, shift, mask + store in dst
-                "               AND     R2, R5, R0, LSR #5  \n" // Green pixel, shift, mask, store in tmp1
-                "               AND     R3, R6, R0, LSR #3  \n" // Blue pixel, shift, mask, store in tmp2
-                "               ORR     R1, R2, R1          \n" // Combine Red + Green
-                
-                "               LDR     R0, [%2], #4        \n" // Load the next pixel, this saves up a partial pipeline stall
-                
-                "               ORR     R7, R3, R1          \n" // Combine RedGreen_pix1 + Blue_pix1 - Save in R7
-            
-                "               AND     R1, R4, R0, LSR #8  \n" // Red pixel, shift, mask + store in dst
-                "               AND     R2, R5, R0, LSR #5  \n" // Green pixel, shift, mask, store in tmp1
-                "               AND     R3, R6, R0, LSR #3  \n" // Blue pixel, shift, mask, store in tmp2
-                "               ORR     R1, R2, R1          \n" // Combine Red + Green
-                "               ORR     R1, R3, R1          \n" // Combine RedGreen + Blue
-                
-                "               ORR     R1, R7, R1, LSL #16 \n" // This pixel goes into the upper half of our writeback register
-                
-                "               SUBS    %0, %0, #1          \n" // Step counter down                
-                
-                "               STR    R1, [%1], #4         \n" // Save back
-                
-
-                "               BNE     LOOP_START          \n"
-                
-                :                                               // No return
-                : "r" (count), "r" (dstptr), "r" (srcptr)
-                : "r0","r1","r2","r3","r4","r5","r6","r7");
+                uint32 count = eng->screen.width*eng->screen.height / 2;
+                _HD_ARM_Convert16 (srcptr, dstptr, count);
 #endif
 	}
         // Translate to Y2
@@ -557,7 +520,7 @@ extern void _HD_ARM_LowerBlit_Fast (hd_surface, uint32, uint32,
 #endif
 
 void HD_ScaleBlendClip (hd_surface ssrf, int sx, int sy, int sw, int sh,
-                        hd_surface dsrf, int dx, int dy, int dw, int dh, int speed)
+                        hd_surface dsrf, int dx, int dy, int dw, int dh, int speed, uint8 opacity)
 {
   int stw = HD_SRF_WIDTH (ssrf), sth = HD_SRF_HEIGHT (ssrf),
       dtw = HD_SRF_WIDTH (dsrf), dth = HD_SRF_HEIGHT (dsrf);
@@ -629,10 +592,10 @@ void HD_ScaleBlendClip (hd_surface ssrf, int sx, int sy, int sw, int sh,
                               dsrf, startx, starty, endx - startx, endy - starty);
   else if (speed & HD_SPEED_NOSCALE)
       _HD_ARM_LowerBlit_Blend (ssrf, fp_initial_ix >> 16, fp_initial_iy >> 16,
-                               dsrf, startx, starty, endx - startx, endy - starty, 0xff);
+                               dsrf, startx, starty, endx - startx, endy - starty, opacity);
   else
       _HD_ARM_LowerBlit_ScaleBlend (ssrf, fp_initial_ix, fp_initial_iy, fp_step_x, fp_step_y,
-                                    dsrf, startx, endx - startx, starty, endy - starty, 0xff);
+                                    dsrf, startx, endx - startx, starty, endy - starty, opacity);
 #else
   buffOff = starty * dtw;// + startx;
   

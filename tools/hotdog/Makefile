@@ -24,6 +24,17 @@ SDLINCLUDE ?= ../ttk/sdlincludes
 SDLLIB ?= ../ttk/libs/SDL
 LDFLAGS = -Wl,-elf2flt
 MYCFLAGS = -DIPOD -I$(PNGINCLUDE) -I$(ZINCLUDE) -O3 -fomit-frame-pointer -funroll-loops
+ifneq ($(PHOTO),)
+MYCFLAGS += -DPHOTO
+else
+ifneq ($(COLOR),)
+MYCFLAGS += -DCOLOR
+else
+ifneq ($(NANO),)
+MYCFLAGS += -DNANO
+endif
+endif
+endif
 DEMOCFLAGS = -I$(SDLINCLUDE)
 DEMOLDFLAGS = $(SDLLIB)/libSDL.a $(PNGLIB)/libpng.a $(ZLIB)/libz.a -lm
 else

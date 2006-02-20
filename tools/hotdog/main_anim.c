@@ -34,12 +34,30 @@
 
 #include "hotdog.h"
 
+#if defined(NANO)
+#define LCD_TYPE 2
+#define WIDTH   176
+#define HEIGHT  132
+#define SWIDTH  176
+#define SHEIGHT 132
+#elif defined(PHOTO) || defined(COLOR)
+#ifdef PHOTO
+#define LCD_TYPE 0
+#else
+#define LCD_TYPE 1
+#endif
+#define WIDTH   220
+#define HEIGHT  176
+#define SWIDTH  220
+#define SHEIGHT 176
+#else /* 5g */
 /* width/height of the region we draw */
 #define WIDTH   320
 #define HEIGHT  240
 /* width/height of the screen */
 #define SWIDTH  320
 #define SHEIGHT 240
+#endif
 
 static uint32 object_topwid, object_bottomwid;
 
@@ -69,11 +87,19 @@ void reset_keypress(void)
 	tcsetattr(0,TCSANOW,&stored_settings);
 }
 
+#if defined(NANO) || defined(PHOTO) || defined(COLOR)
+extern void _HD_ARM_UpdatePhoto (uint16 *fb, int x, int y, int w, int h, int type);
+static void update (hd_engine *eng, int x, int y, int w, int h)
+{
+	_HD_ARM_Update5G (eng->screen.framebuffer, 0, 0, SWIDTH, SHEIGHT, LCD_TYPE);
+}
+#else
 extern void _HD_ARM_Update5G (uint16 *fb, int x, int y, int w, int h);
 static void update (hd_engine *eng, int x, int y, int w, int h)
 {
-	_HD_ARM_Update5G (eng->screen.framebuffer, 0, 0, WIDTH, HEIGHT);
+	_HD_ARM_Update5G (eng->screen.framebuffer, 0, 0, SWIDTH, SHEIGHT);
 }
+#endif
 
 uint32 GetTimeMillis(void)
 {

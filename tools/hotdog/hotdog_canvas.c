@@ -41,5 +41,6 @@ void     HD_Canvas_Destroy(hd_object *obj) {
 
 void HD_Canvas_Render(hd_engine *eng,hd_object *obj, int x, int y, int w, int h) {
     HD_ScaleBlendClip (obj->canvas, x, y, w, h,
-                       eng->buffer, obj->x, obj->y, obj->w, obj->h, obj->speed);
+                       eng->buffer, obj->x, obj->y, obj->w, obj->h,
+                       obj->speed, obj->opacity);
 }

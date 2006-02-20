@@ -40,7 +40,7 @@
 
 	.globl	_HD_ARM_Convert16
 _HD_ARM_Convert16:
-	stmdb	sp!, {r4-r11, lr}
+	stmdb	sp!, {r4-r12, lr}
 	ldr	r4, =0x0000F800		@ R mask - 5 top bits.
 	ldr	r5, =0x000007E0		@ G mask - 6 middle bits.
 	ldr	r6, =0x0000001F		@ B mask - 5 bottom bits.
@@ -49,29 +49,44 @@ _HD_ARM_Convert16:
 	mov	r10, r2			@ r10 = count
 
 	@@ Main loop. 20 cycles per 2 pixels = 10 cycles/pix.
-1:	ldmia	r8!, {r0, r11}		@ Load two pixels to r0 and r11. 4 cyc.
+1:	ldmia	r8!, {r0, r11-r12, r14}	@ Load four pixels to r0, r11, r12, r14. 1N + 1I + 4S cyc.
 	and	r1, r4, r0, lsr #8	@ Red pixel, shift, mask, and store in r1
 	and	r2, r5, r0, lsr #5	@ Green pixel, shift, mask, store in r2
 	and	r3, r6, r0, lsr #3	@ Blue pixel, shift, mask, and store in r3
 	orr	r1, r2, r1		@ Red |= Green
-	orr	r7, r1, r3		@ Store Red|Green|Blue in r7. r7 = first pixel, converted.
+	orr	r0, r1, r3		@ Store Red|Green|Blue in r0. r0 = first pixel, converted.
 
 	@@ Do it again for the next pixel.
 	and	r1, r4, r11, lsr #8	@ Red pixel, shift, mask, and store in r1
 	and	r2, r5, r11, lsr #5	@ Green pixel, shift, mask, store in r2
 	and	r3, r6, r11, lsr #3	@ Blue pixel, shift, mask, and store in r3
 	orr	r1, r2, r1		@ Red |= Green
-	orr	r1, r3, r1		@ Red|Green |= Blue. r1 = second pixel, converted.
+	orr	r11, r3, r1		@ r11 = Red|Green|Blue = second pixel, converted.
 
-	@@ Put the first pixel into the top 16 bits of r1, and store it.
-	orr	r1, r7, r1, lsl #16
-	subs	r10, r10, #1		@ Step counter down
-	str	r1, [r9], #4		@ Save these two pixels. 2 cyc.
+	@@ And again...
+	and	r1, r4, r12, lsr #8
+	and	r2, r5, r12, lsr #5
+	and	r3, r6, r12, lsr #3
+	orr	r1, r2, r1
+	orr	r12, r3, r1
+
+	@@ And again!
+	and	r1, r4, r14, lsr #8
+	and	r2, r5, r14, lsr #5
+	and	r3, r6, r14, lsr #3
+	orr	r1, r2, r1
+	orr	r14, r3, r1
+
+	@@ Combine first+second, third+fourth.
+	orr	r0, r0, r11, lsl #16	@ r0 = (second << 16) | first
+	orr	r12, r12, r14, lsl #16	@ r12 = (fourth << 16) | third
+	subs	r10, r10, #2		@ Step counter down
+	stmia	r9!, {r0, r12}		@ Save these four pixels. 1S + 2N cyc.
 	bne	1b			@ Keep looping until counter = 0. 3 cyc.
 
 	@@ Return
-	ldmia	sp!, {r4-r11, pc}
-
+	ldmia	sp!, {r4-r12, pc}
+	.pool
 
 
 	
@@ -270,6 +285,7 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	@@   5:	jump point into simple-alpha inner loop from no-opacity varied-alpha inner loop
 	@@   6:	update of simple-alpha inner loop
 	@@   7:	beginning of opacity inner loop
+	@@   6: update of opacity inner loop (yes, two 6's)
 	@@   8:	after end of opacity inner loop
 	@@   9:	used by ablend macro
 
@@ -407,32 +423,32 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	b	8f			@ skip the other version - 3 cyc.
 
 	@@ Inner loop 2 - opacity version. 4-5 extra cycles per loop iteration.
-	@@ We skip the adjustment if A=0 because it results in A=1, which is wrong.
-7:	
-	ldr	r6,  [r5]		@ r6 = idst
-	mov	r7,  r3, lsr #16	@ r7 = ix
-	ldr	r7,  [r1, r7, lsl #2]	@ r7 = isrc
-	movs	r8,  r7, lsr #24	@ r8 = A
-	mulne	r8,  r14, r8		@ multiply by the opacity (unless A=0)
-	movne	r8,  r8,  lsr #8	@ divide by 256 (unless A=0)
-	addne	r8,  r8,  #1		@ and add 1 (unless A=0)
-	sub	r8,  r7,  r8		@ r8 = 255 - adjusted A
-					@ r7 is now accumulator
-	and	r0,  r9,  r6, lsr#8	@ r0 = (idst >> 8) & 0x00ff00ff
-	mla	r11, r0,  r8, r10	@ r11 = r0 * alpha + 0x00800080
-	bic	r11, r11, r9		@ r11 &= 0xff00ff00
-	add	r7,  r7,  r11		@ r7 += that whole thing
-	and	r11, r9,  r6		@ r11 = idst & 0x00ff00ff
-	mla	r6,  r11, r8, r10	@ r6 = r11 * alpha + 0x00800080
-	bic	r6,  r6,  r9		@ r6 &= 0xff00ff00
-	add	r7,  r7,  r6, lsr #8	@ r7 += that whole thing >> 8
-	str	r7,  [r5], #4		@ store the pixel
+7:	ldmia	r5, {r6, r12, r13}	@ load 3 pixels			 3S 1N 1I
+	mov	r7, r3, lsr #16		@ figure src #1 offset		 1S
+	ldr	r7, [r1, r7, lsl #2]	@ load src #1			 1S 1N 1I
+	ablend	r7, r6, 1		@ blend #1		        19S
+	add	r3, r3, r4		@ update r3			 1S
+	subs	r2, r2, #1		@ update counter		 1S
+	beq	6f			@ skip if we're done		 1S
 	
-	@@ Increment and test. 5 cyc.
-	add	r3, r3, r4		@ fp_ix += fp_step_x
-	subs	r2, r2, #1		@ dec the counter
-	bne	3b			@ loop while != 0
-	@@ End of inner loop, option 2.
+	mov	r7, r3, lsr #16		@ figure src #2 offset		 1S
+	ldr	r7, [r1, r7, lsl #2]	@ load src #2			 1S 1N 1I
+	ablend	r7, r12, 1		@ blend #2		        19S
+	add	r3, r3, r4		@ update r3			 1S
+	subs	r2, r2, #1		@ update counter		 1S
+	beq	6f			@ skip if we're done		 1S
+	
+	mov	r7, r3, lsr #16		@ figure src #3 offset		 1S
+	ldr	r7, [r1, r7, lsl #2]	@ load src #3			 1S 1N 1I
+	ablend	r7, r13, 1		@ blend #3		        19S
+	add	r3, r3, r4		@ update r3			 1S
+	subs	r2, r2, #1		@ update counter		 1S
+	
+6:	stmia	r5!, {r6, r12, r13}	@ store the three pixels	 2S 2N
+	bne	7b			@ keep looping while some left	 2S 1N
+	@@ Cycle total per 3px:						78S 7N 4I	96
+	@@ 32 cycles per pixel.
+	@@ End of third inner loop.
 
 	@@ Load SP. 1S+2N cyc.
 8:	adr	r6, _HD_ARM_LowerBlit_ScaleBlend_StoreSP
@@ -454,6 +470,7 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	@@ void _HD_ARM_LowerBlit_Blend (hd_surface src, uint32 sx, uint32 sy,
 	@@                               hd_surface dest, uint32 dx, uint32 dy, uint32 dw, uint32 dh,
 	@@                               uint8 opacity)
+	@@ ->NOTE<-: This function is actually SLOWER than ScaleBlend! It needs some optims!
 
 	.globl	_HD_ARM_LowerBlit_Blend
 _HD_ARM_LowerBlit_Blend:
@@ -587,9 +604,10 @@ _HD_ARM_LowerBlit_Blend:
 	
 	
 	@@ _HD_ARM_LowerBlit_f - The core of blit, non-alpha non-scaling.
-	@@ Nice and fast.
+	@@ Nice and fast. (or not.. see ->NOTE<- below)
 	@@ void _HD_ARM_LowerBlit_f (hd_surface src, uint32 sx, uint32 sy,
 	@@                           hd_surface dest, uint32 dx, uint32 dy, uint32 dw, uint32 dh)
+	@@ ->NOTE<-: This func could do with some optimization, loop unrolling, etc. It's too slow.
 	
 	.globl	_HD_ARM_LowerBlit_Fast
 _HD_ARM_LowerBlit_Fast:
@@ -834,9 +852,236 @@ _HD_ARM_Update5G:
 	str	r0, [r1]
 	
 	ldmia	sp!, {r4-r12, pc}	@ return
+	.pool
 
 
+	@@ Really fast memset 0 for screen clearing.
+	@@ void _HD_ARM_ClearScreen (uint32 *fb, uint32 pixels)
+	@@ Equivalent to memset (fb, 0, pixels*4)
+	.globl	_HD_ARM_ClearScreen
+_HD_ARM_ClearScreen:
+	stmdb	sp!, {r4-r12, lr}	@				9S 2N
+	mov	r2, #0			@ Zero				1S
+	mov	r3, #0			@ twelve			1S
+	mov	r4, #0			@ registers			1S
+	mov	r5, #0			@ for				1S
+	mov	r6, #0			@ stmia				1S
+	mov	r7, #0			@ and				1S
+	mov	r8, #0			@ really			1S
+	mov	r9, #0			@ fast				1S
+	mov	r10, #0			@ block				1S
+	mov	r11, #0			@ memsetting.			1S
+	mov	r12, #0			@				1S
+	mov	r14, #0			@				1S
+	@@ Total for setup:					    -> 21S 2N
+	
+	cmp	r1, #12			@ At least 12 pix left?		1S
+1:	stmhsia	r0!, {r2-r12, r14}	@ Zero twelve px and inc.      11S 2N
+	subhs	r1, r1, #12		@ Update r1.			1S
+	cmphs	r1, #12			@ At least 12 left?		1S
+	stmhsia	r0!, {r2-r12, r14}	@ Zero twelve and inc.	       11S 2N
+	subhs	r1, r1, #12		@ Update r1.			1S
+	cmphs	r1, #12			@ At least 12 left?		1S
+	stmhsia	r0!, {r2-r12, r14}	@ Zero twelve and inc.	       11S 2N
+	subhs	r1, r1, #12		@ Update r1.			1S
+	cmphs	r1, #12			@ At least 12 left?		1S
+	stmhsia	r0!, {r2-r12, r14}	@ Zero twelve and inc.	       11S 2N
+	subhs	r1, r1, #12		@ Update r1.			1S
+	cmphs	r1, #12			@ At least 12 left?		1S
+	bhs	1b			@ If so, keep looping.		2S 1N
+	@@ Total for 48 pixels:					    -> 54S 9N (+1S first time)
 
+	cmp	r1, #0			@ Only do the loop if r1 != 0.	1S
+2:	strne	r2, [r0], #4		@ Zero one pixel and inc.	   2N
+	subnes	r1, r1, #1		@ Update r1.			1S
+	bne	2b			@ Keep looping while r1 != 0.	2S 1N
+	@@ Total for each odd pixel:				     -> 3S 3N (+1S first time)
+
+	ldmia	sp!, {r4-r12, pc}	@ Return.
+
+
+	@@ Update the LCD on a Photo, Color, or Nano.
+	@@ Possible values for `type':
+	@@    0  220x176, type 0 LCD (on a Photo)
+	@@    1  220x176, type 1 LCD (on a Color)
+	@@    2  176x132, type 1 LCD with weird rect specifications (on a Nano)
+	@@ void _HD_ARM_UpdatePhoto (uint16 *fb, int x, int y, int w, int h, int type)
+
+	@@ wwait - waits for the LCD to be write ready. clobbers r11. assumes r12 = 0x70008A0C.
+.macro	wwait
+9:	ldr	r11, [r12]		@ r11 = *0x70008A0C
+	tst	r11, #0x80000000	@ is high bit set?
+	beq	9b			@ loop until it is
+.endm
+
+	@@ sendlo - sends a low value (?)
+.macro	sendlo	val
+	wwait
+	orr	r11, \val, #0x80000000
+	str	r11, [r12]
+.endm
+	@@ sendhi - sends a high value (?) clobbers r11, expects r12 = 0x70008A0C.
+.macro	sendhi	val
+	wwait
+	orr	r11, \val, #0x81000000
+	str	r11, [r12]
+.endm
+	@@ cmdat0 - sends a command + data to a type-0 LCD
+.macro	cmdat0	cmd, data
+	sendlo	\cmd
+	sendlo	\data
+.endm
+	@@ cmdat1 - sends a command + data to a type-1 LCD. clobbers r10.
+.macro	cmdat1	cmd, data
+	mov	r10, #0
+	sendlo	r10
+	sendlo	\cmd
+	mov	r10, \data, lsr #8
+	sendhi	r10
+	and	r10, \data, #0xff
+	sendhi	r10
+.endm
+
+	.globl	_HD_ARM_UpdatePhoto
+_HD_ARM_UpdatePhoto:
+	stmdb	sp!, {r4-r12, lr}	@ save regs
+
+	@@ Align x and w to a 2-pixel boundary. 5S cyc.
+	tst	r1, #1			@ is x aligned?
+	subne	r1, r1, #1		@ align it down if so
+	addne	r3, r3, #1		@ and inc the width to compensate
+	tst	r3, #1			@ is w aligned?
+	addne	r3, r3, #1		@ inc it if not
+
+	@@ Load h, type -> r4, r5.
+	add	r4, sp, #40		@ r4[0] = h, r4[1] = type
+	ldmia	r4, {r4, r5}		@ load 'em
+
+	@@ Load 0x70008A0C -> r12.
+	mov	r12,      #0x70000000
+	orr	r12, r12, #0x00008A00
+	orr	r12, r12, #0x0000000C
+
+	@@ Figure out rect1, rect2, rect3, rect4 in r6,r7,r8,r9.
+	cmp	r5, #2			@ nano?
+	bne	1f			@ if not, jump ahead
+	mov	r6, r1			@ if so: rect1 = sx,
+	mov	r7, r2			@        rect2 = sy,
+	add	r8, r1, r3		@        rect3 = sx + width
+	sub	r8, r8, #1		@              - 1,
+	add	r9, r2, r4		@        rect4 = sy + height
+	sub	r9, r9, #1		@              - 1
+	b	2f			@        skip the code for photo
+1:	mov	r6, r2			@ if not: rect1 = sy,
+	rsb	r7, r1, #219		@         rect2 = (lcd_width - 1) - sx
+	add	r8, r2, r4		@         rect3 = sy + height
+	sub	r8, r8, #1		@               - 1
+	sub	r9, r7, r3		@         rect4 = rect2 - width
+	add	r9, r9, #1		@               + 1
+2:	cmp	r5, #0			@ is it a type-0?
+	bne	type1			@ if not, -> type 1.
+type0:	mov	r14, #0x12
+	cmdat0	r14, r6			@ lcd_cmd_data (0x12, rect1 [& 0xff])
+	mov	r14, #0x13
+	cmdat0	r14, r7			@ lcd_cmd_data (0x13, rect2 [& 0xff])
+	mov	r14, #0x15
+	cmdat0	r14, r8			@ lcd_cmd_data (0x15, rect3 [& 0xff])
+	mov	r14, #0x16
+	cmdat0	r14, r9			@ lcd_cmd_data (0x16, rect4 [& 0xff])
+	b	doit
+type1:	cmp	r8, r6			@ if (rect3 < rect1) {
+	moveq	r14, r6			@     int t = rect1
+	moveq	r6, r8			@     rect1 = rect3
+	moveq	r8, r14			@     rect3 = t
+	cmp	r9, r7			@ }    if (rect4 < rect2) { similar }
+	moveq	r14, r7
+	moveq	r7, r9
+	moveq	r9, r14
+	orr	r14, r6, r8, lsl #8	@ r14 = (rect3 << 8) | rect1
+	mov	r11, #0x44		@ attn! r11 will be clobbered!
+	cmdat1	r11, r14		@ lcd_cmd_data (0x44, (rect3 << 8) | rect1)
+	orr	r14, r7, r9, lsl #8
+	mov	r11, #0x45
+	cmdat1	r11, r14		@ lcd_cmd_data (0x45, (rect4 << 8) | rect2)
+	cmp	r5, #2			@ nano?
+	movne	r7, r9			@ if not, rect2 = rect4.
+	orr	r14, r6, r7, lsl #8
+	mov	r11, #0x21
+	cmdat1	r11, r14		@ lcd_cmd_data (0x21, (rect2 << 8) | rect1)
+	mov	r14, #0
+	sendlo	r14			@ lcd_send_lo (0x0)
+	mov	r14, #0x22
+	sendlo	r14			@ lcd_send_lo (0x22)
+	@@ r6-r9 are now free for other uses.
+doit:	cmp	r5, #2
+	moveq	r6, #176*2		@ if nano, r6 (line width) = 176 pix,
+	movne	r6, #220*2		@ else it's 220. Remember, 2-byte pix.
+	mla	r0, r2, r6, r0		@ addr += sy * lcd_width
+	add	r0, r0, r1, lsl #1	@       + sx
+	mov	r10, r6			@ store r10 = scanline width in bytes
+	
+	@@ For this loop:
+	@@   r6 = number of bytes we can write at once
+	@@   r7 = number of bytes total
+	@@   r8 = X
+	mov	r8, #0			@ X = 0 to start
+	add	r7, r3, r3		@ r7 = width * 2
+	mul	r7, r4, r7		@    * height
+
+	@@ Some initial figurings-outs.
+1:	mov	r6, r7			@ write all that are left, if we can
+	cmp	r6, #64000		@ if (pixels_to_write > 64000)   - too much?
+	movhi	r6, #64000		@     pixels_to_write = 64000      limit it to 64k
+	sub	r7, r7, r6		@ update r7 -> number left for the *next* iteration
+	mov	r14, #0x10000000
+	orr	r14, r14,  #0x80
+	str	r14, [r12, #0x14]	@ outl (0x10000080, 0x70008A20)
+	sub	r14, r6, #1		@ r14 = (pixels_to_write - 1)
+	orr	r14, r14, #0xC0000000	@     | 0xC0000000
+	orr	r14, r14, #0x10000	@     | 0x00010000
+	str	r14, [r12, #0x18]	@ outl ((pixels_to_write - 1) | 0xC0010000, 0x70008A24)
+	mov	r14, #0x34000000
+	str	r14, [r12, #0x14]	@ outl (0x34000000, 0x70008A20)
+
+	@@ Write that many pixels, one row at a time.
+	@@ r9 holds the pix we're building
+2:
+	@@ two_pixels = ( ((addr[0] & 0xff) << 8) | ((addr[0] & 0xff00) >> 8)) |
+	@@              ((((addr[1] & 0xff) << 8) | ((addr[1] & 0xff00) >> 8)) << 16)
+	@@ Basically, swab pix0 and pix1 and put pix1 in the high bits.
+	ldr	r9, [r0], #4		@ load two pix into r9		1S 1N 1I
+	@@ Current layout of r9: HHLLhhll. We want LLHHllhh.
+	mov	r11, r9, lsl #8		@ r11 = LLhhll00		1S
+	bic	r11, r11, #0xff0000	@ r11 = LL00ll00		1S
+	mov	r9, r9, lsr #8		@ r9  = 00HHLLhh		1S
+	bic	r9, r9, #0xff00		@ r9  = 00HH00hh		1S
+	orr	r9, r9, r11		@ r9  = LLHHllhh = what we want	1S
+	@@ Wait for the controller:
+3:	ldr	r11, [r12, #0x14]	@ read status reg		1S 1N 1I
+	tst	r11, #0x01000000	@ test bit 24			1S
+	beq	3b			@ loop until set		1S unless taken
+	@@ Write the pixels.
+	str	r9, [r12, #0xF4]	@ store two pix -> 0x70008B00	   2N    (F4 = B00 - A0C)
+	@@ Are we at X = width? If so, skip to next row.
+	add	r8, r8, #2		@ x += 2 (we just stored 2 pix)
+	cmp	r8, r3			@ is it = width yet?
+	addcs	r0, r0, r10		@ if it's >=, addr += lcd_width
+	subcs	r0, r0, r3, lsl #1	@                   - width
+	@@ Did we just write the last pixel?
+	subs	r6, r6, #2		@ r6 -= 2 (# pix)
+	bhi	2b			@ if nonzero and nonnegative, keep going
+	@@ Guess so. Update some stuff.
+3:	ldr	r11, [r12, #0x14]	@ read status reg
+	tst	r11, #0x04000000	@ test bit 26
+	beq	3b			@ loop until set
+	mov	r11, #0
+	str	r11, [r12, #0x18]	@ store 0 -> 0x70008A24
+	cmp	r7, #0			@ still some pixels left to write?
+	bge	1b			@ guess so. keep going.
+
+	ldmia	sp!, {r4-r12, pc}	@ return
+	
+	
 	.section .data
 need_finishup:	.long 0
 	
