@@ -3,6 +3,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <linux/kd.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <linux/fb.h>
 
 #define inl(p) (*(volatile unsigned long *) (p))
 #define outl(v,p) (*(volatile unsigned long *) (p) = (v))
@@ -209,6 +214,10 @@ void HD_LCD_Init()
 		fprintf (stderr, "Unsupported LCD\n");
 		exit (1);
 	}
+
+	int fd = open("/dev/console", O_NONBLOCK);
+	ioctl(fd, KDSETMODE, KD_GRAPHICS);
+	close(fd);
 }
 
 extern void _HD_ARM_Update5G (uint16 *fb, int x, int y, int w, int h);
