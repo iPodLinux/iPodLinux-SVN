@@ -57,10 +57,15 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 
+#define TERMINAL_CONF_FONTNAME 1
+#define TERMINAL_CONF_FONTSIZE 2
+
 /* - - terminal widget - - */
-static PzModule * module;
+static PzModule * terminal_module;
+static PzConfig * terminal_conf;
 static ttk_font terminal_font;
-static TWidget * terminal_widget;
+static PzWindow * terminal_window = 0;
+static TWidget * terminal_widget = 0;
 
 /* - - terminal params - - */
 static int terminal_tiheight = 0;
@@ -178,6 +183,31 @@ void terminal_addch(int ch)
 	terminal_buf[terminal_y*terminal_cols + terminal_x] = ch;
 	terminal_x++;
 	terminal_widget->dirty=1;
+}
+
+void terminal_setfont(char * fname, int fsize)
+{
+	ttk_done_font(terminal_font);
+	terminal_font = ttk_get_font(fname, fsize);
+	if (terminal_window) {
+		terminal_win.ws_ypixel = terminal_h = terminal_window->h-terminal_tiheight;
+		terminal_win.ws_xpixel = terminal_w = terminal_window->w;
+		terminal_ch = ttk_text_height(terminal_font);
+		terminal_cw = ttk_text_width(terminal_font, "M");
+		terminal_win.ws_row = terminal_scroll_bot = terminal_rows = terminal_h/terminal_ch;
+		terminal_win.ws_col = terminal_cols = terminal_w/terminal_cw;
+		terminal_cells = terminal_rows * terminal_cols;
+		if (terminal_buf) {
+			free(terminal_buf);
+			terminal_buf = (int *)calloc(terminal_cells, sizeof(int));
+		}
+		terminal_scroll_top = terminal_x = terminal_y = 0;
+		/* you will need to set the LINES and COLS environment variables from inside the pty */
+		/* ESC R and ESC C will echo back this information for you */
+	}
+	pz_set_string_setting(terminal_conf, TERMINAL_CONF_FONTNAME, fname);
+	pz_set_int_setting   (terminal_conf, TERMINAL_CONF_FONTSIZE, fsize);
+	pz_save_config(terminal_conf);
 }
 
 /* ======== VT102 emulation routines ======== */
@@ -312,6 +342,20 @@ void terminal_handlech(unsigned short ch)
 					terminal_attr = 0;
 					terminal_clear();
 					break;
+				case 'C': /* get cols - specific to Podzilla Terminal */
+					resp[0] = '0'+((terminal_cols/100) % 10);
+					resp[1] = '0'+((terminal_cols/10) % 10);
+					resp[2] = '0'+(terminal_cols % 10);
+					resp[3] = '\n';
+					write(terminal_master, resp, 4);
+					break;
+				case 'R': /* get rows - specific to Podzilla Terminal */
+					resp[0] = '0'+((terminal_rows/100) % 10);
+					resp[1] = '0'+((terminal_rows/10) % 10);
+					resp[2] = '0'+(terminal_rows % 10);
+					resp[3] = '\n';
+					write(terminal_master, resp, 4);
+					break;
 				}
 				break;
 			case 2: /* sequence of the form ESC [ 0 ; 0 ; 0 X where X is a letter */
@@ -351,6 +395,18 @@ void terminal_handlech(unsigned short ch)
 							/*for (i=0; i<terminal_cells; i++) terminal_buf[i] = 0;*/
 							terminal_y = terminal_scroll_bot-1;
 						}
+					}
+					terminal_widget->dirty = 1;
+					break;
+				case 'F': /* switch fonts - specific to Podzilla Terminal */
+					terminal_get_esc_seq_parms(terminal_escape_seq, &parm, 0, &parm1, 0, &parm2, 0);
+					switch (parm) {
+					case 0:
+						terminal_setfont("Fixed 6x13",13);
+						break;
+					case 1:
+						terminal_setfont("Unifont",12);
+						break;
 					}
 					terminal_widget->dirty = 1;
 					break;
@@ -668,7 +724,9 @@ void terminal_handlech(unsigned short ch)
 void terminal_childdied()
 {
 	signal(SIGCHLD, SIG_IGN);
-	pz_close_window(terminal_widget->win);
+	pz_close_window(terminal_window);
+	terminal_widget = 0;
+	terminal_window = 0;
 }
 
 void terminal_destroy(TWidget * wid)
@@ -688,6 +746,8 @@ int terminal_input(TWidget * wid, int ch)
 	switch (ch) {
 	case TTK_INPUT_END:
 		pz_close_window(wid->win);
+		terminal_widget = 0;
+		terminal_window = 0;
 		/* TTK calls terminal_destroy for us */
 		break;
 	case TTK_INPUT_LEFT:
@@ -808,21 +868,21 @@ int terminal_pty_open(int * master, int * slave, char * pty_name, struct termios
 /* ======== program initialization ======== */
 
 #ifdef IPOD
-#define TERMINAL_EXEC_PATH ((char *)pz_module_get_datapath(module, "minix-sh"))
+#define TERMINAL_EXEC_PATH ((char *)pz_module_get_datapath(terminal_module, "minix-sh"))
 #define TERMINAL_EXEC_NAME ("minix-sh")
 #else
 #define TERMINAL_EXEC_PATH ("/bin/sh")
 #define TERMINAL_EXEC_NAME ("sh")
 #endif
 
-PzWindow * new_terminal_window_with(char * path, char * argv0)
+PzWindow * new_terminal_window_with(char * path, char * argv0, char * argv1)
 {
 	PzWindow * ret;
 	TWidget * wid;
 	pid_t p;
 	
 	/* - - create window - - */
-	ret = pz_new_window(_("Terminal"), PZ_WINDOW_NORMAL);
+	terminal_window = ret = pz_new_window(_("Terminal"), PZ_WINDOW_NORMAL);
 	terminal_widget = wid = ttk_new_widget(0,0);
 	wid->w = ret->w;
 	wid->h = ret->h;
@@ -851,7 +911,7 @@ PzWindow * new_terminal_window_with(char * path, char * argv0)
 	terminal_escape_seq[0]=0;
 	
 	/* - - open the pseudoterminal - - */
-	p = terminal_pty_open(&terminal_master, &terminal_slave, terminal_pty_name, 0, &terminal_win, "vt102", _("Welcome to iPodLinux!"), path, argv0, 0);
+	p = terminal_pty_open(&terminal_master, &terminal_slave, terminal_pty_name, 0, &terminal_win, "vt102", _("Welcome to iPodLinux!"), path, argv0, argv1);
 	if (p < 0) {
 		pz_error("Could not open a pseudoterminal.");
 		terminal_child = 0;
@@ -866,13 +926,17 @@ PzWindow * new_terminal_window_with(char * path, char * argv0)
 
 PzWindow * new_terminal_window(void)
 {
-	return new_terminal_window_with(TERMINAL_EXEC_PATH, TERMINAL_EXEC_NAME);
+	return new_terminal_window_with(TERMINAL_EXEC_PATH, TERMINAL_EXEC_NAME, 0);
 }
 
 void terminal_mod_init(void)
 {
-	module = pz_register_module("terminal", 0);
-	terminal_font = ttk_get_font("Unifont", 12);
+	const char * f; int s;
+	terminal_module = pz_register_module("terminal", 0);
+	terminal_conf = pz_load_config(pz_module_get_cfgpath(terminal_module, "terminal.conf"));
+	f = pz_get_string_setting(terminal_conf,TERMINAL_CONF_FONTNAME);
+	s = pz_get_int_setting   (terminal_conf,TERMINAL_CONF_FONTSIZE);
+	terminal_font = ttk_get_font((f?f:"Fixed 6x13"), (s?s:13));
 	pz_menu_add_action("/Extras/Utilities/Terminal", new_terminal_window);
 }
 
