@@ -234,6 +234,7 @@ typedef struct
     int32 angle; /* in rad*2048/pi << 16 */
     int32 adelta; /* same units */
     int frames;
+    int extd;
 } anim_circledata;
 
 static void HD_DoCircleAnimation (hd_object *obj) 
@@ -242,6 +243,14 @@ static void HD_DoCircleAnimation (hd_object *obj)
     a->angle += a->adelta;
     obj->x = a->x + ((a->r * fcos (a->angle >> 16)) >> 16);
     obj->y = a->y + ((a->r * fsin (a->angle >> 16)) >> 16);
+    if (a->extd) {
+        obj->z = (a->angle >> 16) - 1024;
+        if (obj->z < 0) obj->z += 4096;
+        int posn = obj->z;
+        if (obj->z > 2048) obj->z = 4096 - obj->z;
+        obj->opacity = 127 + ((2048 - obj->z) >> 4);
+        printf ("A - %p: pos=%d, z=%d, opac=%d\n", obj, posn, obj->z, obj->opacity);
+    }
     if (a->fbot != 0x10000 || a->ftop != 0x10000) {
         obj->w = (a->w * (a->fbot + ((a->fdelta >> 8) * ((fsin (a->angle >> 16) + 0x10000) >> 9)))) >> 16;
         obj->h = (obj->w * a->aspect_ratio) >> 16;
@@ -284,4 +293,11 @@ void HD_AnimateCircle (hd_object *obj, int32 x, int32 y, int32 r, int32 fbot, in
         obj->h = (obj->w * a->aspect_ratio) >> 16;
     }
 }
-                       
+
+void HD_XAnimateCircle (hd_object *obj, int32 x, int32 y, int32 r, int32 fbot, int32 ftop,
+                        int32 astart, int32 adist, int frames)
+{
+    HD_AnimateCircle (obj, x, y, r, fbot, ftop, astart, adist, frames);
+    anim_circledata *a = obj->animdata;
+    a->extd = 1;
+}
