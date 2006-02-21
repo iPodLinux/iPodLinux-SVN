@@ -447,9 +447,11 @@ PzWindow *new_set_clock_window()
 static int iPodHasFTZ( void )
 {
 #ifdef IPOD
+	/*
 	if( pz_ipod_get_hw_version() >= 0x000B0000 ) {
 		return( 1 );
 	}
+	*/
 #endif
 	return( 0 );
 }
