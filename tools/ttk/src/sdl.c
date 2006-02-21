@@ -1402,6 +1402,60 @@ leave_func:
 
 /**** End MW copied font handling stuff. ****/
 
+static int h2d(char *s, int len)
+{
+	int i, ret = 0;
+	for (i = 0; i < len; i++) {
+		ret = ret << 4;
+		if (*s > 0x40 && *s < 0x47) ret |= *s - 0x37;
+		if (*s > 0x2f && *s < 0x3a) ret |= *s - 0x30;
+		if (*s > 0x60 && *s < 0x67) ret |= *s - 0x57;
+		s++;
+	}
+	return ret;
+}
+
+static void load_fff(Bitmap_Font *bf, const char *fname)
+{
+	char tmp[1024];
+	FILE *ip;
+	long n_bits = 0;
+	unsigned short *bits = NULL;
+
+	bf->firstchar = 0xffff;
+
+	if ((ip = fopen(fname, "r")) == NULL) {
+		perror(fname);	
+		ttk_quit();
+		exit(1);
+	}
+
+	fgets(tmp, 1024, ip);
+	if (tmp[0] != '\\') {
+		fputs("Invalid fff\n", stderr);
+		ttk_quit();
+		exit(1);
+	}
+	sscanf(tmp, "\\size %dx%d", &bf->maxwidth, (int *)&bf->height);
+	while (fgets(tmp, 1024, ip)) {
+		unsigned short index;
+		int i, len = bf->height * 2;
+
+		index = h2d(tmp, 4);
+		if (index < bf->firstchar) bf->firstchar = index;
+		if (n_bits < index + 1) {
+			n_bits += 0xff;
+			bits = realloc(bits, n_bits * len);
+		}
+		for (i = 0; i < (int)bf->height; i++)
+			*((unsigned char *)bits + (index*bf->height + i)*2) =
+					h2d(tmp + 5 + (i * 2), 2);
+		bf->size++;
+	}
+	bf->bits = bits;
+	fclose(ip);
+}
+
 #ifndef NO_SF
 static void draw_sf (ttk_font *f, ttk_surface srf, int x, int y, ttk_color col, const char *str)
 {
@@ -1916,6 +1970,22 @@ void ttk_load_font (ttk_fontinfo *fi, const char *fnbase, int size)
 	fi->f.width = width_bf;
         fi->f.width_lat1 = widthL_bf;
         fi->f.width_uc16 = widthU_bf;
+	fi->f.free = free_bf;
+	fi->f.height = fi->f.bf->height;
+	return;
+    }
+
+    strcpy (fname, fnbase);
+    strcat (fname, ".fff");
+    if (stat (fname, &st) >= 0) {
+	fi->f.bf = calloc (1, sizeof(Bitmap_Font));
+	load_fff (fi->f.bf, fname);
+	fi->f.draw = draw_bf;
+	fi->f.draw_lat1 = lat1_bf;
+	fi->f.draw_uc16 = uc16_bf;
+	fi->f.width = width_bf;
+	fi->f.width_lat1 = widthL_bf;
+	fi->f.width_uc16 = widthU_bf;
 	fi->f.free = free_bf;
 	fi->f.height = fi->f.bf->height;
 	return;
