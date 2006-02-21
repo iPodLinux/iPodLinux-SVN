@@ -249,7 +249,6 @@ static void HD_DoCircleAnimation (hd_object *obj)
         int posn = obj->z;
         if (obj->z > 2048) obj->z = 4096 - obj->z;
         obj->opacity = 127 + ((2048 - obj->z) >> 4);
-        printf ("A - %p: pos=%d, z=%d, opac=%d\n", obj, posn, obj->z, obj->opacity);
     }
     if (a->fbot != 0x10000 || a->ftop != 0x10000) {
         obj->w = (a->w * (a->fbot + ((a->fdelta >> 8) * ((fsin (a->angle >> 16) + 0x10000) >> 9)))) >> 16;
@@ -285,6 +284,7 @@ void HD_AnimateCircle (hd_object *obj, int32 x, int32 y, int32 r, int32 fbot, in
     a->fdelta = a->ftop - a->fbot;
     a->angle = astart << 16;
     a->adelta = (adist << 16) / frames;
+    a->extd = 0;
     obj->animate = HD_DoCircleAnimation;    
     obj->x = a->x + ((a->r * fcos (a->angle >> 16)) >> 16);
     obj->y = a->y + ((a->r * fsin (a->angle >> 16)) >> 16);
