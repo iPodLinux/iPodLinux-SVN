@@ -1089,7 +1089,54 @@ doit:	cmp	r5, #2
 	bge	1b			@ guess so. keep going.
 
 	ldmia	sp!, {r4-r12, pc}	@ return
-	
+
+
+	@@ Calculates the sine of an angle.
+	@@ Returns a 1.16 fixp number.
+	@@ Timings:
+	@@    fsin(Q I)  16S 5N 2I
+	@@   fsin(Q II)  18S 5N 2I
+	@@  fsin(Q III)  17S 5N 2I
+	@@   fsin(Q IV)  19S 5N 2I
+	@@ 
+	@@ int32 fsin (int32 angle)
+	@@
+	.extern	sine_table
+	.globl	fsin
+fsin:	
+	@@ Regs:
+	@@   r0  angle % 4096
+	@@   r1  #0xfff
+	@@   r2  scratch
+	@@   r3  corresponding angle (table lookup index)
+	mov	r1, #0xff
+	orr	r1, r1, #0xf00
+	and	r0, r0, r1		@ angle %= 4096
+	mov	r3, r0			@ corresp = angle
+	mov	r2, r0, lsr #10		@ r2 = top two bits of angle (00 for <1024, 01 for 1024<a<2048, etc.
+	cmp	r2, #3			@ carry flag gets cleared as long as it's not a Q IV angle
+	addls	pc, pc, r2, lsl #2	@ jumptable based on top two bits of angle
+	bx	lr			@ should never happen
+jtbl:	b	quad1
+	b	quad2
+	b	quad3
+	b	quad4
+quad4:	rsbs	r3, r3, #4096		@ angle = 4096 - angle, carry flag gets set since no overflow
+quad2:	rsbccs	r3, r3, #2048		@ angle = 2048 - angle, carry flag gets set since no overflow - if not in q4
+quad3:	subcc	r3, r3, #2048		@ angle = angle - 2048 if not in q4 or q2
+quad1:	cmp	r0, #2048		@ is angle > 2048? save flags for later
+	ldr	r0, =sine_table		@ r0 = sine_table
+	ldr	r0, [r0, r3, lsl #2]	@ r0 = sin(corresp)
+	rsbhi	r0, r0, #0		@ -sin(corresp), if angle was > 2048
+	bx	lr
+
+	@@ Timings for fcos(angle): 3S + 1N + timings for fsin(angle+1024)
+	@@ 
+	@@ int32 fcos (int32 angle)
+	@@
+	.globl	fcos
+fcos:	add	r0, r0, #1024
+	b	fsin			@ tail call: return fsin (angle + 1024)
 	
 	.section .data
 need_finishup:	.long 0
