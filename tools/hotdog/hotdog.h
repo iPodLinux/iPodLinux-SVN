@@ -229,23 +229,28 @@ typedef struct hd_engine {
 
 /**** Optimized ops [need some more, plus ARM ASM optim versions] ****/
 
-#define _HD_ALPHA_BLEND(dst_argb, src_argb, ret_argb)         \
+#define _HD_ALPHA_BLEND(dst_argb, src_argb, ret_argb, opac)         \
 {                                                              \
  uint32 alpha,dst[2];                                          \
  uint32 idst = (dst_argb);                                      \
  uint32 isrc = (src_argb);                                      \
- alpha = (uint32)(255 - (int32)(isrc >> 24));      \
+ if (opac != 0xff) { \
+    dst[0] = ((isrc & 0x00FF00FF) * opac + 0x00800080) & 0xFF00FF00; \
+    dst[1] = (((isrc >> 8) & 0x00FF00FF) * opac + 0x00800080) & 0xFF00FF00; \
+    isrc = (dst[0]>>8) + dst[1]; \
+ } \
+ alpha = 255 - (isrc >> 24); \
  dst[0] = ((idst & 0x00FF00FF) * alpha + 0x00800080) & 0xFF00FF00;          \
  dst[1] = (((idst>>8) & 0x00FF00FF) * alpha + 0x00800080) & 0xFF00FF00;          \
  (ret_argb) = (dst[0]>>8) + dst[1] + isrc;                      \
 }
 
-#define BLEND_ARGB8888_ON_ARGB8888(dst_argb, src_argb) _HD_ALPHA_BLEND(dst_argb, src_argb, dst_argb)
+#define BLEND_ARGB8888_ON_ARGB8888(dst_argb, src_argb, opac) _HD_ALPHA_BLEND(dst_argb, src_argb, dst_argb, opac)
 
 #define HD_SRF_BLENDPIX(srf,x,y,pix) do \
 { \
  uint32 p; \
- _HD_ALPHA_BLEND (HD_SRF_GETPIX (srf,x,y), pix, p); \
+ _HD_ALPHA_BLEND (HD_SRF_GETPIX (srf,x,y), pix, p, 0xff); \
  HD_SRF_SETPIX (srf,x,y,pix); \
 } while(0)
 

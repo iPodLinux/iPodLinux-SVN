@@ -291,23 +291,32 @@ _HD_ARM_LowerBlit_ScaleBlend:
 
 .macro	ablend	src, dst, opac=0
 	@@ Blends src on dst and stores the result in dst.
-	@@ Clobbers src, r8, r11. Clobbers r0 unless dst is r0.
+	@@ Clobbers src, r0, r8, r11.
 	@@ Requires r14 = opacity unless opac=0, r9 = 0xff00ff, r10 = 0x800080.
-	@@ Time:  4 cyc for alpha=0 opac=anything,
+	@@ Time:  4 cyc for alpha=0 opac=0,
 	@@        7 cyc for alpha=255 opac=0,
+	@@       15 cyc for alpha=0 opac=1,
 	@@       17 cyc for all other alphas opac=0,
-	@@       19 cyc for any nonzero alpha opac=1.
+	@@       26 cyc for any nonzero alpha opac=1.
 	@@ On exit from the macro, Z flag is set iff alpha was 0 or 255.
 	
+.if \opac
+	@@ If we have opacity to deal with, we need to scale down *all* parts of src by opac/256.
+	@@ This is almost exactly like the blend loop below.
+	and	r0, r9, \src, lsr #8	@ r0 = (src >> 8) & 0x00ff00ff
+	mla	r11, r0, r14, r10	@ r11 = r0 * opac + 0x00800080
+	bic	r11, r11, r9		@ r11 &= 0xff00ff00
+	and	r0, r9, \src		@ r0 = src & 0x00ff00ff
+	mla	r8, r0, r14, r10	@ r8 = r0 * opac + 0x00800080
+	bic	r8, r8, r9		@ r8 &= 0xff00ff00
+	add	\src, r11, r8, lsr #8	@ src = (r8 >> 8) + r11
+.endif
 	movs	r8, \src, lsr #24	@ r8 = alpha
 	beq	9f			@ skip everything if alpha is 0
-.if \opac
-	mul	r8, r14, r8		@ multiply by the opacity (unless A=0)
-	add	r8, r8, #0x80		@ make it work (unless A=0)
-	mov	r8, r8, lsr #8		@ and divide by 256 (unless A=0)
-	rsb	r8, r8, #0xff		@ r8 = 255 - alpha
-.else
 	rsbs	r8, r8, #0xff		@ r8 = 255 - alpha
+.if !\opac
+	@@ Don't do this for non-0xff opacity, because it will scale 0xff alphas
+	@@ down to something non-0xff.
 	moveq	\dst, \src		@ if alpha was 255, just copy the pixel
 	beq	9f			@ and skip the rest
 .endif
@@ -426,28 +435,28 @@ _HD_ARM_LowerBlit_ScaleBlend:
 7:	ldmia	r5, {r6, r12, r13}	@ load 3 pixels			 3S 1N 1I
 	mov	r7, r3, lsr #16		@ figure src #1 offset		 1S
 	ldr	r7, [r1, r7, lsl #2]	@ load src #1			 1S 1N 1I
-	ablend	r7, r6, 1		@ blend #1		        19S
+	ablend	r7, r6, 1		@ blend #1		        26S
 	add	r3, r3, r4		@ update r3			 1S
 	subs	r2, r2, #1		@ update counter		 1S
 	beq	6f			@ skip if we're done		 1S
 	
 	mov	r7, r3, lsr #16		@ figure src #2 offset		 1S
 	ldr	r7, [r1, r7, lsl #2]	@ load src #2			 1S 1N 1I
-	ablend	r7, r12, 1		@ blend #2		        19S
+	ablend	r7, r12, 1		@ blend #2		        26S
 	add	r3, r3, r4		@ update r3			 1S
 	subs	r2, r2, #1		@ update counter		 1S
 	beq	6f			@ skip if we're done		 1S
 	
 	mov	r7, r3, lsr #16		@ figure src #3 offset		 1S
 	ldr	r7, [r1, r7, lsl #2]	@ load src #3			 1S 1N 1I
-	ablend	r7, r13, 1		@ blend #3		        19S
+	ablend	r7, r13, 1		@ blend #3		        26S
 	add	r3, r3, r4		@ update r3			 1S
 	subs	r2, r2, #1		@ update counter		 1S
 	
 6:	stmia	r5!, {r6, r12, r13}	@ store the three pixels	 2S 2N
 	bne	7b			@ keep looping while some left	 2S 1N
-	@@ Cycle total per 3px:						78S 7N 4I	96
-	@@ 32 cycles per pixel.
+	@@ Cycle total per 3px:						99S 7N 4I	117
+	@@ 39 cycles per pixel.
 	@@ End of third inner loop.
 
 	@@ Load SP. 1S+2N cyc.

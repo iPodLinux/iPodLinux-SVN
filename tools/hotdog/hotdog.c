@@ -606,7 +606,7 @@ void HD_ScaleBlendClip (hd_surface ssrf, int sx, int sy, int sw, int sh,
     
     for(x=startx;x<endx;x++) {
       
-      BLEND_ARGB8888_ON_ARGB8888( dbuf[ buffOff + x ], sbuf[ imgOff + (fp_ix>>16) ] );
+      BLEND_ARGB8888_ON_ARGB8888( dbuf[ buffOff + x ], sbuf[ imgOff + (fp_ix>>16) ], opacity );
       
       fp_ix += fp_step_x;
     }
