@@ -271,7 +271,7 @@ void HD_AnimateLinear (hd_object *obj, int sx, int sy, int sw, int sh,
                        int dx, int dy, int dw, int dh, int frames, void (*done)(hd_object *));
 void HD_AnimateCircle (hd_object *obj, int x, int y, int r, int32 fbot, int32 ftop,
                        int astart, int adist, int frames);
-void HD_XAnimateCircle (hd_object *obj, int x, int y, int r, int32 fbot, int32 ftop,
+void HD_XAnimateCircle (hd_object *obj, int x, int y, int xr, int yr, int32 fbot, int32 ftop,
                         int astart, int adist, int frames);
 void HD_StopAnimation (hd_object *obj);
 int32 fsin (int32 angle); // angle is in units of 1024 per pi/2 radians - that is, rad*2048/pi

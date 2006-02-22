@@ -35,7 +35,8 @@
 #include "hotdog.h"
 
 #define YOFF 45
-#define RADIUS 40
+#define XRADIUS 60
+#define YRADIUS 40
 
 #if defined(NANO)
 #define LCD_TYPE 2
@@ -151,7 +152,8 @@ static void circle_rotate(circle_object *circle, int dir)
 {
 	circle->object->w = 75 * WIDTH / 220;
 	circle->object->h = 150 * WIDTH / 220;
-	HD_XAnimateCircle(circle->object, 80 * WIDTH / 220, YOFF * HEIGHT / 176, RADIUS * HEIGHT / 176,
+	HD_XAnimateCircle(circle->object, 70 * WIDTH / 220, YOFF * HEIGHT / 176,
+			  XRADIUS * WIDTH / 220, YRADIUS * HEIGHT / 176,
 			  object_topwid, object_bottomwid, (circle->position + 1024) & 0xfff,
 			  dir*rotation_angle, rotation_frames);
 	if (dir < 0) {
@@ -251,13 +253,14 @@ int main(int argc, char *argv[]) {
 		HD_Register(engine,objp->object);
 	}
 
-	object_topwid = ((50 * WIDTH / 220) << 16) / obj[0].object->w;
+	object_topwid = ((20 * WIDTH / 220) << 16) / obj[0].object->w;
 	object_bottomwid = ((70 * WIDTH / 220) << 16) / obj[0].object->w;
 
 	if (benchmark) {
 		for (objp = obj; objp->object; objp++) {
 			HD_XAnimateCircle(objp->object, 80 * WIDTH / 220, YOFF * HEIGHT / 176,
-					  RADIUS * HEIGHT / 176, object_topwid, object_bottomwid,
+					  XRADIUS * WIDTH / 220, YRADIUS * HEIGHT / 176,
+					  object_topwid, object_bottomwid,
 					  (objp->position + 1024) & 0xfff, 4096, -100);
 		}
 	} else {

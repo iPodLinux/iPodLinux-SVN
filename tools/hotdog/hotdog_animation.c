@@ -231,7 +231,7 @@ int32 fcos (int32 angle)
 
 typedef struct 
 {
-    int32 x, y, r, w, aspect_ratio;
+    int32 x, y, xr, yr, w, aspect_ratio;
     int32 fbot, ftop, fdelta; /* scale factors for Frontrow-style effect, << 16 */
     int32 angle; /* in rad*2048/pi << 16 */
     int32 adelta; /* same units */
@@ -243,8 +243,8 @@ static void HD_DoCircleAnimation (hd_object *obj)
 {
     anim_circledata *a = obj->animdata;
     a->angle += a->adelta;
-    obj->x = a->x + ((a->r * fcos (a->angle >> 16)) >> 16);
-    obj->y = a->y + ((a->r * fsin (a->angle >> 16)) >> 16);
+    obj->x = a->x + ((a->xr * fcos (a->angle >> 16)) >> 16);
+    obj->y = a->y + ((a->yr * fsin (a->angle >> 16)) >> 16);
     if (a->extd) {
         obj->z = ((a->angle >> 16) - 1024) & 0xfff;
         if (obj->z > 2048) obj->z = 4096 - obj->z;
@@ -252,6 +252,7 @@ static void HD_DoCircleAnimation (hd_object *obj)
     }
     if (a->fbot != 0x10000 || a->ftop != 0x10000) {
         obj->w = (a->w * (a->fbot + ((a->fdelta >> 8) * ((fsin (a->angle >> 16) + 0x10000) >> 9)))) >> 16;
+        obj->x += (a->w - obj->w) >> 1;
         obj->h = (obj->w * a->aspect_ratio) >> 16;
     }
 
@@ -277,7 +278,7 @@ void HD_AnimateCircle (hd_object *obj, int32 x, int32 y, int32 r, int32 fbot, in
     } else {
         a->frames = frames;
     }
-    a->x = x; a->y = y; a->r = r; a->w = obj->w;
+    a->x = x; a->y = y; a->xr = a->yr = r; a->w = obj->w;
     a->aspect_ratio = (obj->h << 16) / obj->w;
     a->fbot = (fbot == 1 || fbot == 0)? (1 << 16) : fbot;
     a->ftop = (ftop == 1 || ftop == 0)? (1 << 16) : ftop;
@@ -286,18 +287,20 @@ void HD_AnimateCircle (hd_object *obj, int32 x, int32 y, int32 r, int32 fbot, in
     a->adelta = (adist << 16) / frames;
     a->extd = 0;
     obj->animate = HD_DoCircleAnimation;    
-    obj->x = a->x + ((a->r * fcos (a->angle >> 16)) >> 16);
-    obj->y = a->y + ((a->r * fsin (a->angle >> 16)) >> 16);
+    obj->x = a->x + ((a->xr * fcos (a->angle >> 16)) >> 16);
+    obj->y = a->y + ((a->yr * fsin (a->angle >> 16)) >> 16);
     if (a->fbot != 0x10000 || a->ftop != 0x10000) {
         obj->w = (a->w * (a->fbot + ((a->fdelta >> 8) * ((fsin (a->angle >> 16) + 0x10000) >> 9)))) >> 16;
         obj->h = (obj->w * a->aspect_ratio) >> 16;
     }
 }
 
-void HD_XAnimateCircle (hd_object *obj, int32 x, int32 y, int32 r, int32 fbot, int32 ftop,
+void HD_XAnimateCircle (hd_object *obj, int32 x, int32 y, int32 xr, int32 yr, int32 fbot, int32 ftop,
                         int32 astart, int32 adist, int frames)
 {
-    HD_AnimateCircle (obj, x, y, r, fbot, ftop, astart, adist, frames);
+    HD_AnimateCircle (obj, x, y, xr, fbot, ftop, astart, adist, frames);
     anim_circledata *a = obj->animdata;
+    a->yr = yr;
+    obj->y = a->y + ((a->yr * fsin (a->angle >> 16)) >> 16);
     a->extd = 1;
 }
