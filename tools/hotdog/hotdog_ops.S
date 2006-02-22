@@ -670,7 +670,7 @@ _HD_ARM_LowerBlit_Fast:
 	@@ Register usage:
 	@@     r0  current pixel in src
 	@@     r1  current pixel in dest
-	@@  r2-r3  transfer regs
+	@@  r2-r3  currently unused
 	@@     r4  width of the blitted region (dw)
 	@@     r5  address of dest(dx,dy+dh)
 	@@     r6  width of src (src[0])
@@ -708,23 +708,23 @@ _HD_ARM_LowerBlit_Fast:
 	@@ Inits - 3S.
 	mov	r12, r4
 	
-	cmp	r12, #8			@ At least 8 pix left?		1S
-2:	ldmhsia	r0!, {r2-r3, r8-r11, r13-r14}	@ Load eight, inc, ...		4S 1N 1I
-	stmhsia	r1!, {r2-r3, r8-r11, r13-r14}	@ save eight, inc, ...		3S 2N
-	subhs	r12, r12, #8		@ Update r12.			1S
-	cmphs	r12, #8			@ At least 8 left?		1S
-	ldmhsia	r0!, {r2-r3, r8-r11, r13-r14}	@ Load eight, inc, ...		4S 1N 1I
-	stmhsia	r1!, {r2-r3, r8-r11, r13-r14}	@ save eight, inc, ...		3S 2N
-	subhs	r12, r12, #8		@ Update r12.			1S
-	cmphs	r12, #8			@ At least 8 left?		1S
-	ldmhsia	r0!, {r2-r3, r8-r11, r13-r14}	@ Load eight, inc, ...		4S 1N 1I
-	stmhsia	r1!, {r2-r3, r8-r11, r13-r14}	@ save eight, inc, ...		3S 2N
-	subhs	r12, r12, #8		@ Update r12.			1S
-	cmphs	r12, #8			@ At least 8 left?		1S
-	ldmhsia	r0!, {r2-r3, r8-r11, r13-r14}	@ Load eight, inc, ...		4S 1N 1I
-	stmhsia	r1!, {r2-r3, r8-r11, r13-r14}	@ save eight, inc, ...		3S 2N
-	subhs	r12, r12, #8		@ Update r12.			1S
-	cmphs	r12, #8			@ At least 8 left?		1S
+	cmp	r12, #4			@ At least 4 pix left?		1S
+2:	ldmhsia	r0!, {r8-r11}		@ Load four, inc, ...		4S 1N 1I
+	stmhsia	r1!, {r8-r11}		@ save four, inc, ...		3S 2N
+	subhs	r12, r12, #4		@ Update r12.			1S
+	cmphs	r12, #4			@ At least 4 left?		1S
+	ldmhsia	r0!, {r8-r11}		@ Load four, inc, ...		4S 1N 1I
+	stmhsia	r1!, {r8-r11}		@ save four, inc, ...		3S 2N
+	subhs	r12, r12, #4		@ Update r12.			1S
+	cmphs	r12, #4			@ At least 4 left?		1S
+	ldmhsia	r0!, {r8-r11}		@ Load four, inc, ...		4S 1N 1I
+	stmhsia	r1!, {r8-r11}		@ save four, inc, ...		3S 2N
+	subhs	r12, r12, #4		@ Update r12.			1S
+	cmphs	r12, #4			@ At least 4 left?		1S
+	ldmhsia	r0!, {r8-r11}		@ Load four, inc, ...		4S 1N 1I
+	stmhsia	r1!, {r8-r11}		@ save four, inc, ...		3S 2N
+	subhs	r12, r12, #4		@ Update r12.			1S
+	cmphs	r12, #4			@ At least 4 left?		1S
 	bhs	2b			@ If so, keep looping.		2S 1N
 	@@ Total for 16 pixels:					    -> 38S 13N 4I (+1S first time)
 
