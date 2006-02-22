@@ -629,8 +629,8 @@ _HD_ARM_LowerBlit_Fast:
 	@@    dh at [sp, #52]
 
 	@@ Register usage:
-	@@     r0  current row + sx in src
-	@@     r1  current row + dx in dest
+	@@     r0  current row + sx in src     <--+    arguably -- r0 = r2 - (r4 << 2) at the end of a row,
+	@@     r1  current row + dx in dest    <--+ unnecessary -- r1 = r3 - (r4 << 2) @ end of row, etc.
 	@@     r2  current pixel in src
 	@@     r3  current pixel in dest
 	@@     r4  width of the blitted region (dw)
@@ -639,7 +639,7 @@ _HD_ARM_LowerBlit_Fast:
 	@@     r7  width of dest (dest[0])
 	@@ r8-r11  transfer regs
 	@@    r12  number of pixels left to transfer in this row
-	@@    r14  scratch
+	@@    r14  currently unused
 
 	@@ r0 is already loaded with src - set it up to point to (sx,sy). 2N + 5S + 2I cyc.
 	ldr	r6, [r0]		@ load width. 1N+1I+1S
@@ -669,21 +669,36 @@ _HD_ARM_LowerBlit_Fast:
 	mov	r3, r1
 	mov	r12, r4
 	
-	@@ First copy as many 16-byte units as we can. 6S if <16 bytes left,
-	@@ 10S + 3N + 1I if =16, 12S + 4N + 1I if >16.
-2:	cmp	r12, #4		@ at least 16 bytes left?
-	ldmhsia	r2!, {r8-r11}		@ If it was >= 16, transfer 16 bytes. Read (1N + 1I + 4S),
-	stmhsia	r3!, {r8-r11}		@ write (2N + 3S),
-	subhs	r12, r12, #4		@ and update r12.
-	bhi	2b			@ If there's more, go back now and skip the rest of this stuff.
-	@@ Then copy 4-byte units till we're done. 4S if done, 3N + 2I + 5S if not done
+	cmp	r12, #4			@ At least 4 pix left?		1S
+2:	ldmhsia	r2!, {r8-r11}		@ Load four, inc, ...		4S 1N 1I
+	stmhsia	r3!, {r8-r11}		@ save four, inc, ...		3S 2N
+	subhs	r12, r12, #4		@ Update r12.			1S
+	cmphs	r12, #4			@ At least 4 left?		1S
+	ldmhsia	r2!, {r8-r11}		@ Load four, inc, ...		4S 1N 1I
+	stmhsia	r3!, {r8-r11}		@ save four, inc, ...		3S 2N
+	subhs	r12, r12, #4		@ Update r12.			1S
+	cmphs	r12, #4			@ At least 4 left?		1S
+	ldmhsia	r2!, {r8-r11}		@ Load four, inc, ...		4S 1N 1I
+	stmhsia	r3!, {r8-r11}		@ save four, inc, ...		3S 2N
+	subhs	r12, r12, #4		@ Update r12.			1S
+	cmphs	r12, #4			@ At least 4 left?		1S
+	ldmhsia	r2!, {r8-r11}		@ Load four, inc, ...		4S 1N 1I
+	stmhsia	r3!, {r8-r11}		@ save four, inc, ...		3S 2N
+	subhs	r12, r12, #4		@ Update r12.			1S
+	cmphs	r12, #4			@ At least 4 left?		1S
+	bhs	2b			@ If so, keep looping.		2S 1N
+	@@ Total for 16 pixels:					    -> 38S 13N 4I (+1S first time)
+
+	@@ Copy 4-byte units till we're done. 4S if done, 3N + 2I + 5S if not done
+	cmp	r12, #0
+	beq	4f
 3:	ldrne	r8, [r2], #4		@ If r8 was != 16, and we're still here (so it's < 16),
 	strne	r8, [r3], #4		@ transfer 4 bytes. 2N+2I+2S for these two.
 	subnes	r12, r12, #1		@ and update r12.
 	bne	3b			@ If we're now <16 bytes, just repeat the word-copying part till
 					@ we're done.
 	@@ Update r0, r1. 2S.
-	add	r0, r0, r6, lsl #2
+4:	add	r0, r0, r6, lsl #2
 	add	r1, r1, r7, lsl #2
 
 	@@ Test and branch. 3S + 1N.
