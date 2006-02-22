@@ -29,6 +29,46 @@
 	
 	.section .text
 	
+__ASM_functions_list:
+	.long	_HD_ARM_Convert16
+	.long	_HD_ARM_Convert2
+	.long	_HD_ARM_LowerBlit_ScaleBlend
+	.long	_HD_ARM_LowerBlit_Blend
+	.long	_HD_ARM_LowerBlit_Fast
+	.long	_HD_ARM_Update5G
+	.long	_HD_ARM_ClearScreen
+	.long	_HD_ARM_UpdatePhoto
+	.long	0
+
+	.globl	_HD_ARM_Setup
+_HD_ARM_Setup:
+	str	r4, [sp, #-4]!
+	@@ Setup stuff for code copy.
+	ldr	r0, =__ASM_functions_start
+	ldr	r1, =0x40000030
+	ldr	r2, =__ASM_functions_end
+	sub	r3, r1, r0		@ r3 = offset
+	@@ Copy ASM funcs to IRAM + 0x30.
+1:	ldr	r4, [r0], #4
+	str	r4, [r1], #4
+	cmp	r0, r2
+	blo	1b
+	@@ Put stubs in at the old addresses to jump to the new ones.
+	adr	r0, __ASM_functions_list
+1:	ldr	r1, [r0], #4		@ load a funcptr and inc funcptrptr
+	cmp	r1, #0			@ is it the 0 at the end?
+	beq	2f			@ if so, break out
+	add	r2, r1, r3		@ r2 = address of func in iram
+	ldr	r4, =0xe51ff004		@ r3 = encoding of `ldr pc, [pc, #-4]' (load pc from next word)
+	str	r4, [r1], #4		@ store instr at func and inc funcptr
+	str	r2, [r1], #4		@ store address of where-to-jump at func + 4 and inc funcptr
+	b	1b			@ keep looping
+2:	@@ Return.
+	ldr	r4, [sp], #4
+	bx	lr
+	.pool
+
+__ASM_functions_start:
 /*
  * This file contains optimized ARM ASM versions of several common operations.
  * Cycle counts are specified for all instructions in inner loops
@@ -268,9 +308,8 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	ldr	r2, [sp, #68]		@ r2 = deltx
 	add	r5, r5, r6, lsl #2	@ r5 += startx
 
-	@@ Store SP so we can use it for calculations.
-	adr	r6, _HD_ARM_LowerBlit_ScaleBlend_StoreSP
-	str	sp, [r6]
+	@@ Store SP so we can use it for calculations. 2N cyc.
+	str	sp, _HD_ARM_LowerBlit_ScaleBlend_StoreSP
 	
 	@@ Pick the no-opacity or the opacity version. 2-4 cyc.
 	cmp	r14, #0xff
@@ -459,9 +498,8 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	@@ 39 cycles per pixel.
 	@@ End of third inner loop.
 
-	@@ Load SP. 1S+2N cyc.
-8:	adr	r6, _HD_ARM_LowerBlit_ScaleBlend_StoreSP
-	ldr	sp, [r6]
+	@@ Load SP. 1S+1N+1I cyc.
+8:	ldr	sp, _HD_ARM_LowerBlit_ScaleBlend_StoreSP
 	
 	@@ Test. 9 cyc.
 	ldr	r6, [sp, #76]		@ r6 = delty
@@ -619,6 +657,7 @@ _HD_ARM_LowerBlit_Blend:
 	@@ ->NOTE<-: This func could do with some optimization, loop unrolling, etc. It's too slow.
 	
 	.globl	_HD_ARM_LowerBlit_Fast
+_HD_ARM_LowerBlit_Fast_StoreSP:	.long 0
 _HD_ARM_LowerBlit_Fast:
 	stmdb	sp!, {r4-r12, lr}	@ save 19 regs, 2N + 9S cyc.
 
@@ -629,10 +668,9 @@ _HD_ARM_LowerBlit_Fast:
 	@@    dh at [sp, #52]
 
 	@@ Register usage:
-	@@     r0  current row + sx in src     <--+    arguably -- r0 = r2 - (r4 << 2) at the end of a row,
-	@@     r1  current row + dx in dest    <--+ unnecessary -- r1 = r3 - (r4 << 2) @ end of row, etc.
-	@@     r2  current pixel in src
-	@@     r3  current pixel in dest
+	@@     r0  current pixel in src
+	@@     r1  current pixel in dest
+	@@  r2-r3  transfer regs
 	@@     r4  width of the blitted region (dw)
 	@@     r5  address of dest(dx,dy+dh)
 	@@     r6  width of src (src[0])
@@ -662,30 +700,31 @@ _HD_ARM_LowerBlit_Fast:
 	mov	r5, r5, lsl #2
 	mla	r5, r7, r5, r1		@ r5 = (dtw * dh * 4) + r1
 
+	@@ save sp
+	str	sp, _HD_ARM_LowerBlit_Fast_StoreSP
+
 	@@ Ok, r0-r7 are set up. Let's transfer some pixels.
 1:
 	@@ Inits - 3S.
-	mov	r2, r0
-	mov	r3, r1
 	mov	r12, r4
 	
-	cmp	r12, #4			@ At least 4 pix left?		1S
-2:	ldmhsia	r2!, {r8-r11}		@ Load four, inc, ...		4S 1N 1I
-	stmhsia	r3!, {r8-r11}		@ save four, inc, ...		3S 2N
-	subhs	r12, r12, #4		@ Update r12.			1S
-	cmphs	r12, #4			@ At least 4 left?		1S
-	ldmhsia	r2!, {r8-r11}		@ Load four, inc, ...		4S 1N 1I
-	stmhsia	r3!, {r8-r11}		@ save four, inc, ...		3S 2N
-	subhs	r12, r12, #4		@ Update r12.			1S
-	cmphs	r12, #4			@ At least 4 left?		1S
-	ldmhsia	r2!, {r8-r11}		@ Load four, inc, ...		4S 1N 1I
-	stmhsia	r3!, {r8-r11}		@ save four, inc, ...		3S 2N
-	subhs	r12, r12, #4		@ Update r12.			1S
-	cmphs	r12, #4			@ At least 4 left?		1S
-	ldmhsia	r2!, {r8-r11}		@ Load four, inc, ...		4S 1N 1I
-	stmhsia	r3!, {r8-r11}		@ save four, inc, ...		3S 2N
-	subhs	r12, r12, #4		@ Update r12.			1S
-	cmphs	r12, #4			@ At least 4 left?		1S
+	cmp	r12, #8			@ At least 8 pix left?		1S
+2:	ldmhsia	r0!, {r2-r3, r8-r11, r13-r14}	@ Load eight, inc, ...		4S 1N 1I
+	stmhsia	r1!, {r2-r3, r8-r11, r13-r14}	@ save eight, inc, ...		3S 2N
+	subhs	r12, r12, #8		@ Update r12.			1S
+	cmphs	r12, #8			@ At least 8 left?		1S
+	ldmhsia	r0!, {r2-r3, r8-r11, r13-r14}	@ Load eight, inc, ...		4S 1N 1I
+	stmhsia	r1!, {r2-r3, r8-r11, r13-r14}	@ save eight, inc, ...		3S 2N
+	subhs	r12, r12, #8		@ Update r12.			1S
+	cmphs	r12, #8			@ At least 8 left?		1S
+	ldmhsia	r0!, {r2-r3, r8-r11, r13-r14}	@ Load eight, inc, ...		4S 1N 1I
+	stmhsia	r1!, {r2-r3, r8-r11, r13-r14}	@ save eight, inc, ...		3S 2N
+	subhs	r12, r12, #8		@ Update r12.			1S
+	cmphs	r12, #8			@ At least 8 left?		1S
+	ldmhsia	r0!, {r2-r3, r8-r11, r13-r14}	@ Load eight, inc, ...		4S 1N 1I
+	stmhsia	r1!, {r2-r3, r8-r11, r13-r14}	@ save eight, inc, ...		3S 2N
+	subhs	r12, r12, #8		@ Update r12.			1S
+	cmphs	r12, #8			@ At least 8 left?		1S
 	bhs	2b			@ If so, keep looping.		2S 1N
 	@@ Total for 16 pixels:					    -> 38S 13N 4I (+1S first time)
 
@@ -698,13 +737,16 @@ _HD_ARM_LowerBlit_Fast:
 	bne	3b			@ If we're now <16 bytes, just repeat the word-copying part till
 					@ we're done.
 	@@ Update r0, r1. 2S.
-4:	add	r0, r0, r6, lsl #2
-	add	r1, r1, r7, lsl #2
+4:	sub	r8, r6, r4
+	add	r0, r0, r8, lsl #2
+	sub	r8, r7, r4
+	add	r1, r1, r8, lsl #2
 
 	@@ Test and branch. 3S + 1N.
 	cmp	r1, r5
 	blo	1b
 
+	ldr	sp, _HD_ARM_LowerBlit_Fast_StoreSP
 	ldmia	sp!, {r4-r12, pc}	@ return - 11S + 1I + 2N
 
 	
@@ -1132,6 +1174,9 @@ quad1:	ldr	r1, =sine_table		@ r0 = sine_table
 	rsbcs	r0, r0, #0		@ -sin(corresp), if angle was > 2048 (if carry flag got set a few instrs ago)
 	bx	lr
 
+
+__ASM_functions_end:
+	
 	.section .data
 need_finishup:	.long 0
 	
