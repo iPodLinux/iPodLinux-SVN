@@ -40,6 +40,10 @@
 hd_engine *HD_Initialize(uint32 width,uint32 height,uint8 bpp, void *framebuffer, void (*update)(struct hd_engine*, int, int, int, int)) {
 	hd_engine *eng;
 
+#ifdef IPOD
+	_HD_ARM_Setup();
+#endif
+
 	eng = (hd_engine *)malloc( sizeof(hd_engine) );
 	assert(eng != NULL);
 
