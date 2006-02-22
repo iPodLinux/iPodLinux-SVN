@@ -1444,7 +1444,7 @@ static void load_fff(Bitmap_Font *bf, const char *fname)
 		index = h2d(tmp, 4);
 		if (index < bf->firstchar) bf->firstchar = index;
 		if (n_bits < index + 1) {
-			n_bits += 0xff;
+			n_bits += (index + 0x100) & ~0xff;
 			bits = realloc(bits, n_bits * len);
 		}
 		for (i = 0; i < (int)bf->height; i++)
