@@ -74,7 +74,7 @@ $(LIB): $(LIBOBJS)
 	$(AR) $(LIB) $(LIBOBJS)
 	$(AR2) $(LIB)
 
-main_anim.o: main_anim.c
+main_anim.o main_select.o: %.o: %.c
 	$(CC) $(CFLAGS) $(MYCFLAGS) $(DEMOCFLAGS) -c -o $@ $<
 
 %.o: %.c
@@ -85,6 +85,9 @@ main_anim.o: main_anim.c
 
 $(DEMO): $(LIB) main_anim.o
 	$(CC) main_anim.o -o $@ $(LIB) $(LDFLAGS) $(DEMOLDFLAGS)
+
+hd-demo2: $(LIB) main_select.o
+	$(CC) main_select.o -o $@ $(LIB) $(LDFLAGS) $(DEMOLDFLAGS)
 
 clean:
 	$(RM) *.o *.elf *.elf2flt *.a *.gdb *~ $(DEMO)
