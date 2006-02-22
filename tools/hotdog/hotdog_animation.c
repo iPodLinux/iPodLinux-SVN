@@ -246,8 +246,7 @@ static void HD_DoCircleAnimation (hd_object *obj)
     obj->x = a->x + ((a->r * fcos (a->angle >> 16)) >> 16);
     obj->y = a->y + ((a->r * fsin (a->angle >> 16)) >> 16);
     if (a->extd) {
-        obj->z = (a->angle >> 16) - 1024;
-        if (obj->z < 0) obj->z += 4096;
+        obj->z = ((a->angle >> 16) - 1024) & 0xfff;
         if (obj->z > 2048) obj->z = 4096 - obj->z;
         obj->opacity = 127 + ((2048 - obj->z) >> 4);
     }

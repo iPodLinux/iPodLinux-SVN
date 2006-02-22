@@ -258,7 +258,11 @@ int main(int argc, char *argv[]) {
 		for (objp = obj; objp->object; objp++) {
 			HD_XAnimateCircle(objp->object, 80 * WIDTH / 220, YOFF * HEIGHT / 176,
 					  RADIUS * HEIGHT / 176, object_topwid, object_bottomwid,
-					  (objp->position + 3072) & 0xfff, 4096, -100);
+					  (objp->position + 1024) & 0xfff, 4096, -100);
+		}
+	} else {
+		for (objp = obj; objp->object; objp++) {
+			circle_rotate (objp, 0);
 		}
 	}
 
