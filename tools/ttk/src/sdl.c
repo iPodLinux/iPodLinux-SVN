@@ -1402,6 +1402,15 @@ leave_func:
 
 /**** End MW copied font handling stuff. ****/
 
+#if SDL_BYTEORDER == SDL_LIL_ENDIAN
+static void fff_swab (unsigned short *ptr, int nbytes) 
+{
+    for (; nbytes; nbytes -= 2, ptr++) {
+        *ptr = (*ptr >> 8) | ((*ptr & 0xff) << 8);
+    }
+}
+#endif
+
 static int h2d(char *s, int len)
 {
 	int i, ret = 0;
@@ -1448,8 +1457,11 @@ static void load_fff(Bitmap_Font *bf, const char *fname)
 			bits = realloc(bits, n_bits * len);
 		}
 		for (i = 0; i < (int)bf->height; i++)
-			*((unsigned char *)bits + (index*bf->height + i)*2) =
-					h2d(tmp + 5 + (i * 2), 2);
+			*((unsigned short *)bits + index*bf->height + i) =
+                            h2d(tmp + 5 + (i * 2), 2);
+#if SDL_BYTEORDER == SDL_LIL_ENDIAN
+                fff_swab (bits + index * bf->height, bf->height * 2);
+#endif
 		bf->size++;
 	}
 	bf->bits = bits;
