@@ -973,42 +973,51 @@ _HD_ARM_ClearScreen:
 	@@    2  176x132, type 1 LCD with weird rect specifications (on a Nano)
 	@@ void _HD_ARM_UpdatePhoto (uint16 *fb, int x, int y, int w, int h, int type)
 
-	@@ wwait - waits for the LCD to be write ready. clobbers r11. assumes r12 = 0x70008A0C.
+	@@ wwait - waits for the LCD to be write ready. clobbers r10, r11. assumes r12 = 0x70008A0C.
 .macro	wwait
+	mov	r10, #0x10000		@ r10 ~= 64 thousand ~= 1ms
 9:	ldr	r11, [r12]		@ r11 = *0x70008A0C
+	subs	r10, r10, #1		@ timer--
+	beq	9f
 	tst	r11, #0x80000000	@ is high bit set?
 	beq	9b			@ loop until it is
+9:
 .endm
 
-	@@ sendlo - sends a low value (?)
+	@@ sendlo - sends a low value (?) clobbers r10, r11, expects r12 = 0x70008A0C.
+	@@ val *cannot* be r10 or r11
 .macro	sendlo	val
 	wwait
 	orr	r11, \val, #0x80000000
 	str	r11, [r12]
 .endm
-	@@ sendhi - sends a high value (?) clobbers r11, expects r12 = 0x70008A0C.
+	@@ sendhi - sends a high value (?) clobbers r10, r11, expects r12 = 0x70008A0C.
+	@@ val *cannot* be r10 or r11
 .macro	sendhi	val
 	wwait
 	orr	r11, \val, #0x81000000
 	str	r11, [r12]
 .endm
-	@@ cmdat0 - sends a command + data to a type-0 LCD
+	@@ cmdat0 - sends a command + data to a type-0 LCD. clobbers r10, r11, expects r12 = addr.
+	@@ cmd or data *cannot* be r10 or r11
 .macro	cmdat0	cmd, data
 	sendlo	\cmd
 	sendlo	\data
 .endm
-	@@ cmdat1 - sends a command + data to a type-1 LCD. clobbers r10.
+	@@ cmdat1 - sends a command + data to a type-1 LCD. clobbers r10, r11, r13 (!), expects r12 = addr.
+	@@ cmd or data *cannot* be r10, r11 or r13
 .macro	cmdat1	cmd, data
-	mov	r10, #0
-	sendlo	r10
+	mov	r13, #0
+	sendlo	r13
 	sendlo	\cmd
-	mov	r10, \data, lsr #8
-	sendhi	r10
-	and	r10, \data, #0xff
-	sendhi	r10
+	mov	r13, \data, lsr #8
+	sendhi	r13
+	and	r13, \data, #0xff
+	sendhi	r13
 .endm
 
 	.globl	_HD_ARM_UpdatePhoto
+_HD_ARM_UpdatePhoto_StoreSP:	.long 0
 _HD_ARM_UpdatePhoto:
 	stmdb	sp!, {r4-r12, lr}	@ save regs
 
@@ -1021,8 +1030,11 @@ _HD_ARM_UpdatePhoto:
 
 	@@ Load h, type -> r4, r5.
 	add	r4, sp, #40		@ r4[0] = h, r4[1] = type
-	ldmia	r4, {r4, r5}		@ load 'em
+	ldmia	r4, {r4, r5}		@ load 'em to r4=h, r5=type
 
+	@@ Save sp so we can use r13 for computations.
+	str	sp, _HD_ARM_UpdatePhoto_StoreSP
+	
 	@@ Load 0x70008A0C -> r12.
 	mov	r12,  #0x70000000
 	orr	r12, r12, #0x8A00
@@ -1063,17 +1075,17 @@ type1:	cmp	r8, r6			@ if (rect3 < rect1) {
 	moveq	r14, r7
 	moveq	r7, r9
 	moveq	r9, r14
-	orr	r14, r6, r8, lsl #8	@ r14 = (rect3 << 8) | rect1
-	mov	r11, #0x44		@ attn! r11 will be clobbered!
-	cmdat1	r11, r14		@ lcd_cmd_data (0x44, (rect3 << 8) | rect1)
-	orr	r14, r7, r9, lsl #8
-	mov	r11, #0x45
-	cmdat1	r11, r14		@ lcd_cmd_data (0x45, (rect4 << 8) | rect2)
+	orr	r8, r6, r8, lsl #8	@ r8 = (rect3 << 8) | rect1, rect3 is clobbered
+	mov	r14, #0x44		@ r14 = command
+	cmdat1	r14, r8			@ lcd_cmd_data (0x44, (rect3 << 8) | rect1)
+	orr	r8, r7, r9, lsl #8
+	mov	r14, #0x45
+	cmdat1	r14, r8			@ lcd_cmd_data (0x45, (rect4 << 8) | rect2)
 	cmp	r5, #2			@ nano?
 	movne	r7, r9			@ if not, rect2 = rect4.
-	orr	r14, r6, r7, lsl #8
-	mov	r11, #0x21
-	cmdat1	r11, r14		@ lcd_cmd_data (0x21, (rect2 << 8) | rect1)
+	orr	r8, r6, r7, lsl #8
+	mov	r14, #0x21
+	cmdat1	r14, r8			@ lcd_cmd_data (0x21, (rect2 << 8) | rect1)
 	mov	r14, #0
 	sendlo	r14			@ lcd_send_lo (0x0)
 	mov	r14, #0x22
@@ -1145,6 +1157,7 @@ doit:	cmp	r5, #2
 	cmp	r7, #0			@ still some pixels left to write?
 	bge	1b			@ guess so. keep going.
 
+	ldr	sp, _HD_ARM_UpdatePhoto_StoreSP	@ restore sp
 	ldmia	sp!, {r4-r12, pc}	@ return
 
 

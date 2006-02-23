@@ -37,11 +37,17 @@
 #define MAX(x,y) (((x)>(y))?(x):(y))
 #endif
 
+#ifdef IPOD
+extern void _HD_ARM_Setup();
+#endif
+
 hd_engine *HD_Initialize(uint32 width,uint32 height,uint8 bpp, void *framebuffer, void (*update)(struct hd_engine*, int, int, int, int)) {
 	hd_engine *eng;
 
 #ifdef IPOD
+#ifndef DONT_RUN_FROM_IRAM
 	_HD_ARM_Setup();
+#endif
 #endif
 
 	eng = (hd_engine *)malloc( sizeof(hd_engine) );

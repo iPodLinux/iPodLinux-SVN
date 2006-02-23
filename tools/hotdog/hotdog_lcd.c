@@ -221,12 +221,17 @@ void HD_LCD_Init()
 }
 
 extern void _HD_ARM_Update5G (uint16 *fb, int x, int y, int w, int h);
+extern void _HD_ARM_UpdatePhoto (uint16 *fb, int x, int y, int w, int h, int lcd_type);
 void HD_LCD_Update (uint16 *fb, int x, int y, int w, int h) 
 {
 	switch (lcd_type) {
 	case 0:
 	case 1:
+#if 0
 		lcd_update_display (fb, x, y, w, h);
+#else
+		_HD_ARM_UpdatePhoto (fb, x, y, w, h, lcd_type);
+#endif
 		break;
 	case 5:
 		_HD_ARM_Update5G (fb, x, y, w, h);
