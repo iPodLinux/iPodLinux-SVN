@@ -126,7 +126,7 @@ struct framet {
 
 struct filebuffer {
 	unsigned char * buffer;
-	unsigned startOff, globalOff, localOff, size, filesize;
+	long long startOff, globalOff, localOff, size, filesize;
 	FILE * file;
 } filebuffer_t;
 
@@ -139,7 +139,7 @@ static void cop_setVideoParams(unsigned int, unsigned int, unsigned int);
 static void cop_presentFrames(int, struct framet *, int);
 static void cop_setPlay(int);
 static int fbread(void *, unsigned, struct filebuffer *);
-static void fbseek(struct filebuffer *, int, int);
+static void fbseek(struct filebuffer *, long long, int);
 static unsigned getFilesize(FILE *);
 static int fourccCmp(char[4], char[4]);
 static int openAviFile(char *);
@@ -233,7 +233,7 @@ static int fbread(void * dest, unsigned size, struct filebuffer * f)
 	return 1;
 }
 
-static void fbseek(struct filebuffer * f, int off, int seekstate)
+static void fbseek(struct filebuffer * f, long long off, int seekstate)
 {
 	if (seekstate == SEEK_CUR) {
 		f->globalOff += off;
@@ -246,8 +246,8 @@ static void fbseek(struct filebuffer * f, int off, int seekstate)
 
 static unsigned  getFilesize(FILE * f)
 {
-	long w;
-	long l;
+	long long w;
+	long long l;
 
 	w = ftell(f);
 	fseek(f, 0, SEEK_END);
@@ -693,11 +693,16 @@ static void audio_thread_stop(void)
 #ifdef USEMALLOCFORAUDIOSTACK
 	free(audio_thread_stack);
 #endif	
+	kill(audio_thread_pid, SIGKILL);
 }
 
 /* init globals to fix the not loading because I was being lazy before */
 static void init_variables()
 {
+	memset(&mainHeader, 0, sizeof(mainHeader));
+	memset(&wavHeader, 0, sizeof(wavHeader));
+	memset(&bitmapInfo, 0, sizeof(bitmapInfo));
+
 	video_status = VIDEO_CONTROL_MODE_STARTING; 
 	video_useAudio = 0;
 	video_useKeys = 1;
@@ -773,6 +778,7 @@ static int playVideo(char * filename)
 	if (!audio_header_found)
 		video_useAudio = 0;
 	outl((unsigned int)&ipod_handle_video, VAR_COP_HANDLER);
+
 	cop_wakeup();
 	audio_open();
 
@@ -1073,6 +1079,8 @@ void new_video_window(char *filename)
 		full_hw_version = ipod_get_hw_version();
 	}
 	outl(1, VAR_VIDEO_ON);
+	outl(0, VAR_VIDEO_MODE);
+	cop_wakeup();
 	init_variables();
 	video_status = VIDEO_CONTROL_MODE_STARTING; 
 	video_curPosition = 0;
