@@ -33,8 +33,11 @@ int main(int argc, char **argv) {
 	char buf[64];
 
 	buf[0] = '\0';
-	while ((ch = getopt(argc, argv, "rflc")) != -1) {
+	while ((ch = getopt(argc, argv, "grflc")) != -1) {
 		switch (ch) {
+		case 'g':
+			sprintf(buf, "%d", (int)(ipod_get_hw_version() >> 16));
+			break;
 		case 'r':
 			sprintf(buf, "%lx", ipod_get_hw_version());
 			break;
