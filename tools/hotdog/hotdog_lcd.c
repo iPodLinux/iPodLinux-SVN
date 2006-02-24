@@ -227,7 +227,7 @@ void HD_LCD_Update (uint16 *fb, int x, int y, int w, int h)
 	switch (lcd_type) {
 	case 0:
 	case 1:
-#if 0
+#if 1
 		lcd_update_display (fb, x, y, w, h);
 #else
 		_HD_ARM_UpdatePhoto (fb, x, y, w, h, lcd_type);
