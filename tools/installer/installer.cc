@@ -174,7 +174,7 @@ PodLocationPage::PodLocationPage (Installer *wizard)
 
         p = strchr (p, '\n');
     }
-    if (!rev || !(rev >> 16))
+    if (!rev || !(rev >> 16) || (rev >> 20))
         status = BadSysInfo;
     else
         hw_ver = rev >> 16;
@@ -262,11 +262,34 @@ PodLocationPage::PodLocationPage (Installer *wizard)
         return;
     }
 
+    const char *gens[] = { "generation 0x0", // 0x0
+                           "first generation", // 0x1
+                           "second generation", // 0x2
+                           "third generation", // 0x3
+                           "first generation mini", // 0x4
+                           "black-and-white fourth generation (Click Wheel)", // 0x5
+                           "photo", // 0x6
+                           "second generation mini", // 0x7
+                           "generation 0x8",
+                           "generation 0x9",
+                           "generation 0xA",
+                           "fifth generation (video)", // 0xB
+                           "nano", // 0xC
+                           "generation 0xD",
+                           "generation 0xE",
+                           "generation 0xF" };
+
     blurb = new QLabel;
     blurb->setWordWrap (true);
     blurb->setAlignment (Qt::AlignTop | Qt::AlignLeft);
+    blurb->setText (QString ("<p>I found a <b>%1GB</b> iPod at physical drive <b>%2</b>. "
+                             "It seems to be a <b>%3</b> iPod, ")
+                    .arg (devGetSize(podloc) >> 21)
+                    .arg (podloc)
+                    .arg (gens[hw_ver]));
     if (status == WinPod) {
-        blurb->setText (tr ("<p>You do not appear to have iPodLinux installed. If you continue, "
+        blurb->setText (blurb->text() +
+                        tr ("and does not have iPodLinux installed. If you continue, "
                             "it will be installed. If you already have iPodLinux installed, "
                             "<i>do not continue</i>.</p>\n"));
         if (hw_ver >= 0xA) {
@@ -302,7 +325,7 @@ PodLocationPage::PodLocationPage (Installer *wizard)
         stateOK = 1;
         emit completeStateChanged();
     } else {
-        blurb->setText (tr ("It appears that you already have iPodLinux installed."));
+        blurb->setText (blurb->text() + tr ("with iPodLinux already installed.</p>"));
         wizard->setInfoText (tr ("<b>What to do?</b>"), tr ("Select an action below."));
         
         advancedCheck = changeUICheck = 0;
