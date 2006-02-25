@@ -246,7 +246,7 @@ namespace VFS
         virtual int init() = 0;
 	
         // Sense function - returns 1 if dev contains this fs
-        static int probe (Device *dev) { return 0; };
+        static int probe (Device *dev) { (void)dev; return 0; };
         
 	// Opening functions - mandatory
 	virtual File *open (const char *path, int flags) = 0;

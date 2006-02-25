@@ -36,6 +36,8 @@ void partFreeTable (PartitionTable t);
 // return 0 for success, nonzero for failure
 int devReadMBR (int devnr, unsigned char *buf);
 int devWriteMBR (int devnr, unsigned char *buf);
+// returns the size in 512-byte sectors for success, 0 or negative for failure
+u64 devGetSize (int devnr);
 
 // returns -1 for failure, or the devnr
 int find_iPod();
