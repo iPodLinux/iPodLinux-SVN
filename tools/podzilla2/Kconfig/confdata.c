@@ -319,8 +319,10 @@ int conf_write(const char *name)
 					       " */\n", str);
 		} else if (!(sym->flags & SYMBOL_CHOICE)) {
 			sym_calc_value(sym);
-			if (!(sym->flags & SYMBOL_WRITE))
+			if (!(sym->flags & SYMBOL_WRITE)) {
+				fprintf (out, "%s=n\n", sym->name);
 				goto next;
+                        }
 			sym->flags &= ~SYMBOL_WRITE;
 			type = sym->type;
 			if (type == S_TRISTATE) {
