@@ -405,7 +405,93 @@ void terminal_handlech(unsigned short ch)
 						terminal_setfont("Fixed 6x13",13);
 						break;
 					case 1:
+						terminal_setfont("Fixed 6x12",12);
+						break;
+					case 2:
+						terminal_setfont("Fixed 6x10",10);
+						break;
+					case 3:
+						terminal_setfont("Fixed 6x9",9);
+						break;
+					case 4:
+						terminal_setfont("Fixed 5x8",8);
+						break;
+					case 5:
+						terminal_setfont("Fixed 5x7",7);
+						break;
+					case 6:
+						terminal_setfont("Fixed 4x6",6);
+						break;
+					case 7:
+						terminal_setfont("Fixed 7x13",13);
+						break;
+					case 8:
+						terminal_setfont("Fixed 7x14",14);
+						break;
+					case 9:
+						terminal_setfont("Fixed 8x13",13);
+						break;
+					case 10:
+						terminal_setfont("Fixed 9x15",15);
+						break;
+					case 11:
+						terminal_setfont("Fixed 9x18",18);
+						break;
+					case 12:
+						terminal_setfont("Fixed 10x20",20);
+						break;
+					case 13:
+					case 14:
+					case 15:
 						terminal_setfont("Unifont",12);
+						break;
+					case 16:
+						terminal_setfont("Apple II 40 Column",9);
+						break;
+					case 17:
+						terminal_setfont("Apple II 80 Column",18);
+						break;
+					case 18:
+						terminal_setfont("Topaz",8);
+						break;
+					case 19:
+						terminal_setfont("Topaz Doubled",16);
+						break;
+					case 20:
+						terminal_setfont("Topaz Sans",8);
+						break;
+					case 21:
+						terminal_setfont("Topaz Sans Doubled",16);
+						break;
+					case 22:
+						terminal_setfont("Opal",9);
+						break;
+					case 23:
+						terminal_setfont("Opal Double",18);
+						break;
+					case 24:
+						terminal_setfont("Diamond",12);
+						break;
+					case 25:
+						terminal_setfont("Onyx",9);
+						break;
+					case 26:
+						terminal_setfont("Peridot",7);
+						break;
+					case 27:
+						terminal_setfont("Sabine Doscbthm",9);
+						break;
+					case 28:
+						terminal_setfont("Sabine Doscbthm Black",9);
+						break;
+					case 29:
+						terminal_setfont("Sabine Doscbthm Script",9);
+						break;
+					case 30:
+						terminal_setfont("Sabine Doscbthm Serif",9);
+						break;
+					case 31:
+						terminal_setfont("Sabine Doscbthm Smallcaps",9);
 						break;
 					}
 					terminal_widget->dirty = 1;
