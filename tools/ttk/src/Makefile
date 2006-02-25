@@ -4,7 +4,7 @@ HDR = ttk.h menu.h icons.h slider.h imgview.h textarea.h appearance.h mwin-emu.h
 EXAMPLES = exscroll exmenu eximage exti
 EXOBJS = exscroll.o exmenu.o eximage.o exti.o
 
-MYCFLAGS = -g -I. -Wall -Wno-unused -Wno-implicit -Wno-char-subscripts
+MYCFLAGS = -O2 -frename-registers -finline-functions -funroll-loops -fomit-frame-pointer -I. -Wall -Wno-unused -Wno-implicit -Wno-char-subscripts
 PREFIX ?= /usr
 ifdef IPOD
 CROSS ?= arm-uclinux-elf
