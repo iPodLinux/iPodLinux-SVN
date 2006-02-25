@@ -576,6 +576,78 @@ void ttk_polyline_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v)
     free (vy);
 }
 
+#define DO_BEZIER(function)\
+    /*  Note: I don't think there is any great performance win in \
+     *  translating this to fixed-point integer math, most of the time \
+     *  is spent in the line drawing routine. */ \
+    float x = (float)x1, y = (float)y1;\
+    float xp = x, yp = y;\
+    float delta;\
+    float dx, d2x, d3x;\
+    float dy, d2y, d3y;\
+    float a, b, c;\
+    int i;\
+    int n = 1;\
+    Sint16 xmax=x1, ymax=y1, xmin=x1, ymin=y1;\
+    \
+    /* compute number of iterations */\
+    if(level < 1)\
+	level=1;\
+    if(level >= 15)\
+	level=15; \
+    while (level-- > 0)\
+	n*= 2;\
+    delta = (float)( 1.0 / (float)n );\
+    \
+    /* compute finite differences \
+     * a, b, c are the coefficient of the polynom in t defining the \
+     * parametric curve. The computation is done independently for x and y */\
+    a = (float)(-x1 + 3*x2 - 3*x3 + x4);\
+    b = (float)(3*x1 - 6*x2 + 3*x3);\
+    c = (float)(-3*x1 + 3*x2);\
+    \
+    d3x = 6 * a * delta*delta*delta;\
+    d2x = d3x + 2 * b * delta*delta;\
+    dx = a * delta*delta*delta + b * delta*delta + c * delta;\
+    \
+    a = (float)(-y1 + 3*y2 - 3*y3 + y4);\
+    b = (float)(3*y1 - 6*y2 + 3*y3);\
+    c = (float)(-3*y1 + 3*y2);\
+    \
+    d3y = 6 * a * delta*delta*delta;\
+    d2y = d3y + 2 * b * delta*delta;\
+    dy = a * delta*delta*delta + b * delta*delta + c * delta;\
+    \
+    /* iterate */\
+    for (i = 0; i < n; i++) {\
+	x += dx; dx += d2x; d2x += d3x;\
+	y += dy; dy += d2y; d2y += d3y;\
+	if((Sint16)xp != (Sint16)x || (Sint16)yp != (Sint16)y){\
+	    function;\
+	    xmax= (xmax>(Sint16)xp)? xmax : (Sint16)xp;\
+	    ymax= (ymax>(Sint16)yp)? ymax : (Sint16)yp;\
+	    xmin= (xmin<(Sint16)xp)? xmin : (Sint16)xp;\
+	    ymin= (ymin<(Sint16)yp)? ymin : (Sint16)yp;\
+	    xmax= (xmax>(Sint16)x)? xmax : (Sint16)x;\
+	    ymax= (ymax>(Sint16)y)? ymax : (Sint16)y;\
+	    xmin= (xmin<(Sint16)x)? xmin : (Sint16)x;\
+	    ymin= (ymin<(Sint16)y)? ymin : (Sint16)y;\
+	}\
+	xp = x; yp = y;\
+    }
+	
+void ttk_bezier(ttk_surface srf, int x1, int y1, int x2, int y2,
+		int x3, int y3, int x4, int y4, int level, ttk_color col)
+{
+    DO_BEZIER(ttk_line(srf, (short)xp, (short)yp, (short)x, (short)y, col));
+}
+
+void ttk_aabezier(ttk_surface srf, int x1, int y1, int x2, int y2,
+		int x3, int y3, int x4, int y4, int level, ttk_color col)
+{
+    DO_BEZIER(ttk_aaline(srf, (short)xp, (short)yp, (short)x, (short)y, col));
+}
+
 void ttk_fillpoly (ttk_surface srf, int nv, short *vx, short *vy, ttk_color col)
 {
     if (ttk_screen->bpp == 2)
