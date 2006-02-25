@@ -21,7 +21,7 @@ CC ?= cc
 endif
 
 do-it:
-	@$(CC) font.c -o font $(LIBS)
+	@$(CC) font.c -o font -Wall $(LIBS)
 
 clean:
 	@rm -f font font.gdb

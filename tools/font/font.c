@@ -83,8 +83,6 @@ int main(int argc, char * argv[])
 		} break;
 		case 2: {
 			int which;
-			int nr, nc;
-			char se[50];
 			
 			if (isdigit(argv[1][0])) {
 				which = atoi(argv[1]);
@@ -111,9 +109,7 @@ int main(int argc, char * argv[])
 			int h = atoi(argv[2]);
 			int i = 0;
 			int which = -1;
-			int nr, nc;
 			char fn[50];
-			char se[50];
 			
 			snprintf(fn, 50, "Fixed %dx%d", w, h);
 			while (fontNames[i]) {
