@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #define BLKRRPART  _IO(0x12,95) /* re-read partition table */
+#define BLKGETSIZE _IO(0x12,96) /* get size of device in 512-byte blocks (long *arg) */
 #endif
 
 PartitionTable partCopyFromMBR (unsigned char *mbr) 
@@ -155,6 +156,45 @@ int devWriteMBR (int devnr, unsigned char *buf)
 #endif
 
     return 0;
+}
+
+u64 devGetSize (int devnr) 
+{
+#ifdef WIN32
+    GET_LENGTH_INFORMATION glinf;
+    DWORD junk;
+    HANDLE fh;
+    DWORD len;
+    char drive[] = "\\\\.\\PhysicalDriveN";
+    
+    drive[17] = devnr + '0';
+    fh = CreateFile (drive, GENERIC_READ | GENERIC_WRITE,
+                     FILE_SHARE_READ | FILE_SHARE_WRITE,
+                     NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
+                     NULL);
+    if (fh == INVALID_HANDLE_VALUE)
+        return GetLastError();
+    
+    DeviceIoControl (fh, IOCTL_DISK_GET_LENGTH_INFO, NULL, 0, &glinf, sizeof(glinf), &junk, NULL);
+
+    CloseHandle (fh);
+    return glinf.Length >> 9;
+#else
+    int fd;
+    unsigned long sectors;
+    char dev[] = "/dev/sdX";
+    
+    dev[7] = devnr + 'a';
+    fd = open (dev, O_RDWR);
+    if (fd < 0)
+        return -errno;
+
+    if (ioctl (fd, BLKGETSIZE, &sectors) < 0)
+        return -errno;
+
+    close (fd);
+    return sectors;
+#endif
 }
 
 int find_iPod() 
