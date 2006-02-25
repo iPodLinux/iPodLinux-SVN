@@ -20,6 +20,31 @@ endif
 
 default: all-check
 
+ifdef IPOD
+CROSS ?= arm-uclinux-elf
+CC = $(CROSS)-gcc
+CXX = $(CROSS)-g++
+LD = $(CROSS)-ld
+OBJCOPY = $(CROSS)-objcopy
+TARGET = ipod
+PIC =
+MYCFLAGS = -O3 -fomit-frame-pointer -funroll-loops -mapcs -mcpu=arm7tdmi -DVERSION=\"$(VERSION)\" -Wall
+else
+CC ?= cc
+CXX ?= c++
+LD ?= ld
+OBJCOPY ?= objcopy
+TARGET = x11
+ifeq ($(shell uname),Darwin)
+PIC = -dynamic
+MAKESO = ld -bundle /usr/lib/bundle1.o -flat_namespace -undefined suppress `gcc -print-libgcc-file-name`
+else
+PIC = -fPIC -DPIC
+MAKESO = cc -shared
+endif
+MYCFLAGS = -DVERSION=\"$(VERSION)\"
+endif
+
 include Makefile
 include $(PZPATH)/.config
 ifndef MODULE
@@ -69,31 +94,6 @@ endif
 else
 WA =
 NWA =
-endif
-
-ifdef IPOD
-CROSS ?= arm-uclinux-elf
-CC = $(CROSS)-gcc
-CXX = $(CROSS)-g++
-LD = $(CROSS)-ld
-OBJCOPY = $(CROSS)-objcopy
-TARGET = ipod
-PIC =
-MYCFLAGS = -mapcs -mcpu=arm7tdmi -DVERSION=\"$(VERSION)\" -Wall
-else
-CC ?= cc
-CXX ?= c++
-LD ?= ld
-OBJCOPY ?= objcopy
-TARGET = x11
-ifeq ($(shell uname),Darwin)
-PIC = -dynamic
-MAKESO = ld -bundle /usr/lib/bundle1.o -flat_namespace -undefined suppress `gcc -print-libgcc-file-name`
-else
-PIC = -fPIC -DPIC
-MAKESO = cc -shared
-endif
-MYCFLAGS = -DVERSION=\"$(VERSION)\"
 endif
 
 ifdef obj-y

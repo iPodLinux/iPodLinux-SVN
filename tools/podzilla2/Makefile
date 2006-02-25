@@ -181,6 +181,8 @@ clean:
 	@make clean -sC Kconfig
 	@echo " CLEAN  core"
 	@make clean -sC core
+	@echo " CLEAN  contrib/ucdl"
+	@make clean -sC contrib/ucdl
 	@echo " CLEAN  modules:"
 	@make clean -sC modules
 	@rm -f .message .target modules/.mods Config.in menu-strings.c
