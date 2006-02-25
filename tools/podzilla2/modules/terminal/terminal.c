@@ -202,8 +202,10 @@ void terminal_setfont(char * fname, int fsize)
 			terminal_buf = (int *)calloc(terminal_cells, sizeof(int));
 		}
 		terminal_scroll_top = terminal_x = terminal_y = 0;
-		/* you will need to set the LINES and COLS environment variables from inside the pty */
-		/* ESC R and ESC C will echo back this information for you */
+		if (terminal_master && terminal_child) {
+			ioctl(terminal_master, TIOCSWINSZ, &terminal_win);
+			kill(terminal_child, SIGWINCH);
+		}
 	}
 	pz_set_string_setting(terminal_conf, TERMINAL_CONF_FONTNAME, fname);
 	pz_set_int_setting   (terminal_conf, TERMINAL_CONF_FONTSIZE, fsize);
