@@ -5,3 +5,4 @@ Category: Music
 Author: Courtney Cavin
 Provides: music
 Contact: courtc@ipodlinux.org
+Soft-Dependencies: tiwidgets, mpd

@@ -52,6 +52,7 @@ typedef struct _pz_Module
 
     struct _pz_Module **deps; // terminated with a 0 entry
     char *depsstr;
+    char *sdepsstr;
     char *providesstr; // We don't enforce the "provides" in mod_init, only in the mod select interface.
 
     char *podpath;
@@ -183,6 +184,9 @@ static void load_modinf (PzModule *mod)
             } else if (strcmp (key, "Dependencies") == 0) {
                 mod->depsstr = malloc (strlen (value) + 1);
                 strcpy (mod->depsstr, value);
+	    } else if (strcmp (key, "Soft-Dependencies") == 0) {
+                mod->sdepsstr = malloc (strlen (value) + 1);
+                strcpy (mod->sdepsstr, value);
             } else if (strcmp (key, "Provides") == 0) {
                 mod->providesstr = malloc (strlen (value) + 1);
                 strcpy (mod->providesstr, value);
@@ -241,18 +245,21 @@ static void load_modinf (PzModule *mod)
     free (buf);
 }
 
+#define SOFTDEP 1
+#define HARDDEP 2
 // Turns the depsstr into a list of deps. returns 0 for success, -1 for failure
 // [initing] concerns the autoselection of deps for loading: if true, all
 // dependencies will be marked to_load regardless of whether they are. If false,
 // they have to be loaded beforehand.
-static int fix_dependencies (PzModule *mod, int initing) 
+static int fix_dependencies (PzModule *mod, int initing, int which) 
 {
     char separator;
-    char *str = mod->depsstr;
+    char *str;
     char *next;
     PzModule **pdep;
     int ndeps = 0;
     
+    str = (which == SOFTDEP) ? mod->sdepsstr : mod->depsstr;
     if (!str) return 0;
     
     if (strchr (str, ','))
@@ -273,11 +280,18 @@ static int fix_dependencies (PzModule *mod, int initing)
 	}
     }
 
-    ndeps += 2; // the first one, the 0 at the end
-    mod->deps = calloc (ndeps, sizeof(PzModule *));
-    str = mod->depsstr;
+    if (mod->deps) {
+	pdep = mod->deps;
+	while (*pdep) pdep++;
+	mod->deps = realloc(mod->deps, (pdep - mod->deps) + ndeps + 1);
+	memset(pdep, 0, (ndeps + 1));
+    } else {
+	ndeps += 2; // the first one, the 0 at the end
+    	mod->deps = calloc (ndeps, sizeof(PzModule *));
+	pdep = mod->deps;
+    }
+    str = (which == SOFTDEP) ? mod->sdepsstr : mod->depsstr;
     while (isspace (*str)) str++; // trim WS on left
-    pdep = mod->deps;
 
     do {
 	if (strchr (str, separator)) {
@@ -301,14 +315,21 @@ static int fix_dependencies (PzModule *mod, int initing)
 		cur = cur->next;
 	    }
 	    if (!cur) {
-		pz_error ("Unresolved dependency for %s: %s. Please install.", mod->name, str);
-		return -1;
+		if (which == HARDDEP) {
+		    pz_error ("Unresolved dependency for %s: %s. Please install.", mod->name, str);
+		    return -1;
+		} else {
+		    str = next;
+		    continue;
+		}
 	    }
 
 	    if (!initing) {
 		if (!cur->to_load) {
-		    pz_error ("Module %s requires %s. You have it, but it isn't loaded. Please load it.", mod->name, str);
-		    return -1;
+		    if (which == HARDDEP) {
+			pz_error ("Module %s requires %s. You have it, but it isn't loaded. Please load it.", mod->name, str);
+			return -1;
+		    }
 		}
 	    } else {
 		if (cur->to_load >= 0)
@@ -633,7 +654,8 @@ void pz_modules_init()
     last = 0;
     while (cur) {
 	updateprogress(sliderwin, slider, ++sliderVal);
-	if (fix_dependencies (cur, 1) == -1) {
+	if (fix_dependencies (cur, 1, SOFTDEP) == -1 ||
+			fix_dependencies(cur, 1, HARDDEP) == -1) {
 	    if (last) last->next = cur->next;
 	    else module_head = cur->next;
 	    free_module (cur);
