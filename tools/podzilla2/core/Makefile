@@ -16,7 +16,7 @@ ifdef IPOD
 CROSS ?= arm-uclinux-elf
 CC = $(CROSS)-gcc
 LD = $(CROSS)-ld
-MYCFLAGS = `$(TTKCONF) --ipod --sdl --cflags` -I../contrib/ucdl -mapcs -mcpu=arm7tdmi -DVERSION=\"$(VERSION)\" -Wall
+MYCFLAGS = -O3 -fomit-frame-pointer -funroll-loops `$(TTKCONF) --ipod --sdl --cflags` -I../contrib/ucdl -mapcs -mcpu=arm7tdmi -DVERSION=\"$(VERSION)\" -Wall
 else
 CC ?= cc
 LD ?= ld

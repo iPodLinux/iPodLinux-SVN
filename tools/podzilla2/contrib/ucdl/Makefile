@@ -1,5 +1,6 @@
 CROSS ?= arm-uclinux-elf-
 CC = $(CROSS)gcc
+CFLAGS = -O3 -fomit-frame-pointer -funroll-loops
 
 all: libuCdl.a modtest testmod.o
 
