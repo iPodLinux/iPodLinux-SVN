@@ -9,7 +9,7 @@ INCLUDEPATH += .
 RESOURCES = installer.qrc
 
 # Input
-HEADERS += installer.h complexwizard.h
+HEADERS += installer.h complexwizard.h actions.h
 SOURCES += installer.cc main.cc complexwizard.cc
 
 # Rawpod
