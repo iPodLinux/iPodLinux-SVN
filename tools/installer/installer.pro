@@ -18,4 +18,11 @@ SOURCES += rawpod/device.cc rawpod/ext2.cc rawpod/fat32.cc \
 HEADERS += rawpod/device.h rawpod/errno.h rawpod/ext2.h \
            rawpod/fat32.h rawpod/partition.h rawpod/vfs.h
 
-CONFIG += debug
+# Zlib
+SOURCES += zlib/adler32.c zlib/compress.c zlib/crc32.c \
+           zlib/deflate.c zlib/gzio.c zlib/infback.c \
+           zlib/inffast.c zlib/inflate.c zlib/inftrees.c \
+           zlib/trees.c zlib/uncompr.c zlib/zutil.c
+HEADERS += zlib/crc32.h zlib/deflate.h zlib/inffast.h \
+           zlib/inffixed.h zlib/inflate.h zlib/inftrees.h \
+           zlib/trees.h zlib/zconf.h zlib/zlib.h zlib/zutil.h
