@@ -1550,6 +1550,7 @@ static void draw16_sf (ttk_font *f, ttk_surface srf, int x, int y, ttk_color col
     dp = dst = malloc (len);
     sp = str;
     while (*sp) *dp++ = (*sp++ & 0xff);
+    *dp = 0;
     draw_sf (f, srf, x, y, col, dst);
     free (dst);
 }
@@ -1570,6 +1571,7 @@ static int width16_sf (ttk_font *f, const uc16 *str)
     dp = dst = malloc (len);
     sp = str;
     while (*sp) *dp++ = (*sp++ & 0xff);
+    *dp = 0;
     
     ret = width_sf (f, dst);
     free (dst);
