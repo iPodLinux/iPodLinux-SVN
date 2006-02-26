@@ -161,7 +161,7 @@ int devWriteMBR (int devnr, unsigned char *buf)
 u64 devGetSize (int devnr) 
 {
 #ifdef WIN32
-    GET_LENGTH_INFORMATION glinf;
+    DISK_GEOMETRY geo;
     DWORD junk;
     HANDLE fh;
     DWORD len;
@@ -175,10 +175,14 @@ u64 devGetSize (int devnr)
     if (fh == INVALID_HANDLE_VALUE)
         return GetLastError();
     
-    DeviceIoControl (fh, IOCTL_DISK_GET_LENGTH_INFO, NULL, 0, &glinf, sizeof(glinf), &junk, NULL);
+    DeviceIoControl (fh, IOCTL_DISK_GET_DRIVE_GEOMETRY, NULL, 0, &geo, sizeof(geo), &junk, NULL);
 
     CloseHandle (fh);
-    return glinf.Length >> 9;
+    u64 size = (geo.Cylinders.QuadPart *
+                (u64)geo.TracksPerCylinder *
+                (u64)geo.SectorsPerTrack *
+                (u64)geo.BytesPerSector);
+    return size >> 9;
 #else
     int fd;
     unsigned long sectors;
