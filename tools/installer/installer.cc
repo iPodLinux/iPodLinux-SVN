@@ -16,8 +16,7 @@
 #include <string.h>
 
 enum { StandardInstall, AdvancedInstall,
-       NormalUpdate, UIChangeUpdate,
-       Uninstall } Mode;
+       Update, Uninstall } Mode;
 
 Installer::Installer (QWidget *parent)
     : ComplexWizard (parent)
@@ -93,7 +92,7 @@ PodLocationPage::PodLocationPage (Installer *wizard)
     FATFS *fat32 = 0;
 
     blurb = subblurb = 0;
-    advancedCheck = changeUICheck = 0;
+    advancedCheck = 0;
     upgradeRadio = uninstallRadio = 0;
     stateOK = 0;
     
@@ -314,7 +313,7 @@ PodLocationPage::PodLocationPage (Installer *wizard)
                              tr ("Read the information below and choose your installation type."));
         advancedCheck = new QCheckBox (tr ("Advanced installation (experienced users only)"));
         upgradeRadio = uninstallRadio = 0;
-        changeUICheck = 0; subblurb = 0;
+        subblurb = 0;
 
         QVBoxLayout *layout = new QVBoxLayout;
         layout->addWidget (blurb);
@@ -328,11 +327,9 @@ PodLocationPage::PodLocationPage (Installer *wizard)
         blurb->setText (blurb->text() + tr ("with iPodLinux already installed.</p>"));
         wizard->setInfoText (tr ("<b>What to do?</b>"), tr ("Select an action below."));
         
-        advancedCheck = changeUICheck = 0;
+        advancedCheck = 0;
         upgradeRadio = new QRadioButton (tr ("Update my existing installation"));
         uninstallRadio = new QRadioButton (tr ("Uninstall iPodLinux"));
-        changeUICheck = new QCheckBox (tr ("Change user interface too"));
-        changeUICheck->hide();
         subblurb = new QLabel (tr ("Please choose either an update or an uninstall "
                                    "so I can display something more informative here."));
         subblurb->setAlignment (Qt::AlignTop | Qt::AlignLeft);
@@ -348,7 +345,6 @@ PodLocationPage::PodLocationPage (Installer *wizard)
         layout->addSpacing (10);
         layout->addWidget (upgradeRadio);
         layout->addWidget (uninstallRadio);
-        layout->addWidget (changeUICheck);
         layout->addStretch (1);
         layout->addWidget (subblurb);
         setLayout (layout);
@@ -361,7 +357,6 @@ void PodLocationPage::uninstallRadioClicked (bool clicked)
 {
     (void)clicked;
     
-    changeUICheck->hide();
     subblurb->setText (tr ("<p>OK, I guess you really do want to uninstall iPodLinux. "
                            "Please be sure you have the backup you made handy if you "
                            "want an easy uninstall. If you've lost it, I'll make do, "
@@ -375,13 +370,10 @@ void PodLocationPage::upgradeRadioClicked (bool clicked)
 {
     (void)clicked;
     
-    changeUICheck->show();
     subblurb->setText (tr ("<p>The update will check for new versions of the kernel and "
                            "the podzilla you have installed; you will be given the chance "
                            "to install them if new versions are present. "
                            "You will also be able to change the packages you have installed.</p>\n"
-                           "<p>If you want to switch to a completely different user interface, "
-                           "check the box.</p>\n"
                            "<p>Press Next to continue.</p>"));
     stateOK = 1;
     emit completeStateChanged();
@@ -390,7 +382,6 @@ void PodLocationPage::upgradeRadioClicked (bool clicked)
 void PodLocationPage::resetPage() 
 {
     if (advancedCheck) advancedCheck->setChecked (0);
-    if (changeUICheck) changeUICheck->setChecked (0);
     if (upgradeRadio) upgradeRadio->setChecked (0);
     if (uninstallRadio) uninstallRadio->setChecked (0);
     if (subblurb) subblurb->setText (tr ("Please choose either an update or an uninstall "
@@ -403,11 +394,7 @@ WizardPage *PodLocationPage::nextPage()
 {
     if (upgradeRadio) {
         if (upgradeRadio->isChecked()) {
-            if (changeUICheck && changeUICheck->isChecked()) {
-                Mode = UIChangeUpdate;
-            } else {
-                Mode = NormalUpdate;
-            }
+            Mode = Update;
         } else {
             Mode = Uninstall;
         }
@@ -419,9 +406,19 @@ WizardPage *PodLocationPage::nextPage()
         }
     }
 
-    if (Mode != Uninstall)
-        return wizard->dlupPage;
-    return wizard->restorePage;
+    switch (Mode) {
+    case StandardInstall:
+        /* add an action for partitioning */
+        return wizard->instPage;
+    case AdvancedInstall:
+        return wizard->partPage;
+    case Update:
+        return wizard->pkgPage;
+    case Uninstall:
+        return wizard->restorePage;
+    }
+
+    return 0;
 }
 
 bool PodLocationPage::isComplete() 

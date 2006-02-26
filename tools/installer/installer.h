@@ -6,6 +6,7 @@
 #define INSTALLER_H
 
 #include "complexwizard.h"
+#include "actions.h"
 
 class QCheckBox;
 class QGroupBox;
@@ -20,15 +21,8 @@ class QTreeWidget;
 
 class IntroductionPage;
 class PodLocationPage;
-class DownloadUpdatesPage;
-class WhatToUpdatePage;
 class PartitioningPage;
-class LoaderSetupPage;
-class KernelPage;
-class UIPage;
-class SimpleInstallPage;
-class MakeBackupPage;
-class DoBackupPage;
+class InstallPage;
 class DoInstallPage;
 class PackagesPage;
 class DoPackagesPage;
@@ -45,35 +39,26 @@ public:
     
 protected:
     /* Install path:
-     * intro -> podloc -+
-     *    If Advanced:  |-> partitioning -> loader -> kernel -> podzilla
-     *           Else:  `-> simpleinst (default? what GUI?)
-     * In any case: -> backup -> doinstall -> packages -> dopackages
+     * intro -> podloc -.
+     *    If Advanced:  `-> partitioning
+     * In any case: -> install -> doinstall -> packages -> dopackages
      */
 
-    /* Upgrade path:    +-> Upgrading kernel? If so, [kernel].
-     *                  |
-     *                  |-> Changing GUI? If so, [podzilla].
-     * intro -> podloc -|
-     *                  `-> In any case: [packages].  -> dopackages
+    /* Upgrade path:
+     * intro -> podloc -> packages -> dopackages
      */
 
     /* Uninstall path:
-     * intro -> podloc -> backup? -> douninst
+     * intro -> podloc -> backuppath -> douninst
      */
 
     IntroductionPage *introPage; /* I U X */
     PodLocationPage *podlocPage; /* I U X */
-
-    DownloadUpdatesPage *dlupPage; /* I U */
+    
     PartitioningPage *partPage; /* IA */
-    LoaderSetupPage *loaderPage; /* IA */
-    KernelPage *kernPage; /* IA UK */
-    UIPage *uiPage; /* IA UP */
-    SimpleInstallPage *simplePage; /* IB */
-    MakeBackupPage *backupPage; /* I */
-    DoBackupPage *dobackupPage; /* I */
+    InstallPage *instPage; /* IB */
     DoInstallPage *doinstPage; /* I */
+
     PackagesPage *pkgPage; /* I U */
     DoPackagesPage *dopkgPage; /* I U */
     
@@ -85,15 +70,8 @@ protected:
 
     friend class IntroductionPage;
     friend class PodLocationPage;
-    friend class DownloadUpdatesPage;
-    friend class WhatToUpdatePage;
     friend class PartitioningPage;
-    friend class LoaderSetupPage;
-    friend class KernelPage;
-    friend class UIPage;
-    friend class SimpleInstallPage;
-    friend class MakeBackupPage;
-    friend class DoBackupPage;
+    friend class InstallPage;
     friend class DoInstallPage;
     friend class PackagesPage;
     friend class DoPackagesPage;
@@ -106,10 +84,10 @@ protected:
 class InstallerPage : public WizardPage
 {
     Q_OBJECT
-
+    
 public:
-    InstallerPage (Installer *wizard)
-        : WizardPage (wizard), wizard (wizard) {}
+    InstallerPage (Installer *wiz)
+        : WizardPage (wiz), wizard (wiz) {}
 
     InstallerPage()
         : WizardPage (0), wizard (0) {}
@@ -154,30 +132,8 @@ private:
     QLabel *blurb;
     QCheckBox *advancedCheck; /* enabled only for install */
     QRadioButton *upgradeRadio, *uninstallRadio; /* enabled only if already installed */
-    QCheckBox *changeUICheck; /* enabled only for upgrade */
     QLabel *subblurb;
     int stateOK;
-};
-
-class DownloadUpdatesPage : public InstallerPage
-{
-    Q_OBJECT
-
-#if 0
-public:
-    DownloadUpdatesPage (Installer *wizard);
-    void resetPage();
-    WizardPage *nextPage();
-    bool isComplete();
-
-private:
-    QHttp *http;
-    QLabel *blurb;
-    QLabel *file;
-    QProgressBar *progbar;
-    QLabel *percent;
-    QLabel *speed;
-#endif
 };
 
 class PartitioningPage : public InstallerPage
@@ -200,67 +156,7 @@ private:
 #endif
 };
 
-class LoaderSetupPage : public InstallerPage
-{
-    Q_OBJECT
-
-#if 0
-public:
-    LoaderSetupPage (Installer *wizard);
-    void resetPage();
-    WizardPage *nextPage();
-    bool isComplete();
-    
-private:
-    QLabel *blurb;
-    QRadioButton *loader1, *loader2;
-    QCheckBox *makeLinuxDefault; // for loader1
-    QTreeWidget *loaderConfig; // for loader2
-    QLineEdit *loaderConfigEntry; // L2
-    QPushButton *loaderConfigAdd, *loaderConfigRemove; // L2
-#endif
-};
-
-class KernelPage : public InstallerPage
-{
-    Q_OBJECT
-
-#if 0
-public:
-    KernelPage (Installer *wizard);
-    void resetPage();
-    WizardPage *nextPage();
-    bool isComplete();
-    
-private:
-    QLabel *blurb;
-    QLineEdit *file;
-    QPushButton *browse;
-#endif
-};
-
-class UIPage : public InstallerPage
-{
-    Q_OBJECT
-
-#if 0
-public:
-    UIPage (Installer *wizard);
-    void resetPage();
-    WizardPage *nextPage();
-    bool isComplete();
-
-private:
-    QLabel *blurb;
-    QRadioButton *podzilla0, *podzilla2;
-    QCheckBox *nonstandardPZ; // only if pz0
-    QLineEdit *nonstandardPZfile;
-    QPushButton *nonstandardPZbrowse;
-    QLabel *bigFatUnsupportedWarning;
-#endif
-};
-
-class SimpleInstallPage : public InstallerPage
+class InstallPage : public InstallerPage
 {
     Q_OBJECT
 
@@ -273,23 +169,7 @@ public:
 
 private:
     QLabel *blurb;
-    QCheckBox *makeLinuxDefault;
-#endif
-};
-
-class MakeBackupPage : public InstallerPage
-{
-    Q_OBJECT
-
-#if 0
-public:
-    MakeBackupPage (Installer *wizard);
-    void resetPage();
-    WizardPage *nextPage();
-    bool isComplete();
-
-private:
-    QLabel *blurb;
+    QRadioButton *loader1apple, *loader1linux, *loader2;
     QCheckBox *makeBackup;
     QLabel *backupPathLabel;
     QLineEdit *backupPath;
@@ -297,24 +177,7 @@ private:
 #endif
 };
 
-class DoBackupPage : public InstallerPage
-{
-    Q_OBJECT
-
-#if 0
-public:
-    DoBackupPage (Installer *wizard);
-    void resetPage();
-    WizardPage *nextPage();
-    bool isComplete();
-    
-private:
-    QLabel *blurb;
-    QProgressBar *backupProgress;
-#endif
-};
-
-class DoInstallPage : public InstallerPage
+class DoInstallPage : public InstallerPage, public ActionOutlet
 {
     Q_OBJECT
 
@@ -324,7 +187,12 @@ public:
     void resetPage();
     WizardPage *nextPage();
     bool isComplete();
-    
+
+    virtual void setTaskDescription (QString str) { action->setText (str); }
+    virtual void setCurrentAction (QString str) {}
+    virtual void setTotalProgress (int tp) { progress->setRange (0, tp); }
+    virtual void setCurrentProgress (int cp) { progress->setValue (cp); }
+
 private:
     QLabel *blurb;
     QLabel *action;
@@ -349,7 +217,7 @@ private:
 #endif
 };
 
-class DoPackagesPage : public InstallerPage
+class DoPackagesPage : public InstallerPage, public ActionOutlet
 {
     Q_OBJECT
 
@@ -360,10 +228,14 @@ public:
     WizardPage *nextPage();
     bool isComplete();
 
+    virtual void setTaskDescription (QString str) { action->setText (str); }
+    virtual void setCurrentAction (QString str) { specific->setText (str); }
+    virtual void setTotalProgress (int tp) { pkgProgress->setRange (0, tp); }
+    virtual void setCurrentProgress (int cp) { pkgProgress->setCurrentProgress (cp); }
+
 private:
     QLabel *blurb;
     QLabel *action;
-    QLabel *package;
     QLabel *specific; // download speed, or what file installing
     QLabel *pkgProgressLabel;
     QProgressBar *pkgProgress;
