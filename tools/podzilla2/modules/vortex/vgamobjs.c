@@ -42,7 +42,7 @@
 
 
 #define VGO_ENEMIES_NUM 	(16)	/* max number of enemies */
-#define VGO_BOLTS_NUM		(3)	/* max number of shots fired */
+#define VGO_BOLTS_NUM		(16)	/* max number of shots fired */
 #define VGO_POWERUPS_NUM	(20)	/* max number of powerups */
 
 static enemy enemies[ VGO_ENEMIES_NUM ];
@@ -136,6 +136,16 @@ void Vortex_CollisionDetection( void )
 					vglob.color.bonus );
 				break;
 
+			case( VORTEX_PU_AF ):
+				vglob.score += 333;
+				vglob.hasAutoFire = 1;
+				Vortex_Console_AddItemAt(
+					"AUTO FIRE", 0, 0,
+					vglob.wxC, vglob.wyC,
+					VORTEX_STYLE_NORMAL,
+					vglob.color.bonus );
+				break;
+
 			case( VORTEX_PU_BUD ):
 				vglob.score += 333;
 				Vortex_Console_AddItemAt(
@@ -174,6 +184,7 @@ void Vortex_CollisionDetection( void )
 
 
 
+
 void Vortex_Bolt_draw( ttk_surface srf )
 {
         int b,w,z;
@@ -187,9 +198,13 @@ void Vortex_Bolt_draw( ttk_surface srf )
 			z = (int) bolts[b].z;
 
 			if( bolts[b].type == VORTEX_BOLT_PARTICLE )
-			    c = vglob.color.plaser;
+			    	c = vglob.color.plaser;
+			else if( bolts[b].type == VORTEX_BOLT_SUPERZAPPER )
+				c = (vglob.timer&1)? vglob.color.bg :
+				    (vglob.timer&2)? vglob.color.super 
+						   : vglob.color.plaser;
 			else if( bolts[b].type == VORTEX_BOLT_FRIENDLY )
-			    c = vglob.color.bolts;
+				c = vglob.color.bolts;
 		
 			if( bolts[b].type == VORTEX_BOLT_PARTICLE )
 			{
@@ -210,6 +225,13 @@ void Vortex_Bolt_draw( ttk_surface srf )
 					c );
 
 				/* crossbar */
+				ttk_line( srf,  
+					vglob.ptsX[w+1][z][0],
+					vglob.ptsY[w+1][z][0],
+					vglob.ptsX[w][z][0],
+					vglob.ptsY[w][z][0],
+					c );
+			} else if (bolts[b].type == VORTEX_BOLT_SUPERZAPPER ) {
 				ttk_line( srf,  
 					vglob.ptsX[w+1][z][0],
 					vglob.ptsY[w+1][z][0],
@@ -244,11 +266,35 @@ void Vortex_Bolt_poll( void )
 	}
 }
 
+void Vortex_Bolt_Superzapper( void ) 
+{
+    	int b;
+	if( !vglob.hasSuperZapper ) return;
+	vglob.hasSuperZapper = 0;
+
+	for( b=0 ; b<VGO_BOLTS_NUM ; b++ ) {
+		bolts[b].active = 1;
+		bolts[b].web = b&0x0f;
+		bolts[b].z = NUM_Z_POINTS-2;
+		bolts[b].v = 0.5;
+		bolts[b].type = VORTEX_BOLT_SUPERZAPPER;
+	}
+	Vortex_Console_AddItemAt(
+		"GO BOOM!", 0, 0,
+		vglob.wxC, vglob.wyC,
+		VORTEX_STYLE_NORMAL,
+		vglob.color.bonus );
+}
+
 
 void Vortex_Bolt_add( void )
 {
 	int b;
-	for( b=0 ; b<VGO_BOLTS_NUM ; b++ )
+	int max = VGO_BOLTS_NUM;
+
+	if( vglob.hasAutoFire ) max = 6;
+
+	for( b=0 ; b<max ; b++ )
 	{
 		if( bolts[b].active == 0 )
 		{
@@ -568,6 +614,8 @@ void Vortex_Powerup_create( int web, int z )
 		Vortex_Powerup_add( web, z, VORTEX_PU_2000 );
 	} else if( vglob.hasParticleLaser == 0 ) {
 		Vortex_Powerup_add( web, z, VORTEX_PU_PART );
+	} else if( vglob.hasAutoFire == 0 ) {
+		Vortex_Powerup_add( web, z, VORTEX_PU_AF );
 	} else 
 		Vortex_Powerup_add( web, z, VORTEX_PU_2000 );
 }

@@ -52,7 +52,7 @@
 #include "render.h"
 
 /* version number */
-#define VORTEX_VERSION	"06021218"
+#define VORTEX_VERSION	"06022702"
 
 /* change this #define to an #undef if you want the header bar to show */
 #define VORTEX_FULLSCREEN
@@ -62,23 +62,6 @@ vortex_globals vglob;
 
 /* padding around the web to the top and bottom */
 #define VPADDING (10)
-
-/* various strings for confusing display */
-char *confusing[][4] = {
-	{ "Burrito", NULL },
-	{ "Montana", NULL },
-	{ "One", "Step", "Beyond", NULL },
-	{ "Madness", "Comes", "Tonight", NULL },
-	{ "Moo", NULL },
-	{ NULL },
-};
-
-/******************************************************************************/
-
-/* protos to be cleaned up later... */
-
-void Vortex_player_clear( void );
-void Vortex_initLevel( void );
 
 
 /******************************************************************************/
@@ -100,7 +83,7 @@ int Vortex_Rand( int max )
 
 
 /* compute the claw at the new current position, at the new current level */
-void Vortex_clawGeometryCompute( void ) /* NOTE: not "cowCompute" */ /* moo. */
+void Vortex_generateClawGeometry( void ) /* NOTE: not "cowCompute" */ /* moo. */
 {
 	LEVELDATA * lv = &vortex_levels[ vglob.currentLevel ];
 
@@ -128,7 +111,7 @@ void Vortex_clawGeometryCompute( void ) /* NOTE: not "cowCompute" */ /* moo. */
 	vglob.py[4] = vglob.py[0];
 }
 
-void Vortex_newLevelCompute( void )
+void Vortex_generateWebGeometry( void )
 {
 	int w, p, pp;
 	LEVELDATA * lv = &vortex_levels[ vglob.currentLevel ];
@@ -204,19 +187,20 @@ void Vortex_selectLevel( int l )
 	}
 }
 
-/* update for a.. um.  new level? */
-void Vortex_newWebSelected( void )
+
+/* player adjustments - new level stuff */
+void Vortex_newClawInPlay( void )
 {
-	Star_GenerateStars();
-	Vortex_newLevelCompute();
-        Vortex_clawGeometryCompute();
-        Vortex_player_clear();
-        Vortex_initLevel();
+	vglob.hasParticleLaser = 0;
+	vglob.hasSuperZapper = 1;
+	vglob.hasAutoFire = 0;
+	vglob.wPosMajor = 8;
+	vglob.wPosMinor = 0;
 }
 
 
 /* all of the stuff that needs to get reset at the beginning of a new level */
-void Vortex_initLevel( void )
+void Vortex_newLevelSetup( void )
 {
 	if( vglob.state == VORTEX_STATE_DEATH ) return;
 	if( vglob.state == VORTEX_STATE_DEAD ) return;
@@ -224,28 +208,15 @@ void Vortex_initLevel( void )
 	Vortex_Powerup_clear();
 	Vortex_Bolt_clear();
 	Vortex_Enemy_clear();
-	Vortex_player_clear();
-	Vortex_newLevelCompute();
-	vglob.wPosMinor=0;
-	vglob.wPosMajor=8;
-	Vortex_clawGeometryCompute();
+	Vortex_newClawInPlay();
+	Vortex_generateWebGeometry();
+	Vortex_generateClawGeometry();
 
 	if( vglob.state == VORTEX_STATE_STARTUP ) return;
 	if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
 		Star_GenerateStars();
 }
 
-
-/******************************************************************************/
-/* player adjustments - new level stuff */
-
-void Vortex_player_clear( void )
-{
-	vglob.hasParticleLaser = 0;
-	vglob.hasSuperZapper = 1;
-	vglob.wPosMajor = 0;
-	vglob.wPosMinor = 0;
-}
 
 /******************************************************************************/
 /* player movement */
@@ -260,7 +231,7 @@ void Vortex_incPosition( int steps )
 
 	if( vglob.wPosMinor < MINOR_MAX ) {
 		vglob.wPosMinor++;
-		Vortex_clawGeometryCompute();
+		Vortex_generateClawGeometry();
 		return;
 	}
 
@@ -276,7 +247,7 @@ void Vortex_incPosition( int steps )
 			vglob.wPosMajor = 14;
 	}
 
-	Vortex_clawGeometryCompute();
+	Vortex_generateClawGeometry();
 }
 
 /* decPosition - the user moves one tick negative */
@@ -286,27 +257,22 @@ void Vortex_decPosition( int steps )
 
 	if( vglob.wPosMinor > 0 ) {
 		vglob.wPosMinor--;
-		Vortex_clawGeometryCompute();
+		Vortex_generateClawGeometry();
 		return;
 	}
 
 	if( vglob.wPosMajor > 0 ) {
 		vglob.wPosMajor--;
 		vglob.wPosMinor = MINOR_MAX;
-		Vortex_clawGeometryCompute();
+		Vortex_generateClawGeometry();
 		return;
 	}
 
 	if( vortex_levels[ vglob.currentLevel ].flags & LF_CLOSEDWEB ) {
 		vglob.wPosMajor = 15;
 		vglob.wPosMinor = MINOR_MAX;
-		Vortex_clawGeometryCompute();
+		Vortex_generateClawGeometry();
 	}
-}
-
-void Vortex_newClawPosition( void )
-{
-	Vortex_clawGeometryCompute();
 }
 
 
@@ -366,21 +332,17 @@ dbgprnt( "  To " );
 dbgprnt( "STARTUP" );
 		/* clear all globals */
 		/* initialize game setup structs */
-		Vortex_initLevel();
+		Vortex_newLevelSetup();
 		break;
 
 	case( VORTEX_STATE_STYLESEL ):
 dbgprnt( "STYLE SEL" );
-		Vortex_initLevel();
-		Vortex_clawGeometryCompute();
-		Vortex_newWebSelected();
+		Vortex_newLevelSetup();
 		break;
 
 	case( VORTEX_STATE_LEVELSEL ):
 		vglob.wPosMajor = 8;
-		Vortex_initLevel();
-		Vortex_clawGeometryCompute();
-		Vortex_newWebSelected();
+		Vortex_newLevelSetup();
 dbgprnt( "LEVEL SEL" );
 		break;
 
@@ -388,9 +350,7 @@ dbgprnt( "LEVEL SEL" );
 		Vortex_Console_HiddenStatic( 0 );
 		vglob.wPosMajor = 8;
 		vglob.wPosMinor = 0;
-		Vortex_initLevel();
-		Vortex_clawGeometryCompute();
-		Vortex_newWebSelected();
+		Vortex_newLevelSetup();
 dbgprnt( "GAME" );
 		break;
 
@@ -630,6 +590,19 @@ void Vortex_draw( PzWidget *widget, ttk_surface srf )
 	case( VORTEX_STATE_DEAD ):
 		break;
 	}
+
+	if( 0 ) {
+		int w, z;
+		for( w=0 ; w<NUM_SEGMENTS ; w++ ) {
+			for( z=0 ; z<NUM_Z_POINTS ; z++ ) {
+				ttk_pixel( srf, vglob.ptsX[w][z][0],
+						    vglob.ptsY[w][z][0], 0xffffff );
+				ttk_pixel( srf, vglob.ptsX[w][z][1],
+					vglob.ptsY[w][z][1], 0xffffff );
+			}
+		}
+
+	}
 }
 
 /* MUSIC PROFESSOR! */
@@ -650,7 +623,9 @@ int event_vortex (PzEvent *ev)
 
 	    if( !vglob.paused ) {
 		if( vglob.state == VORTEX_STATE_STYLESEL ) {
+#ifdef NEVER
 			TTK_SCROLLMOD( ev->arg, 5 );
+#endif
 			if( ev->arg > 0 )
 				vglob.gameStyle++;
 			else 
@@ -683,7 +658,6 @@ int event_vortex (PzEvent *ev)
 		switch( ev->arg ) {
 		case( PZ_BUTTON_ACTION ):
 			if( vglob.state == VORTEX_STATE_GAME ) {
-				vglob.actionDown = 1;
 			}
 			break;
 		case( PZ_BUTTON_HOLD ):
@@ -704,6 +678,11 @@ int event_vortex (PzEvent *ev)
 			vglob.paused = 0;
 			break;
 
+		case( PZ_BUTTON_NEXT ):
+		case( PZ_BUTTON_PREVIOUS ):
+			Vortex_Bolt_Superzapper();
+			break;
+
 		case( PZ_BUTTON_PLAY ):
 			Vortex_stateChange( VORTEX_STATE_ADVANCE );
 			break;
@@ -712,18 +691,16 @@ int event_vortex (PzEvent *ev)
 		    if( !vglob.paused ) {
 			if( vglob.state == VORTEX_STATE_STARTUP ) {
 				Vortex_stateChange( VORTEX_STATE_STYLESEL );
-				vglob.wPosMajor = 8;
-				Vortex_initLevel();
+				Vortex_newLevelSetup();
 			} else if( vglob.state == VORTEX_STATE_STYLESEL ) {
 				Vortex_stateChange( VORTEX_STATE_LEVELSEL );
 				vglob.startLevel = 0;
 				vglob.currentLevel = 0;
-				Vortex_initLevel();
+				Vortex_newLevelSetup();
 			} else if( vglob.state == VORTEX_STATE_LEVELSEL ) {
 				Vortex_stateChange( VORTEX_STATE_GAME );
-				Vortex_initLevel();
+				Vortex_newLevelSetup();
 			} else if( vglob.state == VORTEX_STATE_GAME ) {
-				vglob.actionDown = 0;
 				Vortex_Bolt_add();
 			}
 		    }
@@ -739,7 +716,7 @@ int event_vortex (PzEvent *ev)
 		break;
 
 	case PZ_EVENT_TIMER:
-		if( vglob.actionDown ) Vortex_Bolt_add();
+		if( vglob.hasAutoFire ) Vortex_Bolt_add();
 		Vortex_timerTick( ev );
 		break;
 	}
@@ -758,7 +735,7 @@ static void Vortex_Initialize( void )
 	vglob.lives = 3;
 	vglob.hasParticleLaser = 0;
 	vglob.hasSuperZapper = 1;
-	vglob.actionDown = 0;
+	vglob.hasAutoFire = 0;
 
 	vglob.wPosMajor = 0;
 	vglob.wPosMinor = 0;
@@ -851,7 +828,7 @@ void init_vortex()
 	vglob.color.bolts        = mc_color( 255, 255, 255,  BLACK );
 
 	vglob.color.plaser       = mc_color( 255, 128,   0,  BLACK );
-	vglob.color.super        = mc_color( 128, 128, 128,  DKGREY );
+	vglob.color.super        = mc_color( 255, 255, 255,  BLACK );
 	vglob.color.flippers     = mc_color( 255,   0,   0,  BLACK );
 	vglob.color.edeath       = mc_color( 255, 255,   0,  GREY );
 	vglob.color.powerup	 = mc_color(  64, 225,  64,  DKGREY );

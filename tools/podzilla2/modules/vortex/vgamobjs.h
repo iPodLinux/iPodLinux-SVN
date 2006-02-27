@@ -33,6 +33,7 @@
 #define VORTEX_BOLT_FRIENDLY	(0)	/* player fired bolt */
 #define VORTEX_BOLT_PARTICLE	(1)	/* player fired particle laser */
 #define VORTEX_BOLT_ENEMY	(2)	/* enemy fired bolt */
+#define VORTEX_BOLT_SUPERZAPPER (3)	/* player fired superzapper */
 
 typedef struct bolt {
 	int active;		/* 1 = active, 0 = free */
@@ -77,6 +78,7 @@ typedef struct enemy {
 #define VORTEX_PU_BUD	(2)	/* little buddy */
 #define VORTEX_PU_LIFE	(3)	/* extra life */
 #define VORTEX_PU_OUTTA (4)	/* outta here.  5k points, + next level jump */
+#define VORTEX_PU_AF	(5)	/* autofire */
 
 #define VORTEX_PU_INACTIVE	(0)	/* powerup slot is empty */
 #define VORTEX_PU_ZOOM		(1)	/* powerup is sliding up the side */
@@ -101,6 +103,7 @@ void Vortex_Bolt_draw( ttk_surface srf );
 void Vortex_Bolt_add( void );
 void Vortex_Bolt_clear( void );
 void Vortex_Bolt_poll( void );
+void Vortex_Bolt_Superzapper( void );
 
 /* enemy functions */
 void Vortex_Enemy_draw( ttk_surface srf );
