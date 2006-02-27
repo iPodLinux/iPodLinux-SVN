@@ -34,29 +34,11 @@
 
 #include "hotdog.h"
 
-#if defined(NANO)
-#define LCD_TYPE 2
-#define WIDTH   176
-#define HEIGHT  132
-#define SWIDTH  176
-#define SHEIGHT 132
-#elif defined(PHOTO) || defined(COLOR)
-#ifdef PHOTO
-#define LCD_TYPE 0
+#ifdef IPOD
+static uint32 WIDTH, HEIGHT;
 #else
-#define LCD_TYPE 1
-#endif
-#define WIDTH   220
-#define HEIGHT  176
-#define SWIDTH  220
-#define SHEIGHT 176
-#else /* 5g */
-/* width/height of the region we draw */
-#define WIDTH   320
-#define HEIGHT  240
-/* width/height of the screen */
-#define SWIDTH  320
-#define SHEIGHT 240
+#define WIDTH 220
+#define HEIGHT 176
 #endif
 
 static uint32 object_topwid, object_bottomwid;
@@ -89,7 +71,7 @@ void reset_keypress(void)
 
 static void update (hd_engine *eng, int x, int y, int w, int h) 
 {
-	HD_LCD_Update (eng->screen.framebuffer, 0, 0, SWIDTH, SHEIGHT);
+	HD_LCD_Update (eng->screen.framebuffer, 0, 0, WIDTH, HEIGHT);
 }
 
 uint32 GetTimeMillis(void)
@@ -178,18 +160,19 @@ int main(int argc, char *argv[]) {
 	}
 	atexit(SDL_Quit);
 
-	screen = SDL_SetVideoMode(SWIDTH, SHEIGHT,16,SDL_SWSURFACE);
+	screen = SDL_SetVideoMode(WIDTH, HEIGHT,16,SDL_SWSURFACE);
 	if (screen == NULL) {
 		fprintf(stderr,"Unable to init SDL video: %s\n",SDL_GetError());
 		exit(1);
 	}
-	engine = HD_Initialize (SWIDTH, SHEIGHT, 16, screen->pixels, update);
+	engine = HD_Initialize (WIDTH, HEIGHT, 16, screen->pixels, update);
 #define IMGPREFIX ""
 #else
 
-	screen = malloc (SWIDTH * SHEIGHT * 2);
-	engine = HD_Initialize (SWIDTH, SHEIGHT, 16, screen, update);
 	HD_LCD_Init();
+	HD_LCD_GetInfo (0, &WIDTH, &HEIGHT, 0);
+	screen = malloc (WIDTH * HEIGHT * 2);
+	engine = HD_Initialize (WIDTH, HEIGHT, 16, screen, update);
 #define IMGPREFIX "/mnt/"
 #endif
 
