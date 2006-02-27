@@ -623,9 +623,7 @@ int event_vortex (PzEvent *ev)
 
 	    if( !vglob.paused ) {
 		if( vglob.state == VORTEX_STATE_STYLESEL ) {
-#ifdef NEVER
 			TTK_SCROLLMOD( ev->arg, 5 );
-#endif
 			if( ev->arg > 0 )
 				vglob.gameStyle++;
 			else 
@@ -644,7 +642,7 @@ int event_vortex (PzEvent *ev)
 		}
 
 		if( vglob.state == VORTEX_STATE_GAME ) {
-			TTK_SCROLLMOD( ev->arg, 3 );
+			TTK_SCROLLMOD( ev->arg, 7 );
 			if( ev->arg > 0 ) {
 				Vortex_decPosition( ev->arg );
 			} else {
