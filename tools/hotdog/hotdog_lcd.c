@@ -183,6 +183,14 @@ static long iPod_GetGeneration()
 	return strtol(ptr, NULL, 16);
 }
 
+void HD_LCD_GetInfo (int *hwv, int *lw, int *lh, int *lt) 
+{
+	if (hwv) *hwv = hw_ver;
+	if (lw) *lw = lcd_width;
+	if (lh) *lh = lcd_height;
+	if (lt) *lt = lcd_type;
+}
+
 void HD_LCD_Init() 
 {
 	hw_ver = iPod_GetGeneration() >> 16;

@@ -22,8 +22,8 @@ ZINCLUDE ?= ./libs/zlib
 ZLIB ?= ./libs/zlib
 SDLINCLUDE ?= ../ttk/sdlincludes
 SDLLIB ?= ../ttk/libs/SDL
-LDFLAGS = -Wl,-elf2flt
-MYCFLAGS = -DIPOD -I$(PNGINCLUDE) -I$(ZINCLUDE) -O3 -fomit-frame-pointer -funroll-loops
+LDFLAGS = -Wl,-elf2flt -pg -Wl,-lc_p
+MYCFLAGS = -DIPOD -I$(PNGINCLUDE) -I$(ZINCLUDE) -O3 -funroll-loops -pg
 ifneq ($(PHOTO),)
 MYCFLAGS += -DPHOTO
 else
