@@ -13,6 +13,7 @@
 #include <string.h>
 #ifdef WIN32
 #include <windows.h>
+#include <winioctl.h>
 #else
 #include <fcntl.h>
 #include <unistd.h>
