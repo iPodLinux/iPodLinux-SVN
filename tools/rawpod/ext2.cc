@@ -47,11 +47,13 @@ int Ext2FS::init()
         return -EINVAL;
     }
     if (_sb->s_feature_ro_compat & ~(EXT2_FEATURE_RO_COMPAT_SPARSE_SUPER | EXT2_FEATURE_RO_COMPAT_LARGE_FILE)) {
-        cerr << "EXT2-fs has R/O-compat features set that I don't know about, mounting read-only\n";
+        fprintf (stderr, "EXT2-fs has R/O-compat features set (0x%08x) that I don't know about, mounting read-only\n",
+                 _sb->s_feature_ro_compat);
         _writable = 0;
     }
     if (_sb->s_feature_incompat & ~EXT2_FEATURE_INCOMPAT_FILETYPE) {
-        cerr << "EXT2-fs has INCOMPAT features set that I don't know about - sorry, I can't mount it\n";
+        fprintf (stderr, "EXT2-fs has INCOMPAT features set (0x%08x) that I don't know about - sorry, I can't mount it\n",
+                 _sb->s_feature_incompat);
         return -EINVAL;
     }
     _blocks = _sb->s_blocks_count;
