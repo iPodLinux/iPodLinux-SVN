@@ -113,8 +113,8 @@ void clock_draw_alien_ap( ttk_surface srf, clocks_globals *glob )
 	int x;
 	char buf[16];
 
-	snprintf( buf, 16, "%02d%02d", glob->dispTime->tm_hour,
-				       glob->dispTime->tm_min );
+	snprintf( buf, 16, "%02d%02d", glob->dispTime.tm_hour,
+				       glob->dispTime.tm_min );
 	for( x=0 ; x<4 ; x++ ) {
 		draw_digit( srf, glob, x, buf[x]-'0', ALIEN_AP );
 	}
@@ -156,8 +156,8 @@ void clock_draw_alien_rgb( ttk_surface srf, clocks_globals *glob )
         /* clear to black */
         ttk_fillrect( srf, 0, 0, glob->w, glob->h, ttk_makecol( 0, 0, 0 ));
 
-	snprintf( buf, 16, "%02d%02d", glob->dispTime->tm_hour,
-				       glob->dispTime->tm_min );
+	snprintf( buf, 16, "%02d%02d", glob->dispTime.tm_hour,
+				       glob->dispTime.tm_min );
 	for( x=0 ; x<4 ; x++ ) {
 		draw_digit( srf, glob, x, buf[x]-'0', 
 				ALIEN_RGB, outlines[x], fills[x], darks[x]);

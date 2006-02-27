@@ -66,7 +66,7 @@ typedef struct _clocks_globals {
 
 	/* for displaying the time */
 	int offset;		/* for world clock offset */
-	struct tm *dispTime;	/* time to display */
+	struct tm dispTime;	/* time to display */
 
 } clocks_globals;
 

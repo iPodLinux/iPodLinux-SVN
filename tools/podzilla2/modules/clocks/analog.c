@@ -92,20 +92,20 @@ void clock_draw_simple_analog( ttk_surface srf, clocks_globals *glob )
 	
 	/* minutes */
         aclock_angular_line( srf, glob->fg, cx, cy,
-			(glob->dispTime->tm_min*60)+glob->dispTime->tm_sec,
+			(glob->dispTime.tm_min*60)+glob->dispTime.tm_sec,
 			60*60, mhr, 4, ARM_THICK );
 
 	/* hours */
         aclock_angular_line( srf, glob->fg, cx, cy,
-				(((glob->dispTime->tm_hour > 12)?
-					glob->dispTime->tm_hour-12:
-					glob->dispTime->tm_hour) *60 ) + 
-				    glob->dispTime->tm_min,
+				(((glob->dispTime.tm_hour > 12)?
+					glob->dispTime.tm_hour-12:
+					glob->dispTime.tm_hour) *60 ) + 
+				    glob->dispTime.tm_min,
 				12*60, hhr, 3, ARM_THICK );
 
 	/* seconds */
         aclock_angular_line( srf, glob->fg, cx, cy,
-				glob->dispTime->tm_sec, 60, shr, 
+				glob->dispTime.tm_sec, 60, shr, 
 				2, ARM_NORMAL );
 }
 
@@ -145,20 +145,20 @@ void clock_draw_nelson_analog( ttk_surface srf, clocks_globals *glob )
 	
 	/* minutes */
         aclock_angular_line( srf, glob->fg, cx, cy,
-			(glob->dispTime->tm_min*60)+glob->dispTime->tm_sec,
+			(glob->dispTime.tm_min*60)+glob->dispTime.tm_sec,
 			60*60, mhr, minutes_r, ARM_THICK );
 
 	/* hours */
         aclock_angular_line( srf, glob->fg, cx, cy,
-				(((glob->dispTime->tm_hour > 12)?
-					glob->dispTime->tm_hour-12:
-					glob->dispTime->tm_hour) *60 )+ 
-				    glob->dispTime->tm_min,
+				(((glob->dispTime.tm_hour > 12)?
+					glob->dispTime.tm_hour-12:
+					glob->dispTime.tm_hour) *60 )+ 
+				    glob->dispTime.tm_min,
 				12*60, hhr, hours_r, ARM_THICK );
 
 	/* seconds */
         aclock_angular_line( srf, glob->fg, cx, cy,
-			    glob->dispTime->tm_sec, 60, shr, 0, ARM_NORMAL );
+			    glob->dispTime.tm_sec, 60, shr, 0, ARM_NORMAL );
 }
 
 
@@ -185,7 +185,7 @@ static void clock_common_oversized( ttk_surface srf, clocks_globals *glob,
 		int wid, wid2;;
 
 		/* date text */
-		strftime( buf, 16, "%a %d", glob->dispTime );
+		strftime( buf, 16, "%a %d", &glob->dispTime );
 		wid = pz_vector_width( buf, 5, 9, 1 );
 		wid2 = wid>>1;
 
@@ -204,20 +204,20 @@ static void clock_common_oversized( ttk_surface srf, clocks_globals *glob,
 	/* draw the hands */
 	/* minutes */
         aclock_angular_line( srf, glob->fg, cx, cy,
-			(glob->dispTime->tm_min*60)+glob->dispTime->tm_sec,
+			(glob->dispTime.tm_min*60)+glob->dispTime.tm_sec,
 			60*60, glob->w, 0, ARM_THICK );
 
 	/* hours */
         aclock_angular_line( srf, glob->fg, cx, cy,
-				(((glob->dispTime->tm_hour > 12)?
-					glob->dispTime->tm_hour-12:
-					glob->dispTime->tm_hour) *60) +
-				    glob->dispTime->tm_min,
+				(((glob->dispTime.tm_hour > 12)?
+					glob->dispTime.tm_hour-12:
+					glob->dispTime.tm_hour) *60) +
+				    glob->dispTime.tm_min,
 				12*60, hlen, 0, ARM_THICK );
 	
 	/* seconds */
         aclock_angular_line( srf, glob->fg, cx, cy,
-			glob->dispTime->tm_sec, 60, glob->w, 0, ARM_NORMAL );
+			glob->dispTime.tm_sec, 60, glob->w, 0, ARM_NORMAL );
 }
 
 void clock_draw_oversized( ttk_surface srf, clocks_globals *glob )

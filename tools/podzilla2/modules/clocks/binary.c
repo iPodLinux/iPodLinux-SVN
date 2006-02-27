@@ -88,9 +88,9 @@ static void clock_draw_bcd_common( ttk_surface srf, clocks_globals *glob,
 	ttk_fillrect( srf, 0, 0, glob->w, glob->h, ttk_makecol( 0, 0, 0 ));
 
 	/* generate the digit string */
-	snprintf( buf, 16, "%02d%02d%02d", glob->dispTime->tm_hour,
-					   glob->dispTime->tm_min,
-					   glob->dispTime->tm_sec );
+	snprintf( buf, 16, "%02d%02d%02d", glob->dispTime.tm_hour,
+					   glob->dispTime.tm_min,
+					   glob->dispTime.tm_sec );
 
 	/* display the lights */
 	for( col=0 ; col < 6 ; col++ ){
