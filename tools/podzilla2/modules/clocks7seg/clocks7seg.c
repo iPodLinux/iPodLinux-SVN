@@ -187,8 +187,8 @@ void draw_7seg( ttk_surface srf, clocks_globals *glob )
         ttk_fillrect( srf, 0, 0, glob->w, glob->h, ttk_makecol( BLACK ));
 
 	snprintf( buf, 16, "%2d %02d",
-			clock_convert_1224( glob->dispTime->tm_hour),
-			glob->dispTime->tm_min );
+			clock_convert_1224( glob->dispTime.tm_hour),
+			glob->dispTime.tm_min );
 
 	for( i=0 ; i<5 ; i++ )
 	{
