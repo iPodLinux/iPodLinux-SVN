@@ -291,6 +291,7 @@ hd_surface HD_PNG_Load (const char *fname, int *w, int *h);
 #ifdef IPOD
 /****** LCD ******/
 void HD_LCD_Init();
+void HD_LCD_GetInfo (int *hw_ver, int *lcd_width, int *lcd_height, int *lcd_type);
 void HD_LCD_Update (uint16 *fb, int x, int y, int w, int h);
 void HD_LCD_Quit(); // restore to text mode before quitting
 #endif
