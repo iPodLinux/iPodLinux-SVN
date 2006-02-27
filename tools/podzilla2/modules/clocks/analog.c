@@ -167,6 +167,11 @@ void clock_draw_nelson_analog( ttk_surface srf, clocks_globals *glob )
 **  oversized faces
 */
 
+/* because strftime() seems faulty on nano */
+static char doys[7][4] = {
+	"Sun", "Mon", "Tue", "Wed", "Thu", "Fri"
+};
+
 static void clock_common_oversized( ttk_surface srf, clocks_globals *glob,
 					int showdate )
 {
@@ -185,7 +190,9 @@ static void clock_common_oversized( ttk_surface srf, clocks_globals *glob,
 		int wid, wid2;;
 
 		/* date text */
-		strftime( buf, 16, "%a %d", &glob->dispTime );
+		//strftime( buf, 16, "%a %d", &glob->dispTime );
+		snprintf( buf, 16, "%3s %02d", doys[ glob->dispTime.tm_wday ], 
+						glob->dispTime.tm_mday );
 		wid = pz_vector_width( buf, 5, 9, 1 );
 		wid2 = wid>>1;
 
