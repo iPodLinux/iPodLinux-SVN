@@ -47,6 +47,11 @@ int clock_convert_1224( int hours )
         return( clock_convert_12( hours ));
 }
 
+/* for some reason, strftime doesn't work on nano */
+static char mos[12][4] = {
+	"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+	"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+};
 
 static void clock_draw_vector( ttk_surface srf, clocks_globals *glob )
 {
@@ -59,15 +64,19 @@ static void clock_draw_vector( ttk_surface srf, clocks_globals *glob )
 
 	/* display the time */
 	snprintf( buf, 80, "%02d:%02d:%02d",
-			clock_convert_1224( glob->dispTime->tm_hour),
-			glob->dispTime->tm_min,
-			glob->dispTime->tm_sec );
+			clock_convert_1224( glob->dispTime.tm_hour),
+			glob->dispTime.tm_min,
+			glob->dispTime.tm_sec );
 	pz_vector_string_center( srf,
 			buf, glob->w>>1, glob->h/3,
 			sX, sY, 1, glob->fg );
 
 	/* display the date */
-	strftime( buf, 80, "%Y %b %d", glob->dispTime );
+	//strftime( buf, 80, "%Y %b %d", &glob->dispTime );
+	snprintf( buf, 80, "%4d %3s %02d", 
+		  1900+glob->dispTime.tm_year, 
+		  mos[ glob->dispTime.tm_mon ], 
+		  glob->dispTime.tm_mday);
 	pz_vector_string_center( srf,
 			buf, glob->w>>1, (glob->h*3)>>2,
 			sX2, sY2, 1, glob->fg );
@@ -187,12 +196,16 @@ void draw_clocks( PzWidget *widget, ttk_surface srf )
 {
 	draw_face fcn;
 	time_t t;
+	struct tm * ltm;
 
 	/* setup the time in the global */
 	t = time( NULL );
 	if( t==(time_t) -1 ) return; /* error */
 	t += cglob.offset;
-	cglob.dispTime = localtime( &t );
+	ltm = localtime( &t );
+
+	/* copy the current time */
+	memcpy( &cglob.dispTime, ltm, sizeof( struct tm ));
 
 	/* initialize the colors */
 	cglob.bg = ttk_ap_get( "window.bg" )->color;
@@ -459,16 +472,20 @@ static int iPodHasFTZ( void )
 
 PzWindow *new_local_clock_window()
 {
+/*
 	int locl_z_offs = clocks_tz_offsets[ pz_get_int_setting( pz_global_config, TIME_ZONE )];
 	int locl_d_offs = clocks_dst_offsets[ pz_get_int_setting( pz_global_config, TIME_DST )];
+*/
 
 	cglob.offset = 0;
 
+/*
 	if( iPodHasFTZ() ) {
 		cglob.offset = ( -locl_z_offs )*60;
 		cglob.offset += ( -locl_d_offs )*60;
-		cglob.offset -= ((12*60)+30)*60;	/*  Huh?  */
+		cglob.offset -= ((12*60)+30)*60;	//  Huh?
 	}
+*/
 	cglob.editing = CLOCKS_SEL_NOEDIT;
 
 	/* adjust for time zone */
@@ -561,7 +578,7 @@ void init_clocks()
 	clocks_register_face( clock_draw_oversized_watch, "Oversized Watch" );
 	clocks_register_face( clock_draw_bcd_red, "BCD Binary Clock" );
 	if( ttk_screen->bpp >= 16 ) {
-	 clocks_register_face( clock_draw_bcd_blue, "BCD Binary Clock (blue)" );
+		clocks_register_face( clock_draw_bcd_blue, "BCD Binary Clock (blue)" );
 	}
 	clocks_register_face( clock_draw_alien_ap, "Alien Clock" );
 	clocks_register_face( clock_draw_alien_rgb, "Alien Clock RGB" );
