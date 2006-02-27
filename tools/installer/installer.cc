@@ -100,6 +100,10 @@ PodLocationPage::PodLocationPage (Installer *wizard)
     wizard->setMinimumSize (500, 410);
     wizard->setMaximumSize (640, 500);
 
+    int rdlen;
+    VFS::File *sysinfo;
+    char sysinfo_contents[4096];
+
     if (podloc < 0) { status = CantFindIPod; goto err; }
     if (devReadMBR (podloc, mbr) != 0) { status = InvalidPartitionTable; goto err; }
     ptbl = partCopyFromMBR (mbr);
@@ -133,25 +137,30 @@ PodLocationPage::PodLocationPage (Installer *wizard)
     fat32 = new FATFS (part);
     if (fat32->init() < 0) { status = FSErr; goto err; }
 
-    VFS::File *sysinfo = fat32->open ("/IPOD_C~1/DEVICE/SYSINFO", O_RDONLY);
+    sysinfo = fat32->open ("/IPOD_C~1/DEVICE/SYSINFO", O_RDONLY);
     if (!sysinfo || sysinfo->error()) {
         status = FSErr;
+#ifndef WIN32
         errno = sysinfo? sysinfo->error() : 0;
+#endif
         goto err;
     }
     
-    char sysinfo_contents[4096];
-    int rdlen = sysinfo->read (sysinfo_contents, 4096);
+    rdlen = sysinfo->read (sysinfo_contents, 4096);
     sysinfo->close();
     delete sysinfo;
     
     if (rdlen <= 0) {
         status = BadSysInfo;
+#ifndef WIN32
         errno = -rdlen;
+#endif
         goto err;
     } else if (rdlen >= 4096) {
         status = BadSysInfo;
+#ifndef WIN32
         errno = E2BIG;
+#endif
         goto err;
     }
 
@@ -248,9 +257,12 @@ PodLocationPage::PodLocationPage (Installer *wizard)
         stateOK = 0;
         emit completeStateChanged();
         err = QString (tr ("<p><b><font color=\"red\">Sorry, but an error occurred. Installation "
-                           "cannot continue.</font></b></p>\n")) + err +
-              QString (tr ("<p>Error code: %1 (%2)</p>")).arg (errno).arg (errno? strerror (errno) :
-                                                                           tr ("Success?!"));
+                           "cannot continue.</font></b></p>\n")) + err
+#ifndef WIN32
+              + QString (tr ("<p>Error code: %1 (%2)</p>")).arg (errno).arg (errno? strerror (errno) :
+                                                                           tr ("Success?!"))
+#endif
+	      ;
         blurb->setText (err);
         wizard->setInfoText (tr ("<b>Error</b>"),
                              tr ("Read the message below and press Cancel to exit."));
