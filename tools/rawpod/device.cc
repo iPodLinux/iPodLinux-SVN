@@ -26,7 +26,7 @@ LocalFile::LocalFile (const char *path, int flags) {
     if (flags & OPEN_READ) access |= GENERIC_READ;
     if (flags & OPEN_WRITE) access |= GENERIC_WRITE;
     
-    _fh = CreateFile (path, access, FILE_SHARE_READ | FILE_SHARE_WRITE,
+    _fh = CreateFile ((const TCHAR *)path, access, FILE_SHARE_READ | FILE_SHARE_WRITE,
                       NULL, (flags & OPEN_CREATE)? CREATE_ALWAYS : OPEN_EXISTING,
                       FILE_ATTRIBUTE_NORMAL, NULL);
 }
