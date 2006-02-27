@@ -90,7 +90,7 @@ int devReadMBR (int devnr, unsigned char *buf)
     char drive[] = "\\\\.\\PhysicalDriveN";
     
     drive[17] = devnr + '0';
-    fh = CreateFile (drive, GENERIC_READ | GENERIC_WRITE,
+    fh = CreateFile ((const TCHAR *)drive, GENERIC_READ | GENERIC_WRITE,
                      FILE_SHARE_READ | FILE_SHARE_WRITE,
                      NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
                      NULL);
@@ -127,7 +127,7 @@ int devWriteMBR (int devnr, unsigned char *buf)
     char drive[] = "\\\\.\\PhysicalDriveN";
     
     drive[17] = devnr + '0';
-    fh = CreateFile (drive, GENERIC_READ | GENERIC_WRITE,
+    fh = CreateFile ((const TCHAR *)drive, GENERIC_READ | GENERIC_WRITE,
                      FILE_SHARE_READ | FILE_SHARE_WRITE,
                      NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
                      NULL);
@@ -169,7 +169,7 @@ u64 devGetSize (int devnr)
     char drive[] = "\\\\.\\PhysicalDriveN";
     
     drive[17] = devnr + '0';
-    fh = CreateFile (drive, GENERIC_READ | GENERIC_WRITE,
+    fh = CreateFile ((const TCHAR *)drive, GENERIC_READ | GENERIC_WRITE,
                      FILE_SHARE_READ | FILE_SHARE_WRITE,
                      NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
                      NULL);
