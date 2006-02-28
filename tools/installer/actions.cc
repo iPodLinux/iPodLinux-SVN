@@ -44,3 +44,16 @@ void PartitionAction::run()
     emit setCurrentProgress (3);
     emit setCurrentAction (tr ("Done."));
 }
+
+void DelayAction::run() 
+{
+    emit setTaskDescription (QString (tr ("Delaying for %1 seconds.")).arg (_sec));
+    emit setTotalProgress (_sec);
+    emit setCurrentProgress (0);
+
+    for (int s = 1; s <= _sec; s++) {
+        emit setCurrentAction (QString (tr ("Second %1:")).arg (s));
+        sleep (1);
+        emit setCurrentProgress (s);
+    }
+}
