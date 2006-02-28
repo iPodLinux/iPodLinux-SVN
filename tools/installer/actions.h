@@ -5,26 +5,59 @@
 #ifndef ACTIONS_H
 #define ACTIONS_H
 
-class ActionOutlet 
+#include "installer.h"
+#include <QThread>
+
+class ActionOutlet : public InstallerPage
 {
-public:
+    Q_OBJECT
+
+public slots:
     virtual void setTaskDescription (QString str) = 0;
     virtual void setCurrentAction (QString str) = 0;
     virtual void setTotalProgress (int tp) = 0;
     virtual void setCurrentProgress (int cp) = 0;
 };
 
-class Action 
+class Action : public QThread
 {
+    Q_OBJECT
+
 public:
-    Action (ActionOutlet *out)
-        : _outlet (out)
-    {}
+    Action() : QThread() {}
+
+    virtual void start (ActionOutlet *outlet) {
+        _outlet = outlet;
+        connect (this, SIGNAL(setTaskDescription(QString)), _outlet, SLOT(setTaskDescription(QString)));
+        connect (this, SIGNAL(setCurrentAction(QString)), _outlet, SLOT(setCurrentAction(QString)));
+        connect (this, SIGNAL(setTotalProgress(int)), _outlet, SLOT(setTotalProgress(int)));
+        connect (this, SIGNAL(setCurrentProgress(int)), _outlet, SLOT(setCurrentProgress(int)));
+        QThread::start();
+    }
     
-    virtual void perform() = 0;
-    
-private:
+signals:
+    void setTaskDescription (QString str);
+    void setCurrentAction (QString str);
+    void setTotalProgress (int tp);
+    void setCurrentProgress (int cp);
+
+protected:
     ActionOutlet *_outlet;
 };
 
+class PartitionAction : public Action
+{
+    PartitionAction (int device, int oldpart, int newpart, int newtype, int newsize)
+        : _dev (device), _oldnr (oldpart), _newnr (newpart),
+          _newtype (newtype), _newsize (newsize)
+    {}
+
+protected:
+    virtual void run();
+    
+    int _dev;
+    int _oldnr, _newnr;
+    int _newtype;
+    int _newsize;
+};
 #endif

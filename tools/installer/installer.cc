@@ -3,6 +3,8 @@
  */
 
 #include "installer.h"
+#include "actions.h"
+#include "panes.h"
 #include "rawpod/partition.h"
 #include "rawpod/fat32.h"
 
