@@ -47,6 +47,7 @@ protected:
 
 class PartitionAction : public Action
 {
+public:
     PartitionAction (int device, int oldpart, int newpart, int newtype, int newsize)
         : _dev (device), _oldnr (oldpart), _newnr (newpart),
           _newtype (newtype), _newsize (newsize)
@@ -59,5 +60,18 @@ protected:
     int _oldnr, _newnr;
     int _newtype;
     int _newsize;
+};
+
+class DelayAction : public Action
+{
+public:
+    DelayAction (int nsec)
+        : _sec (nsec)
+    {}
+
+protected:
+    virtual void run();
+    
+    int _sec;
 };
 #endif
