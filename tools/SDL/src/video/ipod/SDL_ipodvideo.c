@@ -565,7 +565,7 @@ M_lcd_prepare_cmd(int cmd)
 	M_lcd_wait_write();
         if (generation > 0x70000) {
             outl ((inl (0x70003000) & ~0x1f00000) | 0x1700000, 0x70003000);
-            outl (cmd | 0x74000, 0x70003008);
+            outl (cmd | 0x740000, 0x70003008);
         } else {
             outl(0x0, lcd_base + LCD_CMD);
             M_lcd_wait_write();
@@ -912,7 +912,7 @@ static void iPod_UpdateRects (_THIS, int nrects, SDL_Rect *rects)
 	p = SDL_VideoSurface->pixels;
 	q = ipod_scr;
 
-	for (i = 0; i < ((lcd_width * lcd_height + 3) & ~3) >> 2; i++, p++, q++) {
+	for (i = 0; i < ((lcd_width+3)&~3) * lcd_height; i+=4, p++, q++) {
 	    // Call the pixels AA, BB, CC, DD (#1, #2, #3, #4).
 	    // (Uint8[4])p looks like
 	    // 000000AA 000000BB 000000CC 000000DD
