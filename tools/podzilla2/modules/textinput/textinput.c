@@ -33,6 +33,7 @@
 static PzModule * ti_module;
 static PzConfig * ti_conf;
 static int ti_selected_tim;
+static int ti_saved_tim;
 static TWidget * (* ti_tim_creators[TI_MAX_TIMS])();
 static TWidget * (* ti_tim_ncreators[TI_MAX_TIMS])();
 
@@ -187,13 +188,44 @@ TWidget * ti_serial_create()
 
 /* API calls for TIM modules */
 
+int ti_supports_method(int id)
+{
+	return (ti_tim_creators[id] && ti_tim_ncreators[id]);
+}
+
 int ti_select(int id)
 {
+	if (!ti_supports_method(id)) return 0;
 	pz_register_input_method(ti_tim_creators[id]);
 	pz_register_input_method_n(ti_tim_ncreators[id]);
+	ti_saved_tim = id;
 	ti_selected_tim = id;
 	pz_set_int_setting(ti_conf, TI_SETTING_SEL_TIM, ti_selected_tim);
 	pz_save_config(ti_conf);
+	return 0;
+}
+
+int ti_current_method()
+{
+	return ti_selected_tim;
+}
+
+int ti_use_method(int id)
+{
+	if (!ti_supports_method(id)) return ti_selected_tim;
+	pz_register_input_method(ti_tim_creators[id]);
+	pz_register_input_method_n(ti_tim_ncreators[id]);
+	ti_saved_tim = ti_selected_tim;
+	ti_selected_tim = id;
+	return ti_saved_tim;
+}
+
+int ti_unuse_method()
+{
+	int id = ti_saved_tim;
+	pz_register_input_method(ti_tim_creators[id]);
+	pz_register_input_method_n(ti_tim_ncreators[id]);
+	ti_selected_tim = id;
 	return 0;
 }
 
