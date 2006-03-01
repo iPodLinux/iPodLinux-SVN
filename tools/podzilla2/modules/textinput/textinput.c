@@ -259,7 +259,7 @@ void ti_init()
 		ti_tim_creators[i]=0;
 		ti_tim_ncreators[i]=0;
 	}
-	ti_selected_tim = pz_get_int_setting(ti_conf, TI_SETTING_SEL_TIM);
+	ti_selected_tim = ti_saved_tim = pz_get_int_setting(ti_conf, TI_SETTING_SEL_TIM);
 #ifdef IPOD
 	if (!ti_selected_tim) {
 		pz_warning (_("Serial text input is selected. Make sure a keyboard is attached or select a different input method."));
