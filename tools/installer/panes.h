@@ -4,6 +4,9 @@
 #include "installer.h"
 #include "actions.h"
 
+#include <QLabel>
+#include <QProgressBar>
+
 class IntroductionPage : public InstallerPage
 {
     Q_OBJECT
@@ -29,7 +32,7 @@ public:
     WizardPage *nextPage();
     bool isComplete();
 #if 1
-    bool isLastPage() { return 1; }
+    bool isLastPage() { return true; }
 #endif
     
 protected slots:
@@ -126,24 +129,26 @@ private:
 #endif
 };
 
-class DoPackagesPage : public ActionOutlet
+class DoActionsPage : public ActionOutlet
 {
     Q_OBJECT
 
-#if 0
 public:
-    DoPackagesPage (Installer *wizard);
-    void resetPage();
-    WizardPage *nextPage();
-    bool isComplete();
+    DoActionsPage (Installer *wizard, InstallerPage *next);
+    void resetPage() {}
+    WizardPage *nextPage() { return nextp; }
+    bool isComplete() { return done; }
+    bool isLastPage() { return !nextp; }
 
 public slots:
     virtual void setTaskDescription (QString str) { action->setText (str); }
     virtual void setCurrentAction (QString str) { specific->setText (str); }
     virtual void setTotalProgress (int tp) { pkgProgress->setRange (0, tp); }
-    virtual void setCurrentProgress (int cp) { pkgProgress->setCurrentProgress (cp); }
+    virtual void setCurrentProgress (int cp) { pkgProgress->setValue (cp); }
+    void nextAction();
 
 private:
+    InstallerPage *nextp;
     QLabel *blurb;
     QLabel *action;
     QLabel *specific; // download speed, or what file installing
@@ -151,7 +156,8 @@ private:
     QProgressBar *pkgProgress;
     QLabel *totalProgressLabel;
     QProgressBar *totalProgress;
-#endif
+    Action *currentAction;
+    bool done;
 };
 
 class RestoreBackupPage : public InstallerPage
