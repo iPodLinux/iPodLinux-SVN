@@ -4,9 +4,11 @@
 
 #include "installer.h"
 #include "actions.h"
+#include "panes.h"
 #include "rawpod/partition.h"
 
 #include <QMessageBox>
+#include <QGridLayout>
 
 #define FATAL(str) do { QMessageBox::critical (0, tr("iPodLinux Installer"), tr(str), tr("Quit")); exit(1); } while(0)
 
@@ -56,4 +58,71 @@ void DelayAction::run()
         sleep (1);
         emit setCurrentProgress (s);
     }
+}
+
+DoActionsPage::DoActionsPage (Installer *wiz, InstallerPage *next) 
+    : ActionOutlet (wiz), nextp (next), done (false)
+{
+    wiz->setInfoText (tr ("<b>Installing</b>"),
+                      tr ("Please wait while the requested actions are performed."));
+
+    action = new QLabel (tr ("Initializing..."));
+    action->setAlignment (Qt::AlignLeft);
+    action->setIndent (10);
+    specific = new QLabel (tr (""));
+    specific->setAlignment (Qt::AlignLeft);
+    specific->setIndent (10);
+    pkgProgressLabel = new QLabel (tr ("Progress for this item:"));
+    pkgProgressLabel->setAlignment (Qt::AlignRight);
+    totalProgressLabel = new QLabel (tr ("Total progress:"));
+    totalProgressLabel->setAlignment (Qt::AlignRight);
+
+    pkgProgress = new QProgressBar;
+    pkgProgress->setRange (0, 0); // barber-pole thingy
+    totalProgress = new QProgressBar;
+    totalProgress->setRange (0, PendingActions->size());
+    totalProgress->setValue (0);
+
+    QGridLayout *layout = new QGridLayout (this);
+    layout->addWidget (action,             1, 0, 1, 3);
+    layout->addWidget (specific,           3, 0, 1, 3);
+    layout->addWidget (pkgProgressLabel,   5, 0, Qt::AlignRight);
+    layout->addWidget (pkgProgress,        5, 2, Qt::AlignLeft);
+    layout->addWidget (totalProgressLabel, 7, 0, Qt::AlignRight);
+    layout->addWidget (totalProgress,      7, 2, Qt::AlignLeft);
+    layout->setRowMinimumHeight (2,  2);
+    layout->setRowMinimumHeight (4, 15);
+    layout->setRowMinimumHeight (6, 10);
+    layout->setColumnMinimumWidth (1, 5);
+    layout->setRowStretch (8, 1);
+    setLayout (layout);
+
+    if (!PendingActions->size()) {
+        totalProgress->setRange (0, 1);
+        totalProgress->setValue (1);
+        pkgProgress->setRange (0, 1);
+        pkgProgress->setValue (1);
+        action->setText ("Done.");
+        specific->setText ("(There was nothing to do.)");
+        done = true;
+        emit completeStateChanged();
+    } else {
+        currentAction = PendingActions->takeFirst();
+        connect (currentAction, SIGNAL(finished()), this, SLOT(nextAction()));
+        currentAction->start (this);
+    }
+}
+
+void DoActionsPage::nextAction() 
+{
+    delete currentAction;
+    if (PendingActions->size()) {
+        currentAction = PendingActions->takeFirst();
+        connect (currentAction, SIGNAL(finished()), this, SLOT(nextAction()));
+        currentAction->start (this);
+    } else {
+        done = true;
+        emit completeStateChanged();
+    }
+    totalProgress->setValue (totalProgress->value() + 1);
 }

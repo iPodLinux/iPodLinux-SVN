@@ -7,10 +7,16 @@
 
 #include "installer.h"
 #include <QThread>
+#include <QList>
 
 class ActionOutlet : public InstallerPage
 {
     Q_OBJECT
+
+public:
+    ActionOutlet (Installer *wiz = 0)
+        : InstallerPage (wiz)
+    {}
 
 public slots:
     virtual void setTaskDescription (QString str) = 0;
@@ -74,4 +80,7 @@ protected:
     
     int _sec;
 };
+
+extern QList<Action*> *PendingActions;
+
 #endif

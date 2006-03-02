@@ -20,6 +20,8 @@
 enum { StandardInstall, AdvancedInstall,
        Update, Uninstall } Mode;
 
+QList<Action*> *PendingActions;
+
 Installer::Installer (QWidget *parent)
     : ComplexWizard (parent)
 {
@@ -30,6 +32,8 @@ Installer::Installer (QWidget *parent)
     resize (530, 410);
     setMinimumSize (500, 410);
     setMaximumSize (640, 500);
+
+    PendingActions = new QList<Action*>;
 }
 
 IntroductionPage::IntroductionPage (Installer *wizard)
@@ -325,7 +329,7 @@ PodLocationPage::PodLocationPage (Installer *wizard)
         }
         wizard->setInfoText (tr ("<b>Installation Information</b>"),
                              tr ("Read the information below and choose your installation type."));
-        advancedCheck = new QCheckBox (tr ("Advanced installation (experienced users only)"));
+        advancedCheck = new QCheckBox (tr ("Customize partitioning (experienced users only)"));
         upgradeRadio = uninstallRadio = 0;
         subblurb = 0;
 

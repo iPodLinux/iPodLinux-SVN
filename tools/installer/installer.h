@@ -22,12 +22,9 @@ class IntroductionPage;
 class PodLocationPage;
 class PartitioningPage;
 class InstallPage;
-class DoInstallPage;
 class PackagesPage;
-class DoPackagesPage;
 class RestoreBackupPage;
-class DoRestoreBackupPage;
-class DoHeuristicUninstallPage;
+class DoActionsPage;
 class DonePage;
 
 class Installer : public ComplexWizard
@@ -56,14 +53,8 @@ protected:
     
     PartitioningPage *partPage; /* IA */
     InstallPage *instPage; /* IB */
-    DoInstallPage *doinstPage; /* I */
-
-    PackagesPage *pkgPage; /* I U */
-    DoPackagesPage *dopkgPage; /* I U */
-    
+    PackagesPage *pkgPage; /* I U */    
     RestoreBackupPage *restorePage; /* XB */
-    DoRestoreBackupPage *dorestorePage; /* XB */
-    DoHeuristicUninstallPage *douninstPage; /* XH */
 
     DonePage *donePage; /* I U X */
 
@@ -71,12 +62,8 @@ protected:
     friend class PodLocationPage;
     friend class PartitioningPage;
     friend class InstallPage;
-    friend class DoInstallPage;
     friend class PackagesPage;
-    friend class DoPackagesPage;
     friend class RestoreBackupPage;
-    friend class DoRestoreBackupPage;
-    friend class DoHeuristicUninstallPage;
     friend class DonePage;
 };
 
