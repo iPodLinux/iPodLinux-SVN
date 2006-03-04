@@ -142,7 +142,10 @@ copysum(FILE *s, FILE *d, unsigned len, unsigned off)
     }
     for (i = 0; i < len; i++) {
 	if (fread(&temp, 1, 1, s) != 1) {
-	    fprintf(stderr, "fread failed: %s\n", strerror(errno));
+	    if (ferror(s))
+		fprintf(stderr, "fread error, check input file\n");
+	    else if (feof(s))
+		fprintf(stderr, "fread length 1 at offset %d hit EOF\n", off);
 	    return -1;
 	}
 	sum = sum + (temp & 0xff);
