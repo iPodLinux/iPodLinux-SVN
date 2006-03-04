@@ -142,16 +142,17 @@ copysum(FILE *s, FILE *d, unsigned len, unsigned off)
     }
     for (i = 0; i < len; i++) {
 	if (fread(&temp, 1, 1, s) != 1) {
+	    fprintf(stderr, "Failure in copysum: ");
 	    if (ferror(s))
-		fprintf(stderr, "fread error, check input file\n");
+		fprintf(stderr, "fread error, check input file.\n");
 	    else if (feof(s))
-		fprintf(stderr, "fread length 1 at offset %d hit EOF\n", off);
+		fprintf(stderr, "fread length 1 at offset %d hit EOF.\n", off);
 	    return -1;
 	}
 	sum = sum + (temp & 0xff);
 	if (d) 
 	    if (fwrite(&temp, 1, 1, d) != 1) {
-		fprintf(stderr, "fwrite failed: %s\n", strerror(errno));
+	        fprintf(stderr, "Failure in copysum: fwrite error\n");
 		return -1;
 	    }
     }
@@ -170,7 +171,12 @@ load_entry(image_t *image, FILE *fw, unsigned offset, int entry)
 	return -1;
     }
     if (fread(image, sizeof(image_t), 1, fw) != 1) {
-	fprintf(stderr, "fread failed: %s\n", strerror(errno));
+	if (ferror(fw))
+	    fprintf(stderr, "fread error, ");
+	else if (feof(fw))
+	    fprintf(stderr, "fread length %d at offset %d hit EOF, ",
+			    sizeof(image_t), offset + entry * sizeof(image_t));
+	fprintf(stderr, "unable to load boot entry.\n");
 	return -1;
     }
     switch_endian(image);
@@ -190,7 +196,7 @@ write_entry(image_t *image, FILE *fw, unsigned offset, int entry)
     }
     switch_endian(image);
     if (fwrite(image, sizeof(image_t), 1, fw) != 1) {
-	fprintf(stderr, "fwrite failed: %s\n", strerror(errno));
+	fprintf(stderr, "fwrite error, unable to write boot entry\n");
 	switch_endian(image);
 	return -1;
     }
@@ -493,17 +499,17 @@ main(int argc, char **argv)
 	return 1;
     }
     if (fwrite(apple_copyright, 0x100, 1, out) != 1) {
-	fprintf(stderr, "fwrite failed: %s\n", strerror(errno));
+	fprintf(stderr, "fwrite failed while writing copyright\n");
 	return 1;
     }
     version = switch_32(0x5b68695d); /* magic */
     if (fwrite(&version, 4, 1, out) != 1) {
-	fprintf(stderr, "fwrite failed: %s\n", strerror(errno));
+	fprintf(stderr, "fwrite failed while writing version magic\n");
 	return 1;
     }
     version = switch_32(0x00004000); /* magic */
     if (fwrite(&version, 4, 1, out) != 1) {
-	fprintf(stderr, "fwrite failed: %s\n", strerror(errno));
+	fprintf(stderr, "fwrite failed while writing version magic\n");
 	return 1;
     }
     if (fw_version == 3) {
@@ -513,7 +519,7 @@ main(int argc, char **argv)
     }
 
     if (fwrite(&version, 4, 1, out) != 1) {
-	fprintf(stderr, "fwrite failed: %s\n", strerror(errno));
+	fprintf(stderr, "fwrite failed while writing version magic\n");
 	return 1;
     }
     if (write_entry(&image, out, TBL, 0) == -1)
