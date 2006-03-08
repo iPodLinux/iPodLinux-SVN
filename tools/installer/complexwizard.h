@@ -60,6 +60,8 @@ private:
     void switchPage(WizardPage *oldPage);
 
     QList<WizardPage *> history;
+    QList<QString> history_titles;
+    QList<QString> history_descriptions;
     QPushButton *cancelButton;
     QPushButton *backButton;
     QPushButton *nextButton;
