@@ -144,6 +144,7 @@ static void load_modinf (PzModule *mod)
 	// mod->name already set
 	mod->longname = strdup (mod->name);
 	mod->author = strdup ("podzilla Team");
+	free (buf);
 	return;
     }
 
@@ -362,6 +363,7 @@ static void do_load (PzModule *mod)
     mod->handle = dlopen (fname, RTLD_NOW | RTLD_GLOBAL);
     free (fname);
     if (!mod->handle) {
+        pz_error ("Could not load module %s: %s", mod->name, dlerror());
         mod->to_load = 0;
     }
 #endif
@@ -485,6 +487,7 @@ static void find_modules (const char *dir)
             sprintf (buf, "%s/" MODULE_INF_FILE, podpath);
             if (stat (buf, &st) < 0) {
                 find_modules (podpath);
+                free (podpath);
                 continue;
             }
             // Module dir - fall through
@@ -600,6 +603,11 @@ void pz_modules_init()
 	}
     }
     
+    if (!module_head) {
+        pz_message_title (_("Warning"), _("No modules. podzilla will probably be very boring."));
+        return;
+    }
+
     /* Used to initialize the window + progressbar used in loading the modules*/
     cur = module_head;
     while (cur) {
@@ -614,11 +622,6 @@ void pz_modules_init()
     slider->x = (sliderwin->w - slider->w)/2;
     ttk_add_widget(sliderwin, slider);
     updateprogress(sliderwin, slider, sliderVal);
-
-    if (!module_head) {
-	pz_message_title (_("Warning"), _("No modules. podzilla will probably be very boring."));
-	return;
-    }
 
     // Mount 'em
     cur = module_head;
@@ -733,6 +736,8 @@ void pz_modules_init()
 	    cur = cur->next;
         }
     }
+
+    ttk_free_window (sliderwin);
 }
 
 
@@ -845,3 +850,4 @@ int _pz_mod_check_version (int otherver)
     module->to_free = 1;
     return 0;
 }
+
