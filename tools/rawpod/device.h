@@ -36,6 +36,9 @@ public:
     s64 lseek (s64 off, int whence);
     int error();
     int close();
+#ifndef WIN32
+    int fileno() { return _fd; }
+#endif
 
 private:
 #ifdef WIN32

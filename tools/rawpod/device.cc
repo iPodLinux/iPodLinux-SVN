@@ -132,7 +132,13 @@ LocalRawDevice::LocalRawDevice (int n)
     setBlocksize (512);
     _f = new LocalFile (drive, OPEN_READ | OPEN_WRITE | OPEN_DEV);
     if (_f->error()) _valid = -_f->error();
-    else _valid = 1;
+    else {
+        _valid = 1;
+
+        u64 offset = _f->lseek (0, SEEK_END);
+        _f->lseek (0, SEEK_SET);
+        setSize ((offset <= 0)? 0 : (offset >> _blocksize_bits));
+    }
 }
 
 int LocalRawDevice::doRead (void *buf, u64 sec) 

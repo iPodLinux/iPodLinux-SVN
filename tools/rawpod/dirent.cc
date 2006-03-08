@@ -11,7 +11,7 @@
 #ifdef WIN32
 
 #include <dirent.h>
-#include "errno.h"
+#include "errors.h"
 #include <io.h> /* _findfirst and _findnext set errno iff they return -1 */
 #include <stdlib.h>
 #include <string.h>

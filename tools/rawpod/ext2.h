@@ -20,6 +20,8 @@
 
 #include "vfs.h"
 
+extern int CreateExt2Filesystem (VFS::Device *dev);
+
 /*
  * The second extended filesystem constants/structures
  */
@@ -37,6 +39,8 @@
 #define EXT2_ROOT_INO		 2	/* Root inode */
 #define EXT2_BOOT_LOADER_INO	 5	/* Boot loader inode */
 #define EXT2_UNDEL_DIR_INO	 6	/* Undelete directory inode */
+#define EXT2_RESIZE_INO		 7	/* Reserved group descriptors inode */
+#define EXT2_JOURNAL_INO	 8	/* Journal inode */
 
 /* First non-reserved inode for old ext2 filesystems */
 #define EXT2_GOOD_OLD_FIRST_INO	11
@@ -57,6 +61,13 @@
 #define EXT2_MIN_BLOCK_SIZE		1024
 #define	EXT2_MAX_BLOCK_SIZE		4096
 #define EXT2_MIN_BLOCK_LOG_SIZE		  10
+#define EXT2_BLOCK_SIZE(s)	(EXT2_MIN_BLOCK_SIZE << (s)->s_log_block_size)
+#define EXT2_BLOCK_SIZE_BITS(s)	((s)->s_log_block_size + 10)
+#define EXT2_INODE_SIZE(s)	(((s)->s_rev_level == EXT2_GOOD_OLD_REV) ? \
+				 EXT2_GOOD_OLD_INODE_SIZE : (s)->s_inode_size)
+#define EXT2_FIRST_INO(s)	(((s)->s_rev_level == EXT2_GOOD_OLD_REV) ? \
+				 EXT2_GOOD_OLD_FIRST_INO : (s)->s_first_ino)
+#define EXT2_ADDR_PER_BLOCK(s)	(EXT2_BLOCK_SIZE(s) / sizeof(u32))
 
 /*
  * Macro-instructions used to manage fragments
@@ -64,6 +75,30 @@
 #define EXT2_MIN_FRAG_SIZE		1024
 #define	EXT2_MAX_FRAG_SIZE		4096
 #define EXT2_MIN_FRAG_LOG_SIZE		  10
+#define EXT2_FRAG_SIZE(s)		(EXT2_MIN_FRAG_SIZE << (s)->s_log_frag_size)
+#define EXT2_FRAGS_PER_BLOCK(s)		(EXT2_BLOCK_SIZE(s) / EXT2_FRAG_SIZE(s))
+
+/*
+ * ACL structures
+ */
+struct ext2_acl_header	/* Header of Access Control Lists */
+{
+	u32	aclh_size;
+	u32	aclh_file_count;
+	u32	aclh_acle_count;
+	u32	aclh_first_acle;
+};
+
+struct ext2_acl_entry	/* Access Control List Entry */
+{
+	u32	acle_size;
+	u16	acle_perms;	/* Access permissions */
+	u16	acle_type;	/* Type of entry */
+	u16	acle_tag;	/* User or group identity */
+	u16	acle_pad1;
+	u32	acle_next;	/* Pointer on next entry for the */
+					/* same inode or on next free entry */
+};
 
 /*
  * Structure of a blocks group descriptor
@@ -79,6 +114,53 @@ struct ext2_group_desc
 	u16	bg_pad;
 	u32	bg_reserved[3];
 };
+
+/*
+ * Data structures used by the directory indexing feature
+ *
+ * Note: all of the multibyte integer fields are little endian.
+ */
+
+/*
+ * Note: dx_root_info is laid out so that if it should somehow get
+ * overlaid by a dirent the two low bits of the hash version will be
+ * zero.  Therefore, the hash version mod 4 should never be 0.
+ * Sincerely, the paranoia department.
+ */
+struct ext2_dx_root_info {
+	u32 reserved_zero;
+	u8 hash_version; /* 0 now, 1 at release */
+	u8 info_length; /* 8 */
+	u8 indirect_levels;
+	u8 unused_flags;
+};
+
+#define EXT2_HASH_LEGACY	0
+#define EXT2_HASH_HALF_MD4	1
+#define EXT2_HASH_TEA		2
+
+#define EXT2_HASH_FLAG_INCOMPAT	0x1
+
+struct ext2_dx_entry {
+	u32 hash;
+	u32 block;
+};
+
+struct ext2_dx_countlimit {
+	u16 limit;
+	u16 count;
+};
+
+/*
+ * Macro-instructions used to manage group descriptors
+ */
+#define EXT2_BLOCKS_PER_GROUP(s)	((s)->s_blocks_per_group)
+#define EXT2_INODES_PER_GROUP(s)	((s)->s_inodes_per_group)
+#define EXT2_INODES_PER_BLOCK(s)	(EXT2_BLOCK_SIZE(s)/EXT2_INODE_SIZE(s))
+/* limits imposed by 16-bit value gd_free_{blocks,inode}_count */
+#define EXT2_MAX_BLOCKS_PER_GROUP(s)	((1 << 16) - 8)
+#define EXT2_MAX_INODES_PER_GROUP(s)	((1 << 16) - EXT2_INODES_PER_BLOCK(s))
+#define EXT2_DESC_PER_BLOCK(s)		(EXT2_BLOCK_SIZE(s) / sizeof (struct ext2_group_desc))
 
 /*
  * Constants relative to the data blocks
@@ -109,7 +191,7 @@ struct ext2_group_desc
 #define EXT2_BTREE_FL			0x00001000 /* btree format dir */
 #define EXT2_INDEX_FL			0x00001000 /* hash-indexed directory */
 #define EXT2_IMAGIC_FL			0x00002000 /* AFS directory */
-#define EXT2_JOURNAL_DATA_FL		0x00004000 /* Reserved for ext3 */
+#define EXT3_JOURNAL_DATA_FL		0x00004000 /* Reserved for ext3 */
 #define EXT2_NOTAIL_FL			0x00008000 /* file tail should not be merged */
 #define EXT2_DIRSYNC_FL			0x00010000 /* dirsync behaviour (directories only) */
 #define EXT2_TOPDIR_FL			0x00020000 /* Top of directory hierarchies*/
@@ -133,19 +215,58 @@ struct ext2_inode {
 	u16	i_links_count;	/* Links count */
 	u32	i_blocks;	/* Blocks count */
 	u32	i_flags;	/* File flags */
-	u32	i_reserved1;
+	union {
+		struct {
+			u32  l_i_reserved1;
+		} linux1;
+		struct {
+			u32  h_i_translator;
+		} hurd1;
+		struct {
+			u32  m_i_reserved1;
+		} masix1;
+	} osd1;				/* OS dependent 1 */
 	u32	i_block[EXT2_N_BLOCKS];/* Pointers to blocks */
 	u32	i_generation;	/* File version (for NFS) */
 	u32	i_file_acl;	/* File ACL */
 	u32	i_dir_acl;	/* Directory ACL */
 	u32	i_faddr;	/* Fragment address */
-	u8	i_frag;
-	u8	i_fsize;
-	u16	i_pad1;
-	u16	i_uid_high;
-	u16	i_gid_high;
-	u32	i_reserved2;
+	union {
+		struct {
+			u8	l_i_frag;	/* Fragment number */
+			u8	l_i_fsize;	/* Fragment size */
+			u16	i_pad1;
+			u16	l_i_uid_high;	/* these 2 fields    */
+			u16	l_i_gid_high;	/* were reserved2[0] */
+			u32	l_i_reserved2;
+		} linux2;
+		struct {
+			u8	h_i_frag;	/* Fragment number */
+			u8	h_i_fsize;	/* Fragment size */
+			u16	h_i_mode_high;
+			u16	h_i_uid_high;
+			u16	h_i_gid_high;
+			u32	h_i_author;
+		} hurd2;
+		struct {
+			u8	m_i_frag;	/* Fragment number */
+			u8	m_i_fsize;	/* Fragment size */
+			u16	m_pad1;
+			u32	m_i_reserved2[2];
+		} masix2;
+	} osd2;				/* OS dependent 2 */
 };
+
+#define i_size_high   i_dir_acl
+
+#define i_reserved1	osd1.linux1.l_i_reserved1
+#define i_frag		osd2.linux2.l_i_frag
+#define i_fsize		osd2.linux2.l_i_fsize
+#define i_uid_low	i_uid
+#define i_gid_low	i_gid
+#define i_uid_high	osd2.linux2.l_i_uid_high
+#define i_gid_high	osd2.linux2.l_i_gid_high
+#define i_reserved2	osd2.linux2.l_i_reserved2
 
 /*
  * File system states
@@ -251,11 +372,13 @@ struct ext2_super_block {
 	u32	s_last_orphan;		/* start of list of inodes to delete */
 	u32	s_hash_seed[4];		/* HTREE hash seed */
 	u8	s_def_hash_version;	/* Default hash version to use */
-	u8	s_reserved_char_pad;
+	u8	s_jnl_backup_type;
 	u16	s_reserved_word_pad;
 	u32	s_default_mount_opts;
  	u32	s_first_meta_bg; 	/* First metablock block group */
-	u32	s_reserved[190];	/* Padding to the end of the block */
+	u32	s_mkfs_time;		/* When the filesystem was created */
+	u32	s_jnl_blocks[17]; 	/* Backup of the journal inode */
+	u32	s_reserved[172];	/* Padding to the end of the block */
 };
 
 /*
@@ -278,11 +401,19 @@ struct ext2_super_block {
 
 #define EXT2_GOOD_OLD_INODE_SIZE 128
 
+/*
+ * Journal inode backup types
+ */
+#define EXT3_JNL_BACKUP_BLOCKS	1
+
+/*
+ * Feature set definitions
+ */
 #define EXT2_FEATURE_COMPAT_DIR_PREALLOC	0x0001
 #define EXT2_FEATURE_COMPAT_IMAGIC_INODES	0x0002
 #define EXT3_FEATURE_COMPAT_HAS_JOURNAL		0x0004
 #define EXT2_FEATURE_COMPAT_EXT_ATTR		0x0008
-#define EXT2_FEATURE_COMPAT_RESIZE_INO		0x0010
+#define EXT2_FEATURE_COMPAT_RESIZE_INODE	0x0010
 #define EXT2_FEATURE_COMPAT_DIR_INDEX		0x0020
 #define EXT2_FEATURE_COMPAT_ANY			0xffffffff
 
