@@ -89,7 +89,6 @@ namespace VFS
 
     s64 BlockDevice::lseek (s64 off, int whence) 
     {
-        u64 oldoff = _pos;
         switch (whence) {
         case SEEK_SET:
             _pos = off;
@@ -104,7 +103,7 @@ namespace VFS
             return -EINVAL;
         }
 
-        return oldoff;
+        return _pos;
     }
 
     int BlockFile::read (void *d, int n) 
@@ -191,7 +190,6 @@ namespace VFS
 
     s64 BlockFile::lseek (s64 off, int whence) 
     {
-        u64 oldoff = _pos;
         switch (whence) {
         case SEEK_SET:
             _pos = off;
@@ -205,6 +203,6 @@ namespace VFS
         default:
             return -EINVAL;
         }
-        return oldoff;
+        return _pos;
     }
 }

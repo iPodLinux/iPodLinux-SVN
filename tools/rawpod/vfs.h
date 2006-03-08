@@ -18,7 +18,7 @@
 
 #include <stdio.h>
 #ifdef WIN32
-#include "errno.h"
+#include "errors.h"
 #else
 #include <errno.h>
 #include <sys/types.h>
@@ -148,7 +148,7 @@ namespace VFS
         }
         void setSize (u64 blocks) { _blocks = blocks; }
 
-    private:
+    protected:
         u64 _pos;
         int _blocksize, _blocksize_bits;
         u64 _blocks;

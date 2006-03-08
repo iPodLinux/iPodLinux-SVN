@@ -35,7 +35,7 @@ PartitionTable partCopyFromMBR (unsigned char *mbr)
 
 int partFigureOutType (PartitionTable t) 
 {
-    if (t[0].active == 0x80 && t[1].active == 0x80 &&
+    if ((t[0].active == 0x80 || t[1].active == 0x80) &&
         t[0].type == 0 && t[1].type == 0xb &&
         t[0].offset < 1024 && t[0].length < (200 << 11)) {
         // WinPod or LinPod
@@ -55,6 +55,8 @@ int partFigureOutType (PartitionTable t)
 
 int partShrinkAndAdd (PartitionTable t, int oldnr, int newnr, int newtype, int newsize) 
 {
+    oldnr--; newnr--;
+    
     if (oldnr >= 4 || newnr >= 4)
         return EINVAL;
     if (t[oldnr].length < (unsigned int)newsize)

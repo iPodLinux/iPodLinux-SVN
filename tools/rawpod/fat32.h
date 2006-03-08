@@ -3,6 +3,8 @@
 
 #include "vfs.h"
 
+extern int CreateFATFilesystem (VFS::Device *dev);
+
 class FATFile;
 class FATFS : public VFS::Filesystem
 {
