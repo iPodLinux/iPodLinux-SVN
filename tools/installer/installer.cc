@@ -9,25 +9,32 @@
 #include "rawpod/fat32.h"
 
 #include <QLabel>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QFileDialog>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QPixmap>
 #include <QCheckBox>
 #include <QRadioButton>
+#include <QSpinBox>
 
 #include <string.h>
 
-enum { StandardInstall, AdvancedInstall,
-       Update, Uninstall } Mode;
+InstallerMode Mode;
 
 QList<Action*> *PendingActions;
+
+int iPodLocation;
+int iPodVersion;
+PartitionTable iPodPartitionTable;
+int iPodPartitionToShrink;
+int iPodLinuxPartitionSize;
 
 Installer::Installer (QWidget *parent)
     : ComplexWizard (parent)
 {
-    introPage = new IntroductionPage (this);
-
-    setFirstPage (introPage);
+    setFirstPage (new IntroductionPage (this));
     setWindowTitle (tr ("iPodLinux Installer"));
     resize (530, 410);
     setMinimumSize (500, 410);
@@ -79,14 +86,14 @@ IntroductionPage::IntroductionPage (Installer *wizard)
 
 WizardPage *IntroductionPage::nextPage() 
 {
-    return (wizard->podlocPage = new PodLocationPage (wizard));
+    return new PodLocationPage (wizard);
 }
 
 PodLocationPage::PodLocationPage (Installer *wizard)
     : InstallerPage (wizard)
 {
     enum { CantFindIPod, InvalidPartitionTable, FSErr, BadSysInfo,
-           NotAnIPod, MacPod, WinPod, SLinPod, BLinPod } status;
+           NotAnIPod, MacPod, WinPod, SLinPod, BLinPod, UnsupPod } status;
     int hw_ver = 0;
     int podloc = find_iPod();
     int ipodtype = PART_NOT_IPOD;
@@ -102,7 +109,7 @@ PodLocationPage::PodLocationPage (Installer *wizard)
     upgradeRadio = uninstallRadio = 0;
     stateOK = 0;
     
-    wizard->resize (530, 410);
+    wizard->resize (530, 440);
     wizard->setMinimumSize (500, 410);
     wizard->setMaximumSize (640, 500);
 
@@ -116,7 +123,6 @@ PodLocationPage::PodLocationPage (Installer *wizard)
     if (!ptbl) { status = InvalidPartitionTable; goto err; }
 
     ipodtype = partFigureOutType (ptbl);
-    partFreeTable (ptbl);
     
     switch (ipodtype) {
     case PART_WINPOD:
@@ -193,6 +199,9 @@ PodLocationPage::PodLocationPage (Installer *wizard)
     else
         hw_ver = rev >> 16;
 
+    if (!(INSTALLER_WORKING_IPODS & (1 << hw_ver)))
+        status = UnsupPod;
+
  err:
     delete fat32;
     delete part;
@@ -255,6 +264,11 @@ PodLocationPage::PodLocationPage (Installer *wizard)
                      "and you did not install Linux correctly when you installed it. Sorry, "
                      "but I don't know enough to fix the problem myself. Run the iPod Updater or "
                      "restore your backup, then re-run this installer.</p>");
+            break;
+        case UnsupPod:
+            err = tr("<p><b>Unsupported iPod type.</b> You appear to have a very new iPod that "
+                     "we don't know about and thus can't support. Please be patient, and "
+                     "don't bug the developers about this. Support will be developed eventually.</p>");
             break;
         default:
             err = tr("<p><b>Unknown error: Success.</b> Something's up. Report a bug.</p>");
@@ -369,6 +383,10 @@ PodLocationPage::PodLocationPage (Installer *wizard)
         stateOK = 0;
         emit completeStateChanged();
     }
+
+    iPodLocation = podloc;
+    iPodVersion = hw_ver;
+    iPodPartitionTable = ptbl;
 }
 
 void PodLocationPage::uninstallRadioClicked (bool clicked) 
@@ -416,24 +434,37 @@ WizardPage *PodLocationPage::nextPage()
         } else {
             Mode = Uninstall;
         }
+        iPodPartitionToShrink = 0;
     } else {
         if (advancedCheck && advancedCheck->isChecked()) {
             Mode = AdvancedInstall;
         } else {
             Mode = StandardInstall;
         }
+        if (iPodVersion >= 0xA) {
+            iPodPartitionToShrink = 2;
+            iPodLinuxPartitionSize = 128 * 2048; /* 128M */
+            if (iPodPartitionTable[1].length > 8192 * 2048)
+                iPodLinuxPartitionSize = 256 * 2048; /* 256M if data ptn is >=8GB */
+        } else {
+            iPodPartitionToShrink = 1;
+            iPodLinuxPartitionSize = iPodPartitionTable[0].length / 2;
+            if (iPodLinuxPartitionSize < 24 * 2048)
+                iPodLinuxPartitionSize = 24 * 2048; /* make it at least 24M */
+            if ((iPodPartitionTable[0].length - iPodLinuxPartitionSize) < 8 * 2048)
+                iPodLinuxPartitionSize = iPodPartitionTable[0].length - 8 * 2048; /* keep at least 8MB for the firmware */
+        }
     }
 
     switch (Mode) {
     case StandardInstall:
-        /* add an action for partitioning */
-        return wizard->instPage;
+        return new InstallPage (wizard);
     case AdvancedInstall:
-        return wizard->partPage;
+        return new PartitioningPage (wizard);
     case Update:
-        return wizard->pkgPage;
+        return new PackagesPage (wizard);
     case Uninstall:
-        return wizard->restorePage;
+        return 0;//new RestorePage (wizard);
     }
 
     return 0;
@@ -443,3 +474,213 @@ bool PodLocationPage::isComplete()
 {
     return stateOK;
 }
+
+PartitioningPage::PartitioningPage (Installer *wiz)
+    : InstallerPage (wiz)
+{
+    wiz->setInfoText (tr ("<b>Advanced Partitioning</b>"), tr ("Fill in the requested information and click Next."));
+    topblurb = new QLabel (tr ("<p>If you've chosen this path, I assume you know what you're doing. "
+                               "If you don't understand this, go back and deselect advanced partitioning "
+                               "selection!</p><p>Make room for iPodLinux by:</p>"));
+    topblurb->setWordWrap (true);
+    partitionSmall = new QRadioButton (tr ("Shrinking the firmware partition"));
+    partitionBig = new QRadioButton (tr ("Shrinking the data partition"));
+    if (iPodPartitionToShrink == 2)
+        partitionBig->setChecked (true);
+    else
+        partitionSmall->setChecked (true);
+    size = new QSpinBox;
+    size->setValue (iPodLinuxPartitionSize / 2048);
+    size->setSuffix (" MB");
+    sizeBlurb = new QLabel (tr ("How big should the Linux partition be?"));
+    sizeBlurb->setAlignment (Qt::AlignRight);
+    sizeBlurb->setIndent (10);
+    spaceLeft = new QLabel;
+    spaceLeft->setWordWrap (true);
+
+    QVBoxLayout *layout = new QVBoxLayout;
+    QHBoxLayout *szlayout = new QHBoxLayout;
+    szlayout->addWidget (sizeBlurb);
+    szlayout->addWidget (size);
+    layout->addWidget (topblurb);
+    layout->addWidget (partitionSmall);
+    layout->addWidget (partitionBig);
+    layout->addSpacing (15);
+    layout->addLayout (szlayout);
+    layout->addWidget (spaceLeft);
+    layout->addStretch (1);
+    layout->addWidget (new QLabel (tr ("Press Next to continue.")));
+    setLayout (layout);
+    setStuff();
+
+    connect (size, SIGNAL(valueChanged(int)), this, SLOT(setStuff(int)));
+    connect (partitionSmall, SIGNAL(toggled(bool)), this, SLOT(setSmallStuff(bool)));
+    connect (partitionBig, SIGNAL(toggled(bool)), this, SLOT(setBigStuff(bool)));
+}
+
+void PartitioningPage::setStuff (int newVal) 
+{
+    (void)newVal;
+    
+    if (iPodPartitionToShrink == 2) {
+        size->setRange (24, (iPodPartitionTable[1].length / 2048) / 2);
+    } else {
+        size->setRange (16, (iPodPartitionTable[0].length / 2048) - 8);
+    }
+    spaceLeft->setText (QString (tr ("This size configuration gives <b>%1MB</b> of space "
+                                     "left for music and data."))
+                        .arg ((iPodPartitionTable[iPodPartitionToShrink - 1].length / 2048) -
+                              size->value()));
+    if (iPodPartitionToShrink != 2) spaceLeft->hide();
+    else spaceLeft->show();
+}
+
+void PartitioningPage::setBigStuff (bool chk) 
+{
+    if (chk) {
+        iPodPartitionToShrink = 2;
+        iPodLinuxPartitionSize = 128 * 2048; /* 128M */
+        if (iPodPartitionTable[1].length > 8192 * 2048)
+            iPodLinuxPartitionSize = 256 * 2048; /* 256M if data ptn is >=8GB */
+        setStuff(0);
+        size->setValue (iPodLinuxPartitionSize / 2048);
+    }
+}
+
+void PartitioningPage::setSmallStuff (bool chk)
+{
+    if (chk) {
+        iPodPartitionToShrink = 1;
+        iPodLinuxPartitionSize = iPodPartitionTable[0].length / 2;
+        if (iPodLinuxPartitionSize < 24 * 2048)
+            iPodLinuxPartitionSize = 24 * 2048; /* make it at least 24M */
+        if ((iPodPartitionTable[0].length - iPodLinuxPartitionSize) < 8 * 2048)
+            iPodLinuxPartitionSize = iPodPartitionTable[0].length - 8 * 2048; /* keep at least 8MB for the firmware */
+        setStuff(0);
+        size->setValue (iPodLinuxPartitionSize / 2048);
+    }
+}
+
+void PartitioningPage::resetPage() 
+{}
+
+WizardPage *PartitioningPage::nextPage() 
+{
+    iPodLinuxPartitionSize = size->value() * 2048;
+    return new InstallPage (wizard);
+}
+
+bool PartitioningPage::isComplete() 
+{
+    return true;
+}
+
+InstallPage::InstallPage (Installer *wiz)
+    : InstallerPage (wiz)
+{
+    wiz->setInfoText (tr ("<b>Installation Information</b>"), tr ("Fill in the information below and click Next."));
+    
+    topblurb = new QLabel (tr ("I'm almost ready to install, but first I need some info."));
+
+    ldrblurb = new QLabel (tr ("First, you need to pick how you're going to load Linux. There are three ways: "));
+    ldrblurb->setWordWrap (true);
+    loader1apple = new QRadioButton (tr ("Standard loader with Apple firmware default"));
+    loader1apple->setChecked (true);
+    loader1linux = new QRadioButton (tr ("Standard loader with iPodLinux default"));
+    loader2 = new QRadioButton (tr ("iPodLoader2 (nice menu interface, but still experimental)"));
+    ldrchoiceblurb = new QLabel;
+    ldrchoiceblurb->setWordWrap (true);
+
+    bkpblurb = new QLabel (tr ("Second, it is <i>highly</i> recommended that you make a backup of "
+                               "your iPod's firmware partition. It will be 40 to 120 MB in size."));
+    bkpblurb->setWordWrap (true);
+    bkpchoiceblurb = new QLabel (tr ("Are you sure? A backup is <b>highly recommended</b>. Without one, "
+                                     "we can't guarantee that uninstallation will go smoothly."));
+    bkpchoiceblurb->setWordWrap (true);
+    makeBackup = new QCheckBox (tr ("Yes, I want to save a backup."));
+    makeBackup->setChecked (true);
+    backupPathLabel = new QLabel (tr ("Save as:"));
+    backupPath = new QLineEdit (tr ("ipod_os_backup.bin"));
+    backupBrowse = new QPushButton (tr ("Browse..."));
+    
+    QVBoxLayout *layout = new QVBoxLayout;
+    layout->addWidget (topblurb);
+    layout->addSpacing (10);
+    layout->addWidget (ldrblurb);
+    layout->addWidget (loader1apple);
+    layout->addWidget (loader1linux);
+    layout->addWidget (loader2);
+    layout->addWidget (ldrchoiceblurb);
+    layout->addSpacing (15);
+    layout->addWidget (bkpblurb);
+    layout->addWidget (makeBackup);
+    QHBoxLayout *bkplayout = new QHBoxLayout;
+    bkplayout->addWidget (backupPathLabel);
+    bkplayout->addWidget (backupPath);
+    bkplayout->addWidget (backupBrowse);
+    layout->addLayout (bkplayout);
+    layout->addWidget (bkpchoiceblurb);
+    setLayout (layout);
+
+    connect (loader1apple, SIGNAL(toggled(bool)), this, SLOT(setLoader1Blurb(bool)));
+    connect (loader1linux, SIGNAL(toggled(bool)), this, SLOT(setLoader1Blurb(bool)));
+    connect (loader2, SIGNAL(toggled(bool)), this, SLOT(setLoader2Blurb(bool)));
+    connect (makeBackup, SIGNAL(toggled(bool)), this, SLOT(setBackupBlurb(bool)));
+    connect (backupPath, SIGNAL(textChanged(QString)), this, SIGNAL(completeStateChanged()));
+    connect (backupBrowse, SIGNAL(released()), this, SLOT(openBrowseDialog()));
+
+    setLoader1Blurb (true);
+    setBackupBlurb (true);
+}
+
+void InstallPage::setLoader1Blurb (bool chk) 
+{
+    if (chk) {
+        ldrchoiceblurb->setText (tr ("To boot the non-default OS, hold rewind as your iPod restarts."));
+    }
+}
+
+void InstallPage::setLoader2Blurb (bool chk) 
+{
+    if (chk) {
+        ldrchoiceblurb->setText (tr ("iPodLoader2 can also load Rockbox, multiple kernels, etc; see "
+                                     "the iPodLinux wiki for more information."));
+    }
+}
+
+void InstallPage::setBackupBlurb (bool chk) 
+{
+    if (chk) {
+        bkpchoiceblurb->hide();
+        backupPathLabel->show();
+        backupPath->show();
+        backupBrowse->show();
+    } else {
+        bkpchoiceblurb->show();
+        backupPathLabel->hide();
+        backupPath->hide();
+        backupBrowse->hide();
+    }
+    emit completeStateChanged();
+}
+
+void InstallPage::openBrowseDialog() 
+{
+    QString ret = QFileDialog::getSaveFileName (this, "Choose a place to save your backup.");
+    if (ret != "")
+        backupPath->setText (ret);
+}
+
+WizardPage *InstallPage::nextPage() 
+{
+    /* XXX action for making backup or saving it to a temp file */
+    PendingActions->append (new PartitionAction (iPodLocation, iPodPartitionToShrink,
+                                                 3, 0x83, iPodLinuxPartitionSize));
+    return new PackagesPage (wizard);
+}
+
+bool InstallPage::isComplete() 
+{
+    return (!makeBackup->isChecked() || backupPath->text().length());
+}
+

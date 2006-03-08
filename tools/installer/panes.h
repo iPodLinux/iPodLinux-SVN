@@ -1,9 +1,11 @@
+/*-*-C++-*-*/
 #ifndef PANES_H
 #define PANES_H
 
 #include "installer.h"
 #include "actions.h"
 
+#include <QHttp>
 #include <QLabel>
 #include <QProgressBar>
 
@@ -31,9 +33,6 @@ public:
     void resetPage();
     WizardPage *nextPage();
     bool isComplete();
-#if 1
-    bool isLastPage() { return true; }
-#endif
     
 protected slots:
     void uninstallRadioClicked (bool clicked);
@@ -51,82 +50,77 @@ class PartitioningPage : public InstallerPage
 {
     Q_OBJECT
 
-#if 0
 public:
     PartitioningPage (Installer *wizard);
     void resetPage();
     WizardPage *nextPage();
     bool isComplete();
+
+private slots:
+    void setBigStuff (bool chk); 
+    void setSmallStuff (bool chk); 
+    void setStuff (int newVal = -1); 
     
 private:
-    QLabel *blurb;
+    QLabel *topblurb;
     QRadioButton *partitionSmall, *partitionBig;
     QSpinBox *size;
-    QLabel *sizeMax;
-    QLabel *bigFatWarning;
-#endif
+    QLabel *sizeBlurb;
+    QLabel *spaceLeft;
 };
 
 class InstallPage : public InstallerPage
 {
     Q_OBJECT
 
-#if 0
 public:
-    SimpleInstallPage (Installer *wizard);
-    void resetPage();
+    InstallPage (Installer *wizard);
+    void resetPage() {}
     WizardPage *nextPage();
     bool isComplete();
 
+protected slots:
+    void setLoader1Blurb (bool chk);
+    void setLoader2Blurb (bool chk);
+    void setBackupBlurb (bool chk); 
+    void openBrowseDialog();
+
 private:
-    QLabel *blurb;
+    QLabel *topblurb, *ldrblurb, *bkpblurb, *ldrchoiceblurb, *bkpchoiceblurb;
     QRadioButton *loader1apple, *loader1linux, *loader2;
     QCheckBox *makeBackup;
     QLabel *backupPathLabel;
     QLineEdit *backupPath;
     QPushButton *backupBrowse;
-#endif
-};
-
-class DoInstallPage : public ActionOutlet
-{
-    Q_OBJECT
-
-#if 0
-public:
-    DoInstallPage (Installer *wizard);
-    void resetPage();
-    WizardPage *nextPage();
-    bool isComplete();
-
-public slots:
-    virtual void setTaskDescription (QString str) { action->setText (str); }
-    virtual void setCurrentAction (QString str) {}
-    virtual void setTotalProgress (int tp) { progress->setRange (0, tp); }
-    virtual void setCurrentProgress (int cp) { progress->setValue (cp); }
-
-private:
-    QLabel *blurb;
-    QLabel *action;
-    QProgressBar *progress;
-#endif
 };
 
 class PackagesPage : public InstallerPage
 {
     Q_OBJECT
 
-#if 0
 public:
     PackagesPage (Installer *wizard);
-    void resetPage();
+    void resetPage() {}
     WizardPage *nextPage();
-    bool isComplete();
+    bool isComplete() { return advok; }
+    bool isLastPage() { return true; }
+
+protected slots:
+    void httpSendProgress (int done, int total); 
+    void httpReadProgress (int done, int total);
+    void httpStateChanged (int state);
+    void httpRequestFinished (int req, bool err);
+    void httpDone (bool err);
+    void httpResponseHeaderReceived (const QHttpResponseHeader& resp);
+    void listClicked (QTreeWidgetItem *item, int column);
     
 private:
+    QHttp *packlistHTTP;
     QLabel *blurb;
+    QLabel *progressStmt;
     QTreeWidget *packages;
-#endif
+    bool advok;
+    bool errored;
 };
 
 class DoActionsPage : public ActionOutlet

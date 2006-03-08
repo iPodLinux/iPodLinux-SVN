@@ -89,11 +89,14 @@ void ComplexWizard::backButtonClicked()
 {
     WizardPage *oldPage = history.takeLast();
     oldPage->resetPage();
+    setInfoText (history_titles.takeLast(), history_descriptions.takeLast());
     switchPage(oldPage);
 }
 
 void ComplexWizard::nextButtonClicked()
 {
+    history_titles.append (pageTitle->text());
+    history_descriptions.append (pageDesc->text());
     WizardPage *oldPage = history.last();
     WizardPage *newPage = oldPage->nextPage();
     newPage->resetPage();
@@ -121,6 +124,7 @@ void ComplexWizard::switchPage(WizardPage *oldPage)
     WizardPage *newPage = history.last();
     if (history.size() == 1) {
         mainLayout->insertWidget(0, newPage);
+        topbar->hide();
     } else {
         mainLayout->insertWidget(0, newPage);
         mainLayout->insertWidget(0, topbar);
@@ -135,10 +139,12 @@ void ComplexWizard::switchPage(WizardPage *oldPage)
     nextButton->setDefault(true);
     nextButton->setEnabled(false);
     if (newPage->isLastPage()) {
+        disconnect (nextButton, SIGNAL(clicked()), qApp, 0);
         disconnect (nextButton, SIGNAL(clicked()), this, 0);
         connect(nextButton, SIGNAL(clicked()), qApp, SLOT(closeAllWindows()));
         nextButton->setText (tr ("&Finish"));
     } else {
+        disconnect (nextButton, SIGNAL(clicked()), qApp, 0);
         disconnect (nextButton, SIGNAL(clicked()), this, 0);
         connect(nextButton, SIGNAL(clicked()), this, SLOT(nextButtonClicked()));
         nextButton->setText (tr ("Next >"));
