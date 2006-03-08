@@ -350,7 +350,6 @@ void pz_ipod_go_to_diskmode()
 	storage_ptr = (unsigned char *)0x40017f08;
 	memcpy(storage_ptr, hotstuff, 9);
 	outl(1, 0x40017F10);	
-	outl(inl(0x60006004) | 0x4, 0x60006004);
 	sleep (1);
 	pz_ipod_reboot();
 #endif
