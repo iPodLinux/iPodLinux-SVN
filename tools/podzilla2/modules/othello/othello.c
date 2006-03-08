@@ -75,13 +75,15 @@ static void othello_draw(PzWidget *wid, ttk_surface srf)
 		if (b_set & (1ULL << c)) {
 
 			if (board & (1ULL << c)) {
-				ttk_fillellipse(srf, coordx + PC_SZ/2,
-						coordy + PC_SZ/2, PC_SZ/2-1,
+				ttk_aafillellipse(srf, coordx + PC_SZ/2,
+						coordy + PC_SZ/2, PC_SZ/2,
 						PC_SZ/2, fg);
 			}
-			ttk_aaellipse(srf, coordx + PC_SZ/2,
-					coordy + PC_SZ/2, PC_SZ/2,
-					PC_SZ/2, fg);
+			else {
+				ttk_aaellipse(srf, coordx + PC_SZ/2,
+						coordy + PC_SZ/2, PC_SZ/2,
+						PC_SZ/2, fg);
+			}
 		}
 		else {
 			ttk_pixel(srf, coordx + PC_SZ/2,
