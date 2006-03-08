@@ -576,15 +576,15 @@ void HD_ScaleBlendClip (hd_surface ssrf, int sx, int sy, int sw, int sh,
 
     // Let the clipping commence
     if( startx < 0 ) {
-        startx = 0;
         fp_initial_ix = -(startx) * fp_step_x;
+        startx = 0;
     }
     if( endx > dtw ) {
         endx = dtw - 1;
     }
     if( starty < 0 ) {
-        starty = 0;
         fp_initial_iy = -(starty) * fp_step_y;
+        starty = 0;
     }
     if( endy > dth ) {
         endy = dth - 1;
