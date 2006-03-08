@@ -641,11 +641,21 @@ void ttk_bezier(ttk_surface srf, int x1, int y1, int x2, int y2,
 {
     DO_BEZIER(ttk_line(srf, (short)xp, (short)yp, (short)x, (short)y, col));
 }
+void ttk_bezier_gc(ttk_surface srf, ttk_gc gc, int x1, int y1, int x2, int y2,
+		int x3, int y3, int x4, int y4, int level)
+{
+    ttk_bezier(srf, x1, y1, x2, y2, x3, y3, x4, y4, level, gc->fg);
+}
 
 void ttk_aabezier(ttk_surface srf, int x1, int y1, int x2, int y2,
 		int x3, int y3, int x4, int y4, int level, ttk_color col)
 {
     DO_BEZIER(ttk_aaline(srf, (short)xp, (short)yp, (short)x, (short)y, col));
+}
+void ttk_aabezier_gc(ttk_surface srf, ttk_gc gc, int x1, int y1, int x2, int y2,
+		int x3, int y3, int x4, int y4, int level)
+{
+    ttk_aabezier(srf, x1, y1, x2, y2, x3, y3, x4, y4, level, gc->fg);
 }
 
 void ttk_fillpoly (ttk_surface srf, int nv, short *vx, short *vy, ttk_color col)
@@ -766,6 +776,219 @@ void ttk_fillellipse_gc (ttk_surface srf, ttk_gc gc, int x, int y, int rx, int r
     }
 }
 
+void ttk_aafillellipse(ttk_surface srf, int xc, int yc, int rx, int ry,
+		ttk_color col)
+{
+    Sint16 left, right, top, bottom;
+    Sint16 x1,y1,x2,y2;
+    int i;
+    int a2, b2, ds, dt, dxt, t, s, d;
+    Sint16 x, y, xs, ys, dyt, xx, yy, xc2, yc2;
+    float cp;
+    Uint8 weight, iweight;
+
+    col = fetchcolor(col);
+
+    /* Sanity check radii */
+    if ((rx < 0) || (ry < 0)) return;
+
+    /* Special case for rx=0 - draw a vline */
+    if (rx == 0) {
+	vlineColor(srf, xc, yc - ry, yc + ry, col);
+	return;
+    }
+    /* Special case for ry=0 - draw a hline */
+    if (ry == 0) {
+	hlineColor(srf, xc - rx, xc + rx, yc, col);
+	return;
+    }
+
+    /* Get clipping boundary */
+    left = srf->clip_rect.x;
+    right = srf->clip_rect.x + srf->clip_rect.w - 1;
+    top = srf->clip_rect.y;
+    bottom = srf->clip_rect.y + srf->clip_rect.h - 1;
+
+    /* Test if bounding box of ellipse is visible */
+    x1 = xc - rx;
+    x2 = xc + rx;
+    y1 = yc - ry;
+    y2 = yc + ry;
+    if ((x1<left) && (x2<left)) return;
+    if ((x1>right) && (x2>right)) return;
+    if ((y1<top) && (y2<top)) return;
+    if ((y1>bottom) && (y2>bottom)) return;
+    
+    /* Variable setup */
+    a2 = rx * rx;
+    b2 = ry * ry;
+
+    ds = 2 * a2;
+    dt = 2 * b2;
+
+    xc2 = 2 * xc;
+    yc2 = 2 * yc;
+
+    dxt = (int) (a2 / sqrt(a2 + b2));
+
+    t = 0;
+    s = -2 * a2 * ry;
+    d = 0;
+
+    x = xc;
+    y = yc - ry;
+
+    /* Lock surface */
+    if (SDL_MUSTLOCK(srf)) {
+	if (SDL_LockSurface(srf) < 0)
+	    return;
+    }
+
+    /* "End points" */
+    pixelColorNolock(srf, x, y, col);
+    pixelColorNolock(srf, xc2 - x, y, col);
+    pixelColorNolock(srf, x, yc2 - y, col);
+    pixelColorNolock(srf, xc2 - x, yc2 - y, col);
+
+    vlineColor(srf, x, y+1, yc2-y-1, col);
+
+    for (i = 1; i <= dxt; i++) {
+	x--;
+	d += t - b2;
+
+	if (d >= 0)
+	    ys = y - 1;
+	else if ((d - s - a2) > 0) {
+	    if ((2 * d - s - a2) >= 0)
+		ys = y + 1;
+	    else {
+		ys = y;
+		y++;
+		d -= s + a2;
+		s += ds;
+	    }
+	} else {
+	    y++;
+	    ys = y + 1;
+	    d -= s + a2;
+	    s += ds;
+	}
+
+	t -= dt;
+
+	/* Calculate alpha */
+	if (s != 0.0) {
+	    cp = (float) abs(d) / (float) abs(s);
+	    if (cp > 1.0) {
+		cp = 1.0;
+	    }
+	} else {
+	    cp = 1.0;
+	}
+
+	/* Calculate weights */
+	weight = (Uint8) (cp * 255);
+	iweight = 255 - weight;
+
+	/* Upper half */
+	xx = xc2 - x;
+	pixelColorWeightNolock(srf, x, y, col, iweight);
+	pixelColorWeightNolock(srf, xx, y, col, iweight);
+
+	pixelColorWeightNolock(srf, x, ys, col, weight);
+	pixelColorWeightNolock(srf, xx, ys, col, weight);
+
+	/* Lower half */
+	yy = yc2 - y;
+	pixelColorWeightNolock(srf, x, yy, col, iweight);
+	pixelColorWeightNolock(srf, xx, yy, col, iweight);
+
+	yy = yc2 - ys;
+	pixelColorWeightNolock(srf, x, yy, col, weight);
+	pixelColorWeightNolock(srf, xx, yy, col, weight);
+
+	/* Fill */
+	vlineColor(srf, x, y+1, 2*yc-y-1, col);
+	vlineColor(srf, xx, y+1, 2*yc-y-1, col);
+	vlineColor(srf, x, ys+1, yy-1, col);
+	vlineColor(srf, xx, ys+1, yy-1, col);
+    }
+
+    dyt = abs(y - yc);
+
+    for (i = 1; i <= dyt; i++) {
+	y++;
+	d -= s + a2;
+
+	if (d <= 0)
+	    xs = x + 1;
+	else if ((d + t - b2) < 0) {
+	    if ((2 * d + t - b2) <= 0)
+		xs = x - 1;
+	    else {
+		xs = x;
+		x--;
+		d += t - b2;
+		t -= dt;
+	    }
+	} else {
+	    x--;
+	    xs = x - 1;
+	    d += t - b2;
+	    t -= dt;
+	}
+
+	s += ds;
+
+	/* Calculate alpha */
+	if (t != 0.0) {
+	    cp = (float) abs(d) / (float) abs(t);
+	    if (cp > 1.0) {
+		cp = 1.0;
+	    }
+	} else {
+	    cp = 1.0;
+	}
+
+	/* Calculate weight */
+	weight = (Uint8) (cp * 255);
+	iweight = 255 - weight;
+
+	/* Left half */
+	xx = xc2 - x;
+	yy = yc2 - y;
+	pixelColorWeightNolock(srf, x, y, col, iweight);
+	pixelColorWeightNolock(srf, xx, y, col, iweight);
+
+	pixelColorWeightNolock(srf, x, yy, col, iweight);
+	pixelColorWeightNolock(srf, xx, yy, col, iweight);
+
+	/* Right half */
+	xx = xc2 - xs;
+	pixelColorWeightNolock(srf, xs, y, col, weight);
+	pixelColorWeightNolock(srf, xx, y, col, weight);
+
+	pixelColorWeightNolock(srf, xs, yy, col, weight);
+	pixelColorWeightNolock(srf, xx, yy, col, weight);
+
+	/* Fill */
+	xx = xc2 - x;
+	hlineColor(srf, x+1, xx-1, y, col);
+	hlineColor(srf, xs+1, xc2-xs-1, y, col);
+	hlineColor(srf, x+1, xx-1, yy, col);
+	hlineColor(srf, xs+1, xc2-xs-1, yy, col);
+    }
+
+    /* Unlock surface */
+    if (SDL_MUSTLOCK(srf))
+	SDL_UnlockSurface(srf);
+}
+
+void ttk_aafillellipse_gc(ttk_surface srf, ttk_gc gc, int xc, int yc,
+		int rx, int ry)
+{
+	ttk_aafillellipse(srf, xc, yc, rx, ry, gc->fg);
+}
 
 /**** Font stuff. Taken from Microwindows with minor modifications. ****/
 
