@@ -21,11 +21,16 @@
 #include "pz.h"
 #include "config.h"
 #include <stdio.h>
+#include <time.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <netdb.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/mount.h>
 #include <sys/utsname.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 #ifdef __linux__
 #include <sys/vfs.h>
 #endif
@@ -243,6 +248,88 @@ static void count_modules (const char *name, const char *longname, const char *a
     number_of_modules++;
 }
 
+static void mpd_stats()
+{
+	int sock, n, c;
+	fd_set rd;
+	struct timeval tv;
+	struct hostent *he;
+	struct sockaddr_in addr;
+	char *hostname = getenv("MPD_HOST");
+	char *port = getenv("MPD_PORT");
+	unsigned char ch;
+	char line[256];
+
+	if (hostname == NULL) hostname = "127.0.0.1";
+	if (port == NULL) port = "6600";
+
+	if ((he = gethostbyname(hostname)) == NULL) {
+		herror(hostname);
+		return;
+	}
+
+	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+		perror("socket");
+		return;
+	}
+
+	addr.sin_family = AF_INET;
+	addr.sin_addr = *((struct in_addr *)he->h_addr);
+	addr.sin_port = htons(atoi(port));
+	memset(&(addr.sin_zero), 0, 8);
+	if (connect(sock,(struct sockaddr*)&addr,sizeof(struct sockaddr))==-1) {
+		return;
+	}
+
+	new_title("MPD");
+	send(sock, "stats\n", 6, 0);
+	c = 0;
+	for (;;) {
+		FD_ZERO(&rd);
+		FD_SET(sock, &rd);
+
+		tv.tv_sec = 0;
+		tv.tv_usec = 500;
+
+		n = select(sock+1, &rd, NULL, NULL, &tv);
+		if (!(FD_ISSET(sock, &rd) && n > 0)) break;
+		if (!read(sock, &ch, 1)) break;
+		if (ch == '\n')	{
+			int len;
+			about_stat *stat = NULL;
+			line[c] = '\0'; 
+			if (!strncmp(line, "artists", len = 7))
+    				stat = new_kvstat(_("Artists"));
+			else if (!strncmp(line, "albums", len = 6))
+    				stat = new_kvstat(_("Albums"));
+			else if (!strncmp(line, "songs", len = 5))
+    				stat = new_kvstat(_("Songs"));
+			if (stat)
+				strcpy(stat->value, line+len+2);
+#if 0
+			if (!strncmp(line, "db_playtime", len = 11)) {
+				struct tm *ti;
+				time_t tim;
+				stat = new_kvstat(_("DB Playtime"));
+				tim = atoi(line+len+2) - 86400;
+				ti = gmtime(&tim);
+#ifndef IPOD
+				strftime(stat->value, 128, "%-j days, "
+						"%-H:%M:%S", ti);
+#else
+				strftime(stat->value, 128, "%j days, "
+						"%H:%M:%S", ti);
+#endif
+			}
+#endif
+			c = 0;
+		}
+		else
+			line[c++] = ch;
+	}
+	close(sock);
+}
+
 static void populate_stats() 
 {
     about_stat *cur;
@@ -286,6 +373,8 @@ static void populate_stats()
 
     /***/ new_title ("Disk");
     do_partitions();
+
+    mpd_stats();
 }
 
 typedef struct {
