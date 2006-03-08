@@ -23,6 +23,7 @@ sub makeAP($) {
     chdir "/home/oremanj/dev/ipl/management/.svnc/ttk";
     system "svn up >svnerr 2>&1" and do { $conn->privmsg("#ipodlinux", "svn up in ttk failed $?"); return; };
     system "zip -r /var/www/html/iplbuilds/appearance-$rev.zip fonts schemes >/dev/null";
+    system "tar czf /var/www/html/iplbuilds/appearance-$rev.tar.gz fonts schemes >/dev/null";
 }
 
 sub makePZcore($) {
@@ -42,6 +43,7 @@ sub makePZmods($) {
     system "svn up >svnerr 2>&1" and do { $conn->privmsg("#ipodlinux", "svn up in pz2 failed $?"); return; };
     system "make defconfig all xpods IPOD=1 TTKDIR=../ttk >builderr 2>&1" and do { $conn->privmsg("#ipodlinux", "Someone just broke the PZ2 build (modules)."); return; };
     system "( cd xpods; zip -r /var/www/html/iplbuilds/pzmodules-$rev.zip * >/dev/null 2>&1 )";
+    system "( cd xpods; tar czf /var/www/html/iplbuilds/pzmodules-$rev.tar.gz * >/dev/null 2>&1 )";
     return 1;
 }
 
