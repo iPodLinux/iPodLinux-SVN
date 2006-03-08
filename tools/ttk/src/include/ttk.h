@@ -346,10 +346,16 @@ void ttk_aaellipse (ttk_surface srf, int x, int y, int rx, int ry, ttk_color col
 void ttk_aaellipse_gc (ttk_surface srf, ttk_gc gc, int x, int y, int rx, int ry);
 void ttk_fillellipse (ttk_surface srf, int x, int y, int rx, int ry, ttk_color col);
 void ttk_fillellipse_gc (ttk_surface srf, ttk_gc gc, int x, int y, int rx, int ry);
-void ttk_bezier(ttk_surface srf, int x1, int y1, int x2, int y2,
+void ttk_aafillellipse (ttk_surface srf, int xc, int yc, int rx, int ry, ttk_color col);
+void ttk_aafillellipse_gc (ttk_surface srf, ttk_gc gc, int xc, int yc, int rx, int ry);
+void ttk_bezier (ttk_surface srf, int x1, int y1, int x2, int y2,
 		int x3, int y3, int x4, int y4, int level, ttk_color col);
-void ttk_aabezier(ttk_surface srf, int x1, int y1, int x2, int y2,
+void ttk_bezier_gc (ttk_surface srf, ttk_gc gc, int x1, int y1, int x2, int y2,
+		int x3, int y3, int x4, int y4, int level);
+void ttk_aabezier (ttk_surface srf, int x1, int y1, int x2, int y2,
 		int x3, int y3, int x4, int y4, int level, ttk_color col);
+void ttk_aabezier_gc (ttk_surface srf, ttk_gc gc, int x1, int y1, int x2, int y2,
+		int x3, int y3, int x4, int y4, int level);
 
 void ttk_bitmap (ttk_surface srf, int x, int y, int w, int h, unsigned short *data, ttk_color col);
 void ttk_bitmap_gc (ttk_surface srf, ttk_gc gc, int x, int y, int w, int h, unsigned short *data);
