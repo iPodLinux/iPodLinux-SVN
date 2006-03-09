@@ -425,12 +425,7 @@ void podpaint_text_tool(ttk_surface srf, int x, int y, ttk_color c)
 void podpaint_ellipse(ttk_surface srf, int x, int y, int rx, int ry, ttk_color c) { ttk_ellipse(srf, x, y, ABS(rx-x), ABS(ry-y), c); }
 void podpaint_aaellipse(ttk_surface srf, int x, int y, int rx, int ry, ttk_color c) { ttk_aaellipse(srf, x, y, ABS(rx-x), ABS(ry-y), c); }
 void podpaint_fillellipse(ttk_surface srf, int x, int y, int rx, int ry, ttk_color c) { ttk_fillellipse(srf, x, y, ABS(rx-x), ABS(ry-y), c); }
-void podpaint_aafillellipse(ttk_surface srf, int x, int y, int rx, int ry, ttk_color c)
-{
-	ttk_fillellipse(srf, x, y, ABS(rx-x), ABS(ry-y), c);
-	ttk_aaellipse(srf, x, y, ABS(rx-x), ABS(ry-y), c);
-	ttk_aaellipse(srf, x, y, ABS(rx-x)-1, ABS(ry-y)-1, c);
-}
+void podpaint_aafillellipse(ttk_surface srf, int x, int y, int rx, int ry, ttk_color c) { ttk_aafillellipse(srf, x, y, ABS(rx-x), ABS(ry-y), c); }
 
 void podpaint_grabd(ttk_surface srf, int x1, int y1, int x2, int y2, ttk_color c)
 {
