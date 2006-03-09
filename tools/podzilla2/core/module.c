@@ -363,7 +363,11 @@ static void do_load (PzModule *mod)
     mod->handle = dlopen (fname, RTLD_NOW | RTLD_GLOBAL);
     free (fname);
     if (!mod->handle) {
+/*
         pz_error ("Could not load module %s: %s", mod->name, dlerror());
+*/
+	fprintf( stderr, "Error: Could not load module %s: %s\n",
+			mod->name, dlerror());
         mod->to_load = 0;
     }
 #endif
