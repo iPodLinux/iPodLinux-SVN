@@ -96,7 +96,7 @@ int ttk_mouse_scroll(TWidget * wid, int dir)
 		(m->mouseMove)(wid, m->x, m->y);
 	}
 	wid->dirty = 1;
-	return TTK_EV_CLICK;
+	return 0;
 }
 
 int ttk_mouse_up(TWidget * wid, int btn, int t)
