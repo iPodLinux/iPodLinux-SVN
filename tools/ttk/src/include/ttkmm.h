@@ -236,9 +236,9 @@ namespace TTK
     void click();
 
     // And, moving a few things into this namespace...
-    ttk_font& textFont = ttk_textfont;
-    ttk_font& menuFont = ttk_menufont;
-    ttk_screeninfo*& screen = ttk_screen;
+    extern ttk_font& textFont;
+    extern ttk_font& menuFont;
+    extern ttk_screeninfo*& screen;
 }
 
 #endif
