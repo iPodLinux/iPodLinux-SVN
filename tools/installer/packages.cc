@@ -92,6 +92,9 @@ void Package::parseLine (QString line)
                 if (!_reqs.contains (value))
                     _reqs << value;
             } else if (key == "supports") {
+                // Flags in _ipods: 0x10000 - specific 'pod type set
+                //                  0x20000 - supports WinPod
+                //                  0x40000 - supports MacPod
                 _ipods = 0;
                 for (int c = 0; c < value.length(); ++c) {
                     char ch = value[c].toAscii();
@@ -99,13 +102,22 @@ void Package::parseLine (QString line)
                         _ipods ^= (1 << (ch - '0'));
                     } else if (toupper (ch) >= 'A' && toupper (ch) <= 'F') {
                         _ipods ^= (1 << (toupper (ch) - 'A' + 10));
+                    } else if (ch == 'w' || ch == 'W') {
+                        _ipods |= 0x10000;
+                        _ipods ^= 0x20000;
+                    } else if (ch == 'm' || ch == 'M') {
+                        _ipods |= 0x10000;
+                        _ipods ^= 0x40000;
                     } else if (ch == '~' || ch == '^' || ch == '!') {
-                        _ipods = ~_ipods;
+                        _ipods = ~(_ipods & ~0x10000) | (_ipods & 0x10000);
                     } else {
                         qWarning ("Bad package list line: |%s| (unsupported supports character `%c')",
                                   line.toAscii().data(), ch);
                     }
                 }
+                if ((_ipods & 0x10000) && !(_ipods & 0x20000))
+                    _ipods = 0;
+                _ipods &= 0xffff;
             } else {
                 qWarning ("Bad package list line: |%s| (unrecognized keyword %s)",
                           line.toAscii().data(), key.toAscii().data());
@@ -296,14 +308,24 @@ void PackagesPage::httpRequestFinished (int req, bool err)
                     if (vrx.cap (1).toInt() != INSTALLER_PACKAGE_VERSION) {
                         if (!errored) {
                             progressStmt->setText (QString (tr ("<b><font color=\"red\">Error: Invalid "
-                                                                "package list version (need %1, got %2)."))
+                                                                "package list version (need %1, got %2)."
+                                                                "</font></b>"))
                                                    .arg (INSTALLER_PACKAGE_VERSION).arg (vrx.cap (1)));
                             errored = true;
                         }
                         return;
                     }
                 } else if (nrx.exactMatch (line)) {
-                    // nothing yet
+                    if (nrx.cap (1) != INSTALLER_VERSION) {
+                        if (!errored) {
+                            progressStmt->setText (QString (tr ("<b><font color=\"red\">Error: Out-of date "
+                                                                "installer (this is %1, current is %2). Please "
+                                                                "update.</font></b>"))
+                                                   .arg (INSTALLER_VERSION).arg (nrx.cap (1)));
+                            errored = true;
+                        }
+                        return;
+                    }
                 } else {
                     Package pkg (line);
                     if (pkg.supports (iPodVersion) && pkg.valid()) {
