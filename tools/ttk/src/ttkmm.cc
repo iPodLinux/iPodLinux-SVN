@@ -430,4 +430,8 @@ namespace TTK
 
     void click() 
     { ttk_click(); }
+
+    ttk_font& textFont = ttk_textfont;
+    ttk_font& menuFont = ttk_menufont;
+    ttk_screeninfo*& screen = ttk_screen;
 }
