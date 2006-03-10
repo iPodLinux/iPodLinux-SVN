@@ -176,8 +176,16 @@ void Package::readPackingList (VFS::Device *dev)
                     _packlist << line;
                 }
             }
+
+            delete[] buf;
+            delete packlist;
         }
     }
+    delete dirp;
+    delete ext2;
+
+    _selected = true;
+    _orig = true;
 }
 
 PackagesPage::PackagesPage (Installer *wiz)
@@ -335,6 +343,34 @@ void PackagesPage::httpDone (bool err)
         blurb->setText (tr ("<p>Here you may select packages to install for iPodLinux. Check the boxes "
                             "next to each package you would like to install.</p>"));
         progressStmt->hide();
+
+        QList<QTreeWidgetItem *> provlist = packages->findItems ("Packages providing `[0-9A-Za-z._-]+'",
+                                                                 Qt::MatchRegExp);
+        QListIterator<QTreeWidgetItem *> provit (provlist);
+        while (provit.hasNext()) {
+            QTreeWidgetItem *item = provit.next();
+            switch (item->childCount()) {
+            case 1:
+                packages->addTopLevelItem (item->takeChild (0));
+                /* FALLTHRU */
+            case 0:
+                packages->takeTopLevelItem (packages->indexOfTopLevelItem (item));
+                delete item;
+                break;
+            default:
+                break;
+            }
+        }
+
+        for (int i = 0; i < packages->topLevelItemCount(); i++) {
+            QTreeWidgetItem *it = packages->topLevelItem(i);
+            PkgTreeWidgetItem *item;
+            if ((item = dynamic_cast<PkgTreeWidgetItem *>(it)) != 0) {
+                item->package().readPackingList (iPodLinuxPartitionDevice);
+                if (item->package().selected()) item->select();
+            }
+        }
+
         packages->show();
         advok = true;
     }
@@ -396,7 +432,50 @@ WizardPage *PackagesPage::nextPage()
     wizard->resize (530, 440);
     wizard->setMinimumSize (500, 410);
     wizard->setMaximumSize (640, 500);
-    // Add package-installing and -removing actions
+
+    bool needsReLoader = false, needsReKernel = false, isLoader2 = false, wasLoader1 = false;
+
+    for (int i = 0; i < packages->topLevelItemCount(); i++) {
+        QTreeWidgetItem *it = packages->topLevelItem(i);
+        PkgTreeWidgetItem *item;
+        if ((item = dynamic_cast<PkgTreeWidgetItem *>(it)) != 0) {
+            if (item->package().changed()) {
+                if (item->package().selected()) {
+                    if (item->package().upgrade()) {
+                        // remove, install
+                        PendingActions->append (new PackageRemoveAction (item->package(),
+                                                                         tr ("Upgrading "
+                                                                             "(uninstalling old version):")));
+                        PendingActions->append (new PackageInstallAction (item->package(),
+                                                                          tr ("Upgrading "
+                                                                              "(installing new version):")));
+                    } else {
+                        // install
+                        PendingActions->append (new PackageInstallAction (item->package(), tr ("Installing:")));
+                    }
+                } else {
+                    // remove
+                    PendingActions->append (new PackageRemoveAction (item->package(), tr ("Removing:")));
+                }
+
+                if (item->package().type() == Package::Kernel)
+                    needsReKernel = true;
+                if (item->package().type() == Package::Loader) {
+                    needsReLoader = true;
+                    if (!item->package().provides().contains ("loader2"))
+                        wasLoader1 = true;
+                }
+            }
+            if (item->package().provides().contains ("loader2"))
+                isLoader2 = true;
+        }
+    }
+
+    if (needsReLoader ||
+        (needsReKernel && (wasLoader1 || !isLoader2))) {
+        PendingActions->append (new FirmwareRecreateAction);
+    }
+
     return new DoActionsPage (wizard, /* new DonePage */0);
 }
 

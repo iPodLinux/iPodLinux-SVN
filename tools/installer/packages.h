@@ -7,13 +7,12 @@
 #ifndef _PACKAGES_H_
 #define _PACKAGES_H_
 #include "installer.h"
-#include "actions.h"
 #include <QTreeWidget>
 
 class Package 
 {
 public:
-    enum Type { Kernel, Loader, File, Archive, Module };
+    enum Type { Kernel, Loader, File, Archive };
 
     Package();
     Package (QString line);

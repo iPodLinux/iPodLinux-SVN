@@ -6,6 +6,7 @@
 #include "actions.h"
 #include "panes.h"
 #include "rawpod/partition.h"
+#include "rawpod/device.h"
 #include "rawpod/fat32.h"
 
 #include <QLabel>
@@ -30,6 +31,8 @@ int iPodVersion;
 PartitionTable iPodPartitionTable;
 int iPodPartitionToShrink;
 int iPodLinuxPartitionSize;
+VFS::Device *iPodDevice;
+VFS::Device *iPodFirmwarePartitionDevice, *iPodMusicPartitionDevice, *iPodLinuxPartitionDevice;
 
 Installer::Installer (QWidget *parent)
     : ComplexWizard (parent)
@@ -385,6 +388,7 @@ PodLocationPage::PodLocationPage (Installer *wizard)
     }
 
     iPodLocation = podloc;
+    iPodDevice = new LocalRawDevice (podloc);
     iPodVersion = hw_ver;
     iPodPartitionTable = ptbl;
 }
@@ -426,6 +430,23 @@ void PodLocationPage::resetPage()
     emit completeStateChanged();
 }
 
+void setupDevices() 
+{
+    if (iPodFirmwarePartitionDevice) delete iPodFirmwarePartitionDevice;
+    if (iPodMusicPartitionDevice) delete iPodMusicPartitionDevice;
+    if (iPodLinuxPartitionDevice) delete iPodLinuxPartitionDevice;
+    
+    iPodFirmwarePartitionDevice = new PartitionDevice (iPodDevice,
+                                                       iPodPartitionTable[0].offset,
+                                                       iPodPartitionTable[0].length);
+    iPodMusicPartitionDevice = new PartitionDevice (iPodDevice,
+                                                    iPodPartitionTable[1].offset,
+                                                    iPodPartitionTable[1].length);
+    iPodLinuxPartitionDevice = new PartitionDevice (iPodDevice,
+                                                    iPodPartitionTable[2].offset,
+                                                    iPodPartitionTable[2].length);
+}
+
 WizardPage *PodLocationPage::nextPage() 
 {
     if (upgradeRadio) {
@@ -462,6 +483,7 @@ WizardPage *PodLocationPage::nextPage()
     case AdvancedInstall:
         return new PartitioningPage (wizard);
     case Update:
+        setupDevices();
         return new PackagesPage (wizard);
     case Uninstall:
         return 0;//new RestorePage (wizard);

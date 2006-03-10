@@ -6,6 +6,7 @@
 #define ACTIONS_H
 
 #include "installer.h"
+#include "packages.h"
 #include <QThread>
 #include <QList>
 
@@ -79,6 +80,49 @@ protected:
     virtual void run();
     
     int _sec;
+};
+
+class PackageAction : public Action
+{
+public:
+    PackageAction (Package pkg, QString label)
+        : _pkg (pkg), _label (label)
+    {}
+
+protected:
+    Package _pkg;
+    QString _label;
+};
+
+class PackageInstallAction : public PackageAction
+{
+public:
+    PackageInstallAction (Package pkg, QString label)
+        : PackageAction (pkg, label)
+    {}
+
+protected:
+    virtual void run() {}
+};
+
+class PackageRemoveAction : public PackageAction
+{
+public:
+    PackageRemoveAction (Package pkg, QString label)
+        : PackageAction (pkg, label)
+    {}
+
+protected:
+    virtual void run() {}
+};
+
+class FirmwareRecreateAction : public Action
+{
+public:
+    FirmwareRecreateAction() {}
+
+protected:
+    virtual void run() {}
 };
 
 extern QList<Action*> *PendingActions;

@@ -36,6 +36,10 @@ extern int iPodPartitionToShrink;
 extern int iPodLinuxPartitionSize;
 // iPod's partition table
 extern PartitionTable iPodPartitionTable;
+// VFS::Device for the whole iPod.
+extern VFS::Device *iPodDevice;
+// VFS::Device for each partition. NOTE: These are 0 for an install!
+extern VFS::Device *iPodFirmwarePartitionDevice, *iPodMusicPartitionDevice, *iPodLinuxPartitionDevice;
 
 class QCheckBox;
 class QGroupBox;
@@ -102,5 +106,8 @@ public:
 protected:
     Installer *wizard;
 };
+
+// Call once the partitions are set in stone.
+void setupDevices();
 
 #endif
