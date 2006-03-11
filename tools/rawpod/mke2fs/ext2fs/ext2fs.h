@@ -882,6 +882,7 @@ extern errcode_t ext2fs_write_bb_FILE(ext2_badblocks_list bb_list,
 
 
 /* inline functions */
+#ifdef NO_INLINE_FUNCS
 extern errcode_t ext2fs_get_mem(unsigned long size, void *ptr);
 extern errcode_t ext2fs_free_mem(void *ptr);
 extern errcode_t ext2fs_resize_mem(unsigned long old_size,
@@ -900,6 +901,7 @@ extern int ext2fs_group_of_blk(ext2_filsys fs, blk_t blk);
 extern int ext2fs_group_of_ino(ext2_filsys fs, ext2_ino_t ino);
 extern blk_t ext2fs_inode_data_blocks(ext2_filsys fs,
 				      struct ext2_inode *inode);
+#endif
 
 /*
  * The actual inlined functions definitions themselves...
@@ -914,7 +916,7 @@ extern blk_t ext2fs_inode_data_blocks(ext2_filsys fs,
 #define _INLINE_ static inline
 #endif
 
-#ifdef NO_INLINE_FUNCS
+#ifndef NO_INLINE_FUNCS
 
 #ifndef EXT2_CUSTOM_MEMORY_ROUTINES
 /*
