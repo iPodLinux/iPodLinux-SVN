@@ -1167,7 +1167,6 @@ CreateFATFilesystem (VFS::Device *d)
   char *tmp;
   char *listfile = NULL;
   FILE *msgfile;
-  struct stat statbuf;
   int i = 0, pos, ch;
   int create = 0;
 
