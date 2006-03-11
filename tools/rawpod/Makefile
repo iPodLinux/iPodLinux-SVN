@@ -5,8 +5,8 @@ APPS = ipodls ipodfind ipodcopy ipodshell ipodrm
 
 all: librawpod.a $(APPS)
 
-ipodcopy: librawpod.a ipodcopy.cc dirent.cc
-	g++ $(CXXFLAGS) -o $@ ipodcopy.cc dirent.cc librawpod.a $(LDFLAGS)
+ipodcopy: librawpod.a ipodcopy.cc
+	g++ $(CXXFLAGS) -o $@ ipodcopy.cc librawpod.a $(LDFLAGS)
 
 ipodls: librawpod.a ipodls.cc
 	g++ $(CXXFLAGS) -o $@ ipodls.cc librawpod.a $(LDFLAGS)
