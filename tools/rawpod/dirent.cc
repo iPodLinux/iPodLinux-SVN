@@ -68,6 +68,11 @@ DIR *opendir(const char *name)
     return dir;
 }
 
+int direrror() 
+{
+    return my_errno;
+}
+
 int closedir(DIR *dir)
 {
     int result = -1;
