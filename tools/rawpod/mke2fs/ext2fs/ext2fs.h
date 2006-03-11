@@ -909,9 +909,12 @@ extern blk_t ext2fs_inode_data_blocks(ext2_filsys fs,
  */
 #ifdef INCLUDE_INLINE_FUNCS
 #define _INLINE_ extern
+#undef NO_INLINE_FUNCS
 #else
-#define _INLINE_ inline
+#define _INLINE_ static inline
 #endif
+
+#ifdef NO_INLINE_FUNCS
 
 #ifndef EXT2_CUSTOM_MEMORY_ROUTINES
 /*
@@ -1059,6 +1062,7 @@ _INLINE_ blk_t ext2fs_inode_data_blocks(ext2_filsys fs,
        return inode->i_blocks -
               (inode->i_file_acl ? fs->blocksize >> 9 : 0);
 }
+#endif /* NO_INLINE_FUNCS */
 #undef _INLINE_
 
 #endif /* _EXT2FS_EXT2FS_H */
