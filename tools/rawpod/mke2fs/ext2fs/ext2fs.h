@@ -12,6 +12,10 @@
 #ifndef _EXT2FS_EXT2FS_H
 #define _EXT2FS_EXT2FS_H
 
+#if defined(WIN32) || defined(__CYGWIN__) || defined(CYGWIN32)
+#define NO_INLINE_FUNCS
+#endif
+
 #ifdef __GNUC__
 #define EXT2FS_ATTR(x) __attribute__(x)
 #else
