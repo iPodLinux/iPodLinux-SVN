@@ -22,6 +22,7 @@ extern "C" {
 DIR           *opendir(const char *);
 int           closedir(DIR *);
 struct dirent *readdir(DIR *);
+int           direrror();
 void          rewinddir(DIR *);
 };
 

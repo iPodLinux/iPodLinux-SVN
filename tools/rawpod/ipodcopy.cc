@@ -26,6 +26,11 @@ public:
     
     int readdir (struct VFS::dirent *de);
     int close() { if (_dp) closedir (_dp); _dp = 0; return 0; }
+#ifdef WIN32
+    int error() { if (!_dp) return direrror(); return 0; }
+#else
+    int error() { if (!_dp) return errno; return 0; }
+#endif
     
 private:
     DIR *_dp;
@@ -33,6 +38,8 @@ private:
 
 int LocalDir::readdir (struct VFS::dirent *de) 
 {
+    if (!_dp) return 0;
+
     struct dirent *d = ::readdir (_dp);
     if (!d) return 0;
     
@@ -53,7 +60,15 @@ int is_dir (const char *filename)
     if (is_local (filename)) {
 #ifdef WIN32
         DWORD attr = GetFileAttributes (filename);
-        if (attr == INVALID_FILE_ATTRIBUTES) return 0;
+        if (attr == INVALID_FILE_ATTRIBUTES) {
+            TCHAR err[512];
+            FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM, 0, GetLastError(), 0, err, 512, 0);
+            for (TCHAR *p = err; *p; p++) {
+                putchar (*p);
+            }
+            printf ("\nExiting.\n");
+            exit (1);
+        }
         return !!(attr & FILE_ATTRIBUTE_DIRECTORY);
 #else
         struct stat st;
@@ -140,6 +155,7 @@ void copy (const char *src, const char *dest)
             dp = ext2->opendir (src);
         if (dp->error()) {
             fprintf (stderr, "ipodcp[%d]: %s: %s\n", copynr, src, strerror (dp->error()));
+            return;
         }
 
         while (dp->readdir (&de)) {
