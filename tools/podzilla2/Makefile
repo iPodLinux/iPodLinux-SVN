@@ -119,16 +119,13 @@ ifdef IPOD
 endif
 
 install:
-ifndef IPOD
-	@echo "No installation necessary on desktop."
-else
-	@if [ -z "$(wildcard $(DESTDIR)/sbin)" ]; then echo "*** $(DESTDIR)/sbin does not exist. Please verify that you have correctly specified your iPod location. Stop."; false; fi
+	@if [ "$(DESTDIR)" = "/mnt/ipod" -a -z "$(wildcard $(DESTDIR)/sbin)" ]; then echo "*** $(DESTDIR)/sbin does not exist. Please verify that you have correctly specified your iPod location. Stop."; false; fi
+	@mkdir -p $(DESTDIR)/sbin $(DESTDIR)/usr/share/schemes $(DESTDIR)/usr/lib
 	@echo "Installing to $(DESTDIR)."
 	@echo " INST   podzilla"
 	@install -m 755 podzilla $(DESTDIR)/sbin/podzilla
 	@echo " INST   modules:"
-	@$(MAKE) install -sC modules DESTDIR=$(DESTDIR)
-endif
+	@$(MAKE) install -sC modules DESTDIR=$(DESTDIR) IPOD=1
 
 .message:
 ifdef IPOD
