@@ -35,7 +35,7 @@ struct insn
 
     /* MUL, MLA */
     { 0x0fe000f0, 0x00000090, "mul%c%s\t%16r, %r, %8r" },
-    { 0x0fe000f0, 0x02000090, "mla%c%s\t%16r, %r, %8r, %12r" },
+    { 0x0fe000f0, 0x00200090, "mla%c%s\t%16r, %r, %8r, %12r" },
 
     /* UMULL, UMLAL, SMULL, SMLAL */
     { 0x0fa000f0, 0x00800090, "%umull%c%s\t%12r, %16r, %r, %8r" },
