@@ -5,6 +5,7 @@
 #include "installer.h"
 #include "actions.h"
 
+#include <QMap>
 #include <QHttp>
 #include <QLabel>
 #include <QProgressBar>
@@ -103,7 +104,6 @@ public:
     void resetPage() {}
     WizardPage *nextPage();
     bool isComplete() { return advok; }
-    bool isLastPage() { return true; }
 
 protected slots:
     void httpSendProgress (int done, int total); 
@@ -119,6 +119,7 @@ private:
     QLabel *blurb;
     QLabel *progressStmt;
     QTreeWidget *packages;
+    QMap <int, PkgTreeWidgetItem*> resolvers;
     bool advok;
     bool errored;
 };

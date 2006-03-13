@@ -23,6 +23,7 @@
 #include <string.h>
 
 InstallerMode Mode;
+LoaderType iPodLoader;
 
 QList<Action*> *PendingActions;
 

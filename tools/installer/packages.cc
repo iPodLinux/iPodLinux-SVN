@@ -20,13 +20,15 @@
 Package::Package()
     : _name ("unk"), _version ("0.1a"), _dest ("/"), _desc ("???"), _url ("http://127.0.0.1/"),
       _subfile ("."), _type (Archive), _reqs (QStringList()), _provs (QStringList()),
-      _ipods (INSTALLER_WORKING_IPODS), _valid (false)
+      _ipods (INSTALLER_WORKING_IPODS), _valid (false),
+      _orig (false), _upgrade (false), _selected (false)
 {}
 
 Package::Package (QString line) 
     : _name ("unk"), _version ("0.0"), _dest ("/"), _desc ("???"), _url ("http://127.0.0.1/"),
       _subfile ("."), _type (Archive), _reqs (QStringList()), _provs (QStringList()),
-      _ipods (INSTALLER_WORKING_IPODS), _valid (false)
+      _ipods (INSTALLER_WORKING_IPODS), _valid (false),
+      _orig (false), _upgrade (false), _selected (false)
 {
     parseLine (line);
 }
@@ -41,7 +43,7 @@ void Package::parseLine (QString line)
     QRegExp rx ("^"
                 "\\s*" "\\[(kernel|loader|file|archive)\\]"
                 "\\s*" "([a-zA-Z0-9_-]+)"
-                "\\s+" "([0-9.YMDSVN-]+" "[abc]?)"
+                "\\s+" "([0-9.YMDNCVS-]+" "[abc]?)"
                 "\\s*" ":"
                 "\\s*" "\"([^\"]*)\""
                 "\\s*" "at"
@@ -118,6 +120,14 @@ void Package::parseLine (QString line)
                 if ((_ipods & 0x10000) && !(_ipods & 0x20000))
                     _ipods = 0;
                 _ipods &= 0xffff;
+            } else if (key == "default") {
+                _selected = true;
+            } else if (key == "defaultif") {
+                if ((value == "loader1" && (iPodLoader == Loader1Apple || iPodLoader == Loader1Linux)) ||
+                    (value == "loader2" && iPodLoader == Loader2) ||
+                    (value == "loader1apple" && iPodLoader == Loader1Apple) ||
+                    (value == "loader1linux" && iPodLoader == Loader1Linux))
+                    _selected = true;
             } else {
                 qWarning ("Bad package list line: |%s| (unrecognized keyword %s)",
                           line.toAscii().data(), key.toAscii().data());
@@ -146,6 +156,8 @@ void Package::readPackingList (VFS::Device *dev)
         delete ext2;
         return;
     }
+
+    _orig = _selected = _upgrade = false;
 
     struct VFS::dirent d;
     while (dirp->readdir (&d) > 0) {
@@ -200,6 +212,19 @@ void Package::readPackingList (VFS::Device *dev)
     _orig = true;
 }
 
+void Package::debug() 
+{
+    qDebug ("Package: %s v%s (\"%s\")", _name.toAscii().data(),
+            _version.toAscii().data(), _desc.toAscii().data());
+    qDebug ("    URL: %s (subfile %s) (installing to %s)", _url.toAscii().data(),
+            _subfile.toAscii().data(), _dest.toAscii().data());
+    qDebug ("   Reqs: %s", _reqs.join (", ").toAscii().data());
+    qDebug ("  Provs: %s", _provs.join (", ").toAscii().data());
+    qDebug ("  Flags: %c%c%c%c", _valid? 'V' : 'v', _orig? 'I' : 'i',
+            _upgrade? 'U' : 'u', _selected? 'S' : 's');
+    qDebug ("   Type: %d", _type);
+}
+
 PackagesPage::PackagesPage (Installer *wiz)
     : InstallerPage (wiz), advok (false), errored (false)
 {
@@ -225,7 +250,6 @@ PackagesPage::PackagesPage (Installer *wiz)
     layout->addSpacing (10);
     layout->addWidget (progressStmt);
     layout->addWidget (packages);
-    layout->addStretch (1);
     packages->hide();
     setLayout (layout);
 
@@ -287,6 +311,35 @@ void PackagesPage::httpRequestFinished (int req, bool err)
             errored = true;
         }
         return;
+    } else if (resolvers [req] && packlistHTTP->bytesAvailable()) {
+        PkgTreeWidgetItem *item = resolvers [req];
+        QString pat = item->package().url();
+        pat.remove (0, pat.lastIndexOf ('/') + 1);
+        if (pat.contains ("YYYYMMDD"))
+            pat.replace ("YYYYMMDD", "([0-9][0-9][0-9][0-9]-?[0-9][0-9]-?[0-9][0-9])");
+        if (pat.contains ("NNN"))
+            pat.replace ("NNN", "([0-9][0-9][0-9][0-9]?[0-9]?)");
+
+        QRegExp rx ("<[Aa] [Hh][Rr][Ee][Ff]=\"[^\"]+\">" + pat + "</[Aa]>");
+        qDebug ("Pattern: %s", rx.pattern().toAscii().data());
+        QStringList lines = QString (packlistHTTP->readAll().constData()).split ("\n");
+        QStringListIterator it (lines);
+        QString cap = "";
+        while (it.hasNext()) {
+            QString line = it.next();
+            if (rx.indexIn (line) >= 0)
+                cap = rx.cap(1);
+        }
+        if (cap != "") {
+            item->package().version().replace ("YYYYMMDD", cap);
+            item->package().version().replace ("NNN", cap);
+            item->package().url().replace ("YYYYMMDD", cap);
+            item->package().url().replace ("NNN", cap);
+            item->package().subfile().replace ("YYYYMMDD", cap);
+            item->package().subfile().replace ("NNN", cap);
+        }
+        item->package().debug();
+        item->update();
     } else if (packlistHTTP->bytesAvailable()) {
         if (packlistHTTP->lastResponse().statusCode() == 200) {
             QStringList lines = QString (packlistHTTP->readAll().constData()).split ("\n");
@@ -329,7 +382,7 @@ void PackagesPage::httpRequestFinished (int req, bool err)
                 } else {
                     Package pkg (line);
                     if (pkg.supports (iPodVersion) && pkg.valid()) {
-                        QTreeWidgetItem *twi;
+                        PkgTreeWidgetItem *twi;
                         if (pkg.provides().size()) {
                             QList <QTreeWidgetItem *> provlist =
                                 packages->findItems ("Packages providing `" + pkg.provides()[0] + "'",
@@ -341,10 +394,19 @@ void PackagesPage::httpRequestFinished (int req, bool err)
                                                                                  QTreeWidgetItem::UserType);
                                 provitem->setText (0, "Packages providing `" + pkg.provides()[0] + "'");
                                 provitem->setFlags (0);
+                                packages->setItemExpanded (provitem, true);
                                 twi = new PkgTreeWidgetItem (provitem, pkg);
                             }
                         } else {
                             twi = new PkgTreeWidgetItem (packages, pkg);
+                        }
+                        if (pkg.url().contains ("YYYYMMDD") || pkg.url().contains ("NNN")) {
+                            QString dir = pkg.url();
+                            dir.truncate (dir.lastIndexOf ('/'));
+                            QUrl url (dir);
+                            packlistHTTP->setHost (url.host(), (url.port() > 0)? url.port() : 80);
+                            resolvers [packlistHTTP->get (url.toString (QUrl::RemoveScheme |
+                                                                        QUrl::RemoveAuthority))] = twi;
                         }
                     }
                 }
@@ -395,6 +457,7 @@ void PackagesPage::httpDone (bool err)
 
         packages->show();
         advok = true;
+        emit completeStateChanged();
     }
 }
 
@@ -403,7 +466,8 @@ void PackagesPage::httpResponseHeaderReceived (const QHttpResponseHeader& resp)
     if (resp.statusCode() >= 300 && resp.statusCode() < 400) { // redirect
         QUrl url (resp.value ("location"));
         packlistHTTP->setHost (url.host(), (url.port() > 0)? url.port() : 80);
-        packlistHTTP->get (url.toString (QUrl::RemoveScheme | QUrl::RemoveAuthority));
+        resolvers [packlistHTTP->get (url.toString (QUrl::RemoveScheme | QUrl::RemoveAuthority))] =
+            resolvers [packlistHTTP->currentId()];
     } else if (resp.statusCode() != 200) {
         if (!errored) {
             progressStmt->setText (QString (tr ("<b><font color=\"red\">Error: %1</font></b>"))
@@ -505,10 +569,7 @@ PkgTreeWidgetItem::PkgTreeWidgetItem (QTreeWidget *parent, Package pkg)
     : QTreeWidgetItem (parent, UserType), _pkg (pkg), _changemarked (false)
 {
     setFlags (Qt::ItemIsSelectable | Qt::ItemIsUserCheckable | Qt::ItemIsEnabled);
-    setCheckState (0, Qt::Unchecked);
-    setText (0, pkg.name());
-    setText (1, pkg.version());
-    setText (3, pkg.description());
+    update();
     _setsel();
 }
 
@@ -516,11 +577,19 @@ PkgTreeWidgetItem::PkgTreeWidgetItem (QTreeWidgetItem *parent, Package pkg)
     : QTreeWidgetItem (parent, UserType), _pkg (pkg), _changemarked (false)
 {
     setFlags (Qt::ItemIsSelectable | Qt::ItemIsUserCheckable | Qt::ItemIsEnabled);
-    setCheckState (0, Qt::Unchecked);
-    setText (0, pkg.name());
-    setText (1, pkg.version());
-    setText (3, pkg.description());
+    update();
     _setsel();
+}
+
+void PkgTreeWidgetItem::update() 
+{
+    if (_pkg.selected())
+        setCheckState (0, Qt::Checked);
+    else
+        setCheckState (0, Qt::Unchecked);
+    setText (0, _pkg.name());
+    setText (1, _pkg.version());
+    setText (3, _pkg.description());
 }
 
 void PkgTreeWidgetItem::_setsel() 
