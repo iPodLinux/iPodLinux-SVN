@@ -20,15 +20,15 @@ public:
     void parseLine (QString line);
     void readPackingList (VFS::Device *dev);
     
-    QString name() { return _name; }
-    QString version() { return _version; }
-    QString destination() { return _dest; }
-    QString description() { return _desc; }
-    QString url() { return _url; }
-    QString subfile() { return _subfile; }
-    QStringList requires() { return _reqs; }
-    QStringList provides() { return _provs; }
-    Type type() { return _type; }
+    QString& name() { return _name; }
+    QString& version() { return _version; }
+    QString& destination() { return _dest; }
+    QString& description() { return _desc; }
+    QString& url() { return _url; }
+    QString& subfile() { return _subfile; }
+    QStringList& requires() { return _reqs; }
+    QStringList& provides() { return _provs; }
+    Type& type() { return _type; }
     bool supports (int hw_ver) { return !!(_ipods & (1 << hw_ver)); }
     bool valid() { return _valid; }
 
@@ -42,6 +42,8 @@ public:
     void select() { _selected = true; }
     void makeDefault() { _orig = _selected; }
     void deselect() { _selected = false; }
+
+    void debug();
 
 protected:
     QString _name, _version, _dest, _desc, _url, _subfile;
@@ -60,6 +62,7 @@ public:
     void select() { _pkg.select(); _setsel(); }
     void deselect() { _pkg.deselect(); _setsel(); }
     void makeDefault() { _pkg.makeDefault(); }
+    void update();
     Package& package() { return _pkg; }
 
 private:

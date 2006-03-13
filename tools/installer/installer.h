@@ -25,7 +25,9 @@
 
 enum InstallerMode { StandardInstall, AdvancedInstall,
                      Update, Uninstall };
+enum LoaderType { Loader1Apple, Loader1Linux, Loader2 };
 extern InstallerMode Mode;
+extern LoaderType iPodLoader;
 // Physical drive number of the iPod.
 extern int iPodLocation;
 // boardHwSwInterfaceRev >> 16 (0x4 = mini, 0xB = video, etc.)
