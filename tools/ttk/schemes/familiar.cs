@@ -1,5 +1,5 @@
 \name Familiar
-# The colour scheme you all know
+# The colour scheme you all know.
 \def black  #000000
 \def white  #ffffff
 \def nearblack #111111
