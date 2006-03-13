@@ -322,7 +322,6 @@ void PackagesPage::httpRequestFinished (int req, bool err)
             pat.replace ("NNN", "([0-9][0-9][0-9][0-9]?[0-9]?)");
 
         QRegExp rx ("<[Aa] [Hh][Rr][Ee][Ff]=\"[^\"]+\">" + pat + "</[Aa]>");
-        qDebug ("Pattern: %s", rx.pattern().toAscii().data());
         QStringList lines = QString (packlistHTTP->readAll().constData()).split ("\n");
         QStringListIterator it (lines);
         QString cap = "";
@@ -339,7 +338,6 @@ void PackagesPage::httpRequestFinished (int req, bool err)
             item->package().subfile().replace ("YYYYMMDD", cap);
             item->package().subfile().replace ("NNN", cap);
         }
-        item->package().debug();
         item->update();
     } else if (packlistHTTP->bytesAvailable()) {
         if (packlistHTTP->lastResponse().statusCode() == 200) {
