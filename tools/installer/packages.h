@@ -57,10 +57,10 @@ protected:
 class PkgTreeWidgetItem : public QTreeWidgetItem 
 {
 public:
-    PkgTreeWidgetItem (QTreeWidget *widget, Package pkg);
-    PkgTreeWidgetItem (QTreeWidgetItem *parent, Package pkg);
-    void select() { _pkg.select(); _setsel(); }
-    void deselect() { _pkg.deselect(); _setsel(); }
+    PkgTreeWidgetItem (PackagesPage *page, QTreeWidget *widget, Package pkg);
+    PkgTreeWidgetItem (PackagesPage *page, QTreeWidgetItem *parent, Package pkg);
+    void select();
+    void deselect();
     void makeDefault() { _pkg.makeDefault(); }
     void update();
     Package& package() { return _pkg; }
@@ -69,6 +69,7 @@ private:
     void _setsel();
     Package _pkg;
     bool _changemarked;
+    PackagesPage *_page;
 };
 
 #endif

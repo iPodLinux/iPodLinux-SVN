@@ -16,6 +16,7 @@
 #include <QVBoxLayout>
 #include <QtDebug>
 #include <QTextStream>
+#include <QMessageBox>
 
 Package::Package()
     : _name ("unk"), _version ("0.1a"), _dest ("/"), _desc ("???"), _url ("http://127.0.0.1/"),
@@ -388,18 +389,24 @@ void PackagesPage::httpRequestFinished (int req, bool err)
                                 packages->findItems ("Packages providing `" + pkg.provides()[0] + "'",
                                                      Qt::MatchExactly);
                             if (provlist.size()) {
-                                twi = new PkgTreeWidgetItem (provlist[0], pkg);
+                                twi = new PkgTreeWidgetItem (this, provlist[0], pkg);
                             } else {
                                 QTreeWidgetItem *provitem = new QTreeWidgetItem (packages,
                                                                                  QTreeWidgetItem::UserType);
                                 provitem->setText (0, "Packages providing `" + pkg.provides()[0] + "'");
                                 provitem->setFlags (0);
                                 packages->setItemExpanded (provitem, true);
-                                twi = new PkgTreeWidgetItem (provitem, pkg);
+                                twi = new PkgTreeWidgetItem (this, provitem, pkg);
                             }
                         } else {
-                            twi = new PkgTreeWidgetItem (packages, pkg);
+                            twi = new PkgTreeWidgetItem (this, packages, pkg);
                         }
+                        packageProvides.insert (pkg.name(), twi);
+                        QStringListIterator pi (pkg.provides());
+                        while (pi.hasNext()) {
+                            packageProvides.insert (pi.next(), twi);
+                        }
+
                         if (pkg.url().contains ("YYYYMMDD") || pkg.url().contains ("NNN")) {
                             QString dir = pkg.url();
                             dir.truncate (dir.lastIndexOf ('/'));
@@ -477,6 +484,89 @@ void PackagesPage::httpResponseHeaderReceived (const QHttpResponseHeader& resp)
     }
 }
 
+void PkgTreeWidgetItem::select() 
+{
+    _pkg.select();
+
+    QStringListIterator rit (_pkg.requires());
+    while (rit.hasNext()) {
+        QString req = rit.next();
+        bool haveAny = false;
+
+        QList <PkgTreeWidgetItem *> satisfants = _page->packageProvides.values (req);
+        for (int i = 0; i < satisfants.size(); i++) {
+            if (satisfants[i]->package().selected())
+                haveAny = true;
+        }
+
+        if (!haveAny) {
+            if (satisfants.size()) {
+                satisfants[0]->setCheckState (0, Qt::Checked);
+                satisfants[0]->select();
+            } else {
+                QMessageBox::warning (_page, QObject::tr ("Missing dependency"),
+                                      QObject::tr ("The package you selected, `%1', has a dependency \n"
+                                                   "on `%2' which I was not able to satisfy. Sorry, \n"
+                                                   "but you can't select this package.")
+                                      .arg (package().name())
+                                      .arg (req),
+                                      QObject::tr ("Ok"));
+                setCheckState (0, Qt::Unchecked);
+                deselect();
+            }
+        }
+    }
+
+    if (parent()) {
+        for (int i = 0; i < parent()->childCount(); i++) {
+            PkgTreeWidgetItem *ptwi;
+
+            if (parent()->child(i) == this) continue;
+            if (parent()->child(i)->checkState(0) == Qt::Checked) {
+                parent()->child(i)->setCheckState (0, Qt::Unchecked);
+                if ((ptwi = dynamic_cast<PkgTreeWidgetItem*>(parent()->child(i))) != 0) {
+                    ptwi->deselect();
+                }
+            }
+        }
+    }
+    
+    _setsel();
+}
+
+void PkgTreeWidgetItem::deselect() 
+{
+    _pkg.deselect();
+
+    QList <QTreeWidgetItem *> allItems = _page->packages->findItems (".*", Qt::MatchRegExp | Qt::MatchRecursive);
+    QListIterator <QTreeWidgetItem *> it (allItems);
+
+    while (it.hasNext()) {
+        QTreeWidgetItem *i = it.next();
+        PkgTreeWidgetItem *item;
+        if (i->checkState(0) == Qt::Checked && (item = dynamic_cast<PkgTreeWidgetItem*>(i)) != 0) {
+            QStringListIterator rit (item->_pkg.requires());
+            while (rit.hasNext()) {
+                QString req = rit.next();
+                bool haveAny = false;
+                
+                QList <PkgTreeWidgetItem *> satisfants = _page->packageProvides.values (req);
+                for (int i = 0; i < satisfants.size(); i++) {
+                    if (satisfants[i]->package().selected())
+                        haveAny = true;
+                }
+                
+                if (!haveAny) {
+                    item->setCheckState (0, Qt::Unchecked);
+                    item->deselect();
+                }
+            }
+        }
+    }
+
+    _setsel();
+}
+
 void PackagesPage::listClicked (QTreeWidgetItem *item, int column) 
 {
     // This is connected to itemChanged, which is connected to setCheckState,
@@ -493,21 +583,6 @@ void PackagesPage::listClicked (QTreeWidgetItem *item, int column)
             ptwi->select();
         else
             ptwi->deselect();
-    }
-
-    if (!item->parent()) { depth--; return; }
-
-    // Items are mutually exclusive with their siblings.
-    if (item->checkState(0) == Qt::Checked) {
-        for (int i = 0; i < item->parent()->childCount(); i++) {
-            if (item->parent()->child(i) == item) continue;
-            if (item->parent()->child(i)->checkState(0) == Qt::Checked) {
-                item->parent()->child(i)->setCheckState (0, Qt::Unchecked);
-                if ((ptwi = dynamic_cast<PkgTreeWidgetItem*>(item->parent()->child(i))) != 0) {
-                    ptwi->deselect();
-                }
-            }
-        }
     }
 
     depth--;
@@ -565,16 +640,16 @@ WizardPage *PackagesPage::nextPage()
     return new DoActionsPage (wizard, /* new DonePage */0);
 }
 
-PkgTreeWidgetItem::PkgTreeWidgetItem (QTreeWidget *parent, Package pkg)
-    : QTreeWidgetItem (parent, UserType), _pkg (pkg), _changemarked (false)
+PkgTreeWidgetItem::PkgTreeWidgetItem (PackagesPage *page, QTreeWidget *parent, Package pkg)
+    : QTreeWidgetItem (parent, UserType), _pkg (pkg), _changemarked (false), _page (page)
 {
     setFlags (Qt::ItemIsSelectable | Qt::ItemIsUserCheckable | Qt::ItemIsEnabled);
     update();
     _setsel();
 }
 
-PkgTreeWidgetItem::PkgTreeWidgetItem (QTreeWidgetItem *parent, Package pkg)
-    : QTreeWidgetItem (parent, UserType), _pkg (pkg), _changemarked (false)
+PkgTreeWidgetItem::PkgTreeWidgetItem (PackagesPage *page, QTreeWidgetItem *parent, Package pkg)
+    : QTreeWidgetItem (parent, UserType), _pkg (pkg), _changemarked (false), _page (page)
 {
     setFlags (Qt::ItemIsSelectable | Qt::ItemIsUserCheckable | Qt::ItemIsEnabled);
     update();

@@ -99,6 +99,8 @@ class PackagesPage : public InstallerPage
 {
     Q_OBJECT
 
+    friend class PkgTreeWidgetItem;
+
 public:
     PackagesPage (Installer *wizard);
     void resetPage() {}
@@ -120,6 +122,7 @@ private:
     QLabel *progressStmt;
     QTreeWidget *packages;
     QMap <int, PkgTreeWidgetItem*> resolvers;
+    QMultiMap <QString, PkgTreeWidgetItem*> packageProvides;
     bool advok;
     bool errored;
 };
