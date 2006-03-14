@@ -333,6 +333,41 @@ ext2_inode *Ext2FS::geti (u32 ino)
     return ret;
 }
 
+void Ext2FS::puti (u32 ino, ext2_inode *inode) 
+{
+    int i = ino - 1; // inodes numbered from 1, stored from 0
+    _device->lseek ((_group_desc[i / _ino_per_group].bg_inode_table << _blocksize_bits) +
+                    (i % _ino_per_group) * _sb->s_inode_size, SEEK_SET);
+    _device->write (inode, _sb->s_inode_size);
+    delete inode;
+}
+
+int Ext2FS::chmod (const char *path, int mode) 
+{
+    s32 ino = lookup (path);
+    if (ino < 0) return ino;
+    ext2_inode *inode = geti (ino);
+    
+    inode->i_mode &= ~07777;
+    inode->i_mode |= (mode & 07777);
+
+    puti (ino, inode);
+    return 0;
+}
+
+int Ext2FS::chown (const char *path, int uid, int gid) 
+{
+    s32 ino = lookup (path);
+    if (ino < 0) return ino;
+    ext2_inode *inode = geti (ino);
+    
+    if (uid >= 0) inode->i_uid = uid;
+    if (gid >= 0) inode->i_gid = gid;
+
+    puti (ino, inode);
+    return 0;
+}
+
 // Used mainly for reading directories - you wouldn't want to read
 // most files all at once.
 int Ext2FS::readiblocks (u8 *buf, u32 *iblock, int n)

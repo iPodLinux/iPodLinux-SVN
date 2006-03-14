@@ -25,7 +25,7 @@ public:
     int readdir (struct VFS::dirent *de);
     int close() { if (_dp) closedir (_dp); _dp = 0; return 0; }
 #ifdef WIN32
-    int error() { if (!_dp) return direrror(); return 0; }
+    int error() { if (!_dp) return 1; return 0; }
 #else
     int error() { if (!_dp) return errno; return 0; }
 #endif

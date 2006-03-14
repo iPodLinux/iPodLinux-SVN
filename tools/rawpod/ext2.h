@@ -526,6 +526,8 @@ public:
     virtual int   symlink (const char *dest, const char *path);
     virtual int   readlink (const char *path, char *buf, int len);
     virtual int   lstat (const char *path, struct my_stat *st);
+    virtual int   chmod (const char *path, int mode);
+    virtual int   chown (const char *path, int uid, int gid);
 
     void setWritable (int flag) { _writable = flag; }
     
@@ -533,6 +535,8 @@ protected:
     s32           lookup (const char *path, int resolve_final_symlink = 0);
     s32           sublookup (u32 root_ino, const char *path, int resolve_final_symlink);
     ext2_inode   *geti (u32 ino);
+    // Saves the inode and frees its memory.
+    void          puti (u32 ino, ext2_inode *inode);
     // Makes the entry in the dir. Does not change link count.
     int          _link (u32 dirino, u32 ino, const char *name, int type = EXT2_FT_REG_FILE);
     // Removes the entry in the dir. Does not change link count.
