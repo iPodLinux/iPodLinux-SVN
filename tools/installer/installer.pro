@@ -23,7 +23,7 @@ HEADERS += rawpod/device.h rawpod/errors.h rawpod/ext2.h \
 
 # Rawpod mke2fs
 INCLUDEPATH += rawpod rawpod/mke2fs rawpod/mke2fs/e2p rawpod/mke2fs/et \
-               rawpod/mke2fs/ext2fs rawpod/mke2fs/uuid
+               rawpod/mke2fs/ext2fs rawpod/mke2fs/uuid libtar zlib
 HEADERS += rawpod/mke2fs/e2p/e2p.h
 SOURCES += rawpod/mke2fs/e2p/feature.cc rawpod/mke2fs/e2p/hashstr.cc \
            rawpod/mke2fs/e2p/iod.cc rawpod/mke2fs/e2p/ls.cc \
@@ -72,6 +72,11 @@ SOURCES += rawpod/mke2fs/uuid/clear.cc rawpod/mke2fs/uuid/compare.cc \
            rawpod/mke2fs/uuid/pack.cc rawpod/mke2fs/uuid/parse.cc \
            rawpod/mke2fs/uuid/unpack.cc rawpod/mke2fs/uuid/unparse.cc
 SOURCES += rawpod/mke2fs/mke2fs_app.cc
+
+# Libtar
+SOURCES += libtar/tblock.cc libtar/decode.cc libtar/extract.cc libtar/handle.cc \
+           libtar/hash.cc libtar/list.cc libtar/output.cc libtar/util.cc
+HEADERS += libtar/internal.h libtar/libtar.h libtar/listhash.h
 
 # Zlib
 SOURCES += zlib/adler32.c zlib/compress.c zlib/crc32.c \
