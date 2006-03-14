@@ -542,7 +542,7 @@ protected:
     // Removes the entry in the dir. Does not change link count.
     int          _unlink (u32 dirino, const char *name);
     // Returns the new inode.
-    s32           creat (const char *path, int type);
+    s32           creat (const char *path, int type, int mode = 0644);
 
     int           readfile (void *buf, ext2_inode *inode);
     int           readiblocks (u8 *buf, u32 *iblock, int n);

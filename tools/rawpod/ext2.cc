@@ -683,7 +683,7 @@ int Ext2FS::mkdir (const char *path)
         return dirino;
     }
 
-    ino = creat (path, EXT2_FT_DIR);
+    ino = creat (path, EXT2_FT_DIR, 0755);
     if (ino < 0)
         return ino;
     
@@ -915,7 +915,7 @@ int Ext2FS::symlink (const char *target, const char *link)
     if (ino > 0)
         return -EEXIST;
     
-    ino = creat (link, EXT2_FT_SYMLINK);
+    ino = creat (link, EXT2_FT_SYMLINK, 0777);
     if (ino < 0)
         return ino;
     
@@ -1501,7 +1501,7 @@ int Ext2FS::_link (u32 dirino, u32 ino, const char *name, int type)
     return 0;
 }
 
-s32 Ext2FS::creat (const char *path, int type) 
+s32 Ext2FS::creat (const char *path, int type, int newmode) 
 {
     s32 ino = lookup (path);
     ext2_inode *inode;
@@ -1536,7 +1536,7 @@ s32 Ext2FS::creat (const char *path, int type)
     // Create a new inode.
     inode = new ext2_inode;
     memset (inode, 0, sizeof(*inode));
-    inode->i_mode = 0644;
+    inode->i_mode = newmode;
     inode->i_uid = inode->i_gid = 0;
     inode->i_size = 0;
     inode->i_atime = inode->i_ctime = inode->i_mtime = getTime();
