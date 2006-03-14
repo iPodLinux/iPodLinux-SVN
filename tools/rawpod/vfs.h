@@ -263,6 +263,8 @@ namespace VFS
 	virtual int link (const char *oldpath, const char *newpath) { (void)oldpath, (void)newpath; return -EPERM; }
 	virtual int symlink (const char *dest, const char *path) { (void)dest, (void)path; return -EPERM; }
         virtual int readlink (const char *path, char *buf, int len) { (void)path, (void)buf, (void)len; return -EINVAL; }
+        virtual int chmod (const char *dest, int mode) { (void)dest, (void)mode; return -EPERM; }
+        virtual int chown (const char *dest, int uid, int gid) { (void)dest, (void)uid, (void)gid; return -EPERM; }
         virtual int stat (const char *path, struct my_stat *st) {
             File *fp = open (path, O_RDONLY);
             int err = 0;
