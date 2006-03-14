@@ -231,9 +231,11 @@ static void load_rockbox(ipod_t *ipod,char *image) {
   );
 }
 
+extern void hd_demo();
+
 void *loader(void) {
   //void *entry;
-    int menuPos,done,redraw;
+    int menuPos,done;
     uint32 ret;
     ipod_t *ipod;
     config_t *conf;
@@ -253,7 +255,7 @@ void *loader(void) {
     fb_cls(framebuffer,0x18);
 
     console_init(framebuffer);
-    console_puts("iPL Bootloader 2.0\n");
+    console_puts("iPL Bootloader 2.1\n");
     fb_update(framebuffer);
 
 #ifdef DEBUG
@@ -312,37 +314,22 @@ void *loader(void) {
  redoMenu:
     menuPos = conf->def;
     done    = 0;
-    redraw  = 1;
-#ifdef DEBUG
-    int key;
-    while (1) {
-        key = keypad_getkey();
-        if (key == IPOD_KEY_UP) mlc_printf ("up\n");
-        if (key == IPOD_KEY_DOWN) mlc_printf ("down\n");
-        if (key == IPOD_KEY_SELECT) mlc_printf ("select\n");
-    }
-#endif
-    while(!done) {
-      int key;
 
-      key = keypad_getkey();
+    while(!done) {
+        int key = keypad_getkey();
+
       if( key == IPOD_KEY_UP ) {
 	if(menuPos>0)
 	  menuPos--;
-	redraw = 1;
       } else if( key == IPOD_KEY_DOWN ) {
 	if(menuPos<(conf->items-1))
 	  menuPos++;
-	redraw = 1;
       } else if( key == IPOD_KEY_SELECT ) {
 	done = 1;
       }
 
-      if(redraw) {
 	menu_redraw(framebuffer,menuPos);
 	fb_update(framebuffer);
-	redraw = 0;
-      }
     }
 
     menu_cls(framebuffer);
