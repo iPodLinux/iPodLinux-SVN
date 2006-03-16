@@ -115,11 +115,16 @@ extern int __pz_builtin_number_of_init_functions;
 #else
 // The _init_module__ one is to make it transparent
 // on systems with leading underscores on C symbols.
+#ifdef __cplusplus
+#define CLINKAGE extern "C"
+#else
+#define CLINKAGE
+#endif
 #define PZ_MOD_INIT(fn) \
-    void __init_module__() { \
+    CLINKAGE void __init_module__() { \
         if (_pz_mod_check_version(PZ_API_VERSION)) fn(); \
     } \
-    void _init_module__() { \
+    CLINKAGE void _init_module__() { \
         if (_pz_mod_check_version(PZ_API_VERSION)) fn(); \
     }
 #endif
