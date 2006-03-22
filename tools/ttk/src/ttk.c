@@ -719,12 +719,12 @@ int ttk_run()
 
 		// If user pushes a button on clickwheel, it'll also register as a tap.
 		// Counter that.
-		if (ttk_button_presstime[*p] && (ttk_get_podversion() & TTK_POD_PP5020) &&
+		if (ttk_button_presstime[*p] && (ttk_get_podversion() & TTK_POD_PP502X) &&
 		    ttk_last_stap_time) ttk_ignore_stap = 1;
 	    }
 	    // stap
 #ifdef IPOD
-	    if (ttk_get_podversion() & TTK_POD_PP5020) {
+	    if (ttk_get_podversion() & TTK_POD_PP502X) {
 		in = inl (0x7000C140);
 		st = (in & 0x40000000);
 		touch = (in & 0x007F0000) >> 16;
@@ -784,7 +784,7 @@ int ttk_run()
 void ttk_click()
 {
 #ifdef IPOD
-    if (ttk_get_podversion() & (TTK_POD_PP5020 | TTK_POD_PP5022)) {
+    if (ttk_get_podversion() & TTK_POD_PP502X) {
 	int i, j;
 	outl(inl(0x70000010) & ~0xc, 0x70000010);
 	outl(inl(0x6000600c) | 0x20000, 0x6000600c);    /* enable device */
