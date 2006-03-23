@@ -8,6 +8,7 @@
 #include "rawpod/partition.h"
 #include "rawpod/device.h"
 #include "rawpod/fat32.h"
+#include "rawpod/ext2.h"
 
 #include <QLabel>
 #include <QLineEdit>
@@ -699,6 +700,10 @@ WizardPage *InstallPage::nextPage()
     /* XXX action for making backup or saving it to a temp file */
     PendingActions->append (new PartitionAction (iPodLocation, iPodPartitionToShrink,
                                                  3, 0x83, iPodLinuxPartitionSize));
+    if (iPodPartitionToShrink == 2) {
+        PendingActions->append (new FormatAction (2, CreateFATFilesystem, "Formatting the music partition."));
+    }
+    PendingActions->append (new FormatAction (3, CreateExt2Filesystem, "Formatting the Linux partition."));
     return new PackagesPage (wizard);
 }
 

@@ -69,6 +69,21 @@ protected:
     int _newsize;
 };
 
+class FormatAction : public Action
+{
+public:
+    FormatAction (int part, int (*mkfs)(VFS::Device *), const char *str)
+        : _part (part), _mkfsfunc (mkfs), _str (str)
+    {}
+
+protected:
+    virtual void run();
+    
+    int _part;
+    int (*_mkfsfunc)(VFS::Device *);
+    const char *_str;
+};
+
 class DelayAction : public Action
 {
 public:
