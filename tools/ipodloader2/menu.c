@@ -122,7 +122,7 @@ void menu_redraw(uint16 *fb,uint32 selectedItem) {
 
   console_setcolor(0xFFFF,0x0000,0x1);
 
-  console_putsXY(2,2,"iPL Loader 2.0");
+  console_putsXY(2,2,"iPL Loader 2.1");
   menu_hline(fb, 2, menu.ipod->lcd_width-2, menu.fh+2, 0xFFFF);
   menu_frame(fb, menu.x-2, menu.y-2, menu.x+menu.w+1, menu.y+menu.h+1, 0xFFFF);
 
