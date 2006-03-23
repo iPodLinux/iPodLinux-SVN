@@ -6,6 +6,8 @@
 #include "actions.h"
 #include "panes.h"
 #include "rawpod/partition.h"
+#include "rawpod/vfs.h"
+#include "rawpod/device.h"
 
 #include <QMessageBox>
 #include <QGridLayout>
@@ -43,8 +45,50 @@ void PartitionAction::run()
         FATAL ("Error writing the partition table. This shouldn't happen. Your iPod is probably fine, but "
                "it might not be; check and see.");
 
+    if (iPodPartitionTable) partFreeTable (iPodPartitionTable);
+    iPodPartitionTable = ptbl;
+    setupDevices();
+
     emit setCurrentProgress (3);
     emit setCurrentAction (tr ("Done."));
+}
+
+template <class F, class Arg>
+class RunnerThread : public QThread 
+{
+public:
+    RunnerThread (F func, Arg arg)
+        : _fn (func), _arg (arg)
+    {}
+
+protected:
+    virtual void run() {
+        (*_fn)(_arg);
+    }
+
+    F _fn;
+    Arg _arg;
+};
+
+void FormatAction::run() 
+{
+    int prog = 0;
+    VFS::Device *dev = new PartitionDevice (iPodDevice, iPodPartitionTable[_part-1].offset,
+                                            iPodPartitionTable[_part-1].length);
+
+    emit setTaskDescription (tr (_str));
+    emit setTotalProgress (0);
+    emit setCurrentAction (tr ("Formatting..."));
+
+    RunnerThread <int(*)(VFS::Device*), VFS::Device*> *rthr =
+        new RunnerThread <int(*)(VFS::Device*), VFS::Device*> (_mkfsfunc, dev);
+    rthr->start();
+    while (rthr->isRunning()) {
+        emit setCurrentProgress (prog++);
+        usleep (300000);
+    }
+
+    delete rthr;
 }
 
 void DelayAction::run() 
