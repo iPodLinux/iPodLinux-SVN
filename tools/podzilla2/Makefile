@@ -194,7 +194,7 @@ dev-env:
 	mkdir -p config pods xpods
 	-ln -sf ../ttk/fonts
 	-ln -sf ../ttk/schemes
-	-ln -sf mono.cs schemes/default.cs
+	-ln -s mono.cs schemes/default.cs
 
 xpods:
 	@echo
