@@ -60,23 +60,31 @@ static int apsc_scroll (TWidget *this, int dir)
 	ttk_epoch++;
 	return ret;
 }
-static int apsc_down (TWidget *this, int button)
+static int apsc_button (TWidget *this, int button, int time)
 {
 	if (button == TTK_BUTTON_ACTION) {
 		set_color_scheme (ttk_menu_get_selected_item (this) -> data, 1);
 		return ttk_menu_button (this, TTK_BUTTON_MENU, 0);
-	}
-    return ttk_menu_down (this, button);
+	} else if (button == TTK_BUTTON_MENU) {
+            ttk_ap_load (SCHEMESDIR "default.cs");
+        }
+    return ttk_menu_button (this, button, time);
 }
 
 TWindow *pz_select_color_scheme() 
 {
+    char linktarget[256];
     TWindow *ret = ttk_new_window();
     TWidget *menu = ttk_new_menu_widget (0, ttk_menufont,
                                          ttk_screen->w - ttk_screen->wx,
                                          ttk_screen->h - ttk_screen->wy);
     menu->scroll = apsc_scroll;
-    menu->down = apsc_down;
+    menu->button = apsc_button;
+
+    if (readlink (SCHEMESDIR "default.cs", linktarget, 256) < 0) {
+        pz_perror ("reading default.cs symlink");
+        linktarget[0] = 0;
+    }
 
     int odfd = open (".", O_RDONLY);
     chdir (SCHEMESDIR);
@@ -86,6 +94,7 @@ TWindow *pz_select_color_scheme()
     	return TTK_MENU_DONOTHING;
     }
     struct dirent *d;
+    int iidx = 0;
     while ((d = readdir (dp)) != 0) {
     	if (strchr (d->d_name, '.') && !strcmp (strrchr (d->d_name, '.'), ".cs") && !!strcmp (d->d_name, "default.cs")) {
     		ttk_menu_item *item = calloc (1, sizeof(struct ttk_menu_item));
@@ -108,6 +117,10 @@ TWindow *pz_select_color_scheme()
     		fclose (f);
     		
     		ttk_menu_append (menu, item);
+                iidx++;
+                if (!strcmp (d->d_name, linktarget)) {
+                    ttk_menu_scroll (menu, iidx * 5);
+                }
     	}
     }
     closedir (dp);
