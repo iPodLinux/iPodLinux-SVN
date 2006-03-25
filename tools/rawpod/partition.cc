@@ -41,7 +41,8 @@ int partFigureOutType (PartitionTable t)
         // WinPod or LinPod
         if (t[2].type == 0x83) {
             // LinPod
-            if (t[2].offset > t[0].offset && t[2].offset < t[1].offset)
+            if (t[2].offset > t[0].offset && t[2].offset < t[1].offset &&
+                t[2].offset < (64 << 11))
                 return PART_SLINPOD;
             return PART_BLINPOD;
         }
