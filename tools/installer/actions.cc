@@ -36,7 +36,6 @@ void PartitionAction::run()
     if (partShrinkAndAdd (ptbl, _oldnr, _newnr, _newtype, _newsize) != 0)
         FATAL ("Error modifying the partition table. Nothing has been written to your iPod; your data is safe.");
     partCopyToMBR (ptbl, mbr);
-    partFreeTable (ptbl);
     
     emit setCurrentProgress (2);
     emit setCurrentAction (tr ("Writing MBR..."));
@@ -166,7 +165,16 @@ void DoActionsPage::nextAction()
         currentAction->start (this);
     } else {
         done = true;
+        action->setText ("Done.");
+        specific->setText ("Press Next to continue.");
+        totalProgress->hide();
+        totalProgressLabel->hide();
+        pkgProgress->hide();
+        pkgProgressLabel->hide();
         emit completeStateChanged();
     }
     totalProgress->setValue (totalProgress->value() + 1);
+    pkgProgress->setRange (0, 1);
+    pkgProgress->setValue (0);
+    specific->setText ("Done.");
 }

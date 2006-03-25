@@ -704,6 +704,7 @@ WizardPage *InstallPage::nextPage()
         PendingActions->append (new FormatAction (2, CreateFATFilesystem, "Formatting the music partition."));
     }
     PendingActions->append (new FormatAction (3, CreateExt2Filesystem, "Formatting the Linux partition."));
+    PendingActions->append (new DelayAction (5));
     return new PackagesPage (wizard);
 }
 
