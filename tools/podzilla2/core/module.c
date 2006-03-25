@@ -197,6 +197,8 @@ static void load_modinf (PzModule *mod)
                 // nothing
             } else if (strcmp (key, "Description") == 0) {
                 // nothing
+            } else if (strcmp (key, "License") == 0) {
+                // nothing
             } else if (strcmp (key, "Unstable") == 0) {
                 // You can override "beta" with secret=testing but you can't
                 // override other things, e.g. "alpha" or "does not work".
@@ -349,6 +351,8 @@ static int fix_dependencies (PzModule *mod, int initing, int which)
 static void do_load (PzModule *mod) 
 {
     char *fname;
+    struct stat st;
+    
     fname = malloc (strlen (mod->mountpt) + strlen (mod->name) + 8);
 #ifdef IPOD
     sprintf (fname, "%s/%s.mod.o", mod->mountpt, mod->name);
@@ -360,6 +364,12 @@ static void do_load (PzModule *mod)
     }
 #else
     sprintf (fname, "%s/%s.so", mod->mountpt, mod->name);
+    if (stat (fname, &st) < 0) {
+        free (fname);
+        mod->handle = 0;
+        mod->to_load = 0;
+        return;
+    }
     mod->handle = dlopen (fname, RTLD_NOW | RTLD_GLOBAL);
     free (fname);
     if (!mod->handle) {
