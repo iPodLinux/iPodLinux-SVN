@@ -222,13 +222,24 @@ static void load_rockbox(ipod_t *ipod,char *image) {
     return;
   }
 
-  // Transfer execution directly to Rockbox - we don't want
-  // to run the rest of the bootloader startup code.
+  // Store the IPOD hw revision in last 4 bytes of DRAM for use by Rockbox
+  // and transfer execution directly to Rockbox - we don't want to run
+  // the rest of the bootloader startup code.
+  if (ipod->hw_rev <= 0x30000) {  // PP5002
+    outl(ipod->hw_rev,0x29fffffc);
 
-  __asm__ volatile(
-    "mov   r0, #0x10000000    \n"
-    "mov   pc, r0             \n"
-  );
+    __asm__ volatile(
+      "mov   r0, #0x28000000    \n"
+      "mov   pc, r0             \n"
+    );
+  } else {                        // PP502x
+    outl(ipod->hw_rev,0x11fffffc);
+
+    __asm__ volatile(
+      "mov   r0, #0x10000000    \n"
+      "mov   pc, r0             \n"
+    );
+  }
 }
 
 extern void hd_demo();
