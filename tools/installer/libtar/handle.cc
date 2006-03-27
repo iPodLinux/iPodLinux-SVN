@@ -51,7 +51,7 @@ tar_open(TAR **t, const char *pathname, tartype_t *type, int options)
 #endif
 
 	(*t)->fh = (*((*t)->type->openfunc))(pathname, O_RDONLY);
-	if (!(*t)->fh || (*t)->fh->error())
+	if (!(*t)->fh)
 	{
 		free(*t);
 		return -1;
@@ -62,7 +62,7 @@ tar_open(TAR **t, const char *pathname, tartype_t *type, int options)
 
 
 int
-tar_fhopen(TAR **t, VFS::File *fh, const char *pathname, tartype_t *type, int options)
+tar_fhopen(TAR **t, void *fh, const char *pathname, tartype_t *type, int options)
 {
 	if (tar_init(t, pathname, type, options) == -1)
 		return -1;
@@ -72,7 +72,7 @@ tar_fhopen(TAR **t, VFS::File *fh, const char *pathname, tartype_t *type, int op
 }
 
 
-VFS::File *
+void *
 tar_fh (TAR *t)
 {
 	return t->fh;
