@@ -11,9 +11,9 @@ RESOURCES = installer.qrc
 
 # Installer
 HEADERS += installer.h complexwizard.h actions.h panes.h \
-           packages.h
+           packages.h make_fw2.h
 SOURCES += installer.cc main.cc complexwizard.cc actions.cc \
-           packages.cc
+           packages.cc make_fw2.h
 
 # Rawpod
 SOURCES += rawpod/device.cc rawpod/ext2.cc rawpod/fat32.cc \
@@ -86,5 +86,7 @@ SOURCES += zlib/adler32.c zlib/compress.c zlib/crc32.c \
 HEADERS += zlib/crc32.h zlib/deflate.h zlib/inffast.h \
            zlib/inffixed.h zlib/inflate.h zlib/inftrees.h \
            zlib/trees.h zlib/zconf.h zlib/zlib.h zlib/zutil.h
+
+DEFINES += EMBED_MAKEFW
 
 CONFIG += debug

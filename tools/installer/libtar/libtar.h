@@ -61,10 +61,10 @@ struct tar_header
 
 /***** handle.c ************************************************************/
 
-typedef VFS::File *(*openfunc_t)(const char *, int, ...);
-typedef int (*closefunc_t)(VFS::File *);
-typedef int (*readfunc_t)(VFS::File *, void *, size_t);
-typedef int (*writefunc_t)(VFS::File *, const void *, size_t);
+typedef void *(*openfunc_t)(const char *, int, ...);
+typedef int (*closefunc_t)(void *);
+typedef int (*readfunc_t)(void *, void *, size_t);
+typedef int (*writefunc_t)(void *, const void *, size_t);
 
 typedef struct
 {
@@ -79,7 +79,7 @@ typedef struct
 {
 	tartype_t *type;
 	const char *pathname;
-        VFS::File *fh;
+        void *fh;
 	int oflags;
 	int options;
 	struct tar_header th_buf;
@@ -103,7 +103,7 @@ extern const char libtar_version[];
 
 /* open a new tarfile handle */
 int tar_open(TAR **t, const char *pathname, tartype_t *type, int options);
-int tar_fhopen (TAR **t, VFS::File *fh, const char *pathname, tartype_t *type, int options);
+int tar_fhopen (TAR **t, void *fh, const char *pathname, tartype_t *type, int options);
 
 /* close tarfile handle */
 int tar_close(TAR *t);
