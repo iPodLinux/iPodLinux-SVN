@@ -20,6 +20,20 @@ typedef struct image
     unsigned int loadAddr;
 } fw_image_t;
 
+typedef struct imginf 
+{
+    /* For the "parent" image (osos@): */
+    struct imginf *subs[5];
+    int hassubs, nsubs;
+
+    /* For all images: */
+    fw_image_t header;
+    char *name;
+    struct fops *file; unsigned int fileoff;
+    void *memblock;
+    struct imginf *next;
+} fw_image_info;
+
 typedef struct fops 
 {
     int (*open)(struct fops *fo, const char *name, int writing);
@@ -60,6 +74,7 @@ extern void fw_clear_ignore();
 extern void fw_add_extract (const char *id);
 extern void fw_add_ignore (const char *id);
 
+fw_image_info *fw_find_image (const char *id);
 void fw_add_image (fw_image_t *image, const char *id, const char *file);
 void fw_iterate_images (const char *filename, void *data, void (*fn)(fw_image_t *image,
                                                                      const char *id,

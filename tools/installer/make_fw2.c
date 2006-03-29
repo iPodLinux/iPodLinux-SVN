@@ -58,20 +58,6 @@ jmp_buf fw_error_out;
 
 static int big_endian = 0;
 
-typedef struct imginf 
-{
-    /* For the "parent" image (osos@): */
-    struct imginf *subs[5];
-    int hassubs, nsubs;
-
-    /* For all images: */
-    fw_image_t header;
-    char *name;
-    struct fops *file; unsigned int fileoff;
-    void *memblock;
-    struct imginf *next;
-} image_info;
-
 int stdio_open (fw_fileops *fo, const char *name, int writing) 
 {
     fo->data = fopen (name, writing? "w+b" : "rb");
@@ -139,7 +125,7 @@ switch_endian (fw_image_t *image)
 void
 fw_clear() 
 {
-    image_info *inf = images;
+    fw_image_info *inf = images;
     int i;
     
     while (inf) {
@@ -152,7 +138,7 @@ fw_clear()
             }
         }
         if (inf->memblock) free (inf->memblock);
-        image_info *last = inf;
+        fw_image_info *last = inf;
         inf = inf->next;
         free (last);
     }
@@ -463,7 +449,7 @@ write_entry(fw_image_t *image, fw_fileops *fw, unsigned offset, int entry, int p
  * slot entry.
  */
 static int
-write_image (image_info *inf, fw_fileops *out, unsigned offset, int entry, int pad) 
+write_image (fw_image_info *inf, fw_fileops *out, unsigned offset, int entry, int pad) 
 {
     if (out->lseek (out, inf->header.devOffset, SEEK_SET) < 0) {
         fprintf (stderr, "fseek failed: %s\n", strerror (errno));
@@ -486,11 +472,11 @@ write_image (image_info *inf, fw_fileops *out, unsigned offset, int entry, int p
  * the next child of that id, or '0'-'4' to find/make that child,
  * or 0 to find/make a non-sub image.
  */
-static image_info *
+static fw_image_info *
 find_or_make_image (const char *id, char subimg) 
 {
     /* Find the parent first. */
-    image_info *current = images;
+    fw_image_info *current = images;
     int found = 0;
     
     while (current) {
@@ -506,9 +492,9 @@ find_or_make_image (const char *id, char subimg)
     /* Make the parent if we didn't find it. */
     if (!found) {
         if (current) { /* adding onto an existing list */
-            current = current->next = (image_info *)calloc (1, sizeof(image_info));
+            current = current->next = (fw_image_info *)calloc (1, sizeof(fw_image_info));
         } else { /* starting off the list */
-            current = images = (image_info *)calloc (1, sizeof(image_info));
+            current = images = (fw_image_info *)calloc (1, sizeof(fw_image_info));
         }
         current->name = strdup (id);
         memcpy (current->header.id, id, 4);
@@ -549,7 +535,7 @@ find_or_make_image (const char *id, char subimg)
             current->nsubs = subnr + 1;
 
         if (!current->subs[subnr]) {
-            current->subs[subnr] = (image_info *)calloc (1, sizeof(image_info));
+            current->subs[subnr] = (fw_image_info *)calloc (1, sizeof(fw_image_info));
             current->subs[subnr]->name = strdup (id);
         }
         return current->subs[subnr];
@@ -578,7 +564,7 @@ fw_add_image (fw_image_t *image, const char *name, const char *file)
         ERROR_EXIT (11);
     }
 
-    image_info *inf = find_or_make_image (name, name[4]);
+    fw_image_info *inf = find_or_make_image (name, name[4]);
     if (inf->file) {
         fprintf (stderr, "warning: overriding image %s; loading from %s +%d instead of old file +%d\n",
                  inf->name, file, image->devOffset, inf->fileoff);
@@ -606,6 +592,23 @@ fw_add_image (fw_image_t *image, const char *name, const char *file)
     }
 
     num_images++;
+}
+
+/* Finds a loaded image and returns it, or NULL if it doesn't exist. */
+fw_image_info *
+fw_find_image (const char *name) 
+{
+    fw_image_info *cur = images;
+    while (cur) {
+        if (!strcmp (cur->name, name)) return cur;
+        if (cur->hassubs) {
+            int i;
+            for (i = 0; i < cur->nsubs; i++) {
+                if (cur->subs[i] && !strcmp (cur->name, cur->subs[i]->name)) return cur->subs[i];
+            }
+        }
+        cur = cur->next;
+    }
 }
 
 /* Does something with each image in `filename'. */
@@ -888,7 +891,7 @@ mark_one_image_for_extraction (fw_image_t *image, const char *id, const char *fi
 
 /* Extract one image (and its subs) */
 static void
-extract_one_image (image_info *inf) 
+extract_one_image (fw_image_info *inf) 
 {
     char buf[512], ext[16];
     
@@ -950,7 +953,7 @@ extract_images (const char *file)
 {
     fw_iterate_images (file, 0, mark_one_image_for_extraction);
     
-    image_info *inf = images;
+    fw_image_info *inf = images;
     while (inf) {
         extract_one_image (inf);
 
@@ -1006,7 +1009,7 @@ fw_create_dump (const char *outfile)
     }
 
     /* Write the images. */
-    image_info *inf = images;
+    fw_image_info *inf = images;
     while (inf) {
         unsigned int totlen = inf->header.len, sublen = 0;
         inf->header.devOffset = (offset + 0x1ff) & ~0x1ff;

@@ -24,7 +24,7 @@
 #include <string.h>
 
 InstallerMode Mode;
-LoaderType iPodLoader;
+LoaderType iPodLoader = UnknownLoader;
 
 QList<Action*> *PendingActions;
 
@@ -35,6 +35,7 @@ int iPodPartitionToShrink;
 int iPodLinuxPartitionSize;
 VFS::Device *iPodDevice;
 VFS::Device *iPodFirmwarePartitionDevice, *iPodMusicPartitionDevice, *iPodLinuxPartitionDevice;
+VFS::Filesystem *iPodMusicPartitionFS, *iPodLinuxPartitionFS;
 bool iPodDoBackup;
 QString iPodBackupLocation;
 
@@ -451,6 +452,21 @@ void setupDevices()
                                                     iPodPartitionTable[2].length);
 }
 
+int setupFilesystems() 
+{
+    int err;
+    
+    iPodMusicPartitionFS = new FATFS (iPodMusicPartitionDevice);
+    if ((err = iPodMusicPartitionFS->init()) < 0) {
+        return -err;
+    }
+    iPodLinuxPartitionFS = new Ext2FS (iPodLinuxPartitionDevice);
+    if ((err = iPodLinuxPartitionFS->init()) < 0) {
+        return -err;
+    }
+    return 0;
+}
+
 WizardPage *PodLocationPage::nextPage() 
 {
     if (upgradeRadio) {
@@ -488,6 +504,11 @@ WizardPage *PodLocationPage::nextPage()
         return new PartitioningPage (wizard);
     case Update:
         setupDevices();
+        if (setupFilesystems()) {
+            QMessageBox::critical (0, tr("iPodLinux Installer"), tr("Error creating filesystem "
+                                                                    "accessors for iPod."), tr("Quit"));
+            exit (1);
+        }
         return new PackagesPage (wizard);
     case Uninstall:
         return 0;//new RestorePage (wizard);
@@ -697,6 +718,17 @@ void InstallPage::openBrowseDialog()
         backupPath->setText (ret);
 }
 
+class FSSetupAction : public Action 
+{
+protected:
+    virtual void run() {
+        if (setupFilesystems()) {
+            emit fatalError ("Error setting up filesystem accessors for the iPod.");
+            while(1);
+        }
+    }
+};
+
 WizardPage *InstallPage::nextPage() 
 {
     if (makeBackup->isChecked()) {
@@ -722,6 +754,7 @@ WizardPage *InstallPage::nextPage()
         PendingActions->append (new FormatAction (2, CreateFATFilesystem, "Formatting the music partition."));
     }
     PendingActions->append (new FormatAction (3, CreateExt2Filesystem, "Formatting the Linux partition."));
+    PendingActions->append (new FSSetupAction);
     return new PackagesPage (wizard);
 }
 
