@@ -22,14 +22,14 @@ Package::Package()
     : _name ("unk"), _version ("0.1a"), _dest ("/"), _desc ("???"), _url ("http://127.0.0.1/"),
       _subfile ("."), _type (Archive), _reqs (QStringList()), _provs (QStringList()),
       _ipods (INSTALLER_WORKING_IPODS), _valid (false),
-      _orig (false), _upgrade (false), _selected (false)
+      _orig (false), _upgrade (false), _selected (false), _required (false)
 {}
 
 Package::Package (QString line) 
     : _name ("unk"), _version ("0.0"), _dest ("/"), _desc ("???"), _url ("http://127.0.0.1/"),
       _subfile ("."), _type (Archive), _reqs (QStringList()), _provs (QStringList()),
       _ipods (INSTALLER_WORKING_IPODS), _valid (false),
-      _orig (false), _upgrade (false), _selected (false)
+      _orig (false), _upgrade (false), _selected (false), _required (false)
 {
     parseLine (line);
 }
@@ -72,6 +72,7 @@ void Package::parseLine (QString line)
     _version = rx.cap (3);
     _desc = rx.cap (4);
     _url = rx.cap (5);
+    _valid = true;
 
     if (rest != "") {
         QStringList bits = rest.split (" ");
@@ -80,6 +81,7 @@ void Package::parseLine (QString line)
             QString key = it.next();
             if (!it.hasNext()) {
                 qWarning ("Bad package file line: |%s| (odd keyword)", line.toAscii().data());
+                _valid = false;
                 return;
             }
             QString value = it.next();
@@ -122,21 +124,21 @@ void Package::parseLine (QString line)
                     _ipods = 0;
                 _ipods &= 0xffff;
             } else if (key == "default") {
-                _selected = true;
-            } else if (key == "defaultif") {
-                if ((value == "loader1" && (iPodLoader == Loader1Apple || iPodLoader == Loader1Linux)) ||
-                    (value == "loader2" && iPodLoader == Loader2) ||
-                    (value == "loader1apple" && iPodLoader == Loader1Apple) ||
-                    (value == "loader1linux" && iPodLoader == Loader1Linux))
-                    _selected = true;
+                _selected = _required = true;
+            } else if (key == "loadreq") {
+                if (!((value == "loader1" && (iPodLoader == Loader1Apple || iPodLoader == Loader1Linux)) ||
+                      (value == "loader2" && iPodLoader == Loader2) ||
+                      (value == "loader1apple" && iPodLoader == Loader1Apple) ||
+                      (value == "loader1linux" && iPodLoader == Loader1Linux)))
+                    _valid = false;
             } else {
                 qWarning ("Bad package list line: |%s| (unrecognized keyword %s)",
                           line.toAscii().data(), key.toAscii().data());
+                _valid = false;
                 return;
             }
         }
     }
-    _valid = true;
 }
 
 void Package::readPackingList (VFS::Device *dev) 
@@ -534,6 +536,11 @@ void PkgTreeWidgetItem::select()
 
 void PkgTreeWidgetItem::deselect() 
 {
+    if (_pkg.required() && !parent()) {
+        setCheckState (0, Qt::Checked);
+        return;
+    }
+
     _pkg.deselect();
 
     QList <QTreeWidgetItem *> allItems = _page->packages->findItems (".*", Qt::MatchRegExp | Qt::MatchRecursive);
@@ -557,6 +564,35 @@ void PkgTreeWidgetItem::deselect()
                 if (!haveAny) {
                     item->setCheckState (0, Qt::Unchecked);
                     item->deselect();
+                }
+            }
+        }
+    }
+
+    if (parent()) {
+        bool required_provide = false;
+
+        for (int i = 0; i < parent()->childCount(); i++) {
+            PkgTreeWidgetItem *ptwi;
+            
+            if ((ptwi = dynamic_cast<PkgTreeWidgetItem*>(parent()->child(i))) != 0) {
+                if (ptwi->_pkg.required()) {
+                    required_provide = true;
+                    break;
+                }
+            }
+        }
+
+        if (required_provide) {
+            for (int i = 0; i < parent()->childCount(); i++) {
+                PkgTreeWidgetItem *ptwi;
+                
+                if (parent()->child(i) == this) continue;
+                if (parent()->child(i)->checkState(0) == Qt::Unchecked) {
+                    parent()->child(i)->setCheckState (0, Qt::Checked);
+                    if ((ptwi = dynamic_cast<PkgTreeWidgetItem*>(parent()->child(i))) != 0) {
+                        ptwi->select();
+                    }
                 }
             }
         }
@@ -592,12 +628,29 @@ WizardPage *PackagesPage::nextPage()
     wizard->setMinimumSize (500, 410);
     wizard->setMaximumSize (640, 500);
 
-    bool needsReLoader = false, needsReKernel = false, isLoader2 = false, wasLoader1 = false;
+    QList <QTreeWidgetItem *> allItems = packages->findItems (".*", Qt::MatchRegExp | Qt::MatchRecursive);
+    QListIterator <QTreeWidgetItem *> it (allItems);
 
-    for (int i = 0; i < packages->topLevelItemCount(); i++) {
-        QTreeWidgetItem *it = packages->topLevelItem(i);
+    bool needsReLoader = false, needsReKernel = false;
+
+    // First, do all the removes...
+    while (it.hasNext()) {
         PkgTreeWidgetItem *item;
-        if ((item = dynamic_cast<PkgTreeWidgetItem *>(it)) != 0) {
+        if ((item = dynamic_cast<PkgTreeWidgetItem *>(it.next())) != 0) {
+            if (item->package().changed()) {
+                if (!item->package().selected()) {
+                    // remove
+                    PendingActions->append (new PackageRemoveAction (item->package(), tr ("Removing:")));
+                }
+            }
+        }
+    }
+
+    // ... then, do the upgrades and installs.
+    it = allItems;
+    while (it.hasNext()) {
+        PkgTreeWidgetItem *item;
+        if ((item = dynamic_cast<PkgTreeWidgetItem *>(it.next())) != 0) {
             if (item->package().changed()) {
                 if (item->package().selected()) {
                     if (item->package().upgrade()) {
@@ -612,26 +665,17 @@ WizardPage *PackagesPage::nextPage()
                         // install
                         PendingActions->append (new PackageInstallAction (item->package(), tr ("Installing:")));
                     }
-                } else {
-                    // remove
-                    PendingActions->append (new PackageRemoveAction (item->package(), tr ("Removing:")));
                 }
 
                 if (item->package().type() == Package::Kernel)
                     needsReKernel = true;
-                if (item->package().type() == Package::Loader) {
+                if (item->package().type() == Package::Loader)
                     needsReLoader = true;
-                    if (!item->package().provides().contains ("loader2"))
-                        wasLoader1 = true;
-                }
             }
-            if (item->package().provides().contains ("loader2"))
-                isLoader2 = true;
         }
     }
 
-    if (needsReLoader ||
-        (needsReKernel && (wasLoader1 || !isLoader2))) {
+    if (needsReLoader || needsReKernel) {
         PendingActions->append (new FirmwareRecreateAction);
     }
 
