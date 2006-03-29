@@ -35,6 +35,8 @@ int iPodPartitionToShrink;
 int iPodLinuxPartitionSize;
 VFS::Device *iPodDevice;
 VFS::Device *iPodFirmwarePartitionDevice, *iPodMusicPartitionDevice, *iPodLinuxPartitionDevice;
+bool iPodDoBackup;
+QString iPodBackupLocation;
 
 Installer::Installer (QWidget *parent)
     : ComplexWizard (parent)
@@ -697,14 +699,29 @@ void InstallPage::openBrowseDialog()
 
 WizardPage *InstallPage::nextPage() 
 {
-    /* XXX action for making backup or saving it to a temp file */
+    if (makeBackup->isChecked()) {
+        iPodDoBackup = true;
+        iPodBackupLocation = backupPath->text();
+        PendingActions->append (new BackupAction (iPodLocation, iPodBackupLocation));
+    } else {
+        iPodDoBackup = false;
+        iPodBackupLocation = QString ("");
+    }
+
+    if (loader1apple->isChecked()) {
+        iPodLoader = Loader1Apple;
+    } else if (loader1linux->isChecked()) {
+        iPodLoader = Loader1Linux;
+    } else {
+        iPodLoader = Loader2;
+    }
+
     PendingActions->append (new PartitionAction (iPodLocation, iPodPartitionToShrink,
                                                  3, 0x83, iPodLinuxPartitionSize));
     if (iPodPartitionToShrink == 2) {
         PendingActions->append (new FormatAction (2, CreateFATFilesystem, "Formatting the music partition."));
     }
     PendingActions->append (new FormatAction (3, CreateExt2Filesystem, "Formatting the Linux partition."));
-    PendingActions->append (new DelayAction (5));
     return new PackagesPage (wizard);
 }
 

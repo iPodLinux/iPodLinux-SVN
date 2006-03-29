@@ -9,6 +9,7 @@
 #include <QHttp>
 #include <QLabel>
 #include <QProgressBar>
+#include <QMessageBox>
 
 class IntroductionPage : public InstallerPage
 {
@@ -143,6 +144,7 @@ public slots:
     virtual void setCurrentAction (QString str) { specific->setText (str); }
     virtual void setTotalProgress (int tp) { pkgProgress->setRange (0, tp); }
     virtual void setCurrentProgress (int cp) { pkgProgress->setValue (cp); }
+    virtual void fatalError (QString str) { QMessageBox::critical (0, tr("iPodLinux Installer"), str, tr("Quit")); exit (1); }
     void nextAction();
 
 private:

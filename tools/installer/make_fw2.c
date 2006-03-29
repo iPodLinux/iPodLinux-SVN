@@ -53,8 +53,8 @@ static int loadall = 0;
 static const char *output_file = 0;
 static struct imginf *images = 0;
 static int num_images = 0;
-static jmp_buf errjmp;
-#define ERROR_EXIT(n) longjmp(errjmp,n)
+jmp_buf fw_error_out;
+#define ERROR_EXIT(n) longjmp(fw_error_out,n)
 
 static int big_endian = 0;
 
@@ -81,8 +81,8 @@ int stdio_open (fw_fileops *fo, const char *name, int writing)
 void stdio_close (fw_fileops *fo) { fclose ((FILE *)fo->data); }
 int stdio_read (struct fops *fo, void *buf, int len) { return fread (buf, 1, len, (FILE *)fo->data); }
 int stdio_write (struct fops *fo, const void *buf, int len) { return fwrite (buf, 1, len, (FILE *)fo->data); }
-int stdio_lseek (struct fops *fo, unsigned long long off, int whence) { return fseek ((FILE *)fo->data, off, whence); }
-unsigned long long stdio_tell (struct fops *fo) { return ftell ((FILE *)fo->data); }
+int stdio_lseek (struct fops *fo, long long off, int whence) { return fseek ((FILE *)fo->data, off, whence); }
+long long stdio_tell (struct fops *fo) { return ftell ((FILE *)fo->data); }
 
 fw_fileops fw_default_fileops = { stdio_open, stdio_close, stdio_read, stdio_write, stdio_lseek, stdio_tell, 0 };
 
@@ -134,6 +134,30 @@ switch_endian (fw_image_t *image)
     image->id[1] = image->id[2];
     image->id[2] = idt[1];
     image->id[3] = idt[0];
+}
+
+void
+fw_clear() 
+{
+    image_info *inf = images;
+    int i;
+    
+    while (inf) {
+        if (inf->hassubs) {
+            for (i = 0; i < inf->nsubs; i++) {
+                if (inf->subs[i]) {
+                    if (inf->subs[i]->memblock) free (inf->subs[i]->memblock);
+                    free (inf->subs[i]);
+                }
+            }
+        }
+        if (inf->memblock) free (inf->memblock);
+        image_info *last = inf;
+        inf = inf->next;
+        free (last);
+    }
+
+    images = NULL;
 }
 
 static void
@@ -316,6 +340,26 @@ lengthof(fw_fileops *f)
 	return -1;
     }
     return f->tell(f);
+}
+
+void
+fw_set_options (int opts) 
+{
+    loadall = !!(opts & FW_LOAD_IMAGES_TO_MEMORY);
+    switch (opts & (FW_LOADER1|FW_LOADER2)) {
+    case FW_LOADER1:
+        loadertype = 1;
+        break;
+    case FW_LOADER2:
+        loadertype = 2;
+        break;
+    default:
+        fprintf (stderr, "Warning: invalid loader type option passed to fw_set_options()\n");
+        break;
+    }
+
+    verbose += !!(opts & FW_VERBOSE);
+    verbose -= !!(opts & FW_QUIET);
 }
 
 void
@@ -565,8 +609,8 @@ fw_add_image (fw_image_t *image, const char *name, const char *file)
 }
 
 /* Does something with each image in `filename'. */
-static void
-iterate_images (const char *filename, void *data, void (*fn)(fw_image_t *, const char *, const char *, void *)) 
+void
+fw_iterate_images (const char *filename, void *data, void (*fn)(fw_image_t *, const char *, const char *, void *)) 
 {
     fw_fileops *in = fw_fops_open (filename, READING);
     int old_version = fw_version;
@@ -655,7 +699,7 @@ load_one (fw_image_t *image, const char *id, const char *filename, void *data)
 void
 fw_load_all (const char *filename, const char *osos_replace) 
 {
-    iterate_images (filename, (void *)osos_replace, load_one);
+    fw_iterate_images (filename, (void *)osos_replace, load_one);
 }
 
 /* Loads a loader-dumped image from `filename'. The image's ID is taken
@@ -822,7 +866,7 @@ list_one_image (fw_image_t *image, const char *id, const char *filename, void *d
 static int
 list_images (const char *file) 
 {
-    iterate_images (file, 0, list_one_image);
+    fw_iterate_images (file, 0, list_one_image);
     return 0;
 }
 
@@ -904,7 +948,7 @@ extract_one_image (image_info *inf)
 static int
 extract_images (const char *file) 
 {
-    iterate_images (file, 0, mark_one_image_for_extraction);
+    fw_iterate_images (file, 0, mark_one_image_for_extraction);
     
     image_info *inf = images;
     while (inf) {
@@ -1020,6 +1064,7 @@ fw_create_dump (const char *outfile)
 void
 fw_set_generation (int gen) 
 {
+    generation = gen;
     fw_version = 2 + (gen >= 4);
 }
 
@@ -1035,7 +1080,7 @@ main (int argc, char **argv)
     const char *input_file = "ipod.fw";
     enum { None = 0, List, Extract, Create } mode = None;
     
-    if ((jr = setjmp (errjmp)) != 0) {
+    if ((jr = setjmp (fw_error_out)) != 0) {
         fprintf (stderr, "A fatal error has occurred; exiting.\n");
         return jr;
     }
