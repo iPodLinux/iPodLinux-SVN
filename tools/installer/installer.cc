@@ -509,6 +509,31 @@ WizardPage *PodLocationPage::nextPage()
                                                                     "accessors for iPod."), tr("Quit"));
             exit (1);
         }
+
+        VFS::File *fh = iPodLinuxPartitionFS->open ("/etc/loadertype", O_RDONLY);
+        if (fh && !fh->error()) {
+            char buf[4] = "?";
+            fh->read (buf, 3);
+            buf[3] = 0;
+            switch (buf[0]) {
+            case 'a':
+            case 'A':
+                iPodLoader = Loader1Apple;
+                break;
+            case 'l':
+            case 'L':
+                iPodLoader = Loader1Linux;
+                break;
+            case '2':
+                iPodLoader = Loader2;
+                break;
+            default:
+                iPodLoader = UnknownLoader;
+                break;
+            }
+            fh->close();
+        }
+        delete fh;
         return new PackagesPage (wizard);
     case Uninstall:
         return 0;//new RestorePage (wizard);

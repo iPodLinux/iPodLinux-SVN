@@ -32,6 +32,9 @@ public:
     bool supports (int hw_ver) { return !!(_ipods & (1 << hw_ver)); }
     bool valid() { return _valid; }
 
+    void makeRequired() { _required = true; }
+    bool required() { return _required; }
+
     // Selected == should it be installed, once everything is done?
     bool selected() { return _selected; }
     // Changed == do I need to do anything with this package?
@@ -50,7 +53,7 @@ protected:
     Type _type;
     QStringList _reqs, _provs;
     quint16 _ipods;
-    bool _valid, _orig, _upgrade, _selected;
+    bool _valid, _orig, _upgrade, _selected, _required;
     QStringList _packlist;
 };
 

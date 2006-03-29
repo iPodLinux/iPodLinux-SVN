@@ -119,31 +119,6 @@ void FirmwareRecreateAction::run_sub()
         FATAL_T (tr ("Unable to modify the firmware (error %1)").arg (jr));
     }
 
-    VFS::File *fh = iPodLinuxPartitionFS->open ("/etc/loadertype", O_RDONLY);
-    if (fh && !fh->error()) {
-        char buf[4] = "?";
-        fh->read (buf, 3);
-        buf[3] = 0;
-        switch (buf[0]) {
-        case 'a':
-        case 'A':
-            iPodLoader = Loader1Apple;
-            break;
-        case 'l':
-        case 'L':
-            iPodLoader = Loader1Linux;
-            break;
-        case '2':
-            iPodLoader = Loader2;
-            break;
-        default:
-            iPodLoader = UnknownLoader;
-            break;
-        }
-        fh->close();
-    }
-    delete fh; 
-
     fw_clear_ignore();
     fw_add_ignore ("aupd");
     fw_add_ignore ("hibe");
@@ -215,7 +190,7 @@ void FirmwareRecreateAction::run_sub()
 
     emit setCurrentAction (tr ("Writing firmware information to the ext2 partition..."));
     
-    fh = iPodLinuxPartitionFS->open ("/etc/loadertype", O_WRONLY | O_CREAT | O_TRUNC);
+    VFS::File *fh = iPodLinuxPartitionFS->open ("/etc/loadertype", O_WRONLY | O_CREAT | O_TRUNC);
     switch (iPodLoader) {
     case Loader1Apple:
         fh->write ("Apple", 5);
