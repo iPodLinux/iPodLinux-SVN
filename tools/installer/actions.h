@@ -165,7 +165,7 @@ public:
     {}
 
 protected:
-    virtual void run() {}
+    virtual void run();
 };
 
 class FirmwareRecreateAction : public Action

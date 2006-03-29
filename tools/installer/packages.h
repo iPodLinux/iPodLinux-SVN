@@ -48,6 +48,25 @@ public:
 
     void debug();
 
+    QStringList getPackingList() { return _packlist; }
+    void clearPackingList() { _packlist.clear(); }
+
+    // Adds [file] to the packing list. [file] should be a path
+    // relative to the package's install destination. Returns
+    // the full path added.
+    QString addFile (QString file) { _packlist << (_dest + "/" + file); return _dest + "/" + file; }
+
+    // Adds the package's one file to the packing list.
+    // Returns true iff something was added.
+    // Adds nothing in the case of an archive.
+    bool addFile() {
+        if (_type == File || _subfile.length() || (_type != Archive && !_url.contains (".tar."))) {
+            _packlist << _dest;
+            return true;
+        }
+        return false;
+    }
+
 protected:
     QString _name, _version, _dest, _desc, _url, _subfile;
     Type _type;

@@ -88,6 +88,25 @@ void DelayAction::run()
     emit setCurrentProgress (_sec);
 }
 
+void PackageRemoveAction::run() 
+{
+    emit setTaskDescription (_label + _pkg.name() + "-" + _pkg.version());
+    emit setTotalProgress (_pkg.getPackingList().size());
+
+    int prog = 0;
+    QStringListIterator it (_pkg.getPackingList());
+    while (it.hasNext()) {
+        QString file = it.next();
+        emit setCurrentProgress (prog++);
+        emit setCurrentAction (file);
+        iPodLinuxPartitionFS->unlink (file.toAscii());
+    }
+    emit setCurrentProgress (prog);
+    emit setCurrentAction ("Removing package metadata...");
+    iPodLinuxPartitionFS->unlink ((QString ("/etc/packages/") + _pkg.name()).toAscii());
+    emit setCurrentAction ("Done.");
+}
+
 void BackupAction::run() 
 {
     emit setTaskDescription (QString (tr ("Backing up the iPod to %1...")).arg (_path));
@@ -113,6 +132,8 @@ void BackupAction::run()
     u32 fwplen = fwpart->lseek (0, SEEK_END);
     u32 fwpread = 0;
     int thisread, err;
+
+    qDebug ("FW Part Length: %d or %d", fwplen, (int) fwpart->lseek (0, SEEK_CUR));
     
     emit setTotalProgress (fwplen);
     fwpart->lseek (0, SEEK_SET);
@@ -120,6 +141,7 @@ void BackupAction::run()
     while (fwpread < fwplen) {
         emit setCurrentAction (tr ("Backing up the firmware partition: %1/%2 bytes")
                                .arg (fwpread).arg (fwplen));
+        emit setCurrentProgress (fwpread);
         if ((thisread = fwpart->read (buf, 4096)) <= 0) {
             if (thisread == 0)
                 FATAL ("Short read on the iPod's firmware partition.");
@@ -134,6 +156,10 @@ void BackupAction::run()
 
     emit setCurrentAction (tr ("Backup complete."));
     emit setCurrentProgress (fwplen);
+
+    delete fwpart;
+    backup->close();
+    delete backup;
 }
 
 DoActionsPage::DoActionsPage (Installer *wiz, InstallerPage *next) 
