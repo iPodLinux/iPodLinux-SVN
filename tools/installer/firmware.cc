@@ -28,8 +28,28 @@ int rawpod_open (fw_fileops *fo, const char *name, int writing)
             part = atoi (strrchr (name, ',') + 1);
         }
         VFS::Device *dev;
-        if (part) dev = setup_partition (devnr, part);
-        else      dev = new LocalRawDevice (devnr);
+        if (devnr == iPodLocation) {
+            switch (part) {
+            case 0:
+                dev = iPodDevice;
+                break;
+            case 1:
+                dev = iPodFirmwarePartitionDevice;
+                break;
+            case 2:
+                dev = iPodMusicPartitionDevice;
+                break;
+            case 3:
+                dev = iPodLinuxPartitionDevice;
+                break;
+            default:
+                dev = setup_partition (devnr, part);
+            }
+        } else if (part) {
+            dev = setup_partition (devnr, part);
+        } else {
+            dev = new LocalRawDevice (devnr);
+        }
 
         const char *filepart = strrchr (name, '>');
         if (filepart && filepart[1] == '/') {
@@ -38,9 +58,9 @@ int rawpod_open (fw_fileops *fo, const char *name, int writing)
             if (*filepart) {
                 VFS::Filesystem *fs;
                 if (part == 2) {
-                    fs = new FATFS (dev);
+                    fs = iPodMusicPartitionFS;
                 } else if (part == 3 || part == 4) {
-                    fs = new Ext2FS (dev); 
+                    fs = iPodLinuxPartitionFS; 
                 } else {
                     fs = 0;
                     fh = new VFS::ErrorFile (EINVAL);
@@ -53,14 +73,12 @@ int rawpod_open (fw_fileops *fo, const char *name, int writing)
                         fh = fs->open (filepart, writing? (O_WRONLY|O_CREAT|O_TRUNC) : O_RDONLY);
                     }
                 }
-                // XXX: fs winds up leaking.
             } else {
                 fh = new VFS::ErrorFile (EINVAL);
             }
         } else {
             fh = new VFS::DeviceFile (dev);
         }
-        // XXX: dev winds up leaking.
     } else {
         fh = new LocalFile (name, writing? OPEN_WRITE|OPEN_CREATE : OPEN_READ);
     }
@@ -101,24 +119,93 @@ void FirmwareRecreateAction::run_sub()
         FATAL_T (tr ("Unable to modify the firmware (error %1)").arg (jr));
     }
 
+    VFS::File *fh = iPodLinuxPartitionFS->open ("/etc/loadertype", O_RDONLY);
+    if (fh && !fh->error()) {
+        char buf[4] = "?";
+        fh->read (buf, 3);
+        buf[3] = 0;
+        switch (buf[0]) {
+        case 'a':
+        case 'A':
+            iPodLoader = Loader1Apple;
+            break;
+        case 'l':
+        case 'L':
+            iPodLoader = Loader1Linux;
+            break;
+        case '2':
+            iPodLoader = Loader2;
+            break;
+        default:
+            iPodLoader = UnknownLoader;
+            break;
+        }
+        fh->close();
+    }
+    delete fh; 
+
     fw_clear_ignore();
     fw_add_ignore ("aupd");
     fw_add_ignore ("hibe");
     
+    struct my_stat st;
+
     switch (iPodLoader) {
     case Loader1Linux:
-        fw_load_binary (make_device_name (iPodLocation, 3, "loader.bin"), "osos@");
-        fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "osos0");
-        fw_load_all (fw_file, "osos1");
+        fw_load_all (fw_file, (Mode == Update)? "osos" : "osos1");
+        if (iPodLinuxPartitionFS->stat ("/loader.bin", &st) >= 0)
+            fw_load_binary (make_device_name (iPodLocation, 3, "loader.bin"), "osos@");
+        if (iPodLinuxPartitionFS->stat ("/linux.bin", &st) >= 0)
+            fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "osos0");
         break;
     case Loader1Apple:
-        fw_load_binary (make_device_name (iPodLocation, 3, "loader.bin"), "osos@");
-        fw_load_all (fw_file, "osos0");
-        fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "osos1");
+        fw_load_all (fw_file, (Mode == Update)? "osos" : "osos0");
+        if (iPodLinuxPartitionFS->stat ("/loader.bin", &st) >= 0)
+            fw_load_binary (make_device_name (iPodLocation, 3, "loader.bin"), "osos@");
+        if (iPodLinuxPartitionFS->stat ("/linux.bin", &st) >= 0)
+            fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "osos1");
         break;
     case Loader2:
-        fw_load_binary (make_device_name (iPodLocation, 3, "loader.bin"), "osos");
-        fw_load_all (fw_file, "aple");
+        fw_load_all (fw_file, (Mode == Update)? "osos" : "aple");
+        if (iPodLinuxPartitionFS->stat ("/loader.bin", &st) >= 0)
+            fw_load_binary (make_device_name (iPodLocation, 3, "loader.bin"), "osos");
+        if (iPodLinuxPartitionFS->stat ("/linux.bin", &st) >= 0)
+            fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "lnux");
+        break;
+    case UnknownLoader:
+        fw_load_all (fw_file, "osos");
+        // Is it an L1?
+        if (fw_find_image ("osos@")) {
+            if (iPodLinuxPartitionFS->stat ("/loader.bin", &st) >= 0)
+                fw_load_binary (make_device_name (iPodLocation, 3, "loader.bin"), "osos@");
+
+            // Which is the default?
+            if (fw_find_image ("osos0") && !memcmp (fw_find_image ("osos0")->memblock, "\xfe\x1f\x00\xea", 4)) {
+                // Linux default
+                if (iPodLinuxPartitionFS->stat ("/linux.bin", &st) >= 0)
+                    fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "osos0");
+                iPodLoader = Loader1Apple;
+            } else if (fw_find_image ("osos1") && !memcmp (fw_find_image ("osos1")->memblock, "\xfe\x1f\x00\xea", 4)) {
+                // Linux secondary
+                if (iPodLinuxPartitionFS->stat ("/linux.bin", &st) >= 0)
+                    fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "osos1");
+                iPodLoader = Loader1Linux;
+            } else {
+                FATAL ("You've apparently installed iPodLinux manually, and I can't figure out what type of "
+                       "firmware layout your iPod has. Sorry, but I can't continue.");
+            }
+        } else if (fw_find_image ("aple")) {
+            // L2
+            if (iPodLinuxPartitionFS->stat ("/loader.bin", &st) >= 0)
+                fw_load_binary (make_device_name (iPodLocation, 3, "loader.bin"), "osos");
+            if (iPodLinuxPartitionFS->stat ("/linux.bin", &st) >= 0)
+                fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "lnux");
+            iPodLoader = Loader2;
+        } else {
+            // Something odd
+            FATAL ("You've apparently installed iPodLinux manually, and I can't figure out what type of "
+                   "firmware layout your iPod has. Sorry, but I can't continue.");
+        }
         break;
     }
 
@@ -126,6 +213,27 @@ void FirmwareRecreateAction::run_sub()
 
     fw_create_dump (make_device_name (iPodLocation, 1));
 
+    emit setCurrentAction (tr ("Writing firmware information to the ext2 partition..."));
+    
+    fh = iPodLinuxPartitionFS->open ("/etc/loadertype", O_WRONLY | O_CREAT | O_TRUNC);
+    switch (iPodLoader) {
+    case Loader1Apple:
+        fh->write ("Apple", 5);
+        break;
+    case Loader1Linux:
+        fh->write ("Linux", 5);
+        break;
+    case Loader2:
+        fh->write ("2Loader", 7);
+        break;
+    case UnknownLoader:
+        fh->write ("?Unknown", 8);
+        break;
+    }
+    fh->write ("\n", 1);
+    fh->close();
+    delete fh;
+    
     emit setCurrentAction (tr ("Done."));
 }
 

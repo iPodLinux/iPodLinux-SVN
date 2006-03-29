@@ -25,7 +25,7 @@
 
 enum InstallerMode { StandardInstall, AdvancedInstall,
                      Update, Uninstall };
-enum LoaderType { Loader1Apple, Loader1Linux, Loader2 };
+enum LoaderType { UnknownLoader = 0, Loader1Apple, Loader1Linux, Loader2 };
 extern InstallerMode Mode;
 extern LoaderType iPodLoader;
 // Physical drive number of the iPod.
@@ -42,6 +42,8 @@ extern PartitionTable iPodPartitionTable;
 extern VFS::Device *iPodDevice;
 // VFS::Device for each partition. NOTE: These are 0 until partitioning is set in stone!
 extern VFS::Device *iPodFirmwarePartitionDevice, *iPodMusicPartitionDevice, *iPodLinuxPartitionDevice;
+// VFS::Filesystems for the music and iPL partitions. These are 0 until formatting is done.
+extern VFS::Filesystem *iPodMusicPartitionFS, *iPodLinuxPartitionFS;
 // Whether the backup was made.
 extern bool iPodDoBackup;
 // If so: Where the backup was made, relative to the dir in which the installer started.
