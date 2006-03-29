@@ -13,7 +13,7 @@ RESOURCES = installer.qrc
 HEADERS += installer.h complexwizard.h actions.h panes.h \
            packages.h make_fw2.h
 SOURCES += installer.cc main.cc complexwizard.cc actions.cc \
-           packages.cc make_fw2.h
+           packages.cc make_fw2.c firmware.cc
 
 # Rawpod
 SOURCES += rawpod/device.cc rawpod/ext2.cc rawpod/fat32.cc \

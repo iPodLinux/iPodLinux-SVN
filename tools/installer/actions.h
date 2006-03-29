@@ -10,6 +10,9 @@
 #include <QThread>
 #include <QList>
 
+struct image;
+typedef struct image fw_image_t;
+
 class ActionOutlet : public InstallerPage
 {
     Q_OBJECT
@@ -24,6 +27,24 @@ public slots:
     virtual void setCurrentAction (QString str) = 0;
     virtual void setTotalProgress (int tp) = 0;
     virtual void setCurrentProgress (int cp) = 0;
+    virtual void fatalError (QString str) = 0;
+};
+
+template <class F, class Arg>
+class RunnerThread : public QThread 
+{
+public:
+    RunnerThread (F func, Arg arg)
+        : _fn (func), _arg (arg)
+    {}
+
+protected:
+    virtual void run() {
+        (*_fn)(_arg);
+    }
+
+    F _fn;
+    Arg _arg;
 };
 
 class Action : public QThread
@@ -39,6 +60,7 @@ public:
         connect (this, SIGNAL(setCurrentAction(QString)), _outlet, SLOT(setCurrentAction(QString)));
         connect (this, SIGNAL(setTotalProgress(int)), _outlet, SLOT(setTotalProgress(int)));
         connect (this, SIGNAL(setCurrentProgress(int)), _outlet, SLOT(setCurrentProgress(int)));
+        connect (this, SIGNAL(fatalError(QString)), _outlet, SLOT(fatalError(QString)));
         QThread::start();
     }
     
@@ -47,9 +69,24 @@ signals:
     void setCurrentAction (QString str);
     void setTotalProgress (int tp);
     void setCurrentProgress (int cp);
+    void fatalError (QString str);
 
 protected:
     ActionOutlet *_outlet;
+};
+
+class BackupAction : public Action
+{
+public:
+    BackupAction (int device, QString bkppath)
+        : _dev (device), _path (bkppath)
+    {}
+
+protected:
+    virtual void run();
+    
+    int _dev;
+    QString _path;
 };
 
 class PartitionAction : public Action
@@ -134,10 +171,23 @@ protected:
 class FirmwareRecreateAction : public Action
 {
 public:
-    FirmwareRecreateAction() {}
+    FirmwareRecreateAction() : fw_file (0) {}
+    ~FirmwareRecreateAction() { if (fw_file) delete fw_file; }
 
 protected:
-    virtual void run() {}
+    static void rethread_shim (FirmwareRecreateAction *self) {
+        self->run_sub();
+    }
+    static void handle_shim (fw_image_t *img, const char *id, const char *file, void *data) {
+        FirmwareRecreateAction *self = (FirmwareRecreateAction *)data;
+        self->handle_image (img, id, file);
+    }
+    void handle_image (fw_image_t *img, const char *id, const char *file);
+
+    virtual void run();
+    void run_sub();
+
+    char *fw_file;
 };
 
 extern QList<Action*> *PendingActions;

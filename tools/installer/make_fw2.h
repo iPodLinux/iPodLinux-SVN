@@ -26,8 +26,8 @@ typedef struct fops
     void (*close)(struct fops *fo);
     int (*read)(struct fops *fo, void *buf, int len);
     int (*write)(struct fops *fo, const void *buf, int len);
-    int (*lseek)(struct fops *fo, unsigned long long off, int whence);
-    unsigned long long (*tell)(struct fops *fo);
+    int (*lseek)(struct fops *fo, long long off, int whence);
+    long long (*tell)(struct fops *fo);
     void *data;
 } fw_fileops;
 
@@ -37,13 +37,23 @@ extern fw_fileops fw_default_fileops;
 #define WRITING 1
 extern fw_fileops *fw_fops_open (const char *filename, int mode);
 
+
 extern int stdio_open (fw_fileops *fo, const char *name, int writing);
 extern void stdio_close (fw_fileops *fo);
 extern int stdio_read (fw_fileops *fo, void *buf, int len);
 extern int stdio_write (fw_fileops *fo, const void *buf, int len);
-extern int stdio_lseek (fw_fileops *fo, unsigned long long off, int whence);
-extern unsigned long long stdio_tell (fw_fileops *fo);
+extern int stdio_lseek (fw_fileops *fo, long long off, int whence);
+extern long long stdio_tell (fw_fileops *fo);
 
+#define FW_LOAD_IMAGES_TO_MEMORY     0x0001
+#define FW_LOADER1                   0x0000
+#define FW_LOADER2                   0x0002
+#define FW_VERBOSE                   0x0004
+#define FW_QUIET                     0x0008
+extern void fw_set_options (int opts);
+extern void fw_set_generation (int gen);
+
+extern void fw_clear();
 extern void fw_test_endian();
 extern void fw_clear_extract();
 extern void fw_clear_ignore();
@@ -60,6 +70,8 @@ void fw_load_dumped (const char *filename, const char *osos_replace, const char 
 void fw_load_binary (const char *filename, const char *id);
 void fw_load_unknown (const char *id, const char *filename);
 int fw_create_dump (const char *outfile);
+
+extern jmp_buf fw_error_out;
 
 #ifdef __cplusplus
 }

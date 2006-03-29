@@ -40,8 +40,12 @@ extern int iPodLinuxPartitionSize;
 extern PartitionTable iPodPartitionTable;
 // VFS::Device for the whole iPod.
 extern VFS::Device *iPodDevice;
-// VFS::Device for each partition. NOTE: These are 0 for an install!
+// VFS::Device for each partition. NOTE: These are 0 until partitioning is set in stone!
 extern VFS::Device *iPodFirmwarePartitionDevice, *iPodMusicPartitionDevice, *iPodLinuxPartitionDevice;
+// Whether the backup was made.
+extern bool iPodDoBackup;
+// If so: Where the backup was made, relative to the dir in which the installer started.
+extern QString iPodBackupLocation;
 
 class QCheckBox;
 class QGroupBox;

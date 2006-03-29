@@ -12,7 +12,8 @@
 #include <QMessageBox>
 #include <QGridLayout>
 
-#define FATAL(str) do { QMessageBox::critical (0, tr("iPodLinux Installer"), tr(str), tr("Quit")); exit(1); } while(0)
+#define FATAL_T(str) do { emit fatalError(str); while(1); } while(0)
+#define FATAL(str) FATAL_T(tr(str))
 
 void PartitionAction::run()
 {
@@ -52,23 +53,6 @@ void PartitionAction::run()
     emit setCurrentAction (tr ("Done."));
 }
 
-template <class F, class Arg>
-class RunnerThread : public QThread 
-{
-public:
-    RunnerThread (F func, Arg arg)
-        : _fn (func), _arg (arg)
-    {}
-
-protected:
-    virtual void run() {
-        (*_fn)(_arg);
-    }
-
-    F _fn;
-    Arg _arg;
-};
-
 void FormatAction::run() 
 {
     int prog = 0;
@@ -96,11 +80,60 @@ void DelayAction::run()
     emit setTotalProgress (_sec);
     emit setCurrentProgress (0);
 
-    for (int s = 1; s <= _sec; s++) {
-        emit setCurrentAction (QString (tr ("Second %1:")).arg (s));
-        sleep (1);
+    for (int s = 0; s < _sec; s++) {
         emit setCurrentProgress (s);
+        emit setCurrentAction (QString (tr ("%1 seconds left...")).arg (_sec - s));
+        sleep (1);
     }
+    emit setCurrentProgress (_sec);
+}
+
+void BackupAction::run() 
+{
+    emit setTaskDescription (QString (tr ("Backing up the iPod to %1...")).arg (_path));
+    emit setTotalProgress (0);
+    emit setCurrentProgress (0);
+    emit setCurrentAction (tr ("Preparing..."));
+
+    VFS::Device *ipoddev = new LocalRawDevice (_dev);
+    VFS::Device *fwpart = setup_partition (_dev, 1);
+    VFS::File *backup = new LocalFile (_path.toAscii().data(), OPEN_WRITE | OPEN_CREATE);
+    if (backup->error())
+        FATAL_T (tr ("Error creating the backup file: %1").arg (strerror (backup->error())));
+
+    emit setCurrentAction (tr ("Backing up partition table"));
+    u8 *buf = new u8[4096];
+    ipoddev->lseek (0, SEEK_SET);
+    if (ipoddev->read (buf, 512) != 512)
+        FATAL ("Error reading the partition table from the iPod.");
+    if (backup->write (buf, 512) != 512)
+        FATAL ("Error writing the partition table to the backup file.");
+    delete ipoddev;
+    
+    u32 fwplen = fwpart->lseek (0, SEEK_END);
+    u32 fwpread = 0;
+    int thisread, err;
+    
+    emit setTotalProgress (fwplen);
+    fwpart->lseek (0, SEEK_SET);
+
+    while (fwpread < fwplen) {
+        emit setCurrentAction (tr ("Backing up the firmware partition: %1/%2 bytes")
+                               .arg (fwpread).arg (fwplen));
+        if ((thisread = fwpart->read (buf, 4096)) <= 0) {
+            if (thisread == 0)
+                FATAL ("Short read on the iPod's firmware partition.");
+            else
+                FATAL_T (tr ("Error reading the iPod's firmware partition: %1").arg (strerror (-thisread)));
+        }
+        if ((err = backup->write (buf, thisread)) != thisread) {
+            FATAL_T (tr ("Error writing %1 bytes to %2: %3").arg (thisread).arg (_path).arg (strerror (-err)));
+        }
+        fwpread += thisread;
+    }
+
+    emit setCurrentAction (tr ("Backup complete."));
+    emit setCurrentProgress (fwplen);
 }
 
 DoActionsPage::DoActionsPage (Installer *wiz, InstallerPage *next) 
