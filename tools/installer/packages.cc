@@ -7,7 +7,10 @@
 #include "installer.h"
 #include "packages.h"
 #include "panes.h"
+#include "rawpod/vfs.h"
+#include "rawpod/device.h"
 #include "rawpod/ext2.h"
+#include "zlib/zlib.h"
 
 #include <QHttp>
 #include <QRegExp>
@@ -17,6 +20,7 @@
 #include <QtDebug>
 #include <QTextStream>
 #include <QMessageBox>
+#include <QDir>
 
 Package::Package()
     : _name ("unk"), _version ("0.1a"), _dest ("/"), _desc ("???"), _url ("http://127.0.0.1/"),
@@ -633,14 +637,25 @@ WizardPage *PackagesPage::nextPage()
 
     bool needsReLoader = false, needsReKernel = false;
 
-    // First, do all the removes...
+    // First of all, downloads.
+    while (it.hasNext()) {
+        PkgTreeWidgetItem *item;
+        if ((item = dynamic_cast<PkgTreeWidgetItem *>(it.next())) != 0) {
+            if (item->package().changed() && item->package().selected() &&
+                item->package().url().startsWith ("http://"))
+                PendingActions->append (new PackageDownloadAction (item->package(), tr ("Downloading ")));
+        }
+    }
+
+    // Next, do all the removes...
+    it = allItems;
     while (it.hasNext()) {
         PkgTreeWidgetItem *item;
         if ((item = dynamic_cast<PkgTreeWidgetItem *>(it.next())) != 0) {
             if (item->package().changed()) {
                 if (!item->package().selected()) {
                     // remove
-                    PendingActions->append (new PackageRemoveAction (item->package(), tr ("Removing:")));
+                    PendingActions->append (new PackageRemoveAction (item->package(), tr ("Removing ")));
                 }
             }
         }
@@ -657,13 +672,13 @@ WizardPage *PackagesPage::nextPage()
                         // remove, install
                         PendingActions->append (new PackageRemoveAction (item->package(),
                                                                          tr ("Upgrading "
-                                                                             "(uninstalling old version):")));
+                                                                             "(uninstalling old version) ")));
                         PendingActions->append (new PackageInstallAction (item->package(),
                                                                           tr ("Upgrading "
-                                                                              "(installing new version):")));
+                                                                              "(installing new version) ")));
                     } else {
                         // install
-                        PendingActions->append (new PackageInstallAction (item->package(), tr ("Installing:")));
+                        PendingActions->append (new PackageInstallAction (item->package(), tr ("Installing ")));
                     }
                 }
 
@@ -714,6 +729,7 @@ void PkgTreeWidgetItem::_setsel()
     if (_pkg.selected()) {
         if (_pkg.upgrade()) {
             setText (2, QObject::tr ("Upgrade"));
+            setCheckState (2, Qt::Checked);
         } else if (_pkg.changed()) {
             setText (2, QObject::tr ("Install"));
         } else {
@@ -727,3 +743,129 @@ void PkgTreeWidgetItem::_setsel()
         }
     }
 }
+
+void PackageRemoveAction::run() 
+{
+    emit setTaskDescription (_label + _pkg.name() + "-" + _pkg.version());
+    emit setTotalProgress (_pkg.getPackingList().size());
+
+    int prog = 0;
+    QStringListIterator it (_pkg.getPackingList());
+    while (it.hasNext()) {
+        QString file = it.next();
+        emit setCurrentProgress (prog++);
+        emit setCurrentAction (file);
+        iPodLinuxPartitionFS->unlink (file.toAscii());
+    }
+    emit setCurrentProgress (prog);
+    emit setCurrentAction ("Removing package metadata...");
+    iPodLinuxPartitionFS->unlink ((QString ("/etc/packages/") + _pkg.name()).toAscii());
+    emit setCurrentAction ("Done.");
+}
+
+void PackageDownloadAction::run() 
+{
+    if (!_pkg.url().contains ("://"))
+        return;
+
+    QDir::current().mkdir ("dl_packages");
+    QUrl pkgurl (_pkg.url());
+
+    _pkg.url() = "dl_packages/" + pkgurl.path().split ("/").last();
+
+    out = new QFile (_pkg.url());
+    http = new QHttp;
+
+    if (!out->open (QIODevice::WriteOnly)) {
+        emit fatalError ("Could not open " + _pkg.url() + " for writing. Check permissions.");
+        while(1);
+    }
+
+    _complete = false;
+
+    http->setHost (pkgurl.host(), (pkgurl.port() > 0)? pkgurl.port() : 80);
+    connect (http, SIGNAL(dataSendProgress(int, int)), this, SLOT(httpSendProgress(int, int)));
+    connect (http, SIGNAL(dataReadProgress(int, int)), this, SLOT(httpReadProgress(int, int)));
+    connect (http, SIGNAL(stateChanged(int)), this, SLOT(httpStateChanged(int)));
+    connect (http, SIGNAL(requestFinished(int, bool)), this, SLOT(httpRequestFinished(int, bool)));
+    connect (http, SIGNAL(done(bool)), this, SLOT(httpDone(bool)));
+    connect (http, SIGNAL(responseHeaderReceived(const QHttpResponseHeader&)),
+             this, SLOT(httpResponseHeaderReceived(const QHttpResponseHeader&)));
+    http->get (pkgurl.toString (QUrl::RemoveScheme | QUrl::RemoveAuthority), out);
+
+    emit setTaskDescription (_label + _pkg.name() + "-" + _pkg.version() + "...");
+    emit setTotalProgress (0);
+    emit setCurrentProgress (0);
+    emit setCurrentAction ("Initializing...");
+
+    while (!_complete)
+        ;
+}
+
+void PackageDownloadAction::httpSendProgress (int done, int total) 
+{
+    (void)total;
+    emit setCurrentProgress (done);
+}
+
+void PackageDownloadAction::httpReadProgress (int done, int total) 
+{
+    emit setTotalProgress (total);
+    emit setCurrentProgress (done);
+}
+
+void PackageDownloadAction::httpStateChanged (int state) 
+{
+    if (state == QHttp::HostLookup)
+        emit setCurrentAction (tr ("Looking up host..."));
+    else if (state == QHttp::Connecting)
+        emit setCurrentAction (tr ("Connecting..."));
+    else if (state == QHttp::Sending)
+        emit setCurrentAction (tr ("Sending request..."));
+    else if (state == QHttp::Reading)
+        emit setCurrentAction (tr ("Transferring data..."));
+    else if (state == QHttp::Connected)
+        emit setCurrentAction (tr ("Connected."));
+    else if (state == QHttp::Closing)
+        emit setCurrentAction (tr ("Closing connection..."));
+    else if (state == QHttp::Unconnected)
+        emit setCurrentAction (tr ("Done."));
+
+}
+
+void PackageDownloadAction::httpRequestFinished (int req, bool err)
+{
+    (void)req;
+
+    if (err) {
+        emit fatalError ("Package " + _pkg.name() + " could not be downloaded from " +
+                         http->currentRequest().path() + ": " + http->errorString());
+        while(1);
+    }
+    out->close();
+    delete out;
+}
+
+void PackageDownloadAction::httpDone (bool err) 
+{
+    (void)err;
+}
+
+void PackageDownloadAction::httpResponseHeaderReceived (const QHttpResponseHeader& resp) 
+{
+    if (resp.statusCode() >= 300 && resp.statusCode() < 400) { // redirect
+        QUrl url (resp.value ("location"));
+        http->setHost (url.host(), (url.port() > 0)? url.port() : 80);
+        http->get (url.toString (QUrl::RemoveScheme | QUrl::RemoveAuthority));
+    } else if (resp.statusCode() != 200) {
+        emit fatalError ("Error fetching " + http->currentRequest().path() + " for package " +
+                         _pkg.name() + ": " + resp.reasonPhrase());
+        while(1);
+    }
+}
+
+void PackageInstallAction::run()
+{
+    
+}
+
