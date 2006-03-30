@@ -88,25 +88,6 @@ void DelayAction::run()
     emit setCurrentProgress (_sec);
 }
 
-void PackageRemoveAction::run() 
-{
-    emit setTaskDescription (_label + _pkg.name() + "-" + _pkg.version());
-    emit setTotalProgress (_pkg.getPackingList().size());
-
-    int prog = 0;
-    QStringListIterator it (_pkg.getPackingList());
-    while (it.hasNext()) {
-        QString file = it.next();
-        emit setCurrentProgress (prog++);
-        emit setCurrentAction (file);
-        iPodLinuxPartitionFS->unlink (file.toAscii());
-    }
-    emit setCurrentProgress (prog);
-    emit setCurrentAction ("Removing package metadata...");
-    iPodLinuxPartitionFS->unlink ((QString ("/etc/packages/") + _pkg.name()).toAscii());
-    emit setCurrentAction ("Done.");
-}
-
 void BackupAction::run() 
 {
     emit setTaskDescription (QString (tr ("Backing up the iPod to %1...")).arg (_path));

@@ -20,9 +20,9 @@
 #define gid_t u16
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <tar.h>
+#include "tar.h"
 
-#include <listhash.h>
+#include "listhash.h"
 
 /* useful constants */
 #define T_BLOCKSIZE		512

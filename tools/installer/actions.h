@@ -9,6 +9,8 @@
 #include "packages.h"
 #include <QThread>
 #include <QList>
+#include <QHttp>
+#include <QFile>
 
 struct image;
 typedef struct image fw_image_t;
@@ -146,6 +148,31 @@ protected:
     QString _label;
 };
 
+class PackageDownloadAction : public PackageAction
+{
+    Q_OBJECT
+
+public:
+    PackageDownloadAction (Package pkg, QString label)
+        : PackageAction (pkg, label)
+    {}
+
+protected slots:
+    void httpSendProgress (int done, int total); 
+    void httpReadProgress (int done, int total);
+    void httpStateChanged (int state);
+    void httpRequestFinished (int req, bool err);
+    void httpDone (bool err);
+    void httpResponseHeaderReceived (const QHttpResponseHeader& resp);
+
+protected:
+    virtual void run();
+
+    QHttp *http;
+    QFile *out;
+    volatile bool _complete;
+};
+
 class PackageInstallAction : public PackageAction
 {
 public:
@@ -154,7 +181,7 @@ public:
     {}
 
 protected:
-    virtual void run() {}
+    virtual void run();
 };
 
 class PackageRemoveAction : public PackageAction
