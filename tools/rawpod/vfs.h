@@ -285,7 +285,7 @@ namespace VFS
             File *fp = open (path, O_RDONLY);
             int err = 0;
             if (fp->error())
-                err = fp->error();
+                err = -fp->error();
             else
                 err = fp->stat (st);
             fp->close();
