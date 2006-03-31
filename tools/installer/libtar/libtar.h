@@ -102,7 +102,7 @@ TAR;
 extern const char libtar_version[];
 
 /* open a new tarfile handle */
-int tar_open(TAR **t, const char *pathname, tartype_t *type, int options);
+int tar_open (TAR **t, const char *pathname, tartype_t *type, int options);
 int tar_fhopen (TAR **t, void *fh, const char *pathname, tartype_t *type, int options);
 
 /* close tarfile handle */
@@ -173,7 +173,6 @@ int tar_extract_fifo(TAR *t, VFS::Filesystem *fs, const char *realname);
 /* for regfiles, we need to extract the content blocks as well */
 int tar_extract_regfile(TAR *t, VFS::Filesystem *fs, const char *realname);
 int tar_skip_regfile(TAR *t);
-
 
 /***** output.c ************************************************************/
 

@@ -60,7 +60,7 @@ public:
     // Returns true iff something was added.
     // Adds nothing in the case of an archive.
     bool addFile() {
-        if (_type == File || _subfile.length() || (_type != Archive && !_url.contains (".tar."))) {
+        if (_type == File || _subfile != "." || (_type != Archive && !_url.contains (".tar."))) {
             _packlist << _dest;
             return true;
         }

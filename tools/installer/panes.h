@@ -121,6 +121,7 @@ private:
     QHttp *packlistHTTP;
     QLabel *blurb;
     QLabel *progressStmt;
+    QString host;
     QTreeWidget *packages;
     QMap <int, PkgTreeWidgetItem*> resolvers;
     QMultiMap <QString, PkgTreeWidgetItem*> packageProvides;

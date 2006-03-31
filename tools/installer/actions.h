@@ -169,6 +169,7 @@ protected:
     virtual void run();
 
     QHttp *http;
+    QString host;
     QFile *out;
 };
 
