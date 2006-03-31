@@ -806,18 +806,18 @@ QString sizeToString (int amount)
 
     // Significant digit handling
     int sigdig = 0;
-    if (amount < 100) {
-        sigdig = 1;
-        while (leftovers >= 10) leftovers /= 10;
-    } else if (amount < 10) {
+    if (amount < 10) {
         sigdig = 2;
         while (leftovers >= 100) leftovers /= 10;
+    } else if (amount < 100) {
+        sigdig = 1;
+        while (leftovers >= 10) leftovers /= 10;
     }
 
     QString decpart = "";
     if (sigdig) decpart = QObject::tr (".%1").arg (leftovers, sigdig);
 
-    return QObject::tr ("%1%2%3").arg (amount).arg (*suffix).arg (decpart);
+    return QObject::tr ("%1%2%3").arg (amount).arg (decpart).arg (*suffix);
 }
 
 QString transferProgressText (int done, int total) 
