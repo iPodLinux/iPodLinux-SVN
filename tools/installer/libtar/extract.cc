@@ -177,6 +177,8 @@ tar_extract_regfile(TAR *t, VFS::Filesystem *fs, const char *realname)
                     delete fhout;
                     return -1;
                 }
+
+                if (t->progressfunc) t->progressfunc (t);
 	}
 
 	/* close output file */

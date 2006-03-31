@@ -609,6 +609,7 @@ fw_find_image (const char *name)
         }
         cur = cur->next;
     }
+    return 0;
 }
 
 /* Does something with each image in `filename'. */
