@@ -22,8 +22,8 @@ sub makeAP($) {
     my($rev) = shift;
     chdir "/home/oremanj/dev/ipl/management/.svnc/ttk";
     system "svn up >svnerr 2>&1" and do { $conn->privmsg("#ipodlinux", "svn up in ttk failed $?"); return; };
-    system "zip -r /var/www/html/iplbuilds/appearance-$rev.zip fonts schemes >/dev/null";
-    system "tar czf /var/www/html/iplbuilds/appearance-$rev.tar.gz fonts schemes >/dev/null";
+    system "zip -r /var/www/html/iplbuilds/appearance-$rev.zip fonts schemes -x ".'\*/.svn/\*'." >/dev/null";
+    system "tar czf /var/www/html/iplbuilds/appearance-$rev.tar.gz --exclude .svn fonts schemes >/dev/null";
 }
 
 sub makePZcore($) {
