@@ -388,7 +388,8 @@ void PackagesPage::httpRequestFinished (int req, bool err)
                         return;
                     }
                 } else {
-                    Package pkg (line);
+                    Package *pkgp = new Package (line);
+                    Package &pkg = *pkgp;
                     if (pkg.supports (iPodVersion) && pkg.valid()) {
                         PkgTreeWidgetItem *twi;
                         if (pkg.provides().size()) {
@@ -450,7 +451,7 @@ void PackagesPage::httpDone (bool err)
             QTreeWidgetItem *item = provit.next();
             switch (item->childCount()) {
             case 1:
-                packages->addTopLevelItem (item->takeChild (0));
+                packages->insertTopLevelItem (packages->indexOfTopLevelItem (item), item->takeChild (0));
                 /* FALLTHRU */
             case 0:
                 packages->takeTopLevelItem (packages->indexOfTopLevelItem (item));
@@ -713,7 +714,7 @@ WizardPage *PackagesPage::nextPage()
     return new DoActionsPage (wizard, /* new DonePage */0);
 }
 
-PkgTreeWidgetItem::PkgTreeWidgetItem (PackagesPage *page, QTreeWidget *parent, Package pkg)
+PkgTreeWidgetItem::PkgTreeWidgetItem (PackagesPage *page, QTreeWidget *parent, Package& pkg)
     : QTreeWidgetItem (parent, UserType), _pkg (pkg), _changemarked (false), _page (page)
 {
     setFlags (Qt::ItemIsSelectable | Qt::ItemIsUserCheckable | Qt::ItemIsEnabled);
@@ -721,7 +722,7 @@ PkgTreeWidgetItem::PkgTreeWidgetItem (PackagesPage *page, QTreeWidget *parent, P
     _setsel();
 }
 
-PkgTreeWidgetItem::PkgTreeWidgetItem (PackagesPage *page, QTreeWidgetItem *parent, Package pkg)
+PkgTreeWidgetItem::PkgTreeWidgetItem (PackagesPage *page, QTreeWidgetItem *parent, Package& pkg)
     : QTreeWidgetItem (parent, UserType), _pkg (pkg), _changemarked (false), _page (page)
 {
     setFlags (Qt::ItemIsSelectable | Qt::ItemIsUserCheckable | Qt::ItemIsEnabled);
@@ -891,7 +892,7 @@ public:
     virtual int read (void *buf, int n) { return gzread (_zfp, buf, n); }
     virtual int write (const void *buf, int n) { return gzwrite (_zfp, buf, n); }
     virtual s64 lseek (s64 off, int whence) { return gzseek (_zfp, off, whence); }
-    virtual int error() { if (!errno) return EINVAL; return errno; }
+    virtual int error() { if (_zfp) return 0; if (!errno) return EINVAL; return errno; }
     virtual int close() { if (_zfp) gzclose (_zfp); _zfp = 0; return 0; }
 
 protected:
@@ -920,6 +921,12 @@ static int tar_rawpod_write (void *fh, const void *buf, size_t size)
 {
     VFS::File *f = (VFS::File *)fh;
     return f->write (buf, size);
+}
+
+void PackageInstallAction::update_progress (TAR *t) 
+{
+    VFS::File *f = (VFS::File *)t->fh;
+    emit setCurrentProgress (f->lseek (0, SEEK_CUR));
 }
 
 void PackageInstallAction::run()
@@ -971,6 +978,8 @@ void PackageInstallAction::run()
                              .arg (strerror (errno)));
             while(1);
         }
+        tarfile->data = this;
+        tarfile->progressfunc = update_progress_shim;
         
         while ((err = th_read (tarfile)) == 0) {
             emit setCurrentProgress (zf->lseek (0, SEEK_CUR));
@@ -997,7 +1006,7 @@ void PackageInstallAction::run()
         char buf[4096];
         int rdlen;
         while ((rdlen = zf->read (buf, 4096)) > 0) {
-            emit setCurrentProgress (zf->lseek (0, SEEK_SET));
+            emit setCurrentProgress (zf->lseek (0, SEEK_CUR));
 
             int err;
             if ((err = of->write (buf, rdlen)) != rdlen) {

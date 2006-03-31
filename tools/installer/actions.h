@@ -7,6 +7,7 @@
 
 #include "installer.h"
 #include "packages.h"
+#include "libtar/libtar.h"
 #include <QThread>
 #include <QList>
 #include <QHttp>
@@ -139,12 +140,12 @@ protected:
 class PackageAction : public Action
 {
 public:
-    PackageAction (Package pkg, QString label)
+    PackageAction (Package& pkg, QString label)
         : _pkg (pkg), _label (label)
     {}
 
 protected:
-    Package _pkg;
+    Package& _pkg;
     QString _label;
 };
 
@@ -153,7 +154,7 @@ class PackageDownloadAction : public PackageAction
     Q_OBJECT
 
 public:
-    PackageDownloadAction (Package pkg, QString label)
+    PackageDownloadAction (Package& pkg, QString label)
         : PackageAction (pkg, label)
     {}
 
@@ -176,12 +177,17 @@ protected:
 class PackageInstallAction : public PackageAction
 {
 public:
-    PackageInstallAction (Package pkg, QString label)
+    PackageInstallAction (Package& pkg, QString label)
         : PackageAction (pkg, label)
     {}
 
 protected:
     virtual void run();
+    static void update_progress_shim (TAR *t) {
+        PackageInstallAction *self = (PackageInstallAction *)t->data;
+        if (self) self->update_progress (t);
+    }
+    void update_progress (TAR *t);
 };
 
 class PackageRemoveAction : public PackageAction

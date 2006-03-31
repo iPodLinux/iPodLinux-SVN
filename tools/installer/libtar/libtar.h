@@ -75,7 +75,7 @@ typedef struct
 }
 tartype_t;
 
-typedef struct
+typedef struct _tar_handle
 {
 	tartype_t *type;
 	const char *pathname;
@@ -84,6 +84,8 @@ typedef struct
 	int options;
 	struct tar_header th_buf;
 	libtar_hash_t *h;
+	void (*progressfunc)(struct _tar_handle *t);
+	void *data;
 }
 TAR;
 
