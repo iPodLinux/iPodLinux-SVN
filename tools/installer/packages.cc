@@ -781,8 +781,6 @@ void PackageDownloadAction::run()
         while(1);
     }
 
-    _complete = false;
-
     http->setHost (pkgurl.host(), (pkgurl.port() > 0)? pkgurl.port() : 80);
     connect (http, SIGNAL(dataSendProgress(int, int)), this, SLOT(httpSendProgress(int, int)));
     connect (http, SIGNAL(dataReadProgress(int, int)), this, SLOT(httpReadProgress(int, int)));
@@ -798,8 +796,7 @@ void PackageDownloadAction::run()
     emit setCurrentProgress (0);
     emit setCurrentAction ("Initializing...");
 
-    while (!_complete)
-        ;
+    QThread::exec();
 }
 
 void PackageDownloadAction::httpSendProgress (int done, int total) 
@@ -810,6 +807,7 @@ void PackageDownloadAction::httpSendProgress (int done, int total)
 
 void PackageDownloadAction::httpReadProgress (int done, int total) 
 {
+    emit setCurrentAction (tr ("Transferring data... %1").arg (transferProgressText (done, total)));
     emit setTotalProgress (total);
     emit setCurrentProgress (done);
 }
@@ -842,13 +840,15 @@ void PackageDownloadAction::httpRequestFinished (int req, bool err)
                          http->currentRequest().path() + ": " + http->errorString());
         while(1);
     }
-    out->close();
-    delete out;
 }
 
 void PackageDownloadAction::httpDone (bool err) 
 {
     (void)err;
+
+    out->close();
+    delete out;
+    QThread::quit();
 }
 
 void PackageDownloadAction::httpResponseHeaderReceived (const QHttpResponseHeader& resp) 

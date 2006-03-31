@@ -117,5 +117,9 @@ protected:
 
 // Call once the partitions are set in stone.
 void setupDevices();
+// Call once the FS'es are set in stone.
+int setupFilesystems();
+// Returns a string giving textual transfer progress, e.g. "42k/1.2M"
+QString transferProgressText (int done, int total);
 
 #endif

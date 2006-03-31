@@ -170,7 +170,6 @@ protected:
 
     QHttp *http;
     QFile *out;
-    volatile bool _complete;
 };
 
 class PackageInstallAction : public PackageAction
