@@ -1162,7 +1162,7 @@ int Ext2File::writeblock (void *buf, u32 block)
         // a new block.
         int group = (_ino - 1) / _ext2->_ino_per_group;
         u32 blk_per_blk = _blocksize >> 2;
-        int newblk;
+        s32 newblk;
         
         pblk = balloc (group);
         
@@ -1365,14 +1365,14 @@ s32 Ext2File::balloc (int group)
             freeblk = findfreebit (blkmap, _blocksize);
         }
     }
-        
+
     // If not, try all groups.
     if (freeblk == -1) {
         for (int grp = 0; grp < _ext2->_groups; grp++) {
             if (_ext2->_group_desc[grp].bg_free_blocks_count < _ext2->_blk_per_group) {
                 _ext2->readblocks (blkmap, _ext2->_group_desc[grp].bg_block_bitmap, _blocksize);
                 freeblk = findfreebit (blkmap, _blocksize);
-                if (freeblk) {
+                if (freeblk >= 0) {
                     group = grp;
                     break;
                 }
@@ -1386,7 +1386,7 @@ s32 Ext2File::balloc (int group)
         for (int grp = 0; grp < _ext2->_groups; grp++) {
             _ext2->readblocks (blkmap, _ext2->_group_desc[grp].bg_block_bitmap, _blocksize);
             freeblk = findfreebit (blkmap, _blocksize);
-            if (freeblk) {
+            if (freeblk >= 0) {
                 group = grp;
                 break;
             }
@@ -1568,7 +1568,7 @@ s32 Ext2FS::creat (const char *path, int type, int newmode)
         if (_group_desc[grp].bg_free_inodes_count < _ino_per_group) {
             readblocks (inomap, _group_desc[grp].bg_inode_bitmap, _blocksize);
             freeino = findfreebit (inomap, _blocksize);
-            if (freeino) {
+            if (freeino >= 0) {
                 group = grp;
                 break;
             }
@@ -1581,7 +1581,7 @@ s32 Ext2FS::creat (const char *path, int type, int newmode)
         for (int grp = 0; grp < _groups; grp++) {
             readblocks (inomap, _group_desc[grp].bg_inode_bitmap, _blocksize);
             freeino = findfreebit (inomap, _blocksize);
-            if (freeino) {
+            if (freeino >= 0) {
                 group = grp;
                 break;
             }
