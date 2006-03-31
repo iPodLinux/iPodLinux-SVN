@@ -11,6 +11,7 @@
 #include "rawpod/device.h"
 #include "rawpod/ext2.h"
 #include "zlib/zlib.h"
+#include "libtar/libtar.h"
 
 #include <QHttp>
 #include <QRegExp>
@@ -262,6 +263,7 @@ PackagesPage::PackagesPage (Installer *wiz)
 
     packlistHTTP = new QHttp;
     packlistHTTP->setHost ("ipodlinux.org", 80);
+    host = "ipodlinux.org";
     connect (packlistHTTP, SIGNAL(dataSendProgress(int, int)), this, SLOT(httpSendProgress(int, int)));
     connect (packlistHTTP, SIGNAL(dataReadProgress(int, int)), this, SLOT(httpReadProgress(int, int)));
     connect (packlistHTTP, SIGNAL(stateChanged(int)), this, SLOT(httpStateChanged(int)));
@@ -293,7 +295,7 @@ void PackagesPage::httpStateChanged (int state)
     if (state == QHttp::HostLookup)
         progressStmt->setText (tr ("<b>Looking up host...</b>"));
     else if (state == QHttp::Connecting)
-        progressStmt->setText (tr ("<b>Connecting...</b>"));
+        progressStmt->setText (tr ("<b>Connecting to %1...</b>").arg (host));
     else if (state == QHttp::Sending)
         progressStmt->setText (tr ("<b>Sending request...</b>"));
     else if (state == QHttp::Reading)
@@ -359,6 +361,7 @@ void PackagesPage::httpRequestFinished (int req, bool err)
                     if (!url.isValid()) {
                         qWarning ("Invalid URL in package list: |%s|", irx.cap (1).toAscii().data());
                     } else {
+                        host = url.host();
                         packlistHTTP->setHost (url.host(), (url.port() > 0)? url.port() : 80);
                         packlistHTTP->get (url.toString (QUrl::RemoveScheme | QUrl::RemoveAuthority));
                     }
@@ -415,6 +418,7 @@ void PackagesPage::httpRequestFinished (int req, bool err)
                             QString dir = pkg.url();
                             dir.truncate (dir.lastIndexOf ('/'));
                             QUrl url (dir);
+                            host = url.host();
                             packlistHTTP->setHost (url.host(), (url.port() > 0)? url.port() : 80);
                             resolvers [packlistHTTP->get (url.toString (QUrl::RemoveScheme |
                                                                         QUrl::RemoveAuthority))] = twi;
@@ -474,8 +478,20 @@ void PackagesPage::httpDone (bool err)
 
 void PackagesPage::httpResponseHeaderReceived (const QHttpResponseHeader& resp) 
 {
+#if 0
+    fprintf (stderr, "<HDR Received>\n");
+    fprintf (stderr, "> %d %s\n", resp.statusCode(), resp.reasonPhrase().toAscii().data());
+    QListIterator <QPair <QString, QString> > valit (resp.values());
+    while (valit.hasNext()) {
+        QPair <QString, QString> kv = valit.next();
+        fprintf (stderr, "%s: %s\n", kv.first.toAscii().data(), kv.second.toAscii().data());
+    }
+    fprintf (stderr, "</HDR> ");
+#endif
+
     if (resp.statusCode() >= 300 && resp.statusCode() < 400) { // redirect
         QUrl url (resp.value ("location"));
+        host = url.host();
         packlistHTTP->setHost (url.host(), (url.port() > 0)? url.port() : 80);
         resolvers [packlistHTTP->get (url.toString (QUrl::RemoveScheme | QUrl::RemoveAuthority))] =
             resolvers [packlistHTTP->currentId()];
@@ -781,7 +797,8 @@ void PackageDownloadAction::run()
         while(1);
     }
 
-    http->setHost (pkgurl.host(), (pkgurl.port() > 0)? pkgurl.port() : 80);
+    host = pkgurl.host();
+    http->setHost (host, (pkgurl.port() > 0)? pkgurl.port() : 80);
     connect (http, SIGNAL(dataSendProgress(int, int)), this, SLOT(httpSendProgress(int, int)));
     connect (http, SIGNAL(dataReadProgress(int, int)), this, SLOT(httpReadProgress(int, int)));
     connect (http, SIGNAL(stateChanged(int)), this, SLOT(httpStateChanged(int)));
@@ -817,7 +834,7 @@ void PackageDownloadAction::httpStateChanged (int state)
     if (state == QHttp::HostLookup)
         emit setCurrentAction (tr ("Looking up host..."));
     else if (state == QHttp::Connecting)
-        emit setCurrentAction (tr ("Connecting..."));
+        emit setCurrentAction (tr ("Connecting to %1...").arg (host));
     else if (state == QHttp::Sending)
         emit setCurrentAction (tr ("Sending request..."));
     else if (state == QHttp::Reading)
@@ -855,7 +872,8 @@ void PackageDownloadAction::httpResponseHeaderReceived (const QHttpResponseHeade
 {
     if (resp.statusCode() >= 300 && resp.statusCode() < 400) { // redirect
         QUrl url (resp.value ("location"));
-        http->setHost (url.host(), (url.port() > 0)? url.port() : 80);
+        host = url.host();
+        http->setHost (host, (url.port() > 0)? url.port() : 80);
         http->get (url.toString (QUrl::RemoveScheme | QUrl::RemoveAuthority));
     } else if (resp.statusCode() != 200) {
         emit fatalError ("Error fetching " + http->currentRequest().path() + " for package " +
@@ -864,8 +882,141 @@ void PackageDownloadAction::httpResponseHeaderReceived (const QHttpResponseHeade
     }
 }
 
-void PackageInstallAction::run()
+class CompressedFile : public VFS::File 
 {
+public:
+    CompressedFile (const char *name) { errno = 0; _zfp = gzopen (name, "rb"); }
+    ~CompressedFile() { close(); }
     
+    virtual int read (void *buf, int n) { return gzread (_zfp, buf, n); }
+    virtual int write (const void *buf, int n) { return gzwrite (_zfp, buf, n); }
+    virtual s64 lseek (s64 off, int whence) { return gzseek (_zfp, off, whence); }
+    virtual int error() { if (!errno) return EINVAL; return errno; }
+    virtual int close() { if (_zfp) gzclose (_zfp); _zfp = 0; return 0; }
+
+protected:
+    gzFile _zfp;
+};
+
+static void *tar_rawpod_open (const char *path, int mode, ...) 
+{
+    (void)path, (void)mode;
+    return 0;
 }
 
+static int tar_rawpod_close (void *fh) 
+{
+    VFS::File *f = (VFS::File *)fh;
+    return f->close();
+}
+
+static int tar_rawpod_read (void *fh, void *buf, size_t size) 
+{
+    VFS::File *f = (VFS::File *)fh;
+    return f->read (buf, size);
+}
+
+static int tar_rawpod_write (void *fh, const void *buf, size_t size) 
+{
+    VFS::File *f = (VFS::File *)fh;
+    return f->write (buf, size);
+}
+
+void PackageInstallAction::run()
+{
+    emit setTaskDescription (_label + _pkg.name() + "-" + _pkg.version());
+    emit setTotalProgress (0);
+    emit setCurrentAction (tr ("Initializing..."));
+
+    int uncompressed_length = 0;
+    gzFile zfp = gzopen (_pkg.url().toAscii(), "rb");
+    if (zfp) {
+        if (gzdirect (zfp)) {
+            FILE *fp = fopen (_pkg.url().toAscii(), "rb");
+            fseek (fp, 0, SEEK_END);
+            uncompressed_length = ftell (fp);
+            fclose (fp);
+        } else {
+            // skip everything
+            gzseek (zfp, 0x7ffff000, SEEK_CUR);
+            // get the offset
+            uncompressed_length = gztell (zfp);
+            if (uncompressed_length < 0 || uncompressed_length >= 0x10000000) {
+                emit fatalError (tr ("Unable to determine size of %1").arg (_pkg.url()));
+                while(1);
+            }
+        }
+        gzclose (zfp);
+    }
+
+    emit setTotalProgress (uncompressed_length);
+
+    VFS::File *zf = new CompressedFile (_pkg.url().toAscii());
+    if (zf->error()) {
+        emit fatalError (tr ("Cannot open %1: %2").arg (_pkg.url()).arg (strerror (zf->error())));
+        delete zf;
+        while(1);
+    }
+    
+    if (!(_pkg.type() == Package::File || (_pkg.type() != Package::Archive && !_pkg.url().contains (".tar.")))) {
+        // handle archive or file-in-archive
+        bool singleFile = _pkg.addFile();
+        
+        tartype_t rawpod_type = { tar_rawpod_open, tar_rawpod_close, tar_rawpod_read, tar_rawpod_write };
+        TAR *tarfile;
+        int err;
+        
+        if (tar_fhopen (&tarfile, (void *)zf, _pkg.url().toAscii(), &rawpod_type, TAR_CHECK_MAGIC) < 0) {
+            emit fatalError (tr ("Cannot initialize libtar handle from %1: %2").arg (_pkg.url())
+                             .arg (strerror (errno)));
+            while(1);
+        }
+        
+        while ((err = th_read (tarfile)) == 0) {
+            emit setCurrentProgress (zf->lseek (0, SEEK_CUR));
+            if (singleFile && th_get_pathname (tarfile) != _pkg.subfile()) {
+                if (TH_ISREG (tarfile))
+                    tar_skip_regfile (tarfile);
+            } else {
+                emit setCurrentAction (tr ("Extracting %1...").arg (th_get_pathname (tarfile)));
+                err = tar_extract_file (tarfile, iPodLinuxPartitionFS,
+                                        (_pkg.destination() + "/" + th_get_pathname (tarfile)).toAscii());
+            }
+        }
+        tar_close (tarfile);
+    } else {
+        // handle single file
+        _pkg.addFile();
+        VFS::File *of = iPodLinuxPartitionFS->open (_pkg.destination().toAscii(), O_WRONLY|O_CREAT|O_TRUNC);
+        if (of->error()) {
+            emit fatalError (tr ("Unable to open %1 for writing on the iPod: %2").arg (_pkg.destination())
+                             .arg (strerror (of->error())));
+            while(1);
+        }
+        emit setCurrentAction (tr ("Extracting..."));
+        char buf[4096];
+        int rdlen;
+        while ((rdlen = zf->read (buf, 4096)) > 0) {
+            emit setCurrentProgress (zf->lseek (0, SEEK_SET));
+
+            int err;
+            if ((err = of->write (buf, rdlen)) != rdlen) {
+                emit fatalError (tr ("Error writing to %1: %2").arg (_pkg.destination())
+                                 .arg (rdlen < 0? strerror (-rdlen) : "short write"));
+                while(1);
+            }
+        }
+        if (rdlen < 0) {
+            emit fatalError (tr ("Error reading %1: %2").arg (_pkg.url()).arg (strerror (-rdlen)));
+            while(1);
+        }
+        of->close();
+        delete of;
+    }
+
+    zf->close();
+    delete zf;
+
+    emit setCurrentProgress (uncompressed_length);
+    emit setCurrentAction ("Done.");
+}
