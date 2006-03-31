@@ -120,8 +120,8 @@ void BackupAction::run()
     fwpart->lseek (0, SEEK_SET);
 
     while (fwpread < fwplen) {
-        emit setCurrentAction (tr ("Backing up the firmware partition: %1/%2 bytes")
-                               .arg (fwpread).arg (fwplen));
+        emit setCurrentAction (tr ("Backing up the firmware partition: %1")
+                               .arg (transferProgressText (fwpread, fwplen)));
         emit setCurrentProgress (fwpread);
         if ((thisread = fwpart->read (buf, 4096)) <= 0) {
             if (thisread == 0)

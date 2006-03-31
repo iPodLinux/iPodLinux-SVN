@@ -788,3 +788,39 @@ bool InstallPage::isComplete()
     return (!makeBackup->isChecked() || backupPath->text().length());
 }
 
+QString sizeToString (int amount) 
+{
+    int leftovers = 0;
+    const char *suffix = "BkMGTPEZY";
+
+    if (amount < 1024) return QString::number (amount);
+    
+    while (suffix[1] && (amount > 1024)) {
+        leftovers = amount & 0x3ff;
+        amount >>= 10;
+        suffix++;
+    }
+
+    // turn it to 000...999 instead of 0...1023
+    leftovers = leftovers * 1000 / 1024;
+
+    // Significant digit handling
+    int sigdig = 0;
+    if (amount < 100) {
+        sigdig = 1;
+        while (leftovers >= 10) leftovers /= 10;
+    } else if (amount < 10) {
+        sigdig = 2;
+        while (leftovers >= 100) leftovers /= 10;
+    }
+
+    QString decpart = "";
+    if (sigdig) decpart = QObject::tr (".%1").arg (leftovers, sigdig);
+
+    return QObject::tr ("%1%2%3").arg (amount).arg (*suffix).arg (decpart);
+}
+
+QString transferProgressText (int done, int total) 
+{
+    return QObject::tr ("%1/%2").arg (sizeToString (done)).arg (sizeToString (total));
+}
