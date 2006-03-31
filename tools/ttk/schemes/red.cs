@@ -4,6 +4,7 @@
 #  originally conceived for the m-robe color scheme by Stuart Clark (Decipher)
 
 # this comment intentionally left blank
+# this one as well.
 
 \def black #000000
 \def red   #ff0000
