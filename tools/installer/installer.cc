@@ -515,6 +515,8 @@ WizardPage *PodLocationPage::nextPage()
         }
     }
 
+    VFS::File *fh;
+
     switch (Mode) {
     case StandardInstall:
         return new InstallPage (wizard);
@@ -529,7 +531,7 @@ WizardPage *PodLocationPage::nextPage()
             exit (1);
         }
 
-        VFS::File *fh = iPodLinuxPartitionFS->open ("/etc/loadertype", O_RDONLY);
+        fh = iPodLinuxPartitionFS->open ("/etc/loadertype", O_RDONLY);
         if (fh && !fh->error()) {
             char buf[4] = "?";
             fh->read (buf, 3);

@@ -93,9 +93,10 @@ tar_extract_file(TAR *t, VFS::Filesystem *fs, const char *realname)
 	if (i != 0)
 		return i;
 
-	lnp = (linkname_t *)calloc(1, sizeof(linkname_t));
+	lnp = (linkname_t *)malloc(sizeof(linkname_t));
 	if (lnp == NULL)
 		return -1;
+        memset (lnp, 0, sizeof(linkname_t));
 	strncpy(lnp->ln_save, th_get_pathname(t), sizeof(lnp->ln_save) - 1);
 	strncpy(lnp->ln_real, realname, sizeof(lnp->ln_real) - 1);
         lnp->ln_save[sizeof(lnp->ln_save) - 1] = 0;

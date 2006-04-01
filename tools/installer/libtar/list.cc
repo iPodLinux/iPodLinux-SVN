@@ -15,6 +15,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#ifdef WIN32
+#include "strsep.h"
+#endif
 
 /*
 ** libtar_listptr_reset() - reset a list pointer
@@ -56,7 +59,8 @@ libtar_list_new(int flags, libtar_cmpfunc_t cmpfunc)
 		return NULL;
 	}
 
-	newlist = (libtar_list_t *)calloc(1, sizeof(libtar_list_t));
+	newlist = (libtar_list_t *)malloc(sizeof(libtar_list_t));
+	memset (newlist, 0, sizeof(libtar_list_t));
 	if (cmpfunc != NULL)
 		newlist->cmpfunc = cmpfunc;
 	else

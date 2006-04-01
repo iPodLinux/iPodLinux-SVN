@@ -16,6 +16,9 @@
 
 #include <stdio.h>
 #include <string.h>
+#ifdef WIN32
+#include "strsep.h"
+#endif
 
 
 /* hashing function for pathnames */
@@ -78,11 +81,13 @@ mkdirhier (VFS::Filesystem *fs, const char *path)
 	char *dirp, *nextp = src;
 	int retval = 1;
 
-	if (strlen (path) >= sizeof(src))
+#if 0
+	if (strlen (path) >= 4095)
 	{
 		errno = ENAMETOOLONG;
 		return -1;
 	}
+#endif
         strcpy (src, path);
         if (strrchr (src, '/'))
             *strrchr (src, '/') = 0;
@@ -106,7 +111,7 @@ mkdirhier (VFS::Filesystem *fs, const char *path)
 		if ((ret = fs->mkdir (dst)) < 0)
 		{
 			if (ret != -EEXIST)
-				return -1;
+				return -ret;
 		}
 		else
 			retval = 0;
