@@ -176,13 +176,13 @@ namespace VFS
     {
     public:
         DeviceFile (Device *dev) : _dev (dev) {}
-        virtual ~DeviceFile() { close(); }
+        virtual ~DeviceFile() {}
 
         virtual int read (void *buf, int n) { return _dev->read (buf, n); }
         virtual int write (const void *buf, int n) { return _dev->write (buf, n); }
         virtual s64 lseek (s64 off, int whence) { return _dev->lseek (off, whence); }
         virtual int error() { return 0; }
-        virtual int close() { if (_dev) delete _dev; _dev = 0; return 0; }
+        virtual int close() { return 0; }
 
     protected:
         Device *_dev;
