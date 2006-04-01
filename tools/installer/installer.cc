@@ -558,7 +558,7 @@ WizardPage *PodLocationPage::nextPage()
         else
             return new PackagesPage (wizard);
     case Uninstall:
-        return 0;//new RestorePage (wizard);
+        return new UninstallPage (wizard);
     }
 
     return 0;
@@ -750,6 +750,88 @@ WizardPage *ChangeLoaderPage::nextPage()
     }
 }
 
+UninstallPage::UninstallPage (Installer *wiz)
+    : InstallerPage (wiz)
+{
+    wiz->setInfoText (tr ("<b>Uninstallation Information</b>"), tr ("Fill in the information below and click Next."));
+
+    blurb = new QLabel (tr ("Uninstallation can be done most reliably if you made a backup. If you did, "
+                            "please browse to its path below. If not, uncheck the box and I'll see what "
+                            "I can do."));
+    blurb->setWordWrap (true);
+    nobackupblurb = new QLabel (tr ("OK, I guess you didn't make one. In the future, please do so. I'll "
+                                    "try my best to restore your iPod to normal, but I may not be able to; "
+                                    "in this case, you'll need to use the Apple updater to restore it, "
+                                    "erasing all music and data. Sorry. Click Next."));
+    nobackupblurb->setWordWrap (true);
+    haveBackup = new QCheckBox (tr ("Yes! I made a backup."));
+    haveBackup->setChecked (true);
+    backupPathLabel = new QLabel (tr ("Load backup:"));
+    backupPath = new QLineEdit ("");
+    backupBrowse = new QPushButton (tr ("Browse..."));
+
+    QVBoxLayout *layout = new QVBoxLayout;
+    layout->addWidget (blurb);
+    layout->addSpacing (10);
+    layout->addWidget (haveBackup);
+    QHBoxLayout *bkplayout = new QHBoxLayout;
+    bkplayout->addWidget (backupPathLabel);
+    bkplayout->addWidget (backupPath);
+    bkplayout->addWidget (backupBrowse);
+    layout->addLayout (bkplayout);
+    layout->addWidget (nobackupblurb);
+    layout->addStretch (1);
+    nobackupblurb->hide();
+    setLayout (layout);
+
+    connect (haveBackup, SIGNAL(toggled(bool)), this, SLOT(setBackupBlurb(bool)));
+    connect (backupPath, SIGNAL(textChanged(QString)), this, SIGNAL(completeStateChanged()));
+    connect (backupBrowse, SIGNAL(released()), this, SLOT(openBrowseDialog()));
+
+    setBackupBlurb (true);
+}
+
+void UninstallPage::setBackupBlurb (bool chk) 
+{
+    if (chk) {
+        nobackupblurb->hide();
+        backupPathLabel->show();
+        backupPath->show();
+        backupBrowse->show();
+    } else {
+        nobackupblurb->show();
+        backupPathLabel->hide();
+        backupPath->hide();
+        backupBrowse->hide();
+    }
+    emit completeStateChanged();
+}
+
+void UninstallPage::openBrowseDialog() 
+{
+    QString ret = QFileDialog::getOpenFileName (this, "Choose a backup file to restore:");
+    if (ret != "")
+        backupPath->setText (ret);
+}
+
+WizardPage *UninstallPage::nextPage()
+{
+    if (haveBackup->isChecked()) {
+        PendingActions->append (new RestoreBackupAction (iPodLocation, backupPath->text()));
+    } else {
+        PendingActions->append (new HeuristicUninstallAction (iPodLocation));
+    }
+    return new DoActionsPage (wizard, new DonePage (wizard));
+}
+
+void UninstallPage::resetPage() 
+{}
+
+bool UninstallPage::isComplete() 
+{
+    return (!haveBackup->isChecked() || (backupPath->text().length() && QFile::exists (backupPath->text())));
+}
+
 InstallPage::InstallPage (Installer *wiz)
     : InstallerPage (wiz)
 {
@@ -931,6 +1013,8 @@ QString transferProgressText (int done, int total)
 DonePage::DonePage (Installer *wiz)
     : InstallerPage (wiz)
 {
+    wizard->setInfoText (tr ("<b>Finished</b>"), tr ("Installation is complete."));
+
     blurb = new QLabel;
     blurb->setWordWrap (true);
 

@@ -141,6 +141,60 @@ void BackupAction::run()
     delete backup;
 }
 
+void RestoreBackupAction::run() 
+{
+    emit setTaskDescription (QString (tr ("Restoring backup from %1...")).arg (_path));
+    emit setTotalProgress (0);
+    emit setCurrentProgress (0);
+    emit setCurrentAction (tr ("Preparing..."));
+
+    VFS::Device *ipoddev = new LocalRawDevice (_dev);
+    VFS::File *backup = new LocalFile (_path.toAscii().data(), OPEN_READ);
+    if (backup->error())
+        FATAL_T (tr ("Error opening the backup file: %1").arg (strerror (backup->error())));
+
+    emit setCurrentAction (tr ("Restoring the partition table"));
+    u8 *buf = new u8[4096];
+    ipoddev->lseek (0, SEEK_SET);
+    if (backup->read (buf, 512) != 512)
+        FATAL ("Error reading the partition table from the backup file..");
+    if (devWriteMBR (_dev, buf) != 0)
+        FATAL ("Error writing the partition table to the iPod.");
+    delete ipoddev;
+
+    VFS::Device *fwpart = setup_partition (_dev, 1);
+    
+    u32 bkplen = backup->lseek (0, SEEK_END);
+    u32 bkpread = 512;
+    int thisread, err;
+
+    emit setTotalProgress (bkplen);
+    backup->lseek (512, SEEK_SET);
+
+    while (bkpread < bkplen) {
+        emit setCurrentAction (tr ("Restoring the firmware partition: %1")
+                               .arg (transferProgressText (bkpread, bkplen)));
+        emit setCurrentProgress (bkpread);
+        if ((thisread = backup->read (buf, 4096)) <= 0) {
+            if (thisread == 0)
+                FATAL ("Short read on the backup.");
+            else
+                FATAL_T (tr ("Error reading the backup: %1").arg (strerror (-thisread)));
+        }
+        if ((err = fwpart->write (buf, thisread)) != thisread) {
+            FATAL_T (tr ("Error writing %1 bytes to iPod: %3").arg (thisread).arg (strerror (-err)));
+        }
+        bkpread += thisread;
+    }
+
+    emit setCurrentAction (tr ("Restore complete."));
+    emit setCurrentProgress (bkplen);
+
+    delete fwpart;
+    backup->close();
+    delete backup;
+}
+
 DoActionsPage::DoActionsPage (Installer *wiz, InstallerPage *next) 
     : ActionOutlet (wiz), nextp (next), done (false)
 {

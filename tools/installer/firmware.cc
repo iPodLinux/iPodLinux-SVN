@@ -285,3 +285,8 @@ void ChangeLoaderAction::run()
     fw_rename_image (imgnames[_old][0], imgnames[_new][0]);
     fw_create_dump (make_device_name (iPodLocation, 1));
 }
+
+void HeuristicUninstallAction::run() 
+{
+    emit fatalError ("Heuristic uninstall is not yet implemented. Use the Apple updater.");
+}
