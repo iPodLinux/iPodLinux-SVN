@@ -228,8 +228,16 @@ static void writeLine (VFS::File *out, QString line, int addnl = true)
 
 void Package::writePackingList() 
 {
+    iPodLinuxPartitionFS->mkdir ("/etc");
+    iPodLinuxPartitionFS->mkdir ("/etc/packages");
     VFS::File *packlist = iPodLinuxPartitionFS->open (QString ("/etc/packages/%1").arg (_name).toAscii(),
                                                       O_WRONLY | O_TRUNC | O_CREAT);
+    if (packlist->error()) {
+        fprintf (stderr, "Error writing packing list: /etc/packages/%s: %s\n", _name.toAscii().data(),
+                 strerror (packlist->error()));
+        return;
+    }
+
     writeLine (packlist, QString ("Version %1").arg (_version));
 
     QStringListIterator it (_packlist);
