@@ -114,7 +114,7 @@ PodLocationPage::PodLocationPage (Installer *wizard)
 
     blurb = subblurb = 0;
     advancedCheck = 0;
-    upgradeRadio = uninstallRadio = 0;
+    upgradeRadio = changeLoaderRadio = uninstallRadio = 0;
     stateOK = 0;
     
     wizard->resize (530, 440);
@@ -351,8 +351,8 @@ PodLocationPage::PodLocationPage (Installer *wizard)
         }
         wizard->setInfoText (tr ("<b>Installation Information</b>"),
                              tr ("Read the information below and choose your installation type."));
-        advancedCheck = new QCheckBox (tr ("Customize partitioning (experienced users only)"));
-        upgradeRadio = uninstallRadio = 0;
+        advancedCheck = new QCheckBox (tr ("Advanced partitioning and package selection"));
+        upgradeRadio = changeLoaderRadio = uninstallRadio = 0;
         subblurb = 0;
 
         QVBoxLayout *layout = new QVBoxLayout;
@@ -369,6 +369,7 @@ PodLocationPage::PodLocationPage (Installer *wizard)
         
         advancedCheck = 0;
         upgradeRadio = new QRadioButton (tr ("Update my existing installation"));
+        changeLoaderRadio = new QRadioButton (tr ("Change loader type and/or boot order"));
         uninstallRadio = new QRadioButton (tr ("Uninstall iPodLinux"));
         subblurb = new QLabel (tr ("Please choose either an update or an uninstall "
                                    "so I can display something more informative here."));
@@ -378,12 +379,14 @@ PodLocationPage::PodLocationPage (Installer *wizard)
         subblurb->resize (width(), 100);
 
         connect (upgradeRadio, SIGNAL(clicked(bool)), this, SLOT(upgradeRadioClicked(bool)));
+        connect (changeLoaderRadio, SIGNAL(clicked(bool)), this, SLOT(changeLoaderRadioClicked(bool)));
         connect (uninstallRadio, SIGNAL(clicked(bool)), this, SLOT(uninstallRadioClicked(bool)));
 
         QVBoxLayout *layout = new QVBoxLayout;
         layout->addWidget (blurb);
         layout->addSpacing (10);
         layout->addWidget (upgradeRadio);
+        layout->addWidget (changeLoaderRadio);
         layout->addWidget (uninstallRadio);
         layout->addStretch (1);
         layout->addWidget (subblurb);
@@ -415,10 +418,22 @@ void PodLocationPage::upgradeRadioClicked (bool clicked)
 {
     (void)clicked;
     
-    subblurb->setText (tr ("<p>The update will check for new versions of the kernel and "
-                           "the podzilla you have installed; you will be given the chance "
-                           "to install them if new versions are present. "
-                           "You will also be able to change the packages you have installed.</p>\n"
+    subblurb->setText (tr ("<p>The update will check for new versions of all packages "
+                           "you have installed; you will be given the chance to upgrade "
+                           "any that have updates, uninstall some packages, install some "
+                           "new ones, or any combination of those.</p>\n"
+                           "<p>Press Next to continue.</p>"));
+    stateOK = 1;
+    emit completeStateChanged();
+}
+
+void PodLocationPage::changeLoaderRadioClicked (bool clicked) 
+{
+    (void)clicked;
+    
+    subblurb->setText (tr ("<p>This will give you the opportunity to change the boot order "
+                           "(whether Linux or the Apple firmware is default) or, if you so "
+                           "desire, to change to iPodLoader2.</p>\n"
                            "<p>Press Next to continue.</p>"));
     stateOK = 1;
     emit completeStateChanged();
@@ -428,6 +443,7 @@ void PodLocationPage::resetPage()
 {
     if (advancedCheck) advancedCheck->setChecked (0);
     if (upgradeRadio) upgradeRadio->setChecked (0);
+    if (changeLoaderRadio) changeLoaderRadio->setChecked (0);
     if (uninstallRadio) uninstallRadio->setChecked (0);
     if (subblurb) subblurb->setText (tr ("Please choose either an update or an uninstall "
                                          "so I can display something more informative here."));
@@ -472,6 +488,8 @@ WizardPage *PodLocationPage::nextPage()
     if (upgradeRadio) {
         if (upgradeRadio->isChecked()) {
             Mode = Update;
+        } else if (changeLoaderRadio->isChecked()) {
+            Mode = ChangeLoader;
         } else {
             Mode = Uninstall;
         }
@@ -503,6 +521,7 @@ WizardPage *PodLocationPage::nextPage()
     case AdvancedInstall:
         return new PartitioningPage (wizard);
     case Update:
+    case ChangeLoader:
         setupDevices();
         if (setupFilesystems()) {
             QMessageBox::critical (0, tr("iPodLinux Installer"), tr("Error creating filesystem "
@@ -534,7 +553,10 @@ WizardPage *PodLocationPage::nextPage()
             fh->close();
         }
         delete fh;
-        return new PackagesPage (wizard);
+        if (Mode == ChangeLoader)
+            return new ChangeLoaderPage (wizard);
+        else
+            return new PackagesPage (wizard);
     case Uninstall:
         return 0;//new RestorePage (wizard);
     }
@@ -552,8 +574,8 @@ PartitioningPage::PartitioningPage (Installer *wiz)
 {
     wiz->setInfoText (tr ("<b>Advanced Partitioning</b>"), tr ("Fill in the requested information and click Next."));
     topblurb = new QLabel (tr ("<p>If you've chosen this path, I assume you know what you're doing. "
-                               "If you don't understand this, go back and deselect advanced partitioning "
-                               "selection!</p><p>Make room for iPodLinux by:</p>"));
+                               "If you don't understand this, just click Next; the defaults are "
+                               "OK.</p><p>Make room for iPodLinux by:</p>"));
     topblurb->setWordWrap (true);
     partitionSmall = new QRadioButton (tr ("Shrinking the firmware partition"));
     partitionBig = new QRadioButton (tr ("Shrinking the data partition"));
@@ -645,6 +667,85 @@ WizardPage *PartitioningPage::nextPage()
 bool PartitioningPage::isComplete() 
 {
     return true;
+}
+
+ChangeLoaderPage::ChangeLoaderPage (Installer *wiz)
+    : InstallerPage (wiz)
+{
+    wiz->setInfoText (tr ("<b>Loader Selection</b>"), tr ("Select the radio button for the loader to which you would like to change and click Next."));
+    
+    blurb = new QLabel (tr ("Please select the radio button for the load order or loader you want to "
+                            "change to below. The currently selected one is your current loader."));
+    blurb->setWordWrap (true);
+    loader1apple = new QRadioButton (tr ("Standard loader with Apple firmware default"));
+    loader1linux = new QRadioButton (tr ("Standard loader with iPodLinux default"));
+    loader2 = new QRadioButton (tr ("iPodLoader2 (nice menu interface, but still experimental)"));
+    ldrchoiceblurb = new QLabel;
+    ldrchoiceblurb->setWordWrap (true);
+
+    connect (loader1apple, SIGNAL(toggled(bool)), this, SLOT(setLoader1Blurb(bool)));
+    connect (loader1linux, SIGNAL(toggled(bool)), this, SLOT(setLoader1Blurb(bool)));
+    connect (loader2, SIGNAL(toggled(bool)), this, SLOT(setLoader2Blurb(bool)));
+
+    QVBoxLayout *layout = new QVBoxLayout;
+    layout->addWidget (blurb);
+    layout->addWidget (loader1apple);
+    layout->addWidget (loader1linux);
+    layout->addWidget (loader2);
+    layout->addWidget (ldrchoiceblurb);
+    setLayout (layout);
+
+    resetPage();
+}
+
+void ChangeLoaderPage::resetPage() 
+{
+    loader1apple->setChecked (false);
+    loader1linux->setChecked (false);
+    loader2->setChecked (false);
+
+    if (iPodLoader == Loader1Apple)
+        loader1apple->setChecked (true);
+    else if (iPodLoader == Loader1Linux)
+        loader1linux->setChecked (true);
+    else if (iPodLoader == Loader2)
+        loader2->setChecked (true);
+}
+
+void ChangeLoaderPage::setLoader1Blurb (bool chk) 
+{
+    if (chk) {
+        ldrchoiceblurb->setText (tr ("To boot the non-default OS, hold rewind as your iPod restarts."));
+    }
+    emit completeStateChanged();
+}
+
+void ChangeLoaderPage::setLoader2Blurb (bool chk) 
+{
+    if (chk) {
+        ldrchoiceblurb->setText (tr ("iPodLoader2 can also load Rockbox, multiple kernels, etc; see "
+                                     "the iPodLinux wiki for more information."));
+    }
+    emit completeStateChanged();
+}
+
+WizardPage *ChangeLoaderPage::nextPage() 
+{
+    LoaderType newLoader;
+
+    if (loader2->isChecked()) newLoader = Loader2;
+    else if (loader1linux->isChecked()) newLoader = Loader1Linux;
+    else newLoader = Loader1Apple;
+    
+    PendingActions->append (new ChangeLoaderAction (iPodLoader, newLoader));
+
+    if ((iPodLoader == Loader2 && !loader2->isChecked()) ||
+        (iPodLoader != Loader2 &&  loader2->isChecked())) {
+        iPodLoader = newLoader;
+        return new PackagesPage (wizard, true);
+    } else {
+        return new DoActionsPage (wizard, /*new DonePage(wizard)*/0);
+    }
 }
 
 InstallPage::InstallPage (Installer *wiz)

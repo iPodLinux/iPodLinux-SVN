@@ -201,6 +201,16 @@ protected:
     virtual void run();
 };
 
+class ChangeLoaderAction : public Action
+{
+public:
+    ChangeLoaderAction (LoaderType oldL, LoaderType newL) : _old (oldL), _new (newL) {}
+
+protected:
+    virtual void run();
+    LoaderType _old, _new;
+};
+
 class FirmwareRecreateAction : public Action
 {
 public:
@@ -211,11 +221,6 @@ protected:
     static void rethread_shim (FirmwareRecreateAction *self) {
         self->run_sub();
     }
-    static void handle_shim (fw_image_t *img, const char *id, const char *file, void *data) {
-        FirmwareRecreateAction *self = (FirmwareRecreateAction *)data;
-        self->handle_image (img, id, file);
-    }
-    void handle_image (fw_image_t *img, const char *id, const char *file);
 
     virtual void run();
     void run_sub();

@@ -212,6 +212,9 @@ usage (int exitcode)
             "             -i. For loader2, equivalent to `lnux=<file>'.\n"
             "  -m         Load all inputs before writing any outputs. You must specify this\n"
             "             option if input and output are the same file. Uses lots of memory.\n"
+            "  -n <1>=<2> Rename the image named <2> to <1>. For instance, -n aple=osos1.\n"
+            "             Must come after the <2> image has been loaded, or results will be\n"
+            "             unpredictable.\n"
             "  -o <file>  Specifies where the output should go. If you don't specify this,\n"
             "             a sensible default is used.\n"
             "  -p <file>  Equivalent to -m -a <file> -o <file>; [p]atch the image in.\n"
@@ -468,7 +471,8 @@ write_image (fw_image_info *inf, fw_fileops *out, unsigned offset, int entry, in
 /* Finds the image with the specified ID and returns it,
  * or makes a new one.
  * Only the first four characters of `id' are considered.
- * Pass subimg = '@' to find a parent image, 'N' to make
+ * Pass subimg = 0 to find a non-parent image, '@' to
+ * find a parent image, '?' for either, 'N' to make
  * the next child of that id, or '0'-'4' to find/make that child,
  * or 0 to find/make a non-sub image.
  */
@@ -505,7 +509,8 @@ find_or_make_image (const char *id, char subimg)
     /* Find the appropriate child. */
     switch (subimg) {
     case 0: /* We just want a parent, so we're done! */
-        if (current->hassubs) {
+    case '?':
+        if (current->hassubs && (subimg != '?')) {
             fprintf (stderr, "warning: overriding %s with non-parental version %s\n", current->name, id);
             current->name = strdup (id);
             current->hassubs = 0;
@@ -544,6 +549,52 @@ find_or_make_image (const char *id, char subimg)
         ERROR_EXIT (11);
     }
     return 0;
+}
+
+void
+fw_rename_image (const char *oldname, const char *newname) 
+{
+    fw_image_info *inf = find_or_make_image (oldname, '?');
+    if (oldname[4] != newname[4]) {
+        if (isdigit (oldname[4]) && isdigit (newname[4])) {
+            int oldsub = oldname[4] - '0';
+            int newsub = newname[4] - '0';
+            fw_image_info *tmp = inf->subs[oldsub]; // swap the subs
+            inf->subs[oldsub] = inf->subs[newsub];
+            inf->subs[newsub] = tmp;
+            if (newsub >= inf->nsubs) inf->nsubs = newsub + 1;
+            inf = inf->subs[newsub];
+        } else if (isdigit (oldname[4]) && !isdigit (newname[4])) {
+            int oldsub = oldname[4] - '0';
+            fw_image_info *img = inf->subs[oldsub]; // take it out of the subs list
+            inf->subs[oldsub] = 0;
+            fw_image_info *next = inf->next;
+            inf->next = img; // and put it in the top one
+            img->next = next;
+            inf = img;
+        } else if (!isdigit (oldname[4]) && isdigit (newname[4])) {
+            fw_image_info *cur = images;
+            while (cur->next && (strncmp (cur->next->header.id, oldname, 4) != 0))
+                cur = cur->next;
+            if (!cur->next) {
+                fprintf (stderr, "Error: image %s does not exist\n", oldname);
+                ERROR_EXIT (11);
+            }
+            cur->next = cur->next->next; // take it out of the top list
+            
+            int newsub = newname[4] - '0';
+            fw_image_info *topimg = find_or_make_image (newname, '@');
+            topimg->subs[newsub] = inf; // and put it in the sub one
+            if (newsub >= topimg->nsubs) topimg->nsubs = newsub + 1;
+            inf = topimg->subs[newsub];
+        }
+    }
+
+    strncpy (inf->header.id, newname, 4);
+    if (inf->name) free (inf->name);
+    inf->name = strdup (newname);
+    inf->hassubs = (newname[4] == '@');
+    inf->header.isparent = inf->hassubs;
 }
 
 /* Adds `image' to the list of images to write, with id `id' (which may
@@ -1109,7 +1160,7 @@ main (int argc, char **argv)
     fw_test_endian();
     
     opterr = 0;
-    while ((c = getopt (argc, argv, "123A:a:b:cd:g:hi:l:mo:p:P:qr:tvx")) != EOF) {
+    while ((c = getopt (argc, argv, "123A:a:b:cd:g:hi:l:mn:o:p:P:qr:tvx")) != EOF) {
         switch (c) {
         case '?':
             fprintf (stderr, "invalid option -%c specified\n", optopt);
@@ -1221,6 +1272,17 @@ main (int argc, char **argv)
         case 'l':
             fw_load_binary (optarg, (loadertype == 2)? "lnux" : "ososN");
             break;
+
+        case 'n': {
+            if (!strchr (optarg, '='))
+                usage (2);
+            char *newname = strdup (optarg);
+            *strchr (newname, '=') = 0;
+            const char *oldname = strchr (optarg, '=') + 1;
+            fw_rename_image (oldname, newname);
+            break;
+        }
+
         default:
             fprintf (stderr, "unknown option (?) -%c\n", c);
             usage (5);
