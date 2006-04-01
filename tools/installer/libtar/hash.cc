@@ -14,6 +14,7 @@
 #include "libtar.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 
 /*
@@ -82,21 +83,23 @@ libtar_hash_new(int num, libtar_hashfunc_t hashfunc)
 {
 	libtar_hash_t *hash;
 
-	hash = (libtar_hash_t *)calloc(1, sizeof(libtar_hash_t));
+	hash = (libtar_hash_t *)malloc(sizeof(libtar_hash_t));
 	if (hash == NULL)
 		return NULL;
+        memset (hash, 0, sizeof(hash));
 	hash->numbuckets = num;
 	if (hashfunc != NULL)
 		hash->hashfunc = hashfunc;
 	else
 		hash->hashfunc = (libtar_hashfunc_t)libtar_str_hashfunc;
 
-	hash->table = (libtar_list_t **)calloc(num, sizeof(libtar_list_t *));
+	hash->table = (libtar_list_t **)malloc(num * sizeof(libtar_list_t *));
 	if (hash->table == NULL)
 	{
 		free(hash);
 		return NULL;
 	}
+	memset (hash->table, 0, num * sizeof(libtar_list_t *));
 
 	return hash;
 }

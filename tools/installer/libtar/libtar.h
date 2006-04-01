@@ -18,8 +18,6 @@
 #define mode_t u32
 #define uid_t u16
 #define gid_t u16
-#include <sys/types.h>
-#include <sys/stat.h>
 #include "tar.h"
 
 #include "listhash.h"

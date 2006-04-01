@@ -83,6 +83,13 @@ static const char *apple_copyright = "{{~~  /-----\\   "
                                      "-----------------------------------------------------"
                                      "----------------------------------------------------";
 
+static void *mallocz (int nmemb, int size)
+{
+    void *ret = malloc (nmemb * size);
+    memset (ret, 0, nmemb * size);
+    return ret;
+}
+
 static unsigned int
 switch_32 (unsigned int l) 
 {
@@ -496,9 +503,9 @@ find_or_make_image (const char *id, char subimg)
     /* Make the parent if we didn't find it. */
     if (!found) {
         if (current) { /* adding onto an existing list */
-            current = current->next = (fw_image_info *)calloc (1, sizeof(fw_image_info));
+            current = current->next = (fw_image_info *)mallocz (1, sizeof(fw_image_info));
         } else { /* starting off the list */
-            current = images = (fw_image_info *)calloc (1, sizeof(fw_image_info));
+            current = images = (fw_image_info *)mallocz (1, sizeof(fw_image_info));
         }
         current->name = strdup (id);
         memcpy (current->header.id, id, 4);
@@ -540,7 +547,7 @@ find_or_make_image (const char *id, char subimg)
             current->nsubs = subnr + 1;
 
         if (!current->subs[subnr]) {
-            current->subs[subnr] = (fw_image_info *)calloc (1, sizeof(fw_image_info));
+            current->subs[subnr] = (fw_image_info *)mallocz (1, sizeof(fw_image_info));
             current->subs[subnr]->name = strdup (id);
         }
         return current->subs[subnr];

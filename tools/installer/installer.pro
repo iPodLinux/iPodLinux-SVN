@@ -8,12 +8,14 @@ QT += network
 DEPENDPATH += .
 INCLUDEPATH += .
 RESOURCES = installer.qrc
+win32:LIBS += -lwsock32
 
 # Installer
 HEADERS += installer.h complexwizard.h actions.h panes.h \
            packages.h make_fw2.h
 SOURCES += installer.cc main.cc complexwizard.cc actions.cc \
            packages.cc make_fw2.c firmware.cc
+win32:SOURCES += getopt.c
 
 # Rawpod
 SOURCES += rawpod/device.cc rawpod/ext2.cc rawpod/fat32.cc \
@@ -76,7 +78,8 @@ SOURCES += rawpod/mke2fs/mke2fs_app.cc
 # Libtar
 SOURCES += libtar/tblock.cc libtar/decode.cc libtar/extract.cc libtar/handle.cc \
            libtar/hash.cc libtar/list.cc libtar/output.cc libtar/util.cc
-HEADERS += libtar/internal.h libtar/libtar.h libtar/listhash.h
+HEADERS += libtar/libtar.h libtar/listhash.h
+win32:HEADERS += libtar/strsep.h
 
 # Zlib
 SOURCES += zlib/adler32.c zlib/compress.c zlib/crc32.c \
@@ -89,4 +92,3 @@ HEADERS += zlib/crc32.h zlib/deflate.h zlib/inffast.h \
 
 DEFINES += EMBED_MAKEFW
 
-CONFIG += debug

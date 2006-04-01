@@ -1058,8 +1058,18 @@ void PackageInstallAction::run()
                     err = tar_extract_file (tarfile, iPodLinuxPartitionFS,
                                             _pkg.addFile (th_get_pathname (tarfile)).toAscii());
                 }
+		if (err != 0) {
+		    if (err < 0) emit fatalError (strerror (-err));
+		    else emit fatalError ("error extracting");
+		    while(1);
+		}
             }
         }
+	if (err != 0) {
+	    if (err < 0) emit fatalError (strerror (-err));
+	    else emit fatalError ("error reading");
+	    while(1);
+	}
         tar_close (tarfile);
     } else {
         // handle single file

@@ -19,7 +19,8 @@ const char libtar_version[] = "1.3.11-rawpod";
 static int
 tar_init(TAR **t, const char *pathname, tartype_t *type, int options)
 {
-	*t = (TAR *)calloc(1, sizeof(TAR));
+	*t = (TAR *)malloc(sizeof(TAR));
+        memset (*t, 0, sizeof(TAR));
 	if (*t == NULL)
 		return -1;
 
