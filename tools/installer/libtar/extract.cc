@@ -155,8 +155,9 @@ tar_extract_regfile(TAR *t, VFS::Filesystem *fs, const char *realname)
 #ifdef DEBUG
 		fprintf(stderr, "open(): %s", fhout? strerror (fhout->error()) : "unknown error");
 #endif
+                int err = fhout? fhout->error() : EINVAL;
                 delete fhout;
-		return -1;
+		return err;
 	}
 
 	/* extract the file */
