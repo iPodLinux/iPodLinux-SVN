@@ -128,41 +128,41 @@ void FirmwareRecreateAction::run_sub()
     switch (iPodLoader) {
     case Loader1Linux:
         fw_load_all (fw_file, (Mode == Update)? "osos" : "osos1");
-        if (iPodLinuxPartitionFS->stat ("/loader.bin", &st) >= 0)
+        if (iPodLinuxPartitionFS->stat ("/loader.bin", &st) >= 0 || Mode != Update)
             fw_load_binary (make_device_name (iPodLocation, 3, "loader.bin"), "osos@");
-        if (iPodLinuxPartitionFS->stat ("/linux.bin", &st) >= 0)
+        if (iPodLinuxPartitionFS->stat ("/linux.bin", &st) >= 0 || Mode != Update)
             fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "osos0");
         break;
     case Loader1Apple:
         fw_load_all (fw_file, (Mode == Update)? "osos" : "osos0");
-        if (iPodLinuxPartitionFS->stat ("/loader.bin", &st) >= 0)
+        if (iPodLinuxPartitionFS->stat ("/loader.bin", &st) >= 0 || Mode != Update)
             fw_load_binary (make_device_name (iPodLocation, 3, "loader.bin"), "osos@");
-        if (iPodLinuxPartitionFS->stat ("/linux.bin", &st) >= 0)
+        if (iPodLinuxPartitionFS->stat ("/linux.bin", &st) >= 0 || Mode != Update)
             fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "osos1");
         break;
     case Loader2:
         fw_load_all (fw_file, (Mode == Update)? "osos" : "aple");
-        if (iPodLinuxPartitionFS->stat ("/loader.bin", &st) >= 0)
+        if (iPodLinuxPartitionFS->stat ("/loader.bin", &st) >= 0 || Mode != Update)
             fw_load_binary (make_device_name (iPodLocation, 3, "loader.bin"), "osos");
-        if (iPodLinuxPartitionFS->stat ("/linux.bin", &st) >= 0)
+        if (iPodLinuxPartitionFS->stat ("/linux.bin", &st) >= 0 || Mode != Update)
             fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "lnux");
         break;
     case UnknownLoader:
         fw_load_all (fw_file, "osos");
         // Is it an L1?
         if (fw_find_image ("osos@")) {
-            if (iPodLinuxPartitionFS->stat ("/loader.bin", &st) >= 0)
+            if (iPodLinuxPartitionFS->stat ("/loader.bin", &st) >= 0 || Mode != Update)
                 fw_load_binary (make_device_name (iPodLocation, 3, "loader.bin"), "osos@");
 
             // Which is the default?
             if (fw_find_image ("osos0") && !memcmp (fw_find_image ("osos0")->memblock, "\xfe\x1f\x00\xea", 4)) {
                 // Linux default
-                if (iPodLinuxPartitionFS->stat ("/linux.bin", &st) >= 0)
+                if (iPodLinuxPartitionFS->stat ("/linux.bin", &st) >= 0 || Mode != Update)
                     fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "osos0");
                 iPodLoader = Loader1Apple;
             } else if (fw_find_image ("osos1") && !memcmp (fw_find_image ("osos1")->memblock, "\xfe\x1f\x00\xea", 4)) {
                 // Linux secondary
-                if (iPodLinuxPartitionFS->stat ("/linux.bin", &st) >= 0)
+                if (iPodLinuxPartitionFS->stat ("/linux.bin", &st) >= 0 || Mode != Update)
                     fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "osos1");
                 iPodLoader = Loader1Linux;
             } else {
@@ -171,9 +171,9 @@ void FirmwareRecreateAction::run_sub()
             }
         } else if (fw_find_image ("aple")) {
             // L2
-            if (iPodLinuxPartitionFS->stat ("/loader.bin", &st) >= 0)
+            if (iPodLinuxPartitionFS->stat ("/loader.bin", &st) >= 0 || Mode != Update)
                 fw_load_binary (make_device_name (iPodLocation, 3, "loader.bin"), "osos");
-            if (iPodLinuxPartitionFS->stat ("/linux.bin", &st) >= 0)
+            if (iPodLinuxPartitionFS->stat ("/linux.bin", &st) >= 0 || Mode != Update)
                 fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "lnux");
             iPodLoader = Loader2;
         } else {

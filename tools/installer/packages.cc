@@ -146,7 +146,7 @@ void Package::parseLine (QString line)
     }
 }
 
-void Package::readPackingList (VFS::Device *dev) 
+void Package::readPackingList (VFS::Device *dev)
 {
     if (!dev) return;
 
@@ -218,6 +218,27 @@ void Package::readPackingList (VFS::Device *dev)
 
     _selected = true;
     _orig = true;
+}
+
+static void writeLine (VFS::File *out, QString line, int addnl = true)
+{
+    out->write (line.toAscii().data(), line.length());
+    if (addnl) out->write ("\n", 1);
+}
+
+void Package::writePackingList() 
+{
+    VFS::File *packlist = iPodLinuxPartitionFS->open (QString ("/etc/packages/%1").arg (_name).toAscii(),
+                                                      O_WRONLY | O_TRUNC | O_CREAT);
+    writeLine (packlist, QString ("Version %1").arg (_version));
+
+    QStringListIterator it (_packlist);
+    while (it.hasNext()) {
+        writeLine (packlist, it.next());
+    }
+
+    packlist->close();
+    delete packlist;
 }
 
 void Package::debug() 
@@ -990,9 +1011,11 @@ void PackageInstallAction::run()
                 emit setCurrentAction (tr ("Extracting %1...").arg (th_get_pathname (tarfile)));
                 if (singleFile)
                     err = tar_extract_file (tarfile, iPodLinuxPartitionFS, _pkg.destination().toAscii());
-                else
+                else {
+                    _pkg.addFile (_pkg.destination() + "/" + th_get_pathname (tarfile));
                     err = tar_extract_file (tarfile, iPodLinuxPartitionFS,
-                                            (_pkg.destination() + "/" + th_get_pathname (tarfile)).toAscii());
+                                            _pkg.addFile (th_get_pathname (tarfile)).toAscii());
+                }
             }
         }
         tar_close (tarfile);
@@ -1028,6 +1051,8 @@ void PackageInstallAction::run()
 
     zf->close();
     delete zf;
+
+    _pkg.writePackingList();
 
     emit setCurrentProgress (uncompressed_length);
     emit setCurrentAction ("Done.");
