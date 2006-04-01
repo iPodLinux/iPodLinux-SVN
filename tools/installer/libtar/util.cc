@@ -86,6 +86,9 @@ mkdirhier (VFS::Filesystem *fs, const char *path)
         strcpy (src, path);
         if (strrchr (src, '/'))
             *strrchr (src, '/') = 0;
+        else
+            return 0;
+        while (src[strlen (src) - 1] == '/') src[strlen (src) - 1] = 0;
 
 	if (path[0] == '/')
 		strcpy(dst, "/");

@@ -988,8 +988,11 @@ void PackageInstallAction::run()
                     tar_skip_regfile (tarfile);
             } else {
                 emit setCurrentAction (tr ("Extracting %1...").arg (th_get_pathname (tarfile)));
-                err = tar_extract_file (tarfile, iPodLinuxPartitionFS,
-                                        (_pkg.destination() + "/" + th_get_pathname (tarfile)).toAscii());
+                if (singleFile)
+                    err = tar_extract_file (tarfile, iPodLinuxPartitionFS, _pkg.destination().toAscii());
+                else
+                    err = tar_extract_file (tarfile, iPodLinuxPartitionFS,
+                                            (_pkg.destination() + "/" + th_get_pathname (tarfile)).toAscii());
             }
         }
         tar_close (tarfile);
