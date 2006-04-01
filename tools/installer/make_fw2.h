@@ -80,6 +80,7 @@ void fw_iterate_images (const char *filename, void *data, void (*fn)(fw_image_t 
                                                                      const char *id,
                                                                      const char *file,
                                                                      void *data));
+void fw_rename_image (const char *oldname, const char *newname);
 void fw_load_all (const char *filename, const char *osos_replace);
 void fw_load_dumped (const char *filename, const char *osos_replace, const char *newid);
 void fw_load_binary (const char *filename, const char *id);

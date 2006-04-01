@@ -24,7 +24,7 @@
 #define INSTALLER_SUPPORTED_IPODS  0x00fe
 
 enum InstallerMode { StandardInstall, AdvancedInstall,
-                     Update, Uninstall };
+                     Update, ChangeLoader, Uninstall };
 enum LoaderType { UnknownLoader = 0, Loader1Apple, Loader1Linux, Loader2 };
 extern InstallerMode Mode;
 extern LoaderType iPodLoader;

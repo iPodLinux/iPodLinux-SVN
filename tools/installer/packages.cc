@@ -263,7 +263,7 @@ void Package::debug()
     qDebug ("   Type: %d", _type);
 }
 
-PackagesPage::PackagesPage (Installer *wiz)
+PackagesPage::PackagesPage (Installer *wiz, bool automatic)
     : InstallerPage (wiz), advok (false), errored (false)
 {
     blurb = new QLabel (tr ("<p>Here you may select packages to install for iPodLinux. Check the boxes "
@@ -454,6 +454,12 @@ void PackagesPage::httpRequestFinished (int req, bool err)
                             resolvers [packlistHTTP->get (url.toString (QUrl::RemoveScheme |
                                                                         QUrl::RemoveAuthority))] = twi;
                         }
+                    } else if (Mode == ChangeLoader && pkg.type() == Package::Loader) {
+                        // If we're changing loader, and this loader is installed but not
+                        // the new one, remove it.
+                        pkg.readPackingList (iPodLinuxPartitionDevice);
+                        if (pkg.selected())
+                            PendingActions->append (new PackageRemoveAction (pkg, tr ("Removing ")));
                     }
                 }
             }
@@ -719,13 +725,15 @@ WizardPage *PackagesPage::nextPage()
             if (item->package().changed()) {
                 if (item->package().selected()) {
                     if (item->package().upgrade()) {
-                        // remove, install
-                        PendingActions->append (new PackageRemoveAction (item->package(),
-                                                                         tr ("Upgrading "
-                                                                             "(uninstalling old version) ")));
-                        PendingActions->append (new PackageInstallAction (item->package(),
-                                                                          tr ("Upgrading "
-                                                                              "(installing new version) ")));
+                        if (item->checkState(2) == Qt::Checked) {
+                            // remove, install
+                            PendingActions->append (new PackageRemoveAction (item->package(),
+                                                                             tr ("Upgrading "
+                                                                                 "(uninstalling old version) ")));
+                            PendingActions->append (new PackageInstallAction (item->package(),
+                                                                              tr ("Upgrading "
+                                                                                  "(installing new version) ")));
+                        }
                     } else {
                         // install
                         PendingActions->append (new PackageInstallAction (item->package(), tr ("Installing ")));
@@ -777,6 +785,7 @@ void PkgTreeWidgetItem::update()
 void PkgTreeWidgetItem::_setsel() 
 {
     if (_pkg.selected()) {
+        setCheckState (0, Qt::Checked);
         if (_pkg.upgrade()) {
             setText (2, QObject::tr ("Upgrade"));
             setCheckState (2, Qt::Checked);
@@ -786,6 +795,7 @@ void PkgTreeWidgetItem::_setsel()
             setText (2, QObject::tr ("Keep"));
         }
     } else {
+        setCheckState (0, Qt::Unchecked);
         if (_pkg.changed()) {
             setText (2, QObject::tr ("Uninstall"));
         } else {
@@ -998,6 +1008,8 @@ void PackageInstallAction::run()
         while(1);
     }
     
+    _pkg.clearPackingList();
+
     if (!(_pkg.type() == Package::File || (_pkg.type() != Package::Archive && !_pkg.url().contains (".tar.")))) {
         // handle archive or file-in-archive
         bool singleFile = _pkg.addFile();

@@ -9,6 +9,7 @@
 #include <QHttp>
 #include <QLabel>
 #include <QProgressBar>
+#include <QRadioButton>
 #include <QMessageBox>
 
 class IntroductionPage : public InstallerPage
@@ -38,12 +39,13 @@ public:
     
 protected slots:
     void uninstallRadioClicked (bool clicked);
+    void changeLoaderRadioClicked (bool clicked);
     void upgradeRadioClicked (bool clicked);
     
 private:
     QLabel *blurb;
     QCheckBox *advancedCheck; /* enabled only for install */
-    QRadioButton *upgradeRadio, *uninstallRadio; /* enabled only if already installed */
+    QRadioButton *upgradeRadio, *changeLoaderRadio, *uninstallRadio; /* enabled only if already installed */
     QLabel *subblurb;
     int stateOK;
 };
@@ -96,6 +98,26 @@ private:
     QPushButton *backupBrowse;
 };
 
+class ChangeLoaderPage : public InstallerPage
+{
+    Q_OBJECT
+
+public:
+    ChangeLoaderPage (Installer *wizard);
+    void resetPage();
+    WizardPage *nextPage();
+    bool isComplete() { return loader1apple->isChecked() || loader1linux->isChecked() ||
+                            loader2->isChecked(); }
+
+protected slots:
+    void setLoader1Blurb (bool chk);
+    void setLoader2Blurb (bool chk);
+
+private:
+    QLabel *blurb, *ldrchoiceblurb;
+    QRadioButton *loader1apple, *loader1linux, *loader2;
+};
+
 class PackagesPage : public InstallerPage
 {
     Q_OBJECT
@@ -103,7 +125,7 @@ class PackagesPage : public InstallerPage
     friend class PkgTreeWidgetItem;
 
 public:
-    PackagesPage (Installer *wizard);
+    PackagesPage (Installer *wizard, bool automatic = false);
     void resetPage() {}
     WizardPage *nextPage();
     bool isComplete() { return advok; }
