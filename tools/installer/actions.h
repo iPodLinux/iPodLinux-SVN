@@ -193,7 +193,7 @@ protected:
 class PackageRemoveAction : public PackageAction
 {
 public:
-    PackageRemoveAction (Package pkg, QString label)
+    PackageRemoveAction (Package& pkg, QString label)
         : PackageAction (pkg, label)
     {}
 
