@@ -24,14 +24,14 @@
 #include <QDir>
 
 Package::Package()
-    : _name ("unk"), _version ("0.1a"), _dest ("/"), _desc ("???"), _url ("http://127.0.0.1/"),
+    : _name ("unk"), _version ("0.1a"), _dest (""), _desc ("???"), _url ("http://127.0.0.1/"),
       _subfile ("."), _type (Archive), _reqs (QStringList()), _provs (QStringList()),
       _ipods (INSTALLER_WORKING_IPODS), _valid (false),
       _orig (false), _upgrade (false), _selected (false), _required (false)
 {}
 
 Package::Package (QString line) 
-    : _name ("unk"), _version ("0.0"), _dest ("/"), _desc ("???"), _url ("http://127.0.0.1/"),
+    : _name ("unk"), _version ("0.0"), _dest (""), _desc ("???"), _url ("http://127.0.0.1/"),
       _subfile ("."), _type (Archive), _reqs (QStringList()), _provs (QStringList()),
       _ipods (INSTALLER_WORKING_IPODS), _valid (false),
       _orig (false), _upgrade (false), _selected (false), _required (false)
@@ -209,6 +209,9 @@ void Package::readPackingList (VFS::Device *dev)
                 }
             }
 
+            _selected = true;
+            _orig = true;
+
             delete[] buf;
             delete packlist;
         }
@@ -216,8 +219,6 @@ void Package::readPackingList (VFS::Device *dev)
     delete dirp;
     delete ext2;
 
-    _selected = true;
-    _orig = true;
 }
 
 static void writeLine (VFS::File *out, QString line, int addnl = true)
@@ -491,10 +492,13 @@ void PackagesPage::httpDone (bool err)
             }
         }
 
-        for (int i = 0; i < packages->topLevelItemCount(); i++) {
-            QTreeWidgetItem *it = packages->topLevelItem(i);
+        QList <QTreeWidgetItem *> allItems = packages->findItems (".*", Qt::MatchRegExp | Qt::MatchRecursive);
+        QListIterator <QTreeWidgetItem *> it (allItems);
+
+        while (it.hasNext()) {
+            QTreeWidgetItem *i = it.next();
             PkgTreeWidgetItem *item;
-            if ((item = dynamic_cast<PkgTreeWidgetItem *>(it)) != 0) {
+            if ((item = dynamic_cast<PkgTreeWidgetItem *>(i)) != 0) {
                 item->package().readPackingList (iPodLinuxPartitionDevice);
                 if (item->package().selected()) item->select();
             }
@@ -1020,7 +1024,6 @@ void PackageInstallAction::run()
                 if (singleFile)
                     err = tar_extract_file (tarfile, iPodLinuxPartitionFS, _pkg.destination().toAscii());
                 else {
-                    _pkg.addFile (_pkg.destination() + "/" + th_get_pathname (tarfile));
                     err = tar_extract_file (tarfile, iPodLinuxPartitionFS,
                                             _pkg.addFile (th_get_pathname (tarfile)).toAscii());
                 }
@@ -1053,6 +1056,7 @@ void PackageInstallAction::run()
             emit fatalError (tr ("Error reading %1: %2").arg (_pkg.url()).arg (strerror (-rdlen)));
             while(1);
         }
+        of->chmod (0755);
         of->close();
         delete of;
     }
