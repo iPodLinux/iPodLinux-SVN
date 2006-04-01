@@ -263,18 +263,32 @@ void Package::debug()
     qDebug ("   Type: %d", _type);
 }
 
-PackagesPage::PackagesPage (Installer *wiz, bool automatic)
-    : InstallerPage (wiz), advok (false), errored (false)
+PackagesPage::PackagesPage (Installer *wiz, bool atm)
+    : InstallerPage (wiz), advok (false), errored (false), automatic (atm)
 {
-    blurb = new QLabel (tr ("<p>Here you may select packages to install for iPodLinux. Check the boxes "
-                            "next to each package you would like to install.</p>"
-                            "<p><i>Please wait while the package list is downloaded.</i></p>"));
+    if (automatic)
+        blurb = new QLabel (tr ("<p>Please wait while the package list is downloaded and resolved "
+                                "so the installer can make some decisions about what to install.</p>"));
+    else if (Mode == Update)
+        blurb = new QLabel (tr ("<p>Here you may modify your installed iPodLinux packages. Check the box "
+                                "next to a package to have it installed; uncheck it to have it removed. "
+                                "If an upgrade is available, the Status column will read \"Upgrade\"; "
+                                "if you do not want this upgrade for some reason, uncheck the box "
+                                "next to that text.</p>"
+                                "<p><i>Please wait while the package list is downloaded.</i></p>"));
+    else
+        blurb = new QLabel (tr ("<p>Here you may select packages to install for iPodLinux. Check the boxes "
+                                "next to each package you would like to install.</p>"
+                                "<p><i>Please wait while the package list is downloaded.</i></p>"));
+        
     blurb->setWordWrap (true);
     progressStmt = new QLabel (tr ("<b>Initializing...</b>"));
 
-    wizard->resize (640, 520);
-    wizard->setMinimumSize (500, 410);
-    wizard->setMaximumSize (1280, 1024);
+    if (!automatic) {
+        wizard->resize (640, 520);
+        wizard->setMinimumSize (500, 410);
+        wizard->setMaximumSize (1280, 1024);
+    }
 
     QStringList headers;
     headers << "Name" << "Version" << "Action" << "Description";
@@ -289,6 +303,8 @@ PackagesPage::PackagesPage (Installer *wiz, bool automatic)
     layout->addWidget (progressStmt);
     layout->addWidget (packages);
     packages->hide();
+    if (automatic)
+        layout->addStretch (1);
     setLayout (layout);
 
     packlistHTTP = new QHttp;
@@ -476,10 +492,12 @@ void PackagesPage::httpDone (bool err)
             errored = true;
         }
     } else {
-        blurb->setText (tr ("<p>Here you may select packages to install for iPodLinux. Check the boxes "
-                            "next to each package you would like to install.</p>"));
-        progressStmt->hide();
-
+        if (!automatic) {
+            blurb->setText (tr ("<p>Here you may select packages to install for iPodLinux. Check the boxes "
+                                "next to each package you would like to install.</p>"));
+            progressStmt->hide();
+        }
+            
         QList<QTreeWidgetItem *> provlist = packages->findItems ("Packages providing `[0-9A-Za-z._-]+'",
                                                                  Qt::MatchRegExp);
         QListIterator<QTreeWidgetItem *> provit (provlist);
@@ -510,9 +528,10 @@ void PackagesPage::httpDone (bool err)
             }
         }
 
-        packages->show();
+        if (!automatic) packages->show();
         advok = true;
         emit completeStateChanged();
+        if (automatic) wizard->clickNextButton();
     }
 }
 
@@ -752,7 +771,7 @@ WizardPage *PackagesPage::nextPage()
         PendingActions->append (new FirmwareRecreateAction);
     }
 
-    return new DoActionsPage (wizard, /* new DonePage */0);
+    return new DoActionsPage (wizard, new DonePage (wizard));
 }
 
 PkgTreeWidgetItem::PkgTreeWidgetItem (PackagesPage *page, QTreeWidget *parent, Package& pkg)

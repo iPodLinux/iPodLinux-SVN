@@ -693,6 +693,7 @@ ChangeLoaderPage::ChangeLoaderPage (Installer *wiz)
     layout->addWidget (loader1linux);
     layout->addWidget (loader2);
     layout->addWidget (ldrchoiceblurb);
+    layout->addStretch (1);
     setLayout (layout);
 
     resetPage();
@@ -744,7 +745,8 @@ WizardPage *ChangeLoaderPage::nextPage()
         iPodLoader = newLoader;
         return new PackagesPage (wizard, true);
     } else {
-        return new DoActionsPage (wizard, /*new DonePage(wizard)*/0);
+        PendingActions->append (new FirmwareRecreateAction);
+        return new DoActionsPage (wizard, new DonePage (wizard));
     }
 }
 
@@ -881,7 +883,7 @@ WizardPage *InstallPage::nextPage()
     }
     PendingActions->append (new FormatAction (3, CreateExt2Filesystem, "Formatting the Linux partition."));
     PendingActions->append (new FSSetupAction);
-    return new PackagesPage (wizard);
+    return new PackagesPage (wizard, (Mode == StandardInstall));
 }
 
 bool InstallPage::isComplete() 
@@ -924,4 +926,57 @@ QString sizeToString (int amount)
 QString transferProgressText (int done, int total) 
 {
     return QObject::tr ("%1/%2").arg (sizeToString (done)).arg (sizeToString (total));
+}
+
+DonePage::DonePage (Installer *wiz)
+    : InstallerPage (wiz)
+{
+    blurb = new QLabel;
+    blurb->setWordWrap (true);
+
+    switch (Mode) {
+    case StandardInstall:
+    case AdvancedInstall:
+        blurb->setText (tr ("<p><b>Congratulations!</b></p>\n"
+                            "<p>You have successfully installed iPodLinux.</p>\n"
+                            "<p>Should you wish to install more packages, get "
+                            "updates, change your loader default, or uninstall "
+                            "iPodLinux, simply rerun this installer. It will "
+                            "detect your existing installation and offer you "
+                            "new options.</p>\n"
+                            "<p>If you need help with something, we have some forums "
+                            "at <a href=\"http://ipodlinux.org/forums\">http://ipodlinux.org/forums/</a> "
+                            "and an IRC channel (<b>#ipodlinux</b> on irc.freenode.net). "
+                            "<b><i>Please</b></i> thoroughly search the wiki "
+                            "(<a href=\"http://ipodlinux.org\">http://ipodlinux.org</a>) "
+                            "and forums before asking us for help!</p>\n"
+                            "<p>Thank you, and have fun!</p>"));
+        break;
+    case Update:
+        blurb->setText (tr ("<p><b>Your updates and package changes have been successfully installed.</b></p>\n"
+                            "<p>Should you wish to install more packages, get "
+                            "updates, change your loader default, or uninstall "
+                            "iPodLinux, simply rerun this installer. It will "
+                            "detect your existing installation and offer you "
+                            "some choices.</p>\n"
+                            "<p>Thank you, and have fun!</p>"));
+        break;
+    case ChangeLoader:
+        blurb->setText (tr ("<p><b>Your loader selection has been successfully changed.</b></p>\n"
+                            "<p>Should you wish to install more packages, get "
+                            "updates, change your loader default, or uninstall "
+                            "iPodLinux, simply rerun this installer. It will "
+                            "detect your existing installation and offer you "
+                            "some choices.</p>\n"
+                            "<p>Thank you, and have fun!</p>"));
+        break;
+    case Uninstall:
+        blurb->setText (tr ("<p>iPodLinux has been successfully uninstalled.</p>"));
+        break;
+    }
+
+    QVBoxLayout *vbl = new QVBoxLayout (this);
+    vbl->addWidget (blurb);
+    vbl->addStretch (1);
+    setLayout (vbl);
 }
