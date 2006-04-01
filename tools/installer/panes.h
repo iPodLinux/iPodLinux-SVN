@@ -197,58 +197,28 @@ private:
     QLabel *blurb;
 };
 
-class RestoreBackupPage : public InstallerPage
+class UninstallPage : public InstallerPage
 {
     Q_OBJECT
 
-#if 0
 public:
-    RestoreBackupPage (Installer *wizard);
+    UninstallPage (Installer *wizard);
     void resetPage();
     WizardPage *nextPage();
     bool isComplete();
+    bool isLastPage() { return false; }
+
+protected slots:
+    void setBackupBlurb (bool clicked);
+    void openBrowseDialog();
 
 private:
     QLabel *blurb;
+    QLabel *nobackupblurb;
     QCheckBox *haveBackup;
-    QLineEdit *backupLoc;
+    QLabel *backupPathLabel;
+    QLineEdit *backupPath;
     QPushButton *backupBrowse;
-#endif
-};
-
-class DoRestoreBackupPage : public InstallerPage
-{
-    Q_OBJECT
-
-#if 0
-public:
-    DoRestoreBackupPage (Installer *wizard);
-    void resetPage();
-    WizardPage *nextPage();
-    bool isComplete();
-    
-private:
-    QLabel *blurb;
-    QProgressBar *restoreProgress;
-#endif
-};
-
-class DoHeuristicUninstallPage : public InstallerPage
-{
-    Q_OBJECT
-
-#if 0
-public:
-    DoHeuristicUninstallPage (Installer *wizard);
-    void resetPage();
-    WizardPage *nextPage();
-    bool isComplete();
-    
-private:
-    QLabel *blurb;
-    QLabel *action;
-    QProgressBar *progress;
-#endif
 };
 
 #endif

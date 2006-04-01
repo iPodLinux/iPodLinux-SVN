@@ -92,6 +92,33 @@ protected:
     QString _path;
 };
 
+class RestoreBackupAction : public Action
+{
+public:
+    RestoreBackupAction (int device, QString bkppath)
+        : _dev (device), _path (bkppath)
+    {}
+
+protected:
+    virtual void run();
+    
+    int _dev;
+    QString _path;
+};
+
+class HeuristicUninstallAction : public Action
+{
+public:
+    HeuristicUninstallAction (int device) 
+        : _dev (device)
+    {}
+    
+protected:
+    virtual void run();
+    
+    int _dev;
+};
+
 class PartitionAction : public Action
 {
 public:
