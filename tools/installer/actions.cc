@@ -114,8 +114,6 @@ void BackupAction::run()
     u32 fwpread = 0;
     int thisread, err;
 
-    qDebug ("FW Part Length: %d or %d", fwplen, (int) fwpart->lseek (0, SEEK_CUR));
-    
     emit setTotalProgress (fwplen);
     fwpart->lseek (0, SEEK_SET);
 
@@ -212,6 +210,8 @@ void DoActionsPage::nextAction()
         pkgProgress->hide();
         pkgProgressLabel->hide();
         emit completeStateChanged();
+        wizard->clickNextButton();
+        return;
     }
     totalProgress->setValue (totalProgress->value() + 1);
     pkgProgress->setRange (0, 1);

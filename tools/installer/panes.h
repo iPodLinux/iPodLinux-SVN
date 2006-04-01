@@ -149,6 +149,7 @@ private:
     QMultiMap <QString, PkgTreeWidgetItem*> packageProvides;
     bool advok;
     bool errored;
+    bool automatic;
 };
 
 class DoActionsPage : public ActionOutlet
@@ -181,6 +182,19 @@ private:
     QProgressBar *totalProgress;
     Action *currentAction;
     bool done;
+};
+
+class DonePage : public InstallerPage
+{
+public:
+    DonePage (Installer *wizard);
+    void resetPage() {}
+    WizardPage *nextPage() { return 0; }
+    bool isComplete() { return true; }
+    bool isLastPage() { return true; }
+
+private:
+    QLabel *blurb;
 };
 
 class RestoreBackupPage : public InstallerPage

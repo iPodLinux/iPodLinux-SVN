@@ -27,9 +27,9 @@
 #include <QDialog>
 #include <QList>
 #include <QLabel>
+#include <QPushButton>
 
 class QHBoxLayout;
-class QPushButton;
 class QVBoxLayout;
 class QLabel;
 class QFrame;
@@ -44,6 +44,9 @@ public:
     void setInfoText (QString title, QString instructions) {
         pageTitle->setText (title);
         pageDesc->setText (instructions);
+    }
+    void clickNextButton() {
+        if (nextButton) nextButton->animateClick();
     }
 
     QList<WizardPage *> historyPages() const { return history; }
