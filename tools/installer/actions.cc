@@ -218,6 +218,25 @@ DoActionsPage::DoActionsPage (Installer *wiz, InstallerPage *next)
     totalProgress->setRange (0, PendingActions->size());
     totalProgress->setValue (0);
 
+#ifdef WIN32
+    QHBoxLayout *pkgProgressLayout = new QHBoxLayout;
+    pkgProgressLayout->addWidget (pkgProgressLabel);
+    pkgProgressLayout->addSpacing (5);
+    pkgProgressLayout->addWidget (pkgProgress);
+    QHBoxLayout *totalProgressLayout = new QHBoxLayout;
+    totalProgressLayout->addWidget (totalProgressLabel);
+    totalProgressLayout->addSpacing (5);
+    totalProgressLayout->addWidget (totalProgress);
+    QVBoxLayout *layout = new QVBoxLayout (this);
+    layout->addWidget (action);
+    layout->addSpacing (2);
+    layout->addWidget (specific);
+    layout->addSpacing (15);
+    layout->addLayout (pkgProgressLayout);
+    layout->addSpacing (10);
+    layout->addLayout (totalProgressLayout);
+    layout->addStretch (1);
+#else
     QGridLayout *layout = new QGridLayout (this);
     layout->addWidget (action,             1, 0, 1, 3);
     layout->addWidget (specific,           3, 0, 1, 3);
@@ -230,6 +249,7 @@ DoActionsPage::DoActionsPage (Installer *wiz, InstallerPage *next)
     layout->setRowMinimumHeight (6, 10);
     layout->setColumnMinimumWidth (1, 5);
     layout->setRowStretch (8, 1);
+#endif
     setLayout (layout);
 
     if (!PendingActions->size()) {
