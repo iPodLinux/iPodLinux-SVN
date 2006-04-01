@@ -19,6 +19,7 @@ public:
 
     void parseLine (QString line);
     void readPackingList (VFS::Device *dev);
+    void writePackingList(); // automatically writes it to iPodLinuxPartitionFS
     
     QString& name() { return _name; }
     QString& version() { return _version; }
@@ -66,6 +67,7 @@ public:
         }
         return false;
     }
+
 
 protected:
     QString _name, _version, _dest, _desc, _url, _subfile;

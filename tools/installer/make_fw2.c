@@ -619,12 +619,20 @@ fw_iterate_images (const char *filename, void *data, void (*fn)(fw_image_t *, co
     fw_fileops *in = fw_fops_open (filename, READING);
     int old_version = fw_version;
     unsigned short ver;
+    int offset = 0;
     char buf[6] = "????";
     fw_image_t image;
 
-    in->lseek (in, 0x10A, SEEK_SET); /* seek to the version */
+ read_version:
+    in->lseek (in, offset + 0x10A, SEEK_SET); /* seek to the version */
     in->read (in, &ver, 2);
     fw_version = switch_16 (ver);
+
+    if (fw_version != 2 && fw_version != 3 && offset < 1024) {
+        fprintf (stderr, "%s: no image at offset %d, looking at offset %d...\n", filename, offset, offset + 512);
+        offset += 512;
+        goto read_version;
+    }
 
     if (verbose >= 2) printf ("Version: %d\n", fw_version);
     if (fw_version < 2 || fw_version > 3) {
@@ -634,10 +642,9 @@ fw_iterate_images (const char *filename, void *data, void (*fn)(fw_image_t *, co
 
     int idx;
     for (idx = 0; idx < 10; idx++) {
-
-        if (load_entry (&image, in, TBL, idx) == -1)
+        if (load_entry (&image, in, offset + TBL, idx) == -1)
             break;
-        image.devOffset += IMAGE_PADDING;
+        image.devOffset += offset + IMAGE_PADDING;
         if (!isalnum (image.id[0]) || !isalnum (image.id[1]) || !isalnum (image.id[2]) ||
             !isalnum (image.id[3]))
             break;
@@ -1008,6 +1015,16 @@ fw_create_dump (const char *outfile)
 	fprintf(stderr, "fwrite failed: %s\n", strerror(errno));
 	return 1;
     }
+
+    /* Clear any existing table. */
+    char *buf = malloc (sizeof(fw_image_t));
+    memset (buf, 0, sizeof(fw_image_t));
+    int i;
+    out->lseek (out, TBL, SEEK_SET);
+    for (i = 0; (i + 1) * sizeof(fw_image_t) < 256; i++) {
+        out->write (out, buf, sizeof(fw_image_t));
+    }
+    free (buf);
 
     /* Write the images. */
     fw_image_info *inf = images;
