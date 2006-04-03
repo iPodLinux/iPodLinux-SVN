@@ -28,7 +28,7 @@
 
 #define uchar unsigned char
 
-#define NLEVELS (1)
+#define NLEVELS (16 * 3)
 
 typedef struct {
 	uchar order;            /* remap above */
