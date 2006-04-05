@@ -29,10 +29,10 @@
 #define GNU_LONGLINK_TYPE	'K'
 
 #ifdef WIN32
-#define size_t u64
-#define mode_t u32
-#define uid_t u16
-#define gid_t u16
+typedef u64 size_t;
+typedef u32 mode_t;
+typedef u16 gid_t;
+typedef u16 uid_t;
 #endif
 
 /* our version of the tar header structure */
