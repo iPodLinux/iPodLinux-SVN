@@ -14,10 +14,6 @@
 #define LIBTAR_H
 
 #include "rawpod/vfs.h"
-#define size_t u64
-#define mode_t u32
-#define uid_t u16
-#define gid_t u16
 #include "tar.h"
 
 #include "listhash.h"
@@ -31,6 +27,13 @@
 /* GNU extensions for typeflag */
 #define GNU_LONGNAME_TYPE	'L'
 #define GNU_LONGLINK_TYPE	'K'
+
+#ifdef WIN32
+#define size_t u64
+#define mode_t u32
+#define uid_t u16
+#define gid_t u16
+#endif
 
 /* our version of the tar header structure */
 struct tar_header
