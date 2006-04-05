@@ -1519,6 +1519,8 @@ s32 Ext2FS::creat (const char *path, int type, int newmode)
     const char *file;
     
     strcpy (dir, path);
+    while (strlen (dir) && dir[strlen (dir) - 1] == '/') dir[strlen (dir) - 1] = 0;
+
     if (!strrchr (dir, '/')) {
         strcpy (dir, "/");
         file = path;
