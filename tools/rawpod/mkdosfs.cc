@@ -62,7 +62,7 @@
 #include <setjmp.h>
 
 #ifdef WIN32
-#define loff_t s64
+typedef s64 loff_t;
 #endif
 
 #if __BYTE_ORDER == __BIG_ENDIAN
