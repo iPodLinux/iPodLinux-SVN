@@ -525,6 +525,7 @@ void PackagesPage::httpDone (bool err)
             if ((item = dynamic_cast<PkgTreeWidgetItem *>(i)) != 0) {
                 item->package().readPackingList (iPodLinuxPartitionDevice);
                 if (item->package().selected()) item->select();
+                else if (item->package().required() && !item->parent()) item->select();
             }
         }
 
@@ -825,6 +826,8 @@ void PkgTreeWidgetItem::_setsel()
 
 void PackageRemoveAction::run() 
 {
+    printf ("Removing %s.\n", _pkg.name().toAscii().data());
+
     emit setTaskDescription (_label + _pkg.name() + "-" + _pkg.version());
     emit setTotalProgress (_pkg.getPackingList().size());
 
@@ -844,6 +847,8 @@ void PackageRemoveAction::run()
 
 void PackageDownloadAction::run() 
 {
+    printf ("Downloading %s.\n", _pkg.name().toAscii().data());
+
     if (!_pkg.url().contains ("://"))
         return;
 
@@ -993,6 +998,8 @@ void PackageInstallAction::update_progress (TAR *t)
 
 void PackageInstallAction::run()
 {
+    printf ("Installing %s.\n", _pkg.name().toAscii().data());
+
     emit setTaskDescription (_label + _pkg.name() + "-" + _pkg.version());
     emit setTotalProgress (0);
     emit setCurrentAction (tr ("Initializing..."));
