@@ -993,12 +993,15 @@ QString sizeToString (int amount)
 
     // Significant digit handling
     int sigdig = 0;
-    if (amount < 10) {
+    if (amount == 0) {
+        sigdig = 3;
+    } else if (amount < 10) {
         sigdig = 2;
+        leftovers /= 10;
         while (leftovers >= 100) leftovers /= 10;
     } else if (amount < 100) {
         sigdig = 1;
-        while (leftovers >= 10) leftovers /= 10;
+        leftovers /= 100;
     }
 
     QString decpart = "";
