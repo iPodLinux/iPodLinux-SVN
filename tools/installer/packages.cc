@@ -1065,10 +1065,8 @@ void PackageInstallAction::run()
 		}
             }
         }
-	if (err != 0) {
-	    if (err < 0) emit fatalError (strerror (-err));
-	    else emit fatalError ("error reading");
-	    while(1);
+	if (err < 0) {
+	    emit fatalError (strerror (-err));
 	}
         tar_close (tarfile);
     } else {
