@@ -61,6 +61,10 @@
 #include <time.h>
 #include <setjmp.h>
 
+#ifdef WIN32
+#define loff_t s64
+#endif
+
 #if __BYTE_ORDER == __BIG_ENDIAN
 
 #define CF_LE_W(v) ((((v) & 0xff) << 8) | (((v) >> 8) & 0xff))
@@ -507,7 +511,7 @@ count_blocks()
       low = 0;
       for (high = 1; valid_offset (dev, high); high *= 2)
 	  low = high;
-      while (low < high - 1) {
+      while (low + 1 < high) {
 	  const loff_t mid = (low + high) / 2;
 	  if (valid_offset (dev, mid))
 	      low = mid;

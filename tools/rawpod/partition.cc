@@ -90,10 +90,10 @@ int devReadMBR (int devnr, unsigned char *buf)
 #ifdef WIN32
     HANDLE fh;
     DWORD len;
-    char drive[] = "\\\\.\\PhysicalDriveN";
+    TCHAR drive[] = TEXT("\\\\.\\PhysicalDriveN");
     
     drive[17] = devnr + '0';
-    fh = CreateFile ((const TCHAR *)drive, GENERIC_READ | GENERIC_WRITE,
+    fh = CreateFile (drive, GENERIC_READ | GENERIC_WRITE,
                      FILE_SHARE_READ | FILE_SHARE_WRITE,
                      NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
                      NULL);
@@ -127,10 +127,10 @@ int devWriteMBR (int devnr, unsigned char *buf)
 #ifdef WIN32
     HANDLE fh;
     DWORD len;
-    char drive[] = "\\\\.\\PhysicalDriveN";
+    TCHAR drive[] = TEXT("\\\\.\\PhysicalDriveN");
     
     drive[17] = devnr + '0';
-    fh = CreateFile ((const TCHAR *)drive, GENERIC_READ | GENERIC_WRITE,
+    fh = CreateFile (drive, GENERIC_READ | GENERIC_WRITE,
                      FILE_SHARE_READ | FILE_SHARE_WRITE,
                      NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
                      NULL);
@@ -169,10 +169,10 @@ u64 devGetSize (int devnr)
     DWORD junk;
     HANDLE fh;
     DWORD len;
-    char drive[] = "\\\\.\\PhysicalDriveN";
+    TCHAR drive[] = TEXT("\\\\.\\PhysicalDriveN");
     
     drive[17] = devnr + '0';
-    fh = CreateFile ((const TCHAR *)drive, GENERIC_READ | GENERIC_WRITE,
+    fh = CreateFile (drive, GENERIC_READ | GENERIC_WRITE,
                      FILE_SHARE_READ | FILE_SHARE_WRITE,
                      NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
                      NULL);
@@ -205,6 +205,33 @@ u64 devGetSize (int devnr)
 #endif
 }
 
+#ifdef WIN32
+void ERR(int e) {
+    LPVOID lpMsgBuf;
+    LPVOID lpDisplayBuf;
+    DWORD dw = e; 
+
+    FormatMessage(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+        FORMAT_MESSAGE_FROM_SYSTEM,
+        NULL,
+        dw,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPTSTR) &lpMsgBuf,
+        0, NULL );
+
+    lpDisplayBuf = LocalAlloc(LMEM_ZEROINIT, 
+        (strlen((const char *)lpMsgBuf)+40)*sizeof(TCHAR)); 
+    wsprintf((TCHAR *)lpDisplayBuf, 
+        TEXT("Reading MBR failed with error %d: %s"), 
+        dw, lpMsgBuf); 
+    MessageBox(NULL, (TCHAR *)lpDisplayBuf, TEXT("Error"), MB_OK); 
+
+    LocalFree(lpMsgBuf);
+    LocalFree(lpDisplayBuf);
+}
+#endif
+
 int find_iPod() 
 {
     int disknr;
@@ -212,14 +239,23 @@ int find_iPod()
     for (disknr = 0; disknr < 8; disknr++) {
         PartitionTable ptbl;
         int type;
+	int err;
 
-        if (devReadMBR (disknr, mbr) != 0) {
+        if ((err = devReadMBR (disknr, mbr)) != 0) {
+	    printf ("Disk %d: cannot read MBR\n", disknr);
+#ifdef WIN32
+#ifdef DEBUG
+	    ERR(err);
+#endif
+#endif
             continue;
         }
         if ((ptbl = partCopyFromMBR (mbr)) == 0) {
+	    printf ("Disk %d: cannot copy ptbl from MBR\n", disknr);
             continue;
         }
         if ((type = partFigureOutType (ptbl)) == PART_NOT_IPOD) {
+	    printf ("Disk %d: not an iPod\n", disknr);
             continue;
         }
         
