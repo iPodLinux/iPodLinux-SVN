@@ -28,6 +28,10 @@
 #include "e2p.h"
 #include "ext2fs.h"
 
+#ifdef WIN32
+#define loff_t s64
+#endif
+
 #define _(x) x
 #define E2FSPROGS_VERSION "1.35-rawpod"
 #define E2FSPROGS_DATE "02-Mar-2006"
@@ -923,7 +927,7 @@ count_blocks (VFS::Device *dev, int block_size)
       low = 0;
       for (high = 1; valid_offset (dev, high); high *= 2)
 	  low = high;
-      while (low < high - 1) {
+      while (low + 1 < high) {
 	  const loff_t mid = (low + high) / 2;
 	  if (valid_offset (dev, mid))
 	      low = mid;

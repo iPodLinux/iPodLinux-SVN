@@ -12,7 +12,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#ifdef WIN32
+#include <winsock.h>
+#else
 #include <netinet/in.h> /* for ntohl and friends */
+#endif
 
 #include "ext2.h"
 #include "e2p.h"
@@ -199,7 +203,11 @@ errcode_t ext2fs_add_journal_inode(ext2_filsys fs, blk_t size, int flags)
 {
 	errcode_t		retval;
 	ext2_ino_t		journal_ino;
+#ifdef WIN32
+        struct my_stat          st;
+#else
 	struct stat		st;
+#endif
 	char			jfile[1024];
 	int			fd, mount_flags, f;
 

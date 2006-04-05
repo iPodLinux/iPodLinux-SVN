@@ -18,6 +18,7 @@
 #ifdef WIN32
 
 #include <windows.h>
+#include <tchar.h>
 
 /**************************************************************/
 
@@ -26,9 +27,16 @@ LocalFile::LocalFile (const char *path, int flags) {
     if (flags & OPEN_READ) access |= GENERIC_READ;
     if (flags & OPEN_WRITE) access |= GENERIC_WRITE;
     
-    _fh = CreateFile ((const TCHAR *)path, access, FILE_SHARE_READ | FILE_SHARE_WRITE,
+    TCHAR *tpath = (TCHAR *)malloc (strlen (path) * sizeof (TCHAR) + 2);
+    for (int i = 0; i < strlen (path); i++) tpath[i] = path[i];
+    tpath[strlen(path)] = 0;
+
+    if (flags & OPEN_CREATE) DeleteFile (tpath);
+    _fh = CreateFile (tpath, access, FILE_SHARE_READ | FILE_SHARE_WRITE,
                       NULL, (flags & OPEN_CREATE)? CREATE_ALWAYS : OPEN_EXISTING,
                       FILE_ATTRIBUTE_NORMAL, NULL);
+
+    free (tpath);
 }
 
 LocalFile::~LocalFile() 
@@ -62,6 +70,21 @@ s64 LocalFile::lseek (s64 off, int whence) {
 int LocalFile::error() {
     if (GetLastError() == NO_ERROR)
         return 0;
+
+    LPVOID lpMsgBuf;
+
+    FormatMessage(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER |
+        FORMAT_MESSAGE_FROM_SYSTEM,
+        NULL,
+        GetLastError(),
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPTSTR) &lpMsgBuf,
+        0, NULL );
+
+    _tprintf (_T("LocalFile::error(): %s\n"), lpMsgBuf);
+    LocalFree (lpMsgBuf);
+
     return GetLastError();
 }
 

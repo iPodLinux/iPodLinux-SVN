@@ -3,7 +3,11 @@
 #define _JFS_COMPAT_H
 
 #include "kernel-list.h"
+#ifdef WIN32
+#include <winsock.h>
+#else
 #include <netinet/in.h>
+#endif
 
 #define printk printf
 #define KERN_ERR ""
