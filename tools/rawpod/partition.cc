@@ -64,6 +64,17 @@ int partShrinkAndAdd (PartitionTable t, int oldnr, int newnr, int newtype, int n
         return ENOSPC;
     if (t[newnr].type != 0)
         return EEXIST;
+
+    // Round it to the nearest cylinder.
+    int cylsize = 255 /* heads */ * 63 /* sectors/track */;
+    int roundDownFuzz = newsize % cylsize, roundUpFuzz = cylsize - roundDownFuzz;
+    if (newsize < cylsize) roundDownFuzz = -1;
+    if ((newsize + cylsize) >= t[oldnr].length) roundUpFuzz = -1;
+    if (roundDownFuzz != -1 || roundUpFuzz != -1) {
+        if (roundDownFuzz > roundUpFuzz && roundUpFuzz != -1)
+            newsize = newsize + cylsize - 1;
+        newsize = newsize - (newsize % cylsize);
+    }
     
     t[oldnr].length -= newsize;
     t[newnr].active = 0;
