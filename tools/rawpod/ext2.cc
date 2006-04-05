@@ -671,6 +671,8 @@ int Ext2FS::mkdir (const char *path)
     char *dir = new char[strlen (path) + 1];
     
     strcpy (dir, path);
+    while (strlen (dir) && dir[strlen (dir) - 1] == '/') dir[strlen (dir) - 1] = 0;
+    
     if (!strrchr (dir, '/')) {
         strcpy (dir, "/");
     } else {
@@ -759,6 +761,8 @@ int Ext2FS::unlink (const char *path)
     const char *file;
     
     strcpy (dir, path);
+    while (strlen (dir) && dir[strlen (dir) - 1] == '/') dir[strlen (dir) - 1] = 0;
+    
     if (!strrchr (dir, '/')) {
         strcpy (dir, "/");
         file = path;
@@ -876,6 +880,8 @@ int Ext2FS::link (const char *dest, const char *src)
     const char *file;
     
     strcpy (dir, src);
+    while (strlen (dir) && dir[strlen (dir) - 1] == '/') dir[strlen (dir) - 1] = 0;
+
     if (!strrchr (dir, '/')) {
         strcpy (dir, "/");
         file = src;
