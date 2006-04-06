@@ -130,7 +130,7 @@ PodLocationPage::PodLocationPage (Installer *wizard)
     ptbl = partCopyFromMBR (mbr);
     if (!ptbl) { status = InvalidPartitionTable; goto err; }
 
-    ipodtype = partFigureOutType (ptbl);
+    ipodtype = partFigureOutType (ptbl, mbr);
     
     switch (ipodtype) {
     case PART_WINPOD:
