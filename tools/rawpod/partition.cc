@@ -33,9 +33,9 @@ PartitionTable partCopyFromMBR (unsigned char *mbr)
     return ret;
 }
 
-int partFigureOutType (PartitionTable t) 
+int partFigureOutType (PartitionTable t, unsigned char *mbr) 
 {
-    if ((t[0].active == 0x80 || t[1].active == 0x80) &&
+    if (!memcmp (mbr + 0x1ae, "Apple iPod", 10) &&
         t[0].type == 0 && t[1].type == 0xb &&
         t[0].offset < 1024 && t[0].length < (200 << 11)) {
         // WinPod or LinPod
@@ -265,7 +265,7 @@ int find_iPod()
 	    printf ("Disk %d: cannot copy ptbl from MBR\n", disknr);
             continue;
         }
-        if ((type = partFigureOutType (ptbl)) == PART_NOT_IPOD) {
+        if ((type = partFigureOutType (ptbl, mbr)) == PART_NOT_IPOD) {
 	    printf ("Disk %d: not an iPod\n", disknr);
             continue;
         }
