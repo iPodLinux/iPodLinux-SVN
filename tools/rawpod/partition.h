@@ -22,7 +22,7 @@ PartitionTable partCopyFromMBR (unsigned char *mbr);
 #define PART_MACPOD    2 // p1 = pmap, p2 = firmware, p3 = music
 #define PART_SLINPOD   3 // LinPod with p3 after p1, before p2, using space from firmware partition
 #define PART_BLINPOD   4 // LinPod with p3 after p2, or between p's 1&2 but taking space out of music ptn
-int partFigureOutType (PartitionTable t);
+int partFigureOutType (PartitionTable t, unsigned char *mbr);
 
 // returns 0 for success, nonzero for failure
 int partShrinkAndAdd (PartitionTable t, int oldnr, int newnr,
