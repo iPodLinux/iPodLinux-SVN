@@ -99,7 +99,7 @@ void BackupAction::run()
     VFS::Device *fwpart = setup_partition (_dev, 1);
     VFS::File *backup = new LocalFile (_path.toAscii().data(), OPEN_WRITE | OPEN_CREATE);
     if (backup->error())
-        FATAL_T (tr ("Error creating the backup file: %1").arg (strerror (backup->error())));
+        FATAL_T (tr ("Error creating the backup file %1: %2 (%3)").arg (_path).arg (strerror (backup->error())).arg (backup->error()));
 
     emit setCurrentAction (tr ("Backing up partition table"));
     u8 *buf = new u8[4096];
