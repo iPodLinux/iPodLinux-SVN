@@ -1083,7 +1083,7 @@ setup_tables (void)
 
 /* Write the new filesystem's data tables to wherever they're going to end up! */
 
-#define error(str)				\
+#define Error(str)				\
   do {						\
     free (fat);					\
     if (info_sector) free (info_sector);	\
@@ -1095,14 +1095,14 @@ setup_tables (void)
   do {									\
     u64 __pos = (pos);							\
     if (dev->lseek (__pos, SEEK_SET) != __pos)				\
-	error ("seek to " errstr " failed whilst writing tables");	\
+	Error ("seek to " errstr " failed whilst writing tables");	\
   } while(0)
 
 #define writebuf(buf,size,errstr)			\
   do {							\
     int __size = (size);				\
     if (dev->write (buf, __size) != __size)		\
-	error ("failed whilst writing " errstr);	\
+	Error ("failed whilst writing " errstr);	\
   } while(0)
 
 
@@ -1202,6 +1202,7 @@ CreateFATFilesystem (VFS::Device *d)
 
 #ifdef TEST
 #include "partition.h"
+#include "device.h"
 int main (int argc, char **argv) 
 {
     if (argc != 2) {
@@ -1209,11 +1210,11 @@ int main (int argc, char **argv)
         return 1;
     }
 
-    VFS::File *file = new LocalFile (argv[1]);
+    VFS::File *file = new LocalFile (argv[1], OPEN_WRITE);
     if (file->error()) {
         fprintf (stderr, "%s: %s\n", argv[1], strerror (file->error()));
     }
-    VFS::Device *device = new VFS::DeviceFile (file);
+    VFS::Device *device = new VFS::LoopbackDevice (file);
     printf ("Are you SURE you want to create a FAT32 filesystem on %s?\n"
             "ALL DATA WILL BE ERASED.\n"
             "Press Enter to continue or Ctrl+C to cancel...\n", argv[1]);
