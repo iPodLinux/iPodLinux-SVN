@@ -65,7 +65,7 @@
 typedef s64 loff_t;
 #endif
 
-#if __BYTE_ORDER == __BIG_ENDIAN
+#if RAWPOD_BIG_ENDIAN
 
 #define CF_LE_W(v) ((((v) & 0xff) << 8) | (((v) >> 8) & 0xff))
 #define CF_LE_L(v) (((unsigned)(v)>>24) | (((unsigned)(v)>>8)&0xff00) | \

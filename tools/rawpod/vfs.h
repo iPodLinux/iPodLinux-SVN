@@ -25,6 +25,33 @@
 #include <sys/stat.h>
 #endif
 
+#ifndef WIN32
+#include <sys/param.h>
+#endif
+#undef RAWPOD_BIG_ENDIAN
+#undef FIGURED_OUT_ENDIAN
+#ifdef __BYTE_ORDER
+# if __BYTE_ORDER == __LITTLE_ENDIAN
+#  define FIGURED_OUT_ENDIAN
+# else
+#  if __BYTE_ORDER == __BIG_ENDIAN
+#   define RAWPOD_BIG_ENDIAN
+#   define FIGURED_OUT_ENDIAN
+#  endif
+# endif
+#endif
+#ifndef FIGURED_OUT_ENDIAN
+# if defined(i386) || defined(__i386__) || defined(_M_IX86) || defined(vax) || defined(__alpha)
+#  define FIGURED_OUT_ENDIAN
+# elsif defined(__powerpc__)
+#  define RAWPOD_BIG_ENDIAN
+#  define FIGURED_OUT_ENDIAN
+# endif
+#endif 
+#ifndef FIGURED_OUT_ENDIAN
+# error Could not figure out endian.
+#endif
+
 #ifndef DONT_REDEFINE_OPEN_CONSTANTS
 #undef O_RDONLY
 #undef O_WRONLY
