@@ -48,6 +48,8 @@ extern VFS::Filesystem *iPodMusicPartitionFS, *iPodLinuxPartitionFS;
 extern bool iPodDoBackup;
 // If so: Where the backup was made, relative to the dir in which the installer started.
 extern QString iPodBackupLocation;
+// Where the backup and packages will go by default. (A directory.) Defaults to QDir::current().
+extern QString InstallerHome;
 
 class QCheckBox;
 class QGroupBox;

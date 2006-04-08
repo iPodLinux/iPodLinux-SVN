@@ -36,6 +36,7 @@ public:
     void resetPage();
     WizardPage *nextPage();
     bool isComplete();
+    bool isLastPage();
     
 protected slots:
     void uninstallRadioClicked (bool clicked);
@@ -47,7 +48,7 @@ private:
     QCheckBox *advancedCheck; /* enabled only for install */
     QRadioButton *upgradeRadio, *changeLoaderRadio, *uninstallRadio; /* enabled only if already installed */
     QLabel *subblurb;
-    int stateOK;
+    int stateOK, wasError;
 };
 
 class PartitioningPage : public InstallerPage
