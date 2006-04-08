@@ -8,6 +8,7 @@
 #include "rawpod/partition.h"
 #include "rawpod/vfs.h"
 #include "rawpod/device.h"
+#include "rawpod/fat32.h"
 
 #include <QMessageBox>
 #include <QGridLayout>
@@ -143,6 +144,8 @@ void BackupAction::run()
 
 void RestoreBackupAction::run() 
 {
+    bool needsMusicReformat = false;
+
     emit setTaskDescription (QString (tr ("Restoring backup from %1...")).arg (_path));
     emit setTotalProgress (0);
     emit setCurrentProgress (0);
@@ -156,9 +159,19 @@ void RestoreBackupAction::run()
     emit setCurrentAction (tr ("Restoring the partition table"));
     u8 *buf = new u8[4096];
     ipoddev->lseek (0, SEEK_SET);
-    if (backup->read (buf, 512) != 512)
-        FATAL ("Error reading the partition table from the backup file..");
-    if (devWriteMBR (_dev, buf) != 0)
+    PartitionTable podtbl, bkptbl;
+    if (ipoddev->read (buf, 512) != 512)
+        FATAL ("Error reading the existing MBR from the iPod.");
+    if (backup->read (buf + 512, 512) != 512)
+        FATAL ("Error reading the MBR from the backup file.");
+    if ((podtbl = partCopyFromMBR (buf)) != NULL) {
+        if ((bkptbl = partCopyFromMBR (buf + 512)) == NULL)
+            FATAL ("Error in partition table in the backup.");
+        if (bkptbl[1].offset != podtbl[1].offset || bkptbl[1].length != podtbl[1].length)
+            needsMusicReformat = true;
+    }
+    ipoddev->lseek (0, SEEK_SET);
+    if (ipoddev->write (buf + 512, 512) != 0)
         FATAL ("Error writing the partition table to the iPod.");
     delete ipoddev;
 
@@ -185,6 +198,21 @@ void RestoreBackupAction::run()
             FATAL_T (tr ("Error writing %1 bytes to iPod: %3").arg (thisread).arg (strerror (-err)));
         }
         bkpread += thisread;
+    }
+
+    if (needsMusicReformat) {
+        emit setCurrentAction (tr ("Formatting the music partition."));
+        emit setTotalProgress (0);
+
+        VFS::Device *musicpart = setup_partition (_dev, 2);
+        int prog = 0;
+        RunnerThread <int(*)(VFS::Device*), VFS::Device*> *rthr =
+            new RunnerThread <int(*)(VFS::Device*), VFS::Device*> (CreateFATFilesystem, musicpart);
+        rthr->start();
+        while (rthr->isRunning()) {
+            emit setCurrentProgress (prog++);
+            usleep (300000);
+        }        
     }
 
     emit setCurrentAction (tr ("Restore complete."));
