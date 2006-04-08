@@ -1204,19 +1204,23 @@ CreateFATFilesystem (VFS::Device *d)
 #include "partition.h"
 int main (int argc, char **argv) 
 {
-    int disknr = find_iPod();
-    if (disknr < 0) {
-        printf ("iPod not found\n");
+    if (argc != 2) {
+        fprintf (stderr, "Usage: mkdosfs <path>\n");
         return 1;
     }
 
-    VFS::Device *part = setup_partition (disknr, 2);
-    printf ("Are you SURE you want to create a FAT32 filesystem on physical disk %d partition %d?\n"
+    VFS::File *file = new LocalFile (argv[1]);
+    if (file->error()) {
+        fprintf (stderr, "%s: %s\n", argv[1], strerror (file->error()));
+    }
+    VFS::Device *device = new VFS::DeviceFile (file);
+    printf ("Are you SURE you want to create a FAT32 filesystem on %s?\n"
             "ALL DATA WILL BE ERASED.\n"
-            "Press Enter to continue or Ctrl+C to cancel...\n", disknr, 2);
+            "Press Enter to continue or Ctrl+C to cancel...\n", argv[1]);
     getchar();
-    CreateFATFilesystem (part);
-    delete part;
+    CreateFATFilesystem (device);
+    delete device;
+    delete file;
 }
 #endif
 
