@@ -478,7 +478,7 @@ void PackagesPage::httpRequestFinished (int req, bool err)
                                 pkg.select();
                                 pkg.makeRequired();
                             }
-                            packageProvides.insert (pi.next(), twi);
+                            packageProvides.insert (prov, twi);
                         }
 
                         if (pkg.url().contains ("YYYYMMDD") || pkg.url().contains ("NNN")) {
