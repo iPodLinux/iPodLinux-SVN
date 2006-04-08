@@ -17,9 +17,6 @@
 
 #ifdef WIN32
 
-#include <windows.h>
-#include <tchar.h>
-
 /**************************************************************/
 
 LocalFile::LocalFile (const char *path, int flags) {
@@ -70,20 +67,6 @@ s64 LocalFile::lseek (s64 off, int whence) {
 int LocalFile::error() {
     if (GetLastError() == NO_ERROR)
         return 0;
-
-    LPVOID lpMsgBuf;
-
-    FormatMessage(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER |
-        FORMAT_MESSAGE_FROM_SYSTEM,
-        NULL,
-        GetLastError(),
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPTSTR) &lpMsgBuf,
-        0, NULL );
-
-    _tprintf (_T("LocalFile::error(): %s\n"), lpMsgBuf);
-    LocalFree (lpMsgBuf);
 
     return GetLastError();
 }
