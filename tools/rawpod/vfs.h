@@ -43,7 +43,7 @@
 #ifndef FIGURED_OUT_ENDIAN
 # if defined(i386) || defined(__i386__) || defined(_M_IX86) || defined(vax) || defined(__alpha)
 #  define FIGURED_OUT_ENDIAN
-# elsif defined(__powerpc__)
+# elif defined(__powerpc__)
 #  define RAWPOD_BIG_ENDIAN
 #  define FIGURED_OUT_ENDIAN
 # endif
