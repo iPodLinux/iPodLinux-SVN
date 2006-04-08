@@ -852,10 +852,10 @@ void PackageDownloadAction::run()
     if (!_pkg.url().contains ("://"))
         return;
 
-    QDir::current().mkdir ("dl_packages");
+    QDir::current().mkdir (InstallerHome + "/dl_packages");
     QUrl pkgurl (_pkg.url());
 
-    _pkg.url() = "dl_packages/" + pkgurl.path().split ("/").last();
+    _pkg.url() = InstallerHome + "/dl_packages/" + pkgurl.path().split ("/").last();
 
     out = new QFile (_pkg.url());
     http = new QHttp;

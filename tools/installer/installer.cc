@@ -38,6 +38,7 @@ VFS::Device *iPodFirmwarePartitionDevice, *iPodMusicPartitionDevice, *iPodLinuxP
 VFS::Filesystem *iPodMusicPartitionFS, *iPodLinuxPartitionFS;
 bool iPodDoBackup;
 QString iPodBackupLocation;
+QString InstallerHome;
 
 Installer::Installer (QWidget *parent)
     : ComplexWizard (parent)
@@ -98,7 +99,7 @@ WizardPage *IntroductionPage::nextPage()
 }
 
 PodLocationPage::PodLocationPage (Installer *wizard)
-    : InstallerPage (wizard)
+    : InstallerPage (wizard), wasError (0)
 {
     enum { CantFindIPod, InvalidPartitionTable, FSErr, BadSysInfo,
            NotAnIPod, MacPod, WinPod, SLinPod, BLinPod, UnsupPod } status;
@@ -219,6 +220,8 @@ PodLocationPage::PodLocationPage (Installer *wizard)
         blurb->setWordWrap (true);
         blurb->setAlignment (Qt::AlignTop | Qt::AlignLeft);
 
+        wasError = 1;
+
         QString err;
         switch (status) {
         case CantFindIPod:
@@ -284,13 +287,23 @@ PodLocationPage::PodLocationPage (Installer *wizard)
         }
         stateOK = 0;
         emit completeStateChanged();
+#ifdef WIN32
+        char e[512];
+        TCHAR E[512];
+        FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM, 0, GetLastError(), 0, E, 512, 0);
+        TCHAR *p = E;
+        char *q = e;
+        while (*p) *q++ = *p++;
+#endif
         err = QString (tr ("<p><b><font color=\"red\">Sorry, but an error occurred. Installation "
                            "cannot continue.</font></b></p>\n")) + err
-#ifndef WIN32
-              + QString (tr ("<p>Error code: %1 (%2)</p>")).arg (errno).arg (errno? strerror (errno) :
+#ifdef WIN32
+            + QString (tr ("<p>Error code: %1 (%2)</p>")).arg (GetLastError()).arg (e)
+#else
+            + QString (tr ("<p>Error code: %1 (%2)</p>")).arg (errno).arg (errno? strerror (errno) :
                                                                            tr ("Success?!"))
 #endif
-	      ;
+            ;
         blurb->setText (err);
         wizard->setInfoText (tr ("<b>Error</b>"),
                              tr ("Read the message below and press Cancel to exit."));
@@ -569,6 +582,11 @@ WizardPage *PodLocationPage::nextPage()
 bool PodLocationPage::isComplete() 
 {
     return stateOK;
+}
+
+bool PodLocationPage::isLastPage() 
+{
+    return wasError;
 }
 
 PartitioningPage::PartitioningPage (Installer *wiz)
@@ -859,7 +877,7 @@ InstallPage::InstallPage (Installer *wiz)
     makeBackup = new QCheckBox (tr ("Yes, I want to save a backup."));
     makeBackup->setChecked (true);
     backupPathLabel = new QLabel (tr ("Save as:"));
-    backupPath = new QLineEdit (tr ("ipod_os_backup.bin"));
+    backupPath = new QLineEdit (InstallerHome + "ipod_os_backup.bin");
     backupBrowse = new QPushButton (tr ("Browse..."));
     
     QVBoxLayout *layout = new QVBoxLayout;
