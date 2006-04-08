@@ -192,6 +192,20 @@ namespace VFS
         Device *_dev;
     };
 
+    class LoopbackDevice : public Device 
+    {
+    public:
+        LoopbackDevice (File *f) : _f (f) {}
+        virtual ~LoopbackDevice() { _f->close(); }
+
+        virtual int read (void *buf, int n) { return _f->read (buf, n); }
+        virtual int write (const void *buf, int n) { return _f->write (buf, n); }
+        virtual s64 lseek (s64 off, int whence) { return _f->lseek (off, whence); }
+
+    protected:
+        File *_f;
+    };
+
     class ErrorFile : public File
     {
     public:
