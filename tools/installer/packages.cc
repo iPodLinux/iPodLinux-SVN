@@ -395,6 +395,7 @@ void PackagesPage::httpRequestFinished (int req, bool err)
         item->update();
     } else if (packlistHTTP->bytesAvailable()) {
         if (packlistHTTP->lastResponse().statusCode() == 200) {
+            QStringList requiredProvides;
             QStringList lines = QString (packlistHTTP->readAll().constData()).split ("\n");
             QStringListIterator it (lines);
             while (it.hasNext()) {
@@ -436,6 +437,19 @@ void PackagesPage::httpRequestFinished (int req, bool err)
                 } else {
                     Package *pkgp = new Package (line);
                     Package &pkg = *pkgp;
+                    if (!pkg.supports (iPodVersion) && pkg.required()) {
+                        if (!pkg.provides().size()) {
+                            QMessageBox::critical (this, QObject::tr ("Unsupported required package"),
+                                                   QObject::tr ("The package `%1' is required for an iPodLinux "
+                                                                "installation, but it is not supported on the "
+                                                                "iPod version you have. Sorry, but installation "
+                                                                "cannot continue.")
+                                                   .arg (pkg.name()),
+                                                   QObject::tr ("Quit"));
+                            exit (1);
+                        }
+                        requiredProvides << pkg.provides()[0];
+                    }
                     if (pkg.supports (iPodVersion) && pkg.valid()) {
                         PkgTreeWidgetItem *twi;
                         if (pkg.provides().size()) {
@@ -458,6 +472,12 @@ void PackagesPage::httpRequestFinished (int req, bool err)
                         packageProvides.insert (pkg.name(), twi);
                         QStringListIterator pi (pkg.provides());
                         while (pi.hasNext()) {
+                            QString prov = pi.next();
+                            if (requiredProvides.contains (prov)) {
+                                requiredProvides.removeAll (prov);
+                                pkg.select();
+                                pkg.makeRequired();
+                            }
                             packageProvides.insert (pi.next(), twi);
                         }
 
@@ -476,8 +496,19 @@ void PackagesPage::httpRequestFinished (int req, bool err)
                         pkg.readPackingList (iPodLinuxPartitionDevice);
                         if (pkg.selected())
                             PendingActions->append (new PackageRemoveAction (pkg, tr ("Removing ")));
+                    } else {
+                        delete pkgp;
                     }
                 }
+            }
+            if (requiredProvides.size()) {
+                QMessageBox::critical (this, QObject::tr ("Unsupported required provide"),
+                                       QObject::tr ("A package providing `%1' is required for an iPodLinux "
+                                                    "installation, but none of the ones in the list I have "
+                                                    "is supported by the iPod version you have. Sorry, but "
+                                                    "installation cannot continue.")
+                                       .arg (requiredProvides[0]),
+                                       QObject::tr ("Quit"));                
             }
         }
     }
