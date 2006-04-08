@@ -29,8 +29,8 @@
 #define GNU_LONGLINK_TYPE	'K'
 
 #ifdef WIN32
-typedef u64 size_t;
-typedef u32 mode_t;
+typedef u32 size_t;
+typedef u16 mode_t;
 typedef u16 gid_t;
 typedef u16 uid_t;
 #endif

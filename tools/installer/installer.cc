@@ -877,7 +877,7 @@ InstallPage::InstallPage (Installer *wiz)
     makeBackup = new QCheckBox (tr ("Yes, I want to save a backup."));
     makeBackup->setChecked (true);
     backupPathLabel = new QLabel (tr ("Save as:"));
-    backupPath = new QLineEdit (InstallerHome + "ipod_os_backup.bin");
+    backupPath = new QLineEdit (InstallerHome + "/ipod_os_backup.bin");
     backupBrowse = new QPushButton (tr ("Browse..."));
     
     QVBoxLayout *layout = new QVBoxLayout;
