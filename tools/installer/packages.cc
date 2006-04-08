@@ -557,6 +557,10 @@ void PackagesPage::httpDone (bool err)
                 item->package().readPackingList (iPodLinuxPartitionDevice);
                 if (item->package().selected()) item->select();
                 else if (item->package().required() && !item->parent()) item->select();
+                // XXX this is a rather silly special case, but I was too lazy to do a whole
+                // "default if certain iPod gens" thing.
+                if ((Mode == StandardInstall || Mode == AdvancedInstall) &&
+                    item->package().name() == "pzmodules" && iPodVersion == 0xB) item->select();
             }
         }
 
