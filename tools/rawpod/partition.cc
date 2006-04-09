@@ -106,9 +106,41 @@ int devReadMBR (int devnr, unsigned char *buf)
 
 int devWriteMBR (int devnr, unsigned char *buf)
 {
-    LocalRawDevice dev (devnr);
-    if (dev.write (buf, 512) != 512)
-        return dev.error();
+#ifdef WIN32
+    HANDLE fh;
+    DWORD len;
+    TCHAR drive[] = TEXT("\\\\.\\PhysicalDriveN");
+
+    drive[17] = devnr + '0';
+    fh = CreateFile (drive, GENERIC_READ | GENERIC_WRITE,
+                     FILE_SHARE_READ | FILE_SHARE_WRITE,
+                     NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
+                     NULL);
+    if (fh == INVALID_HANDLE_VALUE)
+        return GetLastError();
+
+    if (!WriteFile (fh, buf, 512, &len, NULL))
+        return GetLastError();
+
+    CloseHandle (fh);
+#else
+    int fd;
+    char dev[] = "/dev/sdX";
+
+    dev[7] = devnr + 'a';
+    fd = open (dev, O_RDWR);
+    if (fd < 0)
+        return errno;
+
+    if (write (fd, buf, 512) < 0)
+        return errno;
+
+    if (ioctl (fd, BLKRRPART) < 0)
+        return errno;
+
+    close (fd);
+#endif
+
     return 0;
 }
 
