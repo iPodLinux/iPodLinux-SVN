@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <sys/ioctl.h>
 
 static char * fontNames[] = {
 	"Fixed 6x13",
@@ -57,20 +58,27 @@ static char * fontNames[] = {
 	0
 };
 
+static int term_rows()
+{
+	struct winsize win;
+	ioctl(1, TIOCGWINSZ, &win);
+	return win.ws_row;
+}
+
+static int term_cols()
+{
+	struct winsize win;
+	ioctl(1, TIOCGWINSZ, &win);
+	return win.ws_col;
+}
+
 int main(int argc, char * argv[])
 {
 	switch (argc) {
 		case 1: {
-			char * linesstr = getenv("LINES");
-			int lines;
+			int lines = term_rows();
 			int i = 0;
 			signed char ch;
-			if (!linesstr) {
-				lines = 1000;
-			} else {
-				lines = atoi(linesstr);
-				if (!lines) lines = 1000;
-			}
 			while (fontNames[i]) {
 				printf("%3d %s\n", i, fontNames[i]);
 				i++;
