@@ -75,7 +75,7 @@ DEC	[0-9]+
 <*>\r	/* ignore \r */
 
 <SKIP>[ \t]+
-<SKIP>\n	BEGIN nextstate;
+<SKIP>\r?\n	BEGIN nextstate;
 <SKIP>[^ \t]	yymore(); BEGIN nextstate;
 
 
@@ -89,9 +89,9 @@ DEC	[0-9]+
 <DEFK>{ID}	defines[nextdef].key = strdup (yytext); nextstate = DEFV; BEGIN SKIP;
 <DEFK>.		WARN ("unrecognized character %s in definition key", yytext);
 <DEFV>.+	defines[nextdef++].value = strdup (yytext);
-<DEFV>\n	BEGIN INITIAL;
+<DEFV>\r?\n	BEGIN INITIAL;
 
-<COMMAND>name.*\n BEGIN INITIAL;
+<COMMAND>name.*\r?\n BEGIN INITIAL;
 
 <COMMAND>prefix[ \t]+ BEGIN PREFIX;
 <PREFIX>[^ \t]+	fileprefix = strdup (yytext); nextstate = INITIAL; BEGIN SKIP;
@@ -127,7 +127,7 @@ DEC	[0-9]+
     subid = strdup (yytext);
     BEGIN KEY;
 }
-<KEY>\n		BEGIN INITIAL;
+<KEY>\r?\n	BEGIN INITIAL;
 <KEY>"=>" {
     if (!topid) ERR ("first definition line missing top-level ID");
     if (!subid) ERR ("=> without key");
@@ -276,7 +276,7 @@ DEC	[0-9]+
     }
 }
 
-<VALUE>@[^ \t\n,]+ {
+<VALUE>@[^ \t\r\n,]+ {
     char *path;
 
     if (ap->type & TTK_AP_IMAGE)
@@ -349,7 +349,7 @@ DEC	[0-9]+
 }
 
 <VALUE>,	BEGIN KEY;
-<VALUE>\n	BEGIN INITIAL;
+<VALUE>\r?\n	BEGIN INITIAL;
 
 <VALUE>{ID}	WARN ("bare identifier %s in value - did you mistype a \\def inition?", yytext);
 <VALUE>.	WARN ("unrecognized character %s in value", yytext);
