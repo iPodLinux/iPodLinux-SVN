@@ -171,7 +171,7 @@ void RestoreBackupAction::run()
             needsMusicReformat = true;
     }
     ipoddev->lseek (0, SEEK_SET);
-    if (ipoddev->write (buf + 512, 512) != 0)
+    if (ipoddev->write (buf + 512, 512) != 512)
         FATAL ("Error writing the partition table to the iPod.");
     delete ipoddev;
 

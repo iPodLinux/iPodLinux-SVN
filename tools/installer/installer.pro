@@ -92,3 +92,4 @@ HEADERS += zlib/crc32.h zlib/deflate.h zlib/inffast.h \
 
 DEFINES += EMBED_MAKEFW
 
+CONFIG += release

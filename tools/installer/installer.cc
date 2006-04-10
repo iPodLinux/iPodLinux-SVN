@@ -336,7 +336,7 @@ PodLocationPage::PodLocationPage (Installer *wizard)
     blurb->setAlignment (Qt::AlignTop | Qt::AlignLeft);
     blurb->setText (QString ("<p>I found a <b>%1GB</b> iPod at physical drive <b>%2</b>. "
                              "It seems to be a <b>%3</b> iPod, ")
-                    .arg (devGetSize(podloc) >> 21)
+                    .arg (devGetSize(podloc) / 2000000)
                     .arg (podloc)
                     .arg (gens[hw_ver]));
     if (status == WinPod) {
