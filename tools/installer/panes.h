@@ -45,6 +45,7 @@ protected slots:
     
 private:
     QLabel *blurb;
+    QPushButton *restoreBackup; /* enabled only for error */
     QCheckBox *advancedCheck; /* enabled only for install */
     QRadioButton *upgradeRadio, *changeLoaderRadio, *uninstallRadio; /* enabled only if already installed */
     QLabel *subblurb;
