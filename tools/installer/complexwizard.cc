@@ -95,10 +95,14 @@ void ComplexWizard::backButtonClicked()
 
 void ComplexWizard::nextButtonClicked()
 {
+    changePage (history.last()->nextPage());
+}
+
+void ComplexWizard::changePage (WizardPage *newPage)
+{
     history_titles.append (pageTitle->text());
     history_descriptions.append (pageDesc->text());
     WizardPage *oldPage = history.last();
-    WizardPage *newPage = oldPage->nextPage();
     newPage->resetPage();
     history.append(newPage);
     switchPage(oldPage);
