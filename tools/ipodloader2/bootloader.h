@@ -8,8 +8,9 @@ typedef   signed int    int32;
 typedef   signed short  int16;
 typedef   signed char   int8;
 
-typedef unsigned int    size_t;
+typedef unsigned long size_t;
 
+#undef NULL
 #define NULL ((void*)0x0)
 
 #define inl(a) (*(volatile unsigned long *) (a))

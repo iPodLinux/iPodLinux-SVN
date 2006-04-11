@@ -48,4 +48,14 @@ typedef struct {
 void    ipod_init_hardware(void);
 ipod_t *ipod_get_hwinfo(void);
 
+int timer_get_current(void);
+int timer_check(int clock_start, int usecs);
+void lcd_wait_write(void);
+void lcd_prepare_cmd(int cmd);
+void lcd_send_data(int data_lo, int data_hi);
+void lcd_cmd_and_data(int cmd, int data_lo, int data_hi);
+void ipod_set_backlight(int on);
+
+void pcf_standby_mode(void);
+
 #endif

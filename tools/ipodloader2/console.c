@@ -20,6 +20,9 @@ static struct {
 
   uint16  fgcolor,bgcolor;
   uint8   transparent;
+  char    cls_pending;
+  char    scroll_pending;
+  char    scrollMode;
 
   ipod_t *ipod;
 } console;
@@ -34,6 +37,7 @@ void console_home()
 {
   console.cursor.x = 0;
   console.cursor.y = 0;
+  console.scroll_pending = 0;
 }
 
 void console_setfont(const uint8 *font) {
@@ -60,6 +64,24 @@ void console_blitchar(int x,int y,char ch) {
 void console_putchar(char ch) {
   int32 x,y;
 
+  if (console.cls_pending) {
+    // clear screen
+    fb_cls (console.fb, console.bgcolor);
+    console.cls_pending = 0;
+  } else if (console.scroll_pending) {
+    // scroll
+    console.scroll_pending = 0;
+    int i;
+    mlc_memcpy(console.fb,
+               console.fb+(console.dimensions.w*font_height),
+               (console.dimensions.w*console.dimensions.h*2) - 
+               (console.dimensions.w*font_height*2) );
+    for (i = console.dimensions.w*(console.dimensions.h-font_height); i < console.dimensions.w*console.dimensions.h; i++) {
+        console.fb[i] = console.bgcolor;
+    }
+    console.cursor.y--;
+  }
+  
   x = console.cursor.x * font_width;
   y = console.cursor.y * font_height;
 
@@ -69,29 +91,20 @@ void console_putchar(char ch) {
 
     /* Check if we need to scroll the display up */
     if(console.cursor.y >= (console.dimensions.h/font_height) ) {
-#if 0
-      int i;
-      mlc_memcpy(console.fb,
-		 console.fb+(console.dimensions.w*font_height),
-		 (console.dimensions.w*console.dimensions.h*2) - 
-		 (console.dimensions.w*font_height*2) );
-      for (i = console.dimensions.w*(console.dimensions.h-font_height); i < console.dimensions.w*console.dimensions.h; i++) {
-          console.fb[i] = console.bgcolor;
+      if (console.scrollMode) {
+        console.scroll_pending = 1; // delay scroll until we actually write text to a new line
+      } else {
+        // reset cursor to top of screen
+        console.cursor.y = 0;
+        x = y = 0;
+        console.cls_pending = 1; // we must delay fb_cls or we'd never see the just printed line!
       }
-      
-      console.cursor.y--;
-#else
-      console.cursor.y = 0;
-      x = y = 0;
-      fb_cls (console.fb, console.bgcolor);
-#endif
     }
     fb_update(console.fb);
-#ifdef MSGDELAY
-    unsigned int start = inl (0x60005010);
-    while (inl (0x60005010) < start + MSGDELAY)
-        ;
-#endif
+    #ifdef MSGDELAY // actually, such a delay can now be achieved using the debug option in the config file
+      unsigned int start = inl (0x60005010);
+      while (inl (0x60005010) < start + MSGDELAY) {}
+    #endif
     return;
   }
   if(ch == '\r') { console.cursor.x = 0; return; }
@@ -144,6 +157,10 @@ void console_init(uint16 *fb) {
   console.fgcolor     = 0xFFFF;
   console.bgcolor     = 0x0018;
   console.transparent = 0x0;
+
+  console.scrollMode  = 1; // josh says that scrolling used to fail on b&w 4Gs. need to test that again (TT 31Mar06)
+  console.cls_pending = 0;
+  console.scroll_pending = 0;
 
   console.fb = fb;
 }
