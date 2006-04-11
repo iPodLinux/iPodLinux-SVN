@@ -1,4 +1,5 @@
 #include "bootloader.h"
+#include "minilibc.h"
 #include "ipodhw.h"
 #define RTC inl(0x60005010)
 

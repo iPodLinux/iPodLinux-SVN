@@ -24,9 +24,33 @@ typedef struct {
 
 fwfs_t fwfs;
 
-int fwfs_open(void *fsdata,char *fname) {
+static int fwfs_load_subimg_info(fwfs_image_t *master, int subnr, fwfs_image_t *sub) 
+{
+  uint8 buff[512];
+  if ((((subnr + 1) * sizeof(fwfs_image_t)) + (master->devOffset & 0x1ff) + 0x100) > 0x200) {
+    mlc_printf ("Misaligned image - can't load subs\n");
+    return 0;
+  }
+  ata_readblock (master->devOffset >> 9, buff);
+  mlc_memcpy (sub, buff + (subnr * sizeof(fwfs_image_t)) + (master->devOffset & 0x1ff) + 0x100,
+              sizeof(fwfs_image_t));
+  /* The &0xc0c0c0c0==0x40404040 test makes sure all the chars are in the range
+   * 0x40 to 0x7f inclusive - a really crude heuristic for "all letters", but
+   * it's good enough for this.
+   */
+  if (sub->type != 0 && sub->type != 0xFFFFFFFF && (sub->type & 0xc0c0c0c0) == 0x40404040)
+    return 1;
+  return 0;
+}
+
+static int fwfs_open(void *fsdata,char *fname) {
   uint32 i;
   fwfs_t *fs;
+  fwfs_image_t subimg;
+
+#if DEBUG
+  mlc_printf("Entering fwfs_open: %s\n", fname);
+#endif
 
   fs = (fwfs_t*)fsdata;
 
@@ -38,18 +62,47 @@ int fwfs_open(void *fsdata,char *fname) {
 	fs->filehandle[fs->numHandles].length    = fs->image[i].len;
 	fs->filehandle[fs->numHandles].devOffset = fs->image[i].devOffset;
 
+        switch (fname[4]) {
+        case '\0': /* full image - normal load */
+          break;
+        case '@': /* master image - aka the loader itself. don't know WHY, but oh well... */
+          fs->filehandle[fs->numHandles].devOffset += fs->image[i].entryOffset;
+          fs->filehandle[fs->numHandles].length    -= fs->image[i].entryOffset;
+          break;
+        case '0': case '1': case '2': case '3': case '4': /* sub-image, aka Apple or Linux */
+          /* you can also load the default just by loading the whole thing, but
+           * that's rather inefficient since you're loading Linux too...
+           */
+          if (!fwfs_load_subimg_info (fs->images + i, fname[4] - '0', &subimg)) {
+#if DEBUG
+            mlc_printf("Err: asked for an invalid child image\n");
+#endif
+            return(-1);
+          }
+          fs->filehandle[fs->numHandles].devOffset = subimg.devOffset;
+          fs->filehandle[fs->numHandles].length    = subimg.len;
+          break;
+        }
+
 	//mlc_printf("Found the file\n");
-	//for(;;);
+	//mlc_show_fatal_error ();
 
 	fs->numHandles++;
 	return(fs->numHandles-1);
-      } else return(-1);
+      } else {
+	mlc_printf("Err: out of handles\n");
+	return(-1);
+      }
     }
   }
+
+#if DEBUG
+  mlc_printf("Err: did not find the image\n");
+#endif
   return(-1);
 }
 
-size_t fwfs_read(void *fsdata,void *ptr,size_t size,size_t nmemb,int fd) {
+static size_t fwfs_read(void *fsdata,void *ptr,size_t size,size_t nmemb,int fd) {
   fwfs_t *fs;
   static uint8   buff[512];
   uint32  block,off,read,toRead;
@@ -60,26 +113,26 @@ size_t fwfs_read(void *fsdata,void *ptr,size_t size,size_t nmemb,int fd) {
   toRead = size * nmemb;
   off    = fs->filehandle[fd].devOffset + fs->filehandle[fd].position + (fs->offset * 512);
   if (fs->head.version == 3) {
-	  off += 512;
+    off += 512;
   }
 
   block  = off / 512;
   off    = off % 512;
 
   if( off != 0 ) { /* Need to read a partial block at first */
-    ata_readblocks( buff, block, 1 );
+    ata_readblocks_uncached( buff, block, 1 );
     mlc_memcpy( ptr, buff + off, 512 - off );
     read += 512 - off;
     block++;
   }
 
   while( (read+512) <= toRead ) {
-    ata_readblocks( (uint8*)ptr + read, block, 1 );
+    ata_readblocks_uncached( (uint8*)ptr + read, block, 1 );
 
     read  += 512;
     block++;
   }
-  ata_readblocks( buff, block, 1 );
+  ata_readblocks_uncached( buff, block, 1 );
   mlc_memcpy( (uint8*)ptr+read, buff, toRead - read );
 
   read += (toRead - read);
@@ -89,7 +142,7 @@ size_t fwfs_read(void *fsdata,void *ptr,size_t size,size_t nmemb,int fd) {
   return(read);
 }
 
-long fwfs_tell(void *fsdata,int fd) {
+static long fwfs_tell(void *fsdata,int fd) {
   fwfs_t *fs;
 
   fs = (fwfs_t*)fsdata;
@@ -97,36 +150,30 @@ long fwfs_tell(void *fsdata,int fd) {
   return( fs->filehandle[fd].position );
 }
 
-int fwfs_seek(void *fsdata,int fd,long offset,int whence) {
+static int fwfs_seek(void *fsdata,int fd,long offset,int whence) {
   fwfs_t *fs;
 
   fs = (fwfs_t*)fsdata;
   
   switch(whence) {
+  case VFS_SEEK_CUR:
+    offset += fs->filehandle[fd].position;
+    break;
   case VFS_SEEK_SET:
-    if( fs->filehandle[fd].length > offset ) {
-      fs->filehandle[fd].position = offset;
-
-      return(0);
-    } else {
-      return(-1);
-    }
     break;
   case VFS_SEEK_END:
-    if( fs->filehandle[fd].length > offset ) {
-      fs->filehandle[fd].position = fs->filehandle[fd].length - offset;
-      return(0);
-    } else {
-      return(-1);
-    }
+  	offset += fs->filehandle[fd].length;
     break;
   default:
-    mlc_printf("NOOOTT IMPLEMENTED\n");
-    for(;;);
-    return(-1);
+    return -2;
   }
 
-  return(0);
+  if( offset < 0 || offset > fs->filehandle[fd].length ) {
+    return -1;
+  }
+
+  fs->filehandle[fd].position = offset;
+  return 0;
 }
 
 void fwfs_newfs(uint8 part,uint32 offset) {
@@ -134,7 +181,7 @@ void fwfs_newfs(uint8 part,uint32 offset) {
   static uint8  buff[512]; /* !!! Move from BSS */
 
   /* Verify that this is indeed a firmware partition */
-  ata_readblocks( buff, offset,1 );
+  ata_readblocks_uncached( buff, offset,1 );
   if( mlc_strncmp((void*)((uint8*)buff+0x100),"]ih[",4) != 0 ) {
     return;
   } else {
@@ -160,7 +207,7 @@ void fwfs_newfs(uint8 part,uint32 offset) {
   fwfs.filehandle = (fwfs_file*)mlc_malloc( sizeof(fwfs_file) * MAX_HANDLES );
 
   fwfs.image = (fwfs_image_t*)mlc_malloc(512);
-  ata_readblocks( fwfs.image, block, 1 ); /* Reads the Bootloader image table */
+  ata_readblocks_uncached( fwfs.image, block, 1 ); /* Reads the Bootloader image table */
 
   fwfs.images = 0;
   for(i=0;i<MAX_IMAGES;i++) {

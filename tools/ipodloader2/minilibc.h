@@ -39,7 +39,6 @@ int mlc_printf(const char *fmt, ...);
 
 void   mlc_malloc_init(void);
 void  *mlc_malloc(size_t num);
-void   mlc_free(void *ptr);
 size_t mlc_strlen(const char *);
 int    mlc_strcmp(const char *s1,const char *s2);
 int    mlc_strcasecmp(const char *s1,const char *s2);
@@ -49,6 +48,12 @@ char  *mlc_strncpy(char *dest,const char *src,size_t count);
 void  *mlc_memcpy(void *dest,const void *src,size_t n);
 void  *mlc_memset(void *dest,int c,size_t n);
 char  *mlc_strchr(const char *s,int c);
+char  *mlc_strrchr(const char *s,int c);
 int    mlc_memcmp(const void *sv1,const void *sv2,size_t length);
+void   mlc_delay_ms (long time_in_ms);
+long   mlc_atoi (const char *str);
+void   mlc_set_output_options (int buffered, int slow);
+void   mlc_show_critical_error (); // call this if you can still continue but want to make the user see what you just printed
+void   mlc_show_fatal_error (); // call this if you can not continue, and want to make the user see what you just printed
 
 #endif

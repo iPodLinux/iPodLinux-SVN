@@ -92,12 +92,12 @@ static void ipod_set_sysinfo(void) {
 }
 
 /* get current usec counter */
-static int timer_get_current(void) {
+int timer_get_current(void) {
   return inl(ipod.rtc);
 }
 
-/* check if number of useconds has past */
-static int timer_check(int clock_start, int usecs) {
+/* check if number of useconds has passed */
+int timer_check(int clock_start, int usecs) {
   unsigned long clock;
   clock = inl(ipod.rtc);
   
@@ -110,7 +110,7 @@ static int timer_check(int clock_start, int usecs) {
 
 
 /* wait for LCD with timeout */
-static void lcd_wait_write(void) {
+void lcd_wait_write(void) {
   if ((inl(ipod.lcd_base) & ipod.lcd_busy_mask) != 0) {
     int start = timer_get_current();
     
@@ -122,7 +122,7 @@ static void lcd_wait_write(void) {
 
 
 /* send LCD data */
-static void lcd_send_data(int data_lo, int data_hi) {
+void lcd_send_data(int data_lo, int data_hi) {
   lcd_wait_write();
   if( (ipod.hw_rev>>16) == 0x7 ) {
     outl((inl(0x70003000) & ~0x1f00000) | 0x1700000, 0x70003000);
@@ -136,7 +136,7 @@ static void lcd_send_data(int data_lo, int data_hi) {
 
 
 /* send LCD command */
-static void lcd_prepare_cmd(int cmd) {
+void lcd_prepare_cmd(int cmd) {
   lcd_wait_write();
   if( (ipod.hw_rev>>16) == 0x7) {
     outl((inl(0x70003000) & ~0x1f00000) | 0x1700000, 0x70003000);
@@ -148,13 +148,13 @@ static void lcd_prepare_cmd(int cmd) {
   }
 }
 
-static void lcd_cmd_and_data(int cmd, int data_lo, int data_hi) {
+void lcd_cmd_and_data(int cmd, int data_lo, int data_hi) {
   lcd_prepare_cmd(cmd);
   lcd_send_data(data_lo, data_hi);
 }
 
 
-static void ipod_set_backlight(int on) {
+void ipod_set_backlight(int on) {
 
   if((ipod.hw_rev>>16) >= 0x4) {
     if ((ipod.hw_rev>>16) == 0x5 || (ipod.hw_rev>>16) == 0x6) {
@@ -217,6 +217,129 @@ static void ipod_set_backlight(int on) {
   }
 }
 
+
+#define IPOD_I2C_CTRL	(ipod_i2c_base+0x00)
+#define IPOD_I2C_ADDR	(ipod_i2c_base+0x04)
+#define IPOD_I2C_DATA0	(ipod_i2c_base+0x0c)
+#define IPOD_I2C_DATA1	(ipod_i2c_base+0x10)
+#define IPOD_I2C_DATA2	(ipod_i2c_base+0x14)
+#define IPOD_I2C_DATA3	(ipod_i2c_base+0x18)
+#define IPOD_I2C_STATUS	(ipod_i2c_base+0x1c)
+
+/* IPOD_I2C_CTRL bit definitions */
+#define IPOD_I2C_SEND	0x80
+
+/* IPOD_I2C_STATUS bit definitions */
+#define IPOD_I2C_BUSY	(1<<6)
+
+static unsigned ipod_i2c_base;
+
+static int ipod_i2c_wait_not_busy(void)
+{
+  long start = timer_get_current ();
+  do {
+    if (!(inb(IPOD_I2C_STATUS) & IPOD_I2C_BUSY)) {
+      return 0;
+    }
+  } while (!timer_check (start, 100000));
+  return -1;
+}
+
+static int ipod_i2c_send_bytes(unsigned int addr, unsigned int len, unsigned char *data)
+{
+  int data_addr;
+  int i;
+  if (len < 1 || len > 4) {
+    return -1;
+  }
+  if (ipod_i2c_wait_not_busy() < 0) {
+    return -1;
+  }
+  outb((addr << 17) >> 16, IPOD_I2C_ADDR);
+  outb(inb(IPOD_I2C_CTRL) & ~0x20, IPOD_I2C_CTRL);
+  data_addr = IPOD_I2C_DATA0;
+  for ( i = 0; i < len; i++ ) {
+    outb(*data++, data_addr);
+    data_addr += 4;
+  }
+  outb((inb(IPOD_I2C_CTRL) & ~0x26) | ((len-1) << 1), IPOD_I2C_CTRL);
+  outb(inb(IPOD_I2C_CTRL) | IPOD_I2C_SEND, IPOD_I2C_CTRL);
+  return 0;
+}
+
+static int ipod_i2c_send(unsigned int addr, int data0, int data1)
+{
+  unsigned char data[2];
+  data[0] = data0;
+  data[1] = data1;
+  return ipod_i2c_send_bytes(addr, 2, data);
+}
+
+static int ipod_i2c_send_byte(unsigned int addr, int data0)
+{
+  unsigned char data[1];
+  data[0] = data0;
+  return ipod_i2c_send_bytes(addr, 1, data);
+}
+
+static int ipod_i2c_read_byte(unsigned int addr, unsigned int *data)
+{
+  if (ipod_i2c_wait_not_busy() < 0) {
+    return -1;
+  }
+  // clear top 15 bits, left shift 1, or in 0x1 for a read
+  outb(((addr << 17) >> 16) | 0x1, IPOD_I2C_ADDR);
+  outb(inb(IPOD_I2C_CTRL) | 0x20, IPOD_I2C_CTRL);
+  outb(inb(IPOD_I2C_CTRL) | IPOD_I2C_SEND, IPOD_I2C_CTRL);
+  if (ipod_i2c_wait_not_busy() < 0) {
+    return -1;
+  }
+  if (data) {
+    *data = inb(IPOD_I2C_DATA0);
+  }
+  return 0;
+}
+
+static int i2c_readbyte(unsigned int dev_addr, int addr)
+{
+  int data;
+  ipod_i2c_send_byte(dev_addr, addr);
+  ipod_i2c_read_byte(dev_addr, &data);
+  return data;
+}
+
+static void ipod_i2c_init(void)
+{
+  /* reset I2C */
+  int hwver = ipod.hw_rev >> 16;
+  if (hwver > 0x03) {
+    ipod_i2c_base = 0x7000c000;
+    if (hwver == 0x04) {
+      /* GPIO port C disable port 0x10 */
+      outl(inl(0x6000d008) & ~0x10, 0x6000d008);
+      /* GPIO port C disable port 0x20 */
+      outl(inl(0x6000d008) & ~0x20, 0x6000d008);
+    }
+    outl(inl(0x6000600c) | 0x1000, 0x6000600c); /* enable 12 */
+    outl(inl(0x60006004) | 0x1000, 0x60006004); /* start reset 12 */
+    outl(inl(0x60006004) & ~0x1000, 0x60006004);  /* end reset 12 */
+    outl(0x0, 0x600060a4);
+    outl(0x80 | (0 << 8), 0x600060a4);
+    i2c_readbyte(0x08, 0);
+  } else {
+    ipod_i2c_base = 0xc0008000;
+    outl(inl(0xcf005000) | 0x2, 0xcf005000);
+    outl(inl(0xcf005030) | (1<<8), 0xcf005030);
+    outl(inl(0xcf005030) & ~(1<<8), 0xcf005030);
+  }
+}
+
+
+
+void pcf_standby_mode(void)
+{
+  ipod_i2c_send(0x8, 0x8, 0x1 | (1 << 5) | (1 << 6));
+}
 
 ipod_t *ipod_get_hwinfo(void) {
   return(&ipod);
@@ -314,6 +437,8 @@ void ipod_init_hardware(void) {
     ipod.mem_base      = 0x28000000;
     ipod.mem_size      = 0x2000000;
   }
+
+  ipod_i2c_init ();
 
   ipod_set_backlight(1);
 }

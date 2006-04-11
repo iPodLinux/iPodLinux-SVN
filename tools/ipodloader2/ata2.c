@@ -11,6 +11,7 @@
 #include "console.h"
 #include "ipodhw.h"
 #include "minilibc.h"
+#include "ata2.h"
 
 #define REG_DATA       0x0
 #define REG_ERROR      0x1
@@ -66,10 +67,10 @@ void pio_outbyte(unsigned int addr,unsigned char data) {
 }
 
 volatile unsigned char pio_inbyte( unsigned int addr ) {
-  return( inl( pio_reg_addrs[ addr ] ) );
+  return( inb( pio_reg_addrs[ addr ] ) );
 }
 volatile unsigned short pio_inword( unsigned int addr ) {
-  return( inl( pio_reg_addrs[ addr ] ) );
+  return( inw( pio_reg_addrs[ addr ] ) );
 }
 volatile unsigned int pio_indword( unsigned int addr ) {
   return( inl( pio_reg_addrs[ addr ] ) );
@@ -167,16 +168,14 @@ uint32 ata_init(void) {
  * to host memory
  */
 static void ata_transfer_block(void *ptr) {
-  uint32  wordsRead;
+  uint32  words;
   uint16 *dst;
 
   dst = (uint16*)ptr;
 
-  wordsRead = 0;
-  while(wordsRead < 256) {
-    dst[wordsRead] = pio_inword( REG_DATA );
-
-    wordsRead++;
+  words = 256;
+  while(words--) {
+    *dst++ = inw( pio_reg_addrs[REG_DATA] );
   }
 }
 
@@ -215,11 +214,10 @@ void ata_identify(void) {
     mlc_printf("HDDid: ");
     for(c=27;c<47;c++) {
       if( buff[c] != ((' ' << 8) + ' ') ) {
-	console_putchar(buff[c]>>8);
-	console_putchar(buff[c]&0xFF);
+	mlc_printf("%c%c", buff[c]>>8, buff[c]&0xFF);
       }
     }
-    console_putchar('\n');
+    mlc_printf("\n");
   } else {
     mlc_printf("DRQ not set..\n");
   }
@@ -228,7 +226,7 @@ void ata_identify(void) {
 /*
  * Sets up the transfer of one block of data
  */
-int ata_readblock(void *dst, uint32 sector) {
+static int ata_readblock2(void *dst, uint32 sector, int storeInCache) {
   uint8   status,i,cacheindex;
 
   /*
@@ -242,15 +240,18 @@ int ata_readblock(void *dst, uint32 sector) {
       return(0);
     }
   }
+
   /*
    * Okay, it wasnt in cache.. We need to figure out which block
    * to replace in the cache.  Lets use a simple LRU
    */
   cacheindex = 0;
-  for(i=0;i<CACHE_NUMBLOCKS;i++) {
-    if( cachetick[i] < cachetick[cacheindex] ) cacheindex = i;
+  if (storeInCache) {
+    for(i=0;i<CACHE_NUMBLOCKS;i++) {
+      if( cachetick[i] < cachetick[cacheindex] ) cacheindex = i;
+    }
+    cachetick[cacheindex] = cacheticks;
   }
-  cachetick[cacheindex] = cacheticks;
 
   pio_outbyte( REG_DEVICEHEAD, (1<<6) | DEVICE_0 | ((sector & 0xF000000) >> 24) );
   DELAY400NS;
@@ -269,33 +270,46 @@ int ata_readblock(void *dst, uint32 sector) {
 
   status = pio_inbyte( REG_STATUS );
   if( (status & (STATUS_BSY | STATUS_DRQ)) == STATUS_DRQ) {
-    /*ata_transfer_block(dst);*/
-    cacheaddr[cacheindex] = sector;
-    ata_transfer_block(cachedata + cacheindex * 512);
-  }  else {
-    mlc_printf("IO Error\n");
+    if (storeInCache) {
+      cacheaddr[cacheindex] = sector;
+      ata_transfer_block(cachedata + cacheindex * 512);
+      mlc_memcpy(dst,cachedata + cacheindex*512,512);
+      cacheticks++;
+    } else {
+      ata_transfer_block(dst);
+    }
+  } else {
+    mlc_printf("\nATA2 IO Error\n");
     status = pio_inbyte( REG_ERROR );
     mlc_printf("Error reg: %u\n",status);
-    for(;;);
+    mlc_show_fatal_error ();
   }
-
-  /*
-   * We've read a block. Lets make sure it's getting cached as well
-   */
-  mlc_memcpy(dst,cachedata + cacheindex*512,512);
-
-  cacheticks++;
 
   return(0);
 }
 
-/*
- * Replace this with COMMAND_READ_MULTIPLE for FAT32 speedups
- */
-void ata_readblocks(void *dst,uint32 sector,uint32 count) {
-  uint32 i;
+int ata_readblock(void *dst, uint32 sector) {
+  return ata_readblock2(dst, sector, 1);
+}
 
-  for(i=0;i<count;i++)
-    ata_readblock((void*)((uint8*)dst + i*512),sector+i);
+int ata_readblocks(void *dst,uint32 sector,uint32 count) {
+  /* Replace this with COMMAND_READ_MULTIPLE for FAT32 speedups: */
+  int err;
+  while (count-- > 0) {
+    err = ata_readblock2 (dst, sector++, 1);
+    if (err) return err;
+    dst = (char*)dst + 512;
+  }
+  return 0;
+}
 
+int ata_readblocks_uncached (void *dst, uint32 sector, uint32 count) {
+  /* Replace this with COMMAND_READ_MULTIPLE for FAT32 speedups: */
+  int err;
+  while (count-- > 0) {
+    err = ata_readblock2 (dst, sector++, 0);
+    if (err) return err;
+    dst = (char*)dst + 512;
+  }
+  return 0;
 }

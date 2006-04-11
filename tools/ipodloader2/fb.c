@@ -3,43 +3,14 @@
 
 static ipod_t *ipod;
 
-/* get current usec counter */
-static int timer_get_current(void) {
-  return inl(ipod->rtc);
-}
-
-/* check if number of useconds has past */
-static int timer_check(int clock_start, int usecs) {
-  unsigned long clock;
-  clock = inl(ipod->rtc);
-  
-  if ( (clock - clock_start) >= usecs ) {
-    return 1;
-  } else {
-    return 0;
-  }
-}
-
-
-/* wait for LCD with timeout */
-static void lcd_wait_write(void) {
-  if ((inl(ipod->lcd_base) & ipod->lcd_busy_mask) != 0) {
-    int start = timer_get_current();
-    
-    do {
-      if ((inl(ipod->lcd_base) & ipod->lcd_busy_mask) == 0) break;
-    } while (timer_check(start, 1000) == 0);
-  }
-}
-
 static void lcd_send_lo(int v) {
   lcd_wait_write();
-  outl(v | 0x80000000, 0x70008A0C);
+  outl(v | 0x80000000, ipod->lcd_base);
 }
 
 static void lcd_send_hi(int v) {
   lcd_wait_write();
-  outl(v | 0x81000000, 0x70008A0C);
+  outl(v | 0x81000000, ipod->lcd_base);
 }
 
 static void lcd_cmd_data(int cmd, int data) {
@@ -52,41 +23,6 @@ static void lcd_cmd_data(int cmd, int data) {
     lcd_send_hi((data >> 8) & 0xff);
     lcd_send_hi(data & 0xff);
   }
-}
-
-/* send LCD command */
-static void lcd_prepare_cmd(int cmd) {
-  lcd_wait_write();
-  if(ipod->hw_rev >= 0x70000) {
-    outl((inl(0x70003000) & ~0x1f00000) | 0x1700000, 0x70003000);
-    outl(cmd | 0x740000, 0x70003008);
-  }
-  else {
-    outl(0x0, ipod->lcd_base + 0x8);
-    lcd_wait_write();
-    outl(cmd, ipod->lcd_base + 0x8);
-  }
-}
-
-/* send LCD data */
-static void lcd_send_data(int data_lo, int data_hi) {
-  lcd_wait_write();
-  if(ipod->hw_rev >= 0x70000) {
-    outl((inl(0x70003000) & ~0x1f00000) | 0x1700000, 0x70003000);
-    outl(data_hi | (data_lo << 8) | 0x760000, 0x70003008);
-  }
-  else {
-    outl(data_lo, ipod->lcd_base + 0x10);
-    lcd_wait_write();
-    outl(data_hi, ipod->lcd_base + 0x10);
-  }
-}
-
-/* send LCD command and data */
-static void lcd_cmd_and_data(int cmd, int data_lo, int data_hi) {
-  lcd_prepare_cmd(cmd);
-
-  lcd_send_data(data_lo, data_hi);
 }
 
 static void lcd_bcm_write32(unsigned address, unsigned value) {

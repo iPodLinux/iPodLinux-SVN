@@ -1,11 +1,8 @@
 TODO:
 * Make FAT32 use DOS-convention filenames instead of on-disk encoding
+* Similarly, make FAT32 support LFNs
+* Make PP5002 compatible
 * Reduce BSS segment size
-* Make PP5002 compatible, and support more LCDs
-* Implement firmware-on-a-file functionality (RetailOS,Diag,Diskmode)
-* Implement ext2 filesystem driver
-* Implement HFS+ filesystem driver
-* Implement menu system and configuration file
 
 
 Notes about TODOs:
@@ -20,13 +17,3 @@ Notes about TODOs:
   mlc_malloc() needs to be adjusted for the different RAM mapping
   The entry-point is different from the PP502x's
   Support more LCDs: 4G B&W, 4G Color, 4G Photo, Nano, 5G
-* Implement firmware-on-a-file...
-  Keep a copy of the firmware partition (stripped?) on a data-partition
-  and load the soso from here.
-  Thoughts: Is this a good idea? Will 5G work with this? Does it expect
-            rcsc to be on disk or in mem ?
-* Implement menu system..
-  Come up with a short and readable format for a menu.lst equivalent.
-  Maybe we can use the same format out-of-the box even?
-
-

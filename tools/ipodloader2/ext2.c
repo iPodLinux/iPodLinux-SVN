@@ -38,7 +38,7 @@ static void ext2_read_superblock(ext2_t *fs, uint32 offset) {
 
 static void ext2_getblock(uint8 *buffer,uint32 block);
 
-void ext2_ReadDatablockFromInode(inode_t *inode, void *ptr,unsigned int num) {
+static void ext2_ReadDatablockFromInode(inode_t *inode, void *ptr,unsigned int num) {
   uint32 buff[EXT2_MAXBLOCKSIZE/4];
   uint32 buff2[EXT2_MAXBLOCKSIZE/4];
 
@@ -63,13 +63,13 @@ void ext2_ReadDatablockFromInode(inode_t *inode, void *ptr,unsigned int num) {
     ext2_getblock(ptr,buff[offset]);
   } else {
     mlc_printf("Tri-indirects not supported");
-    for(;;);
+    mlc_show_fatal_error ();
   }
 
 		    
 }
 
-unsigned short ext2_readdata(inode_t *inode,void *ptr,unsigned int off,unsigned int size){
+static unsigned short ext2_readdata(inode_t *inode,void *ptr,unsigned int off,unsigned int size){
   static unsigned char buff[EXT2_MAXBLOCKSIZE];
   uint32 sblk,eblk,soff,eoff,read;
 
@@ -162,7 +162,7 @@ static void ext2_getinode(inode_t *ptr,uint32 num) {
 
 static int ext2_min(int x, int y) { return (x < y) ? x : y; } 
 
-void ext2_getblockgroup(void) {  /* gets our groups of blocks descriptor */
+static void ext2_getblockgroup(void) {  /* gets our groups of blocks descriptor */
   unsigned char buff[512];
   unsigned char *dest = (unsigned char *)ext2->groups;
   int block;
@@ -217,7 +217,7 @@ static ext2_file *ext2_findfile(char *fname) {
   return(ret);
 }
 
-int ext2_open(void *fsdata,char *fname) {
+static int ext2_open(void *fsdata,char *fname) {
   ext2_t    *fs;
   ext2_file *file;
 
@@ -236,38 +236,33 @@ int ext2_open(void *fsdata,char *fname) {
   return(fs->numHandles-1);
 }
 
-int ext2_seek(void *fsdata,int fd,long offset,int whence) {
+static int ext2_seek(void *fsdata,int fd,long offset,int whence) {
   ext2_t *fs;
 
   fs = (ext2_t*)fsdata;
 
   switch(whence) {
+  case VFS_SEEK_CUR:
+    offset += fs->filehandle[fd]->position;
+    break;
   case VFS_SEEK_SET:
-    if( fs->filehandle[fd]->length > offset ) {
-      fs->filehandle[fd]->position = offset;
-      return(0);
-    } else {
-      return(-1);
-    }
     break;
   case VFS_SEEK_END:
-    if( fs->filehandle[fd]->length > offset ) {
-      fs->filehandle[fd]->position = fs->filehandle[fd]->length - offset;
-      return(0);
-    } else {
-      return(-1);
-    }
+  	offset += fs->filehandle[fd]->length;
     break;
   default:
-    mlc_printf("NOOOTT IMPLEMENTED\n");
-
-    return(-1);
+    return -2;
   }
 
-  return(0);
+  if( offset < 0 || offset > fs->filehandle[fd]->length ) {
+    return -1;
+  }
+
+  fs->filehandle[fd]->position = offset;
+  return 0;
 }
 
-long ext2_tell(void *fsdata,int fd) {
+static long ext2_tell(void *fsdata,int fd) {
   ext2_t *fs;
 
   fs = (ext2_t*)fsdata;
@@ -275,7 +270,7 @@ long ext2_tell(void *fsdata,int fd) {
   return( fs->filehandle[fd]->position );
 }
 
-size_t ext2_read(void *fsdata,void *ptr,size_t size,size_t nmemb,int fd) {
+static size_t ext2_read(void *fsdata,void *ptr,size_t size,size_t nmemb,int fd) {
   uint32 toRead;
   ext2_t *fs;
 
@@ -290,7 +285,7 @@ size_t ext2_read(void *fsdata,void *ptr,size_t size,size_t nmemb,int fd) {
 
   fs->filehandle[fd]->position += toRead;
 
-  return(toRead);
+  return(toRead / size);
 }
 
 void ext2_newfs(uint8 part,uint32 offset) {

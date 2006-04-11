@@ -46,8 +46,15 @@ mod:	N	near ptr				DONE
 	L	long long (64-bit) int			no
 *****************************************************************************/
 
-#include "console.h"
-#include "ipodhw.h"
+#if ONPC
+	// for debugging on Mac OS or Windows or Linux or whatever
+	#include <stdlib.h>
+	#include <stdio.h>
+#else
+	#include "console.h"
+	#include "ipodhw.h"
+#endif
+
 #include "minilibc.h"
 
 /* flags used in processing format string */
@@ -70,7 +77,7 @@ action:	minimal subfunction for ?printf, calls function
 	'fn' with arg 'ptr' for each character to be output
 returns:total number of characters output
 *****************************************************************************/
-int mlc_do_printf(const char *fmt, mlc_va_list args, fnptr_t fn, void *ptr)
+static int mlc_do_printf(const char *fmt, mlc_va_list args, fnptr_t fn, void *ptr)
 {
 	unsigned flags, actual_wd, count, given_wd;
 	unsigned char *where, buf[PR_BUFLEN];
@@ -290,6 +297,7 @@ EMIT2:				if((flags & PR_LJ) == 0)
 	}
 	return count;
 }
+
 #if 1 /* testing */
 /*****************************************************************************
 SPRINTF
@@ -304,7 +312,7 @@ static int mlc_vsprintf_help(unsigned c, void **ptr) {
 }
 /*****************************************************************************
 *****************************************************************************/
-int mlc_vsprintf(char *buf, const char *fmt, mlc_va_list args)
+static int mlc_vsprintf(char *buf, const char *fmt, mlc_va_list args)
 {
 	int rv;
 
@@ -323,32 +331,57 @@ int mlc_sprintf(char *buf, const char *fmt, ...) {
 	mlc_va_end(args);
 	return rv;
 }
+
 /*****************************************************************************
 PRINTF
 You must write your own putchar()
 *****************************************************************************/
+static int print_to_console(unsigned c, void **ptr) {
+  #if ONPC
+    putchar(c);
+  #else
+    console_putchar(c);
+  #endif
+  return 0;
+}
 
-int mlc_vprintf_help(unsigned c, void **ptr) {
+static int do_buffered_printf = 0;  // boolean flag
+static int do_slow_printf = 0;      // boolean flag
+static int printf_buffer[512];      // 512 should be enough for what we use it for
+static int printf_buflen = 0;       // this is the used amount in the buffer
 
-	console_putchar(c);
-
-	return 0 ;
+// alternative, used with buffered output
+static int print_to_buffer(unsigned c, void **ptr) {
+  if (printf_buflen >= sizeof (printf_buffer)) {
+    // make room (discard older output)
+    printf_buflen -= 40;
+    mlc_memcpy (printf_buffer, printf_buffer+40, printf_buflen);
+  }
+  printf_buffer[printf_buflen++] = c;
+  return 0;
 }
 /*****************************************************************************
 *****************************************************************************/
 int mlc_vprintf(const char *fmt, mlc_va_list args) {
-	return mlc_do_printf(fmt, args, mlc_vprintf_help, NULL);
+	return mlc_do_printf(fmt, args, print_to_console, NULL);
 }
 /*****************************************************************************
 *****************************************************************************/
 int mlc_printf(const char *fmt, ...) {
-	mlc_va_list args;
-	int rv;
+  mlc_va_list args;
+  int rv;
 
-	mlc_va_start(args, fmt);
-	rv = mlc_vprintf(fmt, args);
-	mlc_va_end(args);
-	return rv;
+  mlc_va_start(args, fmt);
+  if (do_buffered_printf) {
+    rv = mlc_do_printf(fmt, args, print_to_buffer, NULL);
+  } else {
+    rv = mlc_vprintf(fmt, args);
+  }
+  mlc_va_end(args);
+  if (do_slow_printf) {
+    mlc_delay_ms (1000); // pause 1s - for debugging
+  }
+  return rv;
 }
 /*****************************************************************************
 *****************************************************************************/
@@ -357,22 +390,25 @@ int mlc_printf(const char *fmt, ...) {
 static volatile uint32 *malloc_nextblock;
 
 void mlc_malloc_init(void) {
-  ipod_t *ipod;
-
-  ipod = ipod_get_hwinfo();
-
-  malloc_nextblock = (uint32*)(ipod->mem_base + 0x800000);
- *malloc_nextblock = (uint32)malloc_nextblock + 4;
+  #if !ONPC
+	ipod_t *ipod;
+	
+	ipod = ipod_get_hwinfo();
+	
+	malloc_nextblock = (uint32*)(ipod->mem_base + 0x800000);
+	*malloc_nextblock = (uint32)malloc_nextblock + 4;
+  #endif
 }
 
 void *mlc_malloc(size_t size) {
-  uint32 ret;
-
-  ret = *malloc_nextblock;
-
-  *malloc_nextblock = (ret + (size & ~4)) + 4;
-
-  return( (void*)ret );
+  #if ONPC
+    return malloc (size);
+  #else
+    uint32 ret;
+    ret = *malloc_nextblock;
+    *malloc_nextblock = (ret + (size & ~4)) + 4;
+    return( (void*)ret );
+  #endif
 }
 
 size_t mlc_strlen(const char *str) {
@@ -476,42 +512,43 @@ char  *mlc_strncpy(char *dest,const char *src,size_t count) {
 	else      return(0x00);
 }
 
-void *mlc_memcpy(void *dest,const void *src,size_t n) {
-  uint8  *bsrc,*bdest;
-  uint32 *dsrc,*ddest;
+void *mlc_memcpy(void *dest, const void *src, size_t n) {
+  // rewrite by TT 31Mar06, taking odd dest into account
 
-  /*
-   * Do byte-copies until we hit an even 4 byte boundary
-   */
-  bsrc  = (uint8*)src;
-  bdest = (uint8*)dest;
-  while( ((uint32)bsrc & 3) && (n>0) ) {
-    *bdest++ = *bsrc++;
-    n--;
+  if( ((uint32)src & 3) != ((uint32)dest & 3) ) {
+    register uint8  *bsrc,*bdest;
+    bsrc  = (uint8*)src;
+    bdest = (uint8*)dest;
+
+    // alignment is different - we can only do a bytewise copy
+    while( n-- > 0 ) *bdest++ = *bsrc++;
+
+  } else if (n>0) {
+    size_t n4;
+    register uint32 *dsrc,*ddest;
+    uint8  *bsrc,*bdest;
+    bsrc  = (uint8*)src;
+    bdest = (uint8*)dest;
+
+    // Do byte-copies until we hit an even 4 byte boundary
+    while( ((uint32)bsrc & 3) && (n--> 0) ) *bdest++ = *bsrc++;
+
+    // Do as many dword copies that we can
+    dsrc  = (uint32*)bsrc;
+    ddest = (uint32*)bdest;
+    n4 = n / 4;
+    while( n4-- ) *ddest++ = *dsrc++;
+
+    // Copy the remaining bytes
+    bsrc  = (uint8*)dsrc;
+    bdest = (uint8*)ddest;
+    n = n & 3;
+    while( n-- ) *bdest++ = *bsrc++;
   }
 
-  /*
-   * Do as many dword copies that we can
-   */
-  dsrc  = (uint32*)bsrc;
-  ddest = (uint32*)bdest;
-  while( n > 4 ) {
-    *ddest++ = *dsrc++;
-    n -= 4;
-  }
-
-  /*
-   * Copy the remaining bytes
-   */
-  bsrc  = (uint8*)dsrc;
-  bdest = (uint8*)ddest;
-  while( n > 0 ) {
-    *bdest++ = *bsrc++;
-    n--;
-  }
-
-  return(dest);
+  return (dest);
 }
+
 #if FAILSAFE_MALLOC
 void *mlc_memcpyX(void *dest,const void *src,size_t n) {
   size_t i;
@@ -529,12 +566,14 @@ void *mlc_memcpyX(void *dest,const void *src,size_t n) {
   return(dest);
 }
 #endif
+
 void *mlc_memset (void *dest, int c, size_t n) 
 {
     uint8 *d = dest;
     while (n--) *d++ = c;
     return dest;
 }
+
 char *mlc_strchr(const char *s,int c) {
   char *ret;
 
@@ -557,3 +596,53 @@ char *mlc_strrchr(const char *s,int c) {
   return(ret);
 }
 
+void mlc_delay_ms (long time_in_ms) {
+  #if defined (__arm__)
+    // we only need the delay on the iPod, not when debugging on a PC
+    if (time_in_ms > 10000) time_in_ms = 10000; // 10s should always be more than enough!
+    long start = timer_get_current ();
+    do {
+      // pause
+    } while (!timer_check (start, time_in_ms*1000));
+  #endif
+}
+
+long mlc_atoi (const char *str) {
+  long n = 0;
+  while (*str >= '0' && *str <= '9') {
+      n *= 10;
+      n += *str++ - '0';
+  }
+  return n;
+}
+
+void mlc_set_output_options (int buffered, int slow) {
+  // buffered:
+  //   pass <1> to have printf calls not output to console but store the text in a buffer
+  //   pass <0> to have all buffered and new lines printed immediately
+  // slow:
+  //   pass a boolean for enabling to pause a little after each printf()
+  if (!buffered && printf_buflen) {
+    // flush the buffered data to console
+    int i;
+    for (i = 0; i < printf_buflen; i++) {
+      print_to_console (printf_buffer[i], 0);
+    }
+    printf_buflen = 0;
+  }
+  do_buffered_printf = buffered;
+  do_slow_printf = slow && !buffered;
+}
+
+// call this if you can still continue but want to make the user see what you just printed:
+void mlc_show_critical_error () {
+  mlc_set_output_options (0, 0);
+  mlc_delay_ms (5000); // just pause for 5s
+}
+
+// call this if you can not continue, and want to make the user see what you just printed:
+void mlc_show_fatal_error () {
+  mlc_set_output_options (0, 0);
+  mlc_printf ("\nHold Menu & %s to restart", ((ipod_get_hwinfo()->hw_rev < 0x40000) ? "Play" : "Select"));
+  for (;;) {} // we stop here
+}

@@ -17,6 +17,7 @@ typedef struct {
   uint32 timeout;
   uint32 def;
   uint32 items;
+  uint32 debug;
 
   config_image_t *image;
 

@@ -83,7 +83,7 @@ static void menu_recenter() {
   menu.y = ((menu.ipod->lcd_height - menu.h - (menu.fh + 6)) >> 1) + menu.fh + 6;
 }
 
-void menu_init(void) {
+void menu_init() {
   menu.ipod = ipod_get_hwinfo();
   menu.numItems = 0;
 }
@@ -111,7 +111,7 @@ void menu_drawprogress(uint16 *fb,uint8 completed) {
   fb_update(fb);
 }
 
-void menu_redraw(uint16 *fb,uint32 selectedItem) {
+void menu_redraw(uint16 *fb,uint32 selectedItem, char *title, char *countDown) {
   int i;
   int line_height = menu.fh + 4;
   const uint8 *menu_font = (menu.fh == 16)? font_large : font_medium;
@@ -122,7 +122,8 @@ void menu_redraw(uint16 *fb,uint32 selectedItem) {
 
   console_setcolor(0xFFFF,0x0000,0x1);
 
-  console_putsXY(2,2,"iPL Loader 2.1");
+  console_putsXY(2,2,title);
+  console_putsXY(menu.ipod->lcd_width-2-mlc_strlen(countDown)*font_width,2,countDown);
   menu_hline(fb, 2, menu.ipod->lcd_width-2, menu.fh+2, 0xFFFF);
   menu_frame(fb, menu.x-2, menu.y-2, menu.x+menu.w+1, menu.y+menu.h+1, 0xFFFF);
 
