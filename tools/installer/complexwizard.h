@@ -48,6 +48,7 @@ public:
     void clickNextButton() {
         if (nextButton) nextButton->animateClick();
     }
+    void changePage (WizardPage *p);
 
     QList<WizardPage *> historyPages() const { return history; }
 

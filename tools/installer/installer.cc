@@ -219,6 +219,7 @@ PodLocationPage::PodLocationPage (Installer *wizard)
         blurb = new QLabel;
         blurb->setWordWrap (true);
         blurb->setAlignment (Qt::AlignTop | Qt::AlignLeft);
+        bool restoreOK = false;
 
         wasError = 1;
 
@@ -247,6 +248,7 @@ PodLocationPage::PodLocationPage (Installer *wizard)
             err = tr("<p><b>Invalid partition table.</b> The iPod I found didn't look "
                      "like it had a valid partition table. It's probably a MacPod; those don't "
                      "work.</p>");
+            restoreOK = true;
             break;
         case FSErr:
             err = tr("<p><b>Error accessing filesystem.</b> I was unable to properly access "
@@ -254,11 +256,13 @@ PodLocationPage::PodLocationPage (Installer *wizard)
                      "something wrong with your iPod's filesystem, or (most likely) there's "
                      "a bug in the installer. Check if the file exists at "
                      "<i>iPod</i><tt>/iPod_Control/Device/SysInfo</tt>; if it does, report a bug. "
-                     "If not, try restarting your iPod.</p>");
+                     "If not, try restarting your iPod into the Apple firmware to recreate it.</p>");
+            restoreOK = true;
             break;
         case BadSysInfo:
             err = tr("<p><b>Invalid SysInfo file.</b> There was something wrong with the syntax "
                      "of your SysInfo file; try restarting your iPod.</p>");
+            restoreOK = true;
             break;
         case NotAnIPod:
             err = tr("<p><b>Not an iPod.</b> The iPod I identified turned out not to be an iPod "
@@ -275,14 +279,16 @@ PodLocationPage::PodLocationPage (Installer *wizard)
                      "and you did not install Linux correctly when you installed it. Sorry, "
                      "but I don't know enough to fix the problem myself. Run the iPod Updater or "
                      "restore your backup, then re-run this installer.</p>");
+            restoreOK = true;
             break;
         case UnsupPod:
             err = tr("<p><b>Unsupported iPod type.</b> You appear to have a very new iPod that "
                      "we don't know about and thus can't support. Please be patient, and "
                      "don't bug the developers about this. Support will be developed eventually.</p>");
+            restoreOK = true;
             break;
         default:
-            err = tr("<p><b>Unknown error: Success.</b> Something's up. Report a bug.</p>");
+            err = tr("<p><b>Unknown error.</b> Something's up. Report a bug.</p>");
             break;
         }
         stateOK = 0;
@@ -310,6 +316,16 @@ PodLocationPage::PodLocationPage (Installer *wizard)
 
         QVBoxLayout *layout = new QVBoxLayout;
         layout->addWidget (blurb);
+        if (restoreOK) {
+            iPodLocation = podloc;
+            iPodDevice = new LocalRawDevice (podloc);
+
+            QPushButton *restoreBackup = new QPushButton (tr ("Restore a previously-made backup"));
+            connect (restoreBackup, SIGNAL(clicked(bool)), this, SLOT(doBackupRestore(bool)));
+            layout->addSpacing (20);
+            layout->addWidget (restoreBackup);
+        }
+        layout->addStretch (1);
         setLayout (layout);
         return;
     }
@@ -494,6 +510,14 @@ int setupFilesystems()
         return -err;
     }
     return 0;
+}
+
+void PodLocationPage::doBackupRestore (bool c) 
+{
+    (void)c;
+    
+    Mode = Uninstall;
+    wizard->changePage (new UninstallPage (wizard));
 }
 
 WizardPage *PodLocationPage::nextPage() 
@@ -1023,7 +1047,7 @@ QString sizeToString (int amount)
     }
 
     QString decpart = "";
-    if (sigdig) decpart = QObject::tr (".%1").arg (leftovers, sigdig);
+    if (sigdig) decpart = QObject::tr (".%1").arg (leftovers, sigdig, 10, '0');
 
     return QObject::tr ("%1%2%3").arg (amount).arg (decpart).arg (*suffix);
 }

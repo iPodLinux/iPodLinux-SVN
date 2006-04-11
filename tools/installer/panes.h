@@ -42,10 +42,10 @@ protected slots:
     void uninstallRadioClicked (bool clicked);
     void changeLoaderRadioClicked (bool clicked);
     void upgradeRadioClicked (bool clicked);
+    void doBackupRestore (bool clicked);
     
 private:
     QLabel *blurb;
-    QPushButton *restoreBackup; /* enabled only for error */
     QCheckBox *advancedCheck; /* enabled only for install */
     QRadioButton *upgradeRadio, *changeLoaderRadio, *uninstallRadio; /* enabled only if already installed */
     QLabel *subblurb;
