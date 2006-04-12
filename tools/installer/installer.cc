@@ -1047,7 +1047,7 @@ QString sizeToString (int amount)
     }
 
     QString decpart = "";
-    if (sigdig) decpart = QObject::tr (".%1").arg (leftovers, sigdig, 10, '0');
+    if (sigdig) decpart = QObject::tr (".%1").arg (leftovers, sigdig, 10, QChar ('0'));
 
     return QObject::tr ("%1%2%3").arg (amount).arg (decpart).arg (*suffix);
 }
