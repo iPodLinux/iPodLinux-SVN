@@ -23,6 +23,8 @@
 #include <QMessageBox>
 #include <QDir>
 
+#include <ctype.h>
+
 Package::Package()
     : _name ("unk"), _version ("0.1a"), _dest (""), _desc ("???"), _url ("http://127.0.0.1/"),
       _subfile ("."), _type (Archive), _reqs (QStringList()), _provs (QStringList()),
