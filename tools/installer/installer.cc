@@ -22,6 +22,7 @@
 #include <QSpinBox>
 
 #include <string.h>
+#include <ctype.h>
 
 InstallerMode Mode;
 LoaderType iPodLoader = UnknownLoader;
