@@ -19,6 +19,7 @@
  */
 
 #include "ttk.h"
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -2199,6 +2200,18 @@ int ttk_text_height (ttk_font fnt)
 int ttk_text_height_gc (ttk_gc gc)
 {
     return gc->font.height;
+}
+void ttk_textf (ttk_surface srf, ttk_font fnt, int x, int y, ttk_color col, const char *fmt, ...)
+{
+    static char *buffer;
+    va_list ap;
+
+    if (!buffer) buffer = malloc(4096);
+
+    va_start (ap, fmt);
+    vsnprintf (buffer, 4096, fmt, ap);
+    va_end (ap);
+    fnt.draw (&fnt, srf, x, y + fnt.ofs, col, buffer);
 }
 void ttk_load_font (ttk_fontinfo *fi, const char *fnbase, int size)
 {
