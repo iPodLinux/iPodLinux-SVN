@@ -367,6 +367,7 @@ void ttk_done_fontinfo (ttk_fontinfo *fi);
 void ttk_done_font (ttk_font f);
 // GFX driver:
 void ttk_text (ttk_surface srf, ttk_font fnt, int x, int y, ttk_color col, const char *str); /* UTF-8 */
+void ttk_textf (ttk_surface srf, ttk_font fnt, int x, int y, ttk_color col, const char *fmt, ...);
 void ttk_text_lat1 (ttk_surface srf, ttk_font fnt, int x, int y, ttk_color col, const char *str);
 void ttk_text_uc16 (ttk_surface srf, ttk_font fnt, int x, int y, ttk_color col, const uc16 *str);
 void ttk_text_gc (ttk_surface srf, ttk_gc gc, int x, int y, const char *str);
