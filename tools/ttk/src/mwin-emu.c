@@ -251,7 +251,7 @@ void t_GrBitmap (t_GR_DRAW_ID srf, t_GR_GC_ID gc, int x, int y, int width, int h
     int minx, maxx;
     unsigned short bitvalue = 0;
     int bitcount;
-    int ubg = 0, bgcol;
+    int ubg = 0, bgcol = 0;
 
     t_GR_GC_INFO gci;
     t_GrGetGCInfo (gc, &gci);

@@ -1158,7 +1158,7 @@ void ttk_move_window (TWindow *win, int offset, int whence)
 {
     TWindowStack *cur = ttk_windows, *last = 0;
     int oidx, idx = -1, nitems = 0, i = 0;
-    int minimized;
+    int minimized = 0;
     if (!cur) return;
 
     while (cur) {

@@ -68,7 +68,7 @@ DEC	[0-9]+
     int nextstate = INITIAL;
     char *fileprefix = 0;
     char *Topid = 0, *topid = 0, *subid = 0;
-    TApItem *ap;
+    TApItem *ap = NULL;
     
     expansion_stack_ptr = yylineno = 0;
 
@@ -465,7 +465,7 @@ void ttk_ap_vline (ttk_surface srf, TApItem *ap, int x, int y1, int y2)
 
 void ttk_ap_dorect (ttk_surface srf, TApItem *ap, int x1, int y1, int x2, int y2, int filled) 
 {
-    ttk_color col;
+    ttk_color col = 0;
     ttk_surface img;
     int rad;
     int iscol = 1;
@@ -606,7 +606,7 @@ void ttk_ap_dorect (ttk_surface srf, TApItem *ap, int x1, int y1, int x2, int y2
         //- Draw the edges.
         if (((x1 + rx) < (x2 - w + rx + rw)) && (rx > 0 || rx + rw < w)) {
             // top and bottom
-            int x, ex = x2 - x1 + rw - w;
+            int x = 0, ex = x2 - x1 + rw - w;
             int excess = ((ap->type & TTK_AP_IMG_HAMASK) == TTK_AP_IMG_HCENTER)? ex % (2*rw) : ex % rw;
             
             switch (ap->type & TTK_AP_IMG_HAMASK) {
@@ -648,7 +648,7 @@ void ttk_ap_dorect (ttk_surface srf, TApItem *ap, int x1, int y1, int x2, int y2
         
         if (((y1 + ry) < (y2 - h + ry + rh)) && (ry > 0 || ry + rh < h)) {
             // left and right
-            int y, ey = y2 - y1 + rh - h;
+            int y = 0, ey = y2 - y1 + rh - h;
             int excess = ((ap->type & TTK_AP_IMG_VAMASK) == TTK_AP_IMG_VCENTER)? ey % (2*rh) : ey % rh;
             
             switch (ap->type & TTK_AP_IMG_VAMASK) {
@@ -686,7 +686,7 @@ void ttk_ap_dorect (ttk_surface srf, TApItem *ap, int x1, int y1, int x2, int y2
         
         //- Tiled part
         if ((x1 + rx) < (x2 - w + rx + rw) && (y1 + ry) < (y2 - h + ry + rh)) {
-            int ox, oy, ex = x2 - x1 + rw - w, ey = y2 - y1 + rh - h;
+            int ox = 0, oy = 0, ex = x2 - x1 + rw - w, ey = y2 - y1 + rh - h;
             int exx = ((ap->type & TTK_AP_IMG_HAMASK) == TTK_AP_IMG_HCENTER)? ex % (2*rw) : ex % rw;
             int exy = ((ap->type & TTK_AP_IMG_VAMASK) == TTK_AP_IMG_VCENTER)? ey % (2*rh) : ey % rh;
             
