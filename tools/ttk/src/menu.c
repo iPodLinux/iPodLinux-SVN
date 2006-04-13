@@ -828,7 +828,7 @@ int ttk_menu_button (TWidget *this, int button, int time)
 	} else if (item->sub == TTK_MENU_UPONE) {
 	    // FALLTHRU to menu button handling
 	} else if (item->sub == TTK_MENU_UPALL) {
-	    int r;
+	    int r = -1;
 	    while (ttk_windows->w->focus->draw == ttk_menu_draw &&
 		   ((menu_data *)ttk_windows->w->focus->data)->closeable &&
 		   (r = ttk_hide_window (ttk_windows->w)) != -1)
