@@ -9,10 +9,87 @@
 #define HDF_MAGIC 0x676f6448
 
 /************ Drawing and objecting ****************/
-static void _do_draw_char8 (hd_surface srf, hd_font *font, int x, int y, uint32 color, uint16 ch, int cblend) {}
-static void _do_draw_char8_fast (hd_surface srf, hd_font *font, int x, int y, uint32 color, uint16 ch, int cblend) {}
-static void _do_draw_char32 (hd_surface srf, hd_font *font, int x, int y, uint32 color, uint16 ch, int cblend) {}
-static void _do_draw_char32_fast (hd_surface srf, hd_font *font, int x, int y, uint32 color, uint16 ch, int cblend) {}
+static void _do_draw_char8 (hd_surface srf, hd_font *font, int x, int y, uint32 color, uint16 ch, int cblend)
+{
+    uint8 *pixels = (uint8 *)font->pixels + font->offset[ch];
+    int width = font->width[ch];
+    int sx = x, ex = x + width, ey = y + font->h;
+    while (y < ey) {
+        uint32 pix;
+        x = sx;
+        while (x < ex) {
+            pix = HD_MASKPIX (color, *pixels++);
+            if (cblend)
+                HD_SRF_BLENDPIX (srf, x, y, color);
+            else
+                HD_SRF_SETPIX (srf, x, y, color);
+            x++;
+        }
+        if (font->bitstype == HD_FONT_CLUMPED)
+            pixels += font->pitch - (width & (font->pitch - 1));
+        else
+            pixels += font->pitch - width;
+        y++;
+    }
+}
+static void _do_draw_char8_fast (hd_surface srf, hd_font *font, int x, int y, uint32 color, uint16 ch, int cblend)
+{
+    uint8 *pixels = (uint8 *)font->pixels + font->offset[ch];
+    uint32 *dest = HD_SRF_PIXPTR (srf, x, y);
+    uint32 pix;
+    int width = font->width[ch];
+    int sx = x, ex = x + width, ey = y + font->h;
+
+    color = ~color;
+    while (y < ey) {
+        x = sx;
+        while (x < ex) {
+            pix = *pixels++;
+            pix |= (pix << 8);
+            pix |= (pix << 16);
+            *dest++ = pix ^ color;
+            x++;
+        }
+        if (font->bitstype == HD_FONT_CLUMPED)
+            pixels += font->pitch - (width & (font->pitch - 1));
+        else
+            pixels += font->pitch - width;
+        dest += HD_SRF_WIDTH (srf) - width;
+        y++;
+    }
+}
+static void _do_draw_char32 (hd_surface srf, hd_font *font, int x, int y, uint32 color, uint16 ch, int cblend)
+{
+    uint32 *pixels = (uint32 *)font->pixels + font->offset[ch];
+    int width = font->width[ch];
+    int sx = x, ex = x + width, ey = y + font->h;
+    while (y < ey) {
+        x = sx;
+        while (x < ex) {
+            HD_SRF_BLENDPIX (srf, x, y, *pixels++);
+            x++;
+        }
+        if (font->bitstype == HD_FONT_PITCHED)
+            pixels += (font->pitch >> 2) - width;
+        y++;
+    }
+}
+static void _do_draw_char32_fast (hd_surface srf, hd_font *font, int x, int y, uint32 color, uint16 ch, int cblend)
+{
+    uint32 *pixels = (uint32 *)font->pixels + font->offset[ch];
+    uint32 *dest = HD_SRF_PIXPTR (srf, x, y);
+    int width = font->width[ch];
+    int ey = y + font->h;
+    while (y < ey) {
+        memcpy (dest, pixels, 4*width);
+        if (font->bitstype == HD_FONT_CLUMPED)
+            pixels += width;
+        else
+            pixels += (font->pitch >> 2);
+        dest += HD_SRF_WIDTH (srf);
+        y++;
+    }
+}
 static void _do_draw_char1 (hd_surface srf, hd_font *font, int x, int y, uint32 color, uint16 ch, int cblend) 
 {
     uint8 *pixels = (uint8 *)font->pixels + font->offset[ch];
@@ -20,13 +97,11 @@ static void _do_draw_char1 (hd_surface srf, hd_font *font, int x, int y, uint32 
     int width = font->width[ch];
     int sx = x, ex = x + width, ey = y + font->h;
 
-    // Ack - assumes CLUMPED. Need PITCHED support, which is basically just a 1bpp blit.
-
     while (y < ey) {
         int byte = 0;
         x = sx;
         ofs = 0;
-
+        
         // Read this row.
         while (x < ex) {
             if (!(ofs & 7)) byte = *pixels++;
@@ -36,16 +111,21 @@ static void _do_draw_char1 (hd_surface srf, hd_font *font, int x, int y, uint32 
                 else
                     HD_SRF_SETPIX (srf, x, y, color);
             }
-            byte >>= 1;
+            byte <<= 1;
             ofs++;
             x++;
         }
         
-        // Align to multiple of pitch.
-        ofs = (ofs + 7) & ~7;
-        while (ofs & (font->pitch - 1)) {
-            ofs++;
-            pixels++;
+        ofs = (ofs + 7) >> 3; // ofs = number of bytes consumed
+        if (font->bitstype == HD_FONT_CLUMPED) {
+            // Align to multiple of pitch.
+            while (ofs & (font->pitch - 1)) {
+                ofs++;
+                pixels++;
+            }
+        } else {
+            // Advance to next row.
+            pixels += font->pitch - ofs;
         }
         y++;
     }
@@ -86,6 +166,7 @@ static void _do_draw_lat8 (hd_surface srf, hd_font *font, int x, int y, uint32 c
             (*func)(srf, font, cx, y, color, *p, blend_all);
             cx += font->width[*p - font->firstchar];
         }
+        p++;
     }
 }
 
@@ -101,6 +182,7 @@ static void _do_draw_uc16 (hd_surface srf, hd_font *font, int x, int y, uint32 c
             (*func)(srf, font, cx, y, color, *p, blend_all);
             cx += font->width[*p - font->firstchar];
         }
+        p++;
     }
 }
 
@@ -110,7 +192,12 @@ void HD_Font_Draw (hd_surface srf, hd_font *font, int x, int y, uint32 color, co
 }
 void HD_Font_DrawFast (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str) 
 {
-    _do_draw_lat8 (srf, font, x, y, color, str, 0, 0);
+    int luminance;
+    luminance = (((color & 0x00FF0000) >> (16 + 2)) +
+                 ((color & 0x0000FF00) >> ( 8 + 1)) +
+                 ((color & 0x0000FF00) >> ( 8 + 3)) +
+                 ((color & 0x000000FF) >> ( 0 + 3)));
+    _do_draw_lat8 (srf, font, x, y, (font->bpp == 1)? color : (luminance > 128)? 0xffffffff : 0, str, 0, 0);
 }
 
 int HD_Font_TextWidth (hd_font *font, const char *str) 
@@ -176,6 +263,7 @@ typedef struct HDF_header
 
 /* 32-bit fonts are stored in AA RR GG BB byte order (ARGB big-endian),
  * and cannot be colored differently from their color in the file. 
+ * The ARGB bytes are premultiplied.
  */
 
 hd_font *HD_Font_LoadHDF (const char *filename) 
@@ -367,6 +455,13 @@ hd_font *HD_Font_LoadFNT (const char *filename)
 
     if (nbits & 1) nbits++;
     fread (font->pixels, 2, nbits, fp);
+    uint8 *pix = font->pixels;
+    for (i = 0; i < nbits; i++) {
+        uint8 tmp;
+        tmp = pix[2*i+1];
+        pix[2*i+1] = pix[2*i];
+        pix[2*i] = tmp;
+    }
 
     if (!noffset) goto errfree;
 
@@ -374,6 +469,7 @@ hd_font *HD_Font_LoadFNT (const char *filename)
     for (i = 0; i < noffset; i++) {
         if (!read32 (fp, font->offset + i))
             goto errfree;
+        font->offset[i] *= 2;
     }
     if (noffset < nchars) printf ("warning: too few offset data\n");
 
@@ -875,7 +971,7 @@ hd_font *HD_Font_LoadPCF (const char *fname)
 	uint16 n = encoding->map[i];
 	if (n == 0xffff)	/* map non-existent chars to default char */
 	    n = encoding->map[encoding->defaultchar];
-	font->offset[i] = goffset[n];
+	font->offset[i] = goffset[n] * 2;
 	font->width[i] = gwidth[n];
     }
     
