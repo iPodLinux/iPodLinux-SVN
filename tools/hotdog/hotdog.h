@@ -93,6 +93,7 @@ typedef uint32 *hd_surface;
 #define HD_SRF_PIXELS(srf) ((srf) + 2 + ((srf)[1]))
 #define HD_SRF_END(srf) ((srf) + 2 + ((srf)[1]) + (((srf)[0]) * ((srf)[1])))
 
+
 /* HD_SurfaceFrom* will _copy_ the pixels, not just reference them.
  * Thus, you still need to free argb or pixels.
  */
@@ -143,7 +144,7 @@ typedef struct hd_font {
     int     bitstype; // PITCHED or CLUMPED
     int32   pitch, h; // h = height of font; pitch = length of a scanline in bytes
     int32   pixbytes; // number of bytes in `pixels'
-    void   *pixels; // 32-bit AARRGGBB values are NOT premultiplied-alpha!
+    void   *pixels;
     int     bpp; // 1 or 8 or 32
 
     // Char info:
@@ -240,12 +241,27 @@ typedef struct hd_engine {
     isrc = (dst[0]>>8) + dst[1]; \
  } \
  alpha = 255 - (isrc >> 24); \
+ idst ^= 0xFF000000; isrc &= ~0xFF000000; \
  dst[0] = ((idst & 0x00FF00FF) * alpha + 0x00800080) & 0xFF00FF00;          \
  dst[1] = (((idst>>8) & 0x00FF00FF) * alpha + 0x00800080) & 0xFF00FF00;          \
  (ret_argb) = (dst[0]>>8) + dst[1] + isrc;                      \
 }
 
 #define BLEND_ARGB8888_ON_ARGB8888(dst_argb, src_argb, opac) _HD_ALPHA_BLEND(dst_argb, src_argb, dst_argb, opac)
+
+#define HD_RGB(r,g,b) (0xff000000 | ((r) << 16) | ((g) << 8) | (b))
+#define HD_RGBA(r,g,b,a) (((a) << 24) | \
+                          (((((r)*(a)) + 0x80) >> 8) << 16) | \
+                          (((((g)*(a)) + 0x80)     ) & 0xFF00) | \
+                           ((((b)*(a)) + 0x80) >> 8))
+#define HD_RGBAM(mr,mg,mb,a) (((a) << 24) | ((mr) << 16) | ((mg) << 8) | (mb))
+#define HD_MASKPIX(argb,a) ({ \
+ uint32 __dst[2]; \
+ uint32 __argb = (argb), __a = (a); \
+ __dst[0] = ((__argb & 0x00FF00FF) * __a + 0x00800080) & 0xFF00FF00; \
+ __dst[1] = (((__argb >> 8) & 0x00FF00FF) * __a + 0x00800080) & 0xFF00FF00; \
+ ((__dst[0]>>8) + __dst[1]); \
+})
 
 #define HD_SRF_BLENDPIX(srf,x,y,pix) do \
 { \

@@ -134,8 +134,8 @@ hd_surface HD_NewSurface (int32 width, int32 height)
     for (i = 0; i < height; i++) {
         ret[2+i] = 2 + height + i*width;
     }
-    // solid white
-    memset (ret + 2 + height, 0xff, width * height * 4);
+    // solid black, transparent
+    memset (ret + 2 + height, 0, width * height * 4);
 
     return ret;
 }
