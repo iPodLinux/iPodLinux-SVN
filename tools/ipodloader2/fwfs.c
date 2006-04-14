@@ -31,7 +31,7 @@ static int fwfs_load_subimg_info(fwfs_image_t *master, int subnr, fwfs_image_t *
     mlc_printf ("Misaligned image - can't load subs\n");
     return 0;
   }
-  ata_readblock (master->devOffset >> 9, buff);
+  ata_readblock (buff, master->devOffset >> 9);
   mlc_memcpy (sub, buff + (subnr * sizeof(fwfs_image_t)) + (master->devOffset & 0x1ff) + 0x100,
               sizeof(fwfs_image_t));
   /* The &0xc0c0c0c0==0x40404040 test makes sure all the chars are in the range
@@ -73,7 +73,7 @@ static int fwfs_open(void *fsdata,char *fname) {
           /* you can also load the default just by loading the whole thing, but
            * that's rather inefficient since you're loading Linux too...
            */
-          if (!fwfs_load_subimg_info (fs->images + i, fname[4] - '0', &subimg)) {
+          if (!fwfs_load_subimg_info (fs->image + i, fname[4] - '0', &subimg)) {
 #if DEBUG
             mlc_printf("Err: asked for an invalid child image\n");
 #endif
