@@ -139,15 +139,15 @@ static int is_rockbox_img (char *firstblock) {
 }
 
 static int is_appleos_img (char *firstblock) {
-  return (mlc_strncmp (firstblock, "!ATAsoso", 8) == 0);
+  return (mlc_memcmp (firstblock, "!ATAsoso", 8) == 0);
 }
 
 static int is_applefw_img (char *firstblock) {
-  return (mlc_strncmp (firstblock+0x20, "portalpl", 8) == 0);
+  return (mlc_memcmp (firstblock+0x20, "portalpl", 8) == 0);
 }
 
 static int is_linux_img (char *firstblock) {
-  return (mlc_strncmp (firstblock, "\xfe\x1f\x00\xea", 4) == 0);
+  return (mlc_memcmp (firstblock, "\xfe\x1f\x00\xea", 4) == 0);
 }
 
 
@@ -547,35 +547,6 @@ redoMenu:
   }
 
   goto redoMenu;
-
-  #if 0 // this appears to be old code - it should be removed if it's outdated
-    entry = (void*)ipod->mem_base;
-
-    if( menuPos == 0 ) return( entry ); /* RetailOS */
-    if( menuPos == 2 ) { /* Diskmode */
-      unsigned char * storage_ptr = (unsigned char *)0x40017F00;
-      char * diskmode = "diskmode\0";
-      char * hotstuff = "hotstuff\0";
-      
-      mlc_memcpy(storage_ptr, diskmode, 9);
-      storage_ptr = (unsigned char *)0x40017f08;
-      mlc_memcpy(storage_ptr, hotstuff, 9);
-      outl(1, 0x40017F10);
-
-      if (ipod->hw_rev >= 0x40000) {
-        outl(inl(0x60006004) | 0x4, 0x60006004);
-      } else {
-        outl(inl(0xcf005030) | 0x4, 0xcf005030);
-      }
-
-    } else { /* Linux kernel */
-      mlc_printf("Loading kernel\n");
-      vfs_read( entry, ret, 1, fd );
-
-      mlc_printf("Trying to start.\n");
-      fb_update(framebuffer);
-    }
-  #endif
 
   return(NULL);
 }
