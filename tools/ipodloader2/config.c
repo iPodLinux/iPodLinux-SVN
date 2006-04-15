@@ -12,43 +12,41 @@ static config_t config;
 static const char * find_somewhere (const char **names, const char *what, int *fdOut)
 {
     int fd = -1;
-    #if DEBUG
-      mlc_printf (">> Looking for a %s...\n", what);
-    #endif
+#if DEBUG
+    mlc_printf (">> Looking for a %s...\n", what);
+#endif
     for (; *names; names++) {
-        #if DEBUG
-          mlc_printf (">> Trying |%s|...\n", *names);
-        #endif
+#if DEBUG
+        mlc_printf (">> Trying |%s|...\n", *names);
+#endif
         fd = vfs_open ((char *)*names);
         if (fd >= 0) break;
     }
+#if DEBUG
     if (*names) {
-        #if DEBUG
-          mlc_printf (">> Found it at %s.\n", *names);
-        #endif
+        mlc_printf (">> Found it at %s.\n", *names);
     } else {
-        #if DEBUG
-          mlc_printf (">>! Not found. :-(\n");
-        #endif
+        mlc_printf (">>! Not found. :-(\n");
     }
+#endif
     if (fdOut) *fdOut = fd;
     return *names;
 }
 
-const char *confnames[] = { "(hd0,1)/LOADER.CFG", "(hd0,1)/loader.cfg",
-                            "(hd0,1)/IPODLO~1.CON", "(hd0,1)/ipodloader.conf",
-                            "(hd0,2)/ipodloader.conf", "(hd0,2)/loader.cfg", 0 };
-const char *kernnames[] = { "(hd0,1)/KERNEL.BIN", "(hd0,1)/kernel.bin",
-                            "(hd0,1)/LINUX.BIN", "(hd0,1)/linux.bin",
-                            "(hd0,1)/NOTES/KERNEL.BIN", "(hd0,1)/Notes/kernel.bin",
-                            "(hd0,1)/vmlinux", "(hd0,2)/kernel.bin",
+const char *confnames[] = { "(hd0,1)/LOADER.CFG", "(hd0,1)/IPODLO~1.CON",
+                            "(hd0,2)/boot/loader.cfg", "(hd0,2)/boot/ipodloader.conf",
+                            "(hd0,2)/loader.cfg", "(hd0,2)/ipodloader.conf", 0 };
+const char *kernnames[] = { "(hd0,1)/KERNEL.BIN", "(hd0,1)/LINUX.BIN",
+                            "(hd0,1)/NOTES/KERNEL.BIN", "(hd0,1)/VMLINUX",
+                            "(hd0,2)/boot/kernel.bin", "(hd0,2)/boot/linux.bin",
+                            "(hd0,2)/boot/vmlinux", "(hd0,2)/kernel.bin",
                             "(hd0,2)/linux.bin", "(hd0,2)/vmlinux", 0 };
 
 #define MAXITEMS 10 // more does not work as long as the assignment to "config.def" below is not fixed
 
 static config_image_t configimgs[MAXITEMS];
 
-void      config_init(void) {
+void config_init(void) {
     char *configdata, *p;
     int fd, len, i;
 
@@ -67,8 +65,12 @@ void      config_init(void) {
         i = 0;
  
         config.image[i].type  = CONFIG_IMAGE_BINARY;
-        config.image[i].title = "RetailOS";
-        config.image[i].path  = "(hd0,0)/osos";
+        config.image[i].title = "Apple OS";
+        if (vfs_open ("(hd0,0)/aple") >= 0) {
+          config.image[i].path = "(hd0,0)/aple";
+        } else {
+          config.image[i].path = "(hd0,0)/osos";
+        }
         i++;
 
         config.image[i].type  = CONFIG_IMAGE_BINARY;
@@ -92,8 +94,8 @@ void      config_init(void) {
         i++;
 
         config.image[i].type  = CONFIG_IMAGE_SPECIAL;
-        config.image[i].title = "Reboot";
-        config.image[i].path  = "reboot";
+        config.image[i].title = "Sleep";
+        config.image[i].path  = "standby";
         i++;
 
         config.items = i;
@@ -130,7 +132,7 @@ void      config_init(void) {
 
         while (*p == ' ' || *p == '\t') p++;
 
-        if ((value = mlc_strchr (p, '=')) != 0 || (value = mlc_strchr (p, '@')) != 0 || (value = mlc_strchr (p, ' ')) != 0) {
+        if ((value = mlc_strchr (p, '@')) != 0 || (value = mlc_strchr (p, '=')) != 0 || (value = mlc_strchr (p, ' ')) != 0) {
             *value = 0;
             do value++; while (*value == ' ' || *value == '\t' || *value == '=' || *value == '@');
         }
