@@ -34,10 +34,13 @@ static const char * find_somewhere (const char **names, const char *what, int *f
 }
 
 const char *confnames[] = { "(hd0,1)/LOADER.CFG", "(hd0,1)/IPODLO~1.CON",
+                            "(hd0,1)/loader.cfg", "(hd0,1)/ipodloader.conf",
                             "(hd0,2)/boot/loader.cfg", "(hd0,2)/boot/ipodloader.conf",
                             "(hd0,2)/loader.cfg", "(hd0,2)/ipodloader.conf", 0 };
 const char *kernnames[] = { "(hd0,1)/KERNEL.BIN", "(hd0,1)/LINUX.BIN",
                             "(hd0,1)/NOTES/KERNEL.BIN", "(hd0,1)/VMLINUX",
+                            "(hd0,1)/kernel.bin", "(hd0,1)/linux.bin",
+                            "(hd0,1)/Notes/kernel.bin", "(hd0,1)/vmlinux",
                             "(hd0,2)/boot/kernel.bin", "(hd0,2)/boot/linux.bin",
                             "(hd0,2)/boot/vmlinux", "(hd0,2)/kernel.bin",
                             "(hd0,2)/linux.bin", "(hd0,2)/vmlinux", 0 };
