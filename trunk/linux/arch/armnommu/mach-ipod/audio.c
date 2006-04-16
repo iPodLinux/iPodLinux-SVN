@@ -1010,7 +1010,7 @@ static ssize_t ipodaudio_write(struct file *filp, const char *buf, size_t count,
 				rem -= cnt;
 				bufsp += cnt;
 
-				write_off_current += cnt;
+				write_off_current = (write_off_current + cnt) % BUF_LEN;
 			}
 
 			/* room at start of buffer (and more data)? */
