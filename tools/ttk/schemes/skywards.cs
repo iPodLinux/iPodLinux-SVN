@@ -24,7 +24,8 @@
 	  bg.charging => <vert #ceedfc to #52b9ef>,
 	  fill.normal => <#c0c2c8 to #b4b7bd to #aaacb2 with #80848e @:3,0,1,0> +1
 	  fill.low => dkgray +1,
-	  fill.charge => <vert #69777f to black> +1
+	  fill.charge => <vert #69777f to black> +1,
+          chargingbolt => #86898f
 
     lock: border => black,
 	  fill => black

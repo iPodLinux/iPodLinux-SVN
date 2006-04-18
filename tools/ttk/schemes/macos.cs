@@ -22,7 +22,7 @@
 
 
   header: bg => gray, fg => black, line => black-1, accent => accentblue
-	  shine => ltgray, shadow => dkgray,
+	  shine => ltgray, shadow => dkgray, chargingbolt => black
 	  gradient.top => gray,
 	  gradient.middle => white,
 	  gradient.bottom => dkgray,

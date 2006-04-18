@@ -33,6 +33,7 @@
 	  fill.normal => <vert lightish to light>,
 	  fill.low => <vert #FF8080 to #FF4040>,
 	  fill.charge => <vert #80FF80 to #40FF40>
+          chargingbolt => black
 
     lock: border => dark,
 	  fill => darkish

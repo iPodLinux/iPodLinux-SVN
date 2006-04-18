@@ -24,7 +24,8 @@
 	  bg.charging => #444,
 	  fill.normal => gray +1,
 	  fill.low => gray +1,
-	  fill.charge => black +1
+	  fill.charge => black +1,
+          chargingbolt => #666
 
     lock: border => #666,
 	  fill => white
