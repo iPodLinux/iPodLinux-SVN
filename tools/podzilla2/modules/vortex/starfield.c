@@ -52,6 +52,7 @@ static PzConfig *config;
 static TWindow *window;
 static TWidget *widget;
 
+
 static void init_star(struct star * star, int z_move)
 {
     star->velocity = rand() % STAR_MAX_VELOCITY+1;
@@ -111,12 +112,13 @@ static void draw_star(struct star * star, int z_move, ttk_surface surface)
 static void starfield_add_stars(struct starfield * starfield, int nb_to_add)
 {
     int i, old_nb_stars;
+    int mv = (ttk_screen->w*ttk_screen->h*20)/100;
 
     old_nb_stars = starfield->nb_stars;
     starfield->nb_stars += nb_to_add;
 
-    if(starfield->nb_stars > (ttk_screen->w*ttk_screen->h*20)/100)
-        starfield->nb_stars = (ttk_screen->w*ttk_screen->h*20)/100;
+    if(starfield->nb_stars > mv )
+        starfield->nb_stars = mv;
 
     for(i=old_nb_stars; i < starfield->nb_stars; i++)
     {
@@ -288,22 +290,22 @@ PZ_MOD_INIT(init_starfield)
 */
 
 
-/** Additions For Vortex ***************************************************/
+/** Additions For External Use ***********************************************/
 
-void Vortex_Starfield_init( void )
+void Module_Starfield_init( void )
 {
 	init_starfield();
 }
 
-void Vortex_Starfield_session( void )
+void Module_Starfield_session( int nstars, int velocity )
 {
-/*
-	this won't work.. need to figure it out
-	ttk_add_widget (window, new_starfield_widget());
-*/
+	starfield.nb_stars = 0;
+	starfield.z_move = velocity;
+
+	starfield_add_stars(&starfield, 200);
 }
 
-void Vortex_Starfield_draw( ttk_surface srf )
+void Module_Starfield_draw( ttk_surface srf )
 {
 	starfield_move_and_draw( &starfield, srf );
 }
