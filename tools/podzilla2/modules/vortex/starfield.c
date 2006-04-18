@@ -20,12 +20,8 @@
 #include <unistd.h>
 #include <string.h>
 #include "pz.h"
+#include "starfield.h"
 
-#define Z_MAX_DIST 100
-#define STAR_MAX_VELOCITY 2
-
-#define MAX_INIT_STAR_X ttk_screen->w/2*Z_MAX_DIST
-#define MAX_INIT_STAR_Y ttk_screen->h/2*Z_MAX_DIST
 
 #define MSG_DISP_TIME 30
 
@@ -43,6 +39,9 @@ struct starfield
     struct star tab[MAX_STARS];
     int nb_stars;
     int z_move;
+
+    int x_range, x_offset;
+    int y_range, y_offset;
 };
 
 
@@ -51,14 +50,25 @@ static PzModule *module;
 static PzConfig *config;
 static TWindow *window;
 static TWidget *widget;
+static struct starfield starfield;
 
 
-static void init_star(struct star * star, int z_move)
+static void star_placement_region( int xrange, int xoffset,
+				   int yrange, int yoffset )
+{
+	starfield.x_range = xrange;
+	starfield.x_offset = xoffset;
+	starfield.y_range = yrange;
+	starfield.y_offset = yoffset;
+}
+
+
+static void init_star(struct starfield * sf, struct star * star, int z_move)
 {
     star->velocity = rand() % STAR_MAX_VELOCITY+1;
 
-    star->x = rand() % (2*MAX_INIT_STAR_X)-MAX_INIT_STAR_X;
-    star->y = rand() % (2*MAX_INIT_STAR_Y)-MAX_INIT_STAR_Y;
+    star->x = ( rand() % sf->x_range ) + sf->x_offset;
+    star->y = ( rand() % sf->y_range ) + sf->y_offset;
 
     if( ttk_screen->bpp >= 16 ) {
 	    star->c = ttk_makecol( 192 + (rand() & 0x3f),
@@ -68,29 +78,29 @@ static void init_star(struct star * star, int z_move)
 	    star->c = ttk_makecol( GREY );
     }
     
-
     if(z_move >= 0)
         star->z = Z_MAX_DIST;
     else
         star->z = rand() % Z_MAX_DIST/2+1;
 }
 
-static void move_star(struct star * star, int z_move)
+static void move_star(struct starfield * sf, struct star * star, int z_move)
 {
     star->z -= z_move * star->velocity;
 
     if (star->z <= 0 || star->z > Z_MAX_DIST)
-        init_star(star, z_move);
+        init_star(sf, star, z_move);
 }
 
-static void draw_star(struct star * star, int z_move, ttk_surface surface)
+static void draw_star( struct starfield * sf,
+			struct star * star, int z_move, ttk_surface surface)
 {
     int x_draw, y_draw;
 
     x_draw = star->x / star->z + ttk_screen->w / 2;
     if (x_draw < 1 || x_draw >= ttk_screen->w)
     {
-        init_star(star, z_move);
+        init_star(sf, star, z_move);
         return;
     }
 
@@ -98,7 +108,7 @@ static void draw_star(struct star * star, int z_move, ttk_surface surface)
 
     if (y_draw < 1 || y_draw >= ttk_screen->h)
     {
-        init_star(star, z_move);
+        init_star(sf, star, z_move);
         return;
     }
 
@@ -128,7 +138,7 @@ static void starfield_add_stars(struct starfield * starfield, int nb_to_add)
 
     for(i=old_nb_stars; i < starfield->nb_stars; i++)
     {
-        init_star(&(starfield->tab[i]), starfield->z_move);
+        init_star(starfield, &(starfield->tab[i]), starfield->z_move);
     }
 }
 
@@ -139,17 +149,16 @@ static void starfield_del_stars(struct starfield * starfield, int nb_to_del)
         starfield->nb_stars = 0;
 }
 
-static void starfield_move_and_draw(struct starfield * starfield, ttk_surface surface)
+static void starfield_move_and_draw(struct starfield * sf, ttk_surface surface)
 {
     int i;
-    for(i=0;i<starfield->nb_stars;++i)
+    for(i=0;i<sf->nb_stars;++i)
     {
-        move_star(&(starfield->tab[i]), starfield->z_move);
-        draw_star(&(starfield->tab[i]), starfield->z_move, surface);
+        move_star(sf, &(sf->tab[i]), sf->z_move);
+        draw_star(sf, &(sf->tab[i]), sf->z_move, surface);
     }
 }
 
-static struct starfield starfield;
 
 static void draw_starfield (TWidget *this, ttk_surface surface)
 {
@@ -253,6 +262,9 @@ static TWidget *new_starfield_widget()
     starfield.nb_stars = 0;
     starfield.z_move = 1;
 
+    star_placement_region( MAX_INIT_STAR_X*2, -MAX_INIT_STAR_X,
+			   MAX_INIT_STAR_Y*2, -MAX_INIT_STAR_Y);
+
     starfield_add_stars(&starfield, 600);
 
     return widget;
@@ -308,10 +320,18 @@ void Module_Starfield_session( int nstars, int velocity )
 	starfield.nb_stars = 0;
 	starfield.z_move = velocity;
 
+	star_placement_region( MAX_INIT_STAR_X*2, -MAX_INIT_STAR_X,
+			       MAX_INIT_STAR_Y*2, -MAX_INIT_STAR_Y);
+
 	starfield_add_stars(&starfield, 200);
 }
 
 void Module_Starfield_draw( ttk_surface srf )
 {
 	starfield_move_and_draw( &starfield, srf );
+}
+
+void Module_Starfield_genregion( int xr, int xo, int yr, int yo )
+{
+	star_placement_region( xr, xo, yr, yo );
 }
