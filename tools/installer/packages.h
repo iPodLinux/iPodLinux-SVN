@@ -27,6 +27,7 @@ public:
     QString& description() { return _desc; }
     QString& url() { return _url; }
     QString& subfile() { return _subfile; }
+    QString& category() { return _category; }
     QStringList& requires() { return _reqs; }
     QStringList& provides() { return _provs; }
     Type& type() { return _type; }
@@ -70,7 +71,7 @@ public:
 
 
 protected:
-    QString _name, _version, _dest, _desc, _url, _subfile;
+    QString _name, _version, _dest, _desc, _url, _subfile, _category;
     Type _type;
     QStringList _reqs, _provs;
     quint16 _ipods;
@@ -88,12 +89,15 @@ public:
     void makeDefault() { _pkg.makeDefault(); }
     void update();
     Package& package() { return _pkg; }
+    bool isProv() { return _prov; }
+    void setProv (bool p) { _prov = p; }
 
 private:
     void _setsel();
     Package& _pkg;
     bool _changemarked;
     PackagesPage *_page;
+    bool _prov;
 };
 
 #endif
