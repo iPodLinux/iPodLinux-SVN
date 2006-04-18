@@ -45,6 +45,7 @@ struct starfield
     int z_move;
 };
 
+
 static int t_disp = 0;
 static PzModule *module;
 static PzConfig *config;
@@ -266,9 +267,9 @@ static TWindow *new_starfield_window()
     return ttk_menu_button(this, key, time);
 }*/
 
-void init_starfield()
+static void init_starfield()
 {
-/* STANDALONE *
+/* STANDALONE
     module = pz_register_module ("starfield", NULL);
 */
 
@@ -285,3 +286,24 @@ void init_starfield()
 /* STANDALONE
 PZ_MOD_INIT(init_starfield)
 */
+
+
+/** Additions For Vortex ***************************************************/
+
+void Vortex_Starfield_init( void )
+{
+	init_starfield();
+}
+
+void Vortex_Starfield_session( void )
+{
+/*
+	this won't work.. need to figure it out
+	ttk_add_widget (window, new_starfield_widget());
+*/
+}
+
+void Vortex_Starfield_draw( ttk_surface srf )
+{
+	starfield_move_and_draw( &starfield, srf );
+}
