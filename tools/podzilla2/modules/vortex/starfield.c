@@ -59,9 +59,15 @@ static void init_star(struct star * star, int z_move)
 
     star->x = rand() % (2*MAX_INIT_STAR_X)-MAX_INIT_STAR_X;
     star->y = rand() % (2*MAX_INIT_STAR_Y)-MAX_INIT_STAR_Y;
-    star->c = ttk_makecol( 192 + (rand() & 0x3f),
-			   192 + (rand() & 0x3f),
-			   192 + (rand() & 0x3f) );
+
+    if( ttk_screen->bpp >= 16 ) {
+	    star->c = ttk_makecol( 192 + (rand() & 0x3f),
+				   192 + (rand() & 0x3f),
+				   192 + (rand() & 0x3f) );
+    } else {
+	    star->c = ttk_makecol( GREY );
+    }
+    
 
     if(z_move >= 0)
         star->z = Z_MAX_DIST;
