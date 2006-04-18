@@ -9,9 +9,9 @@
 #include "rawpod/partition.h"
 
 // The human-readable version.
-#define INSTALLER_VERSION         "2.0a"
+#define INSTALLER_VERSION         "2.0"
 // The integer version for the package list format.
-#define INSTALLER_PACKAGE_VERSION  2
+#define INSTALLER_PACKAGE_VERSION  3
 // A bitmask of working iPods.
 // 0x18fe == 0b 0 0 0 1 1 0 0 0 1 1 1 1 1 1 1 0
 //              ^-^-^ ^ ^ ^-^-^ ^ ^ ^ ^ ^ ^ ^ ^- no 0th gen (0)

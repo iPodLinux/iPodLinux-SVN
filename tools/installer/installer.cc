@@ -157,7 +157,8 @@ PodLocationPage::PodLocationPage (Installer *wizard)
     if (!part) { status = CantFindIPod; goto err; }
     
     fat32 = new FATFS (part);
-    if (fat32->init() < 0) { status = FSErr; goto err; }
+    int e;
+    if ((e = fat32->init()) < 0) { status = FSErr; errno = -e; goto err; }
 
     sysinfo = fat32->open ("/IPOD_C~1/DEVICE/SYSINFO", O_RDONLY);
     if (!sysinfo || sysinfo->error()) {

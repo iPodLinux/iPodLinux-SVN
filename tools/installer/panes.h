@@ -140,6 +140,8 @@ protected slots:
     void httpDone (bool err);
     void httpResponseHeaderReceived (const QHttpResponseHeader& resp);
     void listClicked (QTreeWidgetItem *item, int column);
+    void itemCollapsed (QTreeWidgetItem *item);
+    void itemExpanded (QTreeWidgetItem *item);
     
 private:
     QHttp *packlistHTTP;
@@ -148,6 +150,7 @@ private:
     QString host;
     QTreeWidget *packages;
     QMap <int, PkgTreeWidgetItem*> resolvers;
+    QMap <QString, QTreeWidgetItem*> categories;
     QMultiMap <QString, PkgTreeWidgetItem*> packageProvides;
     bool advok;
     bool errored;

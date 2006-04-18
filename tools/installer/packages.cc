@@ -27,15 +27,15 @@
 
 Package::Package()
     : _name ("unk"), _version ("0.1a"), _dest (""), _desc ("???"), _url ("http://127.0.0.1/"),
-      _subfile ("."), _type (Archive), _reqs (QStringList()), _provs (QStringList()),
-      _ipods (INSTALLER_WORKING_IPODS), _valid (false),
+      _subfile ("."), _category (""), _type (Archive), _reqs (QStringList()),
+      _provs (QStringList()), _ipods (INSTALLER_WORKING_IPODS), _valid (false),
       _orig (false), _upgrade (false), _selected (false), _required (false)
 {}
 
 Package::Package (QString line) 
     : _name ("unk"), _version ("0.0"), _dest (""), _desc ("???"), _url ("http://127.0.0.1/"),
-      _subfile ("."), _type (Archive), _reqs (QStringList()), _provs (QStringList()),
-      _ipods (INSTALLER_WORKING_IPODS), _valid (false),
+      _subfile ("."), _category (""), _type (Archive), _reqs (QStringList()),
+      _provs (QStringList()), _ipods (INSTALLER_WORKING_IPODS), _valid (false),
       _orig (false), _upgrade (false), _selected (false), _required (false)
 {
     parseLine (line);
@@ -97,6 +97,8 @@ void Package::parseLine (QString line)
                 _subfile = value;
             } else if (key == "to") {
                 _dest = value;
+            } else if (key == "category" ){
+                _category = value;
             } else if (key == "provides") {
                 if (!_provs.contains (value))
                     _provs << value;
@@ -298,7 +300,11 @@ PackagesPage::PackagesPage (Installer *wiz, bool atm)
     packages->setHeaderLabels (headers);
     connect (packages, SIGNAL(itemChanged(QTreeWidgetItem*, int)),
              this, SLOT(listClicked(QTreeWidgetItem*, int)));
-    
+    connect (packages, SIGNAL(itemCollapsed(QTreeWidgetItem*)),
+             this, SLOT(itemCollapsed(QTreeWidgetItem*)));
+    connect (packages, SIGNAL(itemExpanded(QTreeWidgetItem*)),
+             this, SLOT(itemExpanded(QTreeWidgetItem*)));
+
     QVBoxLayout *layout = new QVBoxLayout;
     layout->addWidget (blurb);
     layout->addSpacing (10);
@@ -405,6 +411,8 @@ void PackagesPage::httpRequestFinished (int req, bool err)
                 QRegExp irx ("\\s*<<\\s*(\\S+)\\s*>>\\s*");
                 QRegExp vrx ("\\s*[Vv]ersion\\s+(\\d+)\\s*");
                 QRegExp nrx ("\\s*[Ii]nstaller\\s+([0-9A-Za-z.-]+)\\s*");
+                QRegExp crx ("\\s*\\[category\\]\\s*([a-zA-Z0-9_-]+)\\s*:\\s*\"([^\"]*)\"");
+
                 if (irx.exactMatch (line)) {
                     QUrl url (irx.cap (1));
                     if (!url.isValid()) {
@@ -436,6 +444,12 @@ void PackagesPage::httpRequestFinished (int req, bool err)
                         }
                         return;
                     }
+                } else if (crx.exactMatch (line)) {
+                    QTreeWidgetItem *catitem = new QTreeWidgetItem (packages, QTreeWidgetItem::UserType + 2);
+                    catitem->setText (0, crx.cap (2));
+                    catitem->setFlags (0);
+                    packages->setItemExpanded (catitem, true);
+                    categories.insert (crx.cap (1), catitem);
                 } else {
                     Package *pkgp = new Package (line);
                     Package &pkg = *pkgp;
@@ -454,23 +468,60 @@ void PackagesPage::httpRequestFinished (int req, bool err)
                     }
                     if (pkg.supports (iPodVersion) && pkg.valid()) {
                         PkgTreeWidgetItem *twi;
+                        QTreeWidgetItem *pkgparent = 0;
+#if 1
+                        if (pkg.category() != "" && categories[pkg.category()]) {
+                            pkgparent = categories[pkg.category()];
+                        }
+#else
+                        if (pkg.requires().size()) {
+                            QList <QTreeWidgetItem *> reqlist =
+                                packages->findItems (pkg.requires()[0], Qt::MatchExactly | Qt::MatchRecursive);
+                            if (reqlist.size()) {
+                                printf ("Found %d entries, first @%p for %s\n", reqlist.size(), reqlist[0],
+                                        pkg.requires()[0].toAscii().data());
+                                pkgparent = reqlist[0];
+                            }
+                        }
+#endif
+
                         if (pkg.provides().size()) {
                             QList <QTreeWidgetItem *> provlist =
                                 packages->findItems ("Packages providing `" + pkg.provides()[0] + "'",
-                                                     Qt::MatchExactly);
+                                                     Qt::MatchExactly | Qt::MatchRecursive);
                             if (provlist.size()) {
                                 twi = new PkgTreeWidgetItem (this, provlist[0], pkg);
+                                if (provlist[0]->parent() && !pkg.requires().contains (provlist[0]->parent()->text(0))) {
+                                    // Take the `Packages providing whatever' header item out of
+                                    // the children of the package required by one of the providers
+                                    // but not all, and put it into the top-level list.
+                                    provlist[0]->parent()->takeChild (provlist[0]->parent()->indexOfChild (provlist[0]));
+                                    packages->addTopLevelItem (provlist[0]);
+                                }
+                            } else if (categories[pkg.provides()[0]]) {
+                                twi = new PkgTreeWidgetItem (this, categories[pkg.provides()[0]], pkg);
                             } else {
-                                QTreeWidgetItem *provitem = new QTreeWidgetItem (packages,
-                                                                                 QTreeWidgetItem::UserType);
+                                QTreeWidgetItem *provitem;
+                                if (pkgparent)
+                                    provitem = new QTreeWidgetItem (pkgparent,
+                                                                    QTreeWidgetItem::UserType);
+                                else
+                                    provitem = new QTreeWidgetItem (packages,
+                                                                    QTreeWidgetItem::UserType);
+                                
                                 provitem->setText (0, "Packages providing `" + pkg.provides()[0] + "'");
                                 provitem->setFlags (0);
                                 packages->setItemExpanded (provitem, true);
                                 twi = new PkgTreeWidgetItem (this, provitem, pkg);
                             }
+                            twi->setProv (true);
                         } else {
-                            twi = new PkgTreeWidgetItem (this, packages, pkg);
+                            if (pkgparent)
+                                twi = new PkgTreeWidgetItem (this, pkgparent, pkg);
+                            else
+                                twi = new PkgTreeWidgetItem (this, packages, pkg);
                         }
+
                         packageProvides.insert (pkg.name(), twi);
                         QStringListIterator pi (pkg.provides());
                         while (pi.hasNext()) {
@@ -532,13 +583,16 @@ void PackagesPage::httpDone (bool err)
         }
             
         QList<QTreeWidgetItem *> provlist = packages->findItems ("Packages providing `[0-9A-Za-z._-]+'",
-                                                                 Qt::MatchRegExp);
+                                                                 Qt::MatchRegExp | Qt::MatchRecursive);
         QListIterator<QTreeWidgetItem *> provit (provlist);
         while (provit.hasNext()) {
             QTreeWidgetItem *item = provit.next();
             switch (item->childCount()) {
             case 1:
-                packages->insertTopLevelItem (packages->indexOfTopLevelItem (item), item->takeChild (0));
+                if (item->parent())
+                    item->parent()->insertChild (item->parent()->indexOfChild (item), item->takeChild (0));
+                else
+                    packages->insertTopLevelItem (packages->indexOfTopLevelItem (item), item->takeChild (0));
                 /* FALLTHRU */
             case 0:
                 packages->takeTopLevelItem (packages->indexOfTopLevelItem (item));
@@ -558,7 +612,7 @@ void PackagesPage::httpDone (bool err)
             if ((item = dynamic_cast<PkgTreeWidgetItem *>(i)) != 0) {
                 item->package().readPackingList (iPodLinuxPartitionDevice);
                 if (item->package().selected()) item->select();
-                else if (item->package().required() && !item->parent()) item->select();
+                else if (item->package().required() && (!item->isProv() || !item->parent())) item->select();
                 // XXX this is a rather silly special case, but I was too lazy to do a whole
                 // "default if certain iPod gens" thing.
                 if ((Mode == StandardInstall || Mode == AdvancedInstall) &&
@@ -634,7 +688,7 @@ void PkgTreeWidgetItem::select()
         }
     }
 
-    if (parent()) {
+    if (_prov && parent()) {
         for (int i = 0; i < parent()->childCount(); i++) {
             PkgTreeWidgetItem *ptwi;
 
@@ -653,7 +707,7 @@ void PkgTreeWidgetItem::select()
 
 void PkgTreeWidgetItem::deselect() 
 {
-    if (_pkg.required() && !parent()) {
+    if (_pkg.required() && (!_prov || !parent())) {
         setCheckState (0, Qt::Checked);
         return;
     }
@@ -686,7 +740,7 @@ void PkgTreeWidgetItem::deselect()
         }
     }
 
-    if (parent()) {
+    if (_prov && parent()) {
         bool required_provide = false;
 
         for (int i = 0; i < parent()->childCount(); i++) {
@@ -716,6 +770,30 @@ void PkgTreeWidgetItem::deselect()
     }
 
     _setsel();
+}
+
+static int ice = 0;
+
+void PackagesPage::itemCollapsed (QTreeWidgetItem *item) 
+{
+    if (!ice) {
+        ice++;
+        if (dynamic_cast <PkgTreeWidgetItem *> (item) != 0) {
+            packages->expandItem (item);
+        }
+        ice--;
+    }
+}
+
+void PackagesPage::itemExpanded (QTreeWidgetItem *item) 
+{
+    if (!ice) {
+        ice++;
+        if (dynamic_cast <PkgTreeWidgetItem *> (item) != 0) {
+            packages->collapseItem (item);
+        }
+        ice--;
+    }
 }
 
 void PackagesPage::listClicked (QTreeWidgetItem *item, int column) 
@@ -813,7 +891,7 @@ WizardPage *PackagesPage::nextPage()
 }
 
 PkgTreeWidgetItem::PkgTreeWidgetItem (PackagesPage *page, QTreeWidget *parent, Package& pkg)
-    : QTreeWidgetItem (parent, UserType), _pkg (pkg), _changemarked (false), _page (page)
+    : QTreeWidgetItem (parent, UserType), _pkg (pkg), _changemarked (false), _page (page), _prov (false)
 {
     setFlags (Qt::ItemIsSelectable | Qt::ItemIsUserCheckable | Qt::ItemIsEnabled);
     update();
@@ -821,7 +899,7 @@ PkgTreeWidgetItem::PkgTreeWidgetItem (PackagesPage *page, QTreeWidget *parent, P
 }
 
 PkgTreeWidgetItem::PkgTreeWidgetItem (PackagesPage *page, QTreeWidgetItem *parent, Package& pkg)
-    : QTreeWidgetItem (parent, UserType), _pkg (pkg), _changemarked (false), _page (page)
+    : QTreeWidgetItem (parent, UserType), _pkg (pkg), _changemarked (false), _page (page), _prov (false)
 {
     setFlags (Qt::ItemIsSelectable | Qt::ItemIsUserCheckable | Qt::ItemIsEnabled);
     update();
@@ -843,6 +921,9 @@ void PkgTreeWidgetItem::_setsel()
 {
     if (_pkg.selected()) {
         setCheckState (0, Qt::Checked);
+        ice++;
+        _page->packages->expandItem (this);
+        ice--;
         if (_pkg.upgrade()) {
             setText (2, QObject::tr ("Upgrade"));
             setCheckState (2, Qt::Checked);
@@ -853,6 +934,9 @@ void PkgTreeWidgetItem::_setsel()
         }
     } else {
         setCheckState (0, Qt::Unchecked);
+        ice++;
+        _page->packages->collapseItem (this);
+        ice--;
         if (_pkg.changed()) {
             setText (2, QObject::tr ("Uninstall"));
         } else {
