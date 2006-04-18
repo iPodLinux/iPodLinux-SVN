@@ -1676,11 +1676,11 @@ be an RGB value specified in six-digit hexidecimal, like HTML: \verb|#abcdef|.
 {\bf Specifications} are the meat of the color-scheme file. Here are some example specification lines
 that demonstrate the required format.
 \begin{verbatim}
-(1)  name: key1 => val1, key2 => val2, key3.s1 => val3s1,
-(2)        key3.s2 => val3s2
-(3)        key4 => val, key5 => val
-(4) other:
-(5)        key => val
+   name: key1 => val1, key2 => val2, key3.s1 => val3s1,
+         key3.s2 => val3s2
+         key4 => val, key5 => val
+  other:
+         key => val
 \end{verbatim}
 Specification lines have two parts: a top-level specification (``name'' and ``other'' in this example;
 something like ``window'' or ``header'' or ``menu'' in actuality) and a list of key-value pairs. Either
@@ -1692,8 +1692,9 @@ The key should be a string of (usually) lowercase letters; the actual name of th
 \<topspec>\verb|.|\<key>. The key may contain dots, which are probably used for further subdivision
 but don't have to be.
 
-The value is a collection of one or more things separated by spaces. There are three types of values:
-solid colors, background images, and spacing adjustments. Solid colors are specified by \verb|#rrggbb|
+The value is a collection of one or more things separated by spaces. There are seven types of values:
+solid colors, background images, spacing adjustments, gradients, corner rounding specifications,
+and repeatable-area and alignment specifications for images. Solid colors are specified by \verb|#rrggbb|
 or a name that has been \verb|\def|ined to that, and will result in lines, rectangles, and text being
 drawn with that color. Background images apply to filled rectangles only, and are of the form \verb|@file.png|;
 \verb|file.png| should be a file in the schemes directory, which you might want to prefix with the
@@ -1706,6 +1707,35 @@ many if negative; on a horizontal line, positive values push the line down. For 
 spacing of $n$ makes the rectangle {\it thinner} by $2n$ in both dimensions, with the same center; negative
 dimensions make it thicker. Think of spacing for rectangles as like the ``shrink selection'' tool in your graphics program
 with that many pixels as an argument.
+
+Rounding of the corners on a rectangle is called for with $*$ (an asterisk) followed by a whole number below 10.
+The number specifies the radius of the quarter-circle with which each corner will be rounded; 0 is no rounding,
+1 is just a pixel taken out, and 9 is a very round corner.
+
+Gradients are specified by enclosing two or three color specifications, separated by the word ``to'', in
+\<angle brackets>. For instance, {\tt <#000000 to #aaaaaa to #ffffff} would specify a two-part grayscale
+gradient that changes color more rapidly for the first half than for the second. You may specify whether
+a gradient changes color horizontally or vertically by including the keyword {\tt horiz} or {\tt vert} somewhere
+inside the angle brackets; a vertical gradient is the default. Finally, you may specify a solid color in which a
+bar will be drawn on top of the gradient; this can be used to create ``glassy'' effects. The syntax is
+``{\tt with }{\sl color}'' after the ``{\sl color}{\tt \ to }{\sl color}'' specifying the gradient.
+To determine where the bar goes, you may specify an offset from top, right, bottom, and left by using
+{\tt @T,R,B,L} where $T$, $R$, $B$, and $L$ are in pixels (no unit) or in percent (suffix them with {\tt \%}).
+If you specify one value, it will be used for all; if you specify two, the first will be used for top/bottom
+and the second for left/right.
+
+Repeated-area specifications are given by putting a token of the form {\tt WxH+X+Y} in the value for a property;
+this will cause only the area of size $W\timesH$ with its upper-right corner at $(x,y)$ in the image to be repeated
+to stretch. The ``corners'' of the image will be put into the corners of a rectangle drawn with it; the ``sides''
+will be tiled in one direction; and the ``middle'' will be tiled in both directions.
+
+You can specify image alignment in both directions: horizontal and vertical. For horizontal alignment,
+include a token like {\tt horiz left} or {\tt horiz center} in the value for the property; for vertical alignment,
+{\tt vert top}, {\tt vert center}, etc.
+
+A great deal of effort has been expended to ensure that images can be drawn correctly, scaleably, and
+good-lookingly. The parameters for repeated-area and alignment are very powerful, and you should
+play with them to get the effect you want.
 
 A color scheme that emulates the Apple firmware is below.
 
