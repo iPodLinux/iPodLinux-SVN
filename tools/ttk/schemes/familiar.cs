@@ -29,7 +29,8 @@
           fill.low => #C03020,
           fill.charge => <#80e141, #6dd433, #258208 with #aefa73 @:1,0,5,0>,
           bg.low =>  <vert #a0adb8 to #d8e2e6>,
-          bg.charging => <vert #a0adb8 to #d8e2e6>
+          bg.charging => <vert #a0adb8 to #d8e2e6>,
+          chargingbolt => #606C78
     lock: border => #282C28, fill => #383C40
  loadavg: bg => #E8F4E8, fg => #68D028, spike => #C0D0D8
 

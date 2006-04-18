@@ -15,7 +15,7 @@
 	  gradient.bar => white
    music: bar => dkgray +2
  battery: border => black, bg => white, fill.normal => black +1, fill.low => dkgray +1, fill.charge => black +1,
-	  bg.low => white, bg.charging => gray
+	  bg.low => white, bg.charging => gray, chargingbolt => black
     lock: border => black, fill => black
  loadavg: bg => white, fg => dkgray, spike => black
 

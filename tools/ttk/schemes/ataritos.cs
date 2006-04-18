@@ -23,7 +23,8 @@
 
  battery: border => black, bg => white, fill.normal => green, 
 		fill.low => black, fill.charge => black +1,
-		bg.low => green, bg.charging => green
+		bg.low => green, bg.charging => green,
+                chargingbolt => black
 
     lock: border => black, fill => black
 

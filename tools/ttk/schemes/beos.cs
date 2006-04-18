@@ -38,7 +38,8 @@
 		fill.normal => <ltyellow to dkyellow>,
 		fill.low => red, fill.charge => <ltyellow to yellow>,
 		bg.low => <dkyellow to white>,
-		bg.charging => <dkgray to gray>
+		bg.charging => <dkgray to gray>,
+                chargingbolt => dkyellow
 
     lock: border => dkyellow, fill => black
 

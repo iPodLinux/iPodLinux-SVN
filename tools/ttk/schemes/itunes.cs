@@ -56,7 +56,7 @@
 	  gradient.bar => #acacac +1
    music: bar => <vert graptop to grapmid to grapbot with #d5dbfb @:1,1,5,1>
  battery: border => metalfg, bg => grapmid, fill.normal => metalfg +1, fill.low => metalwid +1, fill.charge => metalfg +1,
-	  bg.low => red, bg.charging => blue
+	  bg.low => red, bg.charging => blue, charginbolt => metalfg
     lock: border => metalwid, fill => metalwid
  loadavg: bg => metalbg, fg => metalwid, spike => metalfg
 
