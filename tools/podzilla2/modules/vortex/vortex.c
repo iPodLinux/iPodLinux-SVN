@@ -47,7 +47,6 @@
 #include "console.h"
 #include "vglobals.h"
 #include "levels.h"
-#include "vstars.h"
 #include "vgamobjs.h"
 #include "render.h"
 
@@ -63,6 +62,13 @@ vortex_globals vglob;
 /* padding around the web to the top and bottom */
 #define VPADDING (10)
 
+
+/******************************************************************************/
+
+/* for starfield stuff... */
+extern void Vortex_Starfield_init();
+extern void Vortex_Starfield_session();
+extern void Vortex_Starfield_draw();
 
 /******************************************************************************/
 
@@ -182,8 +188,10 @@ void Vortex_selectLevel( int l )
 
 	if( vglob.currentLevel != vglob.startLevel ) {
 		vglob.currentLevel = vglob.startLevel;
+/*
 		if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
 			Star_GenerateStars();
+*/
 	}
 }
 
@@ -213,8 +221,10 @@ void Vortex_newLevelSetup( void )
 	Vortex_generateClawGeometry();
 
 	if( vglob.state == VORTEX_STATE_STARTUP ) return;
+/*
 	if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
 		Star_GenerateStars();
+*/
 }
 
 
@@ -485,12 +495,16 @@ void Vortex_draw( PzWidget *widget, ttk_surface srf )
 
 	switch( vglob.state ){
 	case( VORTEX_STATE_STARTUP ):
+/*
 		if( !classic ) Star_DrawStars( srf );
+*/
 		Vortex_Console_Render( srf );
 		break;
 
 	case( VORTEX_STATE_STYLESEL ):
+/*
 		if( !classic ) Star_DrawStars( srf );
+*/
 		Vortex_RenderWeb( srf );
 		Vortex_RenderPlayer( srf );
 		Vortex_Bolt_draw( srf );
@@ -521,7 +535,9 @@ void Vortex_draw( PzWidget *widget, ttk_surface srf )
 		break;
 
 	case( VORTEX_STATE_LEVELSEL ):
+/*
 		if( !classic ) Star_DrawStars( srf );
+*/
 		Vortex_RenderWeb( srf );
 
 		Vortex_RenderTimedQuad( srf, "SELECT", "START", "LEVEL", "",
@@ -546,7 +562,9 @@ void Vortex_draw( PzWidget *widget, ttk_surface srf )
 		break;
 
 	case( VORTEX_STATE_GAME ):
+/*
 		if( !classic ) Star_DrawStars( srf );
+*/
 		Vortex_RenderWeb( srf );
 		Vortex_Powerup_draw( srf );
 		Vortex_RenderPlayer( srf );
@@ -578,12 +596,16 @@ void Vortex_draw( PzWidget *widget, ttk_surface srf )
 		break;
 
 	case( VORTEX_STATE_ADVANCE ):
+/*
 		if( !classic ) Star_DrawStars( srf );
+*/
 		Vortex_Console_Render( srf );
 		break;
 
 	case( VORTEX_STATE_DEATH ):
+/*
 		if( !classic ) Star_DrawStars( srf );
+*/
 		Vortex_Console_Render( srf );
 		break;
 
@@ -768,8 +790,10 @@ PzWindow *new_vortex_window()
 	Vortex_Console_HiddenStatic( 1 );
 	Vortex_Console_AddItem( "VORTEX", 0, 0, 
 				VORTEX_STYLE_BOLD, vglob.color.title );
+/*
 	Star_SetStyle( STAR_MOTION_STATIC );
 	Star_GenerateStars();
+*/
 
 	return pz_finish_window( vglob.window );
 }
@@ -797,7 +821,9 @@ void init_vortex()
 
 	/* menu item display name */
 	pz_menu_add_action ("/Extras/Games/Vortex", new_vortex_window);
-	pz_menu_add_action ("/Extras/Demos/Stars", StarsDemo_NewWindow);
+
+	/* Starfield setup */
+	Vortex_Starfield_init();
 
 	Vortex_Initialize();
 

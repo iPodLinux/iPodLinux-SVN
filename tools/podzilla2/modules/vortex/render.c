@@ -28,7 +28,6 @@
 #include "console.h"
 #include "vglobals.h"
 #include "levels.h"
-#include "vstars.h"
 #include "vgamobjs.h"
 #include "render.h"
 
