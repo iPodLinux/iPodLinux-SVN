@@ -1,0 +1,287 @@
+/********************************************************************************************
+*
+* starfield.c
+*
+* Copyright (C) 2005 Kevin Ferrare, original starfield for Rockbox (http://www.rockbox.org)
+* Copyright (C) 2006 Felix Bruns, ported to iPodlinux/podzilla2/ttk
+*
+* 2006 Scott Lawrence, Added color tinting, integrated into Vortex
+*
+* All files in this archive are subject to the GNU General Public License.
+* See the file COPYING in the source tree root for full license agreement.
+*
+* This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
+* KIND, either express or implied.
+*
+********************************************************************************************/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include "pz.h"
+
+#define Z_MAX_DIST 100
+#define STAR_MAX_VELOCITY 2
+
+#define MAX_INIT_STAR_X ttk_screen->w/2*Z_MAX_DIST
+#define MAX_INIT_STAR_Y ttk_screen->h/2*Z_MAX_DIST
+
+#define MSG_DISP_TIME 30
+
+#define MAX_STARS (320*240*20)/100
+
+struct star
+{
+    int x,y,z;
+    int velocity;
+    ttk_color c;
+};
+
+struct starfield
+{
+    struct star tab[MAX_STARS];
+    int nb_stars;
+    int z_move;
+};
+
+static int t_disp = 0;
+static PzModule *module;
+static PzConfig *config;
+static TWindow *window;
+static TWidget *widget;
+
+static void init_star(struct star * star, int z_move)
+{
+    star->velocity = rand() % STAR_MAX_VELOCITY+1;
+
+    star->x = rand() % (2*MAX_INIT_STAR_X)-MAX_INIT_STAR_X;
+    star->y = rand() % (2*MAX_INIT_STAR_Y)-MAX_INIT_STAR_Y;
+    star->c = ttk_makecol( 192 + (rand() & 0x3f),
+			   192 + (rand() & 0x3f),
+			   192 + (rand() & 0x3f) );
+
+    if(z_move >= 0)
+        star->z = Z_MAX_DIST;
+    else
+        star->z = rand() % Z_MAX_DIST/2+1;
+}
+
+static void move_star(struct star * star, int z_move)
+{
+    star->z -= z_move * star->velocity;
+
+    if (star->z <= 0 || star->z > Z_MAX_DIST)
+        init_star(star, z_move);
+}
+
+static void draw_star(struct star * star, int z_move, ttk_surface surface)
+{
+    int x_draw, y_draw;
+
+    x_draw = star->x / star->z + ttk_screen->w / 2;
+    if (x_draw < 1 || x_draw >= ttk_screen->w)
+    {
+        init_star(star, z_move);
+        return;
+    }
+
+    y_draw = star->y / star->z + ttk_screen->h/2;
+
+    if (y_draw < 1 || y_draw >= ttk_screen->h)
+    {
+        init_star(star, z_move);
+        return;
+    }
+
+    ttk_pixel (surface, x_draw, y_draw, star->c );
+    if(star->z < 5*Z_MAX_DIST/6)
+    {
+        ttk_pixel (surface, x_draw, y_draw-1, star->c);
+        ttk_pixel (surface, x_draw-1, y_draw, star->c);
+        if(star->z < Z_MAX_DIST/2)
+        {
+            ttk_pixel (surface, x_draw+1, y_draw, star->c);
+            ttk_pixel (surface, x_draw, y_draw+1, star->c);
+        }
+    }
+}
+
+static void starfield_add_stars(struct starfield * starfield, int nb_to_add)
+{
+    int i, old_nb_stars;
+
+    old_nb_stars = starfield->nb_stars;
+    starfield->nb_stars += nb_to_add;
+
+    if(starfield->nb_stars > (ttk_screen->w*ttk_screen->h*20)/100)
+        starfield->nb_stars = (ttk_screen->w*ttk_screen->h*20)/100;
+
+    for(i=old_nb_stars; i < starfield->nb_stars; i++)
+    {
+        init_star(&(starfield->tab[i]), starfield->z_move);
+    }
+}
+
+static void starfield_del_stars(struct starfield * starfield, int nb_to_del)
+{
+    starfield->nb_stars -= nb_to_del;
+    if(starfield->nb_stars < 0)
+        starfield->nb_stars = 0;
+}
+
+static void starfield_move_and_draw(struct starfield * starfield, ttk_surface surface)
+{
+    int i;
+    for(i=0;i<starfield->nb_stars;++i)
+    {
+        move_star(&(starfield->tab[i]), starfield->z_move);
+        draw_star(&(starfield->tab[i]), starfield->z_move, surface);
+    }
+}
+
+static struct starfield starfield;
+
+static void draw_starfield (TWidget *this, ttk_surface surface)
+{
+    ttk_fillrect (surface, 0, 0, ttk_screen->w, ttk_screen->h, ttk_makecol(BLACK));
+
+    starfield_move_and_draw(&starfield, surface);
+
+    char str_buffer[40];
+    if (t_disp > 0)
+    {
+        t_disp--;
+        snprintf(str_buffer, sizeof(str_buffer), "Stars:%d \nSpeed:%d", starfield.nb_stars, starfield.z_move);
+        ttk_text (surface, ttk_textfont, 3, ttk_screen->h - ttk_text_height(ttk_textfont) - 25, ttk_makecol(WHITE), str_buffer);
+    }
+}
+
+static int down_starfield (TWidget *this, int button) 
+{
+    switch (button) {
+    case TTK_BUTTON_HOLD:
+        ttk_window_hide_header (window);
+        return 0;
+        break;
+    }
+    return TTK_EV_UNUSED;
+}
+
+static int button_starfield (TWidget *this, int button, int time) 
+{
+    switch (button) {
+    case TTK_BUTTON_HOLD:
+        ttk_window_show_header (window);
+        return 0;
+        break;
+
+    case TTK_BUTTON_PREVIOUS:
+        starfield_del_stars(&starfield, 100);
+        t_disp=MSG_DISP_TIME;
+        this->dirty++;
+        return 0;
+        break;
+
+    case TTK_BUTTON_NEXT:
+        starfield_add_stars(&starfield, 100);
+        t_disp=MSG_DISP_TIME;
+        this->dirty++;
+        return 0;
+        break;
+
+    case TTK_BUTTON_MENU:
+        pz_close_window (window);
+        return 0;
+        break;
+
+    case TTK_BUTTON_ACTION:
+        return 0;
+        break;
+    }
+    return TTK_EV_UNUSED;
+}
+
+static int scroll_starfield (TWidget *this, int dir) 
+{
+#ifdef IPOD
+    TTK_SCROLLMOD(dir, 3);
+#else
+    TTK_SCROLLMOD(dir, 1);
+#endif
+    if(dir > 0) {
+        starfield.z_move++;
+        t_disp = MSG_DISP_TIME;
+    } else {
+        starfield.z_move--;
+        t_disp = MSG_DISP_TIME;
+    }
+    this->dirty++;
+    return 0;
+}
+
+static int timer_starfield (TWidget *this) 
+{
+    this->dirty++;
+    return 0;
+}
+
+static TWidget *new_starfield_widget() 
+{
+    widget = ttk_new_widget (0, 0);
+    widget->w = ttk_screen->w - ttk_screen->wx;
+    widget->h = ttk_screen->h - ttk_screen->wy;
+    widget->focusable = 1;
+    widget->dirty = 1;
+    widget->draw    =    draw_starfield;
+    widget->button  =  button_starfield;
+    widget->down    =    down_starfield;
+    widget->scroll  =  scroll_starfield;
+    widget->timer   =   timer_starfield;
+
+    pz_widget_set_timer(widget, 10);
+
+    starfield.nb_stars = 0;
+    starfield.z_move = 1;
+
+    starfield_add_stars(&starfield, 600);
+
+    return widget;
+}
+
+static TWindow *new_starfield_window() 
+{
+    window = pz_new_window ("Starfield", PZ_WINDOW_NORMAL);
+
+    ttk_add_widget (window, new_starfield_widget());
+
+    return pz_finish_window (window);
+}
+
+/*static int save_starfield_config(TWidget *this, int key, int time)
+{
+    if(key == TTK_BUTTON_MENU){
+        pz_save_config(config); 
+    }
+    return ttk_menu_button(this, key, time);
+}*/
+
+void init_starfield()
+{
+/* STANDALONE *
+    module = pz_register_module ("starfield", NULL);
+*/
+
+    //config = pz_load_config(pz_module_get_cfgpath(module, "starfield.conf"));
+
+    pz_menu_add_action ("/Extras/Demos/Starfield", new_starfield_window);
+
+    //pz_menu_add_setting("/Extras/Demos/Starfield/Settings/Start Stars", 1, config, stars_options);
+    //pz_menu_add_setting("/Extras/Demos/Starfield/Settings/Start Speed", 2, config, speed_options);
+
+    //((TWidget *)pz_get_menu_item("/Extras/Demos/Starfield/Settings")->data)->button = save_starfield_config;
+}
+
+/* STANDALONE
+PZ_MOD_INIT(init_starfield)
+*/
