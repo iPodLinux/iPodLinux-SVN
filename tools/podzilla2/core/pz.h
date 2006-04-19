@@ -386,6 +386,7 @@ int pz_vector_width (const char *string, int cw, int ch, int kern);
 void pz_ipod_set (int sid, int value);
 void pz_ipod_fix_setting (int sid, int value); // sets on iPod w/o setting in config
 void pz_ipod_fix_settings (PzConfig *conf);
+int ipod_get_contrast(void);
 int pz_ipod_get_battery_level(void);
 int pz_ipod_is_charging(void);
 long pz_ipod_get_hw_version(void);

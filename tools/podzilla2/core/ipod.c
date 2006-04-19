@@ -98,6 +98,17 @@ static int ipod_set_contrast(int contrast)
 	return 0;
 }
 
+int ipod_get_contrast( void ) 
+{
+	int contrast;
+
+	if (ipod_ioctl(FBIOGET_CONTRAST, &contrast) < 0) {
+		return -1;
+	}
+
+	return contrast;
+}
+
 static int ipod_set_backlight(int backlight)
 {
 	if (ipod_ioctl(FBIOSET_BACKLIGHT, (int *)(long)backlight) < 0) {
