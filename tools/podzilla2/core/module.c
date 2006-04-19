@@ -351,7 +351,9 @@ static int fix_dependencies (PzModule *mod, int initing, int which)
 static void do_load (PzModule *mod) 
 {
     char *fname;
+#ifndef IPOD
     struct stat st;
+#endif
     
     fname = malloc (strlen (mod->mountpt) + strlen (mod->name) + 8);
 #ifdef IPOD
