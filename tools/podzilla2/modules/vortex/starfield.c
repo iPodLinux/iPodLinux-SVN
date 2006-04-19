@@ -46,8 +46,10 @@ struct starfield
 
 
 static int t_disp = 0;
+/*
 static PzModule *module;
 static PzConfig *config;
+*/
 static TWindow *window;
 static TWidget *widget;
 static struct starfield starfield;
@@ -240,6 +242,18 @@ static int scroll_starfield (TWidget *this, int dir)
 
 static int timer_starfield (TWidget *this) 
 {
+    /* try something out here XXXXXX */
+    static int pos = 0;
+    static int p2 = 0;
+
+    p2++;
+    if( p2 > 2 ) p2=0,pos++;
+    if( pos > 32 ) pos = 0;
+
+    star_placement_region( (MAX_INIT_STAR_X/8)-1, 
+			   (-MAX_INIT_STAR_X) + (pos*MAX_INIT_STAR_X/16) ,
+			   MAX_INIT_STAR_Y*2, 
+			   -MAX_INIT_STAR_Y);
     this->dirty++;
     return 0;
 }
