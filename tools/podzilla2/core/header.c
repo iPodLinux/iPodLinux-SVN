@@ -115,8 +115,7 @@ static void battery_draw (TWidget *this, ttk_surface srf)
 	/* fill the container... */
 	ttk_ap_fillrect (srf, ap, this->x + 4, this->y + 1, 
 				this->x + 22, this->y + 9);
-	ttk_draw_icon (ttk_icon_battery, srf, this->x, this->y, 
-				ttk_ap_getx ("battery.border")->color, 
+	ttk_draw_icon (ttk_icon_battery, srf, this->x, this->y, ttk_ap_getx ("battery.border"),
 				ttk_ap_getx ("header.bg")->color);
 
 	if (fill.type & TTK_AP_SPACING) {
@@ -139,7 +138,7 @@ static void battery_draw (TWidget *this, ttk_surface srf)
 	/* overlay the charge icon if we're charging */
 	if (battery_is_charging)
 		ttk_draw_icon (ttk_icon_charging, srf, this->x, this->y,
-			ttk_ap_getx ("battery.border")->color, 
+                               ttk_ap_getx ("battery.chargingbolt"),
 			ttk_ap_getx ("header.bg")->color);
 }
 
@@ -246,7 +245,7 @@ static void hold_unset (TWidget *this)
 static void hold_draw (TWidget *this, ttk_surface srf) 
 {
     if (pz_hold_is_on) {
-	ttk_draw_icon (ttk_icon_hold, srf, this->x + 3, this->y, ttk_ap_getx ("lock.border")->color, 0);
+	ttk_draw_icon (ttk_icon_hold, srf, this->x + 3, this->y, ttk_ap_getx ("lock.fg"), 0);
     }
 }
 
