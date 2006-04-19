@@ -400,6 +400,8 @@ int
 main(int argc, char **argv)
 {
 	TWindow *first;
+	int initialContrast = ipod_get_contrast();
+	if( initialContrast < 1 ) initialContrast = 96;
 
         if (!TTK_VERSION_CHECK()) {
         	fprintf (stderr, "Version mismatch; exiting.\n");
@@ -505,12 +507,14 @@ main(int argc, char **argv)
 	pz_global_config = pz_load_config (CONFIG_FILE);
 	/* Set some sensible defaults */
 #define SET(x) pz_get_setting(pz_global_config,x)
-	if (!SET(WHEEL_DEBOUNCE)) pz_ipod_set (WHEEL_DEBOUNCE, 10);
-	if (!SET(CONTRAST))       pz_ipod_set (CONTRAST, 96);
-	if (!SET(CLICKER))        pz_ipod_set (CLICKER, 1);
-	if (!SET(DSPFREQUENCY))   pz_ipod_set (DSPFREQUENCY, 0);
-	if (!SET(COLORSCHEME))    pz_ipod_set (COLORSCHEME, 0);
-	if (!SET(SLIDE_TRANSIT))  pz_ipod_set (SLIDE_TRANSIT, 1);
+	if (!SET(WHEEL_DEBOUNCE))   pz_ipod_set (WHEEL_DEBOUNCE, 10);
+	if (!SET(CONTRAST))         pz_ipod_set (CONTRAST, initialContrast);
+	if (!SET(CLICKER))          pz_ipod_set (CLICKER, 1);
+	if (!SET(DSPFREQUENCY))     pz_ipod_set (DSPFREQUENCY, 0);
+	if (!SET(SLIDE_TRANSIT))    pz_ipod_set (SLIDE_TRANSIT, 1);
+	if (!SET(BACKLIGHT))        pz_ipod_set (BACKLIGHT, 1);
+	if (!SET(BACKLIGHT_TIMER))  pz_ipod_set (BACKLIGHT_TIMER, 1);
+	if (!SET(COLORSCHEME))      pz_ipod_set (COLORSCHEME, 0);
 	pz_save_config (pz_global_config);
 	pz_ipod_fix_settings (pz_global_config);
 	pz_load_font (&ttk_textfont, "Espy Sans", TEXT_FONT, pz_global_config);
