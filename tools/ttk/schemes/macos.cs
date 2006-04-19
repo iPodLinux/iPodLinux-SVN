@@ -22,7 +22,7 @@
 
 
   header: bg => gray, fg => black, line => black-1, accent => accentblue
-	  shine => ltgray, shadow => dkgray, chargingbolt => black
+	  shine => ltgray, shadow => dkgray,
 	  gradient.top => gray,
 	  gradient.middle => white,
 	  gradient.bottom => dkgray,
@@ -41,7 +41,8 @@
 		fill.normal => <ltgray to dkgray>,
 		fill.low => red, fill.charge => <ltgray to gray>,
 		bg.low => <dkgray to white>,
-		bg.charging => <dkgray to gray>
+		bg.charging => <dkgray to gray>,
+		chargingbolt => black
 
     lock: border => black, fill => black
 
