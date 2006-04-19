@@ -573,7 +573,7 @@ void pz_modules_init()
     TWidget  * slider;
     int sliderVal=0;
     #define MAXSLIDERVAL (100)
-    #define SETUPSECTIONS (8)
+    #define SETUPSECTIONS (6)
 
     PzModule *last, *cur;
     int i;
@@ -651,7 +651,6 @@ void pz_modules_init()
     cur = module_head;
     last = 0;
     while (cur) {
-	//XXXupdateprogress(sliderwin, slider, ++sliderVal);
         if (cur->podpath && cur->extracted) {
             cur->mountpt = strdup (cur->podpath);
             last = cur;
@@ -669,22 +668,20 @@ void pz_modules_init()
     }
 
     sliderVal = (MAXSLIDERVAL/SETUPSECTIONS) * 4;
-    updateprogress(sliderwin, slider, sliderVal, _("Reading Module inf"));
+    updateprogress(sliderwin, slider, sliderVal, _("Scanning Module Info"));
     // Load the module.inf's
     cur = module_head;
     while (cur) {
-	//XXXupdateprogress(sliderwin, slider, ++sliderVal);
 	load_modinf (cur);
 	cur = cur->next;
     }
 
     sliderVal = (MAXSLIDERVAL/SETUPSECTIONS) * 5;
-    updateprogress(sliderwin, slider, sliderVal, _("Determining Dependencies"));
+    updateprogress(sliderwin, slider, sliderVal, _("Module Dependencies"));
     // Figure out the dependencies
     cur = module_head;
     last = 0;
     while (cur) {
-	//XXXupdateprogress(sliderwin, slider, ++sliderVal);
 	if (fix_dependencies (cur, 1, SOFTDEP) == -1 ||
 			fix_dependencies(cur, 1, HARDDEP) == -1) {
 	    if (last) last->next = cur->next;
@@ -696,9 +693,6 @@ void pz_modules_init()
 	    cur = cur->next;
 	}
     }
-
-    sliderVal = (MAXSLIDERVAL/SETUPSECTIONS) * 6;
-    updateprogress(sliderwin, slider, sliderVal, _("Adding Dependencies"));
 
     // Check which ones are linked in
     cur = module_head;
@@ -723,7 +717,7 @@ void pz_modules_init()
         cur = cur->next;
     }
 
-    sliderVal = (MAXSLIDERVAL/SETUPSECTIONS) * 7;
+    sliderVal = (MAXSLIDERVAL/SETUPSECTIONS) * 6;
     updateprogress(sliderwin, slider, sliderVal, _("Loading Modules"));
 
     struct dep *c = load_order;
@@ -744,8 +738,8 @@ void pz_modules_init()
 
     /* initialize the modules */
     while (c) {
-	updateprogress(sliderwin, slider, sliderVal, NULL );
 	sliderVal += MAXSLIDERVAL / modCount;
+	updateprogress(sliderwin, slider, sliderVal, NULL );
 
         current_module = c->mod;
         do_init (c->mod);
