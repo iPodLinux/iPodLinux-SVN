@@ -243,6 +243,7 @@ static int scroll_starfield (TWidget *this, int dir)
 static int timer_starfield (TWidget *this) 
 {
     /* try something out here XXXXXX */
+/*
     static int pos = 0;
     static int p2 = 0;
 
@@ -254,6 +255,7 @@ static int timer_starfield (TWidget *this)
 			   (-MAX_INIT_STAR_X) + (pos*MAX_INIT_STAR_X/16) ,
 			   MAX_INIT_STAR_Y*2, 
 			   -MAX_INIT_STAR_Y);
+*/
     this->dirty++;
     return 0;
 }
