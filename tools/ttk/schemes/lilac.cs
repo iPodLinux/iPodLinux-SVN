@@ -32,8 +32,8 @@
 	  bg.charging => <vert white to ltgray to white>,
 	  fill.normal => <vert lightish to light>,
 	  fill.low => <vert #FF8080 to #FF4040>,
-	  fill.charge => <vert #80FF80 to #40FF40>
-          chargingbolt => black
+	  fill.charge => <vert #80FF80 to #40FF40>,
+	  chargingbolt => dark
 
     lock: border => dark,
 	  fill => darkish
