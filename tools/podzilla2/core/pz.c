@@ -513,7 +513,7 @@ main(int argc, char **argv)
 	if (!SET(DSPFREQUENCY))     pz_ipod_set (DSPFREQUENCY, 0);
 	if (!SET(SLIDE_TRANSIT))    pz_ipod_set (SLIDE_TRANSIT, 1);
 	if (!SET(BACKLIGHT))        pz_ipod_set (BACKLIGHT, 1);
-	if (!SET(BACKLIGHT_TIMER))  pz_ipod_set (BACKLIGHT_TIMER, 1);
+	if (!SET(BACKLIGHT_TIMER))  pz_ipod_set (BACKLIGHT_TIMER, 3);
 	if (!SET(COLORSCHEME))      pz_ipod_set (COLORSCHEME, 0);
 	pz_save_config (pz_global_config);
 	pz_ipod_fix_settings (pz_global_config);
