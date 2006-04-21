@@ -78,6 +78,8 @@ static void MakeVIXI (TWidget *this)
 static void render (TWidget *this, int first, int n)
 {
     int vi, xi, ofs;
+    ttk_color menu_bg_color=0, menu_fg_color=0;
+    ttk_color menu_selbg_color=0, menu_selfg_color=0;
     _MAKETHIS;
     int wid = this->w - 10*data->scroll;
 
@@ -92,6 +94,33 @@ static void render (TWidget *this, int first, int n)
     
     if (!data->menu)
 	return;
+
+    /* a little bit of insurance in case the menu colors loaded bad
+     * 
+     * check the menu selection items to see if they're equal to eachother
+     * and black.  If they are (Black box issue) then set them to be
+     * something sane instead.
+     */
+    if( ttk_ap_getx( "menu.bg" ))
+	    menu_bg_color = ttk_ap_getx( "menu.bg" )->color;
+    if( ttk_ap_getx( "menu.fg" ))
+	    menu_fg_color = ttk_ap_getx( "menu.fg" )->color;
+    if( ttk_ap_getx( "menu.selbg" ))
+	    menu_selbg_color = ttk_ap_getx ("menu.selbg")->color;
+    if( ttk_ap_getx( "menu.selfg" ))
+	    menu_selfg_color = ttk_ap_getx ("menu.selfg")->color;
+    if( menu_bg_color == menu_fg_color ) {
+	if( menu_bg_color == 0 || menu_bg_color == 3 ) { /* why 3? */
+		menu_bg_color = ttk_makecol( WHITE );
+		menu_fg_color = ttk_makecol( BLACK );
+	}
+    }
+    if( menu_selbg_color == menu_selfg_color ) {
+	if( menu_selbg_color == 0 || menu_selbg_color == 3 ) { /* why 3? */
+		menu_selbg_color = ttk_makecol( DKGREY );
+		menu_selfg_color = ttk_makecol( WHITE );
+	}
+    }
 
     for (xi = 0, vi = data->vixi[0]; data->menu[xi] && vi < first+n; xi++, vi = data->vixi[xi]) {
         char *truncname;
@@ -114,8 +143,8 @@ static void render (TWidget *this, int first, int n)
 	if (data->itemsrf[xi]) ttk_free_surface (data->itemsrf[xi]);
 	data->itemsrf[xi] = ttk_new_surface (data->menu[xi]->textwidth + 6,
 					    data->itemheight, ttk_screen->bpp);
-	ttk_fillrect (data->itemsrf[xi], 0, 0, data->menu[xi]->textwidth + 6, data->itemheight,
-                      ttk_ap_getx ("menu.bg") -> color);
+	ttk_fillrect (data->itemsrf[xi], 0, 0, data->menu[xi]->textwidth + 6, 
+			data->itemheight, menu_bg_color );
 
         if (data->i18nable)
             truncname = strdup (gettext (data->menu[xi]->name));
@@ -129,7 +158,7 @@ static void render (TWidget *this, int first, int n)
             }
         }
         
-        ttk_text (data->itemsrf[xi], data->font, 3, ofs, ttk_ap_getx ("menu.fg") -> color, truncname);
+        ttk_text (data->itemsrf[xi], data->font, 3, ofs, menu_fg_color, truncname);
 
 	// Selected
 	if (data->itemsrfI[xi]) ttk_free_surface (data->itemsrfI[xi]);
@@ -142,11 +171,13 @@ static void render (TWidget *this, int first, int n)
 				ttk_ap_getx("menu.selbg")->rounding, data->itemheight); 
 	else
 	    ttk_fillrect (data->itemsrfI[xi], 0, 0, data->menu[xi]->textwidth + 6,
-				data->itemheight, ttk_ap_getx ("menu.selbg") -> color);
+				data->itemheight, menu_selbg_color );
         if (data->i18nable)
-            ttk_text (data->itemsrfI[xi], data->font, 3, ofs, ttk_ap_getx ("menu.selfg") -> color, gettext (data->menu[xi]->name));
+            ttk_text (data->itemsrfI[xi], data->font, 3, ofs, 
+			menu_selfg_color, gettext (data->menu[xi]->name));
         else
-            ttk_text (data->itemsrfI[xi], data->font, 3, ofs, ttk_ap_getx ("menu.selfg") -> color, data->menu[xi]->name);
+            ttk_text (data->itemsrfI[xi], data->font, 3, ofs, 
+			menu_selfg_color, data->menu[xi]->name);
     }
 }
 

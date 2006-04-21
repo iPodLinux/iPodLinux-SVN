@@ -253,6 +253,7 @@ unsigned char ttk_icon_charging[] = { 8, 10,
 
 void ttk_draw_icon (unsigned char *icon, ttk_surface srf, int sx, int sy, TApItem *ap, ttk_color bgcol) 
 {
+    if (!ap) return; /* just in case */
     if (ap->type & TTK_AP_SPACING) sx += ap->spacing;
     if (ap->type & TTK_AP_COLOR) {
         int x, y;
