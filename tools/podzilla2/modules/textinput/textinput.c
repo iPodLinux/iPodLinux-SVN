@@ -27,6 +27,7 @@
 
 #define TI_MAX_TIMS 64
 #define TI_SETTING_SEL_TIM 1
+#define TI_DEFAULT_TIM 2
 
 /* variables for text input */
 
@@ -259,7 +260,11 @@ void ti_init()
 		ti_tim_creators[i]=0;
 		ti_tim_ncreators[i]=0;
 	}
-	ti_selected_tim = ti_saved_tim = pz_get_int_setting(ti_conf, TI_SETTING_SEL_TIM);
+	if (pz_get_setting(ti_conf, TI_SETTING_SEL_TIM)) {
+		ti_selected_tim = ti_saved_tim = pz_get_int_setting(ti_conf, TI_SETTING_SEL_TIM);
+	} else {
+		ti_selected_tim = ti_saved_tim = TI_DEFAULT_TIM;
+	}
 #ifdef IPOD
 	if (!ti_selected_tim) {
 		pz_warning (_("Serial text input is selected. Make sure a keyboard is attached or select a different input method."));
