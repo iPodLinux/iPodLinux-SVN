@@ -537,7 +537,8 @@ static void find_modules (const char *dir)
 static void updateprogress( TWindow * sliderwin, TWidget * slider,
 			    int newVal, char * displayText)
 {
-	static char firstrun = 1;
+	ttk_color menu_bg_color = 0;
+	ttk_color menu_fg_color = 0;
 
 	if( newVal < 0 ) newVal = 0; /* jsut in case */
 
@@ -545,12 +546,24 @@ static void updateprogress( TWindow * sliderwin, TWidget * slider,
 	if( displayText ) {
 		int textw =ttk_text_width(ttk_textfont,displayText);
 
-		ttk_fillrect(sliderwin->srf,0,0,sliderwin->w,sliderwin->h,
-			ttk_ap_getx("menu.bg")->color);
-		ttk_text(sliderwin->srf,ttk_textfont,ttk_screen->w/ 2 - textw/2,
-			ttk_screen->h/2,ttk_ap_getx("menu.fg")->color,
-			displayText);
-		firstrun=0;
+		if( ttk_ap_getx( "menu.bg" ))
+			menu_bg_color = ttk_ap_getx("menu.bg")->color;
+		if( ttk_ap_getx( "menu.fg" ))
+			menu_fg_color = ttk_ap_getx("menu.fg")->color;
+
+		if( menu_fg_color == menu_bg_color ) {
+		    if( menu_fg_color == 0 || menu_fg_color == 3 ) { /*why 3?*/
+			menu_fg_color = ttk_makecol( BLACK );
+			menu_bg_color = ttk_makecol( WHITE );
+		    }
+		}
+
+		ttk_fillrect(sliderwin->srf,0,0,
+				sliderwin->w,sliderwin->h,
+				menu_bg_color );
+		ttk_text(sliderwin->srf,ttk_textfont,
+				ttk_screen->w/ 2 - textw/2, ttk_screen->h/2,
+				menu_fg_color, displayText);
 	}
 
 	ttk_slider_set_val(slider,newVal);
