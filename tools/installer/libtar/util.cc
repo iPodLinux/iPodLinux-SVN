@@ -111,7 +111,7 @@ mkdirhier (VFS::Filesystem *fs, const char *path)
 		if ((ret = fs->mkdir (dst)) < 0)
 		{
 			if (ret != -EEXIST)
-				return -ret;
+				return ret;
 		}
 		else
 			retval = 0;

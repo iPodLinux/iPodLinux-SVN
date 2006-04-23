@@ -24,21 +24,37 @@
 #include <QDir>
 
 #include <ctype.h>
+#ifndef DONT_HAVE_LIBCRYPTO
+#include <openssl/md5.h>
+#endif
 
 Package::Package()
     : _name ("unk"), _version ("0.1a"), _dest (""), _desc ("???"), _url ("http://127.0.0.1/"),
-      _subfile ("."), _category (""), _type (Archive), _reqs (QStringList()),
+      _subfile ("."), _category (""), _idinfo (NoIdentifyingInfo), _filesize (0),
+      _type (Archive), _reqs (QStringList()),
       _provs (QStringList()), _ipods (INSTALLER_WORKING_IPODS), _valid (false),
       _orig (false), _upgrade (false), _selected (false), _required (false)
 {}
 
 Package::Package (QString line) 
     : _name ("unk"), _version ("0.0"), _dest (""), _desc ("???"), _url ("http://127.0.0.1/"),
-      _subfile ("."), _category (""), _type (Archive), _reqs (QStringList()),
+      _subfile ("."), _category (""), _idinfo (NoIdentifyingInfo), _filesize (0),
+      _type (Archive), _reqs (QStringList()),
       _provs (QStringList()), _ipods (INSTALLER_WORKING_IPODS), _valid (false),
       _orig (false), _upgrade (false), _selected (false), _required (false)
 {
     parseLine (line);
+}
+
+static int hex2nyb (char ch) 
+{
+    if (ch >= 'a' && ch <= 'f')
+        return ch - 'a' + 10;
+    if (ch >= 'A' && ch <= 'F')
+        return ch - 'A' + 10;
+    if (ch >= '0' && ch <= '9')
+        return ch - '0';
+    return 0;
 }
 
 void Package::parseLine (QString line) 
@@ -97,8 +113,20 @@ void Package::parseLine (QString line)
                 _subfile = value;
             } else if (key == "to") {
                 _dest = value;
-            } else if (key == "category" ){
+            } else if (key == "category" ) {
                 _category = value;
+            } else if (key == "size") {
+                _idinfo = HasFileSize;
+                _filesize = value.toInt();
+#ifndef DONT_HAVE_LIBCRYPTO
+            } else if (key == "md5") {
+                if (value.length() == 32) {
+                    _idinfo = HasMD5;
+                    for (int i = 0; i < 16; i++) {
+                        _md5[i] = (hex2nyb (value[2*i].toAscii()) << 4) | hex2nyb (value[2*i+1].toAscii());
+                    }
+                }
+#endif
             } else if (key == "provides") {
                 if (!_provs.contains (value))
                     _provs << value;
@@ -252,6 +280,43 @@ void Package::writePackingList()
 
     packlist->close();
     delete packlist;
+}
+
+bool Package::fileAlreadyDownloaded (QString path) 
+{
+    QFile file (path);
+    if (!file.exists()) return false;
+
+    switch (_idinfo) {
+    case NoIdentifyingInfo:
+        return false; // we can't tell
+    case HasFileSize:
+        return (file.size() == _filesize);
+    case HasMD5:
+        break;
+    }
+
+    // Check the MD5 sum.
+#ifndef DONT_HAVE_LIBCRYPTO
+    if (!file.open (QIODevice::ReadOnly))
+        return false;
+
+    MD5_CTX ctx;
+    MD5_Init (&ctx);
+    char buf[4096];
+    while (!file.atEnd()) {
+        int rdlen = file.read (buf, 4096);
+        if (rdlen <= 0) break;
+        MD5_Update (&ctx, buf, rdlen);
+    }
+
+    unsigned char md5[16];
+    MD5_Final (md5, &ctx);
+    file.close();
+    return !memcmp (_md5, md5, 16);
+#endif
+
+    return false;
 }
 
 void Package::debug() 
@@ -833,8 +898,9 @@ WizardPage *PackagesPage::nextPage()
         PkgTreeWidgetItem *item;
         if ((item = dynamic_cast<PkgTreeWidgetItem *>(it.next())) != 0) {
             if (item->package().changed() && item->package().selected() &&
-                item->package().url().startsWith ("http://"))
+                item->package().url().startsWith ("http://")) {
                 PendingActions->append (new PackageDownloadAction (item->package(), tr ("Downloading ")));
+            }
         }
     }
 
@@ -977,6 +1043,9 @@ void PackageDownloadAction::run()
     QUrl pkgurl (_pkg.url());
 
     _pkg.url() = InstallerHome + "/dl_packages/" + pkgurl.path().split ("/").last();
+
+    if (_pkg.fileAlreadyDownloaded (_pkg.url()))
+        return;
 
     out = new QFile (_pkg.url());
     http = new QHttp;
