@@ -91,5 +91,7 @@ HEADERS += zlib/crc32.h zlib/deflate.h zlib/inffast.h \
            zlib/trees.h zlib/zconf.h zlib/zlib.h zlib/zutil.h
 
 DEFINES += EMBED_MAKEFW
+nocrypto:DEFINES += DONT_HAVE_LIBCRYPTO
+!nocrypto:LIBS += -lcrypto
 
 CONFIG += release

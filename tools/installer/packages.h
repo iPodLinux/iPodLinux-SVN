@@ -20,6 +20,7 @@ public:
     void parseLine (QString line);
     void readPackingList (VFS::Device *dev);
     void writePackingList(); // automatically writes it to iPodLinuxPartitionFS
+    bool fileAlreadyDownloaded (QString path);
     
     QString& name() { return _name; }
     QString& version() { return _version; }
@@ -72,6 +73,9 @@ public:
 
 protected:
     QString _name, _version, _dest, _desc, _url, _subfile, _category;
+    enum { NoIdentifyingInfo, HasFileSize, HasMD5 } _idinfo;
+    quint32 _filesize;
+    quint8 _md5[16];
     Type _type;
     QStringList _reqs, _provs;
     quint16 _ipods;
