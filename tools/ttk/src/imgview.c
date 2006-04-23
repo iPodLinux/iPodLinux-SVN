@@ -21,10 +21,10 @@
 #include "ttk.h"
 #include <stdlib.h>
 
-#ifndef MIN
+#undef MIN
+#undef MAX
 #define MIN(x,y) (((x)<(y))?(x):(y))
 #define MAX(x,y) (((x)>(y))?(x):(y))
-#endif
 
 #define _MAKETHIS imgview_data *data = (imgview_data *)this->data
 extern ttk_screeninfo *ttk_screen;
