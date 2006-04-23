@@ -646,7 +646,7 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
 
     for (vi = data->top, xi = data->xivi[data->top];
 	 data->menu[xi] && vi < MIN (data->top + data->visible, data->items);
-	 xi++, vi = data->vixi[xi]) {
+	 vi++, xi = data->xivi[vi]) {
 	ttk_color col;
         int selected = (vi == data->top + data->sel);
 
@@ -736,7 +736,7 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
 int ttk_menu_scroll (TWidget *this, int dir)
 {
     _MAKETHIS;
-    int oldtop, oldsel, lasttop = -1, lastsel = -1;
+    int oldtop, oldsel;
     TTK_SCROLLMOD (dir, 5);
 
     if (!data->menu || !data->items) return 0;
