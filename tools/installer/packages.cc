@@ -1036,27 +1036,22 @@ void PackageDownloadAction::run()
 {
     printf ("Downloading %s.\n", _pkg.name().toAscii().data());
 
+    hostReq = headReq = getReq = 0;
+    contentLength = 0; out = 0;
+
     if (!_pkg.url().contains ("://"))
         return;
 
     QDir::current().mkdir (InstallerHome + "/dl_packages");
     QUrl pkgurl (_pkg.url());
 
-    _pkg.url() = InstallerHome + "/dl_packages/" + pkgurl.path().split ("/").last();
-
-    if (_pkg.fileAlreadyDownloaded (_pkg.url()))
+    if (_pkg.fileAlreadyDownloaded (InstallerHome + "/dl_packages/" + pkgurl.path().split ("/").last()))
         return;
 
-    out = new QFile (_pkg.url());
     http = new QHttp;
 
-    if (!out->open (QIODevice::WriteOnly)) {
-        emit fatalError ("Could not open " + _pkg.url() + " for writing. Check permissions.");
-        while(1);
-    }
-
     host = pkgurl.host();
-    http->setHost (host, (pkgurl.port() > 0)? pkgurl.port() : 80);
+    hostReq = http->setHost (host, (pkgurl.port() > 0)? pkgurl.port() : 80);
     connect (http, SIGNAL(dataSendProgress(int, int)), this, SLOT(httpSendProgress(int, int)));
     connect (http, SIGNAL(dataReadProgress(int, int)), this, SLOT(httpReadProgress(int, int)));
     connect (http, SIGNAL(stateChanged(int)), this, SLOT(httpStateChanged(int)));
@@ -1064,7 +1059,7 @@ void PackageDownloadAction::run()
     connect (http, SIGNAL(done(bool)), this, SLOT(httpDone(bool)));
     connect (http, SIGNAL(responseHeaderReceived(const QHttpResponseHeader&)),
              this, SLOT(httpResponseHeaderReceived(const QHttpResponseHeader&)));
-    http->get (pkgurl.toString (QUrl::RemoveScheme | QUrl::RemoveAuthority), out);
+    headReq = http->head (pkgurl.toString (QUrl::RemoveScheme | QUrl::RemoveAuthority));
 
     emit setTaskDescription (_label + _pkg.name() + "-" + _pkg.version() + "...");
     emit setTotalProgress (0);
@@ -1108,7 +1103,25 @@ void PackageDownloadAction::httpStateChanged (int state)
 
 void PackageDownloadAction::httpRequestFinished (int req, bool err)
 {
-    (void)req;
+    if (req == headReq) {
+        QUrl pkgurl (_pkg.url());
+        _pkg.url() = InstallerHome + "/dl_packages/" + pkgurl.path().split ("/").last();
+        
+        out = new QFile (_pkg.url());
+        if (out->open (QIODevice::ReadOnly)) {
+            if (out->size() == contentLength) {
+                return; // already downloaded
+            }
+            out->close();
+        }
+
+        if (!out->open (QIODevice::WriteOnly)) {
+            emit fatalError ("Could not open " + _pkg.url() + " for writing. Check permissions.");
+            while(1);
+        }
+        
+        getReq = http->get (pkgurl.toString (QUrl::RemoveScheme | QUrl::RemoveAuthority), out);
+    }
 
     if (err) {
         emit fatalError ("Package " + _pkg.name() + " could not be downloaded from " +
@@ -1121,22 +1134,25 @@ void PackageDownloadAction::httpDone (bool err)
 {
     (void)err;
 
-    out->close();
-    delete out;
+    if (out) {
+        out->close();
+        delete out;
+    }
     QThread::quit();
 }
 
 void PackageDownloadAction::httpResponseHeaderReceived (const QHttpResponseHeader& resp) 
 {
     if (resp.statusCode() >= 300 && resp.statusCode() < 400) { // redirect
-        QUrl url (resp.value ("location"));
-        host = url.host();
-        http->setHost (host, (url.port() > 0)? url.port() : 80);
-        http->get (url.toString (QUrl::RemoveScheme | QUrl::RemoveAuthority));
+        /* Yes, there used to be redirect-handling code here, but it didn't work. */
+        emit fatalError ("Redirects not supported");
+        while(1);
     } else if (resp.statusCode() != 200) {
         emit fatalError ("Error fetching " + http->currentRequest().path() + " for package " +
                          _pkg.name() + ": " + resp.reasonPhrase());
         while(1);
+    } else {
+        contentLength = resp.contentLength();
     }
 }
 
