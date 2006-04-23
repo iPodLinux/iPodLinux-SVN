@@ -198,6 +198,8 @@ protected:
 
     QHttp *http;
     QString host;
+    int hostReq, headReq, getReq;
+    int contentLength;
     QFile *out;
 };
 
