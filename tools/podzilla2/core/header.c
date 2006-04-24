@@ -41,15 +41,15 @@ At Init time, the modules register using something like:
 			&update_fcn, &width_fcn, &draw_fcn, void * data )
 
 typedef struct header_struct {
-	/* set by the core */
+	- set by the core 
 	TWidget * wid;
-	ttk_surface * srf;	/* where the widget should draw into */
-	int height;		/* height of the header bar - redundant? */
-	int x_pos;		/* offset from left where the widget draws */
-	int side;		/* LEFT / RIGHT - informational to widget */
+	ttk_surface * srf;	- where the widget should draw into 
+	int height;		- height of the header bar - redundant? 
+	int x_pos;		- offset from left where the widget draws 
+	int side;		- LEFT / RIGHT - informational to widget
 
-	/* set/changable by the widget */
-	int width; 		/* updated with update_width_fcn */
+	- set/changable by the widget 
+	int width; 		- updated with update_width_fcn 
 	void * data;
 } header_struct;
 
