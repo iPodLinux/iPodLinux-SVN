@@ -33,6 +33,74 @@ extern int ipod_read_apm(int *battery, int *charging);
 static int make_dirty (TWidget *this) { this->dirty++; ttk_dirty |= TTK_DIRTY_HEADER; return 0; }
 
 
+/* Modular header widgets notes:
+
+At Init time, the modules register using something like:
+
+    pz_add_header_widget( "Widget Name", 
+			&update_fcn, &width_fcn, &draw_fcn, void * data )
+
+typedef struct header_struct {
+	/* set by the core */
+	TWidget * wid;
+	ttk_surface * srf;	/* where the widget should draw into */
+	int height;		/* height of the header bar - redundant? */
+	int x_pos;		/* offset from left where the widget draws */
+	int side;		/* LEFT / RIGHT - informational to widget */
+
+	/* set/changable by the widget */
+	int width; 		/* updated with update_width_fcn */
+	void * data;
+} header_struct;
+
+void update_fcn( void * data ) 
+	gets called at the user selected interval
+
+void update_width_fcn( header_struct * hdr )
+	returns the width in the number of pixels that the widget needs.
+	For example, If it's a hold indicator, and hold is off it
+	would return 0.
+
+void draw_fcn( header_struct * hdr, ttk_surface srf )
+	gets called whenever the PZ Core decides to redraw it.
+	the widget should adjust "hdr->width" to the appropriate size.
+		0 if there was nothing to draw
+
+	void * is necessary, in case the user wants the widget to be on the 
+	left, as well as the right.
+
+Menu Options (Example of how it'll be arranged, perhaps)
+    Appearance
+	Widgets:
+	    Left Display		Disable, Cycle, Display All
+	    Left Update Interval	1s, 2s, 5s, 10s, 15s, 30s, 1m
+	    Left Selection		>
+		enable/disable list of all registered widgets:
+		    Clock		On, Off
+		    Battery		On, Off
+		    Battery Digits	On, Off
+		    Hold Indicator	On, Off
+		    Load Average	On, Off
+		    MPD Status		On, Off
+		    ...
+	    Right Display		...
+	    Right Update Interval	...
+	    ...
+	Decorations			Solid, Gradient2, Graident3
+					Graient3 Bar
+	    - i'm tempted to jsut draw it as it is defined in the .cs file,
+		now that gradients and bars are supported in that format, but
+		it'd be nice to use one color scheme in a variety of ways.
+	    - perhaps have an "as defined in .CS" option on the list.  yeah.
+
+also:
+    pz_add_titlebar_decoration( "Decoration Name", &update_fcn )
+
+
+-BleuLlama 2006-04
+*/
+
+
 static void battery_draw (TWidget *this, ttk_surface srf) 
 {
 	TApItem fill;
