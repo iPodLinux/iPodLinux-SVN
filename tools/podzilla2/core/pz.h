@@ -548,6 +548,8 @@ void pz_reset_idle_timer();
 #define BATTERY_UPDATE	(51)	/* appearance */
 #define TITLE_JUSTIFY	(52)	/* appearance */
 
+#define VERBOSITY	(53)	/* startup verbosity */
+
 #define 	BATTERY_UPDATE_OFF (5)
 
 #if defined(PZ_COMPAT) && !defined(LEGACY_DOT_C)
