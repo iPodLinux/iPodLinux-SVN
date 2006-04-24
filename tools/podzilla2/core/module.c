@@ -597,6 +597,7 @@ void pz_modules_init()
     TWindow * sliderwin;
     TWidget  * slider;
     int sliderVal=0;
+    int verbosity = pz_get_int_setting( pz_global_config, VERBOSITY );
     #define MAXSLIDERVAL (100)
     #define SETUPSECTIONS (6)
 
@@ -750,6 +751,10 @@ void pz_modules_init()
 	if (c->mod->to_load > 0) {
 	    do_load (c->mod);
 	}
+	if( verbosity < 2 && c->mod->longname ) {
+	    updateprogress(sliderwin, slider, sliderVal, _("Loading Modules"), 
+			    c->mod->longname );
+	}
 	c = c->next;        
     }
     c = load_order;
@@ -763,13 +768,12 @@ void pz_modules_init()
 
     /* initialize the modules */
     while (c) {
-	int verbosity = pz_get_int_setting( pz_global_config, VERBOSITY );
 	sliderVal += MAXSLIDERVAL / modCount;
         current_module = c->mod;
 
 	updateprogress(sliderwin, slider, sliderVal, 
 			_("Initializing Modules"), 
-			(verbosity < 1)?  c->mod->longname : NULL );
+			(verbosity < 2)?  c->mod->longname : NULL );
 
         do_init (c->mod);
         c = c->next;
