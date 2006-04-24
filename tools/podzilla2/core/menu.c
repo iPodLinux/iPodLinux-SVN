@@ -143,7 +143,13 @@ static const char *boolean_options[] = {
     N_("Off"), N_("On"), 0
 };
 
-static const char * transit_options[] = { N_("Off"), N_("Slow"), N_("Fast"), 0 };
+static const char * transit_options[] = { 
+    N_("Off"), N_("Slow"), N_("Fast"), 0
+};
+
+static const char * verbosity_options[] = {
+    N_("High"), N_("Medium"), N_("Low"), 0
+};
 
 static const char * appearance_decorations[] = { "Plain",
 		"Amiga 1.1", "Amiga 1.3", "Amiga 2.0",
@@ -231,6 +237,7 @@ void pz_menu_init()
     pz_menu_add_setting ("/Settings/Appearance/Menu Transition", SLIDE_TRANSIT, pz_global_config, transit_options);
     pz_menu_add_ttkh ("/Settings/Appearance/Menu Font", pz_select_font, &ttk_menufont)->cdata = MENU_FONT;
     pz_menu_add_ttkh ("/Settings/Appearance/Text Font", pz_select_font, &ttk_textfont)->cdata = TEXT_FONT;
+    pz_menu_add_setting ("/Settings/Verbosity", VERBOSITY, pz_global_config, verbosity_options);
     pz_menu_add_setting ("/Settings/Browser Path Display", BROWSER_PATH, pz_global_config, 0);
     pz_menu_add_setting ("/Settings/Browser Show Hidden", BROWSER_HIDDEN, pz_global_config, 0);
     pz_menu_add_stub ("/File Browser");

@@ -535,17 +535,17 @@ static void find_modules (const char *dir)
 
 /* set text to NULL for updating, to a value for new window stuff */
 static void updateprogress( TWindow * sliderwin, TWidget * slider,
-			    int newVal, char * displayText)
+			    int newVal, char * displayText,
+			    char * lineTwo )
 {
 	ttk_color menu_bg_color = 0;
 	ttk_color menu_fg_color = 0;
+	int textw;
 
 	if( newVal < 0 ) newVal = 0; /* jsut in case */
 
 	/* if displayText is non-NULL, rerender the whole thing */
-	if( displayText ) {
-		int textw =ttk_text_width(ttk_textfont,displayText);
-
+	if( displayText || lineTwo ) {
 		if( ttk_ap_getx( "menu.bg" ))
 			menu_bg_color = ttk_ap_getx("menu.bg")->color;
 		if( ttk_ap_getx( "menu.fg" ))
@@ -561,9 +561,21 @@ static void updateprogress( TWindow * sliderwin, TWidget * slider,
 		ttk_fillrect(sliderwin->srf,0,0,
 				sliderwin->w,sliderwin->h,
 				menu_bg_color );
-		ttk_text(sliderwin->srf,ttk_textfont,
+
+		if( displayText ) {
+			textw = ttk_text_width(ttk_textfont,displayText);
+			ttk_text(sliderwin->srf,ttk_textfont,
 				ttk_screen->w/ 2 - textw/2, ttk_screen->h/2,
 				menu_fg_color, displayText);
+		}
+
+		if( lineTwo ) {
+			textw = ttk_text_width(ttk_textfont, lineTwo);
+			ttk_text(sliderwin->srf,ttk_textfont,
+				ttk_screen->w/ 2 - textw/2, 
+				ttk_screen->h/2 + ttk_textfont.height + 5,
+				menu_fg_color, lineTwo);
+		}
 	}
 
 	ttk_slider_set_val(slider,newVal);
@@ -607,11 +619,11 @@ void pz_modules_init()
     ttk_add_widget(sliderwin, slider);
 
     sliderVal = (MAXSLIDERVAL/SETUPSECTIONS) * 1;
-    updateprogress(sliderwin, slider, sliderVal, _("Scanning For Modules"));
+    updateprogress(sliderwin, slider, sliderVal, _("Scanning For Modules"), NULL);
     find_modules (MODULEDIR);
 
     sliderVal = (MAXSLIDERVAL/SETUPSECTIONS) * 2;
-    updateprogress(sliderwin, slider, sliderVal, _("Reading Modules"));
+    updateprogress(sliderwin, slider, sliderVal, _("Reading Modules"), NULL);
     for (i = 0; i < __pz_builtin_number_of_init_functions; i++) {
 	int found = 0;
 	const char *name = __pz_builtin_names[i];
@@ -659,7 +671,7 @@ void pz_modules_init()
     }
 
     sliderVal = (MAXSLIDERVAL/SETUPSECTIONS) * 3;
-    updateprogress(sliderwin, slider, sliderVal, _("Mounting Modules"));
+    updateprogress(sliderwin, slider, sliderVal, _("Mounting Modules"), NULL);
     // Mount 'em
     cur = module_head;
     last = 0;
@@ -681,7 +693,7 @@ void pz_modules_init()
     }
 
     sliderVal = (MAXSLIDERVAL/SETUPSECTIONS) * 4;
-    updateprogress(sliderwin, slider, sliderVal, _("Scanning Module Info"));
+    updateprogress(sliderwin, slider, sliderVal, _("Scanning Module Info"), NULL);
     // Load the module.inf's
     cur = module_head;
     while (cur) {
@@ -690,7 +702,7 @@ void pz_modules_init()
     }
 
     sliderVal = (MAXSLIDERVAL/SETUPSECTIONS) * 5;
-    updateprogress(sliderwin, slider, sliderVal, _("Module Dependencies"));
+    updateprogress(sliderwin, slider, sliderVal, _("Module Dependencies"), NULL);
     // Figure out the dependencies
     cur = module_head;
     last = 0;
@@ -731,7 +743,7 @@ void pz_modules_init()
     }
 
     sliderVal = (MAXSLIDERVAL/SETUPSECTIONS) * 6;
-    updateprogress(sliderwin, slider, sliderVal, _("Loading Modules"));
+    updateprogress(sliderwin, slider, sliderVal, _("Loading Modules"), NULL);
 
     struct dep *c = load_order;
     while (c) {
@@ -744,17 +756,21 @@ void pz_modules_init()
 
 
     sliderVal = 0;
-    updateprogress(sliderwin, slider, sliderVal, _("Initializing Modules"));
+    updateprogress(sliderwin, slider, sliderVal, _("Initializing Modules"), NULL);
 
     /* trigger the sliders to switch to init mode, restting the slider */
     sliderVal = 0;
 
     /* initialize the modules */
     while (c) {
+	int verbosity = pz_get_int_setting( pz_global_config, VERBOSITY );
 	sliderVal += MAXSLIDERVAL / modCount;
-	updateprogress(sliderwin, slider, sliderVal, NULL );
-
         current_module = c->mod;
+
+	updateprogress(sliderwin, slider, sliderVal, 
+			_("Initializing Modules"), 
+			(verbosity < 1)?  c->mod->longname : NULL );
+
         do_init (c->mod);
         c = c->next;
     }
