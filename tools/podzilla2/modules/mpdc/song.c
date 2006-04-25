@@ -90,7 +90,7 @@ static TWindow *open_song(ttk_menu_item *item)
 		mpd_sendCurrentSongCommand(mpdz);
 		if (mpdz->error) {
 			mpdc_tickle();
-			return;
+			return TTK_MENU_DONOTHING;
 		}
 		while ((mpd_getNextInfoEntity_st(&entity, mpdz))) {
 			int found = 1;
