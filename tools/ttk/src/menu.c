@@ -645,7 +645,7 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
     if (!data->menu) return;
 
     for (vi = data->top, xi = data->xivi[data->top];
-	 data->menu[xi] && vi < MIN (data->top + data->visible, data->items);
+	 data->menu[xi] && vi < MIN (data->top + data->visible, data->vitems);
 	 vi++, xi = data->xivi[vi]) {
 	ttk_color col;
         int selected = (vi == data->top + data->sel);
