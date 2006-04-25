@@ -418,6 +418,32 @@ void ttk_free_surface (ttk_surface srf);
 #define   CKEY   255, 255, 255
 #endif
 
+/* Steve Brown's scroll wheel acceleration macro, version 2-poit-oh
+ * Amplifies scroll events with a timeout
+ * arg1: (variable) event to be amplified
+ * arg2: (constant int) slow accel by this factor
+ * arg3: (constant int) maximum acceleration factor
+ */
+#define MIN(x,y)	(((x)<(y))?(x):(y))
+	/* TODO: these timers need to be fine-tuned on a real iPod */
+#define TTK_ACCEL_L	150 /* events below this delay are accel'ed */
+#define TTK_ACCEL_H	250 /* events between the two are decel'ed */
+#define TTK_SCROLL_ACCEL(ttk_accel_event, ttk_accel_slow, ttk_accel_max)		\
+do { 			\
+	static int ttk_accel_throttle = 0;			\
+	static int ttk_accel_timer = 0;			\
+	static int ttk_accel_now = 0;			\
+	ttk_accel_now = ttk_getticks() - ttk_accel_timer;			\
+	if(ttk_accel_now > TTK_ACCEL_H || ttk_accel_throttle * ttk_accel_event < 0) {			\
+		ttk_accel_throttle = 0; /* user changed direction or timed out; stop accel */			\
+	} else if(ttk_accel_now > TTK_ACCEL_L && abs(ttk_accel_throttle) > abs(ttk_accel_event)) {/* slow the accel */			\
+		ttk_accel_throttle -= ttk_accel_event;			\
+	} else { /* increase accel coefficient up to max */			\
+		ttk_accel_throttle += ttk_accel_event; /* count can be negative, meaning backwards direction*/			\
+	}			\
+	ttk_accel_event *= MIN(abs(ttk_accel_throttle / ttk_accel_slow) + 1, ttk_accel_max);			\
+	ttk_accel_timer += ttk_accel_now;			\
+} while (0)
 
 // -- Private --
 #define TTK_NO_EVENT     0

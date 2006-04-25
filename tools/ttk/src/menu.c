@@ -738,6 +738,7 @@ int ttk_menu_scroll (TWidget *this, int dir)
     _MAKETHIS;
     int oldtop, oldsel;
     TTK_SCROLLMOD (dir, 5);
+    TTK_SCROLL_ACCEL(dir, 10, 50); /* TODO: Tune these constants */
 
     if (!data->menu || !data->items) return 0;
 

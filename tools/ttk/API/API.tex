@@ -143,6 +143,15 @@ use another mechanism for processing scroll events; the slider widget modulates 
 that one rotation covers the distance between the minimum and maximum values on the slider.
 The global {\sl wheel sensitivity} is independent of this scroll modulation.
 
+Furthermore, you can use the \verb|TTK_SCROLL_ACCEL| macro to emulate the iPod's wheel acceleration
+feature.  This allows for both coarse and fine adjustment of long lists.  Put this in your scroll 
+handler as well. Unless you want to allow for very fine adjustments, it should be used in 
+conjunction with \verb|TTK_SCROLLMOD|.  The syntax is 
+\verb|TTK_SCROLL_ACCEL(dir|, $slow$, $max$\verb|)|, where dir is the scroll event to be amplified,
+$slow$ is a factor inversely proportional to the rate of acceleration, and $max$ is the maximum 
+acceleration factor.  For example, \verb|TTK_SCROLL_ACCEL(event->arg, 5, 20)| will accelerate every 
+fifth {\sf Podzilla2 scroll} event, up to a maximum factor of 20.
+
 {\sf input} is also an immediate event, but it is rather different from the rest; see ``Text Input'' below.
 
 After immediate events get past the global event handler, they are dispatched to the focused widget
