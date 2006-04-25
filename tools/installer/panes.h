@@ -142,6 +142,10 @@ protected slots:
     void listClicked (QTreeWidgetItem *item, int column);
     void itemCollapsed (QTreeWidgetItem *item);
     void itemExpanded (QTreeWidgetItem *item);
+    void loadExternalPackageList();
+
+protected:
+    Package *parsePackageListLine (QString line, bool makeBold = false);
     
 private:
     QHttp *packlistHTTP;
@@ -149,6 +153,7 @@ private:
     QLabel *progressStmt;
     QString host;
     QTreeWidget *packages;
+    QPushButton *loadpkg;
     QMap <int, PkgTreeWidgetItem*> resolvers;
     QMap <QString, QTreeWidgetItem*> categories;
     QMultiMap <QString, PkgTreeWidgetItem*> packageProvides;

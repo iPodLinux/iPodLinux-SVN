@@ -32,6 +32,7 @@ public:
     QStringList& requires() { return _reqs; }
     QStringList& provides() { return _provs; }
     Type& type() { return _type; }
+    bool& unsupported() { return _unsupported; }
     bool supports (int hw_ver) { return !!(_ipods & (1 << hw_ver)); }
     bool valid() { return _valid; }
 
@@ -77,6 +78,7 @@ protected:
     quint32 _filesize;
     quint8 _md5[16];
     Type _type;
+    bool _unsupported;
     QStringList _reqs, _provs;
     quint16 _ipods;
     bool _valid, _orig, _upgrade, _selected, _required;
