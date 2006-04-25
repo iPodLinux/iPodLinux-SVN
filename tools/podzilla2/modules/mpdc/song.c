@@ -78,9 +78,40 @@ static TWindow *open_song(ttk_menu_item *item)
 {
 	int i, num = 0;
 	ttk_menu_item *sitem;
+	int state;
 
 	if (mpdc_tickle() < 0)
 		return TTK_MENU_DONOTHING;
+
+	state = mpdc_status(mpdz);
+	if (state == MPD_STATUS_STATE_PLAY || state == MPD_STATUS_STATE_PAUSE) {
+		mpd_InfoEntity entity;
+
+		mpd_sendCurrentSongCommand(mpdz);
+		if (mpdz->error) {
+			mpdc_tickle();
+			return;
+		}
+		while ((mpd_getNextInfoEntity_st(&entity, mpdz))) {
+			int found = 1;
+			mpd_Song *song = entity.info.song;
+
+			if (entity.type != MPD_INFO_ENTITY_TYPE_SONG)
+				continue;
+			found &= (!current_song.artist || (song->artist &&
+				strcmp(current_song.artist,song->artist)==0));
+			found &= (!current_song.album || (song->album &&
+				strcmp(current_song.album, song->album) == 0));
+			found &= ((song->title ?
+				(strcmp(item->name, song->title)==0) : 0)
+					|| strcmp(item->name, song->file)==0);
+			if (found && song->file) {
+				mpd_finishCommand(mpdz);
+				return mpd_currently_playing();
+			}
+		}
+		mpd_finishCommand(mpdz);
+	}
 
 	mpd_sendClearCommand(mpdz);
 	mpd_finishCommand(mpdz);
