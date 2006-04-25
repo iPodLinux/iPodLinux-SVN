@@ -855,7 +855,8 @@ void UninstallPage::setBackupBlurb (bool chk)
 
 void UninstallPage::openBrowseDialog() 
 {
-    QString ret = QFileDialog::getOpenFileName (this, "Choose a backup file to restore:");
+    QString ret = QFileDialog::getOpenFileName (this, "Choose a backup file to restore:",
+                                                QString(), "Firmware backup files (*.fw)");
     if (ret != "")
         backupPath->setText (ret);
 }
@@ -969,7 +970,8 @@ void InstallPage::setBackupBlurb (bool chk)
 
 void InstallPage::openBrowseDialog() 
 {
-    QString ret = QFileDialog::getSaveFileName (this, "Choose a place to save your backup.");
+    QString ret = QFileDialog::getSaveFileName (this, "Choose a place to save your backup.",
+                                                QString(), "Firmware backup files (*.fw)");
     if (ret != "")
         backupPath->setText (ret);
 }

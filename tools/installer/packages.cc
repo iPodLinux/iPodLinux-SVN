@@ -21,6 +21,7 @@
 #include <QtDebug>
 #include <QTextStream>
 #include <QMessageBox>
+#include <QFileDialog>
 #include <QDir>
 
 #include <ctype.h>
@@ -31,7 +32,7 @@
 Package::Package()
     : _name ("unk"), _version ("0.1a"), _dest (""), _desc ("???"), _url ("http://127.0.0.1/"),
       _subfile ("."), _category (""), _idinfo (NoIdentifyingInfo), _filesize (0),
-      _type (Archive), _reqs (QStringList()),
+      _type (Archive), _unsupported (false), _reqs (QStringList()),
       _provs (QStringList()), _ipods (INSTALLER_WORKING_IPODS), _valid (false),
       _orig (false), _upgrade (false), _selected (false), _required (false)
 {}
@@ -39,7 +40,7 @@ Package::Package()
 Package::Package (QString line) 
     : _name ("unk"), _version ("0.0"), _dest (""), _desc ("???"), _url ("http://127.0.0.1/"),
       _subfile ("."), _category (""), _idinfo (NoIdentifyingInfo), _filesize (0),
-      _type (Archive), _reqs (QStringList()),
+      _type (Archive), _unsupported (false), _reqs (QStringList()),
       _provs (QStringList()), _ipods (INSTALLER_WORKING_IPODS), _valid (false),
       _orig (false), _upgrade (false), _selected (false), _required (false)
 {
@@ -127,6 +128,8 @@ void Package::parseLine (QString line)
                     }
                 }
 #endif
+            } else if (key == "unsupported") {
+                _unsupported = true;
             } else if (key == "provides") {
                 if (!_provs.contains (value))
                     _provs << value;
@@ -363,19 +366,23 @@ PackagesPage::PackagesPage (Installer *wiz, bool atm)
     headers << "Name" << "Version" << "Action" << "Description";
     packages = new QTreeWidget;
     packages->setHeaderLabels (headers);
+    loadpkg = new QPushButton (tr ("Load package(s) from disk"));
     connect (packages, SIGNAL(itemChanged(QTreeWidgetItem*, int)),
              this, SLOT(listClicked(QTreeWidgetItem*, int)));
     connect (packages, SIGNAL(itemCollapsed(QTreeWidgetItem*)),
              this, SLOT(itemCollapsed(QTreeWidgetItem*)));
     connect (packages, SIGNAL(itemExpanded(QTreeWidgetItem*)),
              this, SLOT(itemExpanded(QTreeWidgetItem*)));
+    connect (loadpkg, SIGNAL(released()), this, SLOT(loadExternalPackageList()));
 
     QVBoxLayout *layout = new QVBoxLayout;
     layout->addWidget (blurb);
     layout->addSpacing (10);
     layout->addWidget (progressStmt);
     layout->addWidget (packages);
+    layout->addWidget (loadpkg);
     packages->hide();
+    loadpkg->hide();
     if (automatic)
         layout->addStretch (1);
     setLayout (layout);
@@ -391,6 +398,37 @@ PackagesPage::PackagesPage (Installer *wiz, bool atm)
     connect (packlistHTTP, SIGNAL(responseHeaderReceived(const QHttpResponseHeader&)),
              this, SLOT(httpResponseHeaderReceived(const QHttpResponseHeader&)));
     packlistHTTP->get ("/iPodLinux:Installation_sources?action=raw");
+}
+
+void PackagesPage::loadExternalPackageList() 
+{
+    QString filename = QFileDialog::getOpenFileName (this, "Choose a package list to load:",
+                                                     QString(), "iPodLinux package lists (*.ipl)");
+    if (filename == "") return;
+
+    QFile pkglist (filename);
+    if (!pkglist.open (QIODevice::ReadOnly)) {
+        QMessageBox::critical (this, tr ("Error opening package list"),
+                               tr ("Could not open %1 for reading: %2").arg (filename).arg (pkglist.errorString()),
+                               tr ("Ok"));
+        return;
+    }
+
+    QStringList filepath = filename.split ("/");
+    filepath.removeAll ("");
+    filepath.removeLast();
+    QDir pkglistdir (filepath.join ("/"));
+
+    QByteArray bline;
+    while (!pkglist.atEnd() && !(bline = pkglist.readLine()).isNull()) {
+        QString line = bline;
+        Package *pkgp = parsePackageListLine (line, true);
+        if (pkgp) { // munge URLs and such to be relative to the filename
+            pkgp->url() = pkglistdir.absoluteFilePath (pkgp->url());
+        }
+    }
+
+    pkglist.close();
 }
 
 void PackagesPage::httpSendProgress (int done, int total) 
@@ -426,6 +464,8 @@ void PackagesPage::httpStateChanged (int state)
     else if (state == QHttp::Unconnected)
         progressStmt->setText (tr ("Done."));
 }
+
+static QStringList requiredProvides;
 
 void PackagesPage::httpRequestFinished (int req, bool err) 
 {
@@ -468,7 +508,6 @@ void PackagesPage::httpRequestFinished (int req, bool err)
         item->update();
     } else if (packlistHTTP->bytesAvailable()) {
         if (packlistHTTP->lastResponse().statusCode() == 200) {
-            QStringList requiredProvides;
             QStringList lines = QString (packlistHTTP->readAll().constData()).split ("\n");
             QStringListIterator it (lines);
             while (it.hasNext()) {
@@ -476,7 +515,6 @@ void PackagesPage::httpRequestFinished (int req, bool err)
                 QRegExp irx ("\\s*<<\\s*(\\S+)\\s*>>\\s*");
                 QRegExp vrx ("\\s*[Vv]ersion\\s+(\\d+)\\s*");
                 QRegExp nrx ("\\s*[Ii]nstaller\\s+([0-9A-Za-z.-]+)\\s*");
-                QRegExp crx ("\\s*\\[category\\]\\s*([a-zA-Z0-9_-]+)\\s*:\\s*\"([^\"]*)\"");
 
                 if (irx.exactMatch (line)) {
                     QUrl url (irx.cap (1));
@@ -509,114 +547,8 @@ void PackagesPage::httpRequestFinished (int req, bool err)
                         }
                         return;
                     }
-                } else if (crx.exactMatch (line)) {
-                    QTreeWidgetItem *catitem = new QTreeWidgetItem (packages, QTreeWidgetItem::UserType + 2);
-                    catitem->setText (0, crx.cap (2));
-                    catitem->setFlags (0);
-                    packages->setItemExpanded (catitem, true);
-                    categories.insert (crx.cap (1), catitem);
                 } else {
-                    Package *pkgp = new Package (line);
-                    Package &pkg = *pkgp;
-                    if (!pkg.supports (iPodVersion) && pkg.required()) {
-                        if (!pkg.provides().size()) {
-                            QMessageBox::critical (this, QObject::tr ("Unsupported required package"),
-                                                   QObject::tr ("The package `%1' is required for an iPodLinux "
-                                                                "installation, but it is not supported on the "
-                                                                "iPod version you have. Sorry, but installation "
-                                                                "cannot continue.")
-                                                   .arg (pkg.name()),
-                                                   QObject::tr ("Quit"));
-                            exit (1);
-                        }
-                        requiredProvides << pkg.provides()[0];
-                    }
-                    if (pkg.supports (iPodVersion) && pkg.valid()) {
-                        PkgTreeWidgetItem *twi;
-                        QTreeWidgetItem *pkgparent = 0;
-#if 1
-                        if (pkg.category() != "" && categories[pkg.category()]) {
-                            pkgparent = categories[pkg.category()];
-                        }
-#else
-                        if (pkg.requires().size()) {
-                            QList <QTreeWidgetItem *> reqlist =
-                                packages->findItems (pkg.requires()[0], Qt::MatchExactly | Qt::MatchRecursive);
-                            if (reqlist.size()) {
-                                printf ("Found %d entries, first @%p for %s\n", reqlist.size(), reqlist[0],
-                                        pkg.requires()[0].toAscii().data());
-                                pkgparent = reqlist[0];
-                            }
-                        }
-#endif
-
-                        if (pkg.provides().size()) {
-                            QList <QTreeWidgetItem *> provlist =
-                                packages->findItems ("Packages providing `" + pkg.provides()[0] + "'",
-                                                     Qt::MatchExactly | Qt::MatchRecursive);
-                            if (provlist.size()) {
-                                twi = new PkgTreeWidgetItem (this, provlist[0], pkg);
-                                if (provlist[0]->parent() && !pkg.requires().contains (provlist[0]->parent()->text(0))) {
-                                    // Take the `Packages providing whatever' header item out of
-                                    // the children of the package required by one of the providers
-                                    // but not all, and put it into the top-level list.
-                                    provlist[0]->parent()->takeChild (provlist[0]->parent()->indexOfChild (provlist[0]));
-                                    packages->addTopLevelItem (provlist[0]);
-                                }
-                            } else if (categories[pkg.provides()[0]]) {
-                                twi = new PkgTreeWidgetItem (this, categories[pkg.provides()[0]], pkg);
-                            } else {
-                                QTreeWidgetItem *provitem;
-                                if (pkgparent)
-                                    provitem = new QTreeWidgetItem (pkgparent,
-                                                                    QTreeWidgetItem::UserType);
-                                else
-                                    provitem = new QTreeWidgetItem (packages,
-                                                                    QTreeWidgetItem::UserType);
-                                
-                                provitem->setText (0, "Packages providing `" + pkg.provides()[0] + "'");
-                                provitem->setFlags (0);
-                                packages->setItemExpanded (provitem, true);
-                                twi = new PkgTreeWidgetItem (this, provitem, pkg);
-                            }
-                            twi->setProv (true);
-                        } else {
-                            if (pkgparent)
-                                twi = new PkgTreeWidgetItem (this, pkgparent, pkg);
-                            else
-                                twi = new PkgTreeWidgetItem (this, packages, pkg);
-                        }
-
-                        packageProvides.insert (pkg.name(), twi);
-                        QStringListIterator pi (pkg.provides());
-                        while (pi.hasNext()) {
-                            QString prov = pi.next();
-                            if (requiredProvides.contains (prov)) {
-                                requiredProvides.removeAll (prov);
-                                pkg.select();
-                                pkg.makeRequired();
-                            }
-                            packageProvides.insert (prov, twi);
-                        }
-
-                        if (pkg.url().contains ("YYYYMMDD") || pkg.url().contains ("NNN")) {
-                            QString dir = pkg.url();
-                            dir.truncate (dir.lastIndexOf ('/'));
-                            QUrl url (dir);
-                            host = url.host();
-                            packlistHTTP->setHost (url.host(), (url.port() > 0)? url.port() : 80);
-                            resolvers [packlistHTTP->get (url.toString (QUrl::RemoveScheme |
-                                                                        QUrl::RemoveAuthority))] = twi;
-                        }
-                    } else if (Mode == ChangeLoader && pkg.type() == Package::Loader) {
-                        // If we're changing loader, and this loader is installed but not
-                        // the new one, remove it.
-                        pkg.readPackingList (iPodLinuxPartitionDevice);
-                        if (pkg.selected())
-                            PendingActions->append (new PackageRemoveAction (pkg, tr ("Removing ")));
-                    } else {
-                        delete pkgp;
-                    }
+                    parsePackageListLine (line);
                 }
             }
             if (requiredProvides.size()) {
@@ -630,6 +562,120 @@ void PackagesPage::httpRequestFinished (int req, bool err)
             }
         }
     }
+}
+
+Package *PackagesPage::parsePackageListLine (QString line, bool makeBold) 
+{
+    QRegExp crx ("\\s*\\[category\\]\\s*([a-zA-Z0-9_-]+)\\s*:\\s*\"([^\"]*)\"");
+    if (crx.exactMatch (line)) {
+        QTreeWidgetItem *catitem = new QTreeWidgetItem (packages, QTreeWidgetItem::UserType + 2);
+        catitem->setText (0, crx.cap (2));
+        catitem->setFlags (0);
+        packages->setItemExpanded (catitem, true);
+        categories.insert (crx.cap (1), catitem);
+        return 0;
+    }
+
+    Package *pkgp = new Package (line);
+    Package &pkg = *pkgp;
+    if (!pkg.supports (iPodVersion) && pkg.required()) {
+        if (!pkg.provides().size()) {
+            QMessageBox::critical (this, QObject::tr ("Unsupported required package"),
+                                   QObject::tr ("The package `%1' is required for an iPodLinux "
+                                                "installation, but it is not supported on the "
+                                                "iPod version you have. Sorry, but installation "
+                                                "cannot continue.")
+                                   .arg (pkg.name()),
+                                   QObject::tr ("Quit"));
+            exit (1);
+        }
+        requiredProvides << pkg.provides()[0];
+    }
+    if (pkg.supports (iPodVersion) && pkg.valid()) {
+        PkgTreeWidgetItem *twi;
+        QTreeWidgetItem *pkgparent = 0;
+        if (pkg.category() != "" && categories[pkg.category()]) {
+            pkgparent = categories[pkg.category()];
+        }
+        
+        if (pkg.provides().size()) {
+            QList <QTreeWidgetItem *> provlist =
+                packages->findItems ("Packages providing `" + pkg.provides()[0] + "'",
+                                     Qt::MatchExactly | Qt::MatchRecursive);
+            if (provlist.size()) {
+                twi = new PkgTreeWidgetItem (this, provlist[0], pkg);
+                if (provlist[0]->parent() && !pkg.requires().contains (provlist[0]->parent()->text(0))) {
+                    // Take the `Packages providing whatever' header item out of
+                    // the children of the package required by one of the providers
+                    // but not all, and put it into the top-level list.
+                    provlist[0]->parent()->takeChild (provlist[0]->parent()->indexOfChild (provlist[0]));
+                    packages->addTopLevelItem (provlist[0]);
+                }
+            } else if (categories[pkg.provides()[0]]) {
+                twi = new PkgTreeWidgetItem (this, categories[pkg.provides()[0]], pkg);
+            } else {
+                QTreeWidgetItem *provitem;
+                if (pkgparent)
+                    provitem = new QTreeWidgetItem (pkgparent,
+                                                    QTreeWidgetItem::UserType);
+                else
+                    provitem = new QTreeWidgetItem (packages,
+                                                    QTreeWidgetItem::UserType);
+                
+                provitem->setText (0, "Packages providing `" + pkg.provides()[0] + "'");
+                provitem->setFlags (0);
+                packages->setItemExpanded (provitem, true);
+                twi = new PkgTreeWidgetItem (this, provitem, pkg);
+            }
+            twi->setProv (true);
+        } else {
+            if (pkgparent)
+                twi = new PkgTreeWidgetItem (this, pkgparent, pkg);
+            else
+                twi = new PkgTreeWidgetItem (this, packages, pkg);
+        }
+        if (pkg.unsupported())
+            twi->setTextColor (0, Qt::darkRed);
+        if (makeBold) {
+            QFont boldFont = twi->font (0);
+            boldFont.setBold (true);
+            twi->setFont (0, boldFont);
+        }
+        
+        packageProvides.insert (pkg.name(), twi);
+        QStringListIterator pi (pkg.provides());
+        while (pi.hasNext()) {
+            QString prov = pi.next();
+            if (requiredProvides.contains (prov)) {
+                requiredProvides.removeAll (prov);
+                pkg.select();
+                pkg.makeRequired();
+            }
+            packageProvides.insert (prov, twi);
+        }
+        
+        if (pkg.url().contains ("YYYYMMDD") || pkg.url().contains ("NNN")) {
+            QString dir = pkg.url();
+            dir.truncate (dir.lastIndexOf ('/'));
+            if (dir.contains ("://")) {
+                QUrl url (dir);
+                host = url.host();
+                packlistHTTP->setHost (url.host(), (url.port() > 0)? url.port() : 80);
+                resolvers [packlistHTTP->get (url.toString (QUrl::RemoveScheme |
+                                                            QUrl::RemoveAuthority))] = twi;
+            }
+        }
+    } else if (Mode == ChangeLoader && pkg.type() == Package::Loader) {
+        // If we're changing loader, and this loader is installed but not
+        // the new one, remove it.
+        pkg.readPackingList (iPodLinuxPartitionDevice);
+        if (pkg.selected())
+            PendingActions->append (new PackageRemoveAction (pkg, tr ("Removing ")));
+    } else {
+        delete pkgp;
+        return 0;
+    }
+    return pkgp;
 }
 
 void PackagesPage::httpDone (bool err) 
@@ -685,7 +731,10 @@ void PackagesPage::httpDone (bool err)
             }
         }
 
-        if (!automatic) packages->show();
+        if (!automatic) {
+            packages->show();
+            loadpkg->show();
+        }
         advok = true;
         emit completeStateChanged();
         if (automatic) wizard->clickNextButton();
