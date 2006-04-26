@@ -30,6 +30,8 @@ int partShrinkAndAdd (PartitionTable t, int oldnr, int newnr,
 
 void partCopyToMBR (PartitionTable t, unsigned char *mbr);
 
+PartitionTable partDupTable (PartitionTable t);
+
 void partFreeTable (PartitionTable t);
 
 

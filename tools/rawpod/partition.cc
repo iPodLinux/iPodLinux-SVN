@@ -90,6 +90,13 @@ void partCopyToMBR (PartitionTable t, unsigned char *mbr)
     memcpy (mbr + 446, t, 64);
 }
 
+PartitionTable partDupTable (PartitionTable t) 
+{
+    PartitionTable ret = new Partition[4];
+    memcpy (ret, t, sizeof(Partition)*4);
+    return ret;
+}
+
 void partFreeTable (PartitionTable t) 
 {
     delete[] t;
