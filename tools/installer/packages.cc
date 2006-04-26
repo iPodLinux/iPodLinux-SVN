@@ -1172,6 +1172,10 @@ void PackageDownloadAction::httpRequestFinished (int req, bool err)
         getReq = http->get (pkgurl.toString (QUrl::RemoveScheme | QUrl::RemoveAuthority), out);
     }
 
+    if (req == getReq) {
+        complete = true;
+    }
+
     if (err) {
         emit fatalError ("Package " + _pkg.name() + " could not be downloaded from " +
                          http->currentRequest().path() + ": " + http->errorString());
@@ -1181,13 +1185,13 @@ void PackageDownloadAction::httpRequestFinished (int req, bool err)
 
 void PackageDownloadAction::httpDone (bool err) 
 {
-    (void)err;
-
-    if (out) {
-        out->close();
-        delete out;
+    if (complete || err) {
+        if (out) {
+            out->close();
+            delete out;
+        }
+        QThread::quit();
     }
-    QThread::quit();
 }
 
 void PackageDownloadAction::httpResponseHeaderReceived (const QHttpResponseHeader& resp) 
