@@ -825,7 +825,10 @@ fw_load_binary (const char *filename, const char *id)
     fw_image_t image;
     image.len = lengthof (in);
     image.devOffset = 0;
-    image.addr = 0x10000000;
+    if (generation >= 4)
+        image.addr = 0x10000000;
+    else
+        image.addr = 0x28000000;
     image.entryOffset = 0;
     image.vers = image_version;
     image.loadAddr = 0xffffffff;
@@ -1207,7 +1210,7 @@ main (int argc, char **argv)
             
         case 'g':
             if (optarg[0] == 'v' && isdigit (optarg[1]))
-                fw_version = optarg[1] - '0';
+                fw_version = optarg[1] - '0', generation = (fw_version == 3)? 5 : 3;
             else if (optarg[0] == 'x' && isxdigit (optarg[1]))
                 generation = (isalpha(optarg[1])? toupper(optarg[1]) - 'A' + 10 : optarg[1] - '0');
             else {
