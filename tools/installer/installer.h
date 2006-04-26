@@ -78,20 +78,9 @@ class Installer : public ComplexWizard
 public:
     Installer (QWidget *parent = 0);
     
-protected:
-    /* Install path:
-     * intro -> podloc -.
-     *    If Advanced:  `-> partitioning
-     * In any case: -> install -> doinstall -> packages -> dopackages
-     */
-
-    /* Upgrade path:
-     * intro -> podloc -> packages -> dopackages
-     */
-
-    /* Uninstall path:
-     * intro -> podloc -> backuppath -> douninst
-     */
+public slots:
+    void setupDevices (Partition *t);
+    void setupFilesystems();
 
     friend class IntroductionPage;
     friend class PodLocationPage;
@@ -99,8 +88,11 @@ protected:
     friend class InstallPage;
     friend class PackagesPage;
     friend class RestoreBackupPage;
+    friend class DoActionsPage;
     friend class DonePage;
 };
+
+extern Installer *installer;
 
 class InstallerPage : public WizardPage
 {
@@ -117,10 +109,6 @@ protected:
     Installer *wizard;
 };
 
-// Call once the partitions are set in stone.
-void setupDevices();
-// Call once the FS'es are set in stone.
-int setupFilesystems();
 // Returns a string giving textual transfer progress, e.g. "42k/1.2M"
 QString transferProgressText (int done, int total);
 

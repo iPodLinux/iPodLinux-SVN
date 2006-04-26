@@ -1160,6 +1160,7 @@ void PackageDownloadAction::httpRequestFinished (int req, bool err)
         out = new QFile (_pkg.url());
         if (out->open (QIODevice::ReadOnly)) {
             if (out->size() == contentLength) {
+                complete = true;
                 return; // already downloaded
             }
             out->close();

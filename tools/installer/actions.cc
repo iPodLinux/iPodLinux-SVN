@@ -46,9 +46,8 @@ void PartitionAction::run()
         FATAL ("Error writing the partition table. This shouldn't happen. Your iPod is probably fine, but "
                "it might not be; check and see.");
 
-    if (iPodPartitionTable) partFreeTable (iPodPartitionTable);
-    iPodPartitionTable = ptbl;
-    setupDevices();
+    connect (this, SIGNAL(doDeviceSetup(Partition*)), installer, SLOT(setupDevices(Partition*)));
+    emit doDeviceSetup (ptbl);
 
     emit setCurrentProgress (3);
     emit setCurrentAction (tr ("Done."));
