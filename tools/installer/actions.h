@@ -121,11 +121,16 @@ protected:
 
 class PartitionAction : public Action
 {
+    Q_OBJECT
+
 public:
     PartitionAction (int device, int oldpart, int newpart, int newtype, int newsize)
         : _dev (device), _oldnr (oldpart), _newnr (newpart),
           _newtype (newtype), _newsize (newsize)
     {}
+
+signals:
+    void doDeviceSetup (Partition *t);
 
 protected:
     virtual void run();
@@ -256,6 +261,20 @@ protected:
     void run_sub();
 
     char *fw_file;
+};
+
+class FSSetupAction : public Action 
+{
+    Q_OBJECT
+
+signals:
+    void doFilesystemSetup();
+
+protected:
+    virtual void run() {
+        connect (this, SIGNAL(doFilesystemSetup()), installer, SLOT(setupFilesystems()));
+        emit doFilesystemSetup();
+    }
 };
 
 extern QList<Action*> *PendingActions;

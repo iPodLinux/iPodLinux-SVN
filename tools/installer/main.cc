@@ -10,6 +10,7 @@
 #include "installer.h"
 
 #include "libtar/libtar.h"
+#include "rawpod/partition.h"
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef WIN32
@@ -58,6 +59,7 @@ int main (int argc, char *argv[])
 #endif
 
     qRegisterMetaType <QHttpResponseHeader> ("QHttpResponseHeader");
+    qRegisterMetaType <PartitionTable> ("PartitionTable");
 
     Installer *inst = new Installer;
     inst->show();

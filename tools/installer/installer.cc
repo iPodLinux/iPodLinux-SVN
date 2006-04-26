@@ -40,10 +40,13 @@ VFS::Filesystem *iPodMusicPartitionFS, *iPodLinuxPartitionFS;
 bool iPodDoBackup;
 QString iPodBackupLocation;
 QString InstallerHome;
+Installer *installer;
 
 Installer::Installer (QWidget *parent)
     : ComplexWizard (parent)
 {
+    installer = this;
+
     setFirstPage (new IntroductionPage (this));
     setWindowTitle (tr ("iPodLinux Installer"));
     resize (530, 410);
@@ -482,12 +485,14 @@ void PodLocationPage::resetPage()
     emit completeStateChanged();
 }
 
-void setupDevices() 
+void Installer::setupDevices (PartitionTable ptbl)
 {
     if (iPodFirmwarePartitionDevice) delete iPodFirmwarePartitionDevice;
     if (iPodMusicPartitionDevice) delete iPodMusicPartitionDevice;
     if (iPodLinuxPartitionDevice) delete iPodLinuxPartitionDevice;
     
+    if (iPodPartitionTable != ptbl) iPodPartitionTable = partDupTable (ptbl);
+
     iPodFirmwarePartitionDevice = new PartitionDevice (iPodDevice,
                                                        iPodPartitionTable[0].offset,
                                                        iPodPartitionTable[0].length);
@@ -499,19 +504,25 @@ void setupDevices()
                                                     iPodPartitionTable[2].length);
 }
 
-int setupFilesystems() 
+void Installer::setupFilesystems() 
 {
     int err;
     
     iPodMusicPartitionFS = new FATFS (iPodMusicPartitionDevice);
     if ((err = iPodMusicPartitionFS->init()) < 0) {
-        return -err;
+        QMessageBox::critical (0, tr ("Error"),
+                               tr ("Error creating filesystem accessor for music partition: %1").arg (strerror (-err)),
+                               tr ("Quit"));
+        exit (1);
     }
     iPodLinuxPartitionFS = new Ext2FS (iPodLinuxPartitionDevice);
     if ((err = iPodLinuxPartitionFS->init()) < 0) {
-        return -err;
+        QMessageBox::critical (0, tr ("Error"),
+                               tr ("Error creating filesystem accessor for ext2 partition: %1").arg (strerror (-err)),
+                               tr ("Quit"));
+        exit (1);
     }
-    return 0;
+    return;
 }
 
 void PodLocationPage::doBackupRestore (bool c) 
@@ -563,12 +574,8 @@ WizardPage *PodLocationPage::nextPage()
         return new PartitioningPage (wizard);
     case Update:
     case ChangeLoader:
-        setupDevices();
-        if (setupFilesystems()) {
-            QMessageBox::critical (0, tr("iPodLinux Installer"), tr("Error creating filesystem "
-                                                                    "accessors for iPod."), tr("Quit"));
-            exit (1);
-        }
+        ((Installer *)wizard)->setupDevices (iPodPartitionTable);
+        ((Installer *)wizard)->setupFilesystems();
 
         fh = iPodLinuxPartitionFS->open ("/etc/loadertype", O_RDONLY);
         if (fh && !fh->error()) {
@@ -975,17 +982,6 @@ void InstallPage::openBrowseDialog()
     if (ret != "")
         backupPath->setText (ret);
 }
-
-class FSSetupAction : public Action 
-{
-protected:
-    virtual void run() {
-        if (setupFilesystems()) {
-            emit fatalError ("Error setting up filesystem accessors for the iPod.");
-            while(1);
-        }
-    }
-};
 
 WizardPage *InstallPage::nextPage() 
 {
