@@ -1087,6 +1087,7 @@ void PackageDownloadAction::run()
 
     hostReq = headReq = getReq = 0;
     contentLength = 0; out = 0;
+    complete = false;
 
     if (!_pkg.url().contains ("://"))
         return;
