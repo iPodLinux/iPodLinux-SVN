@@ -200,6 +200,7 @@ protected:
     QString host;
     int hostReq, headReq, getReq;
     int contentLength;
+    bool complete;
     QFile *out;
 };
 
