@@ -163,10 +163,26 @@ static const char * appearance_decorations[] = { "Plain",
 /* be sure to keep the "Off" entry lined up with BATTERY_UPDATE_OFF in pz.h */
 static const char * battery_update_rates[] = { 
 		N_("1s"), N_("5s"), N_("15s"),
-		N_("30s"), N_("1m"), N_("Off"), 0 };
+		N_("30s"), N_("1m"), N_("Off"), 0
+};
 
 static const char * title_justifications[] = {
 		N_("Center"), N_("Left"), N_("Right"), 0 };
+
+static const char * headerwidget_display_rates[] = {
+		N_("1s"), N_("2s"), N_("5s"), 
+		N_("10s"), N_("15s"),
+		N_("30s"), N_("1m"), 0
+};
+
+/* need better words for these */
+static const char * headerwidget_display_methods[] = {
+		N_("Display All"),	/* display all simultaneously */
+		N_("Cycle"), 		/* round-robin through them all */
+		N_("Disabled"), 0	/* display none of them */
+};
+
+
 
 static void slider_set_setting (int set, int val) 
 {
@@ -228,15 +244,74 @@ void pz_menu_init()
     pz_menu_add_action ("/Settings/Wheel Sensitivity", set_wheeldebounce);
     pz_menu_add_setting ("/Settings/Backlight Timer", BACKLIGHT_TIMER, pz_global_config, backlight_options);
     pz_menu_add_setting ("/Settings/Clicker", CLICKER, pz_global_config, 0);
+
     pz_menu_add_action ("/Settings/Appearance/Color Scheme", pz_select_color_scheme);
-    pz_menu_add_setting ("/Settings/Appearance/Decorations", DECORATIONS, pz_global_config, appearance_decorations);
-    pz_menu_add_setting ("/Settings/Appearance/Justification", TITLE_JUSTIFY, pz_global_config, title_justifications);
-    pz_menu_add_setting ("/Settings/Appearance/Battery Update", BATTERY_UPDATE, pz_global_config, battery_update_rates);
-    pz_menu_add_setting ("/Settings/Appearance/Battery Digits", BATTERY_DIGITS, pz_global_config, 0);
-    pz_menu_add_setting ("/Settings/Appearance/Display Load Average", DISPLAY_LOAD, pz_global_config, 0);
+
+#ifdef MONKEYS_ARE_FLYING_OUT_OF_MY_BUTT
+    pz_menu_add_setting ("/Settings/Appearance/Header/Decorations",
+		DECORATIONS, pz_global_config, appearance_decorations);
+    pz_menu_add_setting ("/Settings/Appearance/Header/Text Justification", 
+		TITLE_JUSTIFY, pz_global_config, title_justifications);
+
+
+    /* this should realy open a list of all of the registered
+	widgets, with "on"/"off" selections for each one */
+    pz_menu_add_setting ("/Settings/Appearance/Header/L Selection", 
+		DECORATIONS, pz_global_config, appearance_decorations);
+
+    /* set of display styles */
+    pz_menu_add_setting ("/Settings/Appearance/Header/L Display", 
+		HEADER_METHOD_L, pz_global_config, 
+		headerwidget_display_methods);
+
+    /* how often they get updated */
+    pz_menu_add_setting ("/Settings/Appearance/Header/L Update Rate", 
+		HEADER_UPD_RATE_L, pz_global_config, 
+		headerwidget_display_rates);
+
+    /* how often the cycling rotates the display */
+    pz_menu_add_setting ("/Settings/Appearance/Header/L Cycle Rate", 
+		HEADER_CYC_RATE_L, pz_global_config, 
+		headerwidget_display_rates);
+
+
+    /* likewise for these three */
+    pz_menu_add_setting ("/Settings/Appearance/Header/R Selection", 
+		DECORATIONS, pz_global_config, appearance_decorations);
+    pz_menu_add_setting ("/Settings/Appearance/Header/R Display", 
+		HEADER_METHOD_R, pz_global_config, 
+		headerwidget_display_methods);
+    pz_menu_add_setting ("/Settings/Appearance/Header/R Update Rate", 
+		HEADER_UPD_RATE_R, pz_global_config, 
+		headerwidget_display_rates);
+    pz_menu_add_setting ("/Settings/Appearance/Header/R Cycle Rate", 
+		HEADER_CYC_RATE_R, pz_global_config, 
+		headerwidget_display_rates);
+
+#else
+    /* these get absorbed into the above */
+    pz_menu_add_setting ("/Settings/Appearance/Decorations",
+		DECORATIONS, pz_global_config, appearance_decorations);
+    pz_menu_add_setting ("/Settings/Appearance/Text Justification", 
+		TITLE_JUSTIFY, pz_global_config, title_justifications);
+
+    /* these three go away with the new modular mechanism */
+    pz_menu_add_setting ("/Settings/Appearance/Battery Update", 
+		BATTERY_UPDATE, pz_global_config, battery_update_rates);
+    pz_menu_add_setting ("/Settings/Appearance/Battery Digits", 
+		BATTERY_DIGITS, pz_global_config, 0);
+    pz_menu_add_setting ("/Settings/Appearance/Display Load Average", 
+		DISPLAY_LOAD, pz_global_config, 0);
+#endif
+
     pz_menu_add_setting ("/Settings/Appearance/Menu Transition", SLIDE_TRANSIT, pz_global_config, transit_options);
     pz_menu_add_ttkh ("/Settings/Appearance/Menu Font", pz_select_font, &ttk_menufont)->cdata = MENU_FONT;
     pz_menu_add_ttkh ("/Settings/Appearance/Text Font", pz_select_font, &ttk_textfont)->cdata = TEXT_FONT;
+
+
+    pz_menu_add_ttkh ("/Settings/Appearance/Widgets/Left", 
+		pz_select_font, &ttk_textfont)->cdata = TEXT_FONT;
+
     pz_menu_add_setting ("/Settings/Verbosity", VERBOSITY, pz_global_config, verbosity_options);
     pz_menu_add_setting ("/Settings/Browser Path Display", BROWSER_PATH, pz_global_config, 0);
     pz_menu_add_setting ("/Settings/Browser Show Hidden", BROWSER_HIDDEN, pz_global_config, 0);
