@@ -779,6 +779,9 @@ void pz_modules_init()
         c = c->next;
     }
 
+    sliderVal = MAXSLIDERVAL;
+    updateprogress(sliderwin, slider, sliderVal, 
+		_("Finishing Up..."), NULL);
     // Any modules with unrecoverable errors on loading set mod->to_free.
     // Oblige them.
     cur = module_head;
