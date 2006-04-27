@@ -540,15 +540,24 @@ void pz_reset_idle_timer();
 
 #define COLORSCHEME	(44)	/* appearance */
 #define DECORATIONS	(45)	/* appearance */
-#define BATTERY_DIGITS	(46)	/* appearance */
-#define DISPLAY_LOAD	(47)	/* appearance */
+#define BATTERY_DIGITS	(46)	/* appearance */	/* deprecated soon */
+#define DISPLAY_LOAD	(47)	/* appearance */	/* deprecated soon */
 #define TEXT_FONT	(48)
 #define SLIDE_TRANSIT	(49)
 #define MENU_FONT	(50)
-#define BATTERY_UPDATE	(51)	/* appearance */
+#define BATTERY_UPDATE	(51)	/* appearance */	/* deprecated */
 #define TITLE_JUSTIFY	(52)	/* appearance */
 
 #define VERBOSITY	(53)	/* startup verbosity */
+
+/* modular header widget stuff */
+#define HEADER_METHOD_L    (54)	 /*  left display method  */
+#define HEADER_CYC_RATE_L (55)	 /*  left cycle rate      */
+#define HEADER_UPD_RATE_L (56)	 /*  left update rate     */
+#define HEADER_METHOD_R    (57)	 /*  right display method */
+#define HEADER_CYC_RATE_R (58)	 /*  right cycle rate     */
+#define HEADER_UPD_RATE_R (59)	 /*  right update rate    */
+
 
 #define 	BATTERY_UPDATE_OFF (5)
 
