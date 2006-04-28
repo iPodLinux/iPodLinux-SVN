@@ -149,7 +149,24 @@ void FirmwareRecreateAction::run_sub()
             fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "lnux");
         break;
     case UnknownLoader:
+        fw_file = strdup (make_device_name (iPodLocation, 1));
         fw_load_all (fw_file, "osos");
+        fw_image_info *osos_inf;
+        // Old stuff?
+        if ((osos_inf = fw_find_image ("osos")) && !fw_find_image ("aple") &&
+            !memcmp ((char *)osos_inf->memblock + osos_inf->header.entryOffset + 0x100, "!ATAsoso", 8)) {
+            // Old Loader1 or Loader2 - set the parent flag
+            osos_inf->header.isparent = 1;
+            fw_create_dump (fw_file);
+            fw_clear();
+            fw_load_all (fw_file, "osos");
+            if (fw_find_image ("osos@") && !fw_find_image ("osos1")) {
+                // Old Loader2, methinks
+                fw_rename_image ("osos0", "aple");
+                fw_rename_image ("osos@", "osos");
+            }
+        }
+
         // Is it an L1?
         if (fw_find_image ("osos@")) {
             if (iPodLinuxPartitionFS->stat ("/loader.bin", &st) >= 0 || !updating)
