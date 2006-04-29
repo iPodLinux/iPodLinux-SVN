@@ -38,7 +38,7 @@
     lock: border => dark,
 	  fill => darkish
 
- loadavg: bg => creme,
+ loadavg: bg => pink,
 	  fg => darkish,
 	  spike => lightish
 

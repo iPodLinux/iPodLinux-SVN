@@ -47,7 +47,7 @@
 
   slider: border => black, bg => dkgray, full => <vert ltyellow to yellow>
 
- loadavg: bg => black, fg => blue, spike => white
+ loadavg: bg => yellow, fg => dkyellow, spike => ltyellow
 
 
   dialog: bg => gray, fg => black, line => yellow,

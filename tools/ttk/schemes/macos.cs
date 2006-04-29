@@ -50,7 +50,7 @@
 
   slider: border => black, bg => dkgray, full => <vert ltgray to gray>
 
- loadavg: bg => black, fg => blue, spike => white
+ loadavg: bg => gray, fg => dkgray, spike => black
 
 
   dialog: bg => gray, fg => black, line => gray,
