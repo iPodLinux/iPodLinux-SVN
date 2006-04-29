@@ -25,7 +25,7 @@
 
     lock: border => orange, fill => black
 
- loadavg: bg => white, fg => blue, spike => orange
+ loadavg: bg => white, fg => black, spike => orange
 
   window: bg => blue, fg => white, border => orange -3
 

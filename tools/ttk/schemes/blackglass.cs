@@ -31,8 +31,8 @@
 	  fill => white
 	  
  loadavg: bg => black,
-	  fg => gray,
-	  spike => white
+	  fg => dkgray,
+	  spike => gray
 	  
   window: bg => black,
 	  fg => #777,
