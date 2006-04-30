@@ -576,6 +576,16 @@ Package *PackagesPage::parsePackageListLine (QString line, bool makeBold)
         return 0;
     }
 
+    QRegExp srx ("\\s*(de)?select\\s+([a-zA-Z0-9_-]+)\\s*");
+    if (srx.exactMatch (line)) {
+        QList <QTreeWidgetItem *> pkglist =
+            packages->findItems (srx.cap (2), Qt::MatchRecursive | Qt::MatchExactly);
+        if (pkglist.size() == 1) {
+            ((PkgTreeWidgetItem *)pkglist[0])->select();
+        }
+        return 0;
+    }
+
     Package *pkgp = new Package (line);
     Package &pkg = *pkgp;
     if (!pkg.supports (iPodVersion) && pkg.required()) {
