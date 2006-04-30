@@ -539,6 +539,14 @@ static int hfsplus_open (void *fsdata, char *fname)
 	return -1;
 }
 
+static void hfsplus_close (void *fsdata, int fd)
+{
+	hfsplus_t *fs = (hfsplus_t*)fsdata;
+	if (fd == (int)fs->numHandles-1) {
+		--fs->numHandles;
+	}
+}
+
 static void copyBytesFromTo (const char* from, char* to, long n)
 {
 	while (n-- > 0) { *to++ = *from++; }
@@ -660,9 +668,11 @@ static void hfsplus_newfs (uint8 part, uint32 offset) {
 		return;
 	}
 	myfs.open		= hfsplus_open;
+	myfs.close		= hfsplus_close;
 	myfs.tell		= hfsplus_tell;
 	myfs.seek		= hfsplus_seek;
 	myfs.read		= hfsplus_read;
+	myfs.getinfo		= 0;
 	myfs.fsdata		= (void*)fsData;
 	myfs.partnum	= part;
 

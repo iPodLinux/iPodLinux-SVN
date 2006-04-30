@@ -14,13 +14,13 @@ typedef struct {
 } config_image_t;
 
 typedef struct {
-  uint32 timeout;
-  uint32 def;
-  uint32 items;
-  uint32 debug;
-
+  int16 timeout;
+  int16 def;       // default item index in menu, 1-based
+  int16 items;
+  int16 backlight;
+  int16 contrast;
+  uint16 debug;
   config_image_t *image;
-
 } config_t;
 
 void      config_init(void);

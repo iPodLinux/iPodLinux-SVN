@@ -15,7 +15,24 @@
  *
  * This code must not compile to more than 0x100 bytes without modifying
  * make_fw.c to accomodate the extra room required.
+ *
+ *
+ * Here's an attempt at some information on how this all works (by TT, 30Apr06):
+ *
+ * This loader code got appended to the "osos" firmware file by a tool such
+ * as "make_fw". The ipod's flash ROM bootloader loads the entire "osos"
+ * file to memory, starting at either 0x28000000 or 0x10000000, which is
+ * the iPod's SDRAM start.
+ * The osos file's directory entry also maintains a entry address, which was
+ * changed to point to this code here, which is effectively the start of
+ * the "loader.bin" file (you can see this by issuing the command
+ *   "arm-uclinux-elf-objdump -d loader.elf | less")
+ * This loader code is built to run at address 0x40000000, though, which is
+ * the start of the PP's second RAM area, called IRAM or Fast RAM.
+ * Hence, this startup code here copies the loader code to 0x40000000 and
+ * then runs it from there.
  */
+
 
 	.equ	PP5002_PROC_ID,	0xc4000000
 	.equ	PP5002_COP_CTRL, 0xcf004058

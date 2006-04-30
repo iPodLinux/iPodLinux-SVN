@@ -58,16 +58,18 @@ static int fwfs_open(void *fsdata,char *fname) {
     if( mlc_strncmp( (char*)&fs->image[i].type, fname, 4 ) == 0 ) { /* Found image */
 
       if( fs->numHandles < MAX_HANDLES ) {
-	fs->filehandle[fs->numHandles].position  = 0;
-	fs->filehandle[fs->numHandles].length    = fs->image[i].len;
-	fs->filehandle[fs->numHandles].devOffset = fs->image[i].devOffset;
+        fwfs_file *fh = &fs->filehandle[fs->numHandles];
+	fh->position  = 0;
+	fh->length    = fs->image[i].len;
+	fh->devOffset = fs->image[i].devOffset;
+	fh->chksum    = fs->image[i].chksum;
 
         switch (fname[4]) {
         case '\0': /* full image - normal load */
           break;
         case '@': /* master image - aka the loader itself. don't know WHY, but oh well... */
-          fs->filehandle[fs->numHandles].devOffset += fs->image[i].entryOffset;
-          fs->filehandle[fs->numHandles].length    -= fs->image[i].entryOffset;
+          fh->devOffset += fs->image[i].entryOffset;
+          fh->length    -= fs->image[i].entryOffset;
           break;
         case '0': case '1': case '2': case '3': case '4': /* sub-image, aka Apple or Linux */
           /* you can also load the default just by loading the whole thing, but
@@ -79,10 +81,11 @@ static int fwfs_open(void *fsdata,char *fname) {
 #endif
             return(-1);
           }
-          fs->filehandle[fs->numHandles].devOffset = subimg.devOffset;
-          fs->filehandle[fs->numHandles].length    = subimg.len;
+          fh->devOffset = subimg.devOffset;
+          fh->length    = subimg.len;
           break;
         }
+
 
 	//mlc_printf("Found the file\n");
 	//mlc_show_fatal_error ();
@@ -100,6 +103,14 @@ static int fwfs_open(void *fsdata,char *fname) {
   mlc_printf("Err: did not find the image\n");
 #endif
   return(-1);
+}
+
+static void fwfs_close (void *fsdata, int fd)
+{
+  fwfs_t *fs = (fwfs_t*)fsdata;
+  if (fd == fs->numHandles-1) {
+    --fs->numHandles;
+  }
 }
 
 static size_t fwfs_read(void *fsdata,void *ptr,size_t size,size_t nmemb,int fd) {
@@ -176,6 +187,13 @@ static int fwfs_seek(void *fsdata,int fd,long offset,int whence) {
   return 0;
 }
 
+static int fwfs_getinfo (void *fsdata, int fd, long *out_chksum) {
+  fwfs_t *fs;
+  fs = (fwfs_t*)fsdata;
+  if (out_chksum) *out_chksum = fs->filehandle[fd].chksum;
+  return 0;
+}
+
 void fwfs_newfs(uint8 part,uint32 offset) {
   uint32 block,i;
   static uint8  buff[512]; /* !!! Move from BSS */
@@ -226,9 +244,11 @@ void fwfs_newfs(uint8 part,uint32 offset) {
   fwfs.numHandles = 0;
 
   myfs.open    = fwfs_open;
+  myfs.close   = fwfs_close;
   myfs.tell    = fwfs_tell;
   myfs.seek    = fwfs_seek;
   myfs.read    = fwfs_read;
+  myfs.getinfo = fwfs_getinfo;
   myfs.fsdata  = (void*)&fwfs;
   myfs.partnum = part;
 

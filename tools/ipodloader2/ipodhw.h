@@ -21,28 +21,14 @@
 #define IPOD_LCD_FORMAT_2BPP   0x00
 #define IPOD_LCD_FORMAT_RGB565 0x01
 
-/* bitmasks for 4g+; SCRL and SCRR are my own invention. */
-#define IPOD_KEYPAD_SCRL   0x80
-#define IPOD_KEYPAD_SCRR   0x40
-#define IPOD_KEYPAD_MENU   0x10
-#define IPOD_KEYPAD_PLAY   0x08
-#define IPOD_KEYPAD_PREV   0x04
-#define IPOD_KEYPAD_NEXT   0x02
-#define IPOD_KEYPAD_ACTION 0x01
-
-/* buttons returned by keypad_getkey() */
-#define IPOD_KEY_NONE    0
-#define IPOD_KEY_UP      1
-#define IPOD_KEY_DOWN    2
-#define IPOD_KEY_SELECT  3
-
 typedef struct {
   uint32 hw_rev;
-  uint32 lcd_base,lcd_height,lcd_width,lcd_type,lcd_busy_mask,lcd_format;
+  uint32 lcd_base, lcd_busy_mask;
   uint32 rtc;
-  uint32 ide_base,ide_control;
-
-  uint32 mem_base,mem_size;
+  uint32 ide_base, ide_control;
+  uint32 mem_base, mem_size;
+  uint32 lcd_height, lcd_width;
+  uint8 lcd_format, lcd_type, lcd_is_grayscale;
 } ipod_t;
 
 void    ipod_init_hardware(void);
@@ -50,10 +36,13 @@ ipod_t *ipod_get_hwinfo(void);
 
 int timer_get_current(void);
 int timer_check(int clock_start, int usecs);
-void lcd_wait_write(void);
+void lcd_wait_ready(void);
 void lcd_prepare_cmd(int cmd);
-void lcd_send_data(int data_lo, int data_hi);
-void lcd_cmd_and_data(int cmd, int data_lo, int data_hi);
+void lcd_send_data(int data_hi, int data_lo);
+void lcd_cmd_and_data16(int cmd, uint16 data);
+void lcd_cmd_and_data_hi_lo(int cmd, int data_hi, int data_lo);
+void lcd_set_contrast(int val);
+int lcd_curr_contrast ();
 void ipod_set_backlight(int on);
 
 void pcf_standby_mode(void);

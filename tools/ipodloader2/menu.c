@@ -5,31 +5,29 @@
 #include "minilibc.h"
 #include "ipodhw.h"
 
-#define MAX_ITEMS 10
-
 static struct {
   ipod_t *ipod;
-  uint32  numItems;
-  char   *string[MAX_ITEMS];
-  int     x,y,w,h,fh;
+  int    numItems;
+  char   *string[MAX_MENU_ITEMS];
+  int    x,y,w,h,fh;
 } menu;
 
 /* Clears the screen to a nice black to blue gradient */
 void menu_cls(uint16 *fb) {
-  uint32 x,y,tmp;
-  
-  for(y=0;y<(menu.ipod->lcd_height);y++) {
-    for(x=0;x<(menu.ipod->lcd_width);x++) {
-      tmp  = y;
-      tmp /= (menu.ipod->lcd_height/29);
-      fb[y * menu.ipod->lcd_width + x] = (y*31) / menu.ipod->lcd_height;  /* BRG * */
+  uint16 x,y;
+  if (menu.ipod->lcd_is_grayscale) {
+    fb_cls (fb, 0);
+  } else {
+    for(y=0;y<(menu.ipod->lcd_height);y++) {
+      for(x=0;x<(menu.ipod->lcd_width);x++) {
+        fb[y * menu.ipod->lcd_width + x] = fb_rgb (0, 0, (y*255) / menu.ipod->lcd_height);
+      }
     }
   }
 }
 
-static void menu_drawrect(uint16 *fb,uint32 x1,uint32 y1,uint32 x2,uint32 y2,uint16 color) {
-  uint32 x,y;
-  
+void menu_drawrect(uint16 *fb,uint16 x1,uint16 y1,uint16 x2,uint16 y2,uint16 color) {
+  int x,y;
   for(y=y1;y<=y2;y++) {
     for(x=x1;x<=x2;x++) {
       fb[y * menu.ipod->lcd_width + x] = color;
@@ -37,23 +35,21 @@ static void menu_drawrect(uint16 *fb,uint32 x1,uint32 y1,uint32 x2,uint32 y2,uin
   }
 }
 
-static void menu_hline (uint16 *fb, uint32 x1, uint32 x2, uint32 y, uint16 color) {
-  uint32 x;
-
-  for(x=x1;x<=x2;x++) {
+void menu_hline (uint16 *fb, uint16 x1, uint16 x2, uint16 y, uint16 color) {
+  int x;
+  for (x=x1; x<=x2; x++) {
     fb[y * menu.ipod->lcd_width + x] = color;
   }
 }
 
-static void menu_vline (uint16 *fb, uint32 x, uint32 y1, uint32 y2, uint16 color) {
-  uint32 y;
-
-  for(y=y1;y<=y2;y++) {
+void menu_vline (uint16 *fb, uint16 x, uint16 y1, uint16 y2, uint16 color) {
+  int y;
+  for (y=y1; y<=y2; y++) {
     fb[y * menu.ipod->lcd_width + x] = color;
   }
 }
 
-static void menu_frame (uint16 *fb, uint32 x1, uint32 y1, uint32 x2, uint32 y2, uint16 color) {
+void menu_frame (uint16 *fb, uint16 x1, uint16 y1, uint16 x2, uint16 y2, uint16 color) {
   menu_hline(fb,x1,x2,y1,color);
   menu_hline(fb,x1,x2,y2,color);
   menu_vline(fb,x1,y1,y2,color);
@@ -89,57 +85,64 @@ void menu_init() {
 }
 
 void menu_additem(char *text) {
-  if(menu.numItems < MAX_ITEMS)
+  if(menu.numItems < MAX_MENU_ITEMS)
     menu.string[menu.numItems++] = text;
   menu_recenter();
 }
 
 void menu_drawprogress(uint16 *fb,uint8 completed) {
-  uint32 pbarWidth;
+  uint16 pbarWidth;
   static char tmpBuff[40];
 
   pbarWidth = (menu.ipod->lcd_width - 20);
 
   menu_cls(fb);
 
-  menu_drawrect(fb,10,(menu.ipod->lcd_height>>1)-5,
-		   10+pbarWidth,(menu.ipod->lcd_height>>1)+5,0x0000);
-  menu_drawrect(fb,10,(menu.ipod->lcd_height>>1)-5,
-                10+(completed*pbarWidth)/255,(menu.ipod->lcd_height>>1)+5,(menu.ipod->lcd_format == IPOD_LCD_FORMAT_RGB565? 63<<5 : 0xFFFF));
+  menu_drawrect( fb,10,(menu.ipod->lcd_height>>1)-5,
+		 10+pbarWidth,(menu.ipod->lcd_height>>1)+5,
+                 WHITE );
+  menu_drawrect( fb,10,(menu.ipod->lcd_height>>1)-5,
+                 10+(completed*pbarWidth)/255,(menu.ipod->lcd_height>>1)+5,
+                 (menu.ipod->lcd_is_grayscale? BLACK : GREEN) );
 
   console_putsXY(1,1,tmpBuff);
   fb_update(fb);
 }
 
-void menu_redraw(uint16 *fb,uint32 selectedItem, char *title, char *countDown) {
+void menu_redraw(uint16 *fb, int selectedItem, char *title, char *countDown) {
   int i;
   int line_height = menu.fh + 4;
+  uint16 fg, bg;
+  uint8 tp;
+
   const uint8 *menu_font = (menu.fh == 16)? font_large : font_medium;
   console_setfont (menu_font);
 
   /*fb_cls(fb,0x1F << 11);*/
   menu_cls(fb);
 
-  console_setcolor(0xFFFF,0x0000,0x1);
+  console_getcolor(&fg, &bg, &tp);
+  console_setcolor(BLACK, WHITE, 1);
 
   console_putsXY(2,2,title);
   console_putsXY(menu.ipod->lcd_width-2-mlc_strlen(countDown)*font_width,2,countDown);
-  menu_hline(fb, 2, menu.ipod->lcd_width-2, menu.fh+2, 0xFFFF);
-  menu_frame(fb, menu.x-2, menu.y-2, menu.x+menu.w+1, menu.y+menu.h+1, 0xFFFF);
+  menu_hline(fb, 2, menu.ipod->lcd_width-2, menu.fh+2, BLACK);
+  menu_frame(fb, menu.x-2, menu.y-2, menu.x+menu.w+1, menu.y+menu.h+1, BLACK);
 
   for(i=0;i<menu.numItems;i++) {
     if( i==selectedItem ) {
       if( menu.ipod->hw_rev < 0x60000 || (menu.ipod->hw_rev>>16 == 0x7) ) {
-        console_setcolor (0, 0xFFFF, 0);
-        menu_drawrect(fb, menu.x, menu.y+i*line_height, menu.x+menu.w-1, menu.y+(i+1)*line_height-1, 0xFFFF);
+        console_setcolor (WHITE, BLACK, 0);
+        menu_drawrect(fb, menu.x, menu.y+i*line_height, menu.x+menu.w-1, menu.y+(i+1)*line_height-1, BLACK);
       } else {
-        console_setcolor(0xFFFF,26,0x0);
-        menu_drawrect(fb, menu.x, menu.y+i*line_height, menu.x+menu.w-1, menu.y+(i+1)*line_height-1, 26);
+        console_setcolor(BLACK, menu.ipod->lcd_is_grayscale?WHITE:MENU_HILIGHT, 0);
+        menu_drawrect(fb, menu.x, menu.y+i*line_height, menu.x+menu.w-1, menu.y+(i+1)*line_height-1, MENU_HILIGHT);
       }
-      console_putsXY(menu.x+2,menu.y+i*line_height+2,menu.string[i]);
     } else {
-      console_setcolor(0xFFFF,0x0000,0x1);
-      console_putsXY(menu.x+2,menu.y+i*line_height+2,menu.string[i]);
+      console_setcolor(BLACK, WHITE, 1);
     }
+    console_putsXY(menu.x+2, menu.y+i*line_height+2, menu.string[i]);
   }
+
+  console_setcolor(fg, bg, tp);
 }

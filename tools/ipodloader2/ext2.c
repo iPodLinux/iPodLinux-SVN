@@ -184,7 +184,7 @@ static ext2_file *ext2_findfile(char *fname) {
   uint32     inode_num,nstr;
   uint8      dirname[1024];
   inode_t   *retnode;
-  char      *origname = fname;
+  //char      *origname = fname;
 
   ret     = mlc_malloc( sizeof(ext2_file) );
   retnode = &ret->inode;
@@ -202,8 +202,8 @@ static ext2_file *ext2_findfile(char *fname) {
 
     inode_num = ext2_finddirentry(dirname,retnode);
     if(inode_num == 0) {
-        mlc_printf ("%s not found\n", origname);
-      return(NULL);
+        //mlc_printf ("%s not found\n", origname);
+        return(NULL);
     }
     
     ext2_getinode(retnode,inode_num);
@@ -234,6 +234,14 @@ static int ext2_open(void *fsdata,char *fname) {
   }
 
   return(fs->numHandles-1);
+}
+
+static void ext2_close (void *fsdata, int fd)
+{
+  ext2_t *fs = (ext2_t*)fsdata;
+  if (fd == fs->numHandles-1) {
+    --fs->numHandles;
+  }
 }
 
 static int ext2_seek(void *fsdata,int fd,long offset,int whence) {
@@ -308,9 +316,11 @@ void ext2_newfs(uint8 part,uint32 offset) {
 
   myfs.fsdata     = (void*)ext2;
   myfs.open       = ext2_open;
+  myfs.close      = ext2_close;
   myfs.seek       = ext2_seek;
   myfs.tell       = ext2_tell;
   myfs.read       = ext2_read;
+  myfs.getinfo    = 0;
   myfs.partnum    = part;
 
   vfs_registerfs(&myfs);

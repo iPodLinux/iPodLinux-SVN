@@ -127,7 +127,7 @@ static int fat32_open(void *fsdata,char *fname) {
   file = fat32_findfile(fs->root_dir_first_cluster,1,fname);
 
   if(file==NULL) {
-    mlc_printf("%s not found\n", fname);
+    //mlc_printf("%s not found\n", fname);
     return(-1);
   }
 
@@ -138,6 +138,14 @@ static int fat32_open(void *fsdata,char *fname) {
   }
 
   return(fs->numHandles-1);
+}
+
+static void fat32_close (void *fsdata, int fd)
+{
+  fat_t *fs = (fat_t*)fsdata;
+  if (fd == fs->numHandles-1) {
+    --fs->numHandles;
+  }
 }
 
 static size_t fat32_read(void *fsdata,void *ptr,size_t size,size_t nmemb,int fd) {
@@ -285,9 +293,11 @@ void fat32_newfs(uint8 part,uint32 offset) {
   }
 
   myfs.open   = fat32_open;
+  myfs.close  = fat32_close;
   myfs.tell   = fat32_tell;
   myfs.seek   = fat32_seek;
   myfs.read   = fat32_read;
+  myfs.getinfo= 0;
   myfs.fsdata = (void*)&fat;
   myfs.partnum = part;
 

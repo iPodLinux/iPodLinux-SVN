@@ -67,10 +67,10 @@ void pio_outbyte(unsigned int addr,unsigned char data) {
 }
 
 volatile unsigned char pio_inbyte( unsigned int addr ) {
-  return( inb( pio_reg_addrs[ addr ] ) );
+  return( inl( pio_reg_addrs[ addr ] ) );
 }
 volatile unsigned short pio_inword( unsigned int addr ) {
-  return( inw( pio_reg_addrs[ addr ] ) );
+  return( inl( pio_reg_addrs[ addr ] ) );
 }
 volatile unsigned int pio_indword( unsigned int addr ) {
   return( inl( pio_reg_addrs[ addr ] ) );
@@ -282,6 +282,7 @@ static int ata_readblock2(void *dst, uint32 sector, int storeInCache) {
     mlc_printf("\nATA2 IO Error\n");
     status = pio_inbyte( REG_ERROR );
     mlc_printf("Error reg: %u\n",status);
+    mlc_printf("dst: %lx, blk: %ld\n", dst, sector);
     mlc_show_fatal_error ();
   }
 

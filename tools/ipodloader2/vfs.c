@@ -42,6 +42,16 @@ int vfs_open(char *fname) {
   return(-1);
 }
 
+void vfs_close(int fd) {
+  if(vfs_handle[fd].fd != -1) {
+    uint32 part = vfs_handle[fd].fsIdx;
+    if (fs[part]->close) {
+      fs[part]->close( fs[part]->fsdata, vfs_handle[fd].fd );
+    }
+    vfs_handle[fd].fd = -1;
+  }
+}
+
 int vfs_seek(int fd,long offset,int whence) {
   uint32 part;
   
@@ -60,6 +70,14 @@ long vfs_tell(int fd) {
   part = vfs_handle[fd].fsIdx;
 
   return( fs[part]->tell( fs[part]->fsdata,vfs_handle[fd].fd) );
+}
+
+int vfs_getinfo(int fd, long *out_chksum) {
+  uint32 part;
+  if(vfs_handle[fd].fd == -1) return(-1);
+  part = vfs_handle[fd].fsIdx;
+  if (!fs[part]->getinfo) return -1;
+  return fs[part]->getinfo( fs[part]->fsdata, vfs_handle[fd].fd, out_chksum );
 }
 
 size_t vfs_read(void *ptr,size_t size, size_t nmemb,int fd) {
