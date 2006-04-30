@@ -1,6 +1,8 @@
 #include "bootloader.h"
 #include "minilibc.h"
 #include "ipodhw.h"
+#include "keypad.h"
+
 #define RTC inl(0x60005010)
 
 #define DPRINTF(args...)
@@ -9,41 +11,41 @@ static ipod_t *ipod;
 
 static void opto_i2c_init(void)
 {
-	int i, curr_value;
+  int i, curr_value;
 
-	/* wait for value to settle */
-	i = 1000;
-	curr_value = (inl(0x7000c104) << 16) >> 24;
-	while (i > 0)
-	{
-		int new_value = (inl(0x7000c104) << 16) >> 24;
+  /* wait for value to settle */
+  i = 1000;
+  curr_value = (inl(0x7000c104) << 16) >> 24;
+  while (i > 0)
+  {
+    int new_value = (inl(0x7000c104) << 16) >> 24;
 
-		if (new_value != curr_value) {
-			i = 10000;
-			curr_value = new_value;
-		}
-		else {
-			i--;
-		}
-	}
+    if (new_value != curr_value) {
+      i = 10000;
+      curr_value = new_value;
+    }
+    else {
+      i--;
+    }
+  }
 
-	outl(inl(0x6000d024) | 0x10, 0x6000d024);	/* port B bit 4 = 1 */
+  outl(inl(0x6000d024) | 0x10, 0x6000d024);	/* port B bit 4 = 1 */
 
-	outl(inl(0x6000600c) | 0x10000, 0x6000600c);	/* dev enable */
-	outl(inl(0x60006004) | 0x10000, 0x60006004);	/* dev reset */
-        int x;
-        for (x = 0; x < 100; x++) {
-        	__asm__ ("mov r0, r0"); /* ~5us delay */
-        }
-	outl(inl(0x60006004) & ~0x10000, 0x60006004);	/* dev reset finish */
+  outl(inl(0x6000600c) | 0x10000, 0x6000600c);	/* dev enable */
+  outl(inl(0x60006004) | 0x10000, 0x60006004);	/* dev reset */
+  int x;
+  for (x = 0; x < 100; x++) {
+    __asm__ ("mov r0, r0"); /* ~5us delay */
+  }
+  outl(inl(0x60006004) & ~0x10000, 0x60006004);	/* dev reset finish */
 
-	outl(0xffffffff, 0x7000c120);
-	outl(0xffffffff, 0x7000c124);
-	outl(0xc00a1f00, 0x7000c100);
-	outl(0x1000000, 0x7000c104);
+  outl(0xffffffff, 0x7000c120);
+  outl(0xffffffff, 0x7000c124);
+  outl(0xc00a1f00, 0x7000c100);
+  outl(0x1000000, 0x7000c104);
 }
 
-int keypad_getstate_opto(void) {
+static int keypad_getstate_opto(void) {
   uint32 reg,in,st,touch,button = 0;
   static int wheelloc = -1;
   static int lasttouch = 0;
@@ -122,10 +124,11 @@ int keypad_getstate(void) {
   uint8 state;
   uint8 ret = 0;
 
-  if( (ipod->hw_rev>>16) >= 5 ) return( keypad_getstate_opto() );
-  
-  if( (ipod->hw_rev>>16) < 4 ) {
+  if( (ipod->hw_rev>>16) >= 5 ) {
+    ret = keypad_getstate_opto();
+  } else if( (ipod->hw_rev>>16) < 4 ) {
     state = inb(0xCF000030);
+    if ((state & 0x20) == 0) ret |= IPOD_KEYPAD_HOLD;
     if ((state & 0x10) == 0) ret |= IPOD_KEYPAD_MENU;
     if ((state & 0x08) == 0) ret |= IPOD_KEYPAD_PREV;
     if ((state & 0x04) == 0) ret |= IPOD_KEYPAD_PLAY;
@@ -133,42 +136,17 @@ int keypad_getstate(void) {
     if ((state & 0x01) == 0) ret |= IPOD_KEYPAD_NEXT;
   } else {  /* 0x4 */
     state = inb(0x6000d030);
+    if ((state & 0x20) == 0) ret |= IPOD_KEYPAD_HOLD;
     if ((state & 0x10) == 0) ret |= IPOD_KEYPAD_PREV;
     if ((state & 0x08) == 0) ret |= IPOD_KEYPAD_NEXT;
     if ((state & 0x04) == 0) ret |= IPOD_KEYPAD_PLAY;
     if ((state & 0x02) == 0) ret |= IPOD_KEYPAD_MENU;
     if ((state & 0x01) == 0) ret |= IPOD_KEYPAD_ACTION;
   }
-  return ret;
-}
-
-void keypad_init(void) {
-  ipod = ipod_get_hwinfo();
-
-  if( (ipod->hw_rev>>16) < 4 ) {
-    /* 1G -> 3G Keyboard init */
-    outb(~inb(0xcf000030), 0xcf000060);
-    outb(inb(0xcf000040), 0xcf000070);
-    
-    outb(inb(0xcf000004) | 0x1, 0xcf000004);
-    outb(inb(0xcf000014) | 0x1, 0xcf000014);
-    outb(inb(0xcf000024) | 0x1, 0xcf000024);
-    
-    outb(0xff, 0xcf000050);
-  } else if( (ipod->hw_rev>>16) == 4 ) {
-    /* mini keyboard init */
-    outl(inl(0x6000d000) | 0x3f, 0x6000d000);
-    outl(inl(0x6000d010) & ~0x3f, 0x6000d010);
-  } else if( (ipod->hw_rev>>16) >= 5 ) {
-    opto_i2c_init();
-    /* IAK? */
-    outl(0,0x7000C180);
-    
-    outl( inl(0x7000C104) | 0xC0000000, 0x7000C104 );
-    outl(0x400A1F00, 0x7000C100);
-    
-    outl( inl(0x6000D024) | 0x10, 0x6000D024 );
+  if (ret & IPOD_KEYPAD_HOLD) {
+    ret = IPOD_KEYPAD_HOLD; // clear all other keys if Hold is engaged
   }
+  return ret;
 }
 
 int keypad_getkey(void) 
@@ -181,7 +159,7 @@ int keypad_getkey(void)
 
   if (newstate == oldstate) return 0;
 
-  for (bit = 1; bit < 0x20; bit <<= 1) {
+  for (bit = 1; bit <= 0x80; bit <<= 1) {
     if ((changes & bit) && (newstate & bit)) {
       downs |= bit;
     }
@@ -189,19 +167,70 @@ int keypad_getkey(void)
 
   DPRINTF ("O/N/C: %x %x %x\n", oldstate, newstate, changes);
 
-  oldstate = newstate & 0x1f;
+  oldstate = newstate;
 
-  if ((newstate & IPOD_KEYPAD_SCRR) || (downs & IPOD_KEYPAD_PLAY) || (downs & IPOD_KEYPAD_NEXT)) {
-    downs &= ~(IPOD_KEYPAD_PLAY | IPOD_KEYPAD_NEXT);
-    return IPOD_KEY_DOWN;
+  if (downs & IPOD_KEYPAD_SCRR) {
+    downs &= ~IPOD_KEYPAD_SCRR;
+    return IPOD_KEY_FWD;
   }
-  if ((newstate & IPOD_KEYPAD_SCRL) || (downs & IPOD_KEYPAD_MENU) || (downs & IPOD_KEYPAD_PREV)) {
-    downs &= ~(IPOD_KEYPAD_MENU | IPOD_KEYPAD_PREV);
-    return IPOD_KEY_UP;
+  if (downs & IPOD_KEYPAD_NEXT) {
+    downs &= ~IPOD_KEYPAD_NEXT;
+    return IPOD_KEY_FWD;
+  }
+  if (downs & IPOD_KEYPAD_PLAY) {
+    downs &= ~IPOD_KEYPAD_PLAY;
+    return IPOD_KEY_PLAY;
+  }
+  if (downs & IPOD_KEYPAD_SCRL) {
+    downs &= ~IPOD_KEYPAD_SCRL;
+    return IPOD_KEY_REW;
+  }
+  if (downs & IPOD_KEYPAD_PREV) {
+    downs &= ~IPOD_KEYPAD_PREV;
+    return IPOD_KEY_REW;
+  }
+  if (downs & IPOD_KEYPAD_MENU) {
+    downs &= ~IPOD_KEYPAD_MENU;
+    return IPOD_KEY_MENU;
   }
   if (downs & IPOD_KEYPAD_ACTION) {
     downs &= ~IPOD_KEYPAD_ACTION;
     return IPOD_KEY_SELECT;
   }
   return IPOD_KEY_NONE;
+}
+
+void keypad_init(void)
+{
+  int ipod_hw_ver;
+  
+  ipod = ipod_get_hwinfo();
+  ipod_hw_ver = ipod->hw_rev>>16;
+
+  if( ipod_hw_ver < 4 ) {
+    /* 1G -> 3G Keyboard init */
+    outb(~inb(0xcf000030), 0xcf000060);
+    outb(inb(0xcf000040), 0xcf000070);
+    
+    if (ipod_hw_ver == 0x1) {
+      outb(inb(0xcf000004) | 0x1, 0xcf000004);
+      outb(inb(0xcf000014) | 0x1, 0xcf000014);
+      outb(inb(0xcf000024) | 0x1, 0xcf000024);
+    }
+    
+    outb(0xff, 0xcf000050);
+  } else if( ipod_hw_ver == 4 ) {
+    /* mini keyboard init */
+    outl(inl(0x6000d000) | 0x3f, 0x6000d000);
+    outl(inl(0x6000d010) & ~0x3f, 0x6000d010);
+  } else {
+    opto_i2c_init();
+    /* IAK? */
+    outl(0,0x7000C180);
+    
+    outl( inl(0x7000C104) | 0xC0000000, 0x7000C104 );
+    outl(0x400A1F00, 0x7000C100);
+    
+    outl( inl(0x6000D024) | 0x10, 0x6000D024 );
+  }
 }

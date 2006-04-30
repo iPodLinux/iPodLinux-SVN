@@ -12,11 +12,16 @@ void console_puts(volatile char *str);
 void console_putsXY(int x,int y,volatile char *str);
 void console_printf (const char *format, ...);
 
-void console_setcolor(uint16 fg,uint16 bg,uint8 transparent);
+void console_setcolor(uint16 fg, uint16 bg, uint8 transparent);
+void console_getcolor(uint16 *fg, uint16 *bg, uint8 *transparent);
+
 void console_setfont(const uint8 *font);
 void console_home();
+void console_clear();
+int console_suppress_fbupdate (int modify);
 
 extern int font_width, font_height;
 extern const uint8 *fontdata;
+extern int console_printcount;
 
 #endif

@@ -1,6 +1,8 @@
 #include "bootloader.h"
+#include "ipodhw.h"
 #include "minilibc.h"
 #include "console.h"
+#include "menu.h"
 #include "vfs.h"
 
 #include "config.h"
@@ -33,46 +35,65 @@ static const char * find_somewhere (const char **names, const char *what, int *f
     return *names;
 }
 
-const char *confnames[] = { "(hd0,1)/LOADER.CFG", "(hd0,1)/IPODLO~1.CON",
-                            "(hd0,1)/loader.cfg", "(hd0,1)/ipodloader.conf",
-                            "(hd0,2)/boot/loader.cfg", "(hd0,2)/boot/ipodloader.conf",
-                            "(hd0,2)/loader.cfg", "(hd0,2)/ipodloader.conf", 0 };
-const char *kernnames[] = { "(hd0,1)/KERNEL.BIN", "(hd0,1)/LINUX.BIN",
-                            "(hd0,1)/NOTES/KERNEL.BIN", "(hd0,1)/VMLINUX",
-                            "(hd0,1)/kernel.bin", "(hd0,1)/linux.bin",
-                            "(hd0,1)/Notes/kernel.bin", "(hd0,1)/vmlinux",
-                            "(hd0,2)/boot/kernel.bin", "(hd0,2)/boot/linux.bin",
-                            "(hd0,2)/boot/vmlinux", "(hd0,2)/kernel.bin",
-                            "(hd0,2)/linux.bin", "(hd0,2)/vmlinux", 0 };
+const char *confnames[] = { // the following are for FAT short naming on the music partition:
+                            "(hd0,1)/IPODLO~1.CON", "(hd0,1)/NOTES/IPODLO~1.CON",
+                            // the following are for HFS long naming on the music partition:
+                            "(hd0,1)/ipodloader.conf", "(hd0,1)/Notes/ipodloader.conf",
+                            "(hd0,1)/loader.cfg", "(hd0,1)/Notes/loader.cfg",
+                            // the following are for the ext2 partition (WinPods only):
+                            "(hd0,2)/ipodloader.conf", "(hd0,2)/boot/ipodloader.conf",
+                            "(hd0,2)/loader.cfg", "(hd0,2)/boot/loader.cfg",
+                            // we can also read from the firmware partition:
+                            "(hd0,0)/lcnf",
+                            0 };
+const char *kernnames[] = { // the following are for HFS and FAT naming on the music partition:
+                            "(hd0,1)/kernel.bin", "(hd0,1)/Notes/kernel.bin",
+                            "(hd0,1)/linux.bin", "(hd0,1)/Notes/linux.bin",
+                            "(hd0,1)/vmlinux", "(hd0,1)/Notes/vmlinux",
+                            // the following are for the ext2 partition (WinPods only):
+                            "(hd0,2)/kernel.bin", "(hd0,2)/boot/kernel.bin",
+                            "(hd0,2)/linux.bin", "(hd0,2)/boot/linux.bin",
+                            "(hd0,2)/vmlinux", "(hd0,2)/boot/vmlinux",
+                            // we can also read the kernel from the firmware partition:
+                            "(hd0,0)/linx",
+                            0 };
 
-#define MAXITEMS 10 // more does not work as long as the assignment to "config.def" below is not fixed
+int is_applefw_img (char *firstblock);
 
-static config_image_t configimgs[MAXITEMS];
+static config_image_t configimgs[MAX_MENU_ITEMS];
 
-void config_init(void) {
+void config_init(void)
+{
     char *configdata, *p;
-    int fd, len, i;
+    int fd, len, firstitem = 1;
 
     mlc_memset (&config, 0, sizeof (config));
     mlc_memset (&configimgs, 0, sizeof (configimgs));
     config.image = configimgs;
-    config.timeout = 10;
-    config.def     = 0;
-    
-    find_somewhere (confnames, "configuration file", &fd);
+    config.timeout   = 15;
+    config.def       = 1; // default item index in menu, 1-based
+    config.debug     = 0;
+    config.contrast  = 0;
+    config.backlight = 1;
+    /* no, we want it on all models - users can turn it off themselves if they like:
+      config.backlight = ! ipod_get_hwinfo()->lcd_is_grayscale; // only color ipod _need_ the light to see anything
+    */
 
-    if (fd < 0) {
-        // no config file was found -> use defaults
+    {
+        // preset default menu items
     
-      setDefaultSettings:
-        i = 0;
+        int i = 0;
  
-        config.image[i].type  = CONFIG_IMAGE_BINARY;
         config.image[i].title = "Apple OS";
-        if (vfs_open ("(hd0,0)/aple") >= 0) {
-          config.image[i].path = "(hd0,0)/aple";
+        if (is_applefw_img ((void*)(ipod_get_hwinfo()->mem_base))) {
+          config.image[i].type  = CONFIG_IMAGE_SPECIAL;
+          config.image[i].path  = "ramimg";
         } else {
-          config.image[i].path = "(hd0,0)/osos";
+          config.image[i].type  = CONFIG_IMAGE_BINARY;
+          config.image[i].path  = "(hd0,0)/aple";
+          if (vfs_open (config.image[i].path) < 0) {
+            config.image[i].path  = "(hd0,0)/osos";
+          }
         }
         i++;
 
@@ -102,83 +123,98 @@ void config_init(void) {
         i++;
 
         config.items = i;
-
-        return;
     }
 
-    // read the config file into the buffer at 'configdata'
-    configdata = mlc_malloc (4096);
-    mlc_memset (configdata, 0, 4096);
-    if ((len = vfs_read (configdata, 1, 4096, fd)) == 4096) {
-        mlc_printf ("Config file is too long, reading only first 4k\n");
-        --len;
-    }
-    configdata[len] = 0;
-    
-    // change all CRs into LFs (for Windows and Mac users)
-    p = configdata;
-    while (*p) {
-      if (*p == '\r') *p = '\n';
-      ++p;
-    }
-    
-    // now parse the file contents
-    p = configdata;
-    while (p && *p) {
-        char *nextline = mlc_strchr (p, '\n');
-        char *value, *keyend;
+    if (find_somewhere (confnames, "configuration file", &fd)) {
 
-        if (nextline) {
-            *nextline = 0;
-            do { nextline++; } while (*nextline == '\n'); // skips empty lines
+        // read the config file into the buffer at 'configdata'
+        configdata = mlc_malloc (4096);
+        mlc_memset (configdata, 0, 4096);
+        if ((len = vfs_read (configdata, 1, 4096, fd)) == 4096) {
+            mlc_printf ("Config file is too long, reading only first 4k\n");
+            --len;
         }
-
-        while (*p == ' ' || *p == '\t') p++;
-
-        if ((value = mlc_strchr (p, '@')) != 0 || (value = mlc_strchr (p, '=')) != 0 || (value = mlc_strchr (p, ' ')) != 0) {
-            *value = 0;
-            do value++; while (*value == ' ' || *value == '\t' || *value == '=' || *value == '@');
+        configdata[len] = 0;
+        
+        // change all CRs into LFs (for Windows and Mac users)
+        p = configdata;
+        while (*p) {
+          if (*p == '\r') *p = '\n';
+          ++p;
         }
+        
+        // now parse the file contents
+        p = configdata;
+        while (p && *p) {
+            char *nextline = mlc_strchr (p, '\n');
+            char *value, *keyend;
 
-        if (!value) {
+            if (nextline) {
+                *nextline = 0;
+                do { nextline++; } while (*nextline == '\n'); // skips empty lines
+            }
+
+            while (*p == ' ' || *p == '\t') p++;
+
+            if (*p == ';' || *p == '#') {
+                // a comment line - ignore it
+                value = 0;
+            } else {
+                if ((value = mlc_strchr (p, '@')) != 0 || (value = mlc_strchr (p, '=')) != 0 || (value = mlc_strchr (p, ' ')) != 0) {
+                    *value = 0;
+                    do value++; while (*value == ' ' || *value == '\t' || *value == '=' || *value == '@');
+                }
+            }
+
+            if (!value) {
+                p = nextline;
+                continue;
+            }
+
+            keyend = p;
+            while (*keyend) keyend++; // goes to the NUL
+            do keyend--; while (*keyend == ' ' || *keyend == '\t'); // goes to last nonblank
+            *++keyend = 0; // first blank at end becomes end of string
+
+            if (!mlc_strcmp (p, "default")) {
+                config.def = mlc_atoi (value);
+            } else if (!mlc_strcmp (p, "timeout")) {
+                config.timeout = 0;
+                config.timeout = mlc_atoi (value);
+                if (config.timeout != 0 && config.timeout < 3) config.timeout = 3; // less than 3s is unusable currently with the slow (polling) keypress code
+            } else if (!mlc_strcmp (p, "debug")) {
+                config.debug = mlc_atoi (value);
+            } else if (!mlc_strcmp (p, "backlight")) {
+                config.backlight = mlc_atoi (value);
+            } else if (!mlc_strcmp (p, "contrast")) {
+                config.contrast = mlc_atoi (value);
+            } else {
+                // it's a menu item
+                if (firstitem) {
+                  // the user wants to list the files explicitly - discard the default list
+                  firstitem = 0;
+                  config.items = 0;
+                }
+                config.image[config.items].type  = CONFIG_IMAGE_BINARY;
+                config.image[config.items].title = p;
+                config.image[config.items].path  = value;
+                if (!mlc_strncasecmp (value, "rb:", 3)) {
+                    config.image[config.items].path += 3;
+                    config.image[config.items].type = CONFIG_IMAGE_ROCKBOX;
+                } else if (value[0] != '(') { // no partition specifier -> it's not a path but command
+                    config.image[config.items].type = CONFIG_IMAGE_SPECIAL;
+                }
+                config.items++;
+                if (config.items >= MAX_MENU_ITEMS) {
+                    break;
+                }
+            }
+
             p = nextline;
-            continue;
         }
-
-        keyend = p;
-        while (*keyend) keyend++; // goes to the NUL
-        do keyend--; while (*keyend == ' ' || *keyend == '\t'); // goes to last nonblank
-        *++keyend = 0; // first blank at end becomes end of string
-
-        if (!mlc_strcmp (p, "default")) {
-            config.def = mlc_atoi (value);
-        } else if (!mlc_strcmp (p, "timeout")) {
-            config.timeout = 0;
-            config.timeout = mlc_atoi (value);
-            if (config.timeout < 3) config.timeout = 3; // less than 3s is unusable currently with the slow (polling) keypress code
-        } else if (!mlc_strcmp (p, "debug")) {
-            config.debug = mlc_atoi (value);
-        } else {
-            config.image[config.items].type  = CONFIG_IMAGE_BINARY;
-            config.image[config.items].title = p;
-            config.image[config.items].path  = value;
-            if (!mlc_strncasecmp (value, "rb:", 3)) {
-                config.image[config.items].path += 3;
-                config.image[config.items].type = CONFIG_IMAGE_ROCKBOX;
-            } else if (value[0] != '(') { // no partition specifier -> it's not a path but command
-                config.image[config.items].type = CONFIG_IMAGE_SPECIAL;
-            }
-            config.items++;
-            if (config.items >= MAXITEMS) {
-                break;
-            }
-        }
-
-        p = nextline;
     }
-    
+
     // finally, some sanity checks:
-    if (config.items == 0) goto setDefaultSettings;
     if (config.def > config.items) config.def = config.items;
 }
 

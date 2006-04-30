@@ -26,6 +26,7 @@ typedef struct {
 typedef struct {
   uint32 devOffset;
   uint32 length;
+  uint32 chksum;
 
   uint32 position;
 } fwfs_file;

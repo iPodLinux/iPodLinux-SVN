@@ -7,9 +7,11 @@
 
 typedef struct {
   int    (*open)(void *fsdata,char *fname);
+  void   (*close)(void *fsdata, int fd);
   long   (*tell)(void *fsdata,int fd);
   int    (*seek)(void *fsdata,int fd,long offset,int whence);
   size_t (*read)(void *fsdata,void *ptr,size_t size,size_t nmemb,int fd);
+  int    (*getinfo)(void *fsdata, int fd, long *out_chksum);
 
   void *fsdata;
   uint8 partnum;
@@ -21,5 +23,7 @@ int  vfs_open(char *fname);
 int  vfs_seek(int fd,long offset,int whence);
 long vfs_tell(int fd);
 size_t vfs_read(void *ptr,size_t size, size_t nmemb,int fd);
+int vfs_getinfo(int fd, long *out_chksum);
+void vfs_close(int fd);
 
 #endif

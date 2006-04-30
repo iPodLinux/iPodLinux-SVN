@@ -10,7 +10,7 @@
 #include "menu.h"
 #include "config.h"
 
-#define LOADERNAME "iPL Loader 2.2"
+#define LOADERNAME "iPL Loader 2.3"
 
 static uint16 *framebuffer;
 
@@ -109,21 +109,28 @@ static void setArgs (char* baseAddr, int size, char* args) {
 // this function is to be called before the screen gets cleared so that
 // the user can, in debug mode, confirm to continue by a keypress
 //
-static void userconfirm () {
-  if (config_get()->debug & 2) {
-    mlc_printf ("Press a key to continue...\n");
-    do { } while (!keypad_getkey());
-  } else if (config_get()->debug) {
-    // do this always in debug mode, not just if bit 0 is set
-    mlc_delay_ms (3000); // 3s
+static int userconfirm () {
+  int shown = 0;
+  if (console_printcount) {
+    if (config_get()->debug & 2) {
+      mlc_printf ("-Press a key-\n");
+      do { } while (!keypad_getkey());
+      shown = 1;
+    } else if (config_get()->debug) {
+      // do this always in debug mode, not just if bit 0 is set
+      mlc_delay_ms (3000); // 3s
+      shown = 1;
+    }
+    console_printcount = 0;
   }
+  return shown;
 }
 
 // -----------------------------
 //   image file type detection
 // -----------------------------
 
-static char* rockboxIDs[] = { "ipco","nano","ipvd","ip3g","ip4g","mini", 0 };
+static char* rockboxIDs[] = { "ipco","nano","ipvd","ip3g","ip4g","mini", "mn2g", 0 };
 
 static int is_rockbox_img (char *firstblock) {
   long **ids = (long **) rockboxIDs;
@@ -142,12 +149,24 @@ static int is_appleos_img (char *firstblock) {
   return (mlc_memcmp (firstblock, "!ATAsoso", 8) == 0);
 }
 
-static int is_applefw_img (char *firstblock) {
+int is_applefw_img (char *firstblock); // we call this in config.c
+int is_applefw_img (char *firstblock) {
   return (mlc_memcmp (firstblock+0x20, "portalpl", 8) == 0);
 }
 
 static int is_linux_img (char *firstblock) {
   return (mlc_memcmp (firstblock, "\xfe\x1f\x00\xea", 4) == 0);
+}
+
+uint32 calc_checksum_fw (char* dest, int size); // we call this in config.c
+uint32 calc_checksum_fw (char* dest, int size) {
+  // Calculate checksum the way the firmware images are doing it
+  uint32 sum = 0;
+  long i;
+  for (i = 0; i < size; i++) {
+      sum += (uint8) *dest++;
+  }
+  return sum;
 }
 
 
@@ -200,20 +219,35 @@ static void load_rockbox(ipod_t *ipod, int fd, uint32 fsize, uint32 read, void *
       break;
     case 0x1:
     case 0x2:
-    case 0x3:
+    case 0x3: // 3g
       if (mlc_memcmp(&header[4],rockboxIDs[3],4)!=0) {
         mlc_printf("Invalid model.\n");
         return;
       }
       sum=7;
       break;
-    case 0x5:
+    case 0x5: // 4g
       if (mlc_memcmp(&header[4],rockboxIDs[4],4)!=0) {
         mlc_printf("Invalid model.\n");
         return;
       }
       sum=8;
       break;
+    case 0x4: // 1st Gen mini
+      if (mlc_memcmp(&header[4],rockboxIDs[5],4)!=0) {
+        mlc_printf("Invalid model.\n");
+        return;
+      }
+      sum=9;
+      break;
+    case 0x7: // 2nd Gen mini
+      if (mlc_memcmp(&header[4],rockboxIDs[6],4)!=0) {
+        mlc_printf("Invalid model.\n");
+        return;
+      }
+      sum=11;
+      break;
+
 
     // Note: if you add more ids here, please use the rockboxIDs[] array
     // so that the auto-detection of rb files keeps working in is_rockbox_img()
@@ -247,7 +281,7 @@ static void load_rockbox(ipod_t *ipod, int fd, uint32 fsize, uint32 read, void *
   if (sum == chksum) {
     mlc_printf("Checksum OK - starting Rockbox.");
   } else {
-    mlc_printf("Checksum error!  Aborting.");
+    mlc_printf("Checksum error! Aborting.");
     return;
   }
 
@@ -286,6 +320,7 @@ static void *loader_handleImage (ipod_t *ipod, char *imagename, int forceRockbox
   char *txt, *args;
   uint32 fsize, n;
   uint32 read = 0;
+  int shown, showWarning = 0;
   void *entry = (void*)ipod->mem_base;
 
   mlc_printf("Addr: %08lx\n", entry);
@@ -336,7 +371,8 @@ static void *loader_handleImage (ipod_t *ipod, char *imagename, int forceRockbox
     txt = "Rockbox (forced)";
   } else {
     // we've got something else - just launch it blindly
-    txt = "Unknown";
+    txt = "Unknown!";
+    showWarning = 1;
   }
 
   mlc_printf("Type: %s\n",txt);
@@ -358,7 +394,10 @@ static void *loader_handleImage (ipod_t *ipod, char *imagename, int forceRockbox
     setArgs (entry+0x80, 0x80, args);
   }
 
-  userconfirm ();
+  shown = userconfirm ();
+  if (showWarning && !shown) {
+    mlc_show_critical_error ();
+  }
 
   while(read < fsize) {
     if( (fsize-read) > (128*1024) ) { /* More than 128K to read */
@@ -386,6 +425,9 @@ static void *loader_handleImage (ipod_t *ipod, char *imagename, int forceRockbox
 // -----------------------
 
 extern void hd_demo();
+static void testcontrast (config_t *conf);
+
+static int orig_contrast;
 
 void *loader(void) {
   int menuPos, done;
@@ -410,7 +452,7 @@ void *loader(void) {
   //  and mlc_show_fatal_error(), which, when called, will not only flush the text
   //  to screen but might to other things that are generally useful in such a case.
   //
-  mlc_set_output_options (1, 0);  // this delays screen text output for now
+  mlc_set_output_options (1, 0);  // this caches screen text output for now
 
   ipod_init_hardware();
   ipod = ipod_get_hwinfo();
@@ -420,9 +462,19 @@ void *loader(void) {
 
   framebuffer = (uint16*)mlc_malloc( ipod->lcd_width * ipod->lcd_height * 2 );
   fb_init();
-  fb_cls(framebuffer,0x18);
+  fb_cls(framebuffer, ipod->lcd_is_grayscale ? WHITE : BLUEISH);
+  fb_update (framebuffer);
+
+  orig_contrast = lcd_curr_contrast();
+  if (ipod->lcd_is_grayscale && (ipod->hw_rev>>16) >= 3) {
+    // increase the contrast a little on 3G, 4G and Minis because of their crappy LCDs
+    // whose contrast weakens with certain patterns (e.g. horizontal lines as they appear
+    // in the menu's frame)
+    lcd_set_contrast (orig_contrast + 4);
+  }
 
   console_init(framebuffer);
+
   mlc_printf(LOADERNAME"\niPod: %08lx\n", ipod->hw_rev);
 
   #ifdef DEBUG
@@ -441,6 +493,8 @@ void *loader(void) {
     /*</DEBUG>*/
   #endif
 
+  keypad_init();
+
   ret = ata_init();
   if( ret ) {
     mlc_printf("ATAinit: %i\n",ret);
@@ -452,6 +506,7 @@ void *loader(void) {
 
   config_init();
   conf = config_get();
+
   if (conf->debug) {
     // any non-zero debug value turns on printf console output
     // furthermore, the debug value's bits have the following meaning:
@@ -463,17 +518,32 @@ void *loader(void) {
     mlc_set_output_options (0, conf->debug & 4);
   }
 
-  menu_init();
-  for(menuPos=0;menuPos<conf->items;menuPos++) {
-    menu_additem( conf->image[menuPos].title );
+  {
+    int contrast;
+    if (conf->contrast < 64) {
+      contrast = lcd_curr_contrast() + conf->contrast;
+    } else {
+      contrast = conf->contrast;
+    }
+    lcd_set_contrast (contrast);
   }
+
+  ipod_set_backlight (conf->backlight);
 
   if (conf->debug & 8) { // test scrolling
     int i;
     for (i = 1; i <= 15; ++i) mlc_printf ("%i\n",i);
+    userconfirm ();
   }
 
-  keypad_init();
+  if (conf->debug & 16) { // test contrast, mainly for grayscale ipods
+    testcontrast (conf);
+  }
+
+  menu_init();
+  for(menuPos=0;menuPos<conf->items;menuPos++) {
+    menu_additem( conf->image[menuPos].title );
+  }
 
   /*
    * This is the "event loop" for the menu
@@ -484,18 +554,25 @@ redoMenu:
   done    = 0;
 
   userconfirm ();
+  mlc_clear_screen ();
+
   int startTime = timer_get_current ();
+  char needsupdate = 1;
+  int last_menuPos = menuPos;
+  int last_second = 0;
   while(!done) {
     int key = keypad_getkey();
     
-    if( key == IPOD_KEY_UP ) {
-      if(menuPos>0)
-        menuPos--;
-    } else if( key == IPOD_KEY_DOWN ) {
-      if(menuPos<(conf->items-1))
-        menuPos++;
+    if( key == IPOD_KEY_REW || key == IPOD_KEY_MENU ) {
+      if (menuPos>0) menuPos--;
+    } else if( key == IPOD_KEY_FWD || key == IPOD_KEY_PLAY ) {
+      if (menuPos<(conf->items-1)) menuPos++;
     } else if( key == IPOD_KEY_SELECT ) {
       done = 1;
+    }
+    if (last_menuPos != menuPos) {
+      last_menuPos = menuPos;
+      needsupdate = 1;
     }
     
     if (key) {
@@ -505,23 +582,31 @@ redoMenu:
     timeLeft[0] = 0;
     if (conf->timeout) {
       int t = conf->timeout - (timer_get_current() - startTime) / 1000000;
+      if (t < 0) t = 0;
+      if (t != last_second) {
+        last_second = t;
+        needsupdate = 1;
+      }
       // show two digits
       timeLeft[1] = (t % 10) + '0';
       t /= 10;
       timeLeft[0] = t ? t+'0' : ' ';
       timeLeft[2] = 0;
-      if (timer_check (startTime, 1000000*conf->timeout)) {
+      if (timer_check (startTime, 1000000*(conf->timeout))) {
         // timed out
         done = 1;
       }
     }
 
-    menu_redraw(framebuffer,menuPos,LOADERNAME,timeLeft);
-    fb_update(framebuffer);
+    if (needsupdate) {
+      needsupdate = 0;
+      menu_redraw(framebuffer, menuPos, LOADERNAME, timeLeft);
+      fb_update(framebuffer);
+    }
   }
 
   menu_cls(framebuffer);
-  console_home();
+  fb_update(framebuffer);
   
   int forceRockbox = conf->image[menuPos].type == CONFIG_IMAGE_ROCKBOX;
   if( conf->image[menuPos].type == CONFIG_IMAGE_BINARY || forceRockbox ) {
@@ -536,17 +621,99 @@ redoMenu:
     }
   } else if( conf->image[menuPos].type == CONFIG_IMAGE_SPECIAL ) {
     char *cmd = conf->image[menuPos].path;
-    mlc_printf("Command: %s\n", cmd);
-    userconfirm ();
-    if (mlc_strcmp ("standby", cmd) == 0) {
+    if (mlc_strcmp ("standby", cmd) == 0 || mlc_strcmp ("sleep", cmd) == 0) {
+      mlc_printf("Going into standby mode\n", cmd);
+      userconfirm ();
+      ipod_set_backlight (0);
+      mlc_delay_ms (1000);
       pcf_standby_mode ();
-    } else {
+      mlc_show_fatal_error();
+    } else if (mlc_strcmp ("osos", cmd) == 0 || mlc_strcmp ("ramimg", cmd) == 0) {
+      if (is_applefw_img ((void*)ipod->mem_base)) {
+        mlc_printf("Launching Apple OS\n");
+      } else {
+        mlc_printf("Launching from RAM\n");
+      }
+      lcd_set_contrast (orig_contrast); // restore contrast in case launch fails and loader() is entered again
+      ipod_set_backlight (0);
+      return (void*)ipod->mem_base;
+    } else if (mlc_strcmp ("reboot", cmd) == 0 || mlc_strcmp ("diskmode", cmd) == 0) {
+      mlc_printf("Boot command:\n%s\n", cmd);
+      userconfirm ();
+      lcd_set_contrast (orig_contrast); // restore contrast in case action fails and loader() is entered again
       set_boot_action (ipod, cmd);
       reboot_ipod (ipod);
+    } else {
+      mlc_printf("Unknown command:\n%s\n", cmd);
+      mlc_show_critical_error();
     }
   }
 
   goto redoMenu;
+}
 
-  return(NULL);
+
+static void testcontrast (config_t *conf)
+{
+  int linemode = 0;
+  int contrast = orig_contrast;
+  int redraw = 1;
+  int kbdstate = 0, lastkbd = 0;
+  int backlight = conf->backlight;
+  uint16 linecolor = 0xffff;
+  ipod_t *ipod = ipod_get_hwinfo();
+
+  menu_init();
+  console_setcolor(BLACK, WHITE, 0);
+
+  while (1) {
+    int key;
+
+    if (redraw) {
+      redraw = 0;
+      lcd_set_contrast (contrast);
+      console_clear();
+      console_suppress_fbupdate (1); // suppresses fb_update calls for now
+      mlc_printf ("Contrast test screen\n");
+      mlc_printf ("Key state: %x\n", kbdstate);
+      mlc_printf ("<< >>: contrast %d\n", (int)lcd_curr_contrast());
+      mlc_printf ("Menu: linemode %d\n", linemode);
+      mlc_printf ("Play: backlight %d\n", backlight);
+      mlc_printf ("Select: exit\n");
+      linecolor = fb_rgb(linemode << 6,linemode << 6,linemode << 6);
+      {
+        int w = ipod->lcd_width;
+        menu_hline (framebuffer, 0, w-1, 78, linecolor);
+        menu_drawrect (framebuffer, 111, 82, w-1, 95, linecolor);
+        menu_drawrect (framebuffer, 0, 96, 110, 109, linecolor);
+      }
+      console_suppress_fbupdate (-1); // calls fb_update now
+    }
+
+    key = keypad_getkey();
+    redraw = 1;
+    if (key == IPOD_KEY_REW) {
+      contrast -= 1;
+    } else if (key == IPOD_KEY_FWD) {
+      contrast += 1;
+    } else if (key == IPOD_KEY_MENU) {
+      if (++linemode > 3) linemode = 0;
+    } else if (key == IPOD_KEY_PLAY) {
+      backlight = !backlight;
+      ipod_set_backlight (backlight);
+      redraw = 0;
+    } else if (key == IPOD_KEY_SELECT) {
+      console_printcount = 0; // prevents userconfirm() from doing something
+      return;
+    } else {
+      redraw = 0;
+    }
+    
+    kbdstate = keypad_getstate();
+    if (kbdstate != lastkbd) {
+      lastkbd = kbdstate;
+      redraw = 1;
+    }
+  } // while
+
 }

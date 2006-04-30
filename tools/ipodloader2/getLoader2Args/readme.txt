@@ -49,7 +49,8 @@ Practical example
 Note: the following assumes that you have the improved "minix" shell
 installed and not only the simple "sash" shell. How to tell the
 difference? Well, if the code below leads just to syntax error messages,
-you got the wrong one instaled.
+you got the wrong one installed. See http://ipodlinux.org/Minix-sh
+for how to install the Minix shell.
 
 Change your /etc/rc file by removing the last line reading "podzilla"
 and add instead these lines:

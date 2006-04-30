@@ -607,13 +607,36 @@ void mlc_delay_ms (long time_in_ms) {
   #endif
 }
 
+void mlc_delay_us (long time_in_micro_s) {
+  #if defined (__arm__)
+    // we only need the delay on the iPod, not when debugging on a PC
+    if (time_in_micro_s > 1000000) time_in_micro_s = 1000000; // 1s should always be more than enough!
+    long start = timer_get_current ();
+    do {
+      // pause
+    } while (!timer_check (start, time_in_micro_s));
+  #endif
+}
+
 long mlc_atoi (const char *str) {
-  long n = 0;
+  long n = 0, factor = 1;
+  if (*str == '+') {
+    str++;
+  } else if (*str == '-') {
+    *str++;
+    factor = -1;
+  }
   while (*str >= '0' && *str <= '9') {
       n *= 10;
       n += *str++ - '0';
   }
-  return n;
+  return n * factor;
+}
+
+void mlc_clear_screen () {
+  // sets the cursor home and clears the screen
+  printf_buflen = 0;
+  console_clear();
 }
 
 void mlc_set_output_options (int buffered, int slow) {
@@ -625,10 +648,12 @@ void mlc_set_output_options (int buffered, int slow) {
   if (!buffered && printf_buflen) {
     // flush the buffered data to console
     int i;
+    console_suppress_fbupdate (1);
     for (i = 0; i < printf_buflen; i++) {
       print_to_console (printf_buffer[i], 0);
     }
     printf_buflen = 0;
+    console_suppress_fbupdate (-1);
   }
   do_buffered_printf = buffered;
   do_slow_printf = slow && !buffered;
@@ -637,12 +662,16 @@ void mlc_set_output_options (int buffered, int slow) {
 // call this if you can still continue but want to make the user see what you just printed:
 void mlc_show_critical_error () {
   mlc_set_output_options (0, 0);
+  ipod_set_backlight (1);
   mlc_delay_ms (5000); // just pause for 5s
 }
 
 // call this if you can not continue, and want to make the user see what you just printed:
 void mlc_show_fatal_error () {
   mlc_set_output_options (0, 0);
-  mlc_printf ("\nHold Menu & %s to restart", ((ipod_get_hwinfo()->hw_rev < 0x40000) ? "Play" : "Select"));
+  mlc_printf ("\nHold Menu & %s to restart\n", ((ipod_get_hwinfo()->hw_rev < 0x40000) ? "Play" : "Select"));
+  ipod_set_backlight (1);
+  mlc_delay_ms (10000); // leave light on for 10s
+  ipod_set_backlight (0);
   for (;;) {} // we stop here
 }
