@@ -1400,20 +1400,139 @@ void dec_draw_Amiga1x( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 	}
 }
 
+/* thse just call the above appropriately */
 void dec_draw_Amiga13( struct header_info * hdr, ttk_surface srf )
 {
-	dec_draw_Amiga1x( hdr, srf, 13 );
+	dec_draw_Amiga1x( hdr, srf, 13 ); /* AmigaDOS 1.3 */
 }
 
 void dec_draw_Amiga11( struct header_info * hdr, ttk_surface srf )
 {
-	dec_draw_Amiga1x( hdr, srf, 11 );
+	dec_draw_Amiga1x( hdr, srf, 11 ); /* AmigaDOS 1.1 */
 }
-
 
 void dec_draw_Amiga20( struct header_info * hdr, ttk_surface srf )
 {
-	dec_draw_Amiga1x( hdr, srf, 20 );
+	dec_draw_Amiga1x( hdr, srf, 20 ); /* AmigaDOS 2.0 */
+}
+
+
+/* BeOS yellow tab */
+void dec_draw_BeOS( struct header_info * hdr, ttk_surface srf )
+{
+	int tw = ttk_text_width (ttk_menufont, ttk_windows->w->title);
+	int www = tw + 10 + hdr->widg->x;
+
+	if( hdr->widg->x == 0 ) {
+		www += ttk_screen->wy;	/* add the width of faux close */
+	}
+
+	/* always force left justification */
+	ttk_header_set_text_justification( TTK_TEXT_LEFT );
+	if( hdr->widg->x == 0 ) {
+		ttk_header_set_text_position( hdr->widg->x + hdr->widg->h + 4 );
+	} else {
+		ttk_header_set_text_position( hdr->widg->x + 4 );
+	}
+
+	/* backing */
+	ttk_fillrect( srf, 0, 0, ttk_screen->w, ttk_screen->wy, 
+			ttk_makecol( BLACK ));
+
+	/* yellow tab */
+	ttk_fillrect( srf, 0, 0, www, ttk_screen->wy, 
+			ttk_ap_get( "header.bg" )->color ); /* xxx color */
+
+	/* faux close widget */
+	/* fill gradient -- unfortunately, we have no diagonal gradient... */
+	ttk_vgradient( srf, 4, 4, 
+		    ttk_screen->wy-4, ttk_screen->wy-4,
+		    ttk_ap_getx( "header.shine" )->color,
+		    ttk_ap_getx( "header.accent" )->color );
+	       
+	/* draw these to get the NE/SW corners */
+	ttk_ap_hline( srf, ttk_ap_get( "header.shadow" ), 
+	    4, ttk_screen->wy-4, 4 );
+	ttk_ap_vline( srf, ttk_ap_get( "header.shadow" ),
+	    4, 4, ttk_screen->wy-4 );
+
+	/* and the main container boxes... */
+	ttk_rect( srf, 4, 4, 
+		    ttk_screen->wy-4, ttk_screen->wy-4,
+		    ttk_ap_getx( "header.shadow" )->color );
+	ttk_rect( srf, 5, 5, 
+		    ttk_screen->wy-3, ttk_screen->wy-3,
+		    ttk_ap_getx( "header.shine" )->color );
+	
+	/* 3d effect */
+	/* top */
+	ttk_line( srf, 0, 0, www, 0,
+			ttk_ap_getx( "header.shine" )->color );
+	/* left */      
+	ttk_line( srf, 0, 0, 0, ttk_screen->wy,
+			ttk_ap_getx( "header.shine" )->color );
+	/* bottom - handled by header.line */
+	/* right */
+	ttk_line( srf, www-1, 1,
+			www-1, ttk_screen->wy,
+			ttk_ap_getx( "header.shadow" )->color ); 
+}
+
+/* Atari ST's horrible looking TOS interface */
+void dec_draw_STTOS( struct header_info * hdr, ttk_surface srf )
+{
+}
+
+/* Apple Lisa */
+void dec_draw_Lisa( struct header_info * hdr, ttk_surface srf )
+{
+	int tw = ttk_text_width (ttk_menufont, ttk_windows->w->title);
+	ttk_color c;
+	int xw = tw + 8 + 3;
+	int xp;
+	int xL, xR;
+	int v = ttk_screen->wy -1;
+
+	ttk_header_set_text_justification( TTK_TEXT_CENTER );
+	xp = ((ttk_screen->w - tw)>>1) - 5;
+	ttk_header_set_text_position( ttk_screen->w >>1 );
+
+	/* center */
+	c = ttk_ap_getx( "header.accent" )->color;
+	ttk_fillrect( srf, xp, 0, xp+xw, v+1, c);
+
+	xL = xp;  xR = xp + xw;
+
+	/* four-bars */
+	ttk_fillrect( srf, xL-5, 0, xL-1, v+1, c );
+	ttk_fillrect( srf, xR+1, 0, xR+5, v+1, c );
+
+	/* three-bars */
+	ttk_fillrect( srf, xL-9, 0, xL-6, v+1, c );
+	ttk_fillrect( srf, xR+6, 0, xR+9, v+1, c );
+
+	/* two-bars */
+	ttk_fillrect( srf, xL-12, 0, xL-10, v+1, c );
+	ttk_fillrect( srf, xR+10, 0, xR+12, v+1, c );
+
+	/* lines */
+	ttk_line( srf, xL-14, 0, xL-14, v, c );
+	ttk_line( srf, xL-16, 0, xL-16, v, c );
+	ttk_line( srf, xL-18, 0, xL-18, v, c );
+
+	ttk_line( srf, xR+13, 0, xR+13, v, c );
+	ttk_line( srf, xR+15, 0, xR+15, v, c );
+	ttk_line( srf, xR+17, 0, xR+17, v, c );
+}
+
+/* Apple Macintosh System 7 */
+void dec_draw_MacOS7( struct header_info * hdr, ttk_surface srf )
+{
+}
+
+/* Apple Macintosh MacOS 8 */
+void dec_draw_MacOS8( struct header_info * hdr, ttk_surface srf )
+{
 }
 
 
@@ -1732,38 +1851,60 @@ void pz_header_init()
 					test_draw_widget, "R2" );
 
 		/* register all internal decorations */
-		pz_add_header_decoration( "Plain", NULL, dec_plain, "GROG" );
+		pz_add_header_decoration( "Plain", NULL, dec_plain,
+					"BleuLlama" );
 		pz_add_header_decoration( "CS Gradient", NULL, dec_csdef,
-					"GROG" );
-
-		pz_add_header_decoration( "Plain Dots", NULL, dec_plaindots,
-					"GROG" );
-		pz_add_header_decoration( "CS Dots", NULL, dec_dots, "GROG" );
-
-		pz_add_header_decoration( "Amiga 1.1", NULL, dec_draw_Amiga11,
 					"BleuLlama" );
 
+		/* dots! */
+		pz_add_header_decoration( "Plain Dots", NULL, dec_plaindots,
+					"BleuLlama" );
+		pz_add_header_decoration( "CS Dots", NULL, dec_dots,
+					"BleuLlama" );
+
+		/* AmigaDOS are first because I say so. */
+		pz_add_header_decoration( "Amiga 1.1", NULL, dec_draw_Amiga11,
+					"BleuLlama" );
 		pz_add_header_decoration( "Amiga 1.3", NULL, dec_draw_Amiga13,
 					"BleuLlama" );
 		pz_add_header_decoration( "Amiga 2.0", NULL, dec_draw_Amiga20,
 					"BleuLlama" );
 
+		/* other OS lookalikes */
+		pz_add_header_decoration( "BeOS", NULL, dec_draw_BeOS, 
+					"BleuLlama" );
+/* XXXXX
+		pz_add_header_decoration( "Atari ST TOS", NULL, dec_draw_STTOS, 
+					"BleuLlama" );
+*/
+		pz_add_header_decoration( "Lisa", NULL, dec_draw_Lisa, 
+					"BleuLlama" );
+/* XXXXX
+		pz_add_header_decoration( "System 7", NULL, dec_draw_MacOS7, 
+					"BleuLlama" );
+		pz_add_header_decoration( "MacOS 8", NULL, dec_draw_MacOS8, 
+					"BleuLlama" );
+*/
+
+		/* a test one for the hell of it.  move this into a module? */
 		pz_add_header_decoration( "Test Header", 
 					test_update_decorations, 
 					test_draw_decorations,
 					"HDR" );
 
+		/* set up "Plain" as the default */
 		pz_enable_header_decorations( "Plain" );
 	}
 	initted++;
 
-	/* for now, hardcode these...  first listed is closer to the center */
+	/* for now, hardcode these... */
 	pz_enable_widget_on_side( HEADER_SIDE_LEFT, "Load Average" );
 	pz_enable_widget_on_side( HEADER_SIDE_LEFT, "Hold" );
 
 	pz_enable_widget_on_side( HEADER_SIDE_RIGHT, "Power Icon" );
 	pz_enable_widget_on_side( HEADER_SIDE_RIGHT, "Power Text" );
 	
+	/* load in the user settings */
 	pz_enable_header_decorations( (char *) 
 		    pz_get_string_setting( pz_global_config, DECORATIONS ));
 
