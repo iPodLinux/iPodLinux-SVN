@@ -1190,12 +1190,12 @@ void test_update_decorations( struct header_info * hdr )
 }
 
 
-/* plain - do nothing */
-void dec_plain( struct header_info * hdr, ttk_surface srf )
+/* this is helpful for getting a real solid color when there's a gradient
+   or if there's a regular color */
+ttk_color pz_dec_ap_get_solid( char * name )
 {
 	ttk_color c;
-	TApItem *ap = ttk_ap_get( "header.bg" );
-
+	TApItem *ap = ttk_ap_get( name );
 	if( ap ) {
 		if( ap->type & TTK_AP_COLOR ) {
 			c = ap->color;
@@ -1205,7 +1205,13 @@ void dec_plain( struct header_info * hdr, ttk_surface srf )
 	} else {
 		c = ttk_makecol( WHITE );
 	}
+	return( c );
+}
 
+/* plain - do nothing */
+void dec_plain( struct header_info * hdr, ttk_surface srf )
+{
+	ttk_color c = pz_dec_ap_get_solid( "header.bg" );
 	ttk_fillrect( srf, 0, 0, ttk_screen->w, hdr->widg->h, c );
 }
 
@@ -1479,8 +1485,86 @@ void dec_draw_BeOS( struct header_info * hdr, ttk_surface srf )
 }
 
 /* Atari ST's horrible looking TOS interface */
+
+/* TOS hashmarks
+**   x x . . x x . . 
+**   x x . . x x . . 
+*/
+static unsigned char dec_tos_hash[] = { 4, 1,
+	3, 3, 0, 0, 3, 3, 0, 0,
+	3, 3, 0, 0, 3, 3, 0, 0
+};
 void dec_draw_STTOS( struct header_info * hdr, ttk_surface srf )
 {
+	int x,y, xp;
+	int startx = hdr->widg->x;
+	ttk_color bg_c = pz_dec_ap_get_solid( "header.bg" );
+	ttk_color fg_c = pz_dec_ap_get_solid( "header.fg" );
+	int tw = ttk_text_width (ttk_menufont, ttk_windows->w->title);
+	enum ttk_justification just = 
+		(int) pz_get_int_setting (pz_global_config, TITLE_JUSTIFY);
+
+	if( startx == 0 ) {
+		startx += hdr->widg->h;
+	}
+
+	/* draw the horrid looking texture */
+	for( x=startx+2 ; x<hdr->widg->x+hdr->widg->w ; x += 4 ) {
+		for( y=0 ; y<hdr->widg->h ; y ++ ) {
+			if( (y&0x02) == 0 ) {
+				ttk_draw_icon( dec_tos_hash, srf, x, y, 
+				    ttk_ap_getx( "header.fg" ), fg_c );
+			}
+		}
+	}
+
+	/* i don't know what's worse... that people thinks this looks good
+	   or that i'm wasting so much time to make it available for them  */
+
+	/* draw the crummy close box */
+	if( hdr->widg->x == 0 ) {
+		int v = hdr->widg->h-1;
+		int offs = v>>3;
+
+		ttk_fillrect( srf, 0, 0, v, v, bg_c );
+		ttk_fillrect( srf, offs, offs,
+			( (offs&1)?1:0 ) + v-offs,
+			( (offs&1)?1:0 ) + v-offs,
+			fg_c );
+
+		/* TL-BR */
+		ttk_line( srf,  0, 0,  v,   v,  bg_c );
+		ttk_line( srf,  0, 1,  v-1, v,  bg_c );
+		ttk_line( srf,  1, 0,  v, v-1,  bg_c );
+
+		/* BL-TR */
+		ttk_line( srf,  0, v,    v, 0,   bg_c );
+		ttk_line( srf,  0, v-1,  v-1, 0, bg_c );
+		ttk_line( srf,  1, v,    v, 1,   bg_c );
+	}
+
+	/* tweak the text for the closebox */
+	pz_header_justification_helper( startx + 6, 
+					hdr->widg->x + hdr->widg->w - 4 );
+	switch( just ) {
+	case( TTK_TEXT_LEFT ):
+		xp = startx + 2;
+		break;
+	case( TTK_TEXT_RIGHT ):
+		xp = hdr->widg->x + hdr->widg->w - tw - 6;
+		break;
+	default:
+		xp = ((ttk_screen->w - tw ) >> 1) -3;
+		break;
+	}
+	/* backwash..er.. backfill */
+	ttk_fillrect( srf, xp, 0, xp+tw+6, hdr->widg->h, bg_c );
+
+	/* draw the separators */
+	ttk_fillrect( srf, startx, 0, startx+2, hdr->widg->h-1, fg_c );
+	ttk_fillrect( srf, hdr->widg->x+hdr->widg->w-1, 0, 
+			   hdr->widg->x+hdr->widg->w+1, hdr->widg->h-1, fg_c );
+	
 }
 
 /* Apple Lisa */
@@ -1864,22 +1948,20 @@ void pz_header_init()
 
 		/* AmigaDOS are first because I say so. */
 		pz_add_header_decoration( "Amiga 1.1", NULL, dec_draw_Amiga11,
-					"BleuLlama" );
+					"Thanks, =RJ=!" );
 		pz_add_header_decoration( "Amiga 1.3", NULL, dec_draw_Amiga13,
-					"BleuLlama" );
+					"Thanks, =RJ=!" );
 		pz_add_header_decoration( "Amiga 2.0", NULL, dec_draw_Amiga20,
 					"BleuLlama" );
 
-		/* other OS lookalikes */
+		/* other inferior OS lookalikes */
 		pz_add_header_decoration( "BeOS", NULL, dec_draw_BeOS, 
 					"BleuLlama" );
-/* XXXXX
 		pz_add_header_decoration( "Atari ST TOS", NULL, dec_draw_STTOS, 
 					"BleuLlama" );
-*/
 		pz_add_header_decoration( "Lisa", NULL, dec_draw_Lisa, 
 					"BleuLlama" );
-/* XXXXX
+/*
 		pz_add_header_decoration( "System 7", NULL, dec_draw_MacOS7, 
 					"BleuLlama" );
 		pz_add_header_decoration( "MacOS 8", NULL, dec_draw_MacOS8, 
