@@ -16,7 +16,8 @@
 \def yellow #ffff00
 \def white #ffffff
 
-  header: bg => black, fg => red, line => red, accent => red,
+  header: bg => <vert medred to black to medred >, fg => red, line => red, 
+	  accent => red,
 	  shadow => medred, shine => ltred,
 	  gradient.top => ltred,
 	  gradient.middle => dkred,
