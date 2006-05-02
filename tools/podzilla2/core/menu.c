@@ -151,6 +151,7 @@ static const char * verbosity_options[] = {
     N_("High"), N_("Medium"), N_("Low"), 0
 };
 
+
 static const char * appearance_decorations[] = { "Plain",
 		"Amiga 1.1", "Amiga 1.3", "Amiga 2.0",
 		"BeOS",
@@ -161,10 +162,12 @@ static const char * appearance_decorations[] = { "Plain",
 		0 };
 
 /* be sure to keep the "Off" entry lined up with BATTERY_UPDATE_OFF in pz.h */
+/* XXXXX
 static const char * battery_update_rates[] = { 
 		N_("1s"), N_("5s"), N_("15s"),
 		N_("30s"), N_("1m"), N_("Off"), 0
 };
+*/
 
 static const char * title_justifications[] = {
 		N_("Center"), N_("Left"), N_("Right"), 0 };
@@ -226,6 +229,8 @@ static int settings_button (TWidget *this, int key, int time)
 
 void pz_menu_init()
 {
+    ttk_menu_item * item;
+
     check_init();
     pz_menu_add_stub ("/Music");
     pz_menu_add_stub ("/Extras");
@@ -247,53 +252,61 @@ void pz_menu_init()
 
     pz_menu_add_action ("/Settings/Appearance/Color Scheme", pz_select_color_scheme);
 
-#ifdef MONKEYS_ARE_FLYING_OUT_OF_MY_BUTT
-    pz_menu_add_setting ("/Settings/Appearance/Header/Decorations",
-		DECORATIONS, pz_global_config, appearance_decorations);
-    pz_menu_add_setting ("/Settings/Appearance/Header/Text Justification", 
-		TITLE_JUSTIFY, pz_global_config, title_justifications);
 
-
-    /* this should realy open a list of all of the registered
-	widgets, with "on"/"off" selections for each one */
-    pz_menu_add_setting ("/Settings/Appearance/Header/L Selection", 
-		DECORATIONS, pz_global_config, appearance_decorations);
+    /* select from the available widgets */
+    item = pz_menu_add_action( "/Settings/Appearance/Widgets/L Selection...", 
+		pz_select_left_widgets );
+    item->flags |= TTK_MENU_ICON_SUB;
 
     /* set of display styles */
-    pz_menu_add_setting ("/Settings/Appearance/Header/L Display", 
+    pz_menu_add_setting ("/Settings/Appearance/Widgets/L Display", 
 		HEADER_METHOD_L, pz_global_config, 
 		headerwidget_display_methods);
 
-    /* how often they get updated */
-    pz_menu_add_setting ("/Settings/Appearance/Header/L Update Rate", 
+    /* how often they get updated - move this into the above selection */
+    pz_menu_add_setting ("/Settings/Appearance/Widgets/L Update Rate", 
 		HEADER_UPD_RATE_L, pz_global_config, 
 		headerwidget_display_rates);
 
     /* how often the cycling rotates the display */
-    pz_menu_add_setting ("/Settings/Appearance/Header/L Cycle Rate", 
+    pz_menu_add_setting ("/Settings/Appearance/Widgets/L Cycle Rate", 
 		HEADER_CYC_RATE_L, pz_global_config, 
 		headerwidget_display_rates);
 
+    /* should we update active, but cycled out widgets? */
+/* XXX future
+    pz_menu_add_setting ("/Settings/Appearance/Widgets/L Update Hidden", 
+		HEADER_UPD_CYCD_L, pz_global_config, boolean_options );
+*/
 
     /* likewise for these three */
-    pz_menu_add_setting ("/Settings/Appearance/Header/R Selection", 
-		DECORATIONS, pz_global_config, appearance_decorations);
-    pz_menu_add_setting ("/Settings/Appearance/Header/R Display", 
+    item = pz_menu_add_action( "/Settings/Appearance/Widgets/R Selection...", 
+		pz_select_right_widgets );
+    item->flags |= TTK_MENU_ICON_SUB;
+    pz_menu_add_setting ("/Settings/Appearance/Widgets/R Display", 
 		HEADER_METHOD_R, pz_global_config, 
 		headerwidget_display_methods);
-    pz_menu_add_setting ("/Settings/Appearance/Header/R Update Rate", 
+    pz_menu_add_setting ("/Settings/Appearance/Widgets/R Update Rate", 
 		HEADER_UPD_RATE_R, pz_global_config, 
 		headerwidget_display_rates);
-    pz_menu_add_setting ("/Settings/Appearance/Header/R Cycle Rate", 
+    pz_menu_add_setting ("/Settings/Appearance/Widgets/R Cycle Rate", 
 		HEADER_CYC_RATE_R, pz_global_config, 
 		headerwidget_display_rates);
+/* XXX future
+    pz_menu_add_setting ("/Settings/Appearance/Widgets/R Update Hidden", 
+		HEADER_UPD_CYCD_R, pz_global_config, boolean_options );
+*/
 
-#else
-    /* these get absorbed into the above */
-    pz_menu_add_setting ("/Settings/Appearance/Decorations",
-		DECORATIONS, pz_global_config, appearance_decorations);
+    /* these are for the titlebar behind the widgets */
+    item = pz_menu_add_action ("/Settings/Appearance/Decorations", 
+		pz_select_decorations );
+    item->flags |= TTK_MENU_ICON_SUB;
+    pz_menu_add_setting ("/Settings/Appearance/Decoration Update",
+		DECORATION_RATE, pz_global_config, headerwidget_display_rates);
     pz_menu_add_setting ("/Settings/Appearance/Text Justification", 
 		TITLE_JUSTIFY, pz_global_config, title_justifications);
+
+#ifdef MONKEYS_ARE_FLYING_OUT_OF_MY_BUTT
 
     /* these three go away with the new modular mechanism */
     pz_menu_add_setting ("/Settings/Appearance/Battery Update", 
@@ -307,11 +320,6 @@ void pz_menu_init()
     pz_menu_add_setting ("/Settings/Appearance/Menu Transition", SLIDE_TRANSIT, pz_global_config, transit_options);
     pz_menu_add_ttkh ("/Settings/Appearance/Menu Font", pz_select_font, &ttk_menufont)->cdata = MENU_FONT;
     pz_menu_add_ttkh ("/Settings/Appearance/Text Font", pz_select_font, &ttk_textfont)->cdata = TEXT_FONT;
-
-
-    pz_menu_add_ttkh ("/Settings/Appearance/Widgets/Left", 
-		pz_select_font, &ttk_textfont)->cdata = TEXT_FONT;
-
     pz_menu_add_setting ("/Settings/Verbosity", VERBOSITY, pz_global_config, verbosity_options);
     pz_menu_add_setting ("/Settings/Browser Path Display", BROWSER_PATH, pz_global_config, 0);
     pz_menu_add_setting ("/Settings/Browser Show Hidden", BROWSER_HIDDEN, pz_global_config, 0);

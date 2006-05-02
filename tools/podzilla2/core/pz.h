@@ -353,6 +353,60 @@ void pz_header_set_local (TWidget *left, TWidget *right);
 void pz_header_unset_local (void);
 
 
+/* modular headers-related stuff */
+TWindow * pz_select_decorations( void );
+TWindow * pz_select_left_widgets( void );
+TWindow * pz_select_right_widgets( void );
+
+struct header_info;	/* pre-declare for the callback functions... */
+
+/* you'll need for your draw and update routines to adhere to these */
+typedef void (*update_fcn) ( struct header_info * );
+typedef void (*draw_fcn)   ( struct header_info *, ttk_surface srf );
+
+typedef struct header_info {
+	struct header_info *next; 	/* next on the list */
+
+        /* set by the core, internal to core (treat as private.. hands off!)  */
+        char * name;                    /* the name of the widget */
+        TWidget * widg;                 /* widget struct */
+        int side;                       /* L / R display side */
+        int LZorder;                    /* left order */
+        int RZorder;                    /* right order */
+/* ** */
+        int LTimeout;                   /* countdown timeout for udpating */
+        int RTimeout;                   /* countdown timeout for udpating */
+        int LCountdown;                 /* countdown timer for udpating */
+        int RCountdown;                 /* countdown timer for udpating */
+/* ** */
+        update_fcn updfcn;              /* update fcn */
+        draw_fcn drawfcn;               /* draw fcn */
+
+
+        /* set/changable by the widget (treat as public)*/
+        void * data;                    /* user data */
+} header_info;
+#define HEADER_SIDE_LEFT        (0x01)
+#define HEADER_SIDE_RIGHT       (0x02)
+#define HEADER_SIDE_DECORATION  (0x80)
+
+void pz_add_header_widget( char * widgetDisplayName,
+                            update_fcn update_function,
+                            draw_fcn draw_function,
+                            void * data );
+void pz_add_header_decoration( char * decorationDisplayName,
+                                update_fcn update_function,
+                                draw_fcn draw_function,
+                                void * data );
+void pz_header_justification_helper( int lx, int rx );
+
+header_info * find_header_item( header_info * list, char * name );
+void pz_enable_widget_on_side( int side, char * name );
+void pz_enable_header_decorations( char * name );
+void force_update_of_widget( char * name );
+void pz_clear_header_lists( void );
+
+
 /** Dialog and message - dialog.c **/
 extern int (*pz_do_dialog) (const char *title, const char *text,
 			    const char *b0, const char *b1, const char *b2,
@@ -453,6 +507,11 @@ int pz_start_input_n_for (TWindow *win);
 /** Appearance - appearance.c **/
 TWindow *pz_select_color_scheme();
 
+/** Icons - icons.c **/
+extern unsigned char pz_icon_play[],    pz_icon_pause[];
+extern unsigned char pz_icon_battery[], pz_icon_charging[];
+extern unsigned char pz_icon_hold[];
+
 
 /** Other things - pz.c **/
 void pz_register_global_hold_button (unsigned char ch, int ms, void (*handler)());
@@ -550,13 +609,19 @@ void pz_reset_idle_timer();
 
 #define VERBOSITY	(53)	/* startup verbosity */
 
-/* modular header widget stuff */
-#define HEADER_METHOD_L    (54)	 /*  left display method  */
-#define HEADER_CYC_RATE_L (55)	 /*  left cycle rate      */
-#define HEADER_UPD_RATE_L (56)	 /*  left update rate     */
-#define HEADER_METHOD_R    (57)	 /*  right display method */
-#define HEADER_CYC_RATE_R (58)	 /*  right cycle rate     */
-#define HEADER_UPD_RATE_R (59)	 /*  right update rate    */
+/****  modular header widget stuff  *** */
+/*   Left side   */
+#define HEADER_METHOD_L   (54)	 /*  display method  */
+#define HEADER_CYC_RATE_L (55)	 /*  cycle rate      */
+#define HEADER_UPD_RATE_L (56)	 /*  update rate     */
+#define HEADER_UPD_CYCD_L (57)   /*  update cycled out widgets? */
+/*   Right side   */
+#define HEADER_METHOD_R   (58)	 /*  display method */
+#define HEADER_CYC_RATE_R (59)	 /*  cycle rate     */
+#define HEADER_UPD_RATE_R (60)	 /*  update rate    */
+#define HEADER_UPD_CYCD_R (61)   /*  update cycled out widgets? */
+
+#define DECORATION_RATE   (62)   /* update rate for decorations */
 
 
 #define 	BATTERY_UPDATE_OFF (5)
