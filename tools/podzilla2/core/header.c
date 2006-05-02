@@ -98,10 +98,6 @@ void pz_add_header_widget( char * widgetDisplayName,
 		}
 		h->next = new;
 	}
-
-/* XXXXX
-	printf( "Added Header Widget %s\n", widgetDisplayName );
-*/
 }
 
 
@@ -143,10 +139,6 @@ void pz_add_header_decoration( char * decorationDisplayName,
 		}
 		h->next = new;
 	}
-
-/* XXXXX
-	printf( "Added Header Decoration %s\n", decorationDisplayName );
-*/
 }
 
 header_info * find_header_item( header_info * list, char * name )
@@ -228,588 +220,8 @@ void pz_clear_header_lists( void )
 }
 
 
-/* ********************************************************************** */ 
-/* Internal widgets */
-
-#ifdef NEVER
-/** Decorations: **/
-static void draw_decorations (TWidget *this, ttk_surface srf)
-{
-	enum ttk_justification just = TTK_TEXT_CENTER;
-	int xp = 0;
-	int xw = 0;
-	int width = ttk_text_width (ttk_menufont, ttk_windows->w->title);
-	int boff = 0;
-	ttk_color c;
-
-	if( pz_get_int_setting( pz_global_config, BATTERY_UPDATE ) 
-	    == BATTERY_UPDATE_OFF ) {
-		boff++;
-	}
-
-	/* set up text positioning */
-	just = (int) pz_get_int_setting (pz_global_config, TITLE_JUSTIFY);
-	ttk_header_set_text_justification( just );
-	ttk_header_set_text_position( -1 );	/* default */
-
-	xw = width + 8;
-	switch( just ) {
-	case( TTK_TEXT_LEFT ):
-		/* XX probably need to adjust this based on left widgets */
-		if( pz_hold_is_on) {
-			ttk_header_set_text_position( ttk_screen->wy + 4 );
-			xp = ttk_screen->wy + 4;
-		} else {
-			ttk_header_set_text_position( 4 );
-			xp = 0;
-		}
-		break;
-	case( TTK_TEXT_RIGHT ):
-		if( boff ) {
-			ttk_header_set_text_position( ttk_screen->w - 2 );
-			xp = (ttk_screen->w - width) -4 -3;
-		} else {
-			ttk_header_set_text_position( hwid_right[hwid_rnext-1]-9 );
-			xp = (hwid_right[hwid_rnext-1] - width) - 14;
-		}
-		break;
-	case( TTK_TEXT_CENTER ):
-	default:
-		ttk_header_set_text_position( ttk_screen->w >>1 );
-		xp = ((ttk_screen->w - width) >> 1) - 4;
-		xw += 3; /* account for the other side */
-		break;
-	}
-
-	/* draw the decorations */
-	if (decorations == PZ_DEC_AMIGA13 || decorations == PZ_DEC_AMIGA11) {
-		/* drag bars */
-		if (decorations == PZ_DEC_AMIGA13) {
-			/* 1.2/1.3 look */
-			int o = ttk_screen->wy / 4;
-			ttk_ap_fillrect (srf, ttk_ap_get ("header.fg"),
-					ttk_screen->wy + o,
-					o,
-					(boff)?ttk_screen->w-4:
-					hwid_right[hwid_rnext-1]-6 - o + 1,
-					o*2-1 );
-			ttk_ap_fillrect (srf, ttk_ap_get ("header.fg"), 
-					ttk_screen->wy + o,
-					ttk_screen->wy - o*2 + 1,
-					(boff)?ttk_screen->w-4:
-					hwid_right[hwid_rnext-1]-6 - o + 1,
-					ttk_screen->wy - o);
-	
-		} else {
-			/* 1.1/1.0 look */
-			int i;
-			for (i = 1; i < ttk_screen->wy; i += 2) {
-				ttk_line (srf, 
-					ttk_screen->wy, i,
-					(boff)?ttk_screen->w:
-					hwid_right[hwid_rnext-1]-6, i,
-					ttk_ap_getx ("header.fg") -> color);
-			}
-		}
-
-		/* faux close widget */
-		if ( !pz_get_int_setting (pz_global_config, DISPLAY_LOAD) 
-			&& !pz_hold_is_on) {
-			double xo = ((float)ttk_screen->wy) / 8.0;
-			double yo = ((float)ttk_screen->wy) / 8.0;
-			/* this should be tweaked to look better on mini */
-			/* i think that the proportions are wrong also */
-
-			ttk_ap_fillrect( srf, ttk_ap_get ("header.fg"), 
-					(int) (xo*1),  (int) (yo*1),
-					(int) (xo*7),  (int) (yo*7) );
-			ttk_ap_fillrect( srf, ttk_ap_get ("header.bg"),
-					(int) (xo*1.6), (int) (yo*1.6),
-					(int) (xo*6.4), (int) (yo*6.4) );
-			ttk_ap_fillrect (srf, ttk_ap_get ("header.accent"), 
-					(int) (xo*3.1), (int) (yo*3.1),
-					(int) (xo*4.8), (int) (yo*4.8) );
-		}
-
-
-		/* clear text area */
-		if (ttk_ap_getx ("header.bg") -> type & TTK_AP_COLOR) {
-			switch( just ) {
-			case( TTK_TEXT_LEFT ):
-				xp = ttk_screen->wy+1;
-				ttk_header_set_text_position( 11 + hwid_left[hwid_lnext-1] );
-				break;
-
-			case( TTK_TEXT_RIGHT ):
-				xp = hwid_right[hwid_rnext-1] - width - 12;
-				ttk_header_set_text_position( hwid_right[hwid_rnext-1] - 8 );
-
-				if( boff ) {
-					xp = ttk_screen->w - width - 6;
-					ttk_header_set_text_position( ttk_screen->w -2 );
-				}
-				break;
-
-			case( TTK_TEXT_CENTER ):
-			default:
-				xp = ((ttk_screen->w - width)>>1) - 4;
-				ttk_header_set_text_position( ttk_screen->w >>1 );
-			}
-
-			ttk_ap_fillrect( srf, ttk_ap_get ("header.bg"),
-				xp, 0, xp + width + 8,
-				ttk_screen->wy - 2 );
-		}
-
-		/* vertical widget separators */
-		ttk_ap_fillrect( srf, ttk_ap_get ("header.fg"), 
-			    ttk_screen->wy-1, 0,
-			    ttk_screen->wy+1, ttk_screen->wy - 1 );
-		if( !boff )
-			ttk_ap_fillrect( srf, ttk_ap_get ("header.fg"), 
-			    hwid_right[hwid_rnext-1] - 4, 0,
-			    hwid_right[hwid_rnext-1] - 6, ttk_screen->wy - 1 );
-
-	} else if (decorations == PZ_DEC_AMIGA20) {
-		/* top */
-		ttk_line( srf, 0, 0, this->w, 0,
-				ttk_ap_getx( "header.shine" )->color );
-		/* left */
-		ttk_line( srf, 0, 0, 0, ttk_screen->wy-2,
-				ttk_ap_getx( "header.shine" )->color );
-		/* bottom - handled by header.line */
-		/* right */
-		ttk_line( srf, ttk_screen->w-1, 1,
-				ttk_screen->w-1, ttk_screen->wy-2,
-				ttk_ap_getx( "header.shadow" )->color );
-
-		/* right widget vertical border bar */
-		if( !boff ) {
-			ttk_line( srf, hwid_right[hwid_rnext-1]-5, 1,
-			       hwid_right[hwid_rnext-1]-5, ttk_screen->wy - 1,
-			       ttk_ap_getx( "header.shadow" )->color );
-			ttk_line( srf, hwid_right[hwid_rnext-1]-4, 1,
-			       hwid_right[hwid_rnext-1]-4, ttk_screen->wy - 1,
-			       ttk_ap_getx( "header.shine" )->color );
-		}
-
-		/* left widget vertical border bar */
-		ttk_line( srf, ttk_screen->wy-2, 0,
-				ttk_screen->wy-2, ttk_screen->wy - 1,
-				ttk_ap_getx( "header.shadow" )->color );
-		ttk_line( srf, ttk_screen->wy-1, 0,
-				ttk_screen->wy-1, ttk_screen->wy - 1,
-				ttk_ap_getx( "header.shine" )->color );
-
-		/* left widget - faux close button */
-		if ( !pz_get_int_setting (pz_global_config, DISPLAY_LOAD) 
-			&& !pz_hold_is_on) {
-			double xo = ((float)ttk_screen->wy) / 7.0;
-			double yo = ((float)ttk_screen->wy) / 7.0;
-			ttk_fillrect( srf, xo*2.6, yo*2, xo*4.4, yo*5,
-				ttk_ap_getx( "header.shine" )->color );
-			ttk_rect( srf, xo*2.6, yo*2, xo*4.4, yo*5,
-				ttk_ap_getx( "header.shadow" )->color );
-		}
-
-		/* tweak the text for the closebox */
-		if( just == TTK_TEXT_LEFT ) 
-			ttk_header_set_text_position( ttk_screen->wy + 4 );
-
-
-	} else if (decorations == PZ_DEC_BEOS) {
-		int www = ttk_screen->wy + width + 10;
-
-		/* always force left justification */
-		ttk_header_set_text_justification( TTK_TEXT_LEFT );
-		ttk_header_set_text_position( ttk_screen->wy + 4 );
-
-		/* faux close widget */
-		if ( !pz_get_int_setting (pz_global_config, DISPLAY_LOAD) 
-			&& !pz_hold_is_on) {
-
-			/* fill gradient */
-			/* unfortunately, we have no diagonal gradient... */
-			ttk_vgradient( srf, 4, 4, 
-				    ttk_screen->wy-4, ttk_screen->wy-4,
-				    ttk_ap_getx( "header.shine" )->color,
-				    ttk_ap_getx( "header.accent" )->color );
-
-			/* draw these to get the NE/SW corners */
-			ttk_ap_hline( srf, ttk_ap_get( "header.shadow" ),
-			    4, ttk_screen->wy-4, 4 );
-			ttk_ap_vline( srf, ttk_ap_get( "header.shadow" ),
-			    4, 4, ttk_screen->wy-4 );
-
-			/* and the main container boxes... */
-			ttk_rect( srf, 4, 4, 
-				    ttk_screen->wy-4, ttk_screen->wy-4,
-				    ttk_ap_getx( "header.shadow" )->color );
-			ttk_rect( srf, 5, 5, 
-				    ttk_screen->wy-3, ttk_screen->wy-3,
-				    ttk_ap_getx( "header.shine" )->color );
-		}
-
-		/* 3d effect */
-		/* top */
-		ttk_line( srf, 0, 0, www, 0,
-				ttk_ap_getx( "header.shine" )->color );
-		/* left */
-		ttk_line( srf, 0, 0, 0, ttk_screen->wy,
-				ttk_ap_getx( "header.shine" )->color );
-		/* bottom - handled by header.line */
-		/* right */
-		ttk_line( srf, www-1, 1,
-				www-1, ttk_screen->wy,
-				ttk_ap_getx( "header.shadow" )->color );
-		
-
-		/* tabify! */
-		ttk_fillrect( srf, www, 0,
-				    ttk_screen->w, ttk_screen->wy, 
-				    ttk_makecol( 0, 0, 0 ) );
-
-
-	} else if (decorations == PZ_DEC_STTOS) {
-		// X X . . X X . .
-		// X X . . X X . . 
-		unsigned short dots[] = {
-			0xcccc, 0xcccc, 0x0000, 0x0000
-		};
-
-		int x,y;
-		ttk_gc gc = ttk_new_gc();
-		ttk_gc_set_foreground (gc, ttk_ap_getx ("header.accent") -> color);
-		TWindow *pixmap = malloc (sizeof(TWindow)); pixmap->srf = srf;
-
-		for( x=ttk_screen->wy+4 ; x<ttk_screen->w ; x += 8 ) {
-			for( y=1 ; y<ttk_screen->wy ; y ++ )
-			    if( y&0x02 ) t_GrBitmap( pixmap, gc, x, y, 8, 1, dots );
-		}
-
-		ttk_free_gc (gc);
-		free (pixmap);
-
-		/* draw the closebox */
-		if ( !pz_get_int_setting (pz_global_config, DISPLAY_LOAD) 
-			&& !pz_hold_is_on) {
-			int v = ttk_screen->wy-1;
-			int offs = v>>2;
-
-			c = ttk_ap_getx( "header.bg" )->color;
-			ttk_fillrect( srf, 0, 0, v, v, c );
-			ttk_fillrect( srf, offs, offs, 
-				( (offs&1)?1:0 ) + v-offs,
-				( (offs&1)?1:0 ) + v-offs,
-				ttk_ap_getx( "header.fg" )->color );
-
-			/* TL-BR */
-			ttk_line( srf,  0, 0,  v,   v,  c );
-			ttk_line( srf,  0, 1,  v-1, v,  c );
-			ttk_line( srf,  1, 0,  v, v-1,  c );
-
-			/* BL-TR */
-			ttk_line( srf,  0, v,    v, 0,   c );
-			ttk_line( srf,  0, v-1,  v-1, 0, c );
-			ttk_line( srf,  1, v,    v, 1,   c );
-		}
-
-		/* draw the separator */
-		ttk_fillrect( srf, ttk_screen->wy, 0, 
-				   ttk_screen->wy+2, ttk_screen->wy-1,
-				ttk_ap_getx( "header.fg" )->color );
-				
-
-		/* tweak the text for the closebox */
-		if( just == TTK_TEXT_LEFT ) {
-			ttk_header_set_text_position( ttk_screen->wy + 6 );
-			xp = ttk_screen->wy +2;
-		}
-
-		ttk_fillrect( srf, xp, 0, xp+xw, ttk_screen->wy,
-				ttk_ap_getx( "header.bg" )->color );
-
-
-	} else if (decorations == PZ_DEC_LISA) {
-		int xL, xR;
-		int v = ttk_screen->wy -1;
-
-		ttk_header_set_text_justification( TTK_TEXT_CENTER );
-		xp = ((ttk_screen->w - width)>>1) - 5;
-		ttk_header_set_text_position( ttk_screen->w >>1 );
-
-		/* center */
-		c = ttk_ap_getx( "header.accent" )->color;
-		ttk_fillrect( srf, xp, 0, xp+xw, v+1, c);
-
-		xL = xp;  xR = xp + xw;
-
-		/* four-bars */
-		ttk_fillrect( srf, xL-5, 0, xL-1, v+1, c );
-		ttk_fillrect( srf, xR+1, 0, xR+5, v+1, c );
-
-		/* three-bars */
-		ttk_fillrect( srf, xL-9, 0, xL-6, v+1, c );
-		ttk_fillrect( srf, xR+6, 0, xR+9, v+1, c );
-
-		/* two-bars */
-		ttk_fillrect( srf, xL-12, 0, xL-10, v+1, c );
-		ttk_fillrect( srf, xR+10, 0, xR+12, v+1, c );
-
-		/* lines */
-		ttk_line( srf, xL-14, 0, xL-14, v, c );
-		ttk_line( srf, xL-16, 0, xL-16, v, c );
-		ttk_line( srf, xL-18, 0, xL-18, v, c );
-
-		ttk_line( srf, xR+13, 0, xR+13, v, c );
-		ttk_line( srf, xR+15, 0, xR+15, v, c );
-		ttk_line( srf, xR+17, 0, xR+17, v, c );
-
-	} else if (decorations == PZ_DEC_MACOS7) {
-		int yb;
-		int r,g,b;
-
-		ttk_header_set_text_justification( TTK_TEXT_CENTER );
-		xp = ((ttk_screen->w - width)>>1) - 4;
-		ttk_header_set_text_position( ttk_screen->w >>1 );
-
-		ttk_unmakecol_ex( ttk_ap_getx( "header.accent" )->color,
-						&r, &g, &b, srf);
-
-		for( yb = 5 ; yb < ttk_screen->wy-3 ; yb += 2 ) {
-			ttk_ap_hline( srf, ttk_ap_getx( "header.shadow" ),
-					1, ttk_screen->w-2, yb );
-		}
-
-		/* draw a lighter box around it, accent color */
-		c = ttk_makecol( (r+255)>>1, (g+255)>>1, (b+255)>>1 );
-		ttk_fillrect( srf, xp, 0, xp+xw, ttk_screen->wy, 
-				ttk_ap_getx( "header.bg" )->color);
-		ttk_rect( srf, 0, 0, ttk_screen->w, ttk_screen->wy, c );
-
-		/* draw the closebox */
-		if ( !pz_get_int_setting (pz_global_config, DISPLAY_LOAD) 
-			&& !pz_hold_is_on) {
-
-			ttk_fillrect( srf, 6, 2, 
-				    ttk_screen->wy-1, ttk_screen->wy-2,
-				    ttk_ap_getx( "header.bg" )->color );
-
-			/* draw these to get the NE/SW corners */
-			ttk_ap_hline( srf, ttk_ap_get( "header.accent" ),
-			    7, ttk_screen->wy-3, 5 );
-			ttk_ap_vline( srf, ttk_ap_get( "header.accent" ),
-			    7, 5, ttk_screen->wy-5 );
-
-			/* and the main container boxes... */
-			ttk_rect( srf, 7, 5, 
-				    ttk_screen->wy-3, ttk_screen->wy-5,
-				    ttk_ap_getx( "header.accent" )->color );
-			ttk_rect( srf, 8, 6, 
-				    ttk_screen->wy-2, ttk_screen->wy-4, c );
-		}
-
-
-	} else if (decorations == PZ_DEC_MACOS8) {
-		int yb, v;
-		ttk_header_set_text_justification( TTK_TEXT_CENTER );
-		xp = ((ttk_screen->w - width)>>1) - 4;
-		ttk_header_set_text_position( ttk_screen->w >>1 );
-
-		/* outer box */
-		ttk_rect( srf, 0, 0, ttk_screen->w, ttk_screen->wy, 
-				ttk_ap_getx( "header.shine" )->color);
-
-		v = ttk_screen->wy;
-
-		/* dragbars */
-		for ( yb=4; yb<ttk_screen->wy-6 ; yb +=2 ) {
-			/* left side */
-			ttk_ap_hline( srf, ttk_ap_get( "header.shine" ), v, xp-3, yb );
-			ttk_ap_hline( srf, ttk_ap_get( "header.shadow" ), v+1, xp-2, yb+1 );
-
-			/* right side */
-			ttk_ap_hline( srf, ttk_ap_get( "header.shine" ), 
-					width+xp+10,
-					(boff)? ttk_screen->w-8 : ttk_screen->w-v-9, 
-					yb );
-			ttk_ap_hline( srf, ttk_ap_get( "header.shadow" ), 
-					width+xp+11,
-					(boff)? ttk_screen->w-7 : ttk_screen->w-v-8,
-					yb+1 );
-			
-		}
-
-		/* draw the closebox */
-		if ( !pz_get_int_setting (pz_global_config, DISPLAY_LOAD) 
-			&& !pz_hold_is_on) {
-
-			ttk_vgradient( srf, 4, 4, 
-				    ttk_screen->wy-4, ttk_screen->wy-4,
-				    ttk_ap_getx( "header.shadow" )->color,
-				    ttk_ap_getx( "header.shine" )->color );
-
-			/* outer recess */
-			ttk_rect( srf, 4, 4, v-5, v-5, ttk_ap_get( "header.shadow" )->color);
-			ttk_rect( srf, 5, 5, v-4, v-4, ttk_ap_get( "header.shine" )->color);
-			ttk_rect( srf, 5, 5, v-5, v-5, 0 );
-
-			/* inner button */
-			ttk_rect( srf, 6, 6, v-6, v-6, ttk_ap_get( "header.shine" )->color);
-			ttk_line( srf, 7, v-7, v-7, v-7, ttk_ap_get( "header.shadow" )->color);
-			ttk_line( srf, v-7, 7, v-7, v-7, ttk_ap_get( "header.shadow" )->color);
-		}
-
-
-	} else if (decorations == PZ_DEC_DOTS) {
-		// . X X X .
-		// X X X X X
-		// X X X X X
-		// X X X X X
-		// . X X X .
-		unsigned short circle[] = { 
-			0x7000, 0xf800, 0xf800, 0xf800, 0x7000 };
-		// Ugh. TTK doesn't export a proper bitmap function. Yet.
-		ttk_gc gc = ttk_new_gc();
-		ttk_gc_set_foreground (gc, ttk_ap_getx ("header.accent") -> color);
-		TWindow *pixmap = malloc (sizeof(TWindow)); pixmap->srf = srf;
-		int pL, pR;
-		int xL, xR;
-		int sxL, sxR;
-		
-		/* starting values */
-		xL = 0;
-		xR = ttk_screen->w;
-
-		sxL = (ttk_screen->w>>1)+2; /* account for radius */
-		sxR = (ttk_screen->w>>1)-2;
-
-		/* account for visible widgets */
-		if( pz_hold_is_on ) xL = ttk_screen->wy;
-		if( !boff ) xR = hwid_right[hwid_rnext-1] - 4;
-
-		/* account for text */
-		if( just == TTK_TEXT_LEFT )
-			xL += (width + 6);
-		else if( just == TTK_TEXT_RIGHT )
-			xR -= (width + 6);
-		else {
-			sxL -= ((width>>1) + 6);
-			sxR += ((width>>1) + 6);
-		}
-
-		/* draw the dots, from the center out */
-		for( pL = (ttk_screen->w)>>1, pR = (ttk_screen->w)>>1;
-		     pL > 1;
-		     pL -= 11, pR += 11 ){
-
-			if( pL>xL && pL <= sxL ) {
-				t_GrBitmap (pixmap, gc, pL - 2, 
-					(ttk_screen->wy >> 1) - 2, 5, 5, circle);
-			}
-			if( pR<xR && pR >= sxR ) {
-				t_GrBitmap (pixmap, gc, pR - 2, 
-					(ttk_screen->wy >> 1) - 2, 5, 5, circle);
-			}
-		}
-
-		ttk_free_gc (gc);
-		free (pixmap);
-
-	} else if(  (decorations == PZ_DEC_BIGRAD) ||
-		(decorations == PZ_DEC_TRIGRAD) ||
-		(decorations == PZ_DEC_BIGRADBAR) ||
-		(decorations == PZ_DEC_TRIGRADBAR) ){
-	int y;
-
-	if( decoration_colors_dirty )
-	{
-		int rt, gt, bt;
-		int rm, gm, bm;
-		int rb, gb, bb;
-		int h2 = this->h/2;
-
-		ttk_unmakecol_ex( ttk_ap_getx( "header.gradient.top" )->color,
-						&rt, &gt, &bt, srf);
-		ttk_unmakecol_ex( ttk_ap_getx( "header.gradient.bottom" )->color,
-						&rb, &gb, &bb, srf);
-
-		if( (decorations == PZ_DEC_TRIGRAD)
-		    || (decorations == PZ_DEC_TRIGRADBAR ))
-		{
-		    ttk_unmakecol_ex( ttk_ap_getx( "header.gradient.middle" )->color,
-						&rm, &gm, &bm, srf);
-		} else {
-		    rm = ( rb + rt ) >> 1;
-		    gm = ( gb + gt ) >> 1;
-		    bm = ( bb + bt ) >> 1;
-		}
-
-		ttk_unmakecol_ex( ttk_ap_getx( "header.gradient.top" )->color,
-						&rt, &gt, &bt, srf);
-
-		/* that is; when the color scheme is changed, compute an array
-		    of 22 or however many lines it is... */
-		for( y=0 ; y<this->h ; y++ )
-		{
-			if( y<h2 ) {
-			    int h2my = h2-y;
-			    gradcol[y] = ttk_makecol_ex( 
-					(rm * y)/h2 + (rt * (h2my)/h2),
-					(gm * y)/h2 + (gt * (h2my)/h2),
-					(bm * y)/h2 + (bt * (h2my)/h2),
-					srf );
-			} else {
-			    int yy = y-h2;
-			    int h2my = h2-yy;
-			    gradcol[y] = ttk_makecol_ex( 
-					(rb * yy)/h2 + (rm * (h2my)/h2),
-					(gb * yy)/h2 + (gm * (h2my)/h2),
-					(bb * yy)/h2 + (bm * (h2my)/h2),
-					srf );
-			}
-		}
-
-		/* and clear the flag... */
-		decoration_colors_dirty = 0;
-	}
-
-	/* draw the gradient to the header... */
-	for( y=0 ; y<this->h ; y++ )
-	{
-	    ttk_line( srf, 0, y, this->w, y, gradcol[y] );
-	}
-
-	/* fill the top if it's a half-gradient */
-	if( (    (decorations == PZ_DEC_BIGRADBAR)
-	      || (decorations == PZ_DEC_TRIGRADBAR)
-	    ) && ttk_ap_get( "header.gradient.bar" ) )
-	{
-	    int spacing =  ttk_ap_get( "header.gradient.bar" )->spacing;
-	    int h2 = this->h>>1;
-
-	    /* spacing seems like it gets corrupted? this patches it. */
-	    if( ( spacing < (h2*-1)) || ( spacing > h2) ) spacing = 0;
-
-	    if( spacing > 0 )
-		    ttk_fillrect( srf, 
-			    0, spacing,
-			    this->w, this->h>>1, 
-			    ttk_ap_get ("header.gradient.bar")->color );
-	    if( spacing < 0 ) {
-		    spacing *= -1;
-		    ttk_fillrect( srf, 
-			    0, (this->h>>1) - spacing,
-			    this->w, (this->h>>1) + spacing, 
-			    ttk_ap_get ("header.gradient.bar")->color );
-	    }
-	}
-    }    
-}
-#endif
-
-
 /******************************************************************************/
+/* Various utility, maintenance functions */
 
 /* these need to correspond directly to their counterparts in menu.c */
 static int ratesecs[] = { 1, 2, 5, 10, 15, 30, 60, -1 };
@@ -1032,11 +444,6 @@ static int handle_header_updates( TWidget *this )
 		make_dirty( this ); /* force a redraw */
 	}
 
-/* XXXX
-	printf( "(time: %d %d   %d %d)\n",
-		l_upd_countdown, l_upd_rate, l_cyc_countdown, l_cyc_rate );
-	fflush( stdout );
-*/
 	/* finally... update the header decorations */
 	if( (--d_upd_countdown <= 0) ) {
 	    	d_upd_countdown = d_upd_rate;
@@ -1447,7 +854,7 @@ void dec_draw_BeOS( struct header_info * hdr, ttk_surface srf )
 
 	/* yellow tab */
 	ttk_fillrect( srf, 0, 0, www, ttk_screen->wy, 
-			ttk_ap_get( "header.bg" )->color ); /* xxx color */
+			pz_dec_ap_get_solid( "header.bg" ));
 
 	/* faux close widget */
 	/* fill gradient -- unfortunately, we have no diagonal gradient... */
@@ -1661,6 +1068,59 @@ void dec_draw_MacOS7( struct header_info * hdr, ttk_surface srf )
 /* Apple Macintosh MacOS 8 */
 void dec_draw_MacOS8( struct header_info * hdr, ttk_surface srf )
 {
+	int yb, v, v2;
+	int tw = ttk_text_width( ttk_menufont, ttk_windows->w->title );
+	int xp = ((ttk_screen->w - tw)>>1) - 4;
+	ttk_header_set_text_justification( TTK_TEXT_CENTER );
+	ttk_header_set_text_position( ttk_screen->w >>1 );
+
+	/* outer box */
+	ttk_rect( srf, 0, 0, ttk_screen->w, ttk_screen->wy,
+			pz_dec_ap_get_solid( "header.shine" ));
+
+	v = hdr->widg->h;
+	v2 = hdr->widg->x + hdr->widg->w - 5;
+
+	/* dragbar imagery */
+	for ( yb=4; yb<ttk_screen->wy-6 ; yb +=2 ) {
+		/* left side */
+		ttk_ap_hline( srf, ttk_ap_get( "header.shine" ), 
+				v, xp-3, yb );
+		ttk_ap_hline( srf, ttk_ap_get( "header.shadow" ), 
+				v+1, xp-2, yb+1 );
+
+		/* right side */
+		ttk_ap_hline( srf, ttk_ap_get( "header.shine" ),
+				tw+xp+10, v2, yb );
+		ttk_ap_hline( srf, ttk_ap_get( "header.shadow" ),
+				tw+xp+11, v2, yb+1 );
+	}
+
+	/* draw the closebox */
+	if ( hdr->widg->x == 0 ) {
+		ttk_vgradient( srf, 4, 4,
+				hdr->widg->h-4, hdr->widg->h-4,
+				ttk_ap_getx( "header.shadow" )->color,
+				ttk_ap_getx( "header.shine" )->color );
+
+		/* outer recess */
+		ttk_rect( srf, 4, 4, v-5, v-5, 
+				pz_dec_ap_get_solid( "header.shadow" ));
+		ttk_rect( srf, 5, 5, v-4, v-4, 
+				pz_dec_ap_get_solid( "header.shine" ));
+		ttk_rect( srf, 5, 5, v-5, v-5, 
+				ttk_makecol( BLACK ));
+
+		/* inner button */
+		ttk_rect( srf, 6, 6, v-6, v-6, 
+				pz_dec_ap_get_solid( "header.shine" ));
+		ttk_line( srf, 7, v-7, v-7, v-7, 
+				pz_dec_ap_get_solid( "header.shadow" ));
+		ttk_line( srf, v-7, 7, v-7, v-7, 
+				pz_dec_ap_get_solid( "header.shadow" ));
+	}
+
+
 }
 
 
@@ -1715,7 +1175,7 @@ static void w_hold_update( struct header_info * hdr )
 	   If hold is off, set the width to be 0, so it doesn't get drawn
         */
 	if( pz_hold_is_on ) {
-		hdr->widg->w = pz_icon_hold[0] + 4;
+		hdr->widg->w = pz_icon_hold[0] + 6;
 	} else {
 		hdr->widg->w = 0;
 	}
@@ -1755,7 +1215,7 @@ static void w_powericon_update( struct header_info * hdr )
 	if( ps != NULL ) {
 		ipod_read_apm( &ps->fill, &ps->is_charging );
 	}
-	hdr->widg->w = pz_icon_battery[0] + 4;
+	hdr->widg->w = pz_icon_battery[0] + 6;
 }
 
 static void w_powericon_draw( struct header_info * hdr, ttk_surface srf )
@@ -1783,7 +1243,7 @@ static void w_powericon_draw( struct header_info * hdr, ttk_surface srf )
         }
 
 	ypos = hdr->widg->y + ((hdr->widg->h - pz_icon_battery[1])>>1),
-	xadd = 2;
+	xadd = 3;
 
         /* back fill the container... */
         ttk_ap_fillrect (srf, ap, hdr->widg->x + xadd +4, ypos + 1,
@@ -1998,19 +1458,21 @@ void pz_header_init()
 		pz_add_header_decoration( "Amiga 2.0", NULL, dec_draw_Amiga20,
 					"BleuLlama" );
 
-		/* other inferior OS lookalikes */
+		/* Be! */
 		pz_add_header_decoration( "BeOS", NULL, dec_draw_BeOS, 
 					"BleuLlama" );
+
+		/* Atari */
 		pz_add_header_decoration( "Atari ST TOS", NULL, dec_draw_STTOS, 
 					"BleuLlama" );
+
+		/* Apple Systems */
 		pz_add_header_decoration( "Lisa", NULL, dec_draw_Lisa, 
 					"BleuLlama" );
-		pz_add_header_decoration( "Mac System 7", NULL, dec_draw_MacOS7, 
+		pz_add_header_decoration( "Mac System 7", NULL, dec_draw_MacOS7,
 					"BleuLlama" );
-/*
 		pz_add_header_decoration( "MacOS 8", NULL, dec_draw_MacOS8, 
 					"BleuLlama" );
-*/
 
 		/* a test one for the hell of it.  move this into a module? */
 		pz_add_header_decoration( "Test Header", 
