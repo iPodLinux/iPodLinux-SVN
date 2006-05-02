@@ -27,9 +27,6 @@
 
 static int initted = 0;
 
-static int decorations;			/* which decoration set to use */
-static int decoration_colors_dirty = 0; /* have the colors changed on us? */
-
 extern int ipod_read_apm(int *battery, int *charging);
 
 static int make_dirty (TWidget *this) { this->dirty++; ttk_dirty |= TTK_DIRTY_HEADER; return 0; }
@@ -812,25 +809,6 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 #endif
 
 
-
-/******************************************************************************/
-
-/* XXX old stuff. need to replace this */
-void pz_header_set_decorations (int decor) 
-{
-	if( decorations != decor )  decoration_colors_dirty++;
-	decorations = decor;
-}
-
-#ifdef NEVER
-static ttk_color gradcol[32];           /* gradient color buffer */
-#endif
-
-void pz_header_colors_dirty( void )
-{
-	decoration_colors_dirty++;
-}
-
 /******************************************************************************/
 
 /* these need to correspond directly to their counterparts in menu.c */
@@ -1212,10 +1190,85 @@ void test_update_decorations( struct header_info * hdr )
 }
 
 
+/* plain - do nothing */
 void dec_plain( struct header_info * hdr, ttk_surface srf )
 {
-	hdr = hdr;
-	srf = srf;
+	ttk_color c;
+	TApItem *ap = ttk_ap_get( "header.bg" );
+
+	if( ap ) {
+		if( ap->type & TTK_AP_COLOR ) {
+			c = ap->color;
+		} else if( ap->type & TTK_AP_GRADIENT ) {
+			c = ap->gradstart;
+		}
+	} else {
+		c = ttk_makecol( WHITE );
+	}
+
+	ttk_fillrect( srf, 0, 0, ttk_screen->w, hdr->widg->h, c );
+}
+
+/* do it as it's defined in the CS file */
+void dec_csdef( struct header_info * hdr, ttk_surface srf )
+{
+	ttk_ap_fillrect( srf, ttk_ap_get ("header.bg"),
+			0, 0, ttk_screen->w, hdr->widg->h ); 
+}
+
+/* m-robe style dots */
+void dec_dots( struct header_info * hdr, ttk_surface srf )
+{
+	enum ttk_justification just = pz_get_int_setting( 
+					pz_global_config, TITLE_JUSTIFY);
+	int tw = ttk_text_width (ttk_menufont, ttk_windows->w->title);
+	int pL, pR;
+	int xL, xR;
+	int sxL, sxR;
+
+	/* starting values */
+	xL = hdr->widg->x;
+	xR = hdr->widg->x + hdr->widg->w;
+
+	sxL = (ttk_screen->w>>1)+2; /* account for radius */
+	sxR = (ttk_screen->w>>1)-2;
+
+	/* account for text */
+	if( just == TTK_TEXT_LEFT )
+		xL += (tw + 6);
+	else if( just == TTK_TEXT_RIGHT )
+		xR -= (tw + 6);
+	else {
+		sxL -= ((tw>>1) + 6);
+		sxR += ((tw>>1) + 6);
+	}
+
+	/* draw the dots, from the center out */
+	for( pL = (ttk_screen->w)>>1, pR = (ttk_screen->w)>>1;
+	     pL > 1;
+	     pL -= 11, pR += 11 ){
+
+		if( pL>xL && pL <= sxL ) {
+			ttk_draw_icon( pz_icon_dot, srf, 
+				pL - 4, (ttk_screen->wy >> 1) - 2, 
+				ttk_ap_getx( "header.accent" ),
+				ttk_ap_getx( "header.accent" )->color );
+		}
+		if( pR<xR && pR >= sxR ) {
+			ttk_draw_icon( pz_icon_dot, srf, 
+				pR - 2, (ttk_screen->wy >> 1) - 2, 
+				ttk_ap_getx( "header.accent" ),
+				ttk_ap_getx( "header.accent" )->color );
+		}
+	}
+}
+
+
+/* dots over the background solid color */
+void dec_plaindots( struct header_info * hdr, ttk_surface srf )
+{
+	dec_plain( hdr, srf );
+	dec_dots( hdr, srf );
 }
 
 
@@ -1368,7 +1421,7 @@ static void w_hold_update( struct header_info * hdr )
 static void w_hold_draw( struct header_info * hdr, ttk_surface srf )
 {
 	if( pz_hold_is_on ) {
-		ttk_draw_icon( pz_icon_hold, srf, hdr->widg->x+1, 
+		ttk_draw_icon( pz_icon_hold, srf, hdr->widg->x+3, 
 			       hdr->widg->y  + ((hdr->widg->h - pz_icon_hold[1])>>1),
 			       ttk_ap_getx ("battery.border"),
 			       ttk_ap_getx ("header.bg")->color );
@@ -1549,7 +1602,7 @@ static void w_lav_update( struct header_info * hdr )
 		ld->iv[h] = ld->iv[h+1];
 	}
 	ld->dv[h] = get_load_average();
-	ld->iv[h] = (hdr->widg->h-1) - (ld->dv[h] * hdr->widg->h-1);
+	ld->iv[h] = (hdr->widg->h-5) - (ld->dv[h] * hdr->widg->h-5);
 	if( ld->iv[h] < 0 ) 
 		ld->iv[h] = 0;
 	if( ld->iv[h] > (hdr->widg->h-1)) 
@@ -1560,35 +1613,30 @@ static void w_lav_update( struct header_info * hdr )
 static void w_lav_draw( struct header_info * hdr, ttk_surface srf )
 {
 	int h;
-	int w4 = hdr->widg->w / N_LAV_ENTRIES;
+	int sz = hdr->widg->w -4;
+	int w4 = sz / N_LAV_ENTRIES;
 	_lav_data * ld = (_lav_data *)hdr->data;
-
-/*
-	ttk_rect( srf,  hdr->widg->x, hdr->widg->y, 
-			hdr->widg->x+hdr->widg->w, hdr->widg->y+hdr->widg->h, 
-			0x00ff0000 );
-*/
 
 	for( h=0 ; h< N_LAV_ENTRIES ; h++ ) {
 		/* backing */
 		ttk_ap_fillrect (srf, ttk_ap_get ("loadavg.bg"), 
-				hdr->widg->x + (h*w4),
-				hdr->widg->y,
-				hdr->widg->x + (h*w4) + w4 + 1,
-				hdr->widg->y + ld->iv[h]);
+				hdr->widg->x + 2 + (h*w4),
+				hdr->widg->y + 2,
+				hdr->widg->x + 2 + (h*w4) + w4 + 1,
+				hdr->widg->y + 2 + ld->iv[h]);
 
 		/* body */
 		ttk_ap_fillrect (srf, ttk_ap_get ("loadavg.fg"), 
-				hdr->widg->x + (h*w4),
-				hdr->widg->y + ld->iv[h],
-				hdr->widg->x + (h*w4) + w4 + 1, 
-				hdr->widg->y + hdr->widg->h - 1 +1);
+				hdr->widg->x + 2 + (h*w4),
+				hdr->widg->y + 2 + ld->iv[h],
+				hdr->widg->x + 2 + (h*w4) + w4 + 1, 
+				hdr->widg->y + hdr->widg->h - 1 -2);
 
 		/* spike line */
 		ttk_ap_hline( srf, ttk_ap_get( "loadavg.spike" ),
-			    hdr->widg->x + (h*w4),
-			    hdr->widg->x + (h*w4) + w4,
-			    hdr->widg->y+ld->iv[h] );
+			    hdr->widg->x + 2 + (h*w4),
+			    hdr->widg->x + 2 + (h*w4) + w4,
+			    hdr->widg->y+ld->iv[h] + 2 );
 	}
 
 }
@@ -1628,14 +1676,18 @@ void pz_header_init()
 					test_draw_widget, "R2" );
 
 		/* register all internal decorations */
-		pz_add_header_decoration( "Plain", NULL, dec_plain, "GROG");
+		pz_add_header_decoration( "Plain", NULL, dec_plain, "GROG" );
+		pz_add_header_decoration( "CS Gradient", NULL, dec_csdef,
+					"GROG" );
 
-		pz_add_header_decoration( "Amiga 1.1",
-					NULL, dec_draw_Amiga11,
+		pz_add_header_decoration( "Plain Dots", NULL, dec_plaindots,
+					"GROG" );
+		pz_add_header_decoration( "CS Dots", NULL, dec_dots, "GROG" );
+
+		pz_add_header_decoration( "Amiga 1.1", NULL, dec_draw_Amiga11,
 					"BleuLlama" );
 
-		pz_add_header_decoration( "Amiga 1.3",
-					NULL, dec_draw_Amiga13,
+		pz_add_header_decoration( "Amiga 1.3", NULL, dec_draw_Amiga13,
 					"BleuLlama" );
 
 		pz_add_header_decoration( "Test Header", 

@@ -152,15 +152,6 @@ static const char * verbosity_options[] = {
 };
 
 
-static const char * appearance_decorations[] = { "Plain",
-		"Amiga 1.1", "Amiga 1.3", "Amiga 2.0",
-		"BeOS",
-		"Atari TOS",
-		"Apple Lisa", "System 7", "MacOS 8",
-		"Dots",
-		"Grad", "Tri-Grad", "Grad/Bar", "Tri-Grad/Bar",
-		0 };
-
 /* be sure to keep the "Off" entry lined up with BATTERY_UPDATE_OFF in pz.h */
 /* XXXXX
 static const char * battery_update_rates[] = { 

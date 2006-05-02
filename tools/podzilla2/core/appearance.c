@@ -42,14 +42,13 @@ static void set_color_scheme (const char *file, int save)
     }
     
     ttk_epoch++;
+    ttk_dirty |= TTK_DIRTY_HEADER;
     
     int odfd = open (".", O_RDONLY);
     chdir (SCHEMESDIR);
     ttk_ap_load (file);
     fchdir (odfd);
     close (odfd);
-
-    pz_header_colors_dirty();
 }
 
 /* color scheme selector */

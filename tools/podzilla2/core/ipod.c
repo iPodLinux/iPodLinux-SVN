@@ -152,7 +152,6 @@ void pz_ipod_fix_setting (int setting, int value)
 		break;
 	case DECORATIONS:
 		ttk_dirty |= TTK_DIRTY_HEADER;
-		pz_header_set_decorations (value);
 		break;
 	case DISPLAY_LOAD:
 		ttk_dirty |= TTK_DIRTY_HEADER;
