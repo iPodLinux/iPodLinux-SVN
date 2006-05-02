@@ -1780,8 +1780,8 @@ static void w_lav_update( struct header_info * hdr )
 	ld->iv[h] = (hdr->widg->h-5) - (ld->dv[h] * hdr->widg->h-5);
 	if( ld->iv[h] < 0 ) 
 		ld->iv[h] = 0;
-	if( ld->iv[h] > (hdr->widg->h-1)) 
-		ld->iv[h]= hdr->widg->h-1;
+	if( ld->iv[h] > (hdr->widg->h-5)) 
+		ld->iv[h]= hdr->widg->h-5;
 }
 
 
