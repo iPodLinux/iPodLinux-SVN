@@ -4,17 +4,13 @@
 \def gray   #a0a0a0
 \def dkgray #505050
 
-  header: bg => black,
+  header: bg => <#222 to #111 to #333 with #555 @:1,0,55%,0>,
 	  fg => #777,
 	  line => #666 -1,
+	  accent => dkgray,
+	  shine => gray,
+	  shadow => dkgray,
 	  accent => dkgray
-	  shine => gray
-	  shadow => dkgray
-	  accent => dkgray
-	  gradient.top => #333,
-	  gradient.middle => black,
-	  gradient.bottom => #333,
-	  gradient.bar => #333 +2
 
    music: bar => <vert #333 to black to #222 with #333 @:1,1,6,1>
 	  
@@ -104,9 +100,9 @@ box:
 	special.border => #008
 
 button:
-	default.bg => black,
+	default.bg => <#222 to #111 to #333 with #555 @:0,0,55%,0>,
 	default.fg => #777,
-	default.border => #666,
-	selected.bg => #333,
+	default.border => #333,
+	selected.bg => <#333 to #222 to #444 with #666 @:0,0,55%,0>,
 	selected.fg => white,
-	selected.border => #333
+	selected.border => #444,
