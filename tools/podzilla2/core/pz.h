@@ -328,30 +328,6 @@ int pz_has_secret (const char *key);
 void pz_header_init (void);
 void pz_header_fix_hold (void);
 #endif
-#define PZ_DEC_PLAIN        (0)
-#define PZ_DEC_AMIGA11      (1)
-#define PZ_DEC_AMIGA13      (2)
-#define PZ_DEC_AMIGA20      (3)
-#define PZ_DEC_BEOS         (4)
-#define PZ_DEC_STTOS        (5)
-#define PZ_DEC_LISA         (6)
-#define PZ_DEC_MACOS7       (7)
-#define PZ_DEC_MACOS8       (8)
-#define PZ_DEC_DOTS         (9)
-#define PZ_DEC_BIGRAD       (10)
-#define PZ_DEC_TRIGRAD      (11)
-#define PZ_DEC_BIGRADBAR    (12)
-#define PZ_DEC_TRIGRADBAR   (13)
-void pz_header_set_decorations (int decor);
-void pz_header_colors_dirty( void );
-
-void pz_hwid_put_left (TWidget *wid); // puts wid as leftmost of left widgets, has to be called from mod init
-void pz_hwid_pack_left (TWidget *wid); // puts wid as rightmost of left widgets
-void pz_hwid_pack_right (TWidget *wid); // puts wid as leftmost of right widgets
-void pz_hwid_unpack (TWidget *wid);
-void pz_header_set_local (TWidget *left, TWidget *right);
-void pz_header_unset_local (void);
-
 
 /* modular headers-related stuff */
 TWindow * pz_select_decorations( void );
@@ -510,7 +486,7 @@ TWindow *pz_select_color_scheme();
 /** Icons - icons.c **/
 extern unsigned char pz_icon_play[],    pz_icon_pause[];
 extern unsigned char pz_icon_battery[], pz_icon_charging[];
-extern unsigned char pz_icon_hold[];
+extern unsigned char pz_icon_hold[],    pz_icon_dot[];
 
 
 /** Other things - pz.c **/

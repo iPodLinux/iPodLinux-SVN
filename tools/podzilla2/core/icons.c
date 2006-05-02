@@ -159,3 +159,19 @@ unsigned char pz_icon_charging[] = { 8, 10,
     0, 0, 1, 3, 0, 0, 0, 0,
     0, 0, 3, 1, 0, 0, 0, 0
 };
+
+
+// decorative dot
+// . X X X .
+// X X X X X
+// X X X X X
+// X X X X X
+// . X X X .
+
+unsigned char pz_icon_dot[] = { 5, 5,
+	0, 3, 3, 3, 0,
+	3, 3, 3, 3, 3,
+	3, 3, 3, 3, 3,
+	3, 3, 3, 3, 3,
+	0, 3, 3, 3, 0
+};
