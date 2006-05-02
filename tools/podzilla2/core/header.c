@@ -1256,13 +1256,13 @@ void dec_dots( struct header_info * hdr, ttk_surface srf )
 
 		if( pL>xL && pL <= sxL ) {
 			ttk_draw_icon( pz_icon_dot, srf, 
-				pL - 4, (ttk_screen->wy >> 1) - 2, 
+				pL - 3, (ttk_screen->wy >> 1) - 2, 
 				ttk_ap_getx( "header.accent" ),
 				ttk_ap_getx( "header.accent" )->color );
 		}
 		if( pR<xR && pR >= sxR ) {
 			ttk_draw_icon( pz_icon_dot, srf, 
-				pR - 2, (ttk_screen->wy >> 1) - 2, 
+				pR - 3, (ttk_screen->wy >> 1) - 2, 
 				ttk_ap_getx( "header.accent" ),
 				ttk_ap_getx( "header.accent" )->color );
 		}
@@ -1612,6 +1612,50 @@ void dec_draw_Lisa( struct header_info * hdr, ttk_surface srf )
 /* Apple Macintosh System 7 */
 void dec_draw_MacOS7( struct header_info * hdr, ttk_surface srf )
 {
+	int yb, xp;
+	int r,g,b;
+	ttk_color c;
+	int tw = ttk_text_width (ttk_menufont, ttk_windows->w->title);
+	int xw = tw + 8;
+
+	ttk_header_set_text_justification( TTK_TEXT_CENTER );
+	xp = ((ttk_screen->w - tw)>>1) - 4;
+	ttk_header_set_text_position( ttk_screen->w >>1 );
+
+	ttk_unmakecol_ex( pz_dec_ap_get_solid( "header.accent" ),
+					&r, &g, &b, srf);
+	
+	for( yb = 5 ; yb < hdr->widg->h-3 ; yb += 2 ) {
+		ttk_ap_hline( srf, ttk_ap_getx( "header.shadow" ),
+				1, ttk_screen->w-2, yb );
+	}
+
+	/* draw a lighter box around it, accent color */
+	c = ttk_makecol( (r+255)>>1, (g+255)>>1, (b+255)>>1 );
+	ttk_fillrect( srf, xp, 0, xp+xw, hdr->widg->h,
+			pz_dec_ap_get_solid( "header.bg" ));
+	ttk_rect( srf, 0, 0, ttk_screen->w, hdr->widg->h, c );
+
+	/* draw the closebox */
+	if( hdr->widg->x == 0 ) {
+		ttk_fillrect( srf, 6, 2,
+			hdr->widg->h-1, hdr->widg->h-2,
+			pz_dec_ap_get_solid( "header.bg" ) );
+
+		/* draw these to get the NE/SW corners */
+		ttk_ap_hline( srf, ttk_ap_get( "header.accent" ),
+			7, hdr->widg->h-3, 5 );
+		ttk_ap_vline( srf, ttk_ap_get( "header.accent" ),
+			7, 5, hdr->widg->h-5 );
+
+		/* and the main container boxes... */
+		ttk_rect( srf, 7, 5, 
+			hdr->widg->h-3, hdr->widg->h-5,
+			pz_dec_ap_get_solid( "header.accent" ) );
+		ttk_rect( srf, 8, 6,
+			hdr->widg->h-2, hdr->widg->h-4, c );
+	}
+
 }
 
 /* Apple Macintosh MacOS 8 */
@@ -1961,9 +2005,9 @@ void pz_header_init()
 					"BleuLlama" );
 		pz_add_header_decoration( "Lisa", NULL, dec_draw_Lisa, 
 					"BleuLlama" );
-/*
-		pz_add_header_decoration( "System 7", NULL, dec_draw_MacOS7, 
+		pz_add_header_decoration( "Mac System 7", NULL, dec_draw_MacOS7, 
 					"BleuLlama" );
+/*
 		pz_add_header_decoration( "MacOS 8", NULL, dec_draw_MacOS8, 
 					"BleuLlama" );
 */
