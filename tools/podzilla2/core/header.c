@@ -25,6 +25,8 @@
 #include <unistd.h>
 #include "pz.h"
 
+static int initted = 0;
+
 static int decorations;			/* which decoration set to use */
 static int decoration_colors_dirty = 0; /* have the colors changed on us? */
 
@@ -32,445 +34,207 @@ extern int ipod_read_apm(int *battery, int *charging);
 
 static int make_dirty (TWidget *this) { this->dirty++; ttk_dirty |= TTK_DIRTY_HEADER; return 0; }
 
+extern int pz_hold_is_on;
 
-/* Modular header widgets notes:
-
-At Init time, the modules register using something like:
-
-    pz_add_header_widget( "Widget Name", 
-			&update_fcn, &width_fcn, &draw_fcn, void * data )
-
-typedef struct header_struct {
-	- set by the core 
-	TWidget * wid;
-	ttk_surface * srf;	- where the widget should draw into 
-	int height;		- height of the header bar - redundant? 
-	int x_pos;		- offset from left where the widget draws 
-	int side;		- LEFT / RIGHT - informational to widget
-
-	- set/changable by the widget 
-	int width; 		- updated with update_width_fcn 
-	void * data;
-} header_struct;
-
-void update_fcn( void * data ) 
-	gets called at the user selected interval
-
-void update_width_fcn( header_struct * hdr )
-	returns the width in the number of pixels that the widget needs.
-	For example, If it's a hold indicator, and hold is off it
-	would return 0.
-
-void draw_fcn( header_struct * hdr, ttk_surface srf )
-	gets called whenever the PZ Core decides to redraw it.
-	the widget should adjust "hdr->width" to the appropriate size.
-		0 if there was nothing to draw
-
-	void * is necessary, in case the user wants the widget to be on the 
-	left, as well as the right.
-
-Menu Options (Example of how it'll be arranged, perhaps)
-    Appearance
-	Widgets:
-	    Left Display		Disable, Cycle, Display All
-	    Left Update Interval	1s, 2s, 5s, 10s, 15s, 30s, 1m
-	    Left Selection		>
-		enable/disable list of all registered widgets:
-		    Clock		On, Off
-		    Battery		On, Off
-		    Battery Digits	On, Off
-		    Hold Indicator	On, Off
-		    Load Average	On, Off
-		    MPD Status		On, Off
-		    ...
-	    Right Display		...
-	    Right Update Interval	...
-	    ...
-	Decorations			Solid, Gradient2, Graident3
-					Graient3 Bar
-	    - i'm tempted to jsut draw it as it is defined in the .cs file,
-		now that gradients and bars are supported in that format, but
-		it'd be nice to use one color scheme in a variety of ways.
-	    - perhaps have an "as defined in .CS" option on the list.  yeah.
-
-also:
-    pz_add_titlebar_decoration( "Decoration Name", &update_fcn )
+static TWidget *headerBar = 0;
 
 
--BleuLlama 2006-04
+/* current issues:
+	Header positioning for widgets seems to have off-by-1 errors
+	Selection of active widgets per side
+	Selection of decoratio:
 */
 
 
-static void battery_draw (TWidget *this, ttk_surface srf) 
+/* ********************************************************************** */ 
+/* List manipulations */
+
+
+/* the list of all available header widgets */
+static header_info * headerWidgets = NULL;
+
+/* the list of all available decorations */
+static header_info * headerDecorations = NULL;
+
+/* this gets inc'ed - for cycling, enumerating, z-sorting widgets */
+static long zvalue = 0L;
+
+
+/* pz_add_header_widget
+**
+**	registers a widget to be available for the left or right side 
+*/
+void pz_add_header_widget( char * widgetDisplayName,
+			    update_fcn update_function,
+			    draw_fcn draw_function,
+			    void * data )
 {
-	TApItem fill;
-	TApItem *ap;
-	char buf[32];
-	static int battery_fill = 0;
-	static int battery_is_charging = 0;
-	ttk_color c;
-
-	/* for the timer update rate */
-	int update_rate;
-	static int ticks = 0;
-	static int secs[] = { 1, 5, 15, 30, 60, -1 };	/* ref: menu.c */
-
-	ticks++;
-	update_rate = pz_get_int_setting( pz_global_config, BATTERY_UPDATE );
-
-	/* battery indicator is off? */
-	if( update_rate >= BATTERY_UPDATE_OFF ) return;
-
-	/* turn it into number of seconds */
-	update_rate = secs[ update_rate ];
-
-	/* we need *2, since we get called twice per time tick... */
-	if( ticks >= (update_rate *2) ) {	
-		/* reset tick counter, read the value */
-		ticks = 0;
-		ipod_read_apm(&battery_fill, &battery_is_charging);
-	}
-
-	/* draw the level as digits/text if that's the user's setting */
-	if (pz_get_int_setting (pz_global_config, BATTERY_DIGITS)) {
-		battery_fill = battery_fill * 1000 / 512;
-	    
-		/* grab the color, but not gradient */
-		TApItem *ap;
-		if( battery_fill < 100 ) 
-			ap = ttk_ap_get( "battery.fill.low" );
-		else
-			ap = ttk_ap_get( "battery.fill.normal" );
-		if( ap ) {
-			if( ap->type & TTK_AP_GRADIENT ) { 
-				c = ap->gradstart;
-			} else {
-				c = ap->color;
-			}
-		} else {
-			c = ttk_makecol( GREY );
-		}
-
-		if (battery_fill >= 1000) 
-			strcpy (buf, "Chrg");
-		else
-			snprintf( buf, 32, "%c%3d", 
-				    (battery_is_charging)?'+':' ',
-				    battery_fill );
-
-		pz_vector_string( srf, buf, 
-				(this->x)-((decorations == PZ_DEC_AMIGA20)?1:0),
-				this->y, 5, 9, 1, c );
+	header_info * new = (header_info *)malloc( sizeof( header_info ));
+	if( !new ) {
+		printf( "Malloc error on %s\n", widgetDisplayName );
 		return;
 	}
+	new->side = 0;
+	new->LZorder = zvalue++;
+	new->RZorder = zvalue++;
+	new->updfcn = update_function;
+	new->drawfcn = draw_function;
+	new->data = data;
+	new->name = widgetDisplayName;
+	new->next = NULL;
 
-	if (battery_is_charging) {
-		memcpy (&fill, ttk_ap_getx ("battery.fill.charge"), 
-			sizeof(TApItem));
-		ap = ttk_ap_get( "battery.bg.charging" );
+	/* now, setup the internal wid */
+	new->widg = ttk_new_widget (0, 0);
+	new->widg->h = ttk_screen->wy;
+	new->widg->w = ttk_screen->wy;	/* square for now */
+	new->widg->draw = NULL;	/* should use this */
+	new->widg->timer = NULL;	/* should use this */
+	/* ttk_widget_set_timer (new->widg, 1000); */
 
-	} else if (battery_fill < 64) {
-		memcpy (&fill, ttk_ap_getx ("battery.fill.low"), 
-			sizeof(TApItem));
-		ap = ttk_ap_get( "battery.bg.low" );
-
+	/* tack it onto the list... */
+	if( !headerWidgets ) {
+		headerWidgets = new;
 	} else {
-		memcpy (&fill, ttk_ap_getx ("battery.fill.normal"), 
-			sizeof(TApItem));
-		ap = ttk_ap_get( "battery.bg" );
+		header_info * h = headerWidgets;
+		while( h->next ) {
+			h = h->next;
+		}
+		h->next = new;
 	}
 
-	/* fill the container... */
-	ttk_ap_fillrect (srf, ap, this->x + 4, this->y + 1, 
-				this->x + 22, this->y + 9);
-	ttk_draw_icon (ttk_icon_battery, srf, this->x, this->y, ttk_ap_getx ("battery.border"),
-				ttk_ap_getx ("header.bg")->color);
+/* XXXXX
+	printf( "Added Header Widget %s\n", widgetDisplayName );
+*/
+}
 
-	if (fill.type & TTK_AP_SPACING) {
-		fill.type &= ~TTK_AP_SPACING;
-		ttk_ap_fillrect (srf, &fill,
-				this->x + 4 + fill.spacing,
-				this->y + 1 + fill.spacing,
-				this->x + 4 + fill.spacing 
-				+ ((battery_fill * (17 - 2*fill.spacing)
-				    + battery_fill / 2) / 512),
-				this->y + 9 - fill.spacing);
+
+void pz_add_header_decoration( char * decorationDisplayName,
+				update_fcn update_function,
+				draw_fcn draw_function,
+				void * data )
+{
+	header_info * new = (header_info *)malloc( sizeof( header_info ));
+	if( !new ) {
+		printf( "Malloc error on %s\n", decorationDisplayName );
+		return;
+	}
+	new->widg = NULL;
+	new->side = 0;
+	new->LZorder = -1;
+	new->RZorder = -1;
+	new->updfcn = update_function;
+	new->drawfcn = draw_function;
+	new->data = data;
+	new->name = decorationDisplayName;
+	new->next = NULL;
+
+	/* now, setup the internal wid */
+	new->widg = ttk_new_widget (0, 0);
+	new->widg->h = ttk_screen->wy;
+	new->widg->w = ttk_screen->w;	
+	new->widg->draw = NULL;		/* should use this */
+	new->widg->timer = NULL;	/* should use this */
+	/* ttk_widget_set_timer (new->widg, 1000); */
+
+	/* tack it onto the list... */
+	if( !headerDecorations ) {
+		headerDecorations = new;
 	} else {
-		ttk_ap_fillrect (srf, &fill,
-				this->x + 4, this->y + 1,
-				 this->x + 4 + ((battery_fill * 17 
-				    + battery_fill / 2) / 512),
-				 this->y + 9);
+		header_info * h = headerDecorations;
+		while( h->next ) {
+			h = h->next;
+		}
+		h->next = new;
 	}
 
-	/* overlay the charge icon if we're charging */
-	if (battery_is_charging)
-		ttk_draw_icon (ttk_icon_charging, srf, this->x, this->y,
-                               ttk_ap_getx ("battery.chargingbolt"),
-			ttk_ap_getx ("header.bg")->color);
+/* XXXXX
+	printf( "Added Header Decoration %s\n", decorationDisplayName );
+*/
 }
 
-static TWidget *new_battery_indicator() 
+header_info * find_header_item( header_info * list, char * name )
 {
-	TWidget *ret = ttk_new_widget (0, 0);
-	ret->w = 25;
-	ret->h = 10;
-	ret->draw = battery_draw;
-	ret->timer = make_dirty;
-	ttk_widget_set_timer (ret, 1000);
+	header_info * curr = list;
 
-	return ret;
-}
+	if( !list || !name ) return( NULL );
 
-/** Load average **/
-static double get_load_average( void )
-{
-	double ret = 0.00;
-#ifdef __linux__
-	FILE * file;
-	float f;
-
-	file = fopen( "/proc/loadavg", "r" );
-	if( file ) {
-		fscanf( file, "%f", &f );
-		ret = f;
-		fclose( file );
-	} else {
-		ret = 0.50;
+	while( curr ) {
+		if( curr->name != NULL &&  !strcmp( name, curr->name )) {
+			return( curr );
+		}
+		curr = curr->next;
 	}
-#else
-#ifdef __APPLE__
-	double avgs[3];
-	if( getloadavg( avgs, 3 ) < 0 ) return( 0.50 );
-	ret = avgs[0];
-#else 
-	ret = (float)(rand()%20) * 0.05;
-#endif
-#endif
-	return( ret );
+	return( NULL );
 }
 
-
-#define LAVG_WIDTH 19
-#define _LAMAKETHIS int *avgs = (int *)this->data
-
-static void loadavg_draw (TWidget *this, ttk_surface srf) 
+void pz_enable_widget_on_side( int side, char * name )
 {
-	double avg;
-	int i;
-	/*_LAMAKETHIS; */
+	header_info * item = find_header_item( headerWidgets, name );
 
-	avg = get_load_average();
-
-	i = (this->h-1) - (avg * this->h-1);
-	if( i < 0 ) i = 0;
-	if( i > (this->h-1)) i= this->h-1;
-
-	/* backing */
-	ttk_ap_fillrect (srf, ttk_ap_get ("loadavg.bg"), 
-				this->x, this->y,
-				this->x + this->w - 2, 
-				this->y + i);
-
-	/* body */
-	ttk_ap_fillrect (srf, ttk_ap_get ("loadavg.fg"), 
-				this->x, this->y+i,
-				this->x + this->w - 2, 
-				this->y + this->h - 1);
-
-	/* spike line */
-	ttk_ap_hline( srf, ttk_ap_get( "loadavg.spike" ),
-			    this->x, this->x + this->w - 3, this->y+i );
-}
-
-static void loadavg_destroy (TWidget *this) 
-{ free (this->data); }
-
-static TWidget *new_load_average_display() 
-{
-	TWidget *ret = ttk_new_widget (0, 0);
-	ret->w = LAVG_WIDTH;
-	ret->h = ttk_screen->wy - 2;
-	
-	ret->data = calloc (LAVG_WIDTH, sizeof(int));
-	ret->draw = loadavg_draw;
-	ret->timer = make_dirty;
-	ret->destroy = loadavg_destroy;
-	ttk_widget_set_timer (ret, 1000);
-
-	return ret;
-}
-
-
-/** Hold status **/
-extern int pz_hold_is_on;
-
-static TWidget *hwid = 0;
-
-static void hold_unset (TWidget *this) 
-{ hwid = 0; }
-
-static void hold_draw (TWidget *this, ttk_surface srf) 
-{
-    if (pz_hold_is_on) {
-	ttk_draw_icon (ttk_icon_hold, srf, this->x + 3, this->y, ttk_ap_getx ("lock.fg"), 0);
-    }
-}
-
-static TWidget *new_hold_status_indicator()
-{
-    TWidget *ret = ttk_new_widget (0, 0);
-    ret->w = 14;
-    ret->h = 10;
-    ret->draw = hold_draw;
-    ret->destroy = hold_unset;
-
-    hwid = ret;
-    return ret;
-}
-
-extern TWindow *pz_last_window;
-char *pz_next_header = 0;
-#define NHWID 5
-static int hwid_left[NHWID], hwid_lnext = 0, hwid_right[NHWID], hwid_rnext = 0;
-static TWidget *hwid_lwid[NHWID], *hwid_rwid[NHWID];
-static int local = 0;
-static TWidget *llwid = 0, *lrwid = 0;
-
-void pz_hwid_pack_left (TWidget *wid) 
-{
-    int lx = 0;
-    if (hwid_lnext != 0) {
-	lx = hwid_left[hwid_lnext - 1];
-    }
-    lx += 2;
-    
-    hwid_lwid[hwid_lnext] = wid;
-    hwid_left[hwid_lnext++] = lx + wid->w;
-    wid->x = lx;
-    wid->y = (ttk_screen->wy - wid->h) / 2;
-    ttk_add_header_widget (wid);
-}
-
-void pz_hwid_pack_right (TWidget *wid)
-{
-    int lx = ttk_screen->w;
-    if (hwid_rnext != 0) {
-	lx = hwid_right[hwid_rnext - 1];
-    }
-    lx -= 2 + wid->w;
-    
-    hwid_rwid [hwid_rnext] = wid;
-    hwid_right[hwid_rnext++] = lx;
-    wid->x = lx;
-    wid->y = (ttk_screen->wy - wid->h) / 2;
-    ttk_add_header_widget (wid);
-}
-
-void pz_hwid_unpack (TWidget *wid) 
-{
-    int i;
-    for (i = 0; i < NHWID; i++) {
-	if (hwid_lwid[i] == wid) {
-	    hwid_lnext--;
-	    memmove (hwid_lwid + i, hwid_lwid + i + 1, (NHWID - i - 1) * sizeof(TWidget*));
-	    memmove (hwid_left + i, hwid_left + i + 1, (NHWID - i - 1) * sizeof(int));
-	    break;
-	} else if (hwid_rwid[i] == wid) {
-	    hwid_rnext--;
-	    memmove (hwid_rwid + i, hwid_rwid + i + 1, (NHWID - i - 1) * sizeof(TWidget*));
-	    memmove (hwid_right + i, hwid_right + i + 1, (NHWID - i - 1) * sizeof(int));
-	    break;
+	if( item != NULL ) {
+		item->side |= side;
 	}
-    }
-    if (i == NHWID) {
-	pz_error ("Unpacking %%%p: not in header\n");
-    } else {
-	ttk_remove_header_widget (wid);
-    }
 }
 
-void pz_hwid_reset() 
+void pz_enable_header_decorations( char * name )
 {
-    local = 0;
+	header_info * d = headerDecorations;
 
-    while (hwid_lnext)
-	pz_hwid_unpack (hwid_lwid[0]);
-
-    while (hwid_rnext)
-	pz_hwid_unpack (hwid_rwid[0]);
-
-    hwid_lnext = hwid_rnext = 0;
+	while( d ) {
+		if( d->name != NULL && !strcmp( name, d->name )) {
+			/* found it!  Set the bit! */
+			d->side |= HEADER_SIDE_DECORATION;
+		} else {
+			/* not it... clear the bit */
+			d->side &= ~HEADER_SIDE_DECORATION;
+		}
+		d = d->next;
+	}
 }
 
-void pz_header_set_local (TWidget *left, TWidget *right) 
+
+static void cycle_widgets_on_side( int side );
+
+void force_update_of_widget( char * name )
 {
-    int i;
+	header_info * item = find_header_item( headerWidgets, name );
 
-    if (local) {
-	pz_error ("Local header created from within local header\n");
-	return;
-    }
+	if( item != NULL ) {
+		/* update it! */
+		if( item->updfcn ) item->updfcn( item );
 
-    local++;
-
-    if (left) {
-	for (i = 0; i < hwid_lnext; i++)
-	    ttk_remove_header_widget (hwid_lwid[i]);
-	left->x = 2;
-	left->y = (ttk_screen->wy - left->h) / 2;
-	ttk_add_header_widget (left);
-	llwid = left;
-    }
-
-    if (right) {
-	for (i = 0; i < hwid_rnext; i++)
-	    ttk_remove_header_widget (hwid_rwid[i]);
-	right->x = ttk_screen->w - 2 - right->w;
-	right->y = (ttk_screen->wy - right->h) / 2;
-	ttk_add_header_widget (right);
-	lrwid = left;
-    }
+		/* in case the widget disappears, force a cycle */
+		if( item->widg->w == 0 ) {
+			if( item->side & HEADER_SIDE_LEFT )
+				cycle_widgets_on_side( HEADER_SIDE_LEFT );
+			if( item->side & HEADER_SIDE_RIGHT )
+				cycle_widgets_on_side( HEADER_SIDE_RIGHT );
+		}
+	}
 }
 
-void pz_header_unset_local() 
+void pz_clear_header_lists( void ) 
 {
-    int i;
-
-    if (!local) {
-	pz_error ("Local header destroyed where it didn't exist");
-	return;
-    }
-
-    if (llwid) {
-	ttk_remove_header_widget (llwid);
-	for (i = 0; i < hwid_lnext; i++)
-	    ttk_add_header_widget (hwid_lwid[i]);
-	llwid = 0;
-    }
-    
-    if (lrwid) {
-	ttk_remove_header_widget (lrwid);
-	for (i = 0; i < hwid_rnext; i++)
-	    ttk_add_header_widget (hwid_rwid[i]);
-	lrwid = 0;
-    }
-
-    local--;
+	header_info * t = headerDecorations;
+	header_info * n = NULL;
+	while( t ) {
+		n = t->next;
+		free( t );
+		t = n;
+	}
+	t = headerWidgets;
+	while( t ) {
+		n = t->next;
+		free( t );
+		t = n;
+	}
 }
 
-void pz_header_set_decorations (int decor) 
-{
-	if( decorations != decor )  decoration_colors_dirty++;
-	decorations = decor;
-}
 
-static ttk_color gradcol[32];           /* gradient color buffer */
-void pz_header_colors_dirty( void )
-{
-	decoration_colors_dirty++;
-}
+/* ********************************************************************** */ 
+/* Internal widgets */
 
+#ifdef NEVER
 /** Decorations: **/
 static void draw_decorations (TWidget *this, ttk_surface srf)
 {
@@ -1045,53 +809,929 @@ static void draw_decorations (TWidget *this, ttk_surface srf)
 	}
     }    
 }
+#endif
 
-static TWidget *new_decorations_widget() 
+
+
+/******************************************************************************/
+
+/* XXX old stuff. need to replace this */
+void pz_header_set_decorations (int decor) 
 {
-    TWidget *ret = ttk_new_widget (0, 0);
-    ret->w = ttk_screen->w;
-    ret->h = ttk_screen->wy;
-    ret->draw = draw_decorations;
-    return ret;
+	if( decorations != decor )  decoration_colors_dirty++;
+	decorations = decor;
+}
+
+#ifdef NEVER
+static ttk_color gradcol[32];           /* gradient color buffer */
+#endif
+
+void pz_header_colors_dirty( void )
+{
+	decoration_colors_dirty++;
+}
+
+/******************************************************************************/
+
+/* these need to correspond directly to their counterparts in menu.c */
+static int ratesecs[] = { 1, 2, 5, 10, 15, 30, 60, -1 };
+
+#define DISP_MODE_ALL	(0)
+#define DISP_MODE_CYCLE	(1)
+#define DISP_MODE_NONE	(2)
+
+
+/* find the item on the selected side with the lowest Z value */
+static header_info * find_lowestZ_for_side( int side )
+{
+	header_info * curr = headerWidgets;
+	header_info * lowesths = NULL;
+	int lowvalue = zvalue+1;
+
+	while( curr != NULL ) {
+		if( (side == HEADER_SIDE_LEFT) && 
+		    (curr->side & HEADER_SIDE_LEFT) ) {
+			if( curr->LZorder < lowvalue ) {
+				lowesths = curr;
+				lowvalue = curr->LZorder;
+			}
+		} else if( (side == HEADER_SIDE_RIGHT) && 
+		           (curr->side & HEADER_SIDE_RIGHT) ) {
+			if( curr->RZorder < lowvalue ) {
+				lowesths = curr;
+				lowvalue = curr->RZorder;
+			}
+		}
+		curr = curr->next;
+	}
+
+	return( lowesths );
+}
+
+/* find the item on the selected side with the highest Z value */
+static header_info * find_highestZ_for_side( int side )
+{
+	header_info * curr = headerWidgets;
+	header_info * highesths = NULL;
+	int highvalue = 0;
+
+	while( curr != NULL ) {
+		if( (side == HEADER_SIDE_LEFT) && 
+		    (curr->side & HEADER_SIDE_LEFT) ) {
+			if( curr->LZorder >= highvalue ) {
+				highesths = curr;
+				highvalue = curr->LZorder;
+			}
+		} else if( (side == HEADER_SIDE_RIGHT) && 
+		           (curr->side & HEADER_SIDE_RIGHT) ) {
+			if( curr->RZorder >= highvalue ) {
+				highesths = curr;
+				highvalue = curr->RZorder;
+			}
+		}
+		curr = curr->next;
+	}
+
+	return( highesths );
+}
+
+/* draw all of the widgets on the selected side in the proper mode */
+static int draw_widgets_for_side( int side, int mode, ttk_surface srf )
+{
+	header_info * c;
+	int xp = 0;
+
+	if( side == HEADER_SIDE_RIGHT ) {
+		xp = ttk_screen->w;
+	}
+
+	if( mode == DISP_MODE_CYCLE ) {
+		/* just draw the topmost one */
+		c = find_highestZ_for_side( side );
+		if( c && c->drawfcn ) {
+			if( side == HEADER_SIDE_RIGHT )	xp -= c->widg->w;
+			c->widg->x = xp;
+			if( srf != NULL ) c->drawfcn( c, srf );
+			if( side == HEADER_SIDE_LEFT )	xp += c->widg->w;
+		}
+
+	} else if ( mode == DISP_MODE_ALL ) {
+		/* draw them all */
+		c = headerWidgets;
+		while( c != NULL ) {
+			if( c->side & side ) {
+				if( c && c->drawfcn ) {
+					if( side == HEADER_SIDE_RIGHT ) {
+						xp -= c->widg->w;
+					}
+					c->widg->x = xp;
+					if( srf != NULL ) c->drawfcn( c, srf );
+					if( side == HEADER_SIDE_LEFT ) {
+						xp += c->widg->w;
+					}
+				}
+			}
+			c = c->next;
+		}
+	}
+	return( xp );
+}
+
+/* and here's another version for computing offsets for the decorations */
+#define compute_offset_for_side( side, mode ) \
+	draw_widgets_for_side( (side), (mode), NULL )
+
+
+/* update all of the widgets on the selected side */
+static void update_widget_list_for_side( int side, TWidget *this, int Mode )
+{
+	header_info * c = headerWidgets;
+
+	while( c != NULL ) {
+		if( c->side & side ) {
+			if( c->updfcn ) {
+				c->updfcn( c );
+				make_dirty( this );
+			}
+		}
+		c = c->next;
+	}
 }
 
 
-static TWidget *decwid = 0;
+/* to cycle, we simply find the lowest z-order item, and make it the highest */
+/* some extra heuristics exist in there to tweak for 0-width (hidden) items */
+static void cycle_widgets_on_side( int side )
+{
+	header_info * lowest = find_lowestZ_for_side( side );
+	header_info * first = lowest;
+	int loops = 0;
+
+	while( loops < 4 ) {
+		if( lowest ) {
+			if( side == HEADER_SIDE_LEFT )  
+				lowest->LZorder = zvalue++;
+			else
+				lowest->RZorder = zvalue++;
+		}
+
+		if( lowest->widg->w > 0 ) return;
+
+		if( lowest == first ) {
+			if( loops > 0 ) {
+				return;
+			}
+			loops++;
+		} 
+		lowest = find_lowestZ_for_side( side );
+	}
+}
+
+/* iterate over the list, find the active one, call its update function */
+static void update_decorations( void )
+{
+	header_info * d = headerDecorations;
+	while( d ){
+		if( d->side & HEADER_SIDE_DECORATION ) {
+			if( d->updfcn ) {
+				d->updfcn( d );
+				return; /* short circuit! */
+			}
+		}
+		d = d->next;
+	}
+}
+
+static int handle_header_updates( TWidget *this )
+{
+	static int d_upd_countdown = 0;
+	static int l_upd_countdown = 0;
+	static int r_upd_countdown = 0;
+	static int l_cyc_countdown = 0;
+	static int r_cyc_countdown = 0;
+
+	int d_upd_rate = ratesecs[ pz_get_int_setting( 
+					pz_global_config, DECORATION_RATE ) ];
+
+	int l_cyc_mode = pz_get_int_setting( pz_global_config, HEADER_METHOD_L );
+	int l_upd_rate = ratesecs[ pz_get_int_setting( 
+					pz_global_config, HEADER_UPD_RATE_L ) ];
+	int l_cyc_rate = ratesecs[ pz_get_int_setting( 
+					pz_global_config, HEADER_CYC_RATE_L ) ];
+
+	int r_cyc_mode = pz_get_int_setting( pz_global_config, HEADER_METHOD_R );
+	int r_upd_rate = ratesecs[ pz_get_int_setting( 
+					pz_global_config, HEADER_UPD_RATE_R ) ];
+	int r_cyc_rate = ratesecs[ pz_get_int_setting( 
+					pz_global_config, HEADER_CYC_RATE_R ) ];
+
+	/* checks to make sure the user didn't go from 60s to 1s and such */
+	if( l_cyc_countdown > l_cyc_rate ) l_cyc_countdown = l_cyc_rate;
+	if( r_cyc_countdown > r_cyc_rate ) r_cyc_countdown = r_cyc_rate;
+	if( l_upd_countdown > l_upd_rate ) l_upd_countdown = l_upd_rate;
+	if( r_upd_countdown > r_upd_rate ) r_upd_countdown = r_upd_rate;
+	if( d_upd_countdown > d_upd_rate ) d_upd_countdown = d_upd_rate;
+
+	/* first, update all of the widgets */
+	if( (l_cyc_mode != DISP_MODE_NONE) && (--l_upd_countdown <= 0)) {
+	    	l_upd_countdown = l_upd_rate;
+		update_widget_list_for_side( HEADER_SIDE_LEFT, this, l_cyc_mode );
+	}
+	if( (r_cyc_mode != DISP_MODE_NONE) && (--r_upd_countdown <= 0)) {
+	    	r_upd_countdown = r_upd_rate;
+		update_widget_list_for_side( HEADER_SIDE_RIGHT, this, r_cyc_mode );
+	}
+
+	/* next, cycle them, if applicable */
+	if( (l_cyc_mode == DISP_MODE_CYCLE) && (--l_cyc_countdown < 0) ) {
+		l_cyc_countdown = l_cyc_rate;
+		cycle_widgets_on_side( HEADER_SIDE_LEFT );
+		make_dirty( this ); /* force a redraw */
+	}
+	if( (r_cyc_mode == DISP_MODE_CYCLE) && (--r_cyc_countdown < 0) ) {
+		r_cyc_countdown = r_cyc_rate;
+		cycle_widgets_on_side( HEADER_SIDE_RIGHT );
+		make_dirty( this ); /* force a redraw */
+	}
+
+/* XXXX
+	printf( "(time: %d %d   %d %d)\n",
+		l_upd_countdown, l_upd_rate, l_cyc_countdown, l_cyc_rate );
+	fflush( stdout );
+*/
+	/* finally... update the header decorations */
+	if( (--d_upd_countdown <= 0) ) {
+	    	d_upd_countdown = d_upd_rate;
+		update_decorations();
+	}
+
+	return( 0 );
+}
+
+
+/* adjust TTK to set up the header justification properly */
+void pz_header_justification_helper( int lx, int rx )
+{
+	enum ttk_justification just = TTK_TEXT_CENTER;
+		ttk_header_set_text_justification( TTK_TEXT_CENTER );
+
+	/* get the setting */
+	just = (int) pz_get_int_setting (pz_global_config, TITLE_JUSTIFY);
+
+	/* tell ttk what to do */
+	ttk_header_set_text_justification( just );
+	ttk_header_set_text_position( -1 );	/* default */
+
+
+	switch( just ) {
+	case( TTK_TEXT_LEFT ):
+		ttk_header_set_text_position( lx );
+		break;
+
+	case( TTK_TEXT_RIGHT ):
+		ttk_header_set_text_position( rx );
+		break;
+
+	case( TTK_TEXT_CENTER ):
+	default:
+		ttk_header_set_text_position( ttk_screen->w >>1 );
+		break;
+	}
+}
+
+
+/* iterate over the list, find the active one, adjust x&w, draw it! */
+static void draw_header_decorations( int x1, int x2, ttk_surface srf )
+{
+	header_info * d = headerDecorations;
+	while( d ){
+		if( d->side & HEADER_SIDE_DECORATION ) {
+			if( d->drawfcn ) {
+				d->widg->x = x1;
+				d->widg->w = x2-x1;
+				d->drawfcn( d, srf );
+				return; /* short circuit! */
+			}
+		}
+		d = d->next;
+	}
+}
+
+
+
+
+/* draw the left and right widgets over the bbacking decoration */
+static void draw_headerBar( TWidget *this, ttk_surface srf )
+{
+	int xl, xr;
+	int l_cyc_mode = pz_get_int_setting( pz_global_config, HEADER_METHOD_L);
+	int r_cyc_mode = pz_get_int_setting( pz_global_config, HEADER_METHOD_R);
+
+	/* 1. compute space that header widgets take up */
+	xl = compute_offset_for_side( HEADER_SIDE_LEFT, l_cyc_mode );
+	xr = compute_offset_for_side( HEADER_SIDE_RIGHT, r_cyc_mode );
+
+	/* 2. draw header decorations */
+	pz_header_justification_helper( xl, xr );
+	draw_header_decorations( xl, xr, srf );
+
+	/* 3. draw widgets */
+	xl = draw_widgets_for_side( HEADER_SIDE_LEFT, l_cyc_mode, srf );
+	xr = draw_widgets_for_side( HEADER_SIDE_RIGHT, r_cyc_mode, srf );
+}
+
+
+static TWidget *new_headerBar_widget() 
+{
+	TWidget *ret = ttk_new_widget (0, 0);
+	ret->w = ttk_screen->w;
+	ret->h = ttk_screen->wy;
+	ret->draw = draw_headerBar;
+	ret->timer = handle_header_updates;
+	ttk_widget_set_timer (ret, 1000);
+	return ret;
+}
+
+
+
+/* ********************************************************************** */ 
+/* Header Decorations */ 
+
+static int hcolor;
+
+/* one for testing... */
+void test_draw_decorations( struct header_info * hdr, ttk_surface srf )
+{
+	ttk_color c;
+	char * data;
+	if( !hdr ) return;
+	data = (char *) hdr->data;
+
+	/* fill the whole back */
+	ttk_fillrect( srf,
+			0, 0,
+			ttk_screen->w, ttk_screen->wy,
+			ttk_makecol( 255, 0, 0 ) );
+
+	/* now fill just the center bit */
+	if( (hcolor & 7) == 6) hcolor = 0;
+	if( (hcolor & 7) == 0) c = ttk_makecol( 255,   0,   0 );
+	if( (hcolor & 7) == 1) c = ttk_makecol( 255, 255,   0 );
+	if( (hcolor & 7) == 2) c = ttk_makecol(   0, 255,   0 );
+	if( (hcolor & 7) == 3) c = ttk_makecol(   0, 255, 255 );
+	if( (hcolor & 7) == 4) c = ttk_makecol(   0,   0, 255 );
+	if( (hcolor & 7) == 5) c = ttk_makecol( 255,   0, 255 );
+	ttk_fillrect( srf,
+			hdr->widg->x, 0,
+			hdr->widg->x + hdr->widg->w, ttk_screen->wy,
+			c );
+
+	/* the left and right sides - find any holes */
+	if( hdr->widg->x != 0 )
+		ttk_fillrect( srf,
+			0, 0,
+			hdr->widg->x, ttk_screen->wy,
+			ttk_makecol( 0, 255, 0 ) );
+	if( hdr->widg->x+hdr->widg->w != ttk_screen->w )
+		ttk_fillrect( srf,
+			hdr->widg->w + hdr->widg->x, 0,
+			ttk_screen->w,  ttk_screen->wy,
+			ttk_makecol( 255, 255, 0 ) );
+/*
+	printf( "Decoration \"%s\"  %d %d\n", data, hdr->widg->x, hdr->widg->w);
+*/
+}
+
+void test_update_decorations( struct header_info * hdr )
+{
+/*
+	printf( "Update Header Timeout\n" );
+*/
+	ttk_dirty |= TTK_DIRTY_HEADER;
+	hcolor++;
+}
+
+
+void dec_plain( struct header_info * hdr, ttk_surface srf )
+{
+	hdr = hdr;
+	srf = srf;
+}
+
+
+/* Amiga Decorations */
+void dec_draw_Amiga1x( struct header_info * hdr, ttk_surface srf, int A1orA3 )
+{
+	int tw = ttk_text_width (ttk_menufont, ttk_windows->w->title);
+	enum ttk_justification just = pz_get_int_setting( 
+					pz_global_config, TITLE_JUSTIFY);
+	int i;
+	int xp1 = hdr->widg->x;
+	int xp2 = hdr->widg->x + hdr->widg->w;
+	int tx1 = 0, tx2 = 0;
+	double yo, xo;
+
+	/* draw the faux close box, if applicable. */
+	if( hdr->widg->x == 0 ) {
+		xp1 = hdr->widg->h;	/* square gadget */
+
+		/* this should be tweaked to look better on mini */
+
+		xo = ((float)hdr->widg->h) / 8.0;
+		yo = ((float)hdr->widg->h) / 8.0;
+
+		ttk_ap_fillrect( srf, ttk_ap_get ("header.fg"),
+				(int) (xo*1),  (int) (yo*1),
+				(int) (xo*7),  (int) (yo*7) );
+		ttk_ap_fillrect( srf, ttk_ap_get ("header.bg"),
+				(int) (xo*1.6), (int) (yo*1.6),
+				(int) (xo*6.4), (int) (yo*6.4) );
+		ttk_ap_fillrect (srf, ttk_ap_get ("header.accent"),
+				(int) (xo*3.1), (int) (yo*3.1),
+				(int) (xo*4.8), (int) (yo*4.8) );
+	}
+
+	/* draw drag bars */
+	if( A1orA3 == 1 ) {
+		/* 1.1 dragbars */
+		for (i = 1; i < ttk_screen->wy; i += 2) {
+			ttk_line (srf,
+				xp1, i, xp2, i,
+				ttk_ap_getx ("header.fg") -> color);
+		}
+	} else {
+		/* 1.3 dragbars */
+		int o = ttk_screen->wy / 4;
+		ttk_ap_fillrect (srf, ttk_ap_get ("header.fg"),
+			xp1 + o,  o,
+			xp2 - o,  o*2 - 1 );
+		ttk_ap_fillrect (srf, ttk_ap_get ("header.fg"),
+			xp1 + o,  hdr->widg->h - o*2 + 1,
+			xp2 - o,  hdr->widg->h - o );
+	}
+
+	/* draw vertical separators */
+	ttk_ap_fillrect( srf, ttk_ap_get( "header.fg" ),
+			xp1-1, 0, xp1+1, hdr->widg->h );
+	if( xp2 != ttk_screen->w ) 
+		ttk_ap_fillrect( srf, ttk_ap_get( "header.fg" ),
+			xp2 - 1, 0, xp2 + 1, hdr->widg->h );
+
+	/* blot out the backing for the text */
+	pz_header_justification_helper( xp1+3, xp2-3 );
+	switch( just ) {
+	case( TTK_TEXT_LEFT ):
+		tx1 = xp1+1;
+		tx2 = xp1+tw+5;
+		break;
+	case( TTK_TEXT_RIGHT ):
+		tx1 = xp2-tw-5;
+		tx2 = xp2-1;
+		break;
+	default: /* center */
+		tx1 = (ttk_screen->w - tw - 5) >> 1;
+		tx2 = tx1 + tw + 5;
+	}
+	ttk_ap_fillrect( srf, ttk_ap_get( "header.bg" ),
+			tx1, 0, tx2, hdr->widg->h );
+}
+
+void dec_draw_Amiga13( struct header_info * hdr, ttk_surface srf )
+{
+	dec_draw_Amiga1x( hdr, srf, 3 );
+}
+
+void dec_draw_Amiga11( struct header_info * hdr, ttk_surface srf )
+{
+	dec_draw_Amiga1x( hdr, srf, 1 );
+}
+
+
+
+
+/* ********************************************************************** */ 
+/* Widgets */ 
+
+
+void test_update_widget( struct header_info * hdr )
+{
+	char * data;
+	if( !hdr ) return;
+	data = (char *) hdr->data;
+/*
+	printf( "update %s\n", data );
+	hdr->widg->w = 5;
+*/
+}
+
+void test_draw_widget( struct header_info * hdr, ttk_surface srf )
+{
+	char * data;
+
+	if( !hdr ) return;
+	data = (char *) hdr->data;
+
+	ttk_rect( srf,  hdr->widg->x, hdr->widg->y, 
+			hdr->widg->x+hdr->widg->w, hdr->widg->y+hdr->widg->h, 
+			ttk_ap_get( "header.shadow" )->color);
+
+	pz_vector_string( srf, data, hdr->widg->x+2, hdr->widg->y+2, 5, 9, 1, 
+			  ttk_ap_get( "header.shadow" )->color);
+/*
+	if( data[0] == 'R' )
+		printf( "draw %s %d\n", data, hdr->widg->x );
+*/
+}
+
+
+/* Hold Widget ****************** */ 
 
 void pz_header_fix_hold() 
 {
-    ttk_dirty |= TTK_DIRTY_HEADER;
+	force_update_of_widget( "Hold" );
+	ttk_dirty |= TTK_DIRTY_HEADER;
 }
 
-static int inited = 0;
-static TWidget *farleft_wids[NHWID];
-int farleft_next = 0;
-void pz_hwid_put_left (TWidget *wid) 
+static void w_hold_update( struct header_info * hdr )
 {
-    if (inited)
-	pz_hwid_pack_left (wid);
-    else
-	farleft_wids[farleft_next++] = wid;
+	/* If hold is on set the width of our widget to be a little bigger
+	   than the size of the icon itself. 
+	   If hold is off, set the width to be 0, so it doesn't get drawn
+        */
+	if( pz_hold_is_on ) {
+		hdr->widg->w = pz_icon_hold[0] + 4;
+	} else {
+		hdr->widg->w = 0;
+	}
 }
+
+static void w_hold_draw( struct header_info * hdr, ttk_surface srf )
+{
+	if( pz_hold_is_on ) {
+		ttk_draw_icon( pz_icon_hold, srf, hdr->widg->x+1, 
+			       hdr->widg->y  + ((hdr->widg->h - pz_icon_hold[1])>>1),
+			       ttk_ap_getx ("battery.border"),
+			       ttk_ap_getx ("header.bg")->color );
+/* XXX 
+	there's something going wrong here, since this 
+	doesn't draw in the right place.
+		ttk_line( srf, hdr->widg->x, 0,
+			 	hdr->widg->x+hdr->widg->w, 0, 0 );
+*/
+				
+	}
+}
+
+
+/* Power Widget ***************** */
+
+typedef struct powerstuff {
+	int fill;
+	int is_charging;
+} powerstuff;
+
+static powerstuff the_power_state;
+
+static void w_powericon_update( struct header_info * hdr )
+{
+	powerstuff * ps = (powerstuff *)hdr->data;
+
+	if( ps != NULL ) {
+		ipod_read_apm( &ps->fill, &ps->is_charging );
+	}
+	hdr->widg->w = pz_icon_battery[0] + 4;
+}
+
+static void w_powericon_draw( struct header_info * hdr, ttk_surface srf )
+{
+	powerstuff * ps = (powerstuff *)hdr->data;
+	int ypos;
+	int xadd;
+	TApItem fill;
+	TApItem *ap;
+
+        if (ps->is_charging) {
+                memcpy (&fill, ttk_ap_getx ("battery.fill.charge"),
+                        sizeof(TApItem));
+                ap = ttk_ap_get( "battery.bg.charging" );
+
+        } else if (ps->fill < 64) {
+                memcpy (&fill, ttk_ap_getx ("battery.fill.low"),
+                        sizeof(TApItem));
+                ap = ttk_ap_get( "battery.bg.low" );
+
+        } else {
+                memcpy (&fill, ttk_ap_getx ("battery.fill.normal"),
+                        sizeof(TApItem));
+                ap = ttk_ap_get( "battery.bg" );
+        }
+
+	ypos = hdr->widg->y + ((hdr->widg->h - pz_icon_battery[1])>>1),
+	xadd = 2;
+
+        /* back fill the container... */
+        ttk_ap_fillrect (srf, ap, hdr->widg->x + xadd +4, ypos + 1,
+                                hdr->widg->x + xadd +22, ypos + 9);
+
+	/* draw the framework */
+	ttk_draw_icon (ttk_icon_battery, srf, hdr->widg->x+xadd, ypos,
+			ttk_ap_getx ("battery.border"),
+			ttk_ap_getx ("header.bg")->color);
+
+	/* fill the container with stuff */
+        if (fill.type & TTK_AP_SPACING) {
+                fill.type &= ~TTK_AP_SPACING;
+                ttk_ap_fillrect (srf, &fill,
+                                xadd + hdr->widg->x + 4 + fill.spacing,
+                                ypos + 1 + fill.spacing,
+                                xadd + hdr->widg->x + 4 + fill.spacing
+                                     + ((ps->fill * (17 - 2*fill.spacing)
+                                     + ps->fill / 2) / 512),
+                                ypos + 9 - fill.spacing);
+        } else {
+                ttk_ap_fillrect (srf, &fill,
+                                xadd + hdr->widg->x + 4, 
+				ypos + 1,
+                                xadd + hdr->widg->x + 4 
+				     + ((ps->fill * 17 + ps->fill / 2) / 512),
+                                ypos + 9);
+        }
+
+
+	/* overlay the charge icon if we're charging */
+	if (ps->is_charging)
+		ttk_draw_icon( pz_icon_charging, srf, hdr->widg->x+xadd, ypos, 
+			ttk_ap_getx ("battery.chargingbolt"),
+			ttk_ap_getx ("header.bg")->color);
+}
+
+static void w_powertext_draw( struct header_info * hdr, ttk_surface srf )
+{
+	char buf[8];
+	powerstuff * ps = (powerstuff *)hdr->data;
+	ttk_color c = 0;
+	TApItem *ap;
+
+	/* set up the appropriate color */
+	if( ps->fill < 100 )
+		ap = ttk_ap_get( "battery.fill.low" );
+	else
+		ap = ttk_ap_get( "battery.fill.normal" );
+	if( ap ) {
+		if( ap->type & TTK_AP_GRADIENT ) {
+			c = ap->gradstart;
+		} else {
+			c = ap->color;
+		}
+	} else {
+		c = ttk_makecol( GREY );
+	}
+
+	if( ps->is_charging >= 1000 )
+		strcpy (buf, "Chrg");
+	else
+		snprintf( buf, 32, "%c%d", 
+			    (ps->is_charging)?'+':' ',
+			    ps->fill );
+
+	pz_vector_string_center( srf, buf, hdr->widg->x+1 + (hdr->widg->w>>1),
+			hdr->widg->y + (hdr->widg->h>>1),
+			5, 9, 1, c );
+}
+
+
+/* Load Average ***************** */ 
+
+
+static double get_load_average( void )
+{
+	double ret = 0.00;
+#ifdef __linux__
+	FILE * file;
+	float f;
+
+	file = fopen( "/proc/loadavg", "r" );
+	if( file ) {
+		fscanf( file, "%f", &f );
+		ret = f;
+		fclose( file );
+	} else {
+		ret = 0.50;
+	}
+#else
+#ifdef __APPLE__
+	double avgs[3];
+	if( getloadavg( avgs, 3 ) < 0 ) return( 0.50 );
+	ret = avgs[0];
+#else 
+	ret = (float)(rand()%20) * 0.05;
+#endif
+#endif
+	return( ret );
+}
+
+
+#define N_LAV_ENTRIES	(4)	/* should be a divisor of the width */
+typedef struct _lav_data {
+	double dv[N_LAV_ENTRIES];
+	int iv[N_LAV_ENTRIES];
+} _lav_data;
+
+static _lav_data lav_data;
+
+static void w_lav_update( struct header_info * hdr )
+{
+	_lav_data * ld = (_lav_data *)hdr->data;
+	int h;
+
+	for( h=0 ; h<N_LAV_ENTRIES-1 ; h++ ) {
+		ld->dv[h] = ld->dv[h+1];
+		ld->iv[h] = ld->iv[h+1];
+	}
+	ld->dv[h] = get_load_average();
+	ld->iv[h] = (hdr->widg->h-1) - (ld->dv[h] * hdr->widg->h-1);
+	if( ld->iv[h] < 0 ) 
+		ld->iv[h] = 0;
+	if( ld->iv[h] > (hdr->widg->h-1)) 
+		ld->iv[h]= hdr->widg->h-1;
+}
+
+
+static void w_lav_draw( struct header_info * hdr, ttk_surface srf )
+{
+	int h;
+	int w4 = hdr->widg->w / N_LAV_ENTRIES;
+	_lav_data * ld = (_lav_data *)hdr->data;
+
+/*
+	ttk_rect( srf,  hdr->widg->x, hdr->widg->y, 
+			hdr->widg->x+hdr->widg->w, hdr->widg->y+hdr->widg->h, 
+			0x00ff0000 );
+*/
+
+	for( h=0 ; h< N_LAV_ENTRIES ; h++ ) {
+		/* backing */
+		ttk_ap_fillrect (srf, ttk_ap_get ("loadavg.bg"), 
+				hdr->widg->x + (h*w4),
+				hdr->widg->y,
+				hdr->widg->x + (h*w4) + w4 + 1,
+				hdr->widg->y + ld->iv[h]);
+
+		/* body */
+		ttk_ap_fillrect (srf, ttk_ap_get ("loadavg.fg"), 
+				hdr->widg->x + (h*w4),
+				hdr->widg->y + ld->iv[h],
+				hdr->widg->x + (h*w4) + w4 + 1, 
+				hdr->widg->y + hdr->widg->h - 1 +1);
+
+		/* spike line */
+		ttk_ap_hline( srf, ttk_ap_get( "loadavg.spike" ),
+			    hdr->widg->x + (h*w4),
+			    hdr->widg->x + (h*w4) + w4,
+			    hdr->widg->y+ld->iv[h] );
+	}
+
+}
+
+
+
+/* ********************************************************************** */ 
+/* Initialization */ 
 
 void pz_header_init() 
 {
-    if (decwid) ttk_remove_header_widget (decwid);
-    ttk_add_header_widget ((decwid = new_decorations_widget()));
+	if( !initted ) {
+		/* register all internal widgets */
+		pz_add_header_widget( "Hold", w_hold_update,
+					w_hold_draw, (void *)NULL );
 
-    pz_hwid_reset();
+		pz_add_header_widget( "Load Average",   /* name */
+					w_lav_update,   /* update fcn */
+					w_lav_draw,     /* draw fcn */
+					&lav_data );	/* data */
 
-    if (pz_get_int_setting (pz_global_config, DISPLAY_LOAD))
-	pz_hwid_pack_left (new_load_average_display());
+		pz_add_header_widget( "Power Icon", w_powericon_update, 
+					w_powericon_draw, &the_power_state );
+		pz_add_header_widget( "Power Text", w_powericon_update, 
+					w_powertext_draw, &the_power_state );
 
-    if (farleft_next > 0) {
-	while (--farleft_next) {
-	    pz_hwid_pack_left (farleft_wids[farleft_next]); // will put most recently pushed furthest to the left
+		
+		pz_add_header_widget("L1", test_update_widget,
+					test_draw_widget, "L2" );
+		pz_add_header_widget("L2", test_update_widget, 
+					test_draw_widget, "L3" );
+		pz_add_header_widget("L3", test_update_widget, 
+					test_draw_widget, "L4" );
+		pz_add_header_widget("R1", test_update_widget, 
+					test_draw_widget, "R1" );
+		pz_add_header_widget("R2", test_update_widget, 
+					test_draw_widget, "R2" );
+
+		/* register all internal decorations */
+		pz_add_header_decoration( "Plain", NULL, dec_plain, "GROG");
+
+		pz_add_header_decoration( "Amiga 1.1",
+					NULL, dec_draw_Amiga11,
+					"BleuLlama" );
+
+		pz_add_header_decoration( "Amiga 1.3",
+					NULL, dec_draw_Amiga13,
+					"BleuLlama" );
+
+		pz_add_header_decoration( "Test Header", 
+					test_update_decorations, 
+					test_draw_decorations,
+					"HDR" );
+
+		pz_enable_header_decorations( "Plain" );
 	}
-    }
-	
-    pz_hwid_pack_left (new_hold_status_indicator());
-    pz_hwid_pack_right (new_battery_indicator());
+	initted++;
 
-    inited++;
+	/* for now, hardcode these...  first listed is closer to the center */
+	pz_enable_widget_on_side( HEADER_SIDE_LEFT, "Load Average" );
+	pz_enable_widget_on_side( HEADER_SIDE_LEFT, "Hold" );
+
+	pz_enable_widget_on_side( HEADER_SIDE_RIGHT, "Power Icon" );
+	pz_enable_widget_on_side( HEADER_SIDE_RIGHT, "Power Text" );
+	
+	pz_enable_header_decorations( (char *) 
+		    pz_get_string_setting( pz_global_config, DECORATIONS ));
+
+	if( headerBar ) ttk_remove_header_widget( headerBar );
+	ttk_add_header_widget( headerBar = new_headerBar_widget() );
+}
+
+
+/* ********************************************************************** */ 
+/* menu stuff */
+
+static int decorations_scroll( TWidget *this, int dir )
+{
+	int ret = ttk_menu_scroll( this, dir );
+	pz_enable_header_decorations( ttk_menu_get_selected_item(this)->data );
+	ttk_epoch++;
+	return ret;
+}
+
+static int decorations_button( TWidget *this, int button, int time )
+{
+	if( button == TTK_BUTTON_ACTION ) {
+		/* save it out */
+		pz_set_string_setting( pz_global_config, DECORATIONS,
+			ttk_menu_get_selected_item(this)->name );
+		return( ttk_menu_button( this, TTK_BUTTON_MENU, 0 ));
+
+	} else if ( button == TTK_BUTTON_MENU ) {
+		pz_enable_header_decorations( (char *)
+		    pz_get_string_setting( pz_global_config, DECORATIONS ));
+	}
+	return( ttk_menu_button( this, button, time ));
+}
+
+TWindow * pz_select_decorations( void )
+{
+	int iidx = 0;
+	header_info * d = headerDecorations;
+
+	TWindow * ret = ttk_new_window();
+	TWidget * menu = ttk_new_menu_widget( 0, ttk_menufont,
+				ttk_screen->w - ttk_screen->wx,
+				ttk_screen->h - ttk_screen->wy );
+
+	menu->scroll = decorations_scroll;
+	menu->button = decorations_button;
+
+
+	while( d ) {
+		ttk_menu_item * item = calloc( 1, sizeof( struct ttk_menu_item ));
+		item->data = malloc( strlen( d->name )+1 );
+		item->name = malloc( strlen( d->name )+1 );
+		strcpy( item->data, d->name );
+		strcpy( (char *)item->name, d->name );
+
+		ttk_menu_append( menu, item );
+		
+		iidx++;
+		if( !strcmp( d->name,
+		    pz_get_string_setting( pz_global_config, DECORATIONS ))) {
+			ttk_menu_scroll( menu, iidx*5 );
+		}
+
+		d = d->next;
+	}
+
+	ttk_add_widget( ret, menu );
+	ttk_window_set_title( ret, _("Decorations"));
+	return ret;
+}
+
+
+TWindow * pz_select_left_widgets( void )
+{
+	return NULL;
+}
+
+TWindow * pz_select_right_widgets( void )
+{
+	return NULL;
 }
