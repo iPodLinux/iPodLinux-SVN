@@ -55,7 +55,7 @@
           button.bg => ltgray, button.fg => black, button.border => black,
 	  button.sel.bg => yellow, button.sel.fg => black, button.sel.border => dkyellow, button.sel.inner => ltyellow +1
 
-  error:  bg => blue, fg => black, line => yellow,
+  error:  bg => yellow, fg => black, line => ltyellow,
           title.fg => white,
           button.bg => ltgray, button.fg => black, button.border => black,
 	  button.sel.bg => yellow, button.sel.fg => black, button.sel.border => dkyellow, button.sel.inner => ltyellow +1
