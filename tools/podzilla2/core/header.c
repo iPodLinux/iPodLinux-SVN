@@ -98,6 +98,8 @@ void pz_add_header_widget( char * widgetDisplayName,
 		}
 		h->next = new;
 	}
+
+	/* XXX check settings to see what the settings should be for it */
 }
 
 
@@ -139,6 +141,10 @@ void pz_add_header_decoration( char * decorationDisplayName,
 		}
 		h->next = new;
 	}
+
+	/* check settings to see if it should be made active */
+	pz_enable_header_decorations( (char *)
+		    pz_get_string_setting( pz_global_config, DECORATIONS ));
 }
 
 header_info * find_header_item( header_info * list, char * name )
@@ -168,16 +174,22 @@ void pz_enable_widget_on_side( int side, char * name )
 void pz_enable_header_decorations( char * name )
 {
 	header_info * d = headerDecorations;
+	int found = 0;
 
 	while( d ) {
 		if( d->name != NULL && !strcmp( name, d->name )) {
 			/* found it!  Set the bit! */
 			d->side |= HEADER_SIDE_DECORATION;
+			found = 1;
 		} else {
 			/* not it... clear the bit */
 			d->side &= ~HEADER_SIDE_DECORATION;
 		}
 		d = d->next;
+	}
+	/* set a default if none was found */
+	if( (!found)  && (headerDecorations != NULL) ) {
+		headerDecorations->side |= HEADER_SIDE_DECORATION;
 	}
 }
 
@@ -225,6 +237,14 @@ void pz_clear_header_lists( void )
 
 /* these need to correspond directly to their counterparts in menu.c */
 static int ratesecs[] = { 1, 2, 5, 10, 15, 30, 60, -1 };
+
+static const char * headerwidget_update_rates[] = {
+                N_("1s"), N_("2s"), N_("5s"),
+                N_("10s"), N_("15s"),
+                N_("30s"), N_("1m"), N_("Off"),
+		0
+};
+#define WIDGET_UPDATE_DISABLED (7)
 
 #define DISP_MODE_ALL	(0)
 #define DISP_MODE_CYCLE	(1)
@@ -547,7 +567,7 @@ static int hcolor;
 /* one for testing... */
 void test_draw_decorations( struct header_info * hdr, ttk_surface srf )
 {
-	ttk_color c;
+	ttk_color c = 0;
 	char * data;
 	if( !hdr ) return;
 	data = (char *) hdr->data;
@@ -601,7 +621,7 @@ void test_update_decorations( struct header_info * hdr )
    or if there's a regular color */
 ttk_color pz_dec_ap_get_solid( char * name )
 {
-	ttk_color c;
+	ttk_color c = ttk_makecol( WHITE );;
 	TApItem *ap = ttk_ap_get( name );
 	if( ap ) {
 		if( ap->type & TTK_AP_COLOR ) {
@@ -609,9 +629,7 @@ ttk_color pz_dec_ap_get_solid( char * name )
 		} else if( ap->type & TTK_AP_GRADIENT ) {
 			c = ap->gradstart;
 		}
-	} else {
-		c = ttk_makecol( WHITE );
-	}
+	} 
 	return( c );
 }
 
@@ -1427,16 +1445,10 @@ void pz_header_init()
 					w_powertext_draw, &the_power_state );
 
 		
-		pz_add_header_widget("L1", test_update_widget,
-					test_draw_widget, "L2" );
-		pz_add_header_widget("L2", test_update_widget, 
-					test_draw_widget, "L3" );
-		pz_add_header_widget("L3", test_update_widget, 
-					test_draw_widget, "L4" );
-		pz_add_header_widget("R1", test_update_widget, 
-					test_draw_widget, "R1" );
-		pz_add_header_widget("R2", test_update_widget, 
-					test_draw_widget, "R2" );
+		pz_add_header_widget("T1", test_update_widget, 
+					test_draw_widget, "T1" );
+		pz_add_header_widget("T2", test_update_widget, 
+					test_draw_widget, "T2" );
 
 		/* register all internal decorations */
 		pz_add_header_decoration( "Plain", NULL, dec_plain,
@@ -1565,12 +1577,121 @@ TWindow * pz_select_decorations( void )
 }
 
 
+/* ********************************************************************** */ 
+/* settings for widgets */
+
+//#define dbgprintf	printf
+#define dbgprintf( ... )
+
+static void lw_set_setting( ttk_menu_item *item, int sid )
+{
+	char namebuf[64];
+	header_info *d = (header_info *)item->data;
+
+	if( item->choice == WIDGET_UPDATE_DISABLED ) {
+		d->side &= ~HEADER_SIDE_LEFT;
+	} else {
+		d->side |= HEADER_SIDE_LEFT;
+	}
+
+	snprintf( namebuf, 64, "L::%s", item->name );
+	dbgprintf( "LSET %s %d\n", namebuf, item->choice );
+}
+
+static int lw_get_setting( ttk_menu_item *item, int sid )
+{
+	dbgprintf( "LGET %s\n", item->name );
+	return( WIDGET_UPDATE_DISABLED );
+}
+
+static void rw_set_setting( ttk_menu_item *item, int sid )
+{
+	char namebuf[64];
+	header_info *d = (header_info *)item->data;
+
+	if( item->choice == WIDGET_UPDATE_DISABLED ) {
+		d->side &= ~HEADER_SIDE_RIGHT;
+	} else {
+		d->side |= HEADER_SIDE_RIGHT;
+	}
+
+	snprintf( namebuf, 64, "R::%s", item->name );
+	dbgprintf( "RSET %s %d\n", namebuf, item->choice );
+}
+
+static int rw_get_setting( ttk_menu_item *item, int sid )
+{
+	dbgprintf( "RGET %s\n", item->name );
+	return( WIDGET_UPDATE_DISABLED );
+}
+
+
+static int lwidgets_button( TWidget *this, int button, int time )
+{
+	if( button == TTK_BUTTON_MENU ) {
+		/* save it out */
+		return( ttk_menu_button( this, TTK_BUTTON_MENU, 0 ));
+	}
+	return( ttk_menu_button( this, button, time ));
+}
+
+static int rwidgets_button( TWidget *this, int button, int time )
+{
+	if( button == TTK_BUTTON_MENU ) {
+		/* save it out */
+		return( ttk_menu_button( this, TTK_BUTTON_MENU, 0 ));
+	}
+	return( ttk_menu_button( this, button, time ));
+}
+
+static TWindow * select_either_widgets( int side )
+{
+	header_info * d = headerWidgets;
+
+	TWindow * ret = ttk_new_window();
+	TWidget * menu = ttk_new_menu_widget( 0, ttk_menufont,
+				ttk_screen->w - ttk_screen->wx,
+				ttk_screen->h - ttk_screen->wy );
+
+	if( side == HEADER_SIDE_LEFT ) 	menu->button = lwidgets_button;
+	else				menu->button = rwidgets_button;
+
+	while( d ) {
+		ttk_menu_item * item = calloc( 1, sizeof( struct ttk_menu_item ));
+		item->choices = headerwidget_update_rates;
+		if( side == HEADER_SIDE_LEFT ) {
+			item->choicechanged = lw_set_setting;
+			item->choiceget = lw_get_setting;
+		} else {
+			item->choicechanged = rw_set_setting;
+			item->choiceget = rw_get_setting;
+		}
+		item->data = d;
+		item->name = malloc( strlen( d->name )+1 );
+		strcpy( (char *)item->name, d->name );
+
+		ttk_menu_append( menu, item );
+		
+		d = d->next;
+	}
+
+	ttk_add_widget( ret, menu );
+	if( side == HEADER_SIDE_LEFT ) {
+		ttk_window_set_title( ret, _("Left Widgets"));
+	} else {
+		ttk_window_set_title( ret, _("Right Widgets"));
+	}
+	return ret;
+}
+
 TWindow * pz_select_left_widgets( void )
 {
-	return NULL;
+	pz_warning( "Widget settings are not saved yet." );
+	return( select_either_widgets( HEADER_SIDE_LEFT ));
 }
 
 TWindow * pz_select_right_widgets( void )
 {
-	return NULL;
+	pz_warning( "Widget settings are not saved yet." );
+	return( select_either_widgets( HEADER_SIDE_RIGHT ));
 }
