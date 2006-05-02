@@ -1272,8 +1272,30 @@ void dec_plaindots( struct header_info * hdr, ttk_surface srf )
 }
 
 
+#define RAISED  (0)
+#define LOWERED (1)
+void dec_draw_3d( ttk_surface srf, int x1, int y1, int x2, int y2, int updown )
+{
+	ttk_color nw, se;
+
+	if( updown == LOWERED ) {
+		se = ttk_ap_get( "header.shine" )->color;
+		nw = ttk_ap_get( "header.shadow" )->color;
+	} else {
+		nw = ttk_ap_get( "header.shine" )->color;
+		se = ttk_ap_get( "header.shadow" )->color;
+	}
+
+	ttk_line( srf, x2, y1, x2, y2, se );
+	ttk_line( srf, x1, y2, x2, y2, se );
+
+	ttk_line( srf, x1, y1, x2, y1, nw );
+	ttk_line( srf, x1, y1, x1, y2, nw );
+}
+
+
 /* Amiga Decorations */
-void dec_draw_Amiga1x( struct header_info * hdr, ttk_surface srf, int A1orA3 )
+void dec_draw_Amiga1x( struct header_info * hdr, ttk_surface srf, int WhichAmigaDOS )
 {
 	int tw = ttk_text_width (ttk_menufont, ttk_windows->w->title);
 	enum ttk_justification just = pz_get_int_setting( 
@@ -1284,35 +1306,49 @@ void dec_draw_Amiga1x( struct header_info * hdr, ttk_surface srf, int A1orA3 )
 	int tx1 = 0, tx2 = 0;
 	double yo, xo;
 
+	dec_plain( hdr, srf );
+
 	/* draw the faux close box, if applicable. */
 	if( hdr->widg->x == 0 ) {
 		xp1 = hdr->widg->h;	/* square gadget */
-
-		/* this should be tweaked to look better on mini */
-
 		xo = ((float)hdr->widg->h) / 8.0;
 		yo = ((float)hdr->widg->h) / 8.0;
 
-		ttk_ap_fillrect( srf, ttk_ap_get ("header.fg"),
-				(int) (xo*1),  (int) (yo*1),
-				(int) (xo*7),  (int) (yo*7) );
-		ttk_ap_fillrect( srf, ttk_ap_get ("header.bg"),
-				(int) (xo*1.6), (int) (yo*1.6),
-				(int) (xo*6.4), (int) (yo*6.4) );
-		ttk_ap_fillrect (srf, ttk_ap_get ("header.accent"),
-				(int) (xo*3.1), (int) (yo*3.1),
-				(int) (xo*4.8), (int) (yo*4.8) );
+		if( WhichAmigaDOS < 20 ) {
+			ttk_ap_fillrect( srf, ttk_ap_get ("header.fg"),
+					(int) (xo*1),  (int) (yo*1),
+					(int) (xo*7),  (int) (yo*7) );
+			ttk_ap_fillrect( srf, ttk_ap_get ("header.bg"),
+					(int) (xo*1.6), (int) (yo*1.6),
+					(int) (xo*6.4), (int) (yo*6.4) );
+			ttk_ap_fillrect (srf, ttk_ap_get ("header.accent"),
+					(int) (xo*3.1), (int) (yo*3.1),
+					(int) (xo*4.8), (int) (yo*4.8) );
+		} else {
+			dec_draw_3d( srf, 0, 0, hdr->widg->h - 1, 
+				hdr->widg->h-1, RAISED );
+
+			ttk_fillrect( srf, xo*3, xo*2, xo*5, xo*6, 
+				ttk_ap_getx( "header.shine" )->color );
+			ttk_rect( srf, xo*3, xo*2, xo*5, xo*6, 
+				ttk_ap_getx( "header.shadow" )->color );
+		}
+
+	} else if( WhichAmigaDOS == 20 ) {
+		xo = ((float)hdr->widg->h) / 8.0;
+		dec_draw_3d( srf, 0, 0, hdr->widg->x - 1, 
+				hdr->widg->h-2, RAISED );
 	}
 
 	/* draw drag bars */
-	if( A1orA3 == 1 ) {
+	if( WhichAmigaDOS == 11 ) {
 		/* 1.1 dragbars */
 		for (i = 1; i < ttk_screen->wy; i += 2) {
 			ttk_line (srf,
 				xp1, i, xp2, i,
 				ttk_ap_getx ("header.fg") -> color);
 		}
-	} else {
+	} else if( WhichAmigaDOS == 13 ) {
 		/* 1.3 dragbars */
 		int o = ttk_screen->wy / 4;
 		ttk_ap_fillrect (srf, ttk_ap_get ("header.fg"),
@@ -1321,44 +1357,64 @@ void dec_draw_Amiga1x( struct header_info * hdr, ttk_surface srf, int A1orA3 )
 		ttk_ap_fillrect (srf, ttk_ap_get ("header.fg"),
 			xp1 + o,  hdr->widg->h - o*2 + 1,
 			xp2 - o,  hdr->widg->h - o );
+	} else {
+		dec_draw_3d( srf, xp1, 0, xp2-1, 
+			hdr->widg->h-1, RAISED );
 	}
 
-	/* draw vertical separators */
-	ttk_ap_fillrect( srf, ttk_ap_get( "header.fg" ),
-			xp1-1, 0, xp1+1, hdr->widg->h );
-	if( xp2 != ttk_screen->w ) 
+
+	if( WhichAmigaDOS == 20 ) {
+		if( hdr->widg->x + hdr->widg->w != ttk_screen->w ) {
+		    dec_draw_3d( srf, hdr->widg->x + hdr->widg->w, 0,
+				      ttk_screen->w-1, hdr->widg->h-1,
+				      RAISED );
+		}
+	} else {
+		/* draw vertical separators */
 		ttk_ap_fillrect( srf, ttk_ap_get( "header.fg" ),
-			xp2 - 1, 0, xp2 + 1, hdr->widg->h );
+				xp1-1, 0, xp1+1, hdr->widg->h );
+		if( xp2 != ttk_screen->w ) 
+			ttk_ap_fillrect( srf, ttk_ap_get( "header.fg" ),
+				xp2 - 1, 0, xp2 + 1, hdr->widg->h );
+	}
 
 	/* blot out the backing for the text */
 	pz_header_justification_helper( xp1+3, xp2-3 );
-	switch( just ) {
-	case( TTK_TEXT_LEFT ):
-		tx1 = xp1+1;
-		tx2 = xp1+tw+5;
-		break;
-	case( TTK_TEXT_RIGHT ):
-		tx1 = xp2-tw-5;
-		tx2 = xp2-1;
-		break;
-	default: /* center */
-		tx1 = (ttk_screen->w - tw - 5) >> 1;
-		tx2 = tx1 + tw + 5;
-	}
-	ttk_ap_fillrect( srf, ttk_ap_get( "header.bg" ),
+
+	if( WhichAmigaDOS < 20 ) {
+		switch( just ) {
+		case( TTK_TEXT_LEFT ):
+			tx1 = xp1+1;
+			tx2 = xp1+tw+5;
+			break;
+		case( TTK_TEXT_RIGHT ):
+			tx1 = xp2-tw-5;
+			tx2 = xp2-1;
+			break;
+		default: /* center */
+			tx1 = (ttk_screen->w - tw - 5) >> 1;
+			tx2 = tx1 + tw + 5;
+		}
+		ttk_ap_fillrect( srf, ttk_ap_get( "header.bg" ),
 			tx1, 0, tx2, hdr->widg->h );
+	}
 }
 
 void dec_draw_Amiga13( struct header_info * hdr, ttk_surface srf )
 {
-	dec_draw_Amiga1x( hdr, srf, 3 );
+	dec_draw_Amiga1x( hdr, srf, 13 );
 }
 
 void dec_draw_Amiga11( struct header_info * hdr, ttk_surface srf )
 {
-	dec_draw_Amiga1x( hdr, srf, 1 );
+	dec_draw_Amiga1x( hdr, srf, 11 );
 }
 
+
+void dec_draw_Amiga20( struct header_info * hdr, ttk_surface srf )
+{
+	dec_draw_Amiga1x( hdr, srf, 20 );
+}
 
 
 
@@ -1688,6 +1744,8 @@ void pz_header_init()
 					"BleuLlama" );
 
 		pz_add_header_decoration( "Amiga 1.3", NULL, dec_draw_Amiga13,
+					"BleuLlama" );
+		pz_add_header_decoration( "Amiga 2.0", NULL, dec_draw_Amiga20,
 					"BleuLlama" );
 
 		pz_add_header_decoration( "Test Header", 
