@@ -230,6 +230,37 @@ void pz_set_float_setting(PzConfig *conf, unsigned int sid, double value)
 	last_setting->next = 0;
 }
 
+void pz_set_blob_setting(PzConfig *conf, unsigned int sid, const void *value, int len)
+{
+	PzConfItem *setting, *last_setting;
+
+	if ((setting = find_setting (conf, sid))) {
+		if (setting->type == PZ_SETTING_BLOB) {
+			free (setting->blobval);
+			setting->blobval = malloc (len);
+                        memcpy (setting->blobval, value, len);
+                        setting->bloblen = len;
+			return;
+		}
+	}
+	pz_unset_setting (conf, sid);
+	
+	if (!conf->settings) {
+		last_setting = conf->settings = malloc (sizeof(PzConfItem));
+	} else {
+		last_setting = conf->settings;
+		while (last_setting->next) last_setting = last_setting->next;
+		last_setting->next = malloc (sizeof(PzConfItem));
+		last_setting = last_setting->next;
+	}
+	last_setting->sid = sid;
+	last_setting->type = PZ_SETTING_BLOB;
+	last_setting->blobval = malloc (len);
+        memcpy (last_setting->blobval, value, len);
+        last_setting->bloblen = len;
+	last_setting->next = 0;
+}
+
 void pz_set_ilist_setting(PzConfig *conf, unsigned int sid, int *vals, int nvals)
 {
 	PzConfItem *setting, *last_setting;
