@@ -198,7 +198,7 @@ void pz_set_string_setting (PzConfig *conf, unsigned int sid, const char *val);
 void pz_set_float_setting (PzConfig *conf, unsigned int sid, double val);
 void pz_set_ilist_setting (PzConfig *conf, unsigned int sid, int *vals, int nval);
 void pz_set_slist_setting (PzConfig *conf, unsigned int sid, char **vals, int nval);
-void pz_set_blob_setting (PzConfig *conf, unsigned int sid, void *val, int bytes);
+void pz_set_blob_setting (PzConfig *conf, unsigned int sid, const void *val, int bytes);
 #ifndef PZ_MOD
 /* These enable you to set reserved settings (0xf0000000+) only.
  * Don't use in modules.
