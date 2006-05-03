@@ -218,6 +218,14 @@ static int settings_button (TWidget *this, int key, int time)
 	return ttk_menu_button (this, key, time);
 }
 
+/* XXXXX BleuLlama wants to use this, but can't because he's an idiot.
+static int epoch_button( TWidget *this, int key, int time )
+{
+	ttk_epoch++;
+	return( ttk_menu_button( this, key, time ));
+}
+*/
+
 void pz_menu_init()
 {
     ttk_menu_item * item;
@@ -245,19 +253,14 @@ void pz_menu_init()
 
 
     /* select from the available widgets */
-    item = pz_menu_add_action( "/Settings/Appearance/Widgets/L Selection...", 
+    item = pz_menu_add_action( "/Settings/Appearance/Widgets/L Sel,Rate", 
 		pz_select_left_widgets );
     item->flags |= TTK_MENU_ICON_SUB;
 
     /* set of display styles */
-    pz_menu_add_setting ("/Settings/Appearance/Widgets/L Display", 
+    pz_menu_add_setting ("/Settings/Appearance/Widgets/L Mode", 
 		HEADER_METHOD_L, pz_global_config, 
 		headerwidget_display_methods);
-
-    /* how often they get updated - move this into the above selection */
-    pz_menu_add_setting ("/Settings/Appearance/Widgets/L Update Rate", 
-		HEADER_UPD_RATE_L, pz_global_config, 
-		headerwidget_display_rates);
 
     /* how often the cycling rotates the display */
     pz_menu_add_setting ("/Settings/Appearance/Widgets/L Cycle Rate", 
@@ -271,15 +274,12 @@ void pz_menu_init()
 */
 
     /* likewise for these three */
-    item = pz_menu_add_action( "/Settings/Appearance/Widgets/R Selection...", 
+    item = pz_menu_add_action( "/Settings/Appearance/Widgets/R Sel,Rate", 
 		pz_select_right_widgets );
     item->flags |= TTK_MENU_ICON_SUB;
-    pz_menu_add_setting ("/Settings/Appearance/Widgets/R Display", 
+    pz_menu_add_setting ("/Settings/Appearance/Widgets/R Mode", 
 		HEADER_METHOD_R, pz_global_config, 
 		headerwidget_display_methods);
-    pz_menu_add_setting ("/Settings/Appearance/Widgets/R Update Rate", 
-		HEADER_UPD_RATE_R, pz_global_config, 
-		headerwidget_display_rates);
     pz_menu_add_setting ("/Settings/Appearance/Widgets/R Cycle Rate", 
 		HEADER_CYC_RATE_R, pz_global_config, 
 		headerwidget_display_rates);
@@ -296,17 +296,6 @@ void pz_menu_init()
 		DECORATION_RATE, pz_global_config, headerwidget_display_rates);
     pz_menu_add_setting ("/Settings/Appearance/Text Justification", 
 		TITLE_JUSTIFY, pz_global_config, title_justifications);
-
-#ifdef MONKEYS_ARE_FLYING_OUT_OF_MY_BUTT
-
-    /* these three go away with the new modular mechanism */
-    pz_menu_add_setting ("/Settings/Appearance/Battery Update", 
-		BATTERY_UPDATE, pz_global_config, battery_update_rates);
-    pz_menu_add_setting ("/Settings/Appearance/Battery Digits", 
-		BATTERY_DIGITS, pz_global_config, 0);
-    pz_menu_add_setting ("/Settings/Appearance/Display Load Average", 
-		DISPLAY_LOAD, pz_global_config, 0);
-#endif
 
     pz_menu_add_setting ("/Settings/Appearance/Menu Transition", SLIDE_TRANSIT, pz_global_config, transit_options);
     pz_menu_add_ttkh ("/Settings/Appearance/Menu Font", pz_select_font, &ttk_menufont)->cdata = MENU_FONT;

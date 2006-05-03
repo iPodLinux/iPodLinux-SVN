@@ -36,10 +36,20 @@ extern int pz_hold_is_on;
 static TWidget *headerBar = 0;
 
 
+/* these need to correspond directly to their counterparts in menu.c */
+static int ratesecs[] = { 1, 2, 5, 10, 15, 30, 60, -1 };
+
+static const char * headerwidget_update_rates[] = {
+                N_("1s"), N_("2s"), N_("5s"),
+                N_("10s"), N_("15s"),
+                N_("30s"), N_("1m"), N_("Off"),
+		0
+};
+#define WIDGET_UPDATE_DISABLED (7)
+
+
 /* current issues:
-	Header positioning for widgets seems to have off-by-1 errors
-	Selection of active widgets per side
-	Selection of decoratio:
+	turn off all display, header doesn't get updated, with ghosts
 */
 
 
@@ -74,6 +84,10 @@ void pz_add_header_widget( char * widgetDisplayName,
 	new->side = 0;
 	new->LZorder = zvalue++;
 	new->RZorder = zvalue++;
+	new->LURate = WIDGET_UPDATE_DISABLED;
+	new->RURate = WIDGET_UPDATE_DISABLED;
+	new->LCountdown = 0;
+	new->RCountdown = 0;
 	new->updfcn = update_function;
 	new->drawfcn = draw_function;
 	new->data = data;
@@ -117,6 +131,10 @@ void pz_add_header_decoration( char * decorationDisplayName,
 	new->side = 0;
 	new->LZorder = -1;
 	new->RZorder = -1;
+	new->LURate = WIDGET_UPDATE_DISABLED;
+	new->RURate = WIDGET_UPDATE_DISABLED;
+	new->LCountdown = 0;
+	new->RCountdown = 0;
 	new->updfcn = update_function;
 	new->drawfcn = draw_function;
 	new->data = data;
@@ -168,6 +186,8 @@ void pz_enable_widget_on_side( int side, char * name )
 
 	if( item != NULL ) {
 		item->side |= side;
+		if( side == HEADER_SIDE_LEFT ) item->LURate = 1;
+		if( side == HEADER_SIDE_RIGHT ) item->RURate = 1;
 	}
 }
 
@@ -203,6 +223,8 @@ void force_update_of_widget( char * name )
 	if( item != NULL ) {
 		/* update it! */
 		if( item->updfcn ) item->updfcn( item );
+		item->LCountdown = 0;
+		item->RCountdown = 0;
 
 		/* in case the widget disappears, force a cycle */
 		if( item->widg->w == 0 ) {
@@ -232,19 +254,79 @@ void pz_clear_header_lists( void )
 }
 
 
+/* ********************************************************************** */ 
+/* settings */
+
+static char hs[1024];
+
+/* init: retrieves the data out of the pz settings file */
+void header_settings_load( void )
+{
+	header_info * item;
+	char * t = (char *)pz_get_string_setting( 
+				pz_global_config, HEADER_WIDGETS );
+	char *tok;
+	char *outer;
+	if( !t ) return;
+
+	strncpy( hs, t, 1024 ); /* strtok is destructive */
+
+	tok = strtok_r( hs, ";", &outer );
+	while( tok ) {
+		if( strlen( tok ) >3 ) {
+			char *tokdup = strdup( tok );
+			char *subtok;
+			char *inner;
+
+			/* extract the widget name */
+			subtok = strtok_r( tokdup, ":", &inner );
+			item = find_header_item( headerWidgets, subtok );
+
+			if( item ) {
+				/* extract the left update rate */
+				subtok = strtok_r( NULL, ":", &inner );
+				item->LURate = atoi( subtok );
+
+				/* extract the right update rate */
+				subtok = strtok_r( NULL, ":", &inner );
+				item->RURate = atoi( subtok );
+
+				/* tweak for flags */
+				if( item->LURate != WIDGET_UPDATE_DISABLED )
+					item->side |= HEADER_SIDE_LEFT;
+				if( item->RURate != WIDGET_UPDATE_DISABLED )
+					item->side |= HEADER_SIDE_RIGHT;
+			}
+
+			free( tokdup );
+		}
+		tok = strtok_r( NULL, ";", &outer );
+	}
+}
+
+/* save: reads through the header list, generates the new string, saves it */
+void header_settings_save( void ) 
+{
+	char buf[1024];
+	char buf2[128];
+	header_info * c = headerWidgets;
+
+	buf[0] = '\0';
+	while( c ) {
+		snprintf( buf2, 128, "%s:%x:%x;", (c->name)?c->name:"unk", 
+					c->LURate, c->RURate );
+		
+		strncat( buf, buf2, 1024 );
+		c = c->next;
+	}
+	pz_set_string_setting( pz_global_config, HEADER_WIDGETS, buf );
+}
+
+
+
 /******************************************************************************/
 /* Various utility, maintenance functions */
 
-/* these need to correspond directly to their counterparts in menu.c */
-static int ratesecs[] = { 1, 2, 5, 10, 15, 30, 60, -1 };
-
-static const char * headerwidget_update_rates[] = {
-                N_("1s"), N_("2s"), N_("5s"),
-                N_("10s"), N_("15s"),
-                N_("30s"), N_("1m"), N_("Off"),
-		0
-};
-#define WIDGET_UPDATE_DISABLED (7)
 
 #define DISP_MODE_ALL	(0)
 #define DISP_MODE_CYCLE	(1)
@@ -355,11 +437,44 @@ static int draw_widgets_for_side( int side, int mode, ttk_surface srf )
 /* update all of the widgets on the selected side */
 static void update_widget_list_for_side( int side, TWidget *this, int Mode )
 {
+	int update, handled;
 	header_info * c = headerWidgets;
 
 	while( c != NULL ) {
 		if( c->side & side ) {
-			if( c->updfcn ) {
+			update = 0;
+			handled = 0;
+			/* for each of these, we do a few things:
+				- if the user changed from like 60s to 2s, fix
+				- decrement the countdown
+				- if it's below 0, reset the counter, update++
+			*/
+			if( side == HEADER_SIDE_LEFT ) {
+				if( c->LCountdown > ratesecs[c->LURate] ) 
+					c->LCountdown = c->LURate;
+				if( --c->LCountdown <= 0 ) {
+					c->LCountdown = ratesecs[c->LURate];
+					update++;
+				}
+				handled++;
+			}
+			
+			/* "handled" -> if the widget was already updated
+			   for the other side, we ignore this side... i'm 
+			    not sure this is the most elegant solution, but
+			    it should be good enough. */
+			if( !handled && side == HEADER_SIDE_RIGHT ) {
+				if( c->RCountdown > c->RURate ) 
+					c->RCountdown = ratesecs[c->RURate] ;
+				if( --c->RCountdown <= 0 ) {
+					c->RCountdown = ratesecs[c->RURate];
+					update++;
+				}
+			
+			}
+
+			/* if there's an update function, update the widget! */
+			if( (update > 0) & (c->updfcn != NULL )) {
 				c->updfcn( c );
 				make_dirty( this );
 			}
@@ -415,41 +530,33 @@ static void update_decorations( void )
 static int handle_header_updates( TWidget *this )
 {
 	static int d_upd_countdown = 0;
-	static int l_upd_countdown = 0;
-	static int r_upd_countdown = 0;
 	static int l_cyc_countdown = 0;
 	static int r_cyc_countdown = 0;
 
 	int d_upd_rate = ratesecs[ pz_get_int_setting( 
 					pz_global_config, DECORATION_RATE ) ];
 
-	int l_cyc_mode = pz_get_int_setting( pz_global_config, HEADER_METHOD_L );
-	int l_upd_rate = ratesecs[ pz_get_int_setting( 
-					pz_global_config, HEADER_UPD_RATE_L ) ];
+	int l_cyc_mode = pz_get_int_setting( 
+					pz_global_config, HEADER_METHOD_L );
 	int l_cyc_rate = ratesecs[ pz_get_int_setting( 
 					pz_global_config, HEADER_CYC_RATE_L ) ];
 
-	int r_cyc_mode = pz_get_int_setting( pz_global_config, HEADER_METHOD_R );
-	int r_upd_rate = ratesecs[ pz_get_int_setting( 
-					pz_global_config, HEADER_UPD_RATE_R ) ];
+	int r_cyc_mode = pz_get_int_setting(
+					pz_global_config, HEADER_METHOD_R );
 	int r_cyc_rate = ratesecs[ pz_get_int_setting( 
 					pz_global_config, HEADER_CYC_RATE_R ) ];
 
 	/* checks to make sure the user didn't go from 60s to 1s and such */
 	if( l_cyc_countdown > l_cyc_rate ) l_cyc_countdown = l_cyc_rate;
 	if( r_cyc_countdown > r_cyc_rate ) r_cyc_countdown = r_cyc_rate;
-	if( l_upd_countdown > l_upd_rate ) l_upd_countdown = l_upd_rate;
-	if( r_upd_countdown > r_upd_rate ) r_upd_countdown = r_upd_rate;
 	if( d_upd_countdown > d_upd_rate ) d_upd_countdown = d_upd_rate;
 
 	/* first, update all of the widgets */
-	if( (l_cyc_mode != DISP_MODE_NONE) && (--l_upd_countdown <= 0)) {
-	    	l_upd_countdown = l_upd_rate;
-		update_widget_list_for_side( HEADER_SIDE_LEFT, this, l_cyc_mode );
+	if( l_cyc_mode != DISP_MODE_NONE ) {
+	    update_widget_list_for_side( HEADER_SIDE_LEFT, this, l_cyc_mode );
 	}
-	if( (r_cyc_mode != DISP_MODE_NONE) && (--r_upd_countdown <= 0)) {
-	    	r_upd_countdown = r_upd_rate;
-		update_widget_list_for_side( HEADER_SIDE_RIGHT, this, r_cyc_mode );
+	if( r_cyc_mode != DISP_MODE_NONE ) {
+	    update_widget_list_for_side( HEADER_SIDE_RIGHT, this, r_cyc_mode );
 	}
 
 	/* next, cycle them, if applicable */
@@ -562,8 +669,9 @@ static TWidget *new_headerBar_widget()
 /* ********************************************************************** */ 
 /* Header Decorations */ 
 
-static int hcolor;
 
+#ifdef NEVER_EVER
+static int hcolor;
 /* one for testing... */
 void test_draw_decorations( struct header_info * hdr, ttk_surface srf )
 {
@@ -615,6 +723,7 @@ void test_update_decorations( struct header_info * hdr )
 	ttk_dirty |= TTK_DIRTY_HEADER;
 	hcolor++;
 }
+#endif
 
 
 /* this is helpful for getting a real solid color when there's a gradient
@@ -876,24 +985,26 @@ void dec_draw_BeOS( struct header_info * hdr, ttk_surface srf )
 
 	/* faux close widget */
 	/* fill gradient -- unfortunately, we have no diagonal gradient... */
-	ttk_vgradient( srf, 4, 4, 
-		    ttk_screen->wy-4, ttk_screen->wy-4,
-		    ttk_ap_getx( "header.shine" )->color,
-		    ttk_ap_getx( "header.accent" )->color );
-	       
-	/* draw these to get the NE/SW corners */
-	ttk_ap_hline( srf, ttk_ap_get( "header.shadow" ), 
-	    4, ttk_screen->wy-4, 4 );
-	ttk_ap_vline( srf, ttk_ap_get( "header.shadow" ),
-	    4, 4, ttk_screen->wy-4 );
+	if( hdr->widg->x == 0 ) {
+		ttk_vgradient( srf, 4, 4, 
+			    ttk_screen->wy-4, ttk_screen->wy-4,
+			    ttk_ap_getx( "header.shine" )->color,
+			    ttk_ap_getx( "header.accent" )->color );
+		       
+		/* draw these to get the NE/SW corners */
+		ttk_ap_hline( srf, ttk_ap_get( "header.shadow" ), 
+		    4, ttk_screen->wy-4, 4 );
+		ttk_ap_vline( srf, ttk_ap_get( "header.shadow" ),
+		    4, 4, ttk_screen->wy-4 );
 
-	/* and the main container boxes... */
-	ttk_rect( srf, 4, 4, 
-		    ttk_screen->wy-4, ttk_screen->wy-4,
-		    ttk_ap_getx( "header.shadow" )->color );
-	ttk_rect( srf, 5, 5, 
-		    ttk_screen->wy-3, ttk_screen->wy-3,
-		    ttk_ap_getx( "header.shine" )->color );
+		/* and the main container boxes... */
+		ttk_rect( srf, 4, 4, 
+			    ttk_screen->wy-4, ttk_screen->wy-4,
+			    ttk_ap_getx( "header.shadow" )->color );
+		ttk_rect( srf, 5, 5, 
+			    ttk_screen->wy-3, ttk_screen->wy-3,
+			    ttk_ap_getx( "header.shine" )->color );
+	}
 	
 	/* 3d effect */
 	/* top */
@@ -928,6 +1039,8 @@ void dec_draw_STTOS( struct header_info * hdr, ttk_surface srf )
 	int tw = ttk_text_width (ttk_menufont, ttk_windows->w->title);
 	enum ttk_justification just = 
 		(int) pz_get_int_setting (pz_global_config, TITLE_JUSTIFY);
+
+	dec_plain( hdr, srf );
 
 	if( startx == 0 ) {
 		startx += hdr->widg->h;
@@ -1002,6 +1115,8 @@ void dec_draw_Lisa( struct header_info * hdr, ttk_surface srf )
 	int xL, xR;
 	int v = ttk_screen->wy -1;
 
+	dec_plain( hdr, srf );
+
 	ttk_header_set_text_justification( TTK_TEXT_CENTER );
 	xp = ((ttk_screen->w - tw)>>1) - 5;
 	ttk_header_set_text_position( ttk_screen->w >>1 );
@@ -1042,6 +1157,8 @@ void dec_draw_MacOS7( struct header_info * hdr, ttk_surface srf )
 	ttk_color c;
 	int tw = ttk_text_width (ttk_menufont, ttk_windows->w->title);
 	int xw = tw + 8;
+
+	dec_plain( hdr, srf );
 
 	ttk_header_set_text_justification( TTK_TEXT_CENTER );
 	xp = ((ttk_screen->w - tw)>>1) - 4;
@@ -1091,6 +1208,8 @@ void dec_draw_MacOS8( struct header_info * hdr, ttk_surface srf )
 	int xp = ((ttk_screen->w - tw)>>1) - 4;
 	ttk_header_set_text_justification( TTK_TEXT_CENTER );
 	ttk_header_set_text_position( ttk_screen->w >>1 );
+
+	dec_plain( hdr, srf );
 
 	/* outer box */
 	ttk_rect( srf, 0, 0, ttk_screen->w, ttk_screen->wy,
@@ -1146,7 +1265,7 @@ void dec_draw_MacOS8( struct header_info * hdr, ttk_surface srf )
 /* ********************************************************************** */ 
 /* Widgets */ 
 
-
+#ifdef NEVER_EVER
 void test_update_widget( struct header_info * hdr )
 {
 	char * data;
@@ -1176,6 +1295,7 @@ void test_draw_widget( struct header_info * hdr, ttk_surface srf )
 		printf( "draw %s %d\n", data, hdr->widg->x );
 */
 }
+#endif
 
 
 /* Hold Widget ****************** */ 
@@ -1429,6 +1549,7 @@ static void w_lav_draw( struct header_info * hdr, ttk_surface srf )
 
 void pz_header_init() 
 {
+	char * t;
 	if( !initted ) {
 		/* register all internal widgets */
 		pz_add_header_widget( "Hold", w_hold_update,
@@ -1444,11 +1565,12 @@ void pz_header_init()
 		pz_add_header_widget( "Power Text", w_powericon_update, 
 					w_powertext_draw, &the_power_state );
 
-		
+#ifdef NEVER_EVER
 		pz_add_header_widget("T1", test_update_widget, 
 					test_draw_widget, "T1" );
 		pz_add_header_widget("T2", test_update_widget, 
 					test_draw_widget, "T2" );
+#endif
 
 		/* register all internal decorations */
 		pz_add_header_decoration( "Plain", NULL, dec_plain,
@@ -1486,24 +1608,32 @@ void pz_header_init()
 		pz_add_header_decoration( "MacOS 8", NULL, dec_draw_MacOS8, 
 					"BleuLlama" );
 
+#ifdef NEVER_EVER
 		/* a test one for the hell of it.  move this into a module? */
 		pz_add_header_decoration( "Test Header", 
 					test_update_decorations, 
 					test_draw_decorations,
 					"HDR" );
+#endif
 
 		/* set up "Plain" as the default */
 		pz_enable_header_decorations( "Plain" );
 	}
 	initted++;
 
-	/* for now, hardcode these... */
-	pz_enable_widget_on_side( HEADER_SIDE_LEFT, "Load Average" );
-	pz_enable_widget_on_side( HEADER_SIDE_LEFT, "Hold" );
+	/* load in the settings */
+	header_settings_load();
 
-	pz_enable_widget_on_side( HEADER_SIDE_RIGHT, "Power Icon" );
-	pz_enable_widget_on_side( HEADER_SIDE_RIGHT, "Power Text" );
-	
+	t = (char *)pz_get_string_setting( pz_global_config, HEADER_WIDGETS );
+
+	/* if there was no defaults, set these... */
+	if( !t || (strlen( t ) <3 ) ){
+		/* and set these up as defaults */
+		pz_enable_widget_on_side( HEADER_SIDE_LEFT, "Hold" );
+		pz_enable_widget_on_side( HEADER_SIDE_RIGHT, "Power Icon" );
+		header_settings_save();
+	}
+
 	/* load in the user settings */
 	pz_enable_header_decorations( (char *) 
 		    pz_get_string_setting( pz_global_config, DECORATIONS ));
@@ -1580,8 +1710,6 @@ TWindow * pz_select_decorations( void )
 /* ********************************************************************** */ 
 /* settings for widgets */
 
-//#define dbgprintf	printf
-#define dbgprintf( ... )
 
 static void lw_set_setting( ttk_menu_item *item, int sid )
 {
@@ -1593,15 +1721,23 @@ static void lw_set_setting( ttk_menu_item *item, int sid )
 	} else {
 		d->side |= HEADER_SIDE_LEFT;
 	}
+	d->LURate = item->choice;
+	ttk_epoch++;
+	ttk_dirty |= TTK_DIRTY_HEADER;
 
 	snprintf( namebuf, 64, "L::%s", item->name );
-	dbgprintf( "LSET %s %d\n", namebuf, item->choice );
 }
 
 static int lw_get_setting( ttk_menu_item *item, int sid )
 {
-	dbgprintf( "LGET %s\n", item->name );
-	return( WIDGET_UPDATE_DISABLED );
+	header_info * hi;
+
+	if( !item || !item->name ) return( WIDGET_UPDATE_DISABLED );
+
+	hi = find_header_item( headerWidgets, (char *)item->name );
+	if( !hi ) return( WIDGET_UPDATE_DISABLED );
+
+	return( hi->LURate );
 }
 
 static void rw_set_setting( ttk_menu_item *item, int sid )
@@ -1614,15 +1750,23 @@ static void rw_set_setting( ttk_menu_item *item, int sid )
 	} else {
 		d->side |= HEADER_SIDE_RIGHT;
 	}
+	d->RURate = item->choice;
+	ttk_epoch++;
+	ttk_dirty |= TTK_DIRTY_HEADER;
 
 	snprintf( namebuf, 64, "R::%s", item->name );
-	dbgprintf( "RSET %s %d\n", namebuf, item->choice );
 }
 
 static int rw_get_setting( ttk_menu_item *item, int sid )
 {
-	dbgprintf( "RGET %s\n", item->name );
-	return( WIDGET_UPDATE_DISABLED );
+	header_info * hi;
+
+	if( !item || !item->name ) return( WIDGET_UPDATE_DISABLED );
+
+	hi = find_header_item( headerWidgets, (char *)item->name );
+	if( !hi ) return( WIDGET_UPDATE_DISABLED );
+
+	return( hi->RURate );
 }
 
 
@@ -1630,6 +1774,7 @@ static int lwidgets_button( TWidget *this, int button, int time )
 {
 	if( button == TTK_BUTTON_MENU ) {
 		/* save it out */
+		header_settings_save(); 
 		return( ttk_menu_button( this, TTK_BUTTON_MENU, 0 ));
 	}
 	return( ttk_menu_button( this, button, time ));
@@ -1639,6 +1784,7 @@ static int rwidgets_button( TWidget *this, int button, int time )
 {
 	if( button == TTK_BUTTON_MENU ) {
 		/* save it out */
+		header_settings_save(); 
 		return( ttk_menu_button( this, TTK_BUTTON_MENU, 0 ));
 	}
 	return( ttk_menu_button( this, button, time ));
@@ -1686,12 +1832,10 @@ static TWindow * select_either_widgets( int side )
 
 TWindow * pz_select_left_widgets( void )
 {
-	pz_warning( "Widget settings are not saved yet." );
 	return( select_either_widgets( HEADER_SIDE_LEFT ));
 }
 
 TWindow * pz_select_right_widgets( void )
 {
-	pz_warning( "Widget settings are not saved yet." );
 	return( select_either_widgets( HEADER_SIDE_RIGHT ));
 }

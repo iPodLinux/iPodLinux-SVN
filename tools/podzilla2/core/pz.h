@@ -344,24 +344,22 @@ typedef struct header_info {
 	struct header_info *next; 	/* next on the list */
 
         /* set by the core, internal to core (treat as private.. hands off!)  */
-        char * name;                    /* the name of the widget */
-        TWidget * widg;                 /* widget struct */
-        int side;                       /* L / R display side */
-        int LZorder;                    /* left order */
-        int RZorder;                    /* right order */
-/* ** */
-        int LTimeout;                   /* countdown timeout for udpating */
-        int RTimeout;                   /* countdown timeout for udpating */
-        int LCountdown;                 /* countdown timer for udpating */
-        int RCountdown;                 /* countdown timer for udpating */
-/* ** */
-        update_fcn updfcn;              /* update fcn */
-        draw_fcn drawfcn;               /* draw fcn */
-
+        char * name;			/* the name of the widget */
+        TWidget * widg;			/* widget struct */
+        int side;			/* L / R display side */
+        int LZorder;			/* left order */
+        int RZorder;			/* right order */
+        int LURate;			/* countdown timeout for udpating */
+        int RURate;			/* countdown timeout for udpating */
+        int LCountdown;			/* countdown timer for udpating */
+        int RCountdown;			/* countdown timer for udpating */
+        update_fcn updfcn;		/* update fcn */
+        draw_fcn drawfcn;		/* draw fcn */
 
         /* set/changable by the widget (treat as public)*/
         void * data;                    /* user data */
 } header_info;
+
 #define HEADER_SIDE_LEFT        (0x01)
 #define HEADER_SIDE_RIGHT       (0x02)
 #define HEADER_SIDE_DECORATION  (0x80)
@@ -575,29 +573,29 @@ void pz_reset_idle_timer();
 
 #define COLORSCHEME	(44)	/* appearance */
 #define DECORATIONS	(45)	/* appearance */
-#define BATTERY_DIGITS	(46)	/* appearance */	/* deprecated soon */
-#define DISPLAY_LOAD	(47)	/* appearance */	/* deprecated soon */
+#define BATTERY_DIGITS	(46)	/*  -- DEPRECATED --  */
+#define DISPLAY_LOAD	(47)	/*  -- DEPRECATED --  */
 #define TEXT_FONT	(48)
 #define SLIDE_TRANSIT	(49)
 #define MENU_FONT	(50)
-#define BATTERY_UPDATE	(51)	/* appearance */	/* deprecated */
+#define BATTERY_UPDATE	(51)	/*  -- DEPRECATED --  */
 #define TITLE_JUSTIFY	(52)	/* appearance */
 
 #define VERBOSITY	(53)	/* startup verbosity */
 
 /****  modular header widget stuff  *** */
-/*   Left side   */
-#define HEADER_METHOD_L   (54)	 /*  display method  */
-#define HEADER_CYC_RATE_L (55)	 /*  cycle rate      */
-#define HEADER_UPD_RATE_L (56)	 /*  update rate     */
-#define HEADER_UPD_CYCD_L (57)   /*  update cycled out widgets? */
-/*   Right side   */
-#define HEADER_METHOD_R   (58)	 /*  display method */
-#define HEADER_CYC_RATE_R (59)	 /*  cycle rate     */
-#define HEADER_UPD_RATE_R (60)	 /*  update rate    */
-#define HEADER_UPD_CYCD_R (61)   /*  update cycled out widgets? */
+#define HEADER_METHOD_L   (54)	 /*  display method - LEFT  */
+#define HEADER_CYC_RATE_L (55)	 /*  cycle rate - LEFT  */
+/* 56  -- DEPRECATED --  */
+#define HEADER_UPD_CYCD_L (57)   /*  update cycled out widgets? - LEFT  */
+
+#define HEADER_METHOD_R   (58)	 /*  display method - RIGHT */
+#define HEADER_CYC_RATE_R (59)	 /*  cycle rate - RIGHT */
+/* 60  -- DEPRECATED --  */
+#define HEADER_UPD_CYCD_R (61)   /*  update cycled out widgets? - RIGHT */
 
 #define DECORATION_RATE   (62)   /* update rate for decorations */
+#define HEADER_WIDGETS    (63)	 /* settings for header widgets */
 
 
 #define 	BATTERY_UPDATE_OFF (5)
