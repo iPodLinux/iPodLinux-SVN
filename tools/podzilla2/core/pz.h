@@ -379,6 +379,7 @@ void pz_enable_widget_on_side( int side, char * name );
 void pz_enable_header_decorations( char * name );
 void force_update_of_widget( char * name );
 void pz_clear_header_lists( void );
+void pz_header_settings_load( void );
 
 
 /** Dialog and message - dialog.c **/
