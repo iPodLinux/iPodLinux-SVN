@@ -330,9 +330,9 @@ void pz_header_fix_hold (void);
 #endif
 
 /* modular headers-related stuff */
-TWindow * pz_select_decorations( void );
-TWindow * pz_select_left_widgets( void );
-TWindow * pz_select_right_widgets( void );
+TWindow * pz_select_decorations( void );	/* user selection of deco. */
+TWindow * pz_select_left_widgets( void );	/* user selection of left  */
+TWindow * pz_select_right_widgets( void );	/* user selection of right */
 
 struct header_info;	/* pre-declare for the callback functions... */
 
@@ -353,6 +353,7 @@ typedef struct header_info {
         int RURate;			/* countdown timeout for udpating */
         int LCountdown;			/* countdown timer for udpating */
         int RCountdown;			/* countdown timer for udpating */
+	int group;			/* grouping - for transients */
         update_fcn updfcn;		/* update fcn */
         draw_fcn drawfcn;		/* draw fcn */
 
@@ -377,9 +378,15 @@ void pz_header_justification_helper( int lx, int rx );
 header_info * find_header_item( header_info * list, char * name );
 void pz_enable_widget_on_side( int side, char * name );
 void pz_enable_header_decorations( char * name );
-void force_update_of_widget( char * name );
+void pz_force_update_of_widget( char * name );
 void pz_clear_header_lists( void );
+
 void pz_header_settings_load( void );
+
+/* the list of all available header widgets */
+header_info * headerWidgets;
+/* the list of all available decorations */
+header_info * headerDecorations;
 
 
 /** Dialog and message - dialog.c **/

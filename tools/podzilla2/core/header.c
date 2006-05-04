@@ -58,10 +58,10 @@ static const char * headerwidget_update_rates[] = {
 
 
 /* the list of all available header widgets */
-static header_info * headerWidgets = NULL;
+header_info * headerWidgets = NULL;
 
 /* the list of all available decorations */
-static header_info * headerDecorations = NULL;
+header_info * headerDecorations = NULL;
 
 /* this gets inc'ed - for cycling, enumerating, z-sorting widgets */
 static long zvalue = 0L;
@@ -230,7 +230,7 @@ void pz_enable_header_decorations( char * name )
 
 static void cycle_widgets_on_side( int side );
 
-void force_update_of_widget( char * name )
+void pz_force_update_of_widget( char * name )
 {
 	header_info * item = find_header_item( headerWidgets, name );
 
@@ -1318,7 +1318,7 @@ void test_draw_widget( struct header_info * hdr, ttk_surface srf )
 
 void pz_header_fix_hold() 
 {
-	force_update_of_widget( "Hold" );
+	pz_force_update_of_widget( "Hold" );
 	ttk_dirty |= TTK_DIRTY_HEADER;
 }
 

@@ -198,21 +198,82 @@ it offscreen, whereas \verb|pz_close_window()| will cause everything to be freed
 to be recreated anew next time it is selected.
 
 \section{Header Widgets}
-Many applications want to put status things in the header: number of lives left in Steroids,
-number of balls left in Pong, whatever. In addition, some modules might want to provide their
-own global header widgets, like MPD.
 
-Global widgets are ``packed'' in place, so you don't have to specify where to put them with $(x,y)$
-coordinates; you simply need to pass a widget and podzilla will do the rest. You have three
-options for how to place your widgets: put all the way to the left; packed to the left, but not past
-existing widgets packed left; or packed to the right, but not past existing widgets packed right.
-Because of the way in which packing is implemented, widgets placed all the way to the left
-must be so placed in a module init function; they cannot be added later. Widgets may be
-packed left and right at any time, however.
+There are a few functions for interacting with the header widget
+and header decorations system.
 
-Per application, you may override all the left widgets, all the right widgets, or both with
-a widget of your choosing. You call \verb|pz_header_set_local()| to set this up, and
-\verb|pz_header_unset_local()| to unset it just before closing your app's window.
+Widgets can be on the left side, on the right side, or both.  Each
+widget has an independant setting for the rate at which (in seconds)
+it is to be updated.  At this interval, the widget's \verb|update_fcn|
+is called.  For a prototype of this, refer to the pz.h file, or an
+example which can be found in the header clock module.  This function
+can be a \verb|NULL| pointer as well, in which case, no update
+function is to be called.  If the user deems that the widget is to
+appear on both the left and right side of the header, then the
+update time on the left side will be observed.  Generally, it is
+within this function that the widget will change its width to be
+appropriate for the amount of space necessary to display its content.
+This is stored in the widget structure, passed in via the header
+info structure.  \verb|hdrinfo->widg->w| If you want a square widget
+(the default size) fill \verb|w| with the content of the widget's
+height \verb|hdrinfo->widg->h|.
+
+When the system deems that the widget needs to be redrawn, either
+when a header redraw happens, the epoch changes, whatever, then the
+widget's \verb|draw_fcn| will be called.  The wiget must draw on the 
+passed in surface in the region defined in \verb|hdrinfo->widg|.  No
+clipping will happen.  The widget should observe all of the boundaries
+within that structure while drawing its content.
+
+Likewise, decorations have similar qualities.  Decorations are
+updated at a constant once-per-second.  This is not configurable.
+Decorations are generally expected to draw outside of their bounding
+area, defined by the x position and the w of the widg.  Generally,
+a decoration will fill the entire header area, which is defined as
+\verb|0,0| thru \verb|ttk screen->w,hdrinfo->widg->h|.  The region
+defined by the widg's x and w describes the center area of the
+header bar, between the left and right widget sets.
+
+It should be noted that the text is rendered by the ttk system, not
+within your decoration draw routine.  The ttk system observes the
+justification of the text (left, right, center).  You can hint to
+it that you want to adjust the left and right boundaries using the
+\verb|pz_header_justification_helper| function.  This will adjust
+the left and right boundaries to be whatever you like.  Look at
+core/header.c for how to force the justification to be a specific
+setting.
+
+Header widgets and header decorations are to be registered to the
+system using the \verb|pz_add_header_widget| and
+\verb|pz_add_header_decoration| functions, respectively.  The
+\verb|data| pointer passed in is preserved in the header info
+structure which is passed to your callback functions.
+The Display Names passed in define what name it goes by for the 
+settings menu, as well as the configuration file when settings are
+saved out.
+
+Some other helpful functions are as follows;
+
+\verb|find_header_info| will retrieve an item based on its registered name.
+
+\verb|pz_enable_widget_on_side| forces a widget to appear on a side.
+
+\verb|pz_enable_header_decorations| likewise switches to a decoration.
+
+\verb|pz_force_update_of_widget| finds and calls a widget's update
+function.  This is used for example, when the hold switch is flipped,
+to force an immediate update of the hold icon indicator.
+
+\verb|pz_clear_header_lists| should be use to wipe out the internal lists.
+
+\verb|pz_header_settings_load| forces an update of the system header settings from the preferences file.
+
+
+\subsection{Transient Widgets}
+
+Note: this functionality is currently unavailable.  It is being written
+right now, and should be integrated shortly.
+
 
 \section{Vector Text}
 Since many games and such need text at any number of sizes, and scalable fonts are impractical
