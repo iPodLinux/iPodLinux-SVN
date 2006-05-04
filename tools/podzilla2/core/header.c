@@ -131,7 +131,7 @@ void pz_add_header_widget( char * widgetDisplayName,
 }
 
 
-static void pz_add_header_decoration( char * decorationDisplayName,
+void pz_add_header_decoration( char * decorationDisplayName,
 				update_fcn update_function,
 				draw_fcn draw_function,
 				void * data )
