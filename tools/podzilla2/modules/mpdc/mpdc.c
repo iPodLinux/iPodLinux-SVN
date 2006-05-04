@@ -246,6 +246,8 @@ void mpd_widg_icons_draw( struct header_info * hdr, ttk_surface srf )
 static mpd_Status widget_inf;
 void mpd_widg_progress_update( struct header_info * hdr )
 {
+	char buf[16];
+	int mins,secs;
 	mpd_Status * inf = (mpd_Status *)hdr->data;
 
 	if( !hdr ) return;
@@ -261,19 +263,28 @@ void mpd_widg_progress_update( struct header_info * hdr )
 		return;
 	else
 		mpd_finishCommand(mpdz);
+
+	/* compute this all out, but it's just to determine the string */
+	mins = inf->elapsedTime / 60;
+	secs = inf->elapsedTime - (mins * 60);
+	snprintf( buf, 16, "%d:%02d", mins, secs );
+        hdr->widg->w = pz_vector_width( buf, 5, 9 ,1 ) + 4;
 }
 
+extern ttk_color pz_dec_ap_get_solid( char * name );
+
 #define WIDG_INSET_X (1)
-#define WIDG_INSET_Y (4)
 void mpd_widg_progress_draw( struct header_info * hdr, ttk_surface srf )
 {
+	char buf[16];
+	int mins,secs;
 	mpd_Status * inf = (mpd_Status *)hdr->data;
 
         ttk_ap_fillrect( srf, ttk_ap_get( "slider.bg" ),
 				hdr->widg->x+WIDG_INSET_X,
-				hdr->widg->y+WIDG_INSET_Y,
+				hdr->widg->y + hdr->widg->h - 7,
                                 hdr->widg->x + hdr->widg->w - (WIDG_INSET_X),
-                                hdr->widg->y + hdr->widg->h - (WIDG_INSET_Y) );
+                                hdr->widg->y + hdr->widg->h - 2 );
 
 	if(    inf->state == MPD_STATUS_STATE_PLAY 
 	    || inf->state == MPD_STATUS_STATE_PAUSE )
@@ -284,18 +295,28 @@ void mpd_widg_progress_draw( struct header_info * hdr, ttk_surface srf )
 
 		ttk_ap_fillrect( srf, ttk_ap_get( "slider.full" ),
 				hdr->widg->x + WIDG_INSET_X,
-				hdr->widg->y + WIDG_INSET_Y,
+				hdr->widg->y + hdr->widg->h - 7,
                                 hdr->widg->x + WIDG_INSET_X + wid,
-                                hdr->widg->y + hdr->widg->h - 
-						(WIDG_INSET_Y) );
+                                hdr->widg->y + hdr->widg->h - 2 );
 	} 
 
 	ttk_rect( srf,  hdr->widg->x+WIDG_INSET_X,
-			hdr->widg->y+WIDG_INSET_Y,
+			hdr->widg->y + hdr->widg->h - 7,
 			hdr->widg->x + hdr->widg->w - (WIDG_INSET_X),
-			hdr->widg->y + hdr->widg->h - (WIDG_INSET_Y),
-			ttk_ap_getx( "slider.border" )->color );
+			hdr->widg->y + hdr->widg->h - 2,
+			pz_dec_ap_get_solid( "slider.border" ));
 
+	/* and dump the time string to the screen */
+	mins = inf->elapsedTime / 60;
+	secs = inf->elapsedTime - (mins * 60);
+	snprintf( buf, 16, "%d:%02d", mins, secs );
+        hdr->widg->w = pz_vector_width( buf, 5, 9 ,1 ) + 4;
+
+	pz_vector_string( srf, buf, 
+			hdr->widg->x + 2,
+			hdr->widg->y + 3,
+			5, 9, 1,
+			pz_dec_ap_get_solid( "header.fg" ));
 }
 
 
