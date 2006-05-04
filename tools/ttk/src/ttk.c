@@ -364,6 +364,55 @@ int ttk_button_pressed (int button)
 }
 
 
+static int iterate_widgets (TWidgetList *wids, int (*func)(TWidget *, int), int arg) 
+{
+    TWidgetList *current = wids;
+    int eret = 0;
+    while (current) {
+        eret |= func (current->v, arg);
+        current = current->next;
+    }
+    return eret;
+}
+
+
+static int do_timers (TWidget *wid, int tick) 
+{
+    int eret = 0;
+
+    if (wid->frame && wid->framedelay && (wid->framelast + wid->framedelay <= tick)) {
+        wid->framelast = tick;
+        eret |= wid->frame (wid) & ~TTK_EV_UNUSED;
+    }
+    
+    if (wid->timer && wid->timerdelay && (wid->timerlast + wid->timerdelay <= tick)) {
+        wid->timerlast = tick + 1;
+        eret |= wid->timer (wid) & ~TTK_EV_UNUSED;
+    }
+
+    return eret;
+}
+
+
+static int do_draw (TWidget *wid, int force) 
+{
+    if (wid->dirty || force) {
+        if (wid->win)
+            wid->draw (wid, wid->win->srf);
+        else
+            wid->draw (wid, ttk_screen->srf);
+        wid->dirty = 0;
+    }
+    return 0;
+}
+
+
+static int check_dirty (TWidget *wid, int unused) 
+{
+    return !!wid->dirty;
+}
+
+
 int ttk_run()
 {
     ttk_screeninfo *s = ttk_screen;
@@ -425,26 +474,30 @@ int ttk_run()
 	    win->epoch = ttk_epoch;
 	}
 
-	// Do hwid, timers
+        /********** EVENT STUFF **********/
+
+        eret = 0;
+
+	/*** Do header widget timers, and check for need to redraw the header ***/
 	if (ttk_header_widgets) {
-	    cur = ttk_header_widgets;
-	    while (cur) {
-		if (cur->v->timer && cur->v->timerdelay && (cur->v->timerlast + cur->v->timerdelay <= tick)) {
-		    cur->v->timerlast = tick + 1;
-		    cur->v->timer (cur->v);
-		}
-		if (cur->v->dirty && win->show_header) {
-		    ttk_ap_fillrect (s->srf, ttk_ap_get ("header.bg"), cur->v->x, cur->v->y,
-				     cur->v->x + cur->v->w, cur->v->y + cur->v->h);
-		    cur->v->dirty = 0;
-		    cur->v->draw (cur->v, s->srf);
-		    ttk_dirty |= TTK_DIRTY_SCREEN;
-		}
-		cur = cur->next;
-	    }
+            eret |= iterate_widgets (ttk_header_widgets, do_timers, tick) & ~TTK_EV_UNUSED;
+            if (win->show_header && iterate_widgets (ttk_header_widgets, check_dirty, 0)) {
+                ttk_dirty |= TTK_DIRTY_HEADER;
+            }
 	}
 
-	/*** Do timers ***/
+	/*** Do timers for TI, and check if it wants a draw. ***/
+        if (win->input) {
+            eret |= do_timers (win->input, tick) & ~TTK_EV_UNUSED;
+            if (win->input->dirty) {
+                ttk_dirty |= TTK_DIRTY_INPUT;
+            }
+        }
+
+	/*** Do timers for widgets. ***/
+        eret |= iterate_widgets (win->widgets, do_timers, tick) & ~TTK_EV_UNUSED;
+
+	/*** Do global timers. ***/
 	ctim = ttk_timers;
 	while (ctim) {
 	    if (tick > (ctim->started + ctim->delay)) {
@@ -460,111 +513,7 @@ int ttk_run()
 	    ctim = ctim->next;
 	}
 
-	/*** Draw ***/
-
-	if ((ttk_dirty & TTK_DIRTY_HEADER) && win->show_header) {
-	    /* Clear it */
-	    ttk_ap_fillrect (s->srf, ttk_ap_get ("header.bg"), 0, 0, s->w, s->wy + ttk_ap_getx ("header.line") -> spacing);
-
-	    if (ttk_header_widgets) {
-		/* Draw hwid */
-		cur = ttk_header_widgets;
-		while (cur) {
-		    cur->v->draw (cur->v, s->srf);
-		    cur = cur->next;
-		}
-	    }
-
-	    /* Draw title */
-	    /* autocenter if unset */
-	    textpos = ((header_text_pos>=0)?header_text_pos:((s->w)>>1));
-
-	    switch( header_text_justification ) {
-	    case( TTK_TEXT_LEFT ):
-		    break;
-	    case( TTK_TEXT_RIGHT ):
-		    textpos -= ttk_text_width( ttk_menufont, win->title);
-		    break;
-	    case( TTK_TEXT_CENTER ):
-	    default:
-		    textpos -= (ttk_text_width( ttk_menufont, win->title)>>1);
-		    break;
-	    }
-
-	    ttk_text (s->srf, ttk_menufont, textpos,
-		      (s->wy - ttk_text_height (ttk_menufont)) / 2,
-		      ttk_ap_getx ("header.fg") -> color,
-		      win->title);
-
-	    /* Draw line */
-	    ttk_ap_hline (s->srf, ttk_ap_get ("header.line"), 0, s->w, s->wy);
-
-	    ttk_dirty &= ~TTK_DIRTY_HEADER;
-	    ttk_dirty |= TTK_DIRTY_SCREEN;
-	}
-
-	if (win->dirty) {
-	    cur = win->widgets;
-            ttk_ap_fillrect (win->srf, ttk_ap_get ("window.bg"), 0, 0, win->w, win->h);
-
-	    while (cur) {
-		cur->v->dirty = 0;
-		cur->v->draw (cur->v, win->srf);
-		cur = cur->next;
-	    }
-	    
-	    ttk_dirty |= TTK_DIRTY_WINDOWAREA;
-	    win->dirty = 0;
-	}
-
-	if (ttk_dirty & TTK_DIRTY_WINDOWAREA) {
-	    TApItem b, *bg;
-	    if (win->background) {
-		memcpy (&b, win->background, sizeof(TApItem));
-	    } else {
-		memcpy (&b, ttk_ap_getx ("window.bg"), sizeof(TApItem));
-	    }
-	    b.spacing = 0;
-	    b.type |= TTK_AP_SPACING;
-	    
-	    if (win->x > s->wx+2 || win->y > s->wy+2)
-		b.spacing = ttk_ap_getx ("window.border") -> spacing;
-	    bg = &b;
-
-	    ttk_ap_fillrect (s->srf, bg, win->x, win->y, win->x + win->w, win->y + win->h);
-	    ttk_blit_image_ex (win->srf, 0, 0, win->w, win->h, s->srf, win->x, win->y);
-	    if (win->x > s->wx+2 || win->y > s->wy+2) { // popup window
-		ttk_ap_rect (s->srf, ttk_ap_get ("window.border"), win->x, win->y,
-			     win->x + win->w, win->y + win->h);
-	    }
-
-	    if( win->show_header )
-		ttk_ap_hline (s->srf, ttk_ap_get ("header.line"), 0, s->w, s->wy);
-
-	    ttk_dirty &= ~TTK_DIRTY_WINDOWAREA;
-	    ttk_dirty |= TTK_DIRTY_SCREEN;
-	}
-
-	/*** Events ***/
-	eret = 0;
-
-	/* check text input stuff */
-	if (win->input) {
-	    if (win->input->frame && win->input->framedelay && (win->input->framelast + win->input->framedelay <= tick)) {
-		win->input->framelast = tick;
-		eret |= win->input->frame (win->input) & ~TTK_EV_UNUSED;
-	    }
-
-	    if (win->input->timer && win->input->timerdelay && (win->input->timerlast + win->input->timerdelay <= tick)) {
-		win->input->timerlast = tick + 1;
-		eret |= win->input->timer (win->input) & ~TTK_EV_UNUSED;
-	    }
-
-	    if (win->input->dirty) {
-		ttk_dirty |= TTK_DIRTY_INPUT;
-	    }
-	}
-
+        /*** Process text input events. ***/
 	while (win->inbuf_start != win->inbuf_end) {
 	    if (win->focus) // NOT evtarget, that's probably the TI method
 		eret |= win->focus->input (win->focus, win->inbuf[win->inbuf_start]) & ~TTK_EV_UNUSED;
@@ -572,51 +521,7 @@ int ttk_run()
 	    win->inbuf_start &= 0x1f;
 	}
 
-	if ((ttk_dirty & TTK_DIRTY_INPUT) && win->input) {
-	    ttk_ap_fillrect (s->srf, ttk_ap_get ("window.bg"), win->input->x, win->input->y,
-			     win->input->x + win->input->w, win->input->y + win->input->h);
-
-	    if (ttk_ap_get ("window.border")) {
-		TApItem border;
-		memcpy (&border, ttk_ap_getx ("window.border"), sizeof(TApItem));
-		border.spacing = -1;
-		
-		ttk_ap_rect (s->srf, &border, win->input->x, win->input->y,
-			     win->input->x + win->input->w, win->input->y + win->input->h);
-	    }
-
-	    win->input->draw (win->input, s->srf);
-
-	    ttk_dirty &= ~TTK_DIRTY_INPUT;
-            ttk_dirty |= TTK_DIRTY_SCREEN;
-	}
-
-	/* check fps + draw individual dirties */
-	cur = win->widgets;
-	while (cur) {
-	    if (cur->v->frame && cur->v->framedelay && (cur->v->framelast + cur->v->framedelay <= tick)) {
-		cur->v->framelast = tick;
-		eret |= cur->v->frame (cur->v) & ~TTK_EV_UNUSED;
-	    }
-	    
-	    if (cur->v->timer && cur->v->timerdelay && (cur->v->timerlast + cur->v->timerdelay <= tick)) {
-		cur->v->timerlast = tick + 1;
-		eret |= cur->v->timer (cur->v) & ~TTK_EV_UNUSED;
-	    }
-
-	    if (cur->v->dirty) {
-                ttk_ap_fillrect (win->srf, ttk_ap_get ("window.bg"), cur->v->x, cur->v->y,
-                                 cur->v->x + cur->v->w, cur->v->y + cur->v->h);
-		cur->v->dirty = 0;
-		cur->v->draw (cur->v, win->srf);
-		ttk_dirty |= TTK_DIRTY_WINDOWAREA;
-	    }
-
-	    cur = cur->next;
-	}
-
-	/* check new events (down, button, scroll) */
-	earg = 0;
+	/*** Check for events. ***/
 	if (evtarget && evtarget->rawkeys)
 	    ev = ttk_get_rawevent (&earg);
 	else
@@ -654,8 +559,7 @@ int ttk_run()
 	    earg *= ttk_scroll_num;
 	}
 
-	/* pass event to local, if we should; update event
-	   metadata in all cases. */
+        /*** Send events. ***/
 	switch (ev) {
 	case TTK_BUTTON_DOWN:
 	    if (!ttk_button_presstime[earg] || !ttk_button_pressedfor[earg]) { // don't reset with key-repted buttons
@@ -702,10 +606,7 @@ int ttk_run()
 	    break;
 	}
 	
-	if ((eret & TTK_EV_UNUSED) && ttk_global_unusedhandler)
-	    eret |= ttk_global_unusedhandler (ev, earg, time);
-
-	/* check old events (stap, held) */
+        /*** Check more events. ***/
 	if (evtarget) {
 	    // held
 	    for (p = keys; *p; p++) {
@@ -763,17 +664,126 @@ int ttk_run()
 		}
 	    }
 #endif
-
-	    if (eret & TTK_EV_CLICK)
-		(*ttk_clicker)();
-	    if (eret & TTK_EV_DONE)
-		return (eret >> 8);
-
-	    if (ttk_dirty & TTK_DIRTY_SCREEN) {
-		ttk_gfx_update (ttk_screen->srf);
-		ttk_dirty &= ~TTK_DIRTY_SCREEN;
-	    }
 	}
+
+        /********** DRAWING STUFF **********/
+
+	/*** Draw header, if necessary ***/
+
+	if ((ttk_dirty & TTK_DIRTY_HEADER) && win->show_header) {
+	    /* Clear it */
+	    ttk_ap_fillrect (s->srf, ttk_ap_get ("header.bg"), 0, 0, s->w, s->wy + ttk_ap_getx ("header.line") -> spacing);
+
+            /* Draw the widgets */
+            if (ttk_header_widgets) iterate_widgets (ttk_header_widgets, do_draw, 1);
+
+	    /* Draw title */
+	    /* autocenter if unset */
+	    textpos = ((header_text_pos>=0)?header_text_pos:((s->w)>>1));
+
+	    switch( header_text_justification ) {
+	    case( TTK_TEXT_LEFT ):
+		    break;
+	    case( TTK_TEXT_RIGHT ):
+		    textpos -= ttk_text_width( ttk_menufont, win->title);
+		    break;
+	    case( TTK_TEXT_CENTER ):
+	    default:
+		    textpos -= (ttk_text_width( ttk_menufont, win->title)>>1);
+		    break;
+	    }
+
+	    ttk_text (s->srf, ttk_menufont, textpos,
+		      (s->wy - ttk_text_height (ttk_menufont)) / 2,
+		      ttk_ap_getx ("header.fg") -> color,
+		      win->title);
+
+	    /* Draw line */
+	    ttk_ap_hline (s->srf, ttk_ap_get ("header.line"), 0, s->w, s->wy);
+
+	    ttk_dirty &= ~TTK_DIRTY_HEADER;
+	    ttk_dirty |= TTK_DIRTY_SCREEN;
+	}
+
+        /*** Redraw the widgets in the window, if it's dirty. ***/
+	if (win->dirty) {
+            ttk_fillrect (win->srf, 0, 0, win->w, win->h, ttk_makecol (CKEY));
+
+            iterate_widgets (win->widgets, do_draw, 1);
+	    
+	    ttk_dirty |= TTK_DIRTY_WINDOWAREA;
+	    win->dirty = 0;
+	}
+
+        /*** Draw widgets that need it. ***/
+        if (iterate_widgets (win->widgets, do_draw, 0)) {
+            ttk_dirty |= TTK_DIRTY_WINDOWAREA;
+        }
+
+        /*** Draw the window surface to the screen surface. ***/
+	if (ttk_dirty & TTK_DIRTY_WINDOWAREA) {
+	    TApItem b, *bg;
+	    if (win->background) {
+		memcpy (&b, win->background, sizeof(TApItem));
+	    } else {
+		memcpy (&b, ttk_ap_getx ("window.bg"), sizeof(TApItem));
+	    }
+	    b.spacing = 0;
+	    b.type |= TTK_AP_SPACING;
+	    
+	    if (win->x > s->wx+2 || win->y > s->wy+2)
+		b.spacing = ttk_ap_getx ("window.border") -> spacing;
+	    bg = &b;
+
+	    ttk_ap_fillrect (s->srf, bg, win->x, win->y, win->x + win->w, win->y + win->h);
+	    ttk_blit_image_ex (win->srf, 0, 0, win->w, win->h, s->srf, win->x, win->y);
+	    if (win->x > s->wx+2 || win->y > s->wy+2) { // popup window
+		ttk_ap_rect (s->srf, ttk_ap_get ("window.border"), win->x, win->y,
+			     win->x + win->w, win->y + win->h);
+	    }
+
+	    if( win->show_header )
+		ttk_ap_hline (s->srf, ttk_ap_get ("header.line"), 0, s->w, s->wy);
+
+	    ttk_dirty &= ~TTK_DIRTY_WINDOWAREA;
+	    ttk_dirty |= TTK_DIRTY_SCREEN;
+	}
+
+        /*** Redraw input if necessary. ***/
+	if ((ttk_dirty & TTK_DIRTY_INPUT) && win->input) {
+	    ttk_ap_fillrect (s->srf, ttk_ap_get ("window.bg"), win->input->x, win->input->y,
+			     win->input->x + win->input->w, win->input->y + win->input->h);
+
+	    if (ttk_ap_get ("window.border")) {
+		TApItem border;
+		memcpy (&border, ttk_ap_getx ("window.border"), sizeof(TApItem));
+		border.spacing = -1;
+		
+		ttk_ap_rect (s->srf, &border, win->input->x, win->input->y,
+			     win->input->x + win->input->w, win->input->y + win->input->h);
+	    }
+
+	    win->input->draw (win->input, s->srf);
+
+	    ttk_dirty &= ~TTK_DIRTY_INPUT;
+            ttk_dirty |= TTK_DIRTY_SCREEN;
+	}
+
+        /********** FINISHING UP **********/
+
+        /*** Handle appropriate event actions. ***/
+        if (eret & TTK_EV_CLICK)
+            (*ttk_clicker)();
+        if (eret & TTK_EV_DONE)
+            return (eret >> 8);
+	if ((eret & TTK_EV_UNUSED) && ttk_global_unusedhandler)
+	    eret |= ttk_global_unusedhandler (ev, earg, time);
+
+        /*** Update the screen if we need it. ***/
+        if (ttk_dirty & TTK_DIRTY_SCREEN) {
+            ttk_gfx_update (ttk_screen->srf);
+            ttk_dirty &= ~TTK_DIRTY_SCREEN;
+        }
 #ifndef IPOD
 	ttk_delay(30);
 #endif
