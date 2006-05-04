@@ -402,6 +402,7 @@ static int do_draw (TWidget *wid, int force)
         else
             wid->draw (wid, ttk_screen->srf);
         wid->dirty = 0;
+        return 1;
     }
     return 0;
 }
@@ -511,14 +512,6 @@ int ttk_run()
 		continue;
 	    }
 	    ctim = ctim->next;
-	}
-
-        /*** Process text input events. ***/
-	while (win->inbuf_start != win->inbuf_end) {
-	    if (win->focus) // NOT evtarget, that's probably the TI method
-		eret |= win->focus->input (win->focus, win->inbuf[win->inbuf_start]) & ~TTK_EV_UNUSED;
-	    win->inbuf_start++;
-	    win->inbuf_start &= 0x1f;
 	}
 
 	/*** Check for events. ***/
@@ -666,7 +659,18 @@ int ttk_run()
 #endif
 	}
 
+        /*** Process text input events. ***/
+	while (win->inbuf_start != win->inbuf_end) {
+	    if (win->focus) // NOT evtarget, that's probably the TI method
+		eret |= win->focus->input (win->focus, win->inbuf[win->inbuf_start]) & ~TTK_EV_UNUSED;
+	    win->inbuf_start++;
+	    win->inbuf_start &= 0x1f;
+	}
+
         /********** DRAWING STUFF **********/
+
+        if (!ttk_windows) return 0;
+        win = ttk_windows->w; // Yes, again; ttk_show_window() might've been called by an event.
 
 	/*** Draw header, if necessary ***/
 
@@ -939,7 +943,7 @@ TWindow *ttk_new_window()
 	ret->title = "TTK";
     }
 
-    ttk_ap_fillrect (ret->srf, ttk_ap_get ("window.bg"), 0, 0, ret->w, ret->h);
+    ttk_fillrect (ret->srf, 0, 0, ret->w, ret->h, ttk_makecol (CKEY));
 
     return ret;
 }
@@ -1019,12 +1023,8 @@ void ttk_show_window (TWindow *win)
 	    int jump = win->w / ttk_transit_frames;
 	    
             // Render the stuff in the new window
-            cur = win->widgets;
-            while (cur) {
-                ttk_ap_fillrect (win->srf, ttk_ap_get ("window.bg"), 0, 0, win->w, win->h);
-                cur->v->draw (cur->v, win->srf);
-                cur = cur->next;
-            }
+            ttk_fillrect (win->srf, 0, 0, win->w, win->h, ttk_makecol (CKEY));
+            iterate_widgets (win->widgets, do_draw, 1);
 
 	    for (i = 0; i < ttk_transit_frames; i++) {
 	    	ttk_ap_fillrect (ttk_screen->srf, ttk_ap_get ("window.bg"), ttk_screen->wx,
@@ -1040,7 +1040,8 @@ void ttk_show_window (TWindow *win)
 	    	ttk_delay (10);
 #endif
 	    }
-	    
+            ttk_ap_fillrect (ttk_screen->srf, ttk_ap_get ("window.bg"), ttk_screen->wx,
+                             ttk_screen->wy, ttk_screen->w, ttk_screen->h);
 	    ttk_blit_image (win->srf, ttk_screen->srf, ttk_screen->wx, ttk_screen->wy);
             ttk_ap_hline (ttk_screen->srf, ttk_ap_get ("header.line"), 0, ttk_screen->w, ttk_screen->wy);
 	    ttk_gfx_update (ttk_screen->srf);
@@ -1132,12 +1133,8 @@ int ttk_hide_window (TWindow *win)
 	    int jump = win->w / ttk_transit_frames;
 
 	    // Render stuff in the new window
-            TWidgetList *cur = win->widgets;
-            while (cur) {
-                ttk_ap_fillrect (win->srf, ttk_ap_get ("window.bg"), 0, 0, win->w, win->h);
-                cur->v->draw (cur->v, win->srf);
-                cur = cur->next;
-            }
+            ttk_fillrect (win->srf, 0, 0, win->w, win->h, ttk_makecol (CKEY));
+            iterate_widgets (win->widgets, do_draw, 1);
 
 	    for (i = ttk_transit_frames - 1; i >= 0; i--) {
 	    	ttk_ap_fillrect (ttk_screen->srf, ttk_ap_get ("window.bg"), ttk_screen->wx,
@@ -1153,7 +1150,8 @@ int ttk_hide_window (TWindow *win)
 	    	ttk_delay (10);
 #endif
 	    }
-	    
+            ttk_ap_fillrect (ttk_screen->srf, ttk_ap_get ("window.bg"), ttk_screen->wx,
+                             ttk_screen->wy, ttk_screen->w, ttk_screen->h);
 	    ttk_blit_image (newwindow->srf, ttk_screen->srf, ttk_screen->wx, ttk_screen->wy);
             ttk_ap_hline (ttk_screen->srf, ttk_ap_get ("header.line"), 0, ttk_screen->w, ttk_screen->wy);
 	    ttk_gfx_update (ttk_screen->srf);
