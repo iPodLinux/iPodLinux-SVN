@@ -212,11 +212,9 @@ usage (int exitcode)
             "  -b <ldr>   For loader1, equivalent to `osos@=<ldr>'; for loader2, `osos=<ldr>'.\n"
             "  -d <id>    Ignore the image with ID <id> when using -a, -A, -p, -P, -x, or -t.\n"
             "             This may be specified multiple times.\n"
-            "  -i <file>  For loader1, equivalent to `ososN=<file>', where N starts from 0\n"
-            "             and increases with each -i or -l option. For loader2, equivalent\n"
-            "             to `aple=<file>'.\n"
-            "  -l <file>  For loader1, equivalent to `ososN=<file>'; see the documentation for\n"
-            "             -i. For loader2, equivalent to `lnux=<file>'.\n"
+            "  -i <file>  Equivalent to `ososN=<file>', where N starts from 0 and increases\n"
+            "  -l <file>  with each -i or -l option. Files given with -i are assumed to be\n"
+            "             Apple firmware, and with -l are assumed to be Linux kernels.\n"
             "  -m         Load all inputs before writing any outputs. You must specify this\n"
             "             option if input and output are the same file. Uses lots of memory.\n"
             "  -n <1>=<2> Rename the image named <2> to <1>. For instance, -n aple=osos1.\n"
@@ -242,12 +240,7 @@ usage (int exitcode)
             "  To create a firmware dump using ipodloader1:\n"
             "    ./make_fw -1 -g <gen> -c -a ipod.fw -l linux.bin -b loader.bin\n"
             "  The same, but the `long way':\n"
-            "    ./make_fw -g <gen> -c osos@=loader.bin osos0=ipod.fw:osos osos1=linux.bin\n"
-            "  The \"long way\" with ipodloader2:\n"
-            "    ./make_fw -g <gen> -c osos=loader.bin aple=ipod.fw:osos lnux=linux.bin\n"
-            "    (Of course, with loader2 you don't necessarily have to put those\n"
-            "     images in the firmware partition.)\n");
-    exit (exitcode);
+            "    ./make_fw -g <gen> -c osos@=loader.bin osos0=ipod.fw:osos osos1=linux.bin\n");
 }
 
 #define READING 0
@@ -873,7 +866,7 @@ fw_load_unknown (const char *id, const char *filename)
     in->read (in, magic, 8); /* read magic */
     if (!strcmp (magic, "make_fw2")) {
         type = Dump;
-        if (!id) id = (loadertype == 2)? "aple" : "ososN";
+        if (!id) id = "ososN";
         if (verbose >= 2) printf ("%s: seems to be a DUMP\n", filename);
     } else if (id) {
         type = Binary;
@@ -1271,13 +1264,13 @@ main (int argc, char **argv)
             output_file = optarg;
             /* FALLTHRU */
         case 'a':
-            fw_load_all (optarg, (loadertype == 2)? "aple" : "ososN");
+            fw_load_all (optarg, "ososN");
             break;
         case 'b':
-            fw_load_binary (optarg, (loadertype == 2)? "osos" : "osos@");
+            fw_load_binary (optarg, "osos@");
             break;
         case 'i':
-            fw_load_dumped (optarg, (loadertype == 2)? "aple" : "ososN", 0);
+            fw_load_dumped (optarg, "ososN");
             break;
         case 'l':
             fw_load_binary (optarg, (loadertype == 2)? "lnux" : "ososN");
