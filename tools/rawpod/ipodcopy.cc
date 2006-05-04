@@ -14,38 +14,6 @@
 int recursive = 0;
 Ext2FS *ext2;
 
-class LocalDir : public VFS::Dir
-{
-public:
-    LocalDir (const char *path)
-        : _dp (opendir (path))
-    {}
-    ~LocalDir() { if (_dp) closedir (_dp); }
-    
-    int readdir (struct VFS::dirent *de);
-    int close() { if (_dp) closedir (_dp); _dp = 0; return 0; }
-#ifdef WIN32
-    int error() { if (!_dp) return 1; return 0; }
-#else
-    int error() { if (!_dp) return errno; return 0; }
-#endif
-    
-private:
-    DIR *_dp;
-};
-
-int LocalDir::readdir (struct VFS::dirent *de) 
-{
-    if (!_dp) return 0;
-
-    struct dirent *d = ::readdir (_dp);
-    if (!d) return 0;
-    
-    de->d_ino = 0;
-    strcpy (de->d_name, d->d_name);
-    return sizeof(*de);
-}
-
 int is_local (const char *path) 
 {
     if (strchr (path, ':') && (strchr (path, ':') != path + 1))

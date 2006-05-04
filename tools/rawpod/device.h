@@ -8,6 +8,7 @@
 #define _DEVICE_H_
 
 #include "vfs.h"
+#include <dirent.h>
 
 #define OPEN_READ    1
 #define OPEN_WRITE   2
@@ -24,6 +25,26 @@
 #else
 #include <unistd.h>
 #endif
+
+class LocalDir : public VFS::Dir
+{
+public:
+    LocalDir (const char *path)
+        : _dp (opendir (path))
+    {}
+    ~LocalDir() { if (_dp) closedir (_dp); }
+    
+    int readdir (struct VFS::dirent *de);
+    int close() { if (_dp) closedir (_dp); _dp = 0; return 0; }
+#ifdef WIN32
+    int error() { if (!_dp) return 1; return 0; }
+#else
+    int error() { if (!_dp) return errno; return 0; }
+#endif
+    
+private:
+    DIR *_dp;
+};
 
 class LocalFile : public VFS::File 
 {
