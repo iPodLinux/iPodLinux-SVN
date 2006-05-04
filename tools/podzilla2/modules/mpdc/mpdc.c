@@ -224,7 +224,7 @@ void mpd_widg_icons_update( struct header_info * hdr )
 		hdr->data = NULL;
 
 	if( hdr->data ) {
-		hdr->widg->w = pz_icon_play[0] + 4;
+		hdr->widg->w = pz_icon_play[0] + 6;
 	} else {
 		hdr->widg->w = 0;
 	}
@@ -236,7 +236,7 @@ void mpd_widg_icons_draw( struct header_info * hdr, ttk_surface srf )
 	if( !hdr || !srf || !hdr->data ) return;
 
 	ttk_draw_icon( icon, srf,
-			hdr->widg->x + 2,
+			hdr->widg->x + 3,
 			hdr->widg->y + ((hdr->widg->h - icon[1])>>1),
 			ttk_ap_getx( "battery.border" ),
 			ttk_ap_getx( "header.bg" )->color );
@@ -267,7 +267,13 @@ void mpd_widg_progress_update( struct header_info * hdr )
 	/* compute this all out, but it's just to determine the string */
 	mins = inf->elapsedTime / 60;
 	secs = inf->elapsedTime - (mins * 60);
-	snprintf( buf, 16, "%d:%02d", mins, secs );
+	if(    inf->state == MPD_STATUS_STATE_PLAY 
+	    || inf->state == MPD_STATUS_STATE_PAUSE )
+	{
+		snprintf( buf, 16, "%d:%02d", mins, secs );
+	} else {
+		snprintf( buf, 16, "----" );
+	}
         hdr->widg->w = pz_vector_width( buf, 5, 9 ,1 ) + 4;
 }
 
@@ -286,6 +292,8 @@ void mpd_widg_progress_draw( struct header_info * hdr, ttk_surface srf )
                                 hdr->widg->x + hdr->widg->w - (WIDG_INSET_X),
                                 hdr->widg->y + hdr->widg->h - 2 );
 
+	/* i really want to show this differently if we're paused, but 
+	    this will be good enough for now... */
 	if(    inf->state == MPD_STATUS_STATE_PLAY 
 	    || inf->state == MPD_STATUS_STATE_PAUSE )
 	{
@@ -307,10 +315,15 @@ void mpd_widg_progress_draw( struct header_info * hdr, ttk_surface srf )
 			pz_dec_ap_get_solid( "slider.border" ));
 
 	/* and dump the time string to the screen */
-	mins = inf->elapsedTime / 60;
-	secs = inf->elapsedTime - (mins * 60);
-	snprintf( buf, 16, "%d:%02d", mins, secs );
-        hdr->widg->w = pz_vector_width( buf, 5, 9 ,1 ) + 4;
+	if(    inf->state == MPD_STATUS_STATE_PLAY 
+	    || inf->state == MPD_STATUS_STATE_PAUSE )
+	{
+		mins = inf->elapsedTime / 60;
+		secs = inf->elapsedTime - (mins * 60);
+		snprintf( buf, 16, "%d:%02d", mins, secs );
+	} else {
+		snprintf( buf, 16, "stop" );
+	}
 
 	pz_vector_string( srf, buf, 
 			hdr->widg->x + 3, hdr->widg->y + 4,
