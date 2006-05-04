@@ -842,7 +842,7 @@ void dec_draw_Amiga1x( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 					pz_global_config, TITLE_JUSTIFY);
 	int i;
 	int xp1 = hdr->widg->x;
-	int xp2 = hdr->widg->x + hdr->widg->w;
+	int xp2 = hdr->widg->x + hdr->widg->w -1;
 	int tx1 = 0, tx2 = 0;
 	double yo, xo;
 
