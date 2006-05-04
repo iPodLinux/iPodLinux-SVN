@@ -142,9 +142,9 @@ void FirmwareRecreateAction::run_sub()
             fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "osos1");
         break;
     case Loader2:
-        fw_load_all (fw_file, updating? "osos" : "aple");
+        fw_load_all (fw_file, updating? "osos" : "osos0");
         if (iPodLinuxPartitionFS->stat ("/loader.bin", &st) >= 0 || !updating)
-            fw_load_binary (make_device_name (iPodLocation, 3, "loader.bin"), "osos");
+            fw_load_binary (make_device_name (iPodLocation, 3, "loader.bin"), "osos@");
         if (iPodLinuxPartitionFS->stat ("/linux.bin", &st) >= 0 || !updating)
             fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "lnux");
         break;
@@ -153,22 +153,17 @@ void FirmwareRecreateAction::run_sub()
         fw_load_all (fw_file, "osos");
         fw_image_info *osos_inf;
         // Old stuff?
-        if ((osos_inf = fw_find_image ("osos")) && !fw_find_image ("aple") &&
+        if ((osos_inf = fw_find_image ("osos")) &&
             !memcmp ((char *)osos_inf->memblock + osos_inf->header.entryOffset + 0x100, "!ATAsoso", 8)) {
             // Old Loader1 or Loader2 - set the parent flag
             osos_inf->header.isparent = 1;
             fw_create_dump (fw_file);
             fw_clear();
             fw_load_all (fw_file, "osos");
-            if (fw_find_image ("osos@") && !fw_find_image ("osos1")) {
-                // Old Loader2, methinks
-                fw_rename_image ("osos0", "aple");
-                fw_rename_image ("osos@", "osos");
-            }
         }
 
         // Is it an L1?
-        if (fw_find_image ("osos@")) {
+        if (fw_find_image ("osos@") && !fw_find_image ("lnux")) {
             if (iPodLinuxPartitionFS->stat ("/loader.bin", &st) >= 0 || !updating)
                 fw_load_binary (make_device_name (iPodLocation, 3, "loader.bin"), "osos@");
 
@@ -184,13 +179,15 @@ void FirmwareRecreateAction::run_sub()
                     fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "osos1");
                 iPodLoader = Loader1Linux;
             } else {
-                FATAL ("You've apparently installed iPodLinux manually, and I can't figure out what type of "
-                       "firmware layout your iPod has. Sorry, but I can't continue.");
+                // Non-Linuxed Loader2, probably
+                if (iPodLinuxPartitionFS->stat ("/linux.bin", &st) >= 0 || !updating)
+                    fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "lnux");
+                iPodLoader = Loader2;
             }
-        } else if (fw_find_image ("aple")) {
+        } else if (fw_find_image ("lnux")) {
             // L2
             if (iPodLinuxPartitionFS->stat ("/loader.bin", &st) >= 0 || !updating)
-                fw_load_binary (make_device_name (iPodLocation, 3, "loader.bin"), "osos");
+                fw_load_binary (make_device_name (iPodLocation, 3, "loader.bin"), "osos@");
             if (iPodLinuxPartitionFS->stat ("/linux.bin", &st) >= 0 || !updating)
                 fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "lnux");
             iPodLoader = Loader2;
@@ -273,18 +270,13 @@ void FirmwareRecreateAction::run()
 
 void ChangeLoaderAction::run() 
 {
+    if (_old == _new) return;
+
     emit setTaskDescription (tr ("Rejiggering the loader..."));
     emit setTotalProgress (0);
     emit setCurrentProgress (0);
 
     setup_makefw();
-
-    const char *imgnames[4][3] = {
-        { "?????", "?????", "?????" },
-        { "osos@", "osos0", "osos1" },
-        { "osos@", "osos1", "osos0" },
-        { "osos",  "aple",  "lnux"  },
-    };
 
     int jr;
     if ((jr = setjmp (fw_error_out)) != 0) {
@@ -296,10 +288,20 @@ void ChangeLoaderAction::run()
     fw_add_ignore ("hibe");
     fw_load_all (iPodDoBackup? iPodBackupLocation.toAscii().data() :
                  make_device_name (iPodLocation, 1), "osos");
-    fw_rename_image (imgnames[_old][1], imgnames[_new][1]); // for L1->L1, this *swaps* the images
-    if (_old == Loader2 || _new == Loader2)
-        fw_rename_image (imgnames[_old][2], imgnames[_new][2]);
-    fw_rename_image (imgnames[_old][0], imgnames[_new][0]);
+    if (_old != Loader2 && _new != Loader2) {
+        // osos0 <-> osos1
+        fw_rename_image ("osos0", "osos1");
+    } else if (_old == Loader2) {
+        // lnux -> osos1, then swap osos0 and osos1 if necessary
+        fw_rename_image ("lnux", "osos1");
+        if (_new == Loader1Linux)
+            fw_rename_image ("osos1", "osos0");
+    } else {
+        // osos0 or osos1 -> lnux, then swap osos0 and osos1 if necessary
+        fw_rename_image ((_old == Loader1Linux)? "osos1" : "osos0", "lnux");
+        if (_old == Loader1Linux)
+            fw_rename_image ("osos1", "osos0");
+    }
     fw_create_dump (make_device_name (iPodLocation, 1));
 }
 
