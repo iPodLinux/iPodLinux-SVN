@@ -477,7 +477,9 @@ static void update_widget_list_for_side( int side, TWidget *this, int Mode )
 			   for the other side, we ignore this side... i'm 
 			    not sure this is the most elegant solution, but
 			    it should be good enough. */
-			if( !handled && side == HEADER_SIDE_RIGHT ) {
+			if( !handled
+				&& !(c->side & HEADER_SIDE_LEFT)
+				&& (side == HEADER_SIDE_RIGHT) ) {
 				if( c->RCountdown > c->RURate ) 
 					c->RCountdown = ratesecs[c->RURate] ;
 				if( --c->RCountdown <= 0 ) {
@@ -488,7 +490,7 @@ static void update_widget_list_for_side( int side, TWidget *this, int Mode )
 			}
 
 			/* if there's an update function, update the widget! */
-			if( (update > 0) & (c->updfcn != NULL )) {
+			if( (update > 0) && (c->updfcn != NULL )) {
 				c->updfcn( c );
 				make_dirty( this );
 			}
@@ -864,7 +866,7 @@ void dec_draw_Amiga1x( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 
 	/* draw the faux close box, if applicable. */
 	if( hdr->widg->x == 0 ) {
-		xp1 = hdr->widg->h;	/* square gadget */
+		xp1 = hdr->widg->h-1;	/* square gadget */
 		xo = ((float)hdr->widg->h) / 8.0;
 		yo = ((float)hdr->widg->h) / 8.0;
 
@@ -926,7 +928,7 @@ void dec_draw_Amiga1x( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 	} else {
 		/* draw vertical separators */
 		ttk_ap_fillrect( srf, ttk_ap_get( "header.fg" ),
-				xp1-1, 0, xp1+1, hdr->widg->h );
+				xp1, 0, xp1+2, hdr->widg->h );
 		if( xp2 != ttk_screen->w ) 
 			ttk_ap_fillrect( srf, ttk_ap_get( "header.fg" ),
 				xp2 - 1, 0, xp2 + 1, hdr->widg->h );
