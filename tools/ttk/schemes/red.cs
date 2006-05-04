@@ -5,6 +5,7 @@
 
 # this comment intentionally left blank
 # this one as well.
+# BUT NOT THIS ONE! HAHAHAHAHA!
 
 \def black #000000
 \def red   #ff0000
