@@ -891,7 +891,7 @@ void dec_draw_Amiga1x( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 	} else if( WhichAmigaDOS == 20 ) {
 		xo = ((float)hdr->widg->h) / 8.0;
 		dec_draw_3d( srf, 0, 0, hdr->widg->x - 1, 
-				hdr->widg->h-2, RAISED );
+				hdr->widg->h-1, RAISED );
 	}
 
 	/* draw drag bars */
@@ -912,7 +912,7 @@ void dec_draw_Amiga1x( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 			xp1 + o,  hdr->widg->h - o*2 + 1,
 			xp2 - o,  hdr->widg->h - o );
 	} else {
-		dec_draw_3d( srf, xp1, 0, xp2-1, 
+		dec_draw_3d( srf, xp1, 0, xp2, 
 			hdr->widg->h-1, RAISED );
 	}
 
