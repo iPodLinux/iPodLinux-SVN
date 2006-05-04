@@ -211,6 +211,86 @@ static TWidget *mpdc_icon()
 }
 #endif
 
+void mpd_widg_icons_update( struct header_info * hdr )
+{
+	int state = mpdc_status( mpdz );
+	if( !hdr ) return;
+
+	if( state == MPD_STATUS_STATE_PLAY )
+		hdr->data = pz_icon_play;
+	else if( state == MPD_STATUS_STATE_PAUSE )
+		hdr->data = pz_icon_pause;
+	else
+		hdr->data = NULL;
+
+	if( hdr->data ) {
+		hdr->widg->w = pz_icon_play[0] + 4;
+	} else {
+		hdr->widg->w = 0;
+	}
+}
+
+void mpd_widg_icons_draw( struct header_info * hdr, ttk_surface srf )
+{
+	unsigned char * icon = (unsigned char *)hdr->data;
+	if( !hdr || !srf || !hdr->data ) return;
+
+	ttk_draw_icon( icon, srf,
+			hdr->widg->x + 2,
+			hdr->widg->y + (hdr->widg->h - icon[1])>>1,
+			ttk_ap_getx( "header.accent" ),
+			ttk_ap_getx( "header.accent" )->color );
+}
+
+
+static mpd_Status widget_inf;
+void mpd_widg_progress_update( struct header_info * hdr )
+{
+	mpd_Status * inf = (mpd_Status *)hdr->data;
+
+	if( !hdr ) return;
+
+	inf->error = NULL;
+
+	mpd_sendStatusCommand(mpdz);
+	if (mpdz->error) { 
+		mpdc_tickle(); 
+		return;
+	}
+	if( !mpd_getStatus_st( inf, mpdz) )
+		return;
+	else
+		mpd_finishCommand(mpdz);
+}
+
+#define WIDG_INSET (2)
+void mpd_widg_progress_draw( struct header_info * hdr, ttk_surface srf )
+{
+	mpd_Status * inf = (mpd_Status *)hdr->data;
+
+        ttk_ap_fillrect( srf, ttk_ap_get( "slider.bg" ),
+				hdr->widg->x+WIDG_INSET,
+				hdr->widg->y+WIDG_INSET,
+                                hdr->widg->x + hdr->widg->w - (WIDG_INSET*2),
+                                hdr->widg->y + hdr->widg->h - (WIDG_INSET*2) );
+
+	if(    inf->state == MPD_STATUS_STATE_PLAY 
+	    || inf->state == MPD_STATUS_STATE_PAUSE )
+	{
+		int wid = inf->elapsedTime 
+			    * (hdr->widg->w-(WIDG_INSET*2)) 
+			    / inf->totalTime;
+
+		ttk_ap_fillrect( srf, ttk_ap_get( "slider.full" ),
+				hdr->widg->x + WIDG_INSET,
+				hdr->widg->y + WIDG_INSET,
+                                hdr->widg->x + WIDG_INSET + wid,
+                                hdr->widg->y + hdr->widg->h - 
+						(WIDG_INSET*2) );
+	} 
+}
+
+
 static int playing_visible(ttk_menu_item *item)
 {
 	int state;
@@ -317,6 +397,11 @@ static void init_mpdc()
 #if 0
 	ttk_add_header_widget(mpdc_icon());
 #endif
+	pz_add_header_widget( "MPD Progress", mpd_widg_progress_update,
+					      mpd_widg_progress_draw, 
+					      &widget_inf );
+	pz_add_header_widget( "MPD Icons", mpd_widg_icons_update,
+					   mpd_widg_icons_draw, NULL );
 }
 
 PZ_MOD_INIT(init_mpdc)
