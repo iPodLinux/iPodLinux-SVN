@@ -17,12 +17,15 @@
 #endif
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #ifdef WIN32
 #include "errors.h"
 #else
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #endif
 
 #ifndef WIN32
@@ -80,6 +83,9 @@ typedef   signed int s32;
 typedef   signed long slong;
 typedef   signed long long s64;
 
+#ifdef st_atime
+#define ST_XTIME_ARE_MACROS
+#endif
 #undef st_atime
 #undef st_ctime
 #undef st_mtime
@@ -343,6 +349,76 @@ namespace VFS
 
     protected:
 	Device *_device;
+    };
+
+    class MountedFilesystem : public Filesystem
+    {
+    public:
+        MountedFilesystem (const char *root)
+            : Filesystem (0), _root (root)
+        {}
+        virtual ~MountedFilesystem() {}
+
+        virtual int init() { return 0; }
+
+        virtual File *open (const char *path, int flags);
+        virtual Dir *opendir (const char *path);
+        
+#ifndef WIN32
+        virtual int mkdir (const char *path) { if (::mkdir (_resolve (path), 0755) < 0) return -errno; return 0; }
+        virtual int rmdir (const char *path) { if (::rmdir (_resolve (path)) < 0) return -errno; return 0; }
+        virtual int unlink (const char *path) { if (::unlink (_resolve (path)) < 0) return -errno; return 0; }
+
+        virtual int rename (const char *Old, const char *New)
+        { if (::rename (_resolve (Old), _resolve (New)) < 0) return -errno; return 0; }
+
+        virtual int link (const char *Old, const char *New)
+        { if (::link (_resolve (Old), _resolve (New)) < 0) return -errno; return 0; }
+
+        virtual int symlink (const char *Old, const char *New)
+        { if (::symlink (Old, _resolve (New)) < 0) return -errno; return 0; }
+
+        virtual int readlink (const char *path, char *buf, int len)
+        { if (::readlink (_resolve (path), buf, len) < 0) return -errno; return 0; }
+
+        virtual int chmod (const char *dest, int mode)
+        { if (::chmod (_resolve (dest), mode) < 0) return -errno; return 0; }
+
+        virtual int chown (const char *dest, int uid, int gid)
+        { if (::chown (_resolve (dest), uid, gid) < 0) return -errno; return 0; }
+
+        virtual int stat (const char *path, struct my_stat *st) {
+            struct stat s;
+            if (::stat (_resolve (path), &s) < 0) return -errno;
+            convert_stat (&s, st);
+            return 0;
+        }
+
+        virtual int lstat (const char *path, struct my_stat *st) {
+            struct stat s;
+            if (::lstat (_resolve (path), &s) < 0) return -errno;
+            convert_stat (&s, st);
+            return 0;
+        }
+#endif
+
+    protected:
+        const char *_root;
+        struct QuickConcatenator 
+        {
+            char *data;
+            QuickConcatenator (const char *first, const char *second) {
+                data = (char *)malloc (strlen (first) + strlen (second) + 1);
+                strcpy (data, first);
+                strcat (data, second);
+            }
+            ~QuickConcatenator() { free (data); }
+            operator const char*() { return data; }
+        };
+        QuickConcatenator _resolve (const char *path) { return QuickConcatenator (_root, path); }
+#ifndef WIN32
+        void convert_stat (struct stat *s, struct my_stat *st);  
+#endif
     };
 };
 

@@ -5,6 +5,7 @@
  */
 
 #include "vfs.h"
+#include "device.h"
 #include <string.h>
 
 #ifndef MIN
@@ -205,4 +206,39 @@ namespace VFS
         }
         return _pos;
     }
+
+    File *MountedFilesystem::open (const char *path, int flags) {
+        int mode = OPEN_READ;
+        if (flags & O_RDWR) mode = OPEN_READ | OPEN_WRITE;
+        if (flags & O_WRONLY) mode = OPEN_WRITE;
+        if (flags & O_CREAT) mode |= OPEN_CREATE;
+        return new LocalFile (_resolve (path), mode);
+    }
+    Dir *MountedFilesystem::opendir (const char *path) {
+        return new LocalDir (_resolve (path));
+    }    
+
+#ifndef WIN32
+    void MountedFilesystem::convert_stat (struct stat *s, struct my_stat *st) {
+        st->st_dev = s->st_dev;
+        st->st_ino = s->st_ino;
+        st->st_mode = s->st_mode;
+        st->st_nlink = s->st_nlink;
+        st->st_uid = s->st_uid;
+        st->st_gid = s->st_gid;
+        st->st_rdev = s->st_rdev;
+        st->st_size = s->st_size;
+        st->st_blksize = s->st_blksize;
+        st->st_blocks = s->st_blocks;
+#ifdef ST_XTIME_ARE_MACROS
+        st->st_atime = s->st_atim.tv_sec;
+        st->st_mtime = s->st_mtim.tv_sec;
+        st->st_ctime = s->st_ctim.tv_sec;
+#else
+        st->st_atime = s->st_atime;
+        st->st_mtime = s->st_mtime;
+        st->st_ctime = s->st_ctime;
+#endif
+    }
+#endif
 }

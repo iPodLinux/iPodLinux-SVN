@@ -125,6 +125,20 @@ int LocalFile::close()
 
 /**************************************************************/
 
+int LocalDir::readdir (struct VFS::dirent *de) 
+{
+    if (!_dp) return 0;
+
+    struct dirent *d = ::readdir (_dp);
+    if (!d) return 0;
+    
+    de->d_ino = 0;
+    strcpy (de->d_name, d->d_name);
+    return sizeof(*de);
+}
+
+/**************************************************************/
+
 LocalRawDevice::LocalRawDevice (int n)
     : BlockDevice()
 {
