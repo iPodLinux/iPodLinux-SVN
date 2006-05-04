@@ -238,8 +238,8 @@ void mpd_widg_icons_draw( struct header_info * hdr, ttk_surface srf )
 	ttk_draw_icon( icon, srf,
 			hdr->widg->x + 2,
 			hdr->widg->y + (hdr->widg->h - icon[1])>>1,
-			ttk_ap_getx( "header.accent" ),
-			ttk_ap_getx( "header.accent" )->color );
+			ttk_ap_getx( "battery.border" ),
+			ttk_ap_getx( "header.bg" )->color );
 }
 
 
@@ -263,31 +263,39 @@ void mpd_widg_progress_update( struct header_info * hdr )
 		mpd_finishCommand(mpdz);
 }
 
-#define WIDG_INSET (2)
+#define WIDG_INSET_X (1)
+#define WIDG_INSET_Y (4)
 void mpd_widg_progress_draw( struct header_info * hdr, ttk_surface srf )
 {
 	mpd_Status * inf = (mpd_Status *)hdr->data;
 
         ttk_ap_fillrect( srf, ttk_ap_get( "slider.bg" ),
-				hdr->widg->x+WIDG_INSET,
-				hdr->widg->y+WIDG_INSET,
-                                hdr->widg->x + hdr->widg->w - (WIDG_INSET*2),
-                                hdr->widg->y + hdr->widg->h - (WIDG_INSET*2) );
+				hdr->widg->x+WIDG_INSET_X,
+				hdr->widg->y+WIDG_INSET_Y,
+                                hdr->widg->x + hdr->widg->w - (WIDG_INSET_X),
+                                hdr->widg->y + hdr->widg->h - (WIDG_INSET_Y) );
 
 	if(    inf->state == MPD_STATUS_STATE_PLAY 
 	    || inf->state == MPD_STATUS_STATE_PAUSE )
 	{
 		int wid = inf->elapsedTime 
-			    * (hdr->widg->w-(WIDG_INSET*2)) 
+			    * (hdr->widg->w-(WIDG_INSET_X*2)) 
 			    / inf->totalTime;
 
 		ttk_ap_fillrect( srf, ttk_ap_get( "slider.full" ),
-				hdr->widg->x + WIDG_INSET,
-				hdr->widg->y + WIDG_INSET,
-                                hdr->widg->x + WIDG_INSET + wid,
+				hdr->widg->x + WIDG_INSET_X,
+				hdr->widg->y + WIDG_INSET_Y,
+                                hdr->widg->x + WIDG_INSET_X + wid,
                                 hdr->widg->y + hdr->widg->h - 
-						(WIDG_INSET*2) );
+						(WIDG_INSET_Y) );
 	} 
+
+	ttk_rect( srf,  hdr->widg->x+WIDG_INSET_X,
+			hdr->widg->y+WIDG_INSET_Y,
+			hdr->widg->x + hdr->widg->w - (WIDG_INSET_X),
+			hdr->widg->y + hdr->widg->h - (WIDG_INSET_Y),
+			ttk_ap_getx( "slider.border" )->color );
+
 }
 
 
