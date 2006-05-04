@@ -237,7 +237,7 @@ void mpd_widg_icons_draw( struct header_info * hdr, ttk_surface srf )
 
 	ttk_draw_icon( icon, srf,
 			hdr->widg->x + 2,
-			hdr->widg->y + (hdr->widg->h - icon[1])>>1,
+			hdr->widg->y + ((hdr->widg->h - icon[1])>>1),
 			ttk_ap_getx( "battery.border" ),
 			ttk_ap_getx( "header.bg" )->color );
 }
