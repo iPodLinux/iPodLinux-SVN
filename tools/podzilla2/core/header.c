@@ -67,11 +67,13 @@ static header_info * headerDecorations = NULL;
 static long zvalue = 0L;
 
 
-/* pz_add_header_widget
+/* int_add_header_widget
 **
 **	registers a widget to be available for the left or right side 
+**	the int_ version is internal; the load settings function needs 
+**	to be called afterwards.
 */
-void pz_add_header_widget( char * widgetDisplayName,
+void int_add_header_widget( char * widgetDisplayName,
 			    update_fcn update_function,
 			    draw_fcn draw_function,
 			    void * data )
@@ -112,12 +114,24 @@ void pz_add_header_widget( char * widgetDisplayName,
 		}
 		h->next = new;
 	}
+}
 
-	/* XXX check settings to see what the settings should be for it */
+/* an externally visible version that also refreshes the settings */
+void pz_add_header_widget( char * widgetDisplayName,
+			    update_fcn update_function,
+			    draw_fcn draw_function,
+			    void * data )
+{
+	/* add it */
+	int_add_header_widget( widgetDisplayName, 
+				update_function, draw_function, data );
+
+	/* refresh settings */
+        pz_header_settings_load();
 }
 
 
-void pz_add_header_decoration( char * decorationDisplayName,
+static void pz_add_header_decoration( char * decorationDisplayName,
 				update_fcn update_function,
 				draw_fcn draw_function,
 				void * data )
@@ -260,7 +274,7 @@ void pz_clear_header_lists( void )
 static char hs[1024];
 
 /* init: retrieves the data out of the pz settings file */
-void header_settings_load( void )
+void pz_header_settings_load( void )
 {
 	header_info * item;
 	char * t = (char *)pz_get_string_setting( 
@@ -1552,23 +1566,23 @@ void pz_header_init()
 	char * t;
 	if( !initted ) {
 		/* register all internal widgets */
-		pz_add_header_widget( "Hold", w_hold_update,
+		int_add_header_widget( "Hold", w_hold_update,
 					w_hold_draw, (void *)NULL );
 
-		pz_add_header_widget( "Load Average",   /* name */
+		int_add_header_widget( "Load Average",   /* name */
 					w_lav_update,   /* update fcn */
 					w_lav_draw,     /* draw fcn */
 					&lav_data );	/* data */
 
-		pz_add_header_widget( "Power Icon", w_powericon_update, 
+		int_add_header_widget( "Power Icon", w_powericon_update, 
 					w_powericon_draw, &the_power_state );
-		pz_add_header_widget( "Power Text", w_powericon_update, 
+		int_add_header_widget( "Power Text", w_powericon_update, 
 					w_powertext_draw, &the_power_state );
 
 #ifdef NEVER_EVER
-		pz_add_header_widget("T1", test_update_widget, 
+		int_add_header_widget("T1", test_update_widget, 
 					test_draw_widget, "T1" );
-		pz_add_header_widget("T2", test_update_widget, 
+		int_add_header_widget("T2", test_update_widget, 
 					test_draw_widget, "T2" );
 #endif
 
@@ -1621,12 +1635,10 @@ void pz_header_init()
 	}
 	initted++;
 
-	/* load in the settings */
-	header_settings_load();
-
-	t = (char *)pz_get_string_setting( pz_global_config, HEADER_WIDGETS );
+	pz_header_settings_load();
 
 	/* if there was no defaults, set these... */
+	t = (char *)pz_get_string_setting( pz_global_config, HEADER_WIDGETS );
 	if( !t || (strlen( t ) <3 ) ){
 		/* and set these up as defaults */
 		pz_enable_widget_on_side( HEADER_SIDE_LEFT, "Hold" );
@@ -1634,7 +1646,7 @@ void pz_header_init()
 		header_settings_save();
 	}
 
-	/* load in the user settings */
+	/* load in the user settings -- redundant? */
 	pz_enable_header_decorations( (char *) 
 		    pz_get_string_setting( pz_global_config, DECORATIONS ));
 
