@@ -313,8 +313,11 @@ void mpd_widg_progress_draw( struct header_info * hdr, ttk_surface srf )
         hdr->widg->w = pz_vector_width( buf, 5, 9 ,1 ) + 4;
 
 	pz_vector_string( srf, buf, 
-			hdr->widg->x + 2,
-			hdr->widg->y + 3,
+			hdr->widg->x + 3, hdr->widg->y + 4,
+			5, 9, 1,
+			pz_dec_ap_get_solid( "header.bg" ));
+	pz_vector_string( srf, buf, 
+			hdr->widg->x + 2, hdr->widg->y + 3,
 			5, 9, 1,
 			pz_dec_ap_get_solid( "header.fg" ));
 }
