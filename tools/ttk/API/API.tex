@@ -1722,7 +1722,7 @@ The number specifies the radius of the quarter-circle with which each corner wil
 1 is just a pixel taken out, and 9 is a very round corner.
 
 Gradients are specified by enclosing two or three color specifications, separated by the word ``to'', in
-\<angle brackets>. For instance, {\tt <#000000 to #aaaaaa to #ffffff} would specify a two-part grayscale
+\<angle brackets>. For instance, {\tt <\#000000 to \#aaaaaa to \#ffffff} would specify a two-part grayscale
 gradient that changes color more rapidly for the first half than for the second. You may specify whether
 a gradient changes color horizontally or vertically by including the keyword {\tt horiz} or {\tt vert} somewhere
 inside the angle brackets; a vertical gradient is the default. Finally, you may specify a solid color in which a
@@ -1734,7 +1734,7 @@ If you specify one value, it will be used for all; if you specify two, the first
 and the second for left/right.
 
 Repeated-area specifications are given by putting a token of the form {\tt WxH+X+Y} in the value for a property;
-this will cause only the area of size $W\timesH$ with its upper-right corner at $(x,y)$ in the image to be repeated
+this will cause only the area of size $W\times H$ with its upper-right corner at $(x,y)$ in the image to be repeated
 to stretch. The ``corners'' of the image will be put into the corners of a rectangle drawn with it; the ``sides''
 will be tiled in one direction; and the ``middle'' will be tiled in both directions.
 
