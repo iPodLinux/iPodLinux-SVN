@@ -129,7 +129,8 @@ static struct vector_polystruct V_alpha[] =
 static struct vector_polystruct V_punctuation[] =
 {
     /* ! */ {8, {PT9, PT1, PT2, PT9, PT26|SKIP, PT29, PT30, PT26}},
-    /* : */ {10, {PT1, 0xc02a, PT4, 0x402a, PT1,  PT9|SKIP, 0xc0d6, PT15, 0x40d6, PT9}},
+    /* : */ {10, {PT1, 0xc02a, PT4, 0x402a, PT1,
+		SKIP | 0x80ab, 0xc0d5, 0x80fc, 0x40d5, 0x80ab}},
     /* / */ {2, {PT14, PT2}},
     /* \ */ {2, {PT16, PT0}},
     /* _ */ {2, {PT14, PT16}},
