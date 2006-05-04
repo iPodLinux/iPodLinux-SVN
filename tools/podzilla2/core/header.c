@@ -1658,6 +1658,7 @@ static int decorations_button( TWidget *this, int button, int time )
 {
 	if( button == TTK_BUTTON_ACTION ) {
 		/* save it out */
+		pz_enable_header_decorations( (char *)ttk_menu_get_selected_item(this)->name );
 		pz_set_string_setting( pz_global_config, DECORATIONS,
 			ttk_menu_get_selected_item(this)->name );
 		return( ttk_menu_button( this, TTK_BUTTON_MENU, 0 ));
