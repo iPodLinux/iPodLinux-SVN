@@ -1270,7 +1270,7 @@ main (int argc, char **argv)
             fw_load_binary (optarg, "osos@");
             break;
         case 'i':
-            fw_load_dumped (optarg, "ososN");
+            fw_load_dumped (optarg, "ososN", 0);
             break;
         case 'l':
             fw_load_binary (optarg, (loadertype == 2)? "lnux" : "ososN");
