@@ -31,25 +31,28 @@ static int cv = 0;
 void deco_update( struct header_info * hdr )
 {
 	if( !hdr || !hdr->widg ) return;
-	cv++;
+	ttk_dirty |= TTK_DIRTY_HEADER;
 }
 
 /* this gets called whenever we need to be redrawn */
 void deco_draw( struct header_info * hdr, ttk_surface srf )
 {
-	int v128 = (cv & 0x63)*2;
-	if( !hdr || !hdr->widg ) return;
+	int i, x, y;
+	ttk_color c = pz_dec_ap_get_solid( "header.accent" );
 
-	/* this doesn't do what i wanted it to do, but it's good enough */
+	if( !hdr || !hdr->widg ) return;
 
 	/* fill the whole thing, to get widget spaces */
 	ttk_fillrect( srf, 0, 0, ttk_screen->w, hdr->widg->h,
-		    ttk_makecol( 64 + v128, 64 + v128, 64 + v128 ));
+			pz_dec_ap_get_solid( "header.bg" ));
 
 	/* now just the title area */
-	ttk_fillrect( srf, hdr->widg->x, 0,
-			hdr->widg->x+hdr->widg->w-1, hdr->widg->h,
-			ttk_makecol( 128 + v128, 128 + v128, 128 + v128 ));
+	for( i=0 ; i<(hdr->widg->w*5) ; i++ )
+	{
+		x=rand() % hdr->widg->w;
+		y=rand() % hdr->widg->h;
+		ttk_pixel( srf, hdr->widg->x + x, hdr->widg->y + y, c );
+	}
 }
 
 
