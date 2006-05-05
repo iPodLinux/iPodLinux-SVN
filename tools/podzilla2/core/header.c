@@ -835,11 +835,11 @@ void dec_draw_3d( ttk_surface srf, int x1, int y1, int x2, int y2, int updown )
 	ttk_color nw, se;
 
 	if( updown == LOWERED ) {
-		se = ttk_ap_get( "header.shine" )->color;
-		nw = ttk_ap_get( "header.shadow" )->color;
+		se = pz_dec_ap_get_solid( "header.shine" );
+		nw = pz_dec_ap_get_solid( "header.shadow" );
 	} else {
-		nw = ttk_ap_get( "header.shine" )->color;
-		se = ttk_ap_get( "header.shadow" )->color;
+		nw = pz_dec_ap_get_solid( "header.shine" );
+		se = pz_dec_ap_get_solid( "header.shadow" );
 	}
 
 	ttk_line( srf, x2, y1, x2, y2, se );
@@ -871,23 +871,26 @@ void dec_draw_Amiga1x( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 		yo = ((float)hdr->widg->h) / 8.0;
 
 		if( WhichAmigaDOS < 20 ) {
-			ttk_ap_fillrect( srf, ttk_ap_get ("header.fg"),
+			ttk_fillrect( srf,  
 					(int) (xo*1),  (int) (yo*1),
-					(int) (xo*7),  (int) (yo*7) );
-			ttk_ap_fillrect( srf, ttk_ap_get ("header.bg"),
+					(int) (xo*7),  (int) (yo*7),
+					pz_dec_ap_get_solid ("header.fg"));
+			ttk_fillrect( srf, 
 					(int) (xo*1.6), (int) (yo*1.6),
-					(int) (xo*6.4), (int) (yo*6.4) );
-			ttk_ap_fillrect (srf, ttk_ap_get ("header.accent"),
+					(int) (xo*6.4), (int) (yo*6.4),
+					pz_dec_ap_get_solid ("header.bg"));
+			ttk_fillrect (srf, 
 					(int) (xo*3.1), (int) (yo*3.1),
-					(int) (xo*4.8), (int) (yo*4.8) );
+					(int) (xo*4.8), (int) (yo*4.8),
+					pz_dec_ap_get_solid ("header.accent"));
 		} else {
 			dec_draw_3d( srf, 0, 0, hdr->widg->h - 1, 
 				hdr->widg->h-1, RAISED );
 
 			ttk_fillrect( srf, xo*3, xo*2, xo*5, xo*6, 
-				ttk_ap_getx( "header.shine" )->color );
+				pz_dec_ap_get_solid( "header.shine" ));
 			ttk_rect( srf, xo*3, xo*2, xo*5, xo*6, 
-				ttk_ap_getx( "header.shadow" )->color );
+				pz_dec_ap_get_solid( "header.shadow" ));
 		}
 
 	} else if( WhichAmigaDOS == 20 ) {
@@ -907,12 +910,14 @@ void dec_draw_Amiga1x( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 	} else if( WhichAmigaDOS == 13 ) {
 		/* 1.3 dragbars */
 		int o = ttk_screen->wy / 4;
-		ttk_ap_fillrect (srf, ttk_ap_get ("header.fg"),
+		ttk_fillrect( srf, 
 			xp1 + o,  o,
-			xp2 - o,  o*2 - 1 );
-		ttk_ap_fillrect (srf, ttk_ap_get ("header.fg"),
+			xp2 - o,  o*2 - 1,
+			pz_dec_ap_get_solid( "header.fg" ));
+		ttk_fillrect( srf,
 			xp1 + o,  hdr->widg->h - o*2 + 1,
-			xp2 - o,  hdr->widg->h - o );
+			xp2 - o,  hdr->widg->h - o,
+			pz_dec_ap_get_solid( "header.fg" ));
 	} else {
 		dec_draw_3d( srf, xp1, 0, xp2, 
 			hdr->widg->h-1, RAISED );
@@ -927,11 +932,11 @@ void dec_draw_Amiga1x( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 		}
 	} else {
 		/* draw vertical separators */
-		ttk_ap_fillrect( srf, ttk_ap_get( "header.fg" ),
-				xp1, 0, xp1+2, hdr->widg->h );
+		ttk_fillrect( srf, xp1, 0, xp1+2, hdr->widg->h,
+				pz_dec_ap_get_solid( "header.fg" ));
 		if( xp2 != ttk_screen->w ) 
-			ttk_ap_fillrect( srf, ttk_ap_get( "header.fg" ),
-				xp2 - 1, 0, xp2 + 1, hdr->widg->h );
+			ttk_fillrect( srf, xp2 - 1, 0, xp2 + 1, hdr->widg->h,
+				pz_dec_ap_get_solid( "header.fg" ));
 	}
 
 	/* blot out the backing for the text */
@@ -951,8 +956,8 @@ void dec_draw_Amiga1x( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 			tx1 = (ttk_screen->w - tw - 5) >> 1;
 			tx2 = tx1 + tw + 5;
 		}
-		ttk_ap_fillrect( srf, ttk_ap_get( "header.bg" ),
-			tx1, 0, tx2, hdr->widg->h );
+		ttk_fillrect( srf, tx1, 0, tx2, hdr->widg->h,
+				pz_dec_ap_get_solid( "header.bg" ));
 	}
 }
 
