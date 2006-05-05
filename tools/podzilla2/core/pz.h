@@ -380,14 +380,29 @@ void pz_enable_widget_on_side( int side, char * name );
 void pz_enable_header_decorations( char * name );
 void pz_force_update_of_widget( char * name );
 void pz_clear_header_lists( void );
+#ifdef NOT_IMPLEMENTED_YET
+void pz_header_widget_set_rate( int seconds, char * name );
+#endif
 
-void pz_header_settings_load( void );
+void pz_header_settings_load( void ); /* force a load of all settings */
 
 /* the list of all available header widgets */
 header_info * headerWidgets;
 /* the list of all available decorations */
 header_info * headerDecorations;
 
+/* for transient widget groups (game stats, etc.) */
+#ifdef NOT_IMPLEMENTED_YET
+int pz_header_group_create( void );
+void pz_header_group_destroy( int group );
+void pz_header_group_activate( int group );
+void pz_header_group_deactivate( int group );
+void pz_header_group_add_widget( char * displayName,
+				update_fcn update_function,
+				draw_fcn draw_function,
+				void * data,
+				int group );
+#endif
 
 /** Dialog and message - dialog.c **/
 extern int (*pz_do_dialog) (const char *title, const char *text,

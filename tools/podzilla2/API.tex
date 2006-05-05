@@ -218,6 +218,13 @@ info structure.  \verb|hdrinfo->widg->w| If you want a square widget
 (the default size) fill \verb|w| with the content of the widget's
 height \verb|hdrinfo->widg->h|.
 
+If you set the width to be zero (0), then the header widget management
+system will behave as though there is no widget.  That is to say
+that if there are two widgets active on one side, with the display
+mode to be ``cycle'', then it will alternate between the two widgets.
+If one of them has a width of 0, then only one widget will display.
+Both widgets' update functions will get called though.
+
 When the system deems that the widget needs to be redrawn, either
 when a header redraw happens, the epoch changes, whatever, then the
 widget's \verb|draw_fcn| will be called.  The wiget must draw on the 
@@ -258,6 +265,8 @@ Some other helpful functions are as follows;
 
 \verb|pz_enable_widget_on_side| forces a widget to appear on a side.
 
+\verb|pz_header_widget_set_rate| sets the rate that the update function will get called.
+
 \verb|pz_enable_header_decorations| likewise switches to a decoration.
 
 \verb|pz_force_update_of_widget| finds and calls a widget's update
@@ -271,9 +280,41 @@ to force an immediate update of the hold icon indicator.
 
 \subsection{Transient Widgets}
 
-Note: this functionality is currently unavailable.  It is being written
-right now, and should be integrated shortly.
+Transient Widgets are those that a module, a game for example, might
+want to enable while the game is running, then remove from the
+header on exit.  For the sake of this explanation, I will assume
+that it is a status or score indicator for a game. There are two
+ways to accomplish this.  The first is using the above mechanisms,
+add in a standard widget, and simply set its width to ``0'' while
+it's not in use.  
 
+The more appropriate way to go is to set up a header group when
+your game starts, and remove it when the game exits.  To do this,
+you make a call to \verb|pz_header_group_create|.  This will return
+a group number, the identifier for the group you just created.  When
+you want to get rid of the widgets as your game exits back to the
+menu system, call \verb|pz_header_group_destroy| to remove all
+references of your group from the system.  This will automatically
+activate the previous group, that is to say, it will reactivate
+\verb|(your new group)-1|
+
+You can manually activate and deactivate header widget groups using
+the \verb|pz_header_group_activate| and \verb|pz_header_group_deactivate|
+functions respectively.
+
+Group zero (0) is always the standard core widgets.  You cannot
+destroy this group, but you can manually reactivate it while your
+game is paused, or whenever you like.
+
+Header groups are exclusive.  A widget can only be in one group, and
+only one group can be displayed at any time.  A group consists of 
+widgets on the left as well as those on the right.  Use the above 
+\verb|pz_enable_widget_on_side| and \verb|pz_header_widget_set_rate| to
+control location and update speed for your added widgets.
+
+You need to add widgets with the \verb|pz_header_group_add_widget|
+function, rather than the above function, so that you can specify
+the group number you're adding your widget into.
 
 \section{Vector Text}
 Since many games and such need text at any number of sizes, and scalable fonts are impractical
