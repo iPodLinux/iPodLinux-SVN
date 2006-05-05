@@ -249,7 +249,8 @@ void pz_menu_init()
     pz_menu_add_setting ("/Settings/Backlight Timer", BACKLIGHT_TIMER, pz_global_config, backlight_options);
     pz_menu_add_setting ("/Settings/Clicker", CLICKER, pz_global_config, 0);
 
-    pz_menu_add_action ("/Settings/Appearance/Color Scheme", pz_select_color_scheme);
+    item = pz_menu_add_action ("/Settings/Appearance/Color Scheme", pz_select_color_scheme);
+    item->flags |= TTK_MENU_ICON_SUB;
 
 
     /* select from the available widgets */
@@ -298,8 +299,12 @@ void pz_menu_init()
 		TITLE_JUSTIFY, pz_global_config, title_justifications);
 
     pz_menu_add_setting ("/Settings/Appearance/Menu Transition", SLIDE_TRANSIT, pz_global_config, transit_options);
-    pz_menu_add_ttkh ("/Settings/Appearance/Menu Font", pz_select_font, &ttk_menufont)->cdata = MENU_FONT;
-    pz_menu_add_ttkh ("/Settings/Appearance/Text Font", pz_select_font, &ttk_textfont)->cdata = TEXT_FONT;
+    item = pz_menu_add_ttkh ("/Settings/Appearance/Menu Font", pz_select_font, &ttk_menufont);
+    item->cdata = MENU_FONT;;
+    item->flags |= TTK_MENU_ICON_SUB;
+    item = pz_menu_add_ttkh ("/Settings/Appearance/Text Font", pz_select_font, &ttk_textfont);
+    item->cdata |= TEXT_FONT;
+    item->flags |= TTK_MENU_ICON_SUB;
     pz_menu_add_setting ("/Settings/Verbosity", VERBOSITY, pz_global_config, verbosity_options);
     pz_menu_add_setting ("/Settings/Browser Path Display", BROWSER_PATH, pz_global_config, 0);
     pz_menu_add_setting ("/Settings/Browser Show Hidden", BROWSER_HIDDEN, pz_global_config, 0);
