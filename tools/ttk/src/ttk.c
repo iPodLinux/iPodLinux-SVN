@@ -397,6 +397,9 @@ static int do_timers (TWidget *wid, int tick)
 static int do_draw (TWidget *wid, int force) 
 {
     if (wid->dirty || force) {
+        if (!force)
+            ttk_fillrect (wid->win->srf, wid->x, wid->y, wid->x + wid->w, wid->y + wid->h,
+                          ttk_makecol (CKEY));
         if (wid->win)
             wid->draw (wid, wid->win->srf);
         else
