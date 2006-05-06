@@ -16,6 +16,15 @@
  * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+/* issues/hackiness with the current design:
+	- timeouts should be stored as milliseconds, not references 
+		into an arbitrary array
+	- resolution should go to 250ms, rather than 1000ms (1s)
+	- the left/right selection should be more streamlined
+		- work the information (rate, countdown, etc) into a sub
+		  structure, so it can be referenced like an array
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -35,6 +44,7 @@ extern int pz_hold_is_on;
 
 static TWidget *headerBar = 0;
 
+static int transientGroup = 1;
 
 /* these need to correspond directly to their counterparts in menu.c */
 static int ratesecs[] = { 1, 2, 5, 10, 15, 30, 60, -1 };
@@ -84,6 +94,7 @@ void int_add_header_widget( char * widgetDisplayName,
 		return;
 	}
 	new->side = 0;
+	new->group = 0;
 	new->LZorder = zvalue++;
 	new->RZorder = zvalue++;
 	new->LURate = WIDGET_UPDATE_DISABLED;
@@ -142,6 +153,7 @@ void pz_add_header_decoration( char * decorationDisplayName,
 		return;
 	}
 	new->widg = NULL;
+	new->group = 0;
 	new->side = 0;
 	new->LZorder = -1;
 	new->RZorder = -1;
@@ -265,6 +277,31 @@ void pz_clear_header_lists( void )
 		free( t );
 		t = n;
 	}
+}
+
+void pz_header_widget_set_rate( int milliseconds, char * name )
+{
+	int seconds = milliseconds/1000;
+	header_info * item = find_header_item( headerWidgets, name );
+
+	if( !item ) return;
+
+	/* since we store an index, not the actual value, we need to do this: */
+
+	if( seconds < 2 ) {
+		item->LURate = item->RURate = 0;
+	} else if( seconds < 5 ) {
+		item->LURate = item->RURate = 1;
+	} else if( seconds < 10 ) {
+		item->LURate = item->RURate = 2;
+	} else if( seconds < 15 ) {
+		item->LURate = item->RURate = 3;
+	} else if( seconds < 30 ) {
+		item->LURate = item->RURate = 4;
+	} else if( seconds < 60 ) {
+		item->LURate = item->RURate = 5;
+	} else 
+		item->LURate = item->RURate = 6;
 }
 
 
@@ -680,6 +717,43 @@ static TWidget *new_headerBar_widget()
 	return ret;
 }
 
+
+/* ********************************************************************** */ 
+/* Transient widget functions */
+
+int pz_header_group_create( void )
+{
+	return( transientGroup++ );
+}
+
+void pz_header_group_destroy( int group )
+{
+	/* iterate over the list, looking for the group number */
+	/* when found, eliminate the node */
+}
+
+void pz_header_group_activate( int group )
+{
+	/* for every item
+		if in the group, set side |= appropriate side
+	*/
+}
+
+void pz_header_group_deactivate( int group )
+{
+	/* for every item
+		if in the group, set side = 0
+	*/
+}
+
+void pz_header_group_add_widget( char * displayName,
+                                update_fcn update_function,
+                                draw_fcn draw_function,
+                                void * data,
+                                int group )
+{
+	/* call the above add widget function, but with the group setting */
+}
 
 
 /* ********************************************************************** */ 

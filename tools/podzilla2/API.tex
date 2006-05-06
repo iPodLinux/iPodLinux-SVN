@@ -203,7 +203,7 @@ There are a few functions for interacting with the header widget
 and header decorations system.
 
 Widgets can be on the left side, on the right side, or both.  Each
-widget has an independant setting for the rate at which (in seconds)
+widget has an independant setting for the rate at which 
 it is to be updated.  At this interval, the widget's \verb|update_fcn|
 is called.  For a prototype of this, refer to the pz.h file, or an
 example which can be found in the header clock module.  This function
@@ -265,7 +265,12 @@ Some other helpful functions are as follows;
 
 \verb|pz_enable_widget_on_side| forces a widget to appear on a side.
 
-\verb|pz_header_widget_set_rate| sets the rate that the update function will get called.
+\verb|pz_header_widget_set_rate| sets the rate in milliseconds that
+the update function will get called. NOTE, that some versions might
+not observe this exactly.  3300ms might result in a 2000ms update
+rate, since early versions support rates of 1, 2, 5, 10, 15, 30,
+and 60 seconds.  This call will pick the most appropriate value
+without going over.
 
 \verb|pz_enable_header_decorations| likewise switches to a decoration.
 
@@ -300,7 +305,7 @@ activate the previous group, that is to say, it will reactivate
 
 You can manually activate and deactivate header widget groups using
 the \verb|pz_header_group_activate| and \verb|pz_header_group_deactivate|
-functions respectively.
+functions respectively.  Activate will not deactivate any other groups.
 
 Group zero (0) is always the standard core widgets.  You cannot
 destroy this group, but you can manually reactivate it while your
