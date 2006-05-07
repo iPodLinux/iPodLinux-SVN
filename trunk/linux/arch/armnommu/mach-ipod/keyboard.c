@@ -316,7 +316,7 @@ static void keyboard_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 		}
 #if !defined(DO_CONTRAST)
 		else {
-			handle_scancode (BTN_PLAY, 1);
+			ikb_handle_button (BTN_PLAY, 1);
 		}
 #endif
 	}
@@ -325,12 +325,12 @@ static void keyboard_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 #if defined(DO_SCROLLBACK)
 			scrollback(0);
 #else
-			handle_scancode (BTN_PREVIOUS, 0);
+			ikb_handle_button (BTN_PREVIOUS, 0);
 #endif
 		}
 #if !defined(DO_SCROLLBACK)
 		else {
-			handle_scancode (BTN_PREVIOUS, 1);
+			ikb_handle_button (BTN_PREVIOUS, 1);
 		}
 #endif
 	}
@@ -339,12 +339,12 @@ static void keyboard_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 #if defined(DO_CONTRAST)
 			contrast_up();
 #else
-			handle_scancode (BTN_MENU, 0);
+			ikb_handle_button (BTN_MENU, 0);
 #endif
 		}
 #if !defined(DO_CONTRAST)
 		else {
-			handle_scancode (BTN_MENU, 1);
+			ikb_handle_button (BTN_MENU, 1);
 		}
 #endif
 	}
