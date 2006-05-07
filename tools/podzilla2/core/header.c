@@ -86,7 +86,8 @@ static long zvalue = 0L;
 void int_add_header_widget( char * widgetDisplayName,
 			    update_fcn update_function,
 			    draw_fcn draw_function,
-			    void * data )
+			    void * data,
+			    int group )
 {
 	header_info * new = (header_info *)malloc( sizeof( header_info ));
 	if( !new ) {
@@ -94,7 +95,7 @@ void int_add_header_widget( char * widgetDisplayName,
 		return;
 	}
 	new->side = 0;
-	new->group = 0;
+	new->group = group;
 	new->LZorder = zvalue++;
 	new->RZorder = zvalue++;
 	new->LURate = WIDGET_UPDATE_DISABLED;
@@ -135,7 +136,7 @@ void pz_add_header_widget( char * widgetDisplayName,
 {
 	/* add it */
 	int_add_header_widget( widgetDisplayName, 
-				update_function, draw_function, data );
+				update_function, draw_function, data, 0 );
 
 	/* refresh settings */
         pz_header_settings_load();
@@ -728,22 +729,76 @@ int pz_header_group_create( void )
 
 void pz_header_group_destroy( int group )
 {
+	header_info * curr = headerWidgets;
+	header_info * prev = NULL;
+	header_info * next = NULL;
+
+	/* make sure that we're not getting rid of the core group */
+	if( group <= 0 ) return;
+
 	/* iterate over the list, looking for the group number */
 	/* when found, eliminate the node */
+
+	while( curr ) {
+		next = curr->next;
+
+		if( curr->group == group ) {
+			if( prev ) {
+				prev->next = next;
+			} else {
+				headerWidgets = next;
+			}
+			free( curr );
+		} else {
+			prev = curr;
+		}
+
+		curr = next;
+	}
 }
 
 void pz_header_group_activate( int group )
 {
+	header_info * w = headerWidgets;
+
 	/* for every item
 		if in the group, set side |= appropriate side
 	*/
+	while( w ) {
+		if( w->group == group )
+		{
+			if( w->LURate != WIDGET_UPDATE_DISABLED ) {
+				w->side |= HEADER_SIDE_LEFT;
+			}
+
+			if( w->RURate != WIDGET_UPDATE_DISABLED ) {
+				w->side |= HEADER_SIDE_RIGHT;
+			}
+		}
+		w = w->next;
+	}
 }
 
 void pz_header_group_deactivate( int group )
 {
+	header_info * w = headerWidgets;
+
 	/* for every item
 		if in the group, set side = 0
 	*/
+	while( w ) {
+		if( w->group == group )
+		{
+			if( w->LURate != WIDGET_UPDATE_DISABLED ) {
+				w->side &= ~HEADER_SIDE_LEFT;
+			}
+
+			if( w->RURate != WIDGET_UPDATE_DISABLED ) {
+				w->side &= ~HEADER_SIDE_RIGHT;
+			}
+		}
+		w = w->next;
+	}
 }
 
 void pz_header_group_add_widget( char * displayName,
@@ -753,6 +808,8 @@ void pz_header_group_add_widget( char * displayName,
                                 int group )
 {
 	/* call the above add widget function, but with the group setting */
+	int_add_header_widget( displayName, update_function, draw_function,
+			    data, group);
 }
 
 
@@ -1648,23 +1705,24 @@ void pz_header_init()
 	if( !initted ) {
 		/* register all internal widgets */
 		int_add_header_widget( "Hold", w_hold_update,
-					w_hold_draw, (void *)NULL );
+					w_hold_draw, (void *)NULL, 0 );
 
 		int_add_header_widget( "Load Average",   /* name */
 					w_lav_update,   /* update fcn */
 					w_lav_draw,     /* draw fcn */
-					&lav_data );	/* data */
+					&lav_data,	/* data */
+					0 );		/* group */
 
 		int_add_header_widget( "Power Icon", w_powericon_update, 
-					w_powericon_draw, &the_power_state );
+					w_powericon_draw, &the_power_state, 0 );
 		int_add_header_widget( "Power Text", w_powericon_update, 
-					w_powertext_draw, &the_power_state );
+					w_powertext_draw, &the_power_state, 0 );
 
 #ifdef NEVER_EVER
 		int_add_header_widget("T1", test_update_widget, 
-					test_draw_widget, "T1" );
+					test_draw_widget, "T1", 0 );
 		int_add_header_widget("T2", test_update_widget, 
-					test_draw_widget, "T2" );
+					test_draw_widget, "T2", 0 );
 #endif
 
 		/* register all internal decorations */
