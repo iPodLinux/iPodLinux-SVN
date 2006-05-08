@@ -23,6 +23,7 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QDir>
+#include <QTimer>
 
 #include <ctype.h>
 #ifndef DONT_HAVE_LIBCRYPTO
@@ -389,6 +390,7 @@ PackagesPage::PackagesPage (Installer *wiz, bool atm)
     
     if (QFile::exists (InstallerHome + "/packages.ipl")) {
         loadExternalPackageList (InstallerHome + "/packages.ipl", false);
+        QTimer::singleShot (0, this, SLOT(done()));
     } else {
         packlistHTTP = new QHttp;
         packlistHTTP->setHost ("ipodlinux.org", 80);
@@ -743,58 +745,63 @@ void PackagesPage::httpDone (bool err)
             errored = true;
         }
     } else {
-        if (!automatic) {
-            blurb->setText (tr ("<p>Here you may select packages to install for iPodLinux. Check the boxes "
-                                "next to each package you would like to install.</p>"));
-            progressStmt->hide();
-        }
-            
-        QList<QTreeWidgetItem *> provlist = packages->findItems ("Packages providing `[0-9A-Za-z._-]+'",
-                                                                 Qt::MatchRegExp | Qt::MatchRecursive);
-        QListIterator<QTreeWidgetItem *> provit (provlist);
-        while (provit.hasNext()) {
-            QTreeWidgetItem *item = provit.next();
-            switch (item->childCount()) {
-            case 1:
-                if (item->parent())
-                    item->parent()->insertChild (item->parent()->indexOfChild (item), item->takeChild (0));
-                else
-                    packages->insertTopLevelItem (packages->indexOfTopLevelItem (item), item->takeChild (0));
-                /* FALLTHRU */
-            case 0:
-                packages->takeTopLevelItem (packages->indexOfTopLevelItem (item));
-                delete item;
-                break;
-            default:
-                break;
-            }
-        }
-
-        QList <QTreeWidgetItem *> allItems = packages->findItems (".*", Qt::MatchRegExp | Qt::MatchRecursive);
-        QListIterator <QTreeWidgetItem *> it (allItems);
-
-        while (it.hasNext()) {
-            QTreeWidgetItem *i = it.next();
-            PkgTreeWidgetItem *item;
-            if ((item = dynamic_cast<PkgTreeWidgetItem *>(i)) != 0) {
-                item->package().readPackingList (iPodLinuxPartitionDevice);
-                if (item->package().selected()) item->select();
-                else if (item->package().required() && (!item->isProv() || !item->parent())) item->select();
-                // XXX this is a rather silly special case, but I was too lazy to do a whole
-                // "default if certain iPod gens" thing.
-                if ((Mode == StandardInstall || Mode == AdvancedInstall) &&
-                    item->package().name() == "pzmodules" && iPodVersion == 0xB) item->select();
-            }
-        }
-
-        if (!automatic) {
-            packages->show();
-            loadpkg->show();
-        }
-        advok = true;
-        emit completeStateChanged();
-        if (automatic) wizard->clickNextButton();
+        done();
     }
+}
+
+void PackagesPage::done() 
+{
+    if (!automatic) {
+        blurb->setText (tr ("<p>Here you may select packages to install for iPodLinux. Check the boxes "
+                            "next to each package you would like to install.</p>"));
+        progressStmt->hide();
+    }
+    
+    QList<QTreeWidgetItem *> provlist = packages->findItems ("Packages providing `[0-9A-Za-z._-]+'",
+                                                             Qt::MatchRegExp | Qt::MatchRecursive);
+    QListIterator<QTreeWidgetItem *> provit (provlist);
+    while (provit.hasNext()) {
+        QTreeWidgetItem *item = provit.next();
+        switch (item->childCount()) {
+        case 1:
+            if (item->parent())
+                    item->parent()->insertChild (item->parent()->indexOfChild (item), item->takeChild (0));
+            else
+                packages->insertTopLevelItem (packages->indexOfTopLevelItem (item), item->takeChild (0));
+            /* FALLTHRU */
+        case 0:
+            packages->takeTopLevelItem (packages->indexOfTopLevelItem (item));
+            delete item;
+            break;
+        default:
+            break;
+        }
+    }
+    
+    QList <QTreeWidgetItem *> allItems = packages->findItems (".*", Qt::MatchRegExp | Qt::MatchRecursive);
+    QListIterator <QTreeWidgetItem *> it (allItems);
+    
+    while (it.hasNext()) {
+        QTreeWidgetItem *i = it.next();
+        PkgTreeWidgetItem *item;
+        if ((item = dynamic_cast<PkgTreeWidgetItem *>(i)) != 0) {
+            item->package().readPackingList (iPodLinuxPartitionDevice);
+            if (item->package().selected()) item->select();
+            else if (item->package().required() && (!item->isProv() || !item->parent())) item->select();
+            // XXX this is a rather silly special case, but I was too lazy to do a whole
+            // "default if certain iPod gens" thing.
+            if ((Mode == StandardInstall || Mode == AdvancedInstall) &&
+                item->package().name() == "pzmodules" && iPodVersion == 0xB) item->select();
+        }
+    }
+    
+    if (!automatic) {
+        packages->show();
+        loadpkg->show();
+    }
+    advok = true;
+    emit completeStateChanged();
+    if (automatic) wizard->clickNextButton();
 }
 
 void PackagesPage::httpResponseHeaderReceived (const QHttpResponseHeader& resp) 

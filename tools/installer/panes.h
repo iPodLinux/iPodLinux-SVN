@@ -139,6 +139,7 @@ protected slots:
     void httpRequestFinished (int req, bool err);
     void httpDone (bool err);
     void httpResponseHeaderReceived (const QHttpResponseHeader& resp);
+    void done();
     void listClicked (QTreeWidgetItem *item, int column);
     void itemCollapsed (QTreeWidgetItem *item);
     void itemExpanded (QTreeWidgetItem *item);
