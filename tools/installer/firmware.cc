@@ -146,7 +146,7 @@ void FirmwareRecreateAction::run_sub()
         if (iPodLinuxPartitionFS->stat ("/loader.bin", &st) >= 0 || !updating)
             fw_load_binary (make_device_name (iPodLocation, 3, "loader.bin"), "osos@");
         if (iPodLinuxPartitionFS->stat ("/linux.bin", &st) >= 0 || !updating)
-            fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "lnux");
+            fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "linx");
         break;
     case UnknownLoader:
         fw_file = strdup (make_device_name (iPodLocation, 1));
@@ -163,7 +163,7 @@ void FirmwareRecreateAction::run_sub()
         }
 
         // Is it an L1?
-        if (fw_find_image ("osos@") && !fw_find_image ("lnux")) {
+        if (fw_find_image ("osos@") && !fw_find_image ("linx")) {
             if (iPodLinuxPartitionFS->stat ("/loader.bin", &st) >= 0 || !updating)
                 fw_load_binary (make_device_name (iPodLocation, 3, "loader.bin"), "osos@");
 
@@ -181,15 +181,15 @@ void FirmwareRecreateAction::run_sub()
             } else {
                 // Non-Linuxed Loader2, probably
                 if (iPodLinuxPartitionFS->stat ("/linux.bin", &st) >= 0 || !updating)
-                    fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "lnux");
+                    fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "linx");
                 iPodLoader = Loader2;
             }
-        } else if (fw_find_image ("lnux")) {
+        } else if (fw_find_image ("linx")) {
             // L2
             if (iPodLinuxPartitionFS->stat ("/loader.bin", &st) >= 0 || !updating)
                 fw_load_binary (make_device_name (iPodLocation, 3, "loader.bin"), "osos@");
             if (iPodLinuxPartitionFS->stat ("/linux.bin", &st) >= 0 || !updating)
-                fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "lnux");
+                fw_load_binary (make_device_name (iPodLocation, 3, "linux.bin"), "linx");
             iPodLoader = Loader2;
         } else {
             // Something odd
@@ -292,13 +292,13 @@ void ChangeLoaderAction::run()
         // osos0 <-> osos1
         fw_rename_image ("osos0", "osos1");
     } else if (_old == Loader2) {
-        // lnux -> osos1, then swap osos0 and osos1 if necessary
-        fw_rename_image ("lnux", "osos1");
+        // linx -> osos1, then swap osos0 and osos1 if necessary
+        fw_rename_image ("linx", "osos1");
         if (_new == Loader1Linux)
             fw_rename_image ("osos1", "osos0");
     } else {
-        // osos0 or osos1 -> lnux, then swap osos0 and osos1 if necessary
-        fw_rename_image ((_old == Loader1Linux)? "osos1" : "osos0", "lnux");
+        // osos0 or osos1 -> linx, then swap osos0 and osos1 if necessary
+        fw_rename_image ((_old == Loader1Linux)? "osos1" : "osos0", "linx");
         if (_old == Loader1Linux)
             fw_rename_image ("osos1", "osos0");
     }
