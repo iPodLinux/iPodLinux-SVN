@@ -880,7 +880,7 @@ fw_load_unknown (const char *id, const char *filename)
             if (verbose >= 2) printf ("%s: seems to be a LOADER\n", filename);
         } else if (!memcmp (magic, "\xfe\x1f\x00\xea", 4)) { /* b +0x7ffc (to 0x8000)    @ the kernel */
             type = Binary;
-            id = (loadertype == 2)? "lnux" : "ososN";
+            id = (loadertype == 2)? "linx" : "ososN";
             if (verbose >= 2) printf ("%s: seems to be a KERNEL\n", filename);
         } else {
             fprintf (stderr, "%s: can't figure out whether it's a loader or kernel.", filename);
@@ -1273,7 +1273,7 @@ main (int argc, char **argv)
             fw_load_dumped (optarg, "ososN", 0);
             break;
         case 'l':
-            fw_load_binary (optarg, (loadertype == 2)? "lnux" : "ososN");
+            fw_load_binary (optarg, (loadertype == 2)? "linx" : "ososN");
             break;
 
         case 'n': {
