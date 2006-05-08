@@ -142,9 +142,10 @@ protected slots:
     void listClicked (QTreeWidgetItem *item, int column);
     void itemCollapsed (QTreeWidgetItem *item);
     void itemExpanded (QTreeWidgetItem *item);
-    void loadExternalPackageList();
+    void doLoadExtraPackageList();
 
 protected:
+    void loadExternalPackageList (QString filename, bool markBold);
     Package *parsePackageListLine (QString line, bool makeBold = false);
     
 private:

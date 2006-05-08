@@ -386,31 +386,40 @@ PackagesPage::PackagesPage (Installer *wiz, bool atm)
     if (automatic)
         layout->addStretch (1);
     setLayout (layout);
-
-    packlistHTTP = new QHttp;
-    packlistHTTP->setHost ("ipodlinux.org", 80);
-    host = "ipodlinux.org";
-    connect (packlistHTTP, SIGNAL(dataSendProgress(int, int)), this, SLOT(httpSendProgress(int, int)));
-    connect (packlistHTTP, SIGNAL(dataReadProgress(int, int)), this, SLOT(httpReadProgress(int, int)));
-    connect (packlistHTTP, SIGNAL(stateChanged(int)), this, SLOT(httpStateChanged(int)));
-    connect (packlistHTTP, SIGNAL(requestFinished(int, bool)), this, SLOT(httpRequestFinished(int, bool)));
-    connect (packlistHTTP, SIGNAL(done(bool)), this, SLOT(httpDone(bool)));
-    connect (packlistHTTP, SIGNAL(responseHeaderReceived(const QHttpResponseHeader&)),
-             this, SLOT(httpResponseHeaderReceived(const QHttpResponseHeader&)));
-    packlistHTTP->get ("/iPodLinux:Installation_sources?action=raw");
+    
+    if (QFile::exists (InstallerHome + "/packages.ipl")) {
+        loadExternalPackageList (InstallerHome + "/packages.ipl", false);
+    } else {
+        packlistHTTP = new QHttp;
+        packlistHTTP->setHost ("ipodlinux.org", 80);
+        host = "ipodlinux.org";
+        connect (packlistHTTP, SIGNAL(dataSendProgress(int, int)), this, SLOT(httpSendProgress(int, int)));
+        connect (packlistHTTP, SIGNAL(dataReadProgress(int, int)), this, SLOT(httpReadProgress(int, int)));
+        connect (packlistHTTP, SIGNAL(stateChanged(int)), this, SLOT(httpStateChanged(int)));
+        connect (packlistHTTP, SIGNAL(requestFinished(int, bool)), this, SLOT(httpRequestFinished(int, bool)));
+        connect (packlistHTTP, SIGNAL(done(bool)), this, SLOT(httpDone(bool)));
+        connect (packlistHTTP, SIGNAL(responseHeaderReceived(const QHttpResponseHeader&)),
+                 this, SLOT(httpResponseHeaderReceived(const QHttpResponseHeader&)));
+        packlistHTTP->get ("/iPodLinux:Installation_sources?action=raw");
+    }
 }
 
-void PackagesPage::loadExternalPackageList() 
+void PackagesPage::doLoadExtraPackageList() 
 {
     QString filename = QFileDialog::getOpenFileName (this, "Choose a package list to load:",
                                                      QString(), "iPodLinux package lists (*.ipl)");
     if (filename == "") return;
 
+    loadExternalPackageList (filename, true);
+}
+
+void PackagesPage::loadExternalPackageList (QString filename, bool markBold) 
+{
     QFile pkglist (filename);
     if (!pkglist.open (QIODevice::ReadOnly)) {
         QMessageBox::critical (this, tr ("Error opening package list"),
                                tr ("Could not open %1 for reading: %2").arg (filename).arg (pkglist.errorString()),
-                               tr ("Ok"));
+                               tr ("Cancel"));
         return;
     }
 
@@ -422,7 +431,7 @@ void PackagesPage::loadExternalPackageList()
     QByteArray bline;
     while (!pkglist.atEnd() && !(bline = pkglist.readLine()).isNull()) {
         QString line = bline;
-        Package *pkgp = parsePackageListLine (line, true);
+        Package *pkgp = parsePackageListLine (line, markBold);
         if (pkgp) { // munge URLs and such to be relative to the filename
             pkgp->url() = pkglistdir.absoluteFilePath (pkgp->url());
         }
@@ -512,20 +521,10 @@ void PackagesPage::httpRequestFinished (int req, bool err)
             QStringListIterator it (lines);
             while (it.hasNext()) {
                 QString line = it.next();
-                QRegExp irx ("\\s*<<\\s*(\\S+)\\s*>>\\s*");
                 QRegExp vrx ("\\s*[Vv]ersion\\s+(\\d+)\\s*");
                 QRegExp nrx ("\\s*[Ii]nstaller\\s+([0-9A-Za-z.-]+)\\s*");
 
-                if (irx.exactMatch (line)) {
-                    QUrl url (irx.cap (1));
-                    if (!url.isValid()) {
-                        qWarning ("Invalid URL in package list: |%s|", irx.cap (1).toAscii().data());
-                    } else {
-                        host = url.host();
-                        packlistHTTP->setHost (url.host(), (url.port() > 0)? url.port() : 80);
-                        packlistHTTP->get (url.toString (QUrl::RemoveScheme | QUrl::RemoveAuthority));
-                    }
-                } else if (vrx.exactMatch (line)) {
+                if (vrx.exactMatch (line)) {
                     if (vrx.cap (1).toInt() != INSTALLER_PACKAGE_VERSION) {
                         if (!errored) {
                             progressStmt->setText (QString (tr ("<b><font color=\"red\">Error: Invalid "
@@ -584,6 +583,22 @@ Package *PackagesPage::parsePackageListLine (QString line, bool makeBold)
             ((PkgTreeWidgetItem *)pkglist[0])->select();
         }
         return 0;
+    }
+
+    QRegExp irx ("\\s*<<\\s*(\\S+)\\s*>>\\s*");
+    if (irx.exactMatch (line)) {
+        if (irx.cap (1).contains ("://")) {
+            QUrl url (irx.cap (1));
+            if (!url.isValid()) {
+                qWarning ("Invalid URL in package list: |%s|", irx.cap (1).toAscii().data());
+            } else {
+                host = url.host();
+                packlistHTTP->setHost (url.host(), (url.port() > 0)? url.port() : 80);
+                packlistHTTP->get (url.toString (QUrl::RemoveScheme | QUrl::RemoveAuthority));
+            }
+        } else {
+            loadExternalPackageList (irx.cap (1), makeBold);
+        }
     }
 
     Package *pkgp = new Package (line);
@@ -668,11 +683,42 @@ Package *PackagesPage::parsePackageListLine (QString line, bool makeBold)
             QString dir = pkg.url();
             dir.truncate (dir.lastIndexOf ('/'));
             if (dir.contains ("://")) {
+                // it's a URL; get a directory listing. It'll be parsed in httpRequestFinished.
                 QUrl url (dir);
                 host = url.host();
                 packlistHTTP->setHost (url.host(), (url.port() > 0)? url.port() : 80);
                 resolvers [packlistHTTP->get (url.toString (QUrl::RemoveScheme |
                                                             QUrl::RemoveAuthority))] = twi;
+            } else {
+                QDir pkgdir (dir);
+                QString pat = pkg.url();
+                pat.remove (0, pat.lastIndexOf ('/') + 1);
+                if (pat.contains ("YYYYMMDD"))
+                    pat.replace ("YYYYMMDD", "([0-9][0-9][0-9][0-9]-?[0-9][0-9]-?[0-9][0-9])");
+                if (pat.contains ("NNN"))
+                    pat.replace ("NNN", "([0-9][0-9][0-9][0-9]?[0-9]?)");
+                
+                QRegExp rx (pat);
+                QStringList files = pkgdir.entryList();
+                QStringListIterator it (files);
+                QString cap = "";
+                while (it.hasNext()) {
+                    QString file = it.next();
+                    if (rx.exactMatch (file) >= 0)
+                        cap = rx.cap(1);
+                }
+                if (cap != "") {
+                    pkg.version().replace ("YYYYMMDD", cap);
+                    pkg.version().replace ("NNN", cap);
+                    pkg.url().replace ("YYYYMMDD", cap);
+                    pkg.url().replace ("NNN", cap);
+                    pkg.subfile().replace ("YYYYMMDD", cap);
+                    pkg.subfile().replace ("NNN", cap);
+                }
+
+                QList <QTreeWidgetItem *> items =
+                    packages->findItems (pkg.name(), Qt::MatchRecursive | Qt::MatchExactly);                
+                if (items.size()) ((PkgTreeWidgetItem *)items[0])->update();
             }
         }
     } else if (Mode == ChangeLoader && pkg.type() == Package::Loader) {
