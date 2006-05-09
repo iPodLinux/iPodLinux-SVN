@@ -1,5 +1,6 @@
 #include "bootloader.h"
 #include "fb.h"
+#define INCLUDE_FONT_DATA
 #include "console.h"
 #include "minilibc.h"
 #include "ipodhw.h"
