@@ -512,6 +512,12 @@ char  *mlc_strncpy(char *dest,const char *src,size_t count) {
 	else      return(0x00);
 }
 
+/* gcc emits code that calls memcpy() */
+void *memcpy (void *dest, const void *src, size_t n) 
+{
+    return mlc_memcpy (dest, src, n);
+}
+
 void *mlc_memcpy(void *dest, const void *src, size_t n) {
   // rewrite by TT 31Mar06, taking odd dest into account
 
