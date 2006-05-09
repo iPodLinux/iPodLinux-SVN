@@ -7,7 +7,10 @@
 #define FONT_LG_HEIGHT  16
 #define FONT_LG_BINSIZE 16*128
 
-static const uint8 font_large[FONT_LG_BINSIZE + 2] = { 8, 16,
+#ifndef INCLUDE_FONT_DATA
+extern const uint8 font_large[];
+#else
+const uint8 font_large[FONT_LG_BINSIZE + 2] = { 8, 16,
 
 	/* 0 0x00 '^@' */
 	0x00, /* 00000000 */
@@ -2313,5 +2316,6 @@ static const uint8 font_large[FONT_LG_BINSIZE + 2] = { 8, 16,
 	0x00, /* 00000000 */
 	0x00, /* 00000000 */
 };
+#endif
 
 #endif
