@@ -4,10 +4,11 @@
 
 CROSS    ?= arm-uclinux-elf-
 CC        = $(CROSS)gcc
-MYCFLAGS  = -O2 -Wall -std=gnu99 -ffreestanding -nostdinc -fomit-frame-pointer
+LD        = $(CROSS)ld
+MYCFLAGS  = -Os -Wall -std=gnu99 -ffreestanding -nostdinc -fomit-frame-pointer
 # -DDEBUG
-MYCPPFLAGS= -O2 -Wall -nostdinc -fomit-frame-pointer -mstructure-size-boundary=8
-MYLDFLAGS = -Wl,-Tarm_elf_40.x -nostartfiles -fomit-frame-pointer
+MYCPPFLAGS= -Os -Wall -nostdinc -fomit-frame-pointer -mstructure-size-boundary=8
+MYLDFLAGS = -Tarm_elf_40.x `$(CC) -print-libgcc-file-name`
 OBJCOPY   = $(CROSS)objcopy
 
 OBJFILES = startup.o loader.o fb.o ipodhw.o console.o minilibc.o ata2.o vfs.o fat32.o ext2.o fwfs.o keypad.o menu.o config.o macpartitions.o
@@ -26,7 +27,8 @@ loader.bin: loader.elf
 
 loader.elf: $(OBJFILES)
 	@echo "Linking $@"
-	@$(CC) $(MYLDFLAGS) $(LDFLAGS) -o $@ $^
+	@$(LD) -o $@ $^ $(MYLDFLAGS)
+#	@$(CC) $(MYLDFLAGS) $(LDFLAGS) -o $@ $^
 
 %.o:%.cc
 	@echo "Compiling $<"
