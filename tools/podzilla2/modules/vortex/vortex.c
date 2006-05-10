@@ -793,6 +793,7 @@ ttk_color mc_color( cr, cg, cb,  mr, mg, mb )
 void init_vortex() 
 {
 	int p,q;
+	int i;
 
 	/* internal module name */
 	vglob.module = pz_register_module ("vortex", cleanup_vortex);
@@ -852,15 +853,45 @@ void init_vortex()
 	vglob.usableH   = ttk_screen->h - ttk_screen->wy;
 #endif
 
-	/* flip all of the Y pixels. */
+	/* scale the tubes appropriately */
 	for( p=0 ; p<NLEVELS ; p++ )
 	{
-		/* web pixels... */
-	    	for( q=0 ; q<16 ; q++ )
-			vortex_levels[p].y[q] = 256 - vortex_levels[p].y[q];
+#ifdef NEVER
+/* DUMP */
+printf( "    {\n" );
+printf( "        %d, /* order */\n", vortex_levels[p].order );
 
-		/* flip y3d */
-		vortex_levels[p].y3d = 256 - vortex_levels[p].y3d;
+printf( "        { ");
+for( i=0 ; i<8 ; i++ ) printf( "%d, ", vortex_levels[p].x[i] ); 
+printf( "\n          " );
+for( i=8 ; i<15 ; i++ ) printf( "%d, ", vortex_levels[p].x[i] );
+printf( "%d ", vortex_levels[p].x[i] );
+printf( "}, /* x */\n");
+
+printf( "        { ");
+for( i=0 ; i<8 ; i++ ) printf( "%d, ", vortex_levels[p].y[i] ); 
+printf( "\n          " );
+for( i=8 ; i<15 ; i++ ) printf( "%d, ", vortex_levels[p].y[i] );
+printf( "%d ", vortex_levels[p].y[i] );
+printf( "}, /* y */\n");
+
+printf( "        { ");
+for( i=0 ; i<8 ; i++ ) printf( "%d, ", vortex_levels[p].angle[i] ); 
+printf( "\n          " );
+for( i=8 ; i<15 ; i++ ) printf( "%d, ", vortex_levels[p].angle[i] );
+printf( "%d ", vortex_levels[p].angle[i] );
+printf( "}, /* angles */\n");
+
+printf( "        %d, /* scale */\n", vortex_levels[p].scale );
+printf( "        %d, /* fscale */\n", vortex_levels[p].fscale );
+printf( "        %d, /* y3d */\n", vortex_levels[p].y3d );
+printf( "        %d, /* y2d */\n", vortex_levels[p].y2d );
+printf( "        %s /* FLAGS */\n", 
+	    (vortex_levels[p].flags == LF_CLOSEDWEB)?
+			"LF_CLOSEDWEB" : "LF_OPENWEB" );
+printf( "    },\n" );
+#endif
+
 
 		/* and scale y3d while we're at it... */
 		vortex_levels[p].y3d = ( vortex_levels[p].y3d 
