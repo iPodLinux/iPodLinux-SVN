@@ -24,6 +24,13 @@
 #include <QFileDialog>
 #include <QDir>
 #include <QTimer>
+#include <QCheckBox>
+#include <QPushButton>
+#include <QRadioButton>
+#include <QGroupBox>
+#include <QLineEdit>
+#include <QHBoxLayout>
+#include <QGridLayout>
 
 #include <ctype.h>
 #ifndef DONT_HAVE_LIBCRYPTO
@@ -1439,4 +1446,134 @@ void PackageInstallAction::run()
 
     emit setCurrentProgress (uncompressed_length);
     emit setCurrentAction ("Done.");
+}
+
+PackageEditDialog::PackageEditDialog (Package& pkg)
+    : _pkg (pkg)
+{
+    name = new QLineEdit (_pkg.name());
+    version = new QLineEdit (_pkg.version());
+    desc = new QLineEdit (_pkg.description());
+    url = new QLineEdit (_pkg.url());
+    dest = new QLineEdit (_pkg.destination());
+    subfile = new QLineEdit (_pkg.subfile());
+    category = new QLineEdit (_pkg.category());
+    requires = new QLineEdit (_pkg.requires().join (", "));
+    provides = new QLineEdit (_pkg.provides().join (", "));
+
+    unsupported = new QCheckBox (tr ("Package is unsupported by the iPodLinux team"));
+    unsupported->setChecked (_pkg.unsupported());
+
+    typeFile = new QRadioButton (tr ("Single file"));
+    typeArchive = new QRadioButton (tr ("Archive (.tar.gz)"));
+    typeKernel = new QRadioButton (tr ("Kernel image"));
+    typeLoader = new QRadioButton (tr ("Loader"));
+    if (_pkg.type() == Package::Kernel) typeKernel->setChecked (true);
+    else if (_pkg.type() == Package::Loader) typeLoader->setChecked (true);
+    else if (_pkg.type() == Package::File) typeFile->setChecked (true);
+    else typeArchive->setChecked (true);
+    
+    supp123G = new QCheckBox (tr ("1G, 2G, 3G"));
+    supp4G = new QCheckBox (tr ("4G"));
+    suppMini1G = new QCheckBox (tr ("Mini 1G"));
+    suppMini2G = new QCheckBox (tr ("Mini 2G"));
+    suppColor = new QCheckBox (tr ("Color"));
+    suppNano = new QCheckBox (tr ("Nano"));
+    suppVideo = new QCheckBox (tr ("Video"));
+    
+    supp123G->setChecked (_pkg.supports (3));
+    supp4G->setChecked (_pkg.supports (5));
+    suppMini1G->setChecked (_pkg.supports (4));
+    suppMini2G->setChecked (_pkg.supports (7));
+    suppColor->setChecked (_pkg.supports (6));
+    suppNano->setChecked (_pkg.supports (0xC));
+    suppVideo->setChecked (_pkg.supports (0xB));
+    
+    QGroupBox *tboxbox = new QGroupBox (tr ("Package information"));
+    QGridLayout *tboxlayout = new QGridLayout (tboxbox);
+    tboxlayout->addWidget (new QLabel (tr ("Name (no spaces):")), 0, 0, Qt::AlignRight);
+    tboxlayout->addWidget (name, 0, 1);
+    tboxlayout->addWidget (new QLabel (tr ("Version:")), 0, 2, Qt::AlignRight);
+    tboxlayout->addWidget (version, 0, 3);
+    tboxlayout->addWidget (new QLabel (tr ("Description:")), 1, 0, Qt::AlignRight);
+    tboxlayout->addWidget (desc, 1, 1, 1, 3);
+    tboxlayout->addWidget (new QLabel (tr ("Source path/URL:")), 2, 0, Qt::AlignRight);
+    tboxlayout->addWidget (url, 2, 1, 1, 3);
+    tboxlayout->addWidget (new QLabel (tr ("Destination path:")), 3, 0, Qt::AlignRight);
+    tboxlayout->addWidget (dest, 3, 1, 1, 3);
+    tboxlayout->addWidget (new QLabel (tr ("File within archive:")), 4, 0, Qt::AlignRight);
+    tboxlayout->addWidget (subfile, 4, 1);
+    tboxlayout->addWidget (new QLabel (tr ("Category:")), 4, 2, Qt::AlignRight);
+    tboxlayout->addWidget (category, 4, 3);
+    tboxlayout->addWidget (new QLabel (tr ("Requires:")), 5, 0, Qt::AlignRight);
+    tboxlayout->addWidget (requires, 5, 1);
+    tboxlayout->addWidget (new QLabel (tr ("Provides:")), 5, 2, Qt::AlignRight);
+    tboxlayout->addWidget (provides, 5, 3);
+    tboxbox->setLayout (tboxlayout);
+    
+    QGroupBox *typebox = new QGroupBox (tr ("Package type"));
+    QGridLayout *typelayout = new QGridLayout (typebox);
+    typelayout->addWidget (typeFile, 0, 0);
+    typelayout->addWidget (typeArchive, 0, 1);
+    typelayout->addWidget (typeKernel, 1, 0);
+    typelayout->addWidget (typeLoader, 1, 1);
+    typebox->setLayout (typelayout);
+
+    QGroupBox *suppbox = new QGroupBox (tr ("Supported iPods"));
+    QGridLayout *supplayout = new QGridLayout (suppbox);
+    supplayout->addWidget (supp123G, 0, 0);
+    supplayout->addWidget (supp4G, 1, 0);
+    supplayout->addWidget (suppMini1G, 0, 1);
+    supplayout->addWidget (suppMini2G, 0, 2);
+    supplayout->addWidget (suppColor, 1, 1);
+    supplayout->addWidget (suppNano, 1, 2);
+    supplayout->addWidget (suppVideo, 2, 1);
+    suppbox->setLayout (supplayout);
+
+    QPushButton *cancelButton = new QPushButton (tr ("Cancel"));
+    QPushButton *okButton = new QPushButton (tr ("OK"));
+    okButton->setDefault (true);
+    connect (cancelButton, SIGNAL(clicked(bool)), this, SLOT(reject()));
+    connect (okButton, SIGNAL(clicked(bool)), this, SLOT(okPressed()));
+    QHBoxLayout *buttlayout = new QHBoxLayout;
+    buttlayout->addStretch (1);
+    buttlayout->addWidget (cancelButton);
+    buttlayout->addWidget (okButton);
+
+    QVBoxLayout *toplayout = new QVBoxLayout (this);
+    toplayout->addWidget (tboxbox);
+    toplayout->addWidget (typebox);
+    toplayout->addWidget (suppbox);
+    toplayout->addStretch (1);
+    toplayout->addLayout (buttlayout);
+    this->setLayout (toplayout);
+}
+
+void PackageEditDialog::okPressed() 
+{
+    _pkg.name() = name->text();
+    _pkg.version() = version->text();
+    _pkg.description() = desc->text();
+    _pkg.subfile() = subfile->text();
+    _pkg.category() = category->text();
+    _pkg.destination() = dest->text();
+    _pkg.requires() = requires->text().replace (", ", ",").split (",");
+    _pkg.provides() = provides->text().replace (", ", ",").split (",");
+    _pkg.unsupported() = unsupported->isChecked();
+
+    if (typeFile->isChecked()) _pkg.type() = Package::File;
+    else if (typeArchive->isChecked()) _pkg.type() = Package::Archive;
+    else if (typeKernel->isChecked()) _pkg.type() = Package::Kernel;
+    else if (typeLoader->isChecked()) _pkg.type() = Package::Loader;
+
+    _pkg.supports() &= ~0x18fe;
+    if (supp123G->isChecked()) _pkg.supports() |= (1 << 1) | (1 << 2) | (1 << 3);
+    if (supp4G->isChecked()) _pkg.supports() |= (1 << 5);
+    if (suppMini1G->isChecked()) _pkg.supports() |= (1 << 4);
+    if (suppMini2G->isChecked()) _pkg.supports() |= (1 << 7);
+    if (suppColor->isChecked()) _pkg.supports() |= (1 << 6);
+    if (suppNano->isChecked()) _pkg.supports() |= (1 << 12);
+    if (suppVideo->isChecked()) _pkg.supports() |= (1 << 11);
+
+    accept();
 }

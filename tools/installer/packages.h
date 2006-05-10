@@ -8,6 +8,7 @@
 #define _PACKAGES_H_
 #include "installer.h"
 #include <QTreeWidget>
+#include <QDialog>
 
 class Package 
 {
@@ -33,6 +34,7 @@ public:
     QStringList& provides() { return _provs; }
     Type& type() { return _type; }
     bool& unsupported() { return _unsupported; }
+    quint16& supports() { return _ipods; }
     bool supports (int hw_ver) { return !!(_ipods & (1 << hw_ver)); }
     bool valid() { return _valid; }
 
@@ -104,6 +106,24 @@ private:
     bool _changemarked;
     PackagesPage *_page;
     bool _prov;
+};
+
+class PackageEditDialog : public QDialog 
+{
+    Q_OBJECT
+
+public:
+    PackageEditDialog (Package& pkg);
+
+public slots:
+    void okPressed();
+
+protected:
+    QLineEdit *name, *version, *desc, *url, *dest, *subfile, *category, *requires, *provides;
+    QCheckBox *unsupported;
+    QRadioButton *typeFile, *typeArchive, *typeKernel, *typeLoader;
+    QCheckBox *supp123G, *supp4G, *suppMini1G, *suppMini2G, *suppColor, *suppNano, *suppVideo;
+    Package& _pkg;
 };
 
 #endif
