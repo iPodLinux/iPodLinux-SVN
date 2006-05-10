@@ -601,6 +601,7 @@ Package *PackagesPage::parsePackageListLine (QString line, bool makeBold)
         } else {
             loadExternalPackageList (irx.cap (1), makeBold);
         }
+        return 0;
     }
 
     Package *pkgp = new Package (line);
