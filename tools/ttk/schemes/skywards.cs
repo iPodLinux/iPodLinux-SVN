@@ -4,16 +4,12 @@
 \def gray    #a0a0a0
 \def dkgray  #505050
 
-  header: bg => unwhite,
+  header: bg => <#e0e0e0, #e0e0e0, #d6d6d6 with #f2f2f2 @:1,0,50%,0>,
 	  fg => black,
 	  line => #9fa2a7 -1,
 	  accent => gray
 	  shadow => dkgray,
-	  shine => gray,
-	  gradient.top => #e0e0e0,
-	  gradient.middle => #e0e0e0,
-	  gradient.bottom => #d6d6d6,
-	  gradient.bar => #f2f2f2 +1
+	  shine => gray
 
    music: bar.bg => #f7f7f7,
 	  bar => <vert #c0c2c8 to #b4b7bd to #aaacb2 with #80848e @:3,0,1,0> +1
