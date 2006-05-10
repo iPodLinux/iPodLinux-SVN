@@ -383,13 +383,13 @@ usage( char * exename )
 {
 	fprintf( stderr, "Usage: %s [options...]\n", exename );
 	fprintf( stderr, "Options:\n" );
-	fprintf( stderr, "  -nano     simulate iPod Nano\n" );
-	fprintf( stderr, "  -mini     simulate iPod Mini\n" );
-	fprintf( stderr, "  -photo    simulate iPod Photo/4g Color\n" );
-	fprintf( stderr, "  -video    simulate iPod Video/5g\n" );
+	fprintf( stderr, "  -g gen    set simulated ipod generation.\n" );
+	fprintf( stderr, "            \"gen\" can be one of:\n" );
+	fprintf( stderr, "                1g, 2g, 3g, 4g, 5g, scroll, touch,\n" );
+	fprintf( stderr, "                dock, mini, photo, color, nano, video\n" );
 	fprintf( stderr, "\n" );
-	fprintf( stderr, "  -2  W H   use a screen W by H, 2bpp\n" );
-	fprintf( stderr, "  -16 W H   use a screen W by H, 16bpp\n" );
+	fprintf( stderr, "  -2  W H   use a screen W by H, 2bpp (monochrome)\n" );
+	fprintf( stderr, "  -16 W H   use a screen W by H, 16bpp (color)\n" );
 	fprintf( stderr, "\n" );
 
 	fprintf( stderr, "default resolution and color are for 1g-4g mono iPod\n" );
@@ -420,15 +420,37 @@ main(int argc, char **argv)
 
 	if (argc > 1) {
 		if (argv[1][0] == '-') {
-			if (!strcmp (argv[1], "-photo"))
+			if (!strcmp (argv[1], "-g")) {
+				if( !strcmp( argv[2], "1g" ))	  ttk_set_emulation( 160, 128, 2 );
+				if( !strcmp( argv[2], "2g" ))	  ttk_set_emulation( 160, 128, 2 );
+				if( !strcmp( argv[2], "3g" ))	  ttk_set_emulation( 160, 128, 2 );
+				if( !strcmp( argv[2], "4g" ))	  ttk_set_emulation( 160, 128, 2 );
+				if( !strcmp( argv[2], "5g" ))	  ttk_set_emulation( 320, 240, 16 );
+
+				if( !strcmp( argv[2], "scroll" )) ttk_set_emulation( 160, 128, 2 );
+				if( !strcmp( argv[2], "touch" ))  ttk_set_emulation( 160, 128, 2 );
+				if( !strcmp( argv[2], "dock" ))   ttk_set_emulation( 160, 128, 2 );
+				if( !strcmp( argv[2], "mini" ))	  ttk_set_emulation( 138, 110, 2 );
+
+				if( !strcmp( argv[2], "photo" ))  ttk_set_emulation( 220, 176, 16 );
+				if( !strcmp( argv[2], "color" ))  ttk_set_emulation( 220, 176, 16 );
+				if( !strcmp( argv[2], "nano" ))	  ttk_set_emulation( 176, 132, 16 );
+				if( !strcmp( argv[2], "video" ))  ttk_set_emulation( 320, 240, 16 );
+
+			} else if (!strcmp (argv[1], "-photo")) {
+				fprintf( stderr, "WARNING: \"-photo\" is deprecated, use \"-g photo\" instead.\n" );
 				ttk_set_emulation (220, 176, 16);
-			else if (!strcmp (argv[1], "-nano"))
+			} else if (!strcmp (argv[1], "-nano")) {
+				fprintf( stderr, "WARNING: \"-nano\" is deprecated, use \"-g nano\" instead.\n" );
 				ttk_set_emulation (176, 132, 16);
-			else if (!strcmp (argv[1], "-mini"))
+			} else if (!strcmp (argv[1], "-mini")) {
+				fprintf( stderr, "WARNING: \"-mini\" is deprecated, use \"-g mini\" instead.\n" );
 				ttk_set_emulation (138, 110, 2);
-			else if (!strcmp (argv[1], "-video"))
+			} else if (!strcmp (argv[1], "-video")) {
+				fprintf( stderr, "WARNING: \"-video\" is deprecated, use \"-g video\" instead.\n" );
 				ttk_set_emulation (320, 240, 16);
-			else if (!strcmp (argv[1], "-2")) {
+
+			} else if (!strcmp (argv[1], "-2")) {
 				if( argc != 4 ) {
 					usage( argv[0] );
 					exit( -2 );
