@@ -59,9 +59,12 @@ int main(int argc, char **argv)
 	HD_Rect(srf, WIDTH/4, HEIGHT/3, WIDTH/2, HEIGHT/2, 0xff808080);
 	HD_Line(srf, 0, 0, WIDTH/2, HEIGHT/2, 0xffff0000);
 	HD_FillCircle(srf, WIDTH/4, HEIGHT/4, WIDTH/6, 0x80ff00ff);
-	HD_FillRect(srf, WIDTH/4, HEIGHT/4, WIDTH/2+WIDTH/4, HEIGHT/2+HEIGHT/4,
-			0x8000ff00);
+	HD_FillRect(srf, WIDTH/4 + 10, HEIGHT/4, WIDTH/2+WIDTH/4,
+			HEIGHT/2+HEIGHT/4, 0x8000ff00);
 	HD_Circle(srf, WIDTH/2, HEIGHT/2, WIDTH/5, 0xff0000ff);
+	HD_Ellipse(srf, WIDTH/2, HEIGHT/2, WIDTH/6, HEIGHT/2, 0xffffff00);
+	HD_FillEllipse(srf, WIDTH/4, HEIGHT-HEIGHT/3, WIDTH/12, HEIGHT/6,
+			0x8000ffff);
 
 	while (!eop) {
 #ifndef IPOD

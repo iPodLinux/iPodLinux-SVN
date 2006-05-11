@@ -331,3 +331,222 @@ void HD_FillCircle(hd_surface srf, int x, int y, int r, uint32 col)
 		++cx;
 	} while (cx <= cy);
 }
+
+void HD_Ellipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col)
+{
+	int ix, iy;
+	int h, i, j, k;
+	int oh, oi, oj, ok;
+	int xmh, xph, ypk, ymk;
+	int xmi, xpi, ymj, ypj;
+	int xmj, xpj, ymi, ypi;
+	int xmk, xpk, ymh, yph;
+
+	if (rx < 0 || ry < 0)
+		return;
+
+	if (rx == 0) {
+		HD_Line(srf, x, y - ry, x, y + ry, col);
+		return;
+	}
+	if (ry == 0) {
+		hLine(srf, x - rx, x + rx, y, col);
+		return;
+	}
+	oh = oi = oj = ok = 0xffff;
+
+	if (rx > ry) {
+		ix = 0;
+		iy = rx * 64;
+
+		do {
+			h = (ix + 32) >> 6;
+			i = (iy + 32) >> 6;
+			j = (h * ry) / rx;
+			k = (i * ry) / rx;
+
+			if (((ok != k) && (oj != k)) ||
+					((oj != j) && (ok != j)) || (k != j)) {
+				xph = x + h;
+				xmh = x - h;
+				if (k > 0) {
+					ypk = y + k;
+					ymk = y - k;
+					HD_SRF_BLENDPIX(srf, xmh, ypk, col);
+					HD_SRF_BLENDPIX(srf, xph, ypk, col);
+					HD_SRF_BLENDPIX(srf, xmh, ymk, col);
+					HD_SRF_BLENDPIX(srf, xph, ymk, col);
+				}
+				else {
+					HD_SRF_BLENDPIX(srf, xmh, y, col);
+					HD_SRF_BLENDPIX(srf, xph, y, col);
+				}
+				ok = k;
+				xpi = x + i;
+				xmi = x - i;
+				if (j > 0) {
+					ypj = y + j;
+					ymj = y - j;
+					HD_SRF_BLENDPIX(srf, xmi, ypj, col);
+					HD_SRF_BLENDPIX(srf, xpi, ypj, col);
+					HD_SRF_BLENDPIX(srf, xmi, ymj, col);
+					HD_SRF_BLENDPIX(srf, xpi, ymj, col);
+				}
+				else {
+					HD_SRF_BLENDPIX(srf, xmi, y, col);
+					HD_SRF_BLENDPIX(srf, xpi, y, col);
+				}
+				oj = j;
+			}
+
+			ix = ix + iy / rx;
+			iy = iy - ix / rx;
+
+		} while (i > h);
+	}
+	else {
+		ix = 0;
+		iy = ry * 64;
+
+		do {
+			h = (ix + 32) >> 6;
+			i = (iy + 32) >> 6;
+			j = (h * rx) / ry;
+			k = (i * rx) / ry;
+
+			if (((oi != i) && (oh != i)) ||
+					((oh != h) && (oi != h) && (i != h))) {
+				xmj = x - j;
+				xpj = x + j;
+				if (i > 0) {
+					ypi = y + i;
+					ymi = y - i;
+					HD_SRF_BLENDPIX(srf, xmj, ypi, col);
+					HD_SRF_BLENDPIX(srf, xpj, ypi, col);
+					HD_SRF_BLENDPIX(srf, xmj, ymi, col);
+					HD_SRF_BLENDPIX(srf, xpj, ymi, col);
+				}
+				else {
+					HD_SRF_BLENDPIX(srf, xmj, y, col);
+					HD_SRF_BLENDPIX(srf, xpj, y, col);
+				}
+				oi = i;
+				xmk = x - k;
+				xpk = x + k;
+				if (h > 0) {
+					yph = y + h;
+					ymh = y - h;
+					HD_SRF_BLENDPIX(srf, xmk, yph, col);
+					HD_SRF_BLENDPIX(srf, xpk, yph, col);
+					HD_SRF_BLENDPIX(srf, xmk, ymh, col);
+					HD_SRF_BLENDPIX(srf, xpk, ymh, col);
+				}
+				else {
+					HD_SRF_BLENDPIX(srf, xmk, y, col);
+					HD_SRF_BLENDPIX(srf, xpk, y, col);
+				}
+				oh = h;
+			}
+			ix = ix + iy / ry;
+			iy = iy - ix / ry;
+
+		} while (i > h);
+	}
+}
+
+void HD_FillEllipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col)
+{
+	int ix, iy;
+	int h, i, j, k;
+	int oh, oi, oj, ok;
+	int xmh, xph;
+	int xmi, xpi;
+	int xmj, xpj;
+	int xmk, xpk;
+
+	if (rx < 0 || ry < 0)
+		return;
+
+	if (rx == 0 || ry == 0) {
+		HD_Line(srf, x - rx, y - ry, x + rx, y + ry, col);
+		return;
+	}
+
+	oh = oi = oj = ok = 0xffff;
+
+	if (rx > ry) {
+		ix = 0;
+		iy = rx * 64;
+
+		do {
+			h = (ix + 32) >> 6;
+			i = (iy + 32) >> 6;
+			j = (h * ry) / rx;
+			k = (i * ry) / rx;
+
+			if ((ok != k) && (oj != k)) {
+				xph = x + h;
+				xmh = x - h;
+				if (k > 0) {
+					hLine(srf, xmh, xph, y + k, col);
+					hLine(srf, xmh, xph, y - k, col);
+				}
+				else
+					hLine(srf, xmh, xph, y, col);
+				ok = k;
+	  		}
+			if ((oj != j) && (ok != j) && (k != j)) {
+				xmi = x - i;
+				xpi = x + i;
+				if (j > 0) {
+					hLine(srf, xmi, xpi, y + j, col);
+					hLine(srf, xmi, xpi, y - j, col);
+				}
+				else
+					hLine(srf, xmi, xpi, y, col);
+				oj = j;
+			}
+
+			ix = ix + iy / rx;
+			iy = iy - ix / rx;
+
+		} while (i > h);
+	} else {
+		ix = 0;
+		iy = ry * 64;
+
+		do {
+			h = (ix + 32) >> 6;
+			i = (iy + 32) >> 6;
+			j = (h * rx) / ry;
+			k = (i * rx) / ry;
+
+			if ((oi != i) && (oh != i)) {
+				xmj = x - j;
+				xpj = x + j;
+				if (i > 0) {
+					hLine(srf, xmj, xpj, y + i, col);
+					hLine(srf, xmj, xpj, y - i, col);
+				}
+				else
+					hLine(srf, xmj, xpj, y, col);
+				oi = i;
+			}
+			if ((oh != h) && (oi != h) && (i != h)) {
+				xmk = x - k;
+				xpk = x + k;
+				if (h > 0) {
+					hLine(srf, xmk, xpk, y + h, col);
+					hLine(srf, xmk, xpk, y - h, col);
+				}
+				else
+					hLine(srf, xmk, xpk, y, col);
+				oh = h;
+			}
+
+			ix = ix + iy / ry;
+			iy = iy - ix / ry;
+
+		} while (i > h);
+	}
+}
