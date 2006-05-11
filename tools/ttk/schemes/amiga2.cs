@@ -6,7 +6,8 @@
 \def gray   #aaaaaa
 \def white  #ffffff
 \def black  #000000
-\def blue   #83acd6
+\def oldblue   #83acd6
+\def blue   #6688bb
 
 
   header: bg => blue, fg => black, line => black -1, accent => black
