@@ -304,6 +304,14 @@ void       HD_Canvas_Render(hd_engine *eng,hd_object *obj, int x, int y, int w, 
 hd_object *HD_PNG_Create(const char *fname);
 hd_surface HD_PNG_Load (const char *fname, int *w, int *h);
 
+/*** PRIMITIVES ***/
+void HD_Pixel(hd_surface srf, int x, int y, uint32 col);
+void HD_Line(hd_surface srf, int x0, int y0, int x1, int y1, uint32 col);
+void HD_FillRect(hd_surface srf, int x1, int y1, int x2, int y2, uint32 col);
+void HD_Rect(hd_surface srf, int x1, int y1, int x2, int y2, uint32 col);
+void HD_Circle(hd_surface srf, int x, int y, int r, uint32 col);
+void HD_FillCircle(hd_surface srf, int x, int y, int r, uint32 col);
+
 #ifdef IPOD
 /****** LCD ******/
 void HD_LCD_Init();

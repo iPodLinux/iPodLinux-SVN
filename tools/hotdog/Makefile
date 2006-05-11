@@ -60,7 +60,7 @@ endif
 
 MYCFLAGS+= -Wall
 LIB = libhotdog.a
-LIBOBJS=  hotdog.o hotdog_png.o hotdog_font.o hotdog_animation.o hotdog_canvas.o hotdog_surface.o hotdog_ops.o zsort.o
+LIBOBJS=  hotdog.o hotdog_png.o hotdog_font.o hotdog_animation.o hotdog_canvas.o hotdog_surface.o hotdog_ops.o hotdog_primitive.o zsort.o
 ifdef IPOD
 LIBOBJS += hotdog_lcd.o
 endif
@@ -74,7 +74,7 @@ $(LIB): $(LIBOBJS)
 	$(AR) $(LIB) $(LIBOBJS)
 	$(AR2) $(LIB)
 
-main_anim.o main_select.o: %.o: %.c
+main_anim.o main_select.o main_prim.o: %.o: %.c
 	$(CC) $(CFLAGS) $(MYCFLAGS) $(DEMOCFLAGS) -c -o $@ $<
 
 %.o: %.c
@@ -89,5 +89,8 @@ $(DEMO): $(LIB) main_anim.o
 hd-demo2: $(LIB) main_select.o
 	$(CC) main_select.o -o $@ $(LIB) $(LDFLAGS) $(DEMOLDFLAGS)
 
+prim-demo: $(LIB) main_prim.o
+	$(CC) main_prim.o -o $@ $(LIB) $(LDFLAGS) $(DEMOLDFLAGS)
+
 clean:
-	$(RM) *.o *.elf *.elf2flt *.a *.gdb *~ $(DEMO)
+	$(RM) *.o *.elf *.elf2flt *.a *.gdb *~ $(DEMO) prim-demo hd-demo2
