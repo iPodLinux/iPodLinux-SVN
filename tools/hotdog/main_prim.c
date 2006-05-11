@@ -18,7 +18,7 @@ hd_engine *engine;
 static void update(hd_engine *e, int x, int y, int w, int h)
 {
 #ifdef IPOD
-	HD_LCD_Update (eng->screen.framebuffer, 0, 0, WIDTH, HEIGHT);
+	HD_LCD_Update (e->screen.framebuffer, 0, 0, WIDTH, HEIGHT);
 #else
 	SDL_UpdateRect(SDL_GetVideoSurface(), x, y, w, h);
 #endif
