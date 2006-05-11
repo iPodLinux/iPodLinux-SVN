@@ -65,6 +65,19 @@ int main(int argc, char **argv)
 	HD_Ellipse(srf, WIDTH/2, HEIGHT/2, WIDTH/6, HEIGHT/2, 0xffffff00);
 	HD_FillEllipse(srf, WIDTH/4, HEIGHT-HEIGHT/3, WIDTH/12, HEIGHT/6,
 			0x8000ffff);
+	{
+		unsigned short bits[] = {
+			0x3800, // ..## #... .... ....
+			0x4700, // .#.. .### .... ....
+			0x38e0, // ..## #... ###. ....
+			0x471c, // .#.. .### ...# ##..
+			0x38e2, // ..## #... ###. ..#.
+			0x471c, // .#.. .### ...# ##..
+			0x38e0, // ..## #... ###. ....
+			0x4700, // .#.. .### .... ....
+			0x3800};// ..## #... .... ....
+		HD_Bitmap(srf, WIDTH - WIDTH/4, 0, 16, 9, bits, 0xffff0000);
+	}
 
 	while (!eop) {
 #ifndef IPOD

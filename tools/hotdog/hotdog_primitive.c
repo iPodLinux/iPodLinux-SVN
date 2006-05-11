@@ -149,6 +149,35 @@ function line(x0, x1, y0, y1)
 #endif
 }
 
+void HD_Bitmap(hd_surface srf, int x, int y, int w, int h,
+		const unsigned short *bits, uint32 col)
+{
+	int minx, maxx;
+	unsigned short value = 0;
+	int count;
+
+	minx = x;
+	maxx = x + w - 1;
+	count = 0;
+	while (h > 0) {
+		if (count <= 0) {
+			count = 16;
+			value = *bits++;
+		}
+		if (value & (1 << 15))
+			HD_SRF_BLENDPIX(srf, x, y, col);
+		value <<= 1;
+		--count;
+
+		if (x++ == maxx) {
+			x = minx;
+			++y;
+			--h;
+			count = 0;
+		}
+	}
+}
+
 void HD_FillRect(hd_surface srf, int x1, int y1, int x2, int y2, uint32 col)
 {
 	int xi;
