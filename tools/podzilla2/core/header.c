@@ -982,7 +982,7 @@ void dec_draw_3d( ttk_surface srf, int x1, int y1, int x2, int y2, int updown )
 
 
 /* Amiga Decorations */
-void dec_draw_Amiga1x( struct header_info * hdr, ttk_surface srf, int WhichAmigaDOS )
+void dec_draw_AmigaXX( struct header_info * hdr, ttk_surface srf, int WhichAmigaDOS )
 {
 	int tw = ttk_text_width (ttk_menufont, ttk_windows->w->title);
 	enum ttk_justification just = pz_get_int_setting( 
@@ -992,6 +992,7 @@ void dec_draw_Amiga1x( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 	int xp2 = hdr->widg->x + hdr->widg->w -1;
 	int tx1 = 0, tx2 = 0;
 	double yo, xo;
+	int hw = hdr->widg->h>>1;
 
 	dec_plain( hdr, srf );
 
@@ -1015,12 +1016,11 @@ void dec_draw_Amiga1x( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 					(int) (xo*4.8), (int) (yo*4.8),
 					pz_dec_ap_get_solid ("header.accent"));
 		} else {
-			dec_draw_3d( srf, 0, 0, hdr->widg->h - 1, 
+			dec_draw_3d( srf, 0, 0, hdr->widg->h-2, 
 				hdr->widg->h-1, RAISED );
-
-			ttk_fillrect( srf, xo*3, xo*2, xo*5, xo*6, 
+			ttk_fillrect( srf, hw-1, xo*2+2, hw+2, xo*6-1,
 				pz_dec_ap_get_solid( "header.shine" ));
-			ttk_rect( srf, xo*3, xo*2, xo*5, xo*6, 
+			ttk_rect( srf, hw-2, xo*2+1, hw+2, xo*6-1,
 				pz_dec_ap_get_solid( "header.shadow" ));
 		}
 
@@ -1050,7 +1050,7 @@ void dec_draw_Amiga1x( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 			xp2 - o,  hdr->widg->h - o,
 			pz_dec_ap_get_solid( "header.fg" ));
 	} else {
-		dec_draw_3d( srf, xp1, 0, xp2, 
+		dec_draw_3d( srf, xp1, 0, xp2,
 			hdr->widg->h-1, RAISED );
 	}
 
@@ -1095,17 +1095,17 @@ void dec_draw_Amiga1x( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 /* thse just call the above appropriately */
 void dec_draw_Amiga13( struct header_info * hdr, ttk_surface srf )
 {
-	dec_draw_Amiga1x( hdr, srf, 13 ); /* AmigaDOS 1.3 */
+	dec_draw_AmigaXX( hdr, srf, 13 ); /* AmigaDOS 1.3 */
 }
 
 void dec_draw_Amiga11( struct header_info * hdr, ttk_surface srf )
 {
-	dec_draw_Amiga1x( hdr, srf, 11 ); /* AmigaDOS 1.1 */
+	dec_draw_AmigaXX( hdr, srf, 11 ); /* AmigaDOS 1.1 */
 }
 
 void dec_draw_Amiga20( struct header_info * hdr, ttk_surface srf )
 {
-	dec_draw_Amiga1x( hdr, srf, 20 ); /* AmigaDOS 2.0 */
+	dec_draw_AmigaXX( hdr, srf, 20 ); /* AmigaDOS 2.0 */
 }
 
 
