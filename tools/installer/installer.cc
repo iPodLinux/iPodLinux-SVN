@@ -637,7 +637,6 @@ PartitioningPage::PartitioningPage (Installer *wiz)
     else
         partitionSmall->setChecked (true);
     size = new QSpinBox;
-    size->setValue (iPodLinuxPartitionSize / 2048);
     size->setSuffix (" MB");
     sizeBlurb = new QLabel (tr ("How big should the Linux partition be?"));
     sizeBlurb->setAlignment (Qt::AlignRight);
@@ -659,6 +658,7 @@ PartitioningPage::PartitioningPage (Installer *wiz)
     layout->addWidget (new QLabel (tr ("Press Next to continue.")));
     setLayout (layout);
     setStuff();
+    size->setValue (iPodLinuxPartitionSize / 2048);
 
     connect (size, SIGNAL(valueChanged(int)), this, SLOT(setStuff(int)));
     connect (partitionSmall, SIGNAL(toggled(bool)), this, SLOT(setSmallStuff(bool)));
