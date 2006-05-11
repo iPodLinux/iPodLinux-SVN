@@ -149,6 +149,22 @@ function line(x0, x1, y0, y1)
 #endif
 }
 
+void HD_Lines(hd_surface srf, hd_point *points, int n, uint32 col)
+{
+	for (--n; n; --n) {
+		HD_Line(srf, points[n - 1].x, points[n - 1].y,
+				points[n].x, points[n].y, col);
+	}
+}
+
+void HD_Poly(hd_surface srf,  hd_point *points, int n, uint32 col)
+{
+	if (n < 3) return;
+	HD_Lines(srf, points, n, col);
+	HD_Line(srf, points[0].x, points[0].y,
+			points[n - 1].x, points[n - 1].y, col);
+}
+
 void HD_Bitmap(hd_surface srf, int x, int y, int w, int h,
 		const unsigned short *bits, uint32 col)
 {

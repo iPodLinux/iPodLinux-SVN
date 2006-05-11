@@ -305,8 +305,13 @@ hd_object *HD_PNG_Create(const char *fname);
 hd_surface HD_PNG_Load (const char *fname, int *w, int *h);
 
 /*** PRIMITIVES ***/
+typedef struct _hd_point {
+	int x, y;
+} hd_point;
 void HD_Pixel(hd_surface srf, int x, int y, uint32 col);
 void HD_Line(hd_surface srf, int x0, int y0, int x1, int y1, uint32 col);
+void HD_Lines(hd_surface srf, hd_point *points, int n, uint32 col);
+void HD_Poly(hd_surface srf,  hd_point *points, int n, uint32 col);
 void HD_Bitmap(hd_surface srf, int x, int y, int w, int h,
 		const unsigned short *bits, uint32 col);
 void HD_FillRect(hd_surface srf, int x1, int y1, int x2, int y2, uint32 col);
