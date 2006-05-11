@@ -311,6 +311,8 @@ void HD_FillRect(hd_surface srf, int x1, int y1, int x2, int y2, uint32 col);
 void HD_Rect(hd_surface srf, int x1, int y1, int x2, int y2, uint32 col);
 void HD_Circle(hd_surface srf, int x, int y, int r, uint32 col);
 void HD_FillCircle(hd_surface srf, int x, int y, int r, uint32 col);
+void HD_Ellipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col);
+void HD_FillEllipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col);
 
 #ifdef IPOD
 /****** LCD ******/
