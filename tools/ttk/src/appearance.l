@@ -276,8 +276,19 @@ DEC	[0-9]+
     }
 }
 
-<VALUE>@[^ \t\r\n,]+ {
+<VALUE>[vcpnbm]?@[^ \t\r\n,]+ {
     char *path;
+    const char *yyptr = yytext;
+
+    if (yytext[0] != '@') { // screen size specifier
+        if (yytext[0] == 'v' && ttk_screen->w != 320) goto skipimg;
+        if (yytext[0] == 'c' && ttk_screen->w != 220) goto skipimg;
+        if (yytext[0] == 'p' && ttk_screen->w != 220) goto skipimg;
+        if (yytext[0] == 'n' && ttk_screen->w != 176) goto skipimg;
+        if (yytext[0] == 'b' && ttk_screen->w != 160) goto skipimg;
+        if (yytext[0] == 'm' && ttk_screen->w != 138) goto skipimg;
+        yyptr++;
+    }
 
     if (ap->type & TTK_AP_IMAGE)
         WARN ("overriding image for %s with %s", ap->name, yytext);
@@ -288,9 +299,9 @@ DEC	[0-9]+
     path = malloc (strlen (filename) + strlen (fileprefix) + yyleng);
     strcpy (path, filename);
     if (strchr (filename, '/'))
-        sprintf (strrchr (path, '/') + 1, "%s%s", fileprefix, yytext + 1);
+        sprintf (strrchr (path, '/') + 1, "%s%s", fileprefix, yyptr + 1);
     else
-        sprintf (path, "%s%s", fileprefix, yytext + 1);
+        sprintf (path, "%s%s", fileprefix, yyptr + 1);
 
     ap->img = ttk_load_image (path);
 
@@ -300,15 +311,26 @@ DEC	[0-9]+
     }
 
     free (path);
+ skipimg: ;
 }
 
-<VALUE>{DEC}"x"{DEC}"+"{DEC}"+"{DEC} {
+<VALUE>([vcpnbm]:)?{DEC}"x"{DEC}"+"{DEC}"+"{DEC} {
     char *str = yytext;
+    if (yytext[0] > 'a' && yytext[0] < 'z') {
+        if (yytext[0] == 'v' && ttk_screen->w != 320) goto skiprr;
+        if (yytext[0] == 'c' && ttk_screen->w != 220) goto skiprr;
+        if (yytext[0] == 'p' && ttk_screen->w != 220) goto skiprr;
+        if (yytext[0] == 'n' && ttk_screen->w != 176) goto skiprr;
+        if (yytext[0] == 'b' && ttk_screen->w != 160) goto skiprr;
+        if (yytext[0] == 'm' && ttk_screen->w != 138) goto skiprr;
+        str += 2;
+    }
     ap->type |= TTK_AP_RRECT;
     ap->rw = atoi (str); str = strchr (str, 'x') + 1;
     ap->rh = atoi (str); str = strchr (str, '+') + 1;
     ap->rx = atoi (str); str = strchr (str, '+') + 1;
     ap->ry = atoi (str);
+ skiprr: ;
 }
 
 <VALUE>(h|horiz|x)[ \t]*left	ap->type &= ~(TTK_AP_IMG_HCENTER | TTK_AP_IMG_HRIGHT);
