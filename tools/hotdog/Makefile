@@ -4,7 +4,11 @@ endif
 
 ifeq ($(OSTYPE),Darwin)
 	PREFIX =
-	MYCFLAGS = -DDARWIN -O3 -mcpu=750 -maltivec -mabi=altivec -fomit-frame-pointer -funroll-loops -g
+ifdef DEBUG
+	MYCFLAGS = -DDARWIN -g
+else
+	MYCFLAGS = -DDARWIN -O3 -mcpu=750 -maltivec -mabi=altivec -fomit-frame-pointer -funroll-loops
+endif
 	LDFLAGS = -framework Foundation -framework Cocoa
 endif
 ifeq ($(OSTYPE),Linux)
