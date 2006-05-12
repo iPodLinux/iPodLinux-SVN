@@ -30,7 +30,9 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
+#include <math.h>
 
 #include "hotdog.h"
 
@@ -595,3 +597,33 @@ void HD_FillEllipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col)
 		} while (i > h);
 	}
 }
+
+void HD_Blur(hd_surface srf, int x, int y, int w, int h, int rad)
+{
+	int kh, kw, kx, ky;
+	int lx, ly;
+	int rsum, gsum, bsum, amt, col;
+
+	kw = kh = rad;
+	
+	for (ly = 0; ly < h; ++ly) {
+		for (lx = 0; lx < w; ++lx) {
+			amt = rsum = gsum = bsum = 0;
+			for (ky = 0; ky < kh; ++ky) {
+				for (kx = 0; kx < kw; ++kx) {
+					col = HD_SRF_GETPIX(srf,
+							x + lx + kx - kw/2,
+							y + ly + ky - kh/2);
+					rsum += (col & 0xff0000) >> 16;
+					gsum += (col & 0x00ff00) >> 8;
+					bsum += (col & 0x0000ff);
+					++amt;
+				}
+			}
+			HD_SRF_SETPIX(srf, x + lx, y + ly,
+					0xff000000 | (rsum/amt) << 16 |
+					(gsum/amt) << 8 | (bsum/amt));
+		}
+	}
+}
+
