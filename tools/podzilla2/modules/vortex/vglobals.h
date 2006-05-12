@@ -125,6 +125,10 @@ typedef struct vortex_globals {
 	vortex_colors color;
 
 	int gameStyle;
+
+	/* the 32x256 array containing the current tube */
+	int tubeX[(NUM_SEGMENTS+1)*2][256];
+	int tubeY[(NUM_SEGMENTS+1)*2][256];
 } vortex_globals;
 
 /* so that we can all use it... */
