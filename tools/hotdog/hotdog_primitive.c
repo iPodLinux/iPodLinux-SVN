@@ -631,9 +631,8 @@ void HD_Blur(hd_surface srf, int x, int y, int w, int h, int rad)
 					++amt;
 				}
 			}
-			HD_SRF_SETPIX(srf, x + lx, y + ly,
-					0xff000000 | (rsum/amt) << 16 |
-					(gsum/amt) << 8 | (bsum/amt));
+			HD_SRF_PIXF(srf, x + lx, y + ly) = 0xff000000 |
+				(rsum/amt) << 16 | (gsum/amt) << 8 | (bsum/amt);
 		}
 	}
 }
