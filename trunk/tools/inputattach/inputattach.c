@@ -388,7 +388,7 @@ int main(int argc, char **argv)
 
         if (argc < 2 || argc > 3 || !strcmp("--help", argv[1])) {
                 puts("");
-                puts("Usage: inputttach <mode> <device>");
+                puts("Usage: inputattach <mode> <device>");
                 puts("");
                 puts("Modes:");
                 puts("  --sunkbd        -skb   Sun Type 4 and Type 5 keyboards");
