@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <unistd.h>
 #include "hotdog.h"
 
 #ifdef IPOD
@@ -47,25 +48,39 @@ int main(int argc, char **argv)
 	screen = malloc(WIDTH * HEIGHT * 2);
 	engine = HD_Initialize(WIDTH, HEIGHT, 16, screen, update);
 #endif
-	obj = HD_New_Object();
-	obj->type = HD_TYPE_CANVAS;
-	obj->canvas = HD_NewSurface(WIDTH, HEIGHT);
-	obj->natw = obj->w = WIDTH;
-	obj->nath = obj->h = HEIGHT;
+
+	if (!access("bg2.png", R_OK))
+		obj = HD_PNG_Create("bg2.png");
+	else {
+		obj = HD_New_Object();
+		obj->type = HD_TYPE_CANVAS;
+		obj->canvas = HD_NewSurface(WIDTH, HEIGHT);
+		obj->natw = WIDTH;
+		obj->nath = HEIGHT;
+	}
+	obj->x = 0;
+	obj->y = 0;
+	obj->w = WIDTH;
+	obj->h = HEIGHT;
 	obj->render = HD_Canvas_Render;
         obj->destroy = HD_Canvas_Destroy;
 	HD_Register(engine, obj);
+#define PREM(a) (HD_RGBA(((a) & 0x00ff0000) >> 16, \
+			 ((a) & 0x0000ff00) >> 8,  \
+			 ((a) & 0x000000ff),       \
+			 ((a) & 0xff000000) >> 24))
+
 	srf = obj->canvas;
-	HD_Rect(srf, WIDTH/4, HEIGHT/3, WIDTH/2, HEIGHT/2, 0xff808080);
-	HD_Line(srf, 0, 0, WIDTH/2, HEIGHT/2, 0xffff0000);
-	HD_Line(srf, WIDTH/2, HEIGHT/2, WIDTH/2, HEIGHT, 0xffff0000);
-	HD_FillCircle(srf, WIDTH/4, HEIGHT/4, WIDTH/6, 0x80ff00ff);
+	HD_Rect(srf, WIDTH/4, HEIGHT/3, WIDTH/2, HEIGHT/2, PREM(0xff808080));
+	HD_Line(srf, 0, 0, WIDTH/2, HEIGHT/2, PREM(0xffff0000));
+	HD_Line(srf, WIDTH/2, HEIGHT/2, WIDTH/2, HEIGHT, PREM(0xffff0000));
+	HD_FillCircle(srf, WIDTH/4, HEIGHT/4, WIDTH/6, PREM(0xd0ff00ff));
 	HD_FillRect(srf, WIDTH/4 + 10, HEIGHT/4, WIDTH/2+WIDTH/4,
-			HEIGHT/2+HEIGHT/4, 0x8000ff00);
-	HD_Circle(srf, WIDTH/2, HEIGHT/2, WIDTH/5, 0xff0000ff);
-	HD_Ellipse(srf, WIDTH/2, HEIGHT/2, WIDTH/6, HEIGHT/2, 0xffffff00);
+			HEIGHT/2+HEIGHT/4, PREM(0xd000ff00));
+	HD_Circle(srf, WIDTH/2, HEIGHT/2, WIDTH/5, PREM(0xff0000ff));
+	HD_Ellipse(srf, WIDTH/2, HEIGHT/2, WIDTH/6, HEIGHT/2, PREM(0xffffff00));
 	HD_FillEllipse(srf, WIDTH/4, HEIGHT-HEIGHT/3, WIDTH/12, HEIGHT/6,
-			0x8000ffff);
+			PREM(0x8000ffff));
 	{
 		hd_point lines[] = {
 			{ 4, 4}, {10, 4}, {10,20}, { 4,10},
@@ -87,7 +102,7 @@ int main(int argc, char **argv)
 			0x3800};// ..## #... .... ....
 		HD_Bitmap(srf, WIDTH - WIDTH/4, 0, 16, 9, bits, 0xffff0000);
 	}
-	HD_Blur(srf, 0, HEIGHT/2, WIDTH, HEIGHT/2, 8);
+	HD_Blur(srf, 0, HEIGHT/2, WIDTH, 24, 24);
 
 	while (!eop) {
 #ifndef IPOD

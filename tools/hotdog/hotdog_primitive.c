@@ -600,20 +600,20 @@ void HD_FillEllipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col)
 
 void HD_Blur(hd_surface srf, int x, int y, int w, int h, int rad)
 {
-	int kh, kw, kx, ky;
+	int  kx, ky;
 	int lx, ly;
-	int rsum, gsum, bsum, amt, col;
+	int rsum, gsum, bsum, amt;
+	uint32 col;
+	int rad_2 = rad >> 1;
 
-	kw = kh = rad;
-	
 	for (ly = 0; ly < h; ++ly) {
 		for (lx = 0; lx < w; ++lx) {
 			amt = rsum = gsum = bsum = 0;
-			for (ky = 0; ky < kh; ++ky) {
-				for (kx = 0; kx < kw; ++kx) {
+			for (ky = 0; ky < rad; ++ky) {
+				for (kx = 0; kx < rad; ++kx) {
 					col = HD_SRF_GETPIX(srf,
-							x + lx + kx - kw/2,
-							y + ly + ky - kh/2);
+							x + lx + kx - rad_2,
+							y + ly + ky - rad_2);
 					rsum += (col & 0xff0000) >> 16;
 					gsum += (col & 0x00ff00) >> 8;
 					bsum += (col & 0x0000ff);
