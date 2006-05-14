@@ -1497,7 +1497,7 @@ static void __init ipodaudio_hw_init(void)
 		break;
 	}
 
-	printk(KERN_ERR "codec %s\n", (codec_chip == WM8731 ? "WM8731" : (codec_chip == WM8721 ? "WM8721" : (codec_chip==WM8975 ? "WM8975" : "WM8758"))));
+	printk("codec %s\n", (codec_chip == WM8731 ? "WM8731" : (codec_chip == WM8721 ? "WM8721" : (codec_chip==WM8975 ? "WM8975" : "WM8758"))));
 
 	/* reset I2C */
 	ipod_i2c_init();
