@@ -835,7 +835,7 @@ void HD_FillEllipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col)
 
 void HD_AAFillEllipse(hd_surface srf, int xc, int yc, int rx, int ry,uint32 col)
 {
-	int i;
+	int i, sty, styy;
 	int a2, b2, ds, dt, dxt, t, s, d;
 	int32 x, y, xs, ys, dyt, xx, yy, xc2, yc2;
 	float cp;
@@ -871,7 +871,8 @@ void HD_AAFillEllipse(hd_surface srf, int xc, int yc, int rx, int ry,uint32 col)
 	HD_SRF_BLENDPIX(srf, x, yc2 - y, col);
 	HD_SRF_BLENDPIX(srf, xc2 - x, yc2 - y, col);
 
-	HD_Line(srf, x, y+1, x, yc2-y-1, col);
+	hLine(srf, xc - rx, xc + rx, yc, col);
+	sty = styy = 0;
 
 	for (i = 1; i <= dxt; i++) {
 		--x;
@@ -918,19 +919,24 @@ void HD_AAFillEllipse(hd_surface srf, int xc, int yc, int rx, int ry,uint32 col)
 		BLENDPIX_WEIGHT(srf, xx, ys, col, weight);
 
 		/* Lower half */
-		yy = yc2 - y;
-		BLENDPIX_WEIGHT(srf, x, yy, col, iweight);
-		BLENDPIX_WEIGHT(srf, xx, yy, col, iweight);
-
 		yy = yc2 - ys;
 		BLENDPIX_WEIGHT(srf, x, yy, col, weight);
 		BLENDPIX_WEIGHT(srf, xx, yy, col, weight);
 
+		yy = yc2 - y;
+		BLENDPIX_WEIGHT(srf, x, yy, col, iweight);
+		BLENDPIX_WEIGHT(srf, xx, yy, col, iweight);
+
+
 		/* Fill */
-		HD_Line(srf, x, y+1, x, 2*yc-y-1, col);
-		HD_Line(srf, xx, y+1, xx, 2*yc-y-1, col);
-		HD_Line(srf, x, ys+1, x, yy-1, col);
-		HD_Line(srf, xx, ys+1, xx, yy-1, col);
+		if (i < dxt) {
+			if (sty != y)
+				hLine(srf, x, xx+1, y, col);
+			if (styy != yy)
+				hLine(srf, x, xx+1, yy, col);
+			sty = y;
+			styy = yy;
+		}
 	}
 
 	dyt = abs(y - yc);
@@ -979,6 +985,7 @@ void HD_AAFillEllipse(hd_surface srf, int xc, int yc, int rx, int ry,uint32 col)
 	
 		BLENDPIX_WEIGHT(srf, x, yy, col, iweight);
 		BLENDPIX_WEIGHT(srf, xx, yy, col, iweight);
+		hLine(srf, x+1, xx, y-1, col);
 
 		/* Right half */
 		xx = xc2 - xs;
@@ -987,13 +994,7 @@ void HD_AAFillEllipse(hd_surface srf, int xc, int yc, int rx, int ry,uint32 col)
 
 		BLENDPIX_WEIGHT(srf, xs, yy, col, weight);
 		BLENDPIX_WEIGHT(srf, xx, yy, col, weight);
-
-		/* Fill */
-		xx = xc2 - x;
-		hLine(srf, x+1, xx-1, y, col);
-		hLine(srf, xs+1, xc2-xs-1, y, col);
-		hLine(srf, x+1, xx-1, yy, col);
-		hLine(srf, xs+1, xc2-xs-1, yy, col);
+		hLine(srf, x+1, xc2 - x, yy+1, col);
 	}
 }
 
