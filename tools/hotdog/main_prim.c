@@ -31,6 +31,7 @@ int main(int argc, char **argv)
 	hd_surface srf;
 	hd_object *obj;
 #ifndef IPOD
+#define IMGPREFIX ""
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		fprintf(stderr,"Unable to init SDL: %s\n",SDL_GetError());
 		exit(1);
@@ -43,14 +44,16 @@ int main(int argc, char **argv)
 	}
 	engine = HD_Initialize (WIDTH, HEIGHT, 16, screen->pixels, update);
 #else
+#define IMGPREFIX "/mnt/"
 	HD_LCD_Init();
 	HD_LCD_GetInfo(0, &WIDTH, &HEIGHT, 0);
 	screen = malloc(WIDTH * HEIGHT * 2);
 	engine = HD_Initialize(WIDTH, HEIGHT, 16, screen, update);
 #endif
+#
 
-	if (!access("bg2.png", R_OK))
-		obj = HD_PNG_Create("bg2.png");
+	if (!access(IMGPREFIX "bg2.png", R_OK))
+		obj = HD_PNG_Create(IMGPREFIX "bg2.png");
 	else {
 		obj = HD_New_Object();
 		obj->type = HD_TYPE_CANVAS;
