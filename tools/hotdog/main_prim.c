@@ -72,7 +72,7 @@ int main(int argc, char **argv)
 
 	srf = obj->canvas;
 	HD_Rect(srf, WIDTH/4, HEIGHT/3, WIDTH/2, HEIGHT/2, PREM(0xff808080));
-	HD_Line(srf, 0, 0, WIDTH/2, HEIGHT/2, PREM(0xffff0000));
+	HD_AALine(srf, 0, 0, WIDTH/2, HEIGHT/2, PREM(0xffff0000));
 	HD_Line(srf, WIDTH/2, HEIGHT/2, WIDTH/2, HEIGHT, PREM(0xffff0000));
 	HD_FillCircle(srf, WIDTH/4, HEIGHT/4, WIDTH/6, PREM(0xd0ff00ff));
 	HD_FillRect(srf, WIDTH/4 + 10, HEIGHT/4, WIDTH/2+WIDTH/4,
@@ -87,7 +87,7 @@ int main(int argc, char **argv)
 			{ 4,22}, {10,22}, {10,38}, { 4,28}
 		};
 		HD_Lines(srf, lines, 4, 0xff0000ff);
-		HD_Poly(srf, lines + 4, 4, 0xff00ff00);
+		HD_AAPoly(srf, lines + 4, 4, 0xff00ff00);
 	}
 	{
 		unsigned short bits[] = {

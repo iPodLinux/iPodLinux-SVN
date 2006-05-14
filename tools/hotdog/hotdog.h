@@ -235,9 +235,9 @@ typedef struct hd_engine {
  uint32 alpha,dst[2];                                          \
  uint32 idst = (dst_argb);                                      \
  uint32 isrc = (src_argb);                                      \
- if (opac != 0xff) { \
-    dst[0] = ((isrc & 0x00FF00FF) * opac + 0x00800080) & 0xFF00FF00; \
-    dst[1] = (((isrc >> 8) & 0x00FF00FF) * opac + 0x00800080) & 0xFF00FF00; \
+ if ((opac) != 0xff) { \
+    dst[0] = ((isrc & 0x00FF00FF) * (opac) + 0x00800080) & 0xFF00FF00; \
+    dst[1] = (((isrc >> 8) & 0x00FF00FF) * (opac) + 0x00800080) & 0xFF00FF00; \
     isrc = (dst[0]>>8) + dst[1]; \
  } \
  alpha = 255 - (isrc >> 24); \
@@ -267,7 +267,7 @@ typedef struct hd_engine {
 { \
  uint32 p; \
  _HD_ALPHA_BLEND (HD_SRF_GETPIX (srf,x,y), pix, p, 0xff); \
- HD_SRF_SETPIX (srf,x,y,pix); \
+ HD_SRF_SETPIX (srf,x,y,p); \
 } while(0)
 
 hd_engine *HD_Initialize(uint32 width,uint32 height,uint8 bpp, void *framebuffer, void (*update)(struct hd_engine*, int, int, int, int));
@@ -310,8 +310,11 @@ typedef struct _hd_point {
 } hd_point;
 void HD_Pixel(hd_surface srf, int x, int y, uint32 col);
 void HD_Line(hd_surface srf, int x0, int y0, int x1, int y1, uint32 col);
+void HD_AALine(hd_surface srf, int x0, int y0, int x1, int y1, uint32 col);
 void HD_Lines(hd_surface srf, hd_point *points, int n, uint32 col);
+void HD_AALines(hd_surface srf, hd_point *points, int n, uint32 col);
 void HD_Poly(hd_surface srf,  hd_point *points, int n, uint32 col);
+void HD_AAPoly(hd_surface srf, hd_point *points, int n, uint32 col);
 void HD_Bitmap(hd_surface srf, int x, int y, int w, int h,
 		const unsigned short *bits, uint32 col);
 void HD_FillRect(hd_surface srf, int x1, int y1, int x2, int y2, uint32 col);
