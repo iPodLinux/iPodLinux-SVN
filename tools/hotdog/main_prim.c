@@ -102,7 +102,7 @@ int main(int argc, char **argv)
 			0x3800};// ..## #... .... ....
 		HD_Bitmap(srf, WIDTH - WIDTH/4, 0, 16, 9, bits, 0xffff0000);
 	}
-	HD_Blur(srf, 0, HEIGHT/2, WIDTH, 24, 24);
+	HD_Blur(srf, 0, HEIGHT/2, WIDTH, 24, 5);
 
 	while (!eop) {
 #ifndef IPOD

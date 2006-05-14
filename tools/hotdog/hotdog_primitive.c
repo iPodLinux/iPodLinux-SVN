@@ -605,7 +605,7 @@ void HD_Blur(hd_surface srf, int x, int y, int w, int h, int rad)
 	int rsum, gsum, bsum, amt;
 	uint32 col;
 	int tx, ty;
-	int rad_2 = rad >> 1;
+	int diam = (rad << 1) + 1;
 
 	if (rad <= 0 || w <= 0 || h <= 0)
 		return;
@@ -617,10 +617,10 @@ void HD_Blur(hd_surface srf, int x, int y, int w, int h, int rad)
 	for (ly = 0; ly < h; ++ly) {
 		for (lx = 0; lx < w; ++lx) {
 			amt = rsum = gsum = bsum = 0;
-			for (ky = 0; ky < rad; ++ky) {
-				for (kx = 0; kx < rad; ++kx) {
-					tx = x + lx + kx - rad_2;
-					ty = y + ly + ky - rad_2;
+			for (ky = 0; ky < diam; ++ky) {
+				for (kx = 0; kx < diam; ++kx) {
+					tx = x + lx + kx - rad;
+					ty = y + ly + ky - rad;
 					if (tx < 0 || tx > HD_SRF_WIDTH(srf) ||
 					    ty < 0 || ty > HD_SRF_HEIGHT(srf))
 						continue;
