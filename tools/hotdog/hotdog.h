@@ -322,9 +322,11 @@ void HD_Rect(hd_surface srf, int x1, int y1, int x2, int y2, uint32 col);
 void HD_Circle(hd_surface srf, int x, int y, int r, uint32 col);
 void HD_AACircle(hd_surface srf, int xc, int yc, int r, uint32 col);
 void HD_FillCircle(hd_surface srf, int x, int y, int r, uint32 col);
+void HD_AAFillCircle(hd_surface srf, int xc, int yc, int r, uint32 col);
 void HD_AAEllipse(hd_surface srf, int xc, int yc, int rx, int ry, uint32 col);
 void HD_Ellipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col);
 void HD_FillEllipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col);
+void HD_AAFillEllipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col);
 void HD_Blur(hd_surface srf, int x, int y, int w, int h, int rad);
 
 #ifdef IPOD
