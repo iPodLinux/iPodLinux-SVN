@@ -152,21 +152,100 @@ function line(x0, x1, y0, y1)
 #endif
 }
 
-void HD_Lines(hd_surface srf, hd_point *points, int n, uint32 col)
+#define BLENDPIX_WEIGHT(srf,x,y,pix,wei)			\
+  do {								\
+    uint32 p;							\
+    _HD_ALPHA_BLEND(HD_SRF_GETPIX(srf, x, y), pix, p, wei);	\
+    HD_SRF_SETPIX(srf,x,y,p);					\
+  } while (0)
+
+void HD_AALine(hd_surface srf, int x0, int y0, int x1, int y1, uint32 col)
 {
-	for (--n; n; --n) {
-		HD_Line(srf, points[n - 1].x, points[n - 1].y,
-				points[n].x, points[n].y, col);
+	uint32 erracc, erradj;
+	uint32 erracctmp, wgt;
+	int dx, dy, xdir;
+
+	if (y0 > y1) {
+		SWAP(y0, y1);
+		SWAP(x0, x1);
 	}
+
+	dx = x1 - x0;
+	dy = y1 - y0;
+
+	if (dx >= 0)
+		xdir = 1;
+	else {
+		xdir = -1;
+		dx = (-dx);
+	}
+
+	if (dx == 0 || dy == 0 || dx == dy) {
+		HD_Line(srf, x0, y0, x1, y1, col);
+		return;
+	}
+
+	erracc = 0;
+
+	HD_SRF_BLENDPIX(srf, x0, y0, col);
+
+	if (dy > dx) {
+		erradj = ((dx << 16) / dy) << 16;
+
+		while (--dy) {
+			erracctmp = erracc;
+			erracc += erradj;
+			if (erracc <= erracctmp)
+				x0 += xdir;
+			++y0;
+	
+			wgt = (erracc >> 24) & 0xff;
+			BLENDPIX_WEIGHT(srf, x0, y0, col, 255 - wgt);
+			BLENDPIX_WEIGHT(srf, x0 + xdir, y0, col, wgt);
+		}
+	}
+	else {
+		erradj = ((dy << 16) / dx) << 16;
+
+		while (--dx) {
+			erracctmp = erracc;
+			erracc += erradj;
+			if (erracc <= erracctmp)
+				++y0;
+			x0 += xdir;
+			wgt = (erracc >> 24) & 0xff;
+			BLENDPIX_WEIGHT(srf, x0, y0, col, 255 - wgt);
+			BLENDPIX_WEIGHT(srf, x0, y0 + 1, col, wgt);
+		}
+	}
+
+	HD_SRF_BLENDPIX(srf, x1, y1, col);
 }
 
-void HD_Poly(hd_surface srf,  hd_point *points, int n, uint32 col)
-{
-	if (n < 3) return;
-	HD_Lines(srf, points, n, col);
-	HD_Line(srf, points[0].x, points[0].y,
-			points[n - 1].x, points[n - 1].y, col);
-}
+#define DO_HD_LINES(function, srf, p, n, col)				\
+  do {									\
+    for (--n; n; --n)							\
+      function(srf, p[n - 1].x, p[n - 1].y, p[n].x, p[n].y, col);	\
+  } while (0)
+
+void HD_Lines(hd_surface srf, hd_point *points, int n, uint32 col)
+{ DO_HD_LINES(HD_Line, srf, points, n, col); }
+
+void HD_AALines(hd_surface srf, hd_point *points, int n, uint32 col)
+{ DO_HD_LINES(HD_AALine, srf, points, n, col); }
+
+#define DO_HD_POLY(function, srf, p, n, col)			\
+  do {								\
+    if (n < 3) return;						\
+    function(srf, p[0].x, p[0].y, p[n - 1].x, p[n - 1].y, col);	\
+    DO_HD_LINES(function, srf, p, n, col);			\
+  } while (0)
+
+void HD_Poly(hd_surface srf, hd_point *points, int n, uint32 col)
+{ DO_HD_POLY(HD_Line, srf, points, n, col); }
+
+void HD_AAPoly(hd_surface srf, hd_point *points, int n, uint32 col)
+{ DO_HD_POLY(HD_AALine, srf, points, n, col); }
 
 void HD_Bitmap(hd_surface srf, int x, int y, int w, int h,
 		const unsigned short *bits, uint32 col)
@@ -341,11 +420,9 @@ void HD_FillCircle(hd_surface srf, int x, int y, int r, uint32 col)
 	}
 
 	do {
-		xpcx = x + cx;
-		xmcx = x - cx;
-		xpcy = x + cy;
-		xmcy = x - cy;
 		if (ocy != cy) {
+			xpcx = x + cx;
+			xmcx = x - cx;
 			if (cy > 0) {
 				hLine(srf, xmcx, xpcx, y + cy, col);
 				hLine(srf, xmcx, xpcx, y - cy, col);
@@ -355,6 +432,8 @@ void HD_FillCircle(hd_surface srf, int x, int y, int r, uint32 col)
 			ocy = cy;
 		}
 		if (ocx != cx) {
+			xpcy = x + cy;
+			xmcy = x - cy;
 			if (cx != cy) {
 				if (cx > 0) {
 					hLine(srf, xmcy, xpcy, y - cx, col);
