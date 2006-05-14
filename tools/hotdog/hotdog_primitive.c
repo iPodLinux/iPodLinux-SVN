@@ -82,6 +82,7 @@ static void hLine(hd_surface srf, int x1, int x2, int y, uint32 col)
 {
 	uint32 *p;
 	/* TODO: check bounds */
+	if (x1 > x2) SWAP(x1, x2);
 	p = HD_SRF_ROWF(srf, y);
 	for (; x1 < x2; ++x1)
 		BLEND_ARGB8888_ON_ARGB8888(*(p + x1), col, 0xff)
