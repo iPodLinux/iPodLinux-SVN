@@ -401,6 +401,9 @@ void HD_Circle(hd_surface srf, int x, int y, int r, uint32 col)
 	} while (cx <= cy);
 }
 
+void HD_AACircle(hd_surface srf, int xc, int yc, int r, uint32 col)
+{ HD_AAEllipse(srf, xc, yc, r, r, col); }
+
 /* XXX: add clipping */
 void HD_FillCircle(hd_surface srf, int x, int y, int r, uint32 col)
 {
@@ -458,6 +461,9 @@ void HD_FillCircle(hd_surface srf, int x, int y, int r, uint32 col)
 		++cx;
 	} while (cx <= cy);
 }
+
+void HD_AAFillCircle(hd_surface srf, int xc, int yc, int r, uint32 col)
+{ HD_AAFillEllipse(srf, xc, yc, r, r, col); }
 
 void HD_Ellipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col)
 {
@@ -581,6 +587,155 @@ void HD_Ellipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col)
 	}
 }
 
+void HD_AAEllipse(hd_surface srf, int xc, int yc, int rx, int ry, uint32 col)
+{
+	int i;
+	int a2, b2, ds, dt, dxt, t, s, d;
+	int32 x, y, xs, ys, dyt, xx, yy, xc2, yc2;
+	float cp;
+	unsigned char weight, iweight;
+
+	if (rx < 0 || ry < 0)
+		return;
+
+	if (rx == 0 || ry == 0) {
+		HD_Line(srf, xc - rx, yc - ry, xc + ry, yc + ry, col);
+		return;
+	}
+
+	a2 = rx * rx;
+	b2 = ry * ry;
+
+	ds = a2 << 1;
+	dt = b2 << 1;
+
+	xc2 = xc << 1;
+	yc2 = yc << 1;
+
+	dxt = (int)(a2 / sqrt(a2 + b2));
+
+	t = 0;
+	s = -2 * a2 * ry;
+	d = 0;
+
+	x = xc;
+	y = yc - ry;
+
+	HD_SRF_BLENDPIX(srf, x, y, col);
+	HD_SRF_BLENDPIX(srf, xc2 - x, y, col);
+	HD_SRF_BLENDPIX(srf, x, yc2 - y, col);
+	HD_SRF_BLENDPIX(srf, xc2 - x, yc2 - y, col);
+
+	for (i = 1; i <= dxt; ++i) {
+		--x;
+		d += t - b2;
+
+		if (d >= 0)
+			ys = y - 1;
+		else if ((d - s - a2) > 0) {
+			if ((2 * d - s - a2) >= 0)
+				ys = y + 1;
+			else {
+				ys = y++;
+				d -= s + a2;
+				s += ds;
+			}
+		}
+		else {
+			ys = ++y + 1;
+			d -= s + a2;
+			s += ds;
+		}
+
+		t -= dt;
+
+		/* Calculate alpha */
+		if (s != 0.0) {
+			cp = (float)ABS(d) / (float)ABS(s);
+			if (cp > 1.0)
+				cp = 1.0;
+		}
+		else
+			cp = 1.0;
+
+		/* Calculate weights */
+		weight = (unsigned char)(cp * 255);
+		iweight = 255 - weight;
+
+		/* Upper half */
+		xx = xc2 - x;
+		BLENDPIX_WEIGHT(srf, x, y, col, iweight);
+		BLENDPIX_WEIGHT(srf, xx, y, col, iweight);
+
+		BLENDPIX_WEIGHT(srf, x, ys, col, weight);
+		BLENDPIX_WEIGHT(srf, xx, ys, col, weight);
+
+		/* Lower half */
+		yy = yc2 - y;
+		BLENDPIX_WEIGHT(srf, x, yy, col, iweight);
+		BLENDPIX_WEIGHT(srf, xx, yy, col, iweight);
+
+		yy = yc2 - ys;
+		BLENDPIX_WEIGHT(srf, x, yy, col, weight);
+		BLENDPIX_WEIGHT(srf, xx, yy, col, weight);
+	}
+
+	dyt = ABS(y - yc);
+
+	for (i = 1; i <= dyt; ++i) {
+		++y;
+		d -= s + a2;
+
+		if (d <= 0)
+			xs = x + 1;
+		else if ((d + t - b2) < 0) {
+			if ((2 * d + t - b2) <= 0)
+				xs = x - 1;
+			else {
+				xs = x--;
+				d += t - b2;
+				t -= dt;
+			}
+		} else {
+			xs = --x - 1;
+			d += t - b2;
+			t -= dt;
+		}
+
+		s += ds;
+
+		/* Calculate alpha */
+		if (t != 0.0) {
+			cp = (float) abs(d) / (float) abs(t);
+			if (cp > 1.0)
+				cp = 1.0;
+		}
+		else
+			cp = 1.0;
+
+		/* Calculate weight */
+		weight = (unsigned char)(cp * 255);
+		iweight = 255 - weight;
+
+		/* Left half */
+		xx = xc2 - x;
+		yy = yc2 - y;
+		BLENDPIX_WEIGHT(srf, x, y, col, iweight);
+		BLENDPIX_WEIGHT(srf, xx, y, col, iweight);
+
+		BLENDPIX_WEIGHT(srf, x, yy, col, iweight);
+		BLENDPIX_WEIGHT(srf, xx, yy, col, iweight);
+
+		/* Right half */
+		xx = 2 * xc - xs;
+		BLENDPIX_WEIGHT(srf, xs, y, col, weight);
+		BLENDPIX_WEIGHT(srf, xx, y, col, weight);
+
+		BLENDPIX_WEIGHT(srf, xs, yy, col, weight);
+		BLENDPIX_WEIGHT(srf, xx, yy, col, weight);
+	}
+}
+
 void HD_FillEllipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col)
 {
 	int ix, iy;
@@ -675,6 +830,170 @@ void HD_FillEllipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col)
 			iy = iy - ix / ry;
 
 		} while (i > h);
+	}
+}
+
+void HD_AAFillEllipse(hd_surface srf, int xc, int yc, int rx, int ry,uint32 col)
+{
+	int i;
+	int a2, b2, ds, dt, dxt, t, s, d;
+	int32 x, y, xs, ys, dyt, xx, yy, xc2, yc2;
+	float cp;
+	unsigned char weight, iweight;
+
+	if (rx < 0 || ry < 0) return;
+
+	if (rx == 0 || ry == 0) {
+		HD_Line(srf, xc - rx, yc - ry, xc + rx, yc + ry, col);
+		return;
+	}
+
+	a2 = rx * rx;
+	b2 = ry * ry;
+
+	ds = a2 << 1;
+	dt = b2 << 1;
+
+	xc2 = xc << 1;
+	yc2 = yc << 1;
+
+	dxt = (int)(a2 / sqrt(a2 + b2));
+
+	t = 0;
+	s = -2 * a2 * ry;
+	d = 0;
+
+	x = xc;
+	y = yc - ry;
+
+	HD_SRF_BLENDPIX(srf, x, y, col);
+	HD_SRF_BLENDPIX(srf, xc2 - x, y, col);
+	HD_SRF_BLENDPIX(srf, x, yc2 - y, col);
+	HD_SRF_BLENDPIX(srf, xc2 - x, yc2 - y, col);
+
+	HD_Line(srf, x, y+1, x, yc2-y-1, col);
+
+	for (i = 1; i <= dxt; i++) {
+		--x;
+		d += t - b2;
+
+		if (d >= 0)
+			ys = y - 1;
+		else if ((d - s - a2) > 0) {
+			if ((2 * d - s - a2) >= 0)
+				ys = y + 1;
+			else {
+				ys = y++;
+				d -= s + a2;
+				s += ds;
+			}
+		}
+		else {
+			ys = ++y + 1;
+			d -= s + a2;
+			s += ds;
+		}
+
+		t -= dt;
+
+		/* Calculate alpha */
+		if (s != 0.0) {
+			cp = (float) abs(d) / (float) abs(s);
+			if (cp > 1.0)
+				cp = 1.0;
+		}
+		else
+			cp = 1.0;
+
+		/* Calculate weights */
+		weight = (unsigned char)(cp * 255);
+		iweight = 255 - weight;
+
+		/* Upper half */
+		xx = xc2 - x;
+		BLENDPIX_WEIGHT(srf, x, y, col, iweight);
+		BLENDPIX_WEIGHT(srf, xx, y, col, iweight);
+
+		BLENDPIX_WEIGHT(srf, x, ys, col, weight);
+		BLENDPIX_WEIGHT(srf, xx, ys, col, weight);
+
+		/* Lower half */
+		yy = yc2 - y;
+		BLENDPIX_WEIGHT(srf, x, yy, col, iweight);
+		BLENDPIX_WEIGHT(srf, xx, yy, col, iweight);
+
+		yy = yc2 - ys;
+		BLENDPIX_WEIGHT(srf, x, yy, col, weight);
+		BLENDPIX_WEIGHT(srf, xx, yy, col, weight);
+
+		/* Fill */
+		HD_Line(srf, x, y+1, x, 2*yc-y-1, col);
+		HD_Line(srf, xx, y+1, xx, 2*yc-y-1, col);
+		HD_Line(srf, x, ys+1, x, yy-1, col);
+		HD_Line(srf, xx, ys+1, xx, yy-1, col);
+	}
+
+	dyt = abs(y - yc);
+
+	for (i = 1; i <= dyt; i++) {
+		++y;
+		d -= s + a2;
+
+		if (d <= 0)
+			xs = x + 1;
+		else if ((d + t - b2) < 0) {
+			if ((2 * d + t - b2) <= 0)
+				xs = x - 1;
+			else {
+				xs = x--;
+				d += t - b2;
+				t -= dt;
+			}
+		}
+		else {
+			xs = --x - 1;
+			d += t - b2;
+			t -= dt;
+		}
+
+		s += ds;
+
+		/* Calculate alpha */
+		if (t != 0.0) {
+			cp = (float) abs(d) / (float) abs(t);
+			if (cp > 1.0)
+				cp = 1.0;
+		}
+		else
+			cp = 1.0;
+
+		/* Calculate weight */
+		weight = (unsigned char) (cp * 255);
+		iweight = 255 - weight;
+
+		/* Left half */
+		xx = xc2 - x;
+		yy = yc2 - y;
+		BLENDPIX_WEIGHT(srf, x, y, col, iweight);
+		BLENDPIX_WEIGHT(srf, xx, y, col, iweight);
+	
+		BLENDPIX_WEIGHT(srf, x, yy, col, iweight);
+		BLENDPIX_WEIGHT(srf, xx, yy, col, iweight);
+
+		/* Right half */
+		xx = xc2 - xs;
+		BLENDPIX_WEIGHT(srf, xs, y, col, weight);
+		BLENDPIX_WEIGHT(srf, xx, y, col, weight);
+
+		BLENDPIX_WEIGHT(srf, xs, yy, col, weight);
+		BLENDPIX_WEIGHT(srf, xx, yy, col, weight);
+
+		/* Fill */
+		xx = xc2 - x;
+		hLine(srf, x+1, xx-1, y, col);
+		hLine(srf, xs+1, xc2-xs-1, y, col);
+		hLine(srf, x+1, xx-1, yy, col);
+		hLine(srf, xs+1, xc2-xs-1, yy, col);
 	}
 }
 

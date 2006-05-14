@@ -78,7 +78,7 @@ int main(int argc, char **argv)
 	HD_FillRect(srf, WIDTH/4 + 10, HEIGHT/4, WIDTH/2+WIDTH/4,
 			HEIGHT/2+HEIGHT/4, PREM(0xd000ff00));
 	HD_Circle(srf, WIDTH/2, HEIGHT/2, WIDTH/5, PREM(0xff0000ff));
-	HD_Ellipse(srf, WIDTH/2, HEIGHT/2, WIDTH/6, HEIGHT/2, PREM(0xffffff00));
+	HD_AAEllipse(srf, WIDTH/2, HEIGHT/2, WIDTH/6, HEIGHT/2, PREM(0xffffff00));
 	HD_FillEllipse(srf, WIDTH/4, HEIGHT-HEIGHT/3, WIDTH/12, HEIGHT/6,
 			PREM(0x8000ffff));
 	{
