@@ -111,7 +111,7 @@ void int_add_header_widget( char * widgetDisplayName,
 	/* now, setup the internal wid */
 	new->widg = ttk_new_widget (0, 0);
 	new->widg->h = ttk_screen->wy;
-	new->widg->w = ttk_screen->wy;	/* square for now */
+	new->widg->w = 0; 	/* default to 0 width */
 	new->widg->draw = NULL;	/* should use this */
 	new->widg->timer = NULL;	/* should use this */
 	/* ttk_widget_set_timer (new->widg, 1000); */
@@ -1423,6 +1423,7 @@ void test_update_widget( struct header_info * hdr )
 	char * data;
 	if( !hdr ) return;
 	data = (char *) hdr->data;
+	hdr->widg->w = hdr->widg->h;
 /*
 	printf( "update %s\n", data );
 	hdr->widg->w = 5;
@@ -1649,6 +1650,8 @@ static void w_lav_update( struct header_info * hdr )
 {
 	_lav_data * ld = (_lav_data *)hdr->data;
 	int h;
+
+	hdr->widg->w = hdr->widg->h;
 
 	for( h=0 ; h<N_LAV_ENTRIES-1 ; h++ ) {
 		ld->dv[h] = ld->dv[h+1];
