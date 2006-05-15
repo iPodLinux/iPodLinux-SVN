@@ -71,6 +71,8 @@ sub mirror_file($$) {
 sub handle_pkglist($$$);
 sub handle_pkglist($$$) {
     my($pkglist, $localpath, $remotepath) = @_;
+    my($rp) = "$remotepath/";
+    $rp = "" unless $rp =~ m[://];
     my($fhin, $fhout);
     print STDERR ">>> Mirroring $pkglist -> $localpath...\n";
     -d $localpath || mkdir($localpath, 0755) || die "$localpath: $!\n";
@@ -82,12 +84,12 @@ sub handle_pkglist($$$) {
         if (/^\s*<<\s*(\S+)\s*>>\s*$/) {
             my($basename) = basename($1);
             handle_pkglist ($1, "$localpath/$basename", "$remotepath/$basename");
-            print $fhout "<< $remotepath/$basename/packages.ipl >>\n";
+            print $fhout "<< $rp$basename/packages.ipl >>\n";
         } elsif (/^\s*\[(kernel|loader|file|archive)\]\s*([a-zA-Z0-9_-]+)\s+([0-9.YMDNCVS-]+[abc]?)\s*:\s*"(.*?)"\s*at\s+(\S+)(.*)/) {
             my($type, $name, $vers, $desc, $url, $rest) = ($1, $2, $3, $4, $5, $6);
             my($newname) = "$name-$vers.@{[extension $url]}";
             mirror_file ($url, "$localpath/$newname");
-            print $fhout "[$type] $name $vers: \"$desc\" at $remotepath/$newname$rest\n";
+            print $fhout "[$type] $name $vers: \"$desc\" at $rp$newname$rest\n";
         } else {
             print $fhout "$_\n";
         }
