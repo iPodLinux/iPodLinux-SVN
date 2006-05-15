@@ -5,6 +5,7 @@
 #include "installer.h"
 #include "actions.h"
 
+#include <QDir>
 #include <QMap>
 #include <QHttp>
 #include <QLabel>
@@ -147,7 +148,7 @@ protected slots:
 
 protected:
     void loadExternalPackageList (QString filename, bool markBold);
-    Package *parsePackageListLine (QString line, bool makeBold = false);
+    Package *parsePackageListLine (QString line, bool makeBold = false, QDir *relativeTo = 0);
     
 private:
     QHttp *packlistHTTP;

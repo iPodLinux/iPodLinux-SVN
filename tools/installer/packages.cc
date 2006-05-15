@@ -381,7 +381,7 @@ PackagesPage::PackagesPage (Installer *wiz, bool atm)
              this, SLOT(itemCollapsed(QTreeWidgetItem*)));
     connect (packages, SIGNAL(itemExpanded(QTreeWidgetItem*)),
              this, SLOT(itemExpanded(QTreeWidgetItem*)));
-    connect (loadpkg, SIGNAL(released()), this, SLOT(loadExternalPackageList()));
+    connect (loadpkg, SIGNAL(released()), this, SLOT(doLoadExtraPackageList()));
 
     QVBoxLayout *layout = new QVBoxLayout;
     layout->addWidget (blurb);
@@ -458,7 +458,7 @@ void PackagesPage::loadExternalPackageList (QString filename, bool markBold)
                                        tr ("Cancel"));
             }
         } else {
-            Package *pkgp = parsePackageListLine (line, markBold);
+            Package *pkgp = parsePackageListLine (line, markBold, &pkglistdir);
             if (pkgp) { // munge URLs and such to be relative to the filename
                 pkgp->url() = pkglistdir.absoluteFilePath (pkgp->url());
             }
@@ -591,12 +591,12 @@ void PackagesPage::httpRequestFinished (int req, bool err)
     }
 }
 
-Package *PackagesPage::parsePackageListLine (QString line, bool makeBold) 
+Package *PackagesPage::parsePackageListLine (QString line, bool makeBold, QDir *relativeTo) 
 {
     if (line.indexOf ('#') >= 0)
         line.truncate (line.indexOf ('#'));
     line = line.trimmed();
-    if (line == "") return;
+    if (line == "") return 0;
 
     QRegExp crx ("\\s*\\[category\\]\\s*([a-zA-Z0-9_-]+)\\s*:\\s*\"([^\"]*)\"");
     if (crx.exactMatch (line)) {
@@ -630,7 +630,10 @@ Package *PackagesPage::parsePackageListLine (QString line, bool makeBold)
                 packlistHTTP->get (url.toString (QUrl::RemoveScheme | QUrl::RemoveAuthority));
             }
         } else {
-            loadExternalPackageList (irx.cap (1), makeBold);
+            if (relativeTo)
+                loadExternalPackageList (relativeTo->absoluteFilePath (irx.cap (1)), makeBold);
+            else
+                loadExternalPackageList (irx.cap (1), makeBold);
         }
         return 0;
     }
