@@ -213,10 +213,13 @@ appear on both the left and right side of the header, then the
 update time on the left side will be observed.  Generally, it is
 within this function that the widget will change its width to be
 appropriate for the amount of space necessary to display its content.
-This is stored in the widget structure, passed in via the header
-info structure.  \verb|hdrinfo->widg->w| If you want a square widget
-(the default size) fill \verb|w| with the content of the widget's
-height \verb|hdrinfo->widg->h|.
+
+The widet's width is stored in the ``widg'' structure, passed in
+via the header info structure.  \verb|hdrinfo->widg->w| If you want
+a square widget (the default size) fill \verb|w| with the content
+of the widget's height \verb|hdrinfo->widg->h|.  When you instantiate
+a new widget, its default width is 0 pixels.  If you want it to
+appear, you need to set this to a positive width in pixels.
 
 If you set the width to be zero (0), then the header widget management
 system will behave as though there is no widget.  That is to say
