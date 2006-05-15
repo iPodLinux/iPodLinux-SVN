@@ -440,9 +440,28 @@ void PackagesPage::loadExternalPackageList (QString filename, bool markBold)
     QByteArray bline;
     while (!pkglist.atEnd() && !(bline = pkglist.readLine()).isNull()) {
         QString line = bline;
-        Package *pkgp = parsePackageListLine (line, markBold);
-        if (pkgp) { // munge URLs and such to be relative to the filename
-            pkgp->url() = pkglistdir.absoluteFilePath (pkgp->url());
+
+        QRegExp vrx ("\\s*[Vv]ersion\\s+(\\d+)\\s*");
+        QRegExp nrx ("\\s*[Ii]nstaller\\s+([0-9A-Za-z.-]+)\\s*");
+        if (vrx.exactMatch (line)) {
+            if (vrx.cap (1).toInt() != INSTALLER_PACKAGE_VERSION) {
+                QMessageBox::critical (this, tr ("Version mismatch"),
+                                       tr ("Package format version mismatch (need %1, got %2)")
+                                       .arg (INSTALLER_PACKAGE_VERSION).arg (vrx.cap (1)),
+                                       tr ("Cancel"));
+            }
+        } else if (nrx.exactMatch (line)) {
+            if (nrx.cap (1) != INSTALLER_VERSION) {
+                QMessageBox::critical (this, tr ("Version mismatch"),
+                                       tr ("Installer version mismatch (need %1, got %2)")
+                                       .arg (INSTALLER_VERSION).arg (vrx.cap (1)),
+                                       tr ("Cancel"));
+            }
+        } else {
+            Package *pkgp = parsePackageListLine (line, markBold);
+            if (pkgp) { // munge URLs and such to be relative to the filename
+                pkgp->url() = pkglistdir.absoluteFilePath (pkgp->url());
+            }
         }
     }
 
@@ -574,6 +593,11 @@ void PackagesPage::httpRequestFinished (int req, bool err)
 
 Package *PackagesPage::parsePackageListLine (QString line, bool makeBold) 
 {
+    if (line.indexOf ('#') >= 0)
+        line.truncate (line.indexOf ('#'));
+    line = line.trimmed();
+    if (line == "") return;
+
     QRegExp crx ("\\s*\\[category\\]\\s*([a-zA-Z0-9_-]+)\\s*:\\s*\"([^\"]*)\"");
     if (crx.exactMatch (line)) {
         QTreeWidgetItem *catitem = new QTreeWidgetItem (packages, QTreeWidgetItem::UserType + 2);
@@ -707,15 +731,16 @@ Package *PackagesPage::parsePackageListLine (QString line, bool makeBold)
                     pat.replace ("YYYYMMDD", "([0-9][0-9][0-9][0-9]-?[0-9][0-9]-?[0-9][0-9])");
                 if (pat.contains ("NNN"))
                     pat.replace ("NNN", "([0-9][0-9][0-9][0-9]?[0-9]?)");
-                
+
                 QRegExp rx (pat);
                 QStringList files = pkgdir.entryList();
                 QStringListIterator it (files);
                 QString cap = "";
                 while (it.hasNext()) {
                     QString file = it.next();
-                    if (rx.exactMatch (file) >= 0)
+                    if (rx.exactMatch (file)) {
                         cap = rx.cap(1);
+                    }
                 }
                 if (cap != "") {
                     pkg.version().replace ("YYYYMMDD", cap);

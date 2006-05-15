@@ -8,7 +8,7 @@ sub extension($) {
     if ($name =~ /\.(tar\.[a-z0-9]+)$/) {
         return $1;
     }
-    $name =~ s/^.*\./$1/;
+    $name =~ s/^.*\.//;
     return $name;
 }
 
@@ -34,19 +34,22 @@ sub mirror_file($$) {
             my($dirdata) = get ($dir);
             die " error getting directory listing\n" unless defined $dirdata;
             my(@dirlines) = split /\n/, $dirdata;
+            my($cap) = undef;
             for (@dirlines) {
                 my($pat) = $file;
                 $pat =~ s/YYYYMMDD/(\\d\\d\\d\\d-?\\d\\d-?\\d\\d)/;
                 $pat =~ s/NNN/(\\d\\d\\d+)/;
                 if (m[<a href=".*?">$pat</a>]i) {
-                    my($cap) = $1;
-                    $file =~ s/YYYYMMDD/$cap/;
-                    $remote =~ s/YYYYMMDD/$cap/;
-                    $local =~ s/YYYYMMDD/$cap/;
-                    $file =~ s/NNN/$cap/;
-                    $remote =~ s/NNN/$cap/;
-                    $local =~ s/NNN/$cap/;
+                    $cap = $1;
                 }
+            }
+            if (defined $cap) {
+                $file =~ s/YYYYMMDD/$cap/;
+                $remote =~ s/YYYYMMDD/$cap/;
+                $local =~ s/YYYYMMDD/$cap/;
+                $file =~ s/NNN/$cap/;
+                $remote =~ s/NNN/$cap/;
+                $local =~ s/NNN/$cap/;
             }
             print STDERR $file;
         } else {
