@@ -95,9 +95,9 @@ switch_endian(image_t *image)
 void
 print_image(image_t *image, const char *head)
 {
-    printf("%stype: '%s' id: 0x%4x len: 0x%4x addr: 0x%4x vers: 0x%8x\r\n", 
+    printf("%stype: '%s' id: 0x%08x len: 0x%x addr: 0x%08x vers: 0x%x\n", 
 	    head, image->type, image->id, image->len, image->addr, image->vers);
-    printf("devOffset: 0x%08X entryOffset: 0x%08X "
+    printf("  devOffset: 0x%08X entryOffset: 0x%08X "
 	    "loadAddr: 0x%08X chksum: 0x%08X\n", 
 	    image->devOffset, image->entryOffset, 
 	    image->loadAddr, image->chksum);
@@ -106,9 +106,9 @@ print_image(image_t *image, const char *head)
 void
 usage()
 {
-    printf("Usage: patch_fw [-h]\n"
-	   "       patch_fw [-v] -o outfile -e img_no fw_file\n"   
-	   "       patch_fw [-v] -g gen [-r rev] -o outfile [-i img_from_-e]* [-l raw_img]* ldr_img\n\n"
+    printf("Usage: make_fw [-h]\n"
+	   "       make_fw [-v] -o outfile -e img_no fw_file\n"
+	   "       make_fw [-v] -g gen [-r rev] -o outfile [-i img_from_-e]* [-l raw_img]* ldr_img\n\n"
 	   "  -g:    set target ipod generation, valid options are: 1g, 2g, 3g\n"
 	   "         4g, 5g, scroll, touch, dock, mini, photo, color, nano and video\n"
 	   "  -e:    extract the image at img_no in boot table to outfile\n"
@@ -144,7 +144,7 @@ copysum(FILE *s, FILE *d, unsigned len, unsigned off)
 	if (fread(&temp, 1, 1, s) != 1) {
 	    fprintf(stderr, "Failure in copysum: ");
 	    if (ferror(s))
-		fprintf(stderr, "fread error, check input file.\n");
+		fprintf(stderr, "fread error: %s\n", strerror(errno));
 	    else if (feof(s))
 		fprintf(stderr, "fread length 1 at offset %d hit EOF.\n", off);
 	    return -1;
@@ -152,7 +152,7 @@ copysum(FILE *s, FILE *d, unsigned len, unsigned off)
 	sum = sum + (temp & 0xff);
 	if (d) 
 	    if (fwrite(&temp, 1, 1, d) != 1) {
-	        fprintf(stderr, "Failure in copysum: fwrite error\n");
+		fprintf(stderr, "Failure in copysum; fwrite error: %s\n", strerror(errno));
 		return -1;
 	    }
     }
@@ -172,9 +172,9 @@ load_entry(image_t *image, FILE *fw, unsigned offset, int entry)
     }
     if (fread(image, sizeof(image_t), 1, fw) != 1) {
 	if (ferror(fw))
-	    fprintf(stderr, "fread error, ");
+	    fprintf(stderr, "fread error (%s), ", strerror(errno));
 	else if (feof(fw))
-	    fprintf(stderr, "fread length %d at offset %d hit EOF, ",
+	    fprintf(stderr, "fread length %lu at offset %lu hit EOF, ",
 			    sizeof(image_t), offset + entry * sizeof(image_t));
 	fprintf(stderr, "unable to load boot entry.\n");
 	return -1;
@@ -196,7 +196,7 @@ write_entry(image_t *image, FILE *fw, unsigned offset, int entry)
     }
     switch_endian(image);
     if (fwrite(image, sizeof(image_t), 1, fw) != 1) {
-	fprintf(stderr, "fwrite error, unable to write boot entry\n");
+	fprintf(stderr, "fwrite error (%s), unable to write boot entry\n", strerror(errno));
 	switch_endian(image);
 	return -1;
     }
@@ -236,6 +236,33 @@ extract(FILE *f, int idx, FILE *out)
     if (copysum(f, out, image->len, off) == -1)
 	return -1;
 		
+    return 0;
+}
+
+/* list all images */
+int 
+listall(FILE *f)
+{
+    image_t *image;
+    unsigned char buf[512];
+    int idx;
+
+    fseek(f, 0x100 + 10, SEEK_SET);
+    fread(&fw_version, sizeof(fw_version), 1, f);
+    fw_version = switch_16(fw_version);
+
+    image = (image_t *)buf;
+    
+    idx = 0;
+    while (idx < 20) {
+	char prefix[32];
+	if (load_entry(image, f, TBL, idx) < 0) return -1;
+	if (!image->id) break;
+	sprintf (prefix, "%2d: ", idx);
+	print_image (image, prefix);
+	++idx;
+    }
+
     return 0;
 }
 
@@ -456,13 +483,23 @@ main(int argc, char **argv)
 	return 0;
     }
     else if (!gen_set) {
+	if ((in = fopen(argv[optind], "rb")) != NULL) {
+	    // just list all available entries
+	    listall (in);
+	    fclose(in);
+	    return 0;
+	}
 	usage();
 	return 1;
     }
 
     printf("Generating firmware image compatible with ");
     if (fw_version == 3) {
-	printf("iPod mini, 4g and iPod photo...\n");
+	if (needs_rcsc) {
+	    printf("iPod video\n");
+	} else {
+	    printf("iPod mini, 4g and iPod photo/color...\n");
+	}
     } else {
 	printf("1g, 2g and 3g iPods...\n");
     }
@@ -499,17 +536,17 @@ main(int argc, char **argv)
 	return 1;
     }
     if (fwrite(apple_copyright, 0x100, 1, out) != 1) {
-	fprintf(stderr, "fwrite failed while writing copyright\n");
+	fprintf(stderr, "fwrite error (%s) while writing copyright\n", strerror(errno));
 	return 1;
     }
     version = switch_32(0x5b68695d); /* magic */
     if (fwrite(&version, 4, 1, out) != 1) {
-	fprintf(stderr, "fwrite failed while writing version magic\n");
+	fprintf(stderr, "fwrite error (%s) while writing version magic\n", strerror(errno));
 	return 1;
     }
     version = switch_32(0x00004000); /* magic */
     if (fwrite(&version, 4, 1, out) != 1) {
-	fprintf(stderr, "fwrite failed while writing version magic\n");
+	fprintf(stderr, "fwrite error (%s) while writing version magic\n", strerror(errno));
 	return 1;
     }
     if (fw_version == 3) {
@@ -519,7 +556,7 @@ main(int argc, char **argv)
     }
 
     if (fwrite(&version, 4, 1, out) != 1) {
-	fprintf(stderr, "fwrite failed while writing version magic\n");
+	fprintf(stderr, "fwrite error (%s) while writing version magic\n", strerror(errno));
 	return 1;
     }
     if (write_entry(&image, out, TBL, 0) == -1)
@@ -551,7 +588,7 @@ main(int argc, char **argv)
 	    return 1;
 	}
 
-        if (verbose) print_image(&rsrc, "rsrc image: ");
+	if (verbose) print_image(&rsrc, "rsrc image: ");
     }
 
     return 0;
