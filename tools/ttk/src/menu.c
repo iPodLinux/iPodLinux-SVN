@@ -687,7 +687,7 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
 		      y + ofs, col, data->menu[xi]->choices[data->menu[xi]->choice]);
 	}
 
-	if ((data->menu[xi]->flags & TTK_MENU_ICON) && (!selected || data->menu[xi]->iconflash)) {
+	if (data->menu[xi]->flags & TTK_MENU_ICON) {
             const char *prop =
                 (!selected)? "menu.icon" :
                 (data->menu[xi]->iconflash == 3)? "menu.icon3" :
@@ -695,20 +695,22 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
                 (data->menu[xi]->iconflash == 1)? "menu.icon1" :
                 "menu.icon0";
             TApItem *ap = ttk_ap_get (prop);
-            ttk_color bgcol = (selected? ttk_ap_getx ("menu.selbg")->color : ttk_ap_getx ("menu.bg")->color);
+            if (ap) {
+                ttk_color bgcol = (selected? ttk_ap_getx ("menu.selbg")->color : ttk_ap_getx ("menu.bg")->color);
                 
-	    switch (data->menu[xi]->flags & TTK_MENU_ICON) {
-	    case TTK_MENU_ICON_SUB:
-		ttk_draw_icon (ttk_icon_sub, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, ap, bgcol);
-		break;
-	    case TTK_MENU_ICON_EXE:
-		ttk_draw_icon (ttk_icon_exe, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, ap, bgcol);
-		break;
-	    case TTK_MENU_ICON_SND:
-		ttk_draw_icon (ttk_icon_spkr, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, ap, bgcol);
-		break;
-	    }
-	}
+                switch (data->menu[xi]->flags & TTK_MENU_ICON) {
+                case TTK_MENU_ICON_SUB:
+                    ttk_draw_icon (ttk_icon_sub, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, ap, bgcol);
+                    break;
+                case TTK_MENU_ICON_EXE:
+                    ttk_draw_icon (ttk_icon_exe, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, ap, bgcol);
+                    break;
+                case TTK_MENU_ICON_SND:
+                    ttk_draw_icon (ttk_icon_spkr, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, ap, bgcol);
+                    break;
+                }
+            }
+        }
 
 	y += data->itemheight;
     }
