@@ -142,9 +142,11 @@ protected slots:
     void httpResponseHeaderReceived (const QHttpResponseHeader& resp);
     void done();
     void listClicked (QTreeWidgetItem *item, int column);
+    void listDoubleClicked (QTreeWidgetItem *item);
     void itemCollapsed (QTreeWidgetItem *item);
     void itemExpanded (QTreeWidgetItem *item);
     void doLoadExtraPackageList();
+    void doSavePackageList();
 
 protected:
     void loadExternalPackageList (QString filename, bool markBold);
@@ -156,7 +158,7 @@ private:
     QLabel *progressStmt;
     QString host;
     QTreeWidget *packages;
-    QPushButton *loadpkg;
+    QPushButton *loadpkg, *savepkg;
     QMap <int, PkgTreeWidgetItem*> resolvers;
     QMap <QString, QTreeWidgetItem*> categories;
     QMultiMap <QString, PkgTreeWidgetItem*> packageProvides;
