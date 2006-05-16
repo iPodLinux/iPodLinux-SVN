@@ -9,7 +9,7 @@
 #include "rawpod/partition.h"
 
 // The human-readable version.
-#define INSTALLER_VERSION         "2.11"
+#define INSTALLER_VERSION         "2.2b2"
 // The integer version for the package list format.
 #define INSTALLER_PACKAGE_VERSION  3
 // A bitmask of working iPods.
@@ -50,6 +50,8 @@ extern bool iPodDoBackup;
 extern QString iPodBackupLocation;
 // Where the backup and packages will go by default. (A directory.) Defaults to QDir::current().
 extern QString InstallerHome;
+// The first package list to be loaded.
+extern QString PackageListFile;
 
 class QCheckBox;
 class QGroupBox;

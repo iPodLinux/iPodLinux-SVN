@@ -73,6 +73,7 @@ public:
         return false;
     }
 
+    Package& operator= (Package& other);
 
 protected:
     QString _name, _version, _dest, _desc, _url, _subfile, _category;
