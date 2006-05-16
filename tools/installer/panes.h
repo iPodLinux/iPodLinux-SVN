@@ -147,10 +147,12 @@ protected slots:
     void itemExpanded (QTreeWidgetItem *item);
     void doLoadExtraPackageList();
     void doSavePackageList();
+    void doSaveSelection();
 
 protected:
     void loadExternalPackageList (QString filename, bool markBold);
     Package *parsePackageListLine (QString line, bool makeBold = false, QDir *relativeTo = 0);
+    void fixupPackageItem (PkgTreeWidgetItem *item);
     
 private:
     QHttp *packlistHTTP;
@@ -158,9 +160,10 @@ private:
     QLabel *progressStmt;
     QString host;
     QTreeWidget *packages;
-    QPushButton *loadpkg, *savepkg;
+    QPushButton *loadpkg, *savepkg, *savesel;
     QMap <int, PkgTreeWidgetItem*> resolvers;
     QMap <QString, QTreeWidgetItem*> categories;
+    QMap <QString, PkgTreeWidgetItem*> packageMap;
     QMultiMap <QString, PkgTreeWidgetItem*> packageProvides;
     bool advok;
     bool errored;

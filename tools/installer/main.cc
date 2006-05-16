@@ -30,6 +30,7 @@ void usage (int exitcode)
              "  Options:\n"
              "       -h  This help screen.\n"
              "   -d DIR  Store temporary files in DIR instead of the current directory.\n"
+             "  -l FILE  Use FILE as the package list file.\n"
              "\n");
     exit (exitcode);
 }
@@ -37,16 +38,20 @@ void usage (int exitcode)
 int main (int argc, char *argv[]) 
 {
     InstallerHome = QDir::currentPath();
+    PackageListFile = "http://ipodlinux.org/iPodLinux:Installation_sources?action=raw";
 
     QApplication app (argc, argv);
 
     char ch;
-    while ((ch = getopt (argc, argv, "d:h")) != EOF) switch (ch) {
+    while ((ch = getopt (argc, argv, "d:l:h")) != EOF) switch (ch) {
     case 'd':
         InstallerHome = QString (optarg);
         break;
     case 'h':
         usage (0);
+        break;
+    case 'l':
+        PackageListFile = QString (optarg);
         break;
     case '?':
     default:

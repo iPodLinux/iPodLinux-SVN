@@ -40,6 +40,7 @@ VFS::Filesystem *iPodMusicPartitionFS, *iPodLinuxPartitionFS;
 bool iPodDoBackup;
 QString iPodBackupLocation;
 QString InstallerHome;
+QString PackageListFile;
 Installer *installer;
 
 Installer::Installer (QWidget *parent)
