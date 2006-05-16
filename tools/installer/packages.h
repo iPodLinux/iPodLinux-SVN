@@ -87,6 +87,10 @@ protected:
     QStringList _packlist;
 };
 
+const int PackageItemType = QTreeWidgetItem::UserType + 0;
+const int ProvidesHeaderType = QTreeWidgetItem::UserType + 1;
+const int CategoryHeaderType = QTreeWidgetItem::UserType + 2;
+
 class PkgTreeWidgetItem : public QTreeWidgetItem 
 {
 public:
@@ -113,7 +117,7 @@ class PackageEditDialog : public QDialog
     Q_OBJECT
 
 public:
-    PackageEditDialog (Package& pkg);
+    PackageEditDialog (QWidget *parent, Package& pkg, PkgTreeWidgetItem *item = 0);
 
 public slots:
     void okPressed();
@@ -124,6 +128,7 @@ protected:
     QRadioButton *typeFile, *typeArchive, *typeKernel, *typeLoader;
     QCheckBox *supp123G, *supp4G, *suppMini1G, *suppMini2G, *suppColor, *suppNano, *suppVideo;
     Package& _pkg;
+    PkgTreeWidgetItem *_item;
 };
 
 #endif
