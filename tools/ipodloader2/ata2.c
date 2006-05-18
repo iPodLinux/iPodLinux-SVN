@@ -24,17 +24,20 @@
 #define REG_STATUS     0x7
 #define REG_COMMAND    0x7
 #define REG_CONTROL    0x8
-#define REG_ALTSTATUS  0x8 
+#define REG_ALTSTATUS  0x8
 
 #define REG_DA         0x9
 
 #define CONTROL_NIEN   0x2
 #define CONTROL_SRST   0x4
 
+  // all commands: see include/linux/hdreg.h
+
 #define COMMAND_IDENTIFY_DEVICE 0xEC
 #define COMMAND_READ_MULTIPLE 0xC4
 #define COMMAND_READ_SECTORS  0x20
 #define COMMAND_READ_SECTORS_VRFY  0x21
+#define COMMAND_STANDBY        	0xE0
 
 #define DEVICE_0       0xA0
 #define DEVICE_1       0xB0
@@ -114,16 +117,16 @@ uint32 ata_init(void) {
   /*
    * Black magic
    */
-  if( (ipod->hw_rev >> 16) > 3 ) {
+  if( ipod->hw_ver > 3 ) {
     /* PP502x */
-    outl(inl(0xc3000028) | (1 << 5), 0xc3000028);
-    outl(inl(0xc3000028) & ~0x10000000, 0xc3000028);
+    outl(inl(0xc3000028) | 0x20, 0xc3000028);  // clear intr
+    outl(inl(0xc3000028) & ~0x10000000, 0xc3000028); // reset?
     
     outl(0x10, 0xc3000000);
     outl(0x80002150, 0xc3000004);
   } else {
     /* PP5002 */
-    outl(inl(0xc0003024) | (1 << 7), 0xc0003024);
+    outl(inl(0xc0003024) | 0x80, 0xc0003024);
     outl(inl(0xc0003024) & ~(1<<2), 0xc0003024);
     
     outl(0x10, 0xc0003000);
@@ -162,6 +165,43 @@ uint32 ata_init(void) {
 
   return(0);
 }
+
+static void ata_clear_intr ()
+{
+  if( ipod_get_hwinfo()->hw_ver > 3 ) {
+    outl(inl(0xc3000028) | 0x30, 0xc3000028); // this hopefully clears all pending intrs
+  } else {
+    outl(inl(0xc0003024) | 0x80, 0xc0003024);
+  }
+}
+
+void ata_exit(void)
+{
+  ata_clear_intr ();
+}
+
+
+/*
+ * Stops (spins down) the drive
+ */
+void ata_standby (int cmd_variation)
+{
+  uint8  status, cmd = COMMAND_STANDBY;
+  // this is just a wild guess from "tempel" - I have no idea if this is the correct way to spin a disk down
+  if (cmd_variation == 1) cmd = 0x94;
+  if (cmd_variation == 2) cmd = 0x96;
+  if (cmd_variation == 3) cmd = 0xE0;
+  if (cmd_variation == 4) cmd = 0xE2;
+  pio_outbyte( REG_COMMAND, cmd );
+  DELAY400NS;
+  while( pio_inbyte( REG_ALTSTATUS) & STATUS_BSY ); /* wait until drive is not busy */
+  status = pio_inbyte( REG_STATUS );
+
+  // The linux kernel notes mention that some drives might cause an interrupt when put to standby mode.
+  // This interrupt is then to be ignored.
+  ata_clear_intr ();
+}
+
 
 /*
  * Copies one block of data (512bytes) from the device
@@ -214,7 +254,7 @@ void ata_identify(void) {
     mlc_printf("HDDid: ");
     for(c=27;c<47;c++) {
       if( buff[c] != ((' ' << 8) + ' ') ) {
-	mlc_printf("%c%c", buff[c]>>8, buff[c]&0xFF);
+        mlc_printf("%c%c", buff[c]>>8, buff[c]&0xFF);
       }
     }
     mlc_printf("\n");

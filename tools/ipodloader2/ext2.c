@@ -39,8 +39,10 @@ static void ext2_read_superblock(ext2_t *fs, uint32 offset) {
 static void ext2_getblock(uint8 *buffer,uint32 block);
 
 static void ext2_ReadDatablockFromInode(inode_t *inode, void *ptr,unsigned int num) {
-  uint32 buff[EXT2_MAXBLOCKSIZE/4];
-  uint32 buff2[EXT2_MAXBLOCKSIZE/4];
+  static uint32 *buff = 0;
+  static uint32 *buff2 = 0;
+  if (!buff) buff = mlc_malloc (EXT2_MAXBLOCKSIZE);
+  if (!buff2) buff2 = mlc_malloc (EXT2_MAXBLOCKSIZE);
 
   if(        num < 12 ) { /* Direct blocks */
     ext2_getblock(ptr,inode->i_block[num]);
@@ -70,9 +72,11 @@ static void ext2_ReadDatablockFromInode(inode_t *inode, void *ptr,unsigned int n
 }
 
 static unsigned short ext2_readdata(inode_t *inode,void *ptr,unsigned int off,unsigned int size){
-  static unsigned char buff[EXT2_MAXBLOCKSIZE];
   uint32 sblk,eblk,soff,eoff,read;
 
+  static unsigned char *buff = 0;
+  if (!buff) buff = mlc_malloc (EXT2_MAXBLOCKSIZE);
+  
   read = 0;
 
   sblk = off          / (1024<<ext2->super.s_log_block_size);
@@ -145,7 +149,9 @@ static void ext2_getblock(uint8 *buffer,uint32 block) {
 
 static void ext2_getinode(inode_t *ptr,uint32 num) {
   uint32 block,off,group,group_offset;
-  uint8 buff[EXT2_MAXBLOCKSIZE];
+
+  static uint8 *buff = 0;
+  if (!buff) buff = mlc_malloc (EXT2_MAXBLOCKSIZE);
 
   num--;
 
@@ -163,13 +169,15 @@ static void ext2_getinode(inode_t *ptr,uint32 num) {
 static int ext2_min(int x, int y) { return (x < y) ? x : y; } 
 
 static void ext2_getblockgroup(void) {  /* gets our groups of blocks descriptor */
-  unsigned char buff[512];
+  static unsigned char *buff = 0;
   unsigned char *dest = (unsigned char *)ext2->groups;
   int block;
   int numgroups = ext2->super.s_inodes_count / ext2->super.s_inodes_per_group;
   int read = 0;
 
   block = ((ext2->super.s_first_data_block + 1) << (1 + ext2->super.s_log_block_size)) + ext2->lba_offset;
+
+  if (!buff) buff = mlc_malloc (512);
 
   while(read < numgroups * sizeof(group_t))
     {
@@ -182,10 +190,12 @@ static void ext2_getblockgroup(void) {  /* gets our groups of blocks descriptor 
 static ext2_file *ext2_findfile(char *fname) {
   ext2_file *ret;
   uint32     inode_num,nstr;
-  uint8      dirname[1024];
+  static uint8 *dirname = 0;
   inode_t   *retnode;
   //char      *origname = fname;
 
+  if (!dirname) dirname = mlc_malloc (1024);
+  
   ret     = mlc_malloc( sizeof(ext2_file) );
   retnode = &ret->inode;
 

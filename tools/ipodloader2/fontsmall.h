@@ -8,18 +8,7 @@
 #ifndef _SMALLFONT_H_
 #define _SMALLFONT_H_
 
-#include "bootloader.h"
-
-#if 0 /* Don't include the small font for now. */
-
-#define FONT_SM_WIDTH   4
-#define FONT_SM_HEIGHT  6
-#define FONT_SM_BINSIZE 6*128
-
-#ifndef INCLUDE_FONT_DATA
-extern const uint8 font_small[];
-#else
-const uint8 font_small[FONT_SM_BINSIZE + 2] = { 4, 6,
+const uint8 font_small[] = { 4, 6,
 
 	/*{*/
 	  	/*   Char 0: ' '  */
@@ -1098,8 +1087,5 @@ const uint8 font_small[FONT_SM_BINSIZE + 2] = { 4, 6,
 	0x00,	/*=   [    ]        */
 	/*}*/
 };
-#endif /* INCLUDE_FONTS */
 
-#endif /* 0 */
-
-#endif /* _SMALLFONT_H_ */
+#endif

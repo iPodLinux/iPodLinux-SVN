@@ -55,7 +55,10 @@ mod:	N	near ptr				DONE
 	#include "ipodhw.h"
 #endif
 
+#include "fb.h"
+#include "ipodhw.h"
 #include "minilibc.h"
+#include "interrupts.h"
 
 /* flags used in processing format string */
 #define	PR_LJ	0x01	/* left justify */
@@ -347,12 +350,13 @@ static int print_to_console(unsigned c, void **ptr) {
 
 static int do_buffered_printf = 0;  // boolean flag
 static int do_slow_printf = 0;      // boolean flag
-static int printf_buffer[512];      // 512 should be enough for what we use it for
+static const int printf_buffer_size = 512; // 512 should be enough for what we use it for
+static uint8 *printf_buffer = 0;
 static int printf_buflen = 0;       // this is the used amount in the buffer
 
 // alternative, used with buffered output
 static int print_to_buffer(unsigned c, void **ptr) {
-  if (printf_buflen >= sizeof (printf_buffer)) {
+  if (printf_buflen >= printf_buffer_size) {
     // make room (discard older output)
     printf_buflen -= 40;
     mlc_memcpy (printf_buffer, printf_buffer+40, printf_buflen);
@@ -387,16 +391,12 @@ int mlc_printf(const char *fmt, ...) {
 *****************************************************************************/
 #endif
 
-static volatile uint32 *malloc_nextblock;
+static uint32 malloc_top;
 
 void mlc_malloc_init(void) {
   #if !ONPC
-	ipod_t *ipod;
-	
-	ipod = ipod_get_hwinfo();
-	
-	malloc_nextblock = (uint32*)(ipod->mem_base + 0x800000);
-	*malloc_nextblock = (uint32)malloc_nextblock + 4;
+    ipod_t *hw = ipod_get_hwinfo ();
+    malloc_top = hw->mem_base + hw->mem_size;
   #endif
 }
 
@@ -404,21 +404,16 @@ void *mlc_malloc(size_t size) {
   #if ONPC
     return malloc (size);
   #else
-    uint32 ret;
-    ret = *malloc_nextblock;
-    *malloc_nextblock = (ret + (size & ~4)) + 4;
-    return( (void*)ret );
+    size = (size + 15) & 0xfffffff0; // round size up to a 4-byte boundary
+    malloc_top -= size;
+    return (void*) malloc_top;
   #endif
 }
 
 size_t mlc_strlen(const char *str) {
   uint32 i = 0;
-
-  while(*(str++) != 0) {
-    i++;
-  }
-
-  return(i);
+  while (*str++) i++;
+  return i;
 }
 
 int mlc_memcmp(const void *sv1,const void *sv2,size_t length) {
@@ -502,7 +497,6 @@ char  *mlc_strncpy(char *dest,const char *src,size_t count) {
 
 	while( (*src != 0) && count ) {
 		*dest = *src;
-
 		src++;
 		dest++;
 		count--;
@@ -513,10 +507,12 @@ char  *mlc_strncpy(char *dest,const char *src,size_t count) {
 }
 
 /* gcc emits code that calls memcpy() */
+#if !ONPC
 void *memcpy (void *dest, const void *src, size_t n) 
 {
     return mlc_memcpy (dest, src, n);
 }
+#endif
 
 void *mlc_memcpy(void *dest, const void *src, size_t n) {
   // rewrite by TT 31Mar06, taking odd dest into account
@@ -555,24 +551,6 @@ void *mlc_memcpy(void *dest, const void *src, size_t n) {
   return (dest);
 }
 
-#if FAILSAFE_MALLOC
-void *mlc_memcpyX(void *dest,const void *src,size_t n) {
-  size_t i;
-  uint8 *d,*s;
-  
-  d = (uint8*)dest;
-  s = (uint8*)src;
-  for(i=0;i<n;i++) {
-    *d = *s;
-
-    d++;
-    s++;
-  }
-
-  return(dest);
-}
-#endif
-
 void *mlc_memset (void *dest, int c, size_t n) 
 {
     uint8 *d = dest;
@@ -609,7 +587,7 @@ void mlc_delay_ms (long time_in_ms) {
     long start = timer_get_current ();
     do {
       // pause
-    } while (!timer_check (start, time_in_ms*1000));
+    } while (!timer_passed (start, time_in_ms*1000));
   #endif
 }
 
@@ -620,7 +598,7 @@ void mlc_delay_us (long time_in_micro_s) {
     long start = timer_get_current ();
     do {
       // pause
-    } while (!timer_check (start, time_in_micro_s));
+    } while (!timer_passed (start, time_in_micro_s));
   #endif
 }
 
@@ -633,16 +611,43 @@ long mlc_atoi (const char *str) {
     factor = -1;
   }
   while (*str >= '0' && *str <= '9') {
-      n *= 10;
-      n += *str++ - '0';
+      n = (n * 10) + *str++ - '0';
   }
   return n * factor;
+}
+
+uint16 mlc_atorgb (const char *str, uint16 dft) {
+  if (*str == 'c') {
+    // read 16bit rgb code
+    str++;
+    return mlc_atoi (str);
+  } else if (*str == '(') {
+    // read 3 values
+    int v, r = 0, g = 0, b = 0;
+    *str++;
+    while (*str <= ' ') ++str; // skip whitespace
+    while (*str >= '0' && *str <= '9') r = (r * 10) + *str++ - '0';
+    if (*str == ',') ++str; // skip ,
+    while (*str <= ' ') ++str; // skip whitespace
+    while (*str >= '0' && *str <= '9') g = (g * 10) + *str++ - '0';
+    if (*str == ',') ++str; // skip ,
+    while (*str <= ' ') ++str; // skip whitespace
+    while (*str >= '0' && *str <= '9') b = (b * 10) + *str++ - '0';
+    if (*str == ')') {
+      v = fb_rgb (r,g,b);
+      //mlc_printf("r:%02x g:%02x b:%02x > %04x\n", r, g, b, v); // debug output
+      return v;
+    }
+  }
+  return dft;
 }
 
 void mlc_clear_screen () {
   // sets the cursor home and clears the screen
   printf_buflen = 0;
-  console_clear();
+  #if !ONPC
+    console_clear();
+  #endif
 }
 
 void mlc_set_output_options (int buffered, int slow) {
@@ -651,18 +656,23 @@ void mlc_set_output_options (int buffered, int slow) {
   //   pass <0> to have all buffered and new lines printed immediately
   // slow:
   //   pass a boolean for enabling to pause a little after each printf()
-  if (!buffered && printf_buflen) {
-    // flush the buffered data to console
-    int i;
-    console_suppress_fbupdate (1);
-    for (i = 0; i < printf_buflen; i++) {
-      print_to_console (printf_buffer[i], 0);
+  #if !ONPC
+    if (!printf_buffer) {
+      printf_buffer = mlc_malloc (printf_buffer_size * sizeof (*printf_buffer));
     }
-    printf_buflen = 0;
-    console_suppress_fbupdate (-1);
-  }
-  do_buffered_printf = buffered;
-  do_slow_printf = slow && !buffered;
+    if (!buffered && printf_buflen) {
+      // flush the buffered data to console
+      int i;
+      console_suppress_fbupdate (1);
+      for (i = 0; i < printf_buflen; i++) {
+        print_to_console (printf_buffer[i], 0);
+      }
+      printf_buflen = 0;
+      console_suppress_fbupdate (-1);
+    }
+    do_buffered_printf = buffered;
+    do_slow_printf = slow && !buffered;
+  #endif
 }
 
 // call this if you can still continue but want to make the user see what you just printed:
@@ -679,5 +689,24 @@ void mlc_show_fatal_error () {
   ipod_set_backlight (1);
   mlc_delay_ms (10000); // leave light on for 10s
   ipod_set_backlight (0);
-  for (;;) {} // we stop here
+  exit_irqs ();
+  // wait for one minute, then put iPod to sleep
+  for (int start = timer_get_current(); timer_passed (start, TIMER_MINUTE); ) {}
+  pcf_standby_mode ();
+}
+
+void mlc_hexdump (void* addr, int len)
+{
+  int i;
+  uint8 *p = (uint8 *)addr;
+  for (i = 0; i < len; i+=8) {
+    mlc_printf("%02x", (int)*p++);
+    mlc_printf("%02x", (int)*p++);
+    mlc_printf("%02x", (int)*p++);
+    mlc_printf("%02x ", (int)*p++);
+    mlc_printf("%02x", (int)*p++);
+    mlc_printf("%02x", (int)*p++);
+    mlc_printf("%02x", (int)*p++);
+    mlc_printf("%02x\n", (int)*p++);
+  }
 }

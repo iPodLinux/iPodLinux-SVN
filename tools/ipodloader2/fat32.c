@@ -27,7 +27,8 @@ typedef struct {
 
 fat_t fat;
 
-uint8 *clusterBuffer = NULL;
+static uint8 *clusterBuffer = NULL;
+static uint8 *gBlkBuf = 0;
 
 /*
  * This routine sucks, and would benefit greately from having
@@ -41,16 +42,15 @@ uint8 *clusterBuffer = NULL;
 uint32 xxi = 0;
 static uint32 fat32_findnextcluster(uint32 prev) {
   uint32 block,offset,ret;
-  uint8  tmpBuff[512];
 
   // this calculates the FAT block number
   offset = ((fat.offset+fat.number_of_reserved_sectors)*512) + prev * 4;
   block  = offset / fat.bytes_per_sector;
   offset = offset % fat.bytes_per_sector;
 
-  ata_readblocks( tmpBuff, block, 1 );
+  ata_readblocks( gBlkBuf, block, 1 );
 
-  ret = ((uint32*)tmpBuff)[offset/4];
+  ret = ((uint32*)gBlkBuf)[offset/4];
 
   return(ret);
 }
@@ -251,11 +251,12 @@ static int fat32_seek(void *fsdata,int fd,long offset,int whence) {
 
 
 void fat32_newfs(uint8 part,uint32 offset) {
-  uint8 buff[512];
+
+  gBlkBuf = (uint8*)mlc_malloc(512);
 
   /* Verify that this is a FAT32 partition */
-  ata_readblocks( buff, offset,1 );
-  if( (buff[510] != 0x55) || (buff[511] != 0xAA) ) {
+  ata_readblocks( gBlkBuf, offset,1 );
+  if( (gBlkBuf[510] != 0x55) || (gBlkBuf[511] != 0xAA) ) {
     mlc_printf("Not valid FAT superblock\n");
     mlc_show_critical_error();
     return;
@@ -266,19 +267,19 @@ void fat32_newfs(uint8 part,uint32 offset) {
 
   fat.offset =  offset;
 
-  fat.bytes_per_sector           = (buff[0xC] << 8) | buff[0xB];
-  fat.sectors_per_cluster        =  buff[0xD];
-  fat.number_of_reserved_sectors = (buff[0xF] << 8) | buff[0xE];
-  fat.number_of_fats             =  buff[0x10];
-  if (mlc_strncmp ("FAT16   ", (char*)&buff[54], 8) == 0) {
+  fat.bytes_per_sector           = (gBlkBuf[0xC] << 8) | gBlkBuf[0xB];
+  fat.sectors_per_cluster        =  gBlkBuf[0xD];
+  fat.number_of_reserved_sectors = (gBlkBuf[0xF] << 8) | gBlkBuf[0xE];
+  fat.number_of_fats             =  gBlkBuf[0x10];
+  if (mlc_strncmp ("FAT16   ", (char*)&gBlkBuf[54], 8) == 0) {
     // FAT16 partition
-    fat.sectors_per_fat            = (buff[23] << 8) | buff[22];
+    fat.sectors_per_fat            = (gBlkBuf[23] << 8) | gBlkBuf[22];
     fat.root_dir_first_cluster     = 2;
-    fat.data_area_offset           = (((buff[18] << 8) | buff[17]) * 32 + 511) / 512; // root directory size
-  } else if (mlc_strncmp ("FAT32   ", (char*)&buff[82], 8) == 0) {
+    fat.data_area_offset           = (((gBlkBuf[18] << 8) | gBlkBuf[17]) * 32 + 511) / 512; // root directory size
+  } else if (mlc_strncmp ("FAT32   ", (char*)&gBlkBuf[82], 8) == 0) {
     // FAT32 partition
-    fat.sectors_per_fat            = (buff[0x27] << 24) | (buff[0x26] << 16) | (buff[0x25] << 8) | buff[0x24];
-    fat.root_dir_first_cluster     = (buff[0x2F] << 24) | (buff[0x2E] << 16) | (buff[0x2D] << 8) | buff[0x2C];
+    fat.sectors_per_fat            = (gBlkBuf[0x27] << 24) | (gBlkBuf[0x26] << 16) | (gBlkBuf[0x25] << 8) | gBlkBuf[0x24];
+    fat.root_dir_first_cluster     = (gBlkBuf[0x2F] << 24) | (gBlkBuf[0x2E] << 16) | (gBlkBuf[0x2D] << 8) | gBlkBuf[0x2C];
     fat.data_area_offset           = 0;
   } else {
     mlc_printf("Neither FAT16 nor FAT32\n");

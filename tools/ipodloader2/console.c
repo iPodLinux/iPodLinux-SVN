@@ -1,15 +1,20 @@
 #include "bootloader.h"
 #include "fb.h"
-#define INCLUDE_FONT_DATA
 #include "console.h"
 #include "minilibc.h"
 #include "ipodhw.h"
 
-/*#include "vga_font.h"*/
 
+#include "fontlarge.h"
+#include "fontmedium.h"
+// not used currently: #include "fontsmall.h"
+
+
+int font_lines;
 int font_height, font_width;
-const uint8 *fontdata;
 int console_printcount = 0;
+
+static const uint8 *fontdata;
 
 static struct {
   struct {
@@ -67,23 +72,34 @@ void console_clear()
   console.cls_pending = 1;
 }
 
-void console_setfont(const uint8 *font) {
+
+void console_setfont (const uint8 *font) {
   font_width  = font[0];
   font_height = font[1];
   fontdata    = font + 2;
+  font_lines  = console.dimensions.h / font_height;
 }
 
-static void console_blitchar(uint16 x,uint16 y,char ch) {
+const uint8* console_currentfont (void)
+{
+  return fontdata - 2;
+}
+
+static void console_blitchar(int x, int y, char ch) {
   int r,c;
 
-  for(r=0;r<font_height;r++) {
-    for(c=0;c<font_width;c++) {
-      if( (uint8)fontdata[(uint8)ch * font_height + r] & (1<<(8-c)) ) {  /* Pixel set */
-	console.fb[(y+r)*console.dimensions.w+x+c] = console.fgcolor;
-      } else { /* Pixel clear */
-	if( !console.transparent )
-	  console.fb[(y+r)*console.dimensions.w+x+c] = console.bgcolor;
+  if ((y >= 0) && ((y + font_height) <= console.dimensions.h)) {
+    int ofs = y * console.dimensions.w + x;
+    for(r=0;r<font_height;r++) {
+      for(c=0;c<font_width;c++) {
+        if( (uint8)fontdata[(uint8)ch * font_height + r] & (1<<(8-c)) ) {  /* Pixel set */
+          console.fb[ofs+c] = console.fgcolor;
+        } else { /* Pixel clear */
+          if( !console.transparent )
+            console.fb[ofs+c] = console.bgcolor;
+        }
       }
+      ofs += console.dimensions.w;
     }
   }
 
@@ -95,7 +111,7 @@ static void console_linefeed () {
   console.cursor.y++;
 
   /* Check if we need to scroll the display up */
-  if(console.cursor.y >= (console.dimensions.h/font_height) ) {
+  if(console.cursor.y >= font_lines ) {
     if (console.scrollMode) {
       console.scroll_pending = 1; // delay scroll until we actually write text to a new line
     } else {
@@ -134,7 +150,7 @@ again:
     console.cursor.y--;
   }
   
-  if( console.cursor.x >= (console.dimensions.w/font_width) ) {
+  if( console.cursor.x >= (console.dimensions.w / font_width) ) {
     console_linefeed ();
     goto again;
   }
@@ -167,9 +183,8 @@ void console_putsXY(int x,int y,volatile char *str) {
   }
 }
 
-void console_init(uint16 *fb) {
-  const uint8 *font;
-
+void console_init(uint16 *fb)
+{
   console.ipod = ipod_get_hwinfo();
 
   console.cursor.x = 0;
@@ -177,17 +192,10 @@ void console_init(uint16 *fb) {
   console.dimensions.w = console.ipod->lcd_width;
   console.dimensions.h = console.ipod->lcd_height;
 
-  if (console.dimensions.w < 300)
-    font = font_medium;
-  else
-    font = font_large;
+  console_setfont ( (console.dimensions.w < 300) ? font_medium : font_large );
 
-  font_width = font[0];
-  font_height = font[1];
-  fontdata = font + 2;
-
-  console.fgcolor     = BLACK;
-  console.bgcolor     = console.ipod->lcd_is_grayscale ? WHITE : BLUEISH;
+  console.fgcolor     = WHITE;
+  console.bgcolor     = BLACK;
   console.transparent = 0;
   console.scrollMode  = 1;
   console.cls_pending = 1;

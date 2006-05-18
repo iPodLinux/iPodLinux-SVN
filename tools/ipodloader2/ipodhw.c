@@ -22,107 +22,97 @@
 #define R_RAM_ADDR_SET          0x11
 #define R_RAM_DATA              0x12
 
-struct sysinfo_t {
-        unsigned IsyS;  /* == "IsyS" */
-        unsigned len;
-
-        char BoardHwName[16];
-        char pszSerialNumber[32];
-        char pu8FirewireGuid[16];
-
-        unsigned boardHwRev;
-        unsigned bootLoaderImageRev;
-        unsigned diskModeImageRev;
-        unsigned diagImageRev;
-        unsigned osImageRev;
-
-        unsigned iram_perhaps;
-
-        unsigned Flsh;
-        unsigned flash_zero;
-        unsigned flash_base;
-        unsigned flash_size;
-        unsigned flash_zero2;
-
-        unsigned Sdrm;
-        unsigned sdram_zero;
-        unsigned sdram_base;
-        unsigned sdram_size;
-        unsigned sdram_zero2;
-
-                                                                
-        unsigned Frwr;
-        unsigned frwr_zero;
-        unsigned frwr_base;
-        unsigned frwr_size;
-        unsigned frwr_zero2;
-                                                                
-        unsigned Iram;
-        unsigned iram_zero;
-        unsigned iram_base;
-        unsigned iram_size;
-        unsigned iram_zero2;
-                                                                
-        char pad7[120];
-
-        unsigned boardHwSwInterfaceRev;
-
-        /* added in V3 */
-        char HddFirmwareRev[10];
-
-        unsigned short RegionCode;
-
-        unsigned PolicyFlags;
-
-        char ModelNumStr[16];
-};
-
 static ipod_t    ipod;
-static struct sysinfo_t ipod_sys_info;
-
 
 static int ipod_is_pp5022(void) {
   return (inl(0x70000000) << 8) >> 24 == '2';
 }
 
-static void ipod_set_sysinfo(void) {
-  unsigned sysinfo_tag = (unsigned)SYSINFO_TAG;
-  struct sysinfo_t ** sysinfo_ptr = SYSINFO_PTR;
-  
-  if (ipod_is_pp5022()) {
-    sysinfo_tag = (unsigned)SYSINFO_TAG_PP5022;
-    sysinfo_ptr = SYSINFO_PTR_PP5022;
-  }
-  
-  if (*(unsigned *)sysinfo_tag == *(unsigned *)"IsyS" 
-      && (*(struct sysinfo_t **)sysinfo_ptr)->IsyS ==  *
-      (unsigned *)"IsyS" ) {
-    mlc_memcpy(&ipod_sys_info, *sysinfo_ptr, sizeof(struct sysinfo_t));
+struct sysinfo_t {
+        unsigned IsyS;  /* == "IsyS" */
+        unsigned len;
+        char BoardHwName[16];
+        char pszSerialNumber[32];
+        char pu8FirewireGuid[16];
+        unsigned boardHwRev;
+        unsigned bootLoaderImageRev;
+        unsigned diskModeImageRev;
+        unsigned diagImageRev;
+        unsigned osImageRev;
+        unsigned iram_perhaps;
+        unsigned Flsh;
+        unsigned flash_zero;
+        unsigned flash_base;
+        unsigned flash_size;
+        unsigned flash_zero2;
+        unsigned Sdrm;
+        unsigned sdram_zero;
+        unsigned sdram_base;
+        unsigned sdram_size;
+        unsigned sdram_zero2;
+        unsigned Frwr;
+        unsigned frwr_zero;
+        unsigned frwr_base;
+        unsigned frwr_size;
+        unsigned frwr_zero2;
+        unsigned Iram;
+        unsigned iram_zero;
+        unsigned iram_base;
+        unsigned iram_size;
+        unsigned iram_zero2;
+        char pad7[120];
+        unsigned boardHwSwInterfaceRev;
 
-    /* magic length based on newer ipod nano sysinfo */
-    if (ipod_sys_info.len == 0xf8) {
-      ipod.hw_rev = ipod_sys_info.sdram_zero2; 
+        /* added in V3 */
+        char HddFirmwareRev[10];
+        unsigned short RegionCode;
+        unsigned PolicyFlags;
+        char ModelNumStr[16];
+};
+
+#define SYSINFO_TAG             0x40017f18
+#define SYSINFO_PTR             (struct sysinfo_t **)0x40017f1c
+#define SYSINFO_TAG_PP5022      0x4001ff18
+#define SYSINFO_PTR_PP5022      (struct sysinfo_t **)0x4001ff1c
+
+static void ipod_set_sysinfo(void) {
+  struct sysinfo_t ** sysinfo_ptr;
+  if (ipod_is_pp5022()) {
+    sysinfo_ptr = SYSINFO_PTR_PP5022;
+  } else {
+    sysinfo_ptr = SYSINFO_PTR;
+  }
+  if ( (*sysinfo_ptr)->IsyS == *(unsigned *)"IsyS" ) {
+    if ((*sysinfo_ptr)->len == 0xf8) {
+      ipod.hw_rev = (*sysinfo_ptr)->sdram_zero2; 
     } else {
-      ipod.hw_rev = ipod_sys_info.boardHwSwInterfaceRev; 
+      ipod.hw_rev = (*sysinfo_ptr)->boardHwSwInterfaceRev; 
     }
   }
+  ipod.hw_ver = ipod.hw_rev >> 16;
 }
 
 /* get current usec counter */
-int timer_get_current(void) {
+unsigned long timer_get_current(void) {
   return inl(ipod.rtc);
 }
 
 /* check if number of useconds has passed */
-int timer_check(int clock_start, int usecs) {
+int timer_passed(unsigned long clock_start, int usecs) {
   unsigned long clock;
   clock = inl(ipod.rtc);
-  
-  if ( (clock - clock_start) >= usecs ) {
-    return 1;
+  return (clock - clock_start) >= usecs;
+}
+
+void ipod_reboot ()
+{
+  if (ipod.hw_rev >= 0x40000) {
+    outl(inl(0x60006004) | 0x4, 0x60006004);
   } else {
-    return 0;
+    outl(inl(0xcf005030) | 0x4, 0xcf005030);
   }
+  /* We never exit this function */
+  for(;;) {}
 }
 
 
@@ -150,7 +140,7 @@ static int ipod_i2c_wait_not_busy(void)
     if (!(inb(IPOD_I2C_STATUS) & IPOD_I2C_BUSY)) {
       return 0;
     }
-  } while (!timer_check (start, 100000));
+  } while (!timer_passed (start, 100000));
   return -1;
 }
 
@@ -217,10 +207,10 @@ static int i2c_readbyte(unsigned int dev_addr, int addr)
   return data;
 }
 
-static void ipod_i2c_init(void)
+void ipod_i2c_init(void)
 {
   /* reset I2C */
-  int hwver = ipod.hw_rev >> 16;
+  int hwver = ipod.hw_ver;
   if (hwver > 0x03) {
     ipod_i2c_base = 0x7000c000;
     if (hwver == 0x04) {
@@ -254,6 +244,32 @@ void pcf_standby_mode(void)
   ipod_i2c_init ();
   
   ipod_i2c_send(0x8, 0x8, 0x1 | (1 << 5) | (1 << 6));
+  /* We never exit this function - a wakeup will reboot */
+  for(;;) {}
+}
+
+
+void ipod_beep(int duration_ms, int period)
+  // period: 40=2286Hz, 30=3024Hz, 20=4465Hz, 10=8547Hz
+{
+  if (ipod.hw_ver >= 4) {
+    if (duration_ms == 0 && period == 0) {
+      // both values 0 -> make a click
+      duration_ms = 1;
+      period = 20;
+    }
+    if (period < 0) duration_ms = 30; // default period
+    if (duration_ms < 0) duration_ms = 50; // default duration
+    if (duration_ms > 1000) duration_ms = 1000; // max beep duration is 1s
+    outl(inl(0x70000010) & ~0xc, 0x70000010);
+    outl(inl(0x6000600c) | 0x20000, 0x6000600c);  /* enable device */
+    outl(0x80000000 | 0x800000 | (period & 0xffff), 0x7000a000); /* set pitch */
+    int starttime = timer_get_current();
+    do { } while (!timer_passed (starttime, duration_ms*1000));
+    outl(0x0, 0x7000a000);  /* piezo off */
+  } else {
+    // !!! still missing -- need to write to serial port
+  }
 }
 
 
@@ -261,17 +277,16 @@ void pcf_standby_mode(void)
 void lcd_wait_ready(void) {
   if ((inl(ipod.lcd_base) & ipod.lcd_busy_mask) != 0) {
     int start = timer_get_current();
-    
     do {
       if ((inl(ipod.lcd_base) & ipod.lcd_busy_mask) == 0) break;
-    } while (timer_check(start, 1000) == 0);
+    } while (!timer_passed(start, 1000));
   }
 }
 
 /* send LCD data */
 void lcd_send_data(int data_hi, int data_lo) {
   lcd_wait_ready();
-  if( (ipod.hw_rev>>16) == 0x7 ) {
+  if( ipod.hw_ver == 0x7 ) {
     outl((inl(0x70003000) & ~0x1f00000) | 0x1700000, 0x70003000);
     outl(data_lo | (data_hi << 8) | 0x760000, 0x70003008);
   } else {
@@ -284,7 +299,7 @@ void lcd_send_data(int data_hi, int data_lo) {
 /* send LCD command */
 void lcd_prepare_cmd(int cmd) {
   lcd_wait_ready();
-  if( (ipod.hw_rev>>16) == 0x7) {
+  if( ipod.hw_ver == 0x7) {
     outl((inl(0x70003000) & ~0x1f00000) | 0x1700000, 0x70003000);
     outl(cmd | 0x740000, 0x70003008);
   } else {
@@ -307,11 +322,11 @@ static unsigned int lcd_contrast = 0x6a;  /* default for mini2 */
 
 int lcd_curr_contrast () // returns current contrast
 {
-  if ((ipod.hw_rev>>16) == 7) {
+  if (ipod.hw_ver == 7) {
     // mini 2g - can't read the contrast. we use a global that
     // defaults to 0x6a instead.
     return lcd_contrast;
-  } else if ((ipod.hw_rev>>16) < 6) {
+  } else if (ipod.hw_ver < 6) {
     lcd_wait_ready ();
     (void) inl(ipod.lcd_base + LCD_CMD);
     lcd_wait_ready ();
@@ -322,12 +337,12 @@ int lcd_curr_contrast () // returns current contrast
 
 void lcd_set_contrast(int val)
 {
-  int ver = ipod.hw_rev>>16;
+  int ver = ipod.hw_ver;
   if (ver < 6 || ver == 0x7) {
     if (val < 0) val = 0;
     else if (val > 127) val = 127;
     if (val != lcd_curr_contrast()) {
-      if ((ipod.hw_rev>>16) == 7 || (ipod.hw_rev>>16) < 6) {
+      if (ver == 7 || ver < 6) {
         lcd_cmd_and_data16 (R_CONTRAST_CONTROL, 0x400 | val);
       }
     }
@@ -338,8 +353,8 @@ void lcd_set_contrast(int val)
 
 void ipod_set_backlight(int on) {
 
-  if((ipod.hw_rev>>16) >= 0x4) {
-    if ((ipod.hw_rev>>16) == 0x5 || (ipod.hw_rev>>16) == 0x6) {
+  if(ipod.hw_ver >= 0x4) {
+    if (ipod.hw_ver == 0x5 || ipod.hw_ver == 0x6) {
       if (on) {
 	/* brightness full */
 	outl(0x80000000 | (0xff << 16), 0x7000a010);
@@ -352,10 +367,10 @@ void ipod_set_backlight(int on) {
 	outl(inl(0x70000084) & ~0x2000000, 0x70000084);
 	outl(0x80000000, 0x7000a010);
       }
-    } else if ((ipod.hw_rev>>16) == 0x04 || (ipod.hw_rev>>16) == 0x7) {
+    } else if (ipod.hw_ver == 0x04 || ipod.hw_ver == 0x7) {
       /* set port B03 */
       outl(((0x100 | (on ? 1 : 0)) << 3), 0x6000d824);
-    } else if ( ((ipod.hw_rev>>16) == 0xc) || ((ipod.hw_rev>>16) == 0xb) ) {
+    } else if ( (ipod.hw_ver == 0xc) || (ipod.hw_ver == 0xb) ) {
       /* set port B03 */
       outl(((0x100 | (on ? 1 : 0)) << 3), 0x6000d824);
       /* set port L07 */
@@ -374,14 +389,14 @@ void ipod_set_backlight(int on) {
     outl(lcd_state, IPOD_PP5002_LCD_BASE);
   }
   
-  if ((ipod.hw_rev>>16) < 0x6 || (ipod.hw_rev>>16) == 0x7) {
+  if (ipod.hw_ver < 0x6 || ipod.hw_ver == 0x7) {
     if (on) {
       /* display control (1 00 0 1) */
       /* GSH=01 -> 2/3 level grayscale control */
       /* GSL=00 -> 1/4 level grayscale control */
       /* REV=0 -> don't reverse */
       /* D=1 -> display on */
-      if ((ipod.hw_rev>>16) < 3) {
+      if (ipod.hw_ver < 3) {
         /* REV=1 */
         lcd_cmd_and_data_hi_lo(0x7, 0x0, 0x11 | 0x2);
       }
@@ -409,7 +424,7 @@ void ipod_init_hardware(void) {
   int hw_ver;
   ipod_set_sysinfo();
 
-  hw_ver = ipod.hw_rev >> 16;
+  hw_ver = ipod.hw_ver;
   if( hw_ver == 0xC ) { /* Nano */
     ipod.lcd_base      = 0x70008A0C;
     ipod.lcd_busy_mask = 0x80000000;
@@ -421,8 +436,8 @@ void ipod_init_hardware(void) {
     ipod.ide_base      = IPOD_PP5020_IDE_PRIMARY_BASE;
     ipod.ide_control   = IPOD_PP5020_IDE_PRIMARY_CONTROL;
     ipod.mem_base      = 0x10000000;
-    ipod.mem_size      = 0x2000000;
-  } else if( (ipod.hw_rev >> 16) == 0xB ) { /* 5th Gen  (Video) */
+    ipod.mem_size      = 0x02000000;
+  } else if( hw_ver == 0xB ) { /* 5th Gen  (Video) */
     ipod.lcd_base      = 0x70008A0C;
     ipod.lcd_busy_mask = 0x80000000;
     ipod.lcd_width     = 320;
@@ -433,7 +448,7 @@ void ipod_init_hardware(void) {
     ipod.ide_base      = IPOD_PP5020_IDE_PRIMARY_BASE;
     ipod.ide_control   = IPOD_PP5020_IDE_PRIMARY_CONTROL;
     ipod.mem_base      = 0x10000000;
-    ipod.mem_size      = 0x2000000;  /* 0x4000000 for 60GB model.. Maybe a check? */
+    ipod.mem_size      = 0x02000000;  /* 0x04000000 for 60GB model.. Maybe a check? */
   } else if( hw_ver == 0x6 ) { /* Photo / Color */
     ipod.lcd_base      = 0x70008A0C;
     ipod.lcd_busy_mask = 0x80000000;
@@ -444,7 +459,7 @@ void ipod_init_hardware(void) {
     ipod.ide_base      = IPOD_PP5020_IDE_PRIMARY_BASE;
     ipod.ide_control   = IPOD_PP5020_IDE_PRIMARY_CONTROL;
     ipod.mem_base      = 0x10000000;
-    ipod.mem_size      = 0x2000000;
+    ipod.mem_size      = 0x02000000;
 
     if(ipod.hw_rev == 0x60000) ipod.lcd_type = 0;
     else { /* Detect the LCD type */
@@ -472,7 +487,7 @@ void ipod_init_hardware(void) {
     ipod.ide_base      = IPOD_PP5020_IDE_PRIMARY_BASE;
     ipod.ide_control   = IPOD_PP5020_IDE_PRIMARY_CONTROL;
     ipod.mem_base      = 0x10000000;
-    ipod.mem_size      = 0x2000000;
+    ipod.mem_size      = 0x02000000;
   } else if( (hw_ver == 0x4) || 
 	     (hw_ver == 0x7) ) { /* Mini / Mini 2G */
     ipod.lcd_base      = IPOD_PP5020_LCD_BASE;
@@ -485,7 +500,7 @@ void ipod_init_hardware(void) {
     ipod.ide_base      = IPOD_PP5020_IDE_PRIMARY_BASE;
     ipod.ide_control   = IPOD_PP5020_IDE_PRIMARY_CONTROL;
     ipod.mem_base      = 0x10000000;
-    ipod.mem_size      = 0x2000000;
+    ipod.mem_size      = 0x02000000;
   } else if( hw_ver < 0x4 ) { /* 3G / 2G / 1G */
     ipod.lcd_base      = IPOD_PP5002_LCD_BASE;
     ipod.lcd_busy_mask = 0x8000;
@@ -497,7 +512,17 @@ void ipod_init_hardware(void) {
     ipod.ide_base      = IPOD_PP5002_IDE_PRIMARY_BASE;
     ipod.ide_control   = IPOD_PP5002_IDE_PRIMARY_CONTROL;
     ipod.mem_base      = 0x28000000;
-    ipod.mem_size      = 0x2000000;
+    ipod.mem_size      = 0x02000000;
   }
+
+  // determine the Fast RAM start and size
+  ipod.iram_base = 0x40000000;
+  if (ipod_is_pp5022 ()) {
+      ipod.iram_full_size = 0x20000;  // PP5022 has 128MB of internal RAM
+  } else {
+      ipod.iram_full_size = 0x18000;  // PP5020 and PP5002 have 96MB of internal RAM
+  }
+  ipod.iram_user_end = ipod.iram_base + ipod.iram_full_size - 0x100; // last 256 bytes appear to be used for special things by the Flash ROM
+
   ipod.lcd_is_grayscale = (ipod.lcd_format == IPOD_LCD_FORMAT_2BPP);
 }

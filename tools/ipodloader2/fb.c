@@ -69,29 +69,22 @@ static void lcd_bcm_setup_rect(unsigned cmd, unsigned start_horiz, unsigned star
 
 static unsigned lcd_bcm_read32(unsigned address) {
   while ((inw(0x30020000) & 1) == 0);
-
   /* write out destination address as two 16bit values */
   outw(address, 0x30020000);
   outw((address >> 16), 0x30020000);
-
   /* wait for it to be read ready */
   while ((inw(0x30030000) & 0x10) == 0);
-
   /* read the value */
   return inw(0x30000000) | inw(0x30000000) << 16;
 }
 
 static void lcd_bcm_finishup(void) {
   unsigned data; 
-
   outw(0x31, 0x30030000); 
-
   lcd_bcm_read32(0x1FC);
-
   do {
-          data = lcd_bcm_read32(0x1F8);
+    data = lcd_bcm_read32(0x1F8);
   } while (data == 0xFFFA0005 || data == 0xFFFF);
-
   lcd_bcm_read32(0x1FC);
 }
 
@@ -106,10 +99,24 @@ static uint8 LUMA565(uint16 val) {
   return calc;
 }
 
-uint16 fb_rgb(uint8 r, uint8 g, uint8 b) {
+uint16 fb_rgb(int r, int g, int b) {
   uint16 rgb;
+  if (r < 0) r = 0;
+  if (r > 255) r = 255;
+  if (g < 0) g = 0;
+  if (g > 255) g = 255;
+  if (b < 0) b = 0;
+  if (b > 255) b = 255;
   rgb = ((r >> 3) << 11) + ((g >> 2) << 5) + (b >> 3);
   return rgb;
+}
+
+void fb_rgbsplit (uint16 rgb, uint8 *r, uint8 *g, uint8 *b)
+  // inverse of fb_rgb()
+{
+  *r = (rgb>>11)<<3;
+  *g = ((rgb>>5)&0x3F)<<2;
+  *b = (rgb&0x1F)<<3;
 }
 
 
@@ -123,7 +130,7 @@ static void fb_565_bitblt(uint16 *x, int sx, int sy, int mx, int my) {
   unsigned short *addr = x;
   
   /* calculate the drawing region */
-  if( (ipod->hw_rev>>16) != 0x6) {
+  if( ipod->hw_ver != 0x6) {
     rect1 = starty;                 /* start horiz */
     rect2 = startx;                 /* start vert */
     rect3 = (starty + width) - 1;   /* max horiz */
@@ -163,7 +170,7 @@ static void fb_565_bitblt(uint16 *x, int sx, int sy, int mx, int my) {
     /* max vert << 8 | start vert */
     lcd_cmd_data(0x45, (rect4 << 8) | rect2);
     
-    if( (ipod->hw_rev>>16) == 0x6) {
+    if( ipod->hw_ver == 0x6) {
       /* start vert = max vert */
       rect2 = rect4;
     }
@@ -210,41 +217,25 @@ static void fb_565_bitblt(uint16 *x, int sx, int sy, int mx, int my) {
     for (y = 0; y < h; y++) {
       /* for each column */
       for (x = 0; x < width; x += 2) {
-	unsigned two_pixels;
-
+        /* output 2 pixels */
 	if( ipod->lcd_type != 5 ) {
+          unsigned two_pixels;
 	  two_pixels = ( ((addr[0]&0xFF)<<8) | ((addr[0]&0xFF00)>>8) ) | 
 	               ((((addr[1]&0xFF)<<8) | ((addr[1]&0xFF00)>>8) )<<16);
-	} else {
-	  two_pixels = (addr[1]<<16) | addr[0];
-	}
-	
-	if( ipod->lcd_type != 5 ) {
-
 	  while ((inl(0x70008a20) & 0x1000000) == 0);
-	  
-	  /* output 2 pixels */
 	  outl(two_pixels, 0x70008b00);
           addr += 2;
 	} else {
-	  /*two_pixels = ((two_pixels&0xFF000000)>>24) | ((two_pixels&0xFF0000)>>8) | 
-	    ((two_pixels&0xFF00) << 8) | ((two_pixels&0xFF)<<24);*/
-
-
-          /* output 2 pixels */
-          outw (*addr++, 0x30000000);
+	  outw (*addr++, 0x30000000);
           outw (*addr++, 0x30000000);
 	}
       }
-      
       addr += ipod->lcd_width - width;
     }
 
     if (ipod->lcd_type != 5) {
       while ((inl(0x70008a20) & 0x4000000) == 0);
-      
       outl(0x0, 0x70008a24);
-    
       height = height - h;
     } else {
       height = 0;
@@ -304,7 +295,7 @@ void fb_init(void) {
 
   int hw_ver;
   ipod = ipod_get_hwinfo();
-  hw_ver = ipod->hw_rev >> 16;
+  hw_ver = ipod->hw_ver;
 
   if (hw_ver == 0x4 || hw_ver == 0x7) {
     /* driver output control - 160x112 (ipod mini) */
@@ -330,7 +321,7 @@ void fb_init(void) {
   }
 
   #if YOU_WANT_TO_SCREW_UP_THE_COLORS_IN_RETAILOS
-    if( ((ipod->hw_rev>>16) == 0x6) && (ipod->lcd_type == 0) ) {
+    if( (ipod->hw_ver == 0x6) && (ipod->lcd_type == 0) ) {
       lcd_cmd_data(0xef,0x0);
       lcd_cmd_data(0x1,0x0);
       lcd_cmd_data(0x80,0x1);
