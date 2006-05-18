@@ -1,16 +1,7 @@
 #ifndef _MEDIUMFONT_H_
 #define _MEDIUMFONT_H_
 
-#include "bootloader.h"
-
-#define FONT_MED_WIDTH   8
-#define FONT_MED_HEIGHT  8
-#define FONT_MED_BINSIZE 8*128
-
-#ifndef INCLUDE_FONT_DATA
-extern const uint8 font_medium[];
-#else
-const uint8 font_medium[FONT_MED_BINSIZE + 2] = { 8, 8,
+const uint8 font_medium[] = { 8, 8,
 
    /* 0 0x00 '^@' */
    0x00, /* 00000000 */
@@ -1292,6 +1283,5 @@ const uint8 font_medium[FONT_MED_BINSIZE + 2] = { 8, 8,
    0xfe, /* 11111110 */
    0x00, /* 00000000 */
 };
-#endif
 
 #endif

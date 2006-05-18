@@ -11,9 +11,9 @@ MYCPPFLAGS= -Os -Wall -nostdinc -fomit-frame-pointer -mstructure-size-boundary=8
 MYLDFLAGS = -Tarm_elf_40.x `$(CC) -print-libgcc-file-name`
 OBJCOPY   = $(CROSS)objcopy
 
-OBJFILES = startup.o loader.o fb.o ipodhw.o console.o minilibc.o ata2.o vfs.o fat32.o ext2.o fwfs.o keypad.o menu.o config.o macpartitions.o
+OBJFILES = startup.o loader.o fb.o ipodhw.o console.o minilibc.o ata2.o vfs.o fat32.o ext2.o fwfs.o keypad.o menu.o config.o macpartitions.o interrupts.o interrupt-entry.o
 
-all: loader.bin
+all: loader.bin $(OBJFILES) Makefile
 #	@echo "Building firmware image"
 #	@./make_fw -g 4g -o my_sw.bin -i apple_os.bin $<
 
@@ -28,7 +28,6 @@ loader.bin: loader.elf
 loader.elf: $(OBJFILES)
 	@echo "Linking $@"
 	@$(LD) -o $@ $^ $(MYLDFLAGS)
-#	@$(CC) $(MYLDFLAGS) $(LDFLAGS) -o $@ $^
 
 %.o:%.cc
 	@echo "Compiling $<"

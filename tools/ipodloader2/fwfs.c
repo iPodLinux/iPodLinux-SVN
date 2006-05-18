@@ -24,15 +24,16 @@ typedef struct {
 
 fwfs_t fwfs;
 
+static uint8 *gBlkBuf = 0;
+
 static int fwfs_load_subimg_info(fwfs_image_t *master, int subnr, fwfs_image_t *sub) 
 {
-  uint8 buff[512];
   if ((((subnr + 1) * sizeof(fwfs_image_t)) + (master->devOffset & 0x1ff) + 0x100) > 0x200) {
     mlc_printf ("Misaligned image - can't load subs\n");
     return 0;
   }
-  ata_readblock (buff, master->devOffset >> 9);
-  mlc_memcpy (sub, buff + (subnr * sizeof(fwfs_image_t)) + (master->devOffset & 0x1ff) + 0x100,
+  ata_readblock (gBlkBuf, master->devOffset >> 9);
+  mlc_memcpy (sub, gBlkBuf + (subnr * sizeof(fwfs_image_t)) + (master->devOffset & 0x1ff) + 0x100,
               sizeof(fwfs_image_t));
   /* The &0xc0c0c0c0==0x40404040 test makes sure all the chars are in the range
    * 0x40 to 0x7f inclusive - a really crude heuristic for "all letters", but
@@ -76,19 +77,13 @@ static int fwfs_open(void *fsdata,char *fname) {
            * that's rather inefficient since you're loading Linux too...
            */
           if (!fwfs_load_subimg_info (fs->image + i, fname[4] - '0', &subimg)) {
-#if DEBUG
-            mlc_printf("Err: asked for an invalid child image\n");
-#endif
+            mlc_printf("Err: asked for invalid child img\n");
             return(-1);
           }
           fh->devOffset = subimg.devOffset;
           fh->length    = subimg.len;
           break;
         }
-
-
-	//mlc_printf("Found the file\n");
-	//mlc_show_fatal_error ();
 
 	fs->numHandles++;
 	return(fs->numHandles-1);
@@ -115,7 +110,6 @@ static void fwfs_close (void *fsdata, int fd)
 
 static size_t fwfs_read(void *fsdata,void *ptr,size_t size,size_t nmemb,int fd) {
   fwfs_t *fs;
-  static uint8   buff[512];
   uint32  block,off,read,toRead;
 
   fs = (fwfs_t*)fsdata;
@@ -131,8 +125,8 @@ static size_t fwfs_read(void *fsdata,void *ptr,size_t size,size_t nmemb,int fd) 
   off    = off % 512;
 
   if( off != 0 ) { /* Need to read a partial block at first */
-    ata_readblocks_uncached( buff, block, 1 );
-    mlc_memcpy( ptr, buff + off, 512 - off );
+    ata_readblocks_uncached( gBlkBuf, block, 1 );
+    mlc_memcpy( ptr, gBlkBuf + off, 512 - off );
     read += 512 - off;
     block++;
   }
@@ -143,8 +137,8 @@ static size_t fwfs_read(void *fsdata,void *ptr,size_t size,size_t nmemb,int fd) 
     read  += 512;
     block++;
   }
-  ata_readblocks_uncached( buff, block, 1 );
-  mlc_memcpy( (uint8*)ptr+read, buff, toRead - read );
+  ata_readblocks_uncached( gBlkBuf, block, 1 );
+  mlc_memcpy( (uint8*)ptr+read, gBlkBuf, toRead - read );
 
   read += (toRead - read);
 
@@ -196,22 +190,22 @@ static int fwfs_getinfo (void *fsdata, int fd, long *out_chksum) {
 
 void fwfs_newfs(uint8 part,uint32 offset) {
   uint32 block,i;
-  static uint8  buff[512]; /* !!! Move from BSS */
+
+  if (!gBlkBuf) gBlkBuf = mlc_malloc (512);
 
   /* Verify that this is indeed a firmware partition */
-  ata_readblocks_uncached( buff, offset,1 );
-  if( mlc_strncmp((void*)((uint8*)buff+0x100),"]ih[",4) != 0 ) {
+  ata_readblocks_uncached( gBlkBuf, offset,1 );
+  if( mlc_strncmp((void*)((uint8*)gBlkBuf+0x100),"]ih[",4) != 0 ) {
     return;
-  } else {
   }
 
   /* copy the firmware header */
-  mlc_memcpy(&fwfs.head, buff + 0x100, sizeof(fwfs_header_t));
+  mlc_memcpy(&fwfs.head, gBlkBuf + 0x100, sizeof(fwfs_header_t));
 
   //mlc_printf("\nversion = %d\n", (int)fwfs.head.version);
 
   if (fwfs.head.version == 1) {
-	  fwfs.head.bl_table = 0x4000;
+    fwfs.head.bl_table = 0x4000;
   }
 
   block = offset + (fwfs.head.bl_table / 512);

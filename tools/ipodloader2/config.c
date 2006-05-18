@@ -4,6 +4,7 @@
 #include "console.h"
 #include "menu.h"
 #include "vfs.h"
+#include "fb.h"
 
 #include "config.h"
 
@@ -72,12 +73,12 @@ void config_init(void)
     config.image = configimgs;
     config.timeout   = 15;
     config.def       = 1; // default item index in menu, 1-based
-    config.debug     = 0;
-    config.contrast  = 0;
     config.backlight = 1;
-    /* no, we want it on all models - users can turn it off themselves if they like:
-      config.backlight = ! ipod_get_hwinfo()->lcd_is_grayscale; // only color ipod _need_ the light to see anything
-    */
+    config.usegradient = 1;
+    config.bgcolor   = fb_rgb(0,0,255);
+    config.hicolor   = fb_rgb(64,128,0);
+    config.beep_time = 50;
+    config.beep_period = 30;
 
     {
         // preset default menu items
@@ -181,13 +182,25 @@ void config_init(void)
             } else if (!mlc_strcmp (p, "timeout")) {
                 config.timeout = 0;
                 config.timeout = mlc_atoi (value);
-                if (config.timeout != 0 && config.timeout < 3) config.timeout = 3; // less than 3s is unusable currently with the slow (polling) keypress code
+                if (config.timeout != 0 && config.timeout < 2) config.timeout = 2; // less than 2s is quite unusable
             } else if (!mlc_strcmp (p, "debug")) {
                 config.debug = mlc_atoi (value);
             } else if (!mlc_strcmp (p, "backlight")) {
                 config.backlight = mlc_atoi (value);
             } else if (!mlc_strcmp (p, "contrast")) {
                 config.contrast = mlc_atoi (value);
+            } else if (!mlc_strcmp (p, "bg_gradient")) {
+                config.usegradient = mlc_atoi (value);
+            } else if (!mlc_strcmp (p, "bg_color")) {
+                config.bgcolor = mlc_atorgb (value, config.bgcolor);
+            } else if (!mlc_strcmp (p, "hilight_color")) {
+                config.hicolor = mlc_atorgb (value, config.hicolor);
+            } else if (!mlc_strcmp (p, "beep_duration")) {
+                config.beep_time = mlc_atoi (value);
+            } else if (!mlc_strcmp (p, "beep_period")) {
+                config.beep_period = mlc_atoi (value);
+            } else if (!mlc_strcmp (p, "ata_standby_code")) {
+                config.ata_standby_code = mlc_atoi (value);
             } else {
                 // it's a menu item
                 if (firstitem) {
@@ -219,5 +232,5 @@ void config_init(void)
 }
 
 config_t *config_get(void) {
-  return(&config);
+  return &config;
 }

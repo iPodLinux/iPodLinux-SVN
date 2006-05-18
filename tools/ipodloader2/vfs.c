@@ -96,11 +96,13 @@ void vfs_registerfs( filesystem *newfs ) {
 }
 
 void vfs_init(void) {
-  uint8  buff[512];
+  uint8 *buff;
   uint32 i;
 
   fsCnt = 0;
 
+  buff = mlc_malloc (512);
+  
   ata_readblocks( buff, 0, 1 );
 
   for(i=0;i<MAX_FILES;i++) vfs_handle[i].fd = -1;

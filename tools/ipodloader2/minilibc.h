@@ -53,9 +53,11 @@ int    mlc_memcmp(const void *sv1,const void *sv2,size_t length);
 void   mlc_delay_ms (long time_in_ms);
 void   mlc_delay_us (long time_in_micro_s);
 long   mlc_atoi (const char *str);
+uint16 mlc_atorgb (const char *str, uint16 dft);
 void   mlc_set_output_options (int buffered, int slow);
 void   mlc_show_critical_error (); // call this if you can still continue but want to make the user see what you just printed
 void   mlc_show_fatal_error (); // call this if you can not continue, and want to make the user see what you just printed
 void   mlc_clear_screen ();
+void   mlc_hexdump (void* addr, int len);
 
 #endif

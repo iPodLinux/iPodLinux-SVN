@@ -100,7 +100,7 @@ struct MacPart {
 
 static void hfsplus_newfs (uint8 part, uint32 offset);
 
-static uint8 gBlkBuf[512];
+static uint8 *gBlkBuf = 0;
 
 
 extern "C" void check_mac_partitions ()
@@ -119,6 +119,8 @@ extern "C" void check_mac_partitions ()
 		return;
 	}
 	
+    if (!gBlkBuf) gBlkBuf = (uint8*) mlc_malloc (512);
+        
 	while (blkNo <= partBlkCount) {
 		MacPart *pm = (MacPart*) gBlkBuf;
 		
@@ -178,7 +180,7 @@ extern "C" void check_mac_partitions ()
 
 #include "unicodecmp.h"
 
-static int compareUnicode (hfsunistr s1, hfsunistr s2)
+static int compareUnicode (const hfsunistr s1, const hfsunistr s2)
 {
 	return FastUnicodeCompare (&s1.unicode[0], s1.length, &s2.unicode[0], s2.length);
 }
@@ -305,7 +307,7 @@ static int16be* getRecord(hfs_node *node, short i)
 	return (int16be*)(((char*)node) + hfsRecofs(node, i));
 }
 
-static int compareKey (recptr key1, recptr key2)
+static int compareKey (const recptr key1, const recptr key2)
 {
 	int result = ((cat_key*)key1)->parentID - ((cat_key*)key2)->parentID;
 	if (result == 0) {
@@ -314,17 +316,17 @@ static int compareKey (recptr key1, recptr key2)
 	return result;
 }
 
-static uint16 keyLen (recptr key)
+static uint16 keyLen (const recptr key)
 {
 	return 2 + *(uint16be*)key;
 }
 
-static recptr skipKey (recptr key)
+static recptr skipKey (const recptr key)
 {
 	return (recptr)((char*)key + keyLen(key));
 }
 
-static recptr searchLeafNode(hfs_node *node, recptr key)
+static recptr searchLeafNode(hfs_node *node, const recptr key)
 {
 	short n = node->numRecords;
 	for (short i = 0; i < n; i++) {
@@ -340,7 +342,7 @@ static recptr searchLeafNode(hfs_node *node, recptr key)
 	return NULL;
 }
 
-static int32 searchIndexNode(hfs_node *node, recptr key)
+static int32 searchIndexNode(hfs_node *node, const recptr key)
 {
 	int32 nextNode = 0;
 	for (short i = 0; i < node->numRecords; i++) {
@@ -356,7 +358,7 @@ static int32 searchIndexNode(hfs_node *node, recptr key)
 	return nextNode;
 }
 
-static recptr searchNode(uint32 nodeID, recptr key)
+static recptr searchNode(uint32 nodeID, const recptr key)
 {
 	hfs_node *node = getNode (nodeID);
 	recptr	result = NULL;
@@ -373,7 +375,7 @@ static recptr searchNode(uint32 nodeID, recptr key)
 	return result;
 }
 
-static recptr findkey (recptr key)
+static recptr findkey (const recptr key)
 {
 	return searchNode (gCurrVolume->catRootNodeID, key);
 }

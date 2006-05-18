@@ -2,9 +2,10 @@
 #define _CONSOLE_H_
 
 #include "bootloader.h"
-#include "fontlarge.h"
-#include "fontmedium.h"
-#include "fontsmall.h"
+
+extern const uint8 font_large[];
+extern const uint8 font_medium[];
+extern const uint8 font_small[];
 
 void console_init(uint16 *fb);
 void console_putchar(char ch);
@@ -16,12 +17,13 @@ void console_setcolor(uint16 fg, uint16 bg, uint8 transparent);
 void console_getcolor(uint16 *fg, uint16 *bg, uint8 *transparent);
 
 void console_setfont(const uint8 *font);
+const uint8* console_currentfont (void);
 void console_home();
 void console_clear();
 int console_suppress_fbupdate (int modify);
 
 extern int font_width, font_height;
-extern const uint8 *fontdata;
 extern int console_printcount;
+extern int font_lines;
 
 #endif

@@ -19,8 +19,12 @@
 #define IPOD_KEY_PLAY    4
 #define IPOD_KEY_MENU    5
 
-int  keypad_getkey(void);
-int  keypad_getstate(void);
-void keypad_init(void);
+int   keypad_getkey(void);
+uint8 keypad_getstate(void);
+void  keypad_init(void);
+void  keypad_exit(void);
+int   isHoldEngaged (void);
+void  keypad_test (void);
+void  keypad_enable_wheelclicks (int rew_left, int fwd_left);
 
 #endif
