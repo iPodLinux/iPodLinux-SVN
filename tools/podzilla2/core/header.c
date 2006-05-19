@@ -1038,7 +1038,7 @@ void dec_draw_AmigaXX( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 				xp1, i, xp2, i,
 				ttk_ap_getx ("header.fg") -> color);
 		}
-	} else if( WhichAmigaDOS == 13 ) {
+	} else if( WhichAmigaDOS == 13 || WhichAmigaDOS == 14 ) {
 		/* 1.3 dragbars */
 		int o = ttk_screen->wy / 4;
 		ttk_fillrect( srf, 
@@ -1061,8 +1061,8 @@ void dec_draw_AmigaXX( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 				      ttk_screen->w-1, hdr->widg->h-1,
 				      RAISED );
 		}
-	} else {
-		/* draw vertical separators */
+	} else if( WhichAmigaDOS != 14 ) {
+		/* draw vertical separators - 1.3, 1.1, not 1.4 */
 		ttk_fillrect( srf, xp1, 0, xp1+2, hdr->widg->h,
 				pz_dec_ap_get_solid( "header.fg" ));
 		if( xp2 != ttk_screen->w ) 
@@ -1093,6 +1093,11 @@ void dec_draw_AmigaXX( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 }
 
 /* thse just call the above appropriately */
+void dec_draw_Amiga14( struct header_info * hdr, ttk_surface srf )
+{
+	dec_draw_AmigaXX( hdr, srf, 14 ); /* AmigaDOS 1.4 (unreleased) */
+}
+
 void dec_draw_Amiga13( struct header_info * hdr, ttk_surface srf )
 {
 	dec_draw_AmigaXX( hdr, srf, 13 ); /* AmigaDOS 1.3 */
@@ -1745,6 +1750,8 @@ void pz_header_init()
 					"Thanks, =RJ=!" );
 		pz_add_header_decoration( "Amiga 1.3", NULL, dec_draw_Amiga13,
 					"Thanks, =RJ=!" );
+		pz_add_header_decoration( "Amiga 1.4", NULL, dec_draw_Amiga14,
+					"Thanks, =RJ=!" );
 		pz_add_header_decoration( "Amiga 2.0", NULL, dec_draw_Amiga20,
 					"BleuLlama" );
 
@@ -1771,26 +1778,29 @@ void pz_header_init()
 					test_draw_decorations,
 					"HDR" );
 #endif
-
-		/* set up "Plain" as the default */
-		pz_enable_header_decorations( "Plain" );
 	}
 	initted++;
 
 	pz_header_settings_load();
 
-	/* if there was no defaults, set these... */
+	/* if there were no defaults, set these... */
 	t = (char *)pz_get_string_setting( pz_global_config, HEADER_WIDGETS );
 	if( !t || (strlen( t ) <3 ) ){
-		/* and set these up as defaults */
+		/* some default widgets */
 		pz_enable_widget_on_side( HEADER_SIDE_LEFT, "Hold" );
 		pz_enable_widget_on_side( HEADER_SIDE_RIGHT, "Power Icon" );
-		header_settings_save();
-	}
 
-	/* load in the user settings -- redundant? */
-	pz_enable_header_decorations( (char *) 
+		/* set up "Plain" as the default */
+		pz_enable_header_decorations( "Plain" );
+
+		/* and save it out */
+		header_settings_save();
+	} else {
+
+	    /* load in the user settings -- redundant? */
+	    pz_enable_header_decorations( (char *) 
 		    pz_get_string_setting( pz_global_config, DECORATIONS ));
+	}
 
 	if( headerBar ) ttk_remove_header_widget( headerBar );
 	ttk_add_header_widget( headerBar = new_headerBar_widget() );
