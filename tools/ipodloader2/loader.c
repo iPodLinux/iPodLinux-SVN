@@ -219,12 +219,14 @@ static int userconfirm ()
   config_t *conf = config_get();
   if (console_printcount) {
     if (conf->debug & 2) {
+      keypad_flush ();
       mlc_printf ("-Press a key-\n");
       do { } while (!keypad_getkey());
       shown = 1;
     } else if (conf->debug) {
       // do this always in debug mode, not just if bit 0 is set
       mlc_delay_ms (3000); // 3s
+      keypad_flush ();
       shown = 1;
     }
     console_printcount = 0;
@@ -254,8 +256,8 @@ static int is_rockbox_img (char *firstblock) {
   return 0;
 }
 
-static int is_appleos_img (char *firstblock) {
-  return (mlc_memcmp (firstblock, "!ATAsoso", 8) == 0);
+static int is_fw_img_hdr (char *data) {
+  return (mlc_memcmp (data, "!ATA", 4) == 0) && (*(long*)&data[500] == 0);
 }
 
 int is_applefw_img (char *firstblock); // we call this in config.c
@@ -441,7 +443,6 @@ static void *loader_handleImage (ipod_t *ipod, char *imagename, int forceRockbox
   int fd, isLinux = 0;
   char *txt, *args;
   uint32 fsize, n;
-  uint32 read = 0;
   int shown, showWarning = 0;
   static char *buf512 = 0;
   void *entry = (void*)ipod->mem_base;
@@ -473,19 +474,18 @@ static void *loader_handleImage (ipod_t *ipod, char *imagename, int forceRockbox
   // read the first block of the image and see what type it is
   //  Note: do not load the first block to *entry, because it's also mapped to address 0,
   //  where we have our interupt vectors which must not be overwritten yet.
-  n = vfs_read( buf512, 1, 512, fd );
-  if (n != 512) {
-      mlc_printf("Err: couldn't read 512 bytes\n");
-      return 0;
-  }
-  read = n;
-  if (is_appleos_img (buf512)) {
-    // we've got the raw apple_os.bin - skip the first 512 bytes
-    read = 0;
+  do {
+    n = vfs_read( buf512, 1, 512, fd );
+    if (n != 512) {
+        mlc_printf("Err: read failed\n");
+        return 0;
+    }
+  } while (is_fw_img_hdr (buf512)); // skip the header block we might have in an extracted apple-os.bin file
+
+
+  if (is_applefw_img (buf512)) {
+    // we've got the apple_os
     txt = "Apple OS";
-  } else if (is_applefw_img (buf512)) {
-    // we've got the apple_os without the 512-byte-header
-    txt = "Apple firmware";
   } else if (is_linux_img (buf512)) {
     // we've got the linux kernel
     txt = "Linux kernel";
@@ -532,7 +532,7 @@ static void *loader_handleImage (ipod_t *ipod, char *imagename, int forceRockbox
       }
     }
     
-    load_rockbox (ipod, fd, fsize, read, entry, buf512);
+    load_rockbox (ipod, fd, fsize, 512, entry, buf512);
     return 0;
   }
 
@@ -548,7 +548,8 @@ static void *loader_handleImage (ipod_t *ipod, char *imagename, int forceRockbox
     mlc_show_critical_error ();
   }
 
-  while(read < fsize) {
+  uint32 read = 512;
+  while (read < fsize) {
     if( (fsize-read) > (128*1024) ) { /* More than 128K to read */
       vfs_read( (void*)((uint8*)entry + read), 128*1024, 1, fd );
       read += 128 * 1024;
@@ -564,9 +565,8 @@ static void *loader_handleImage (ipod_t *ipod, char *imagename, int forceRockbox
   console_setcolor (WHITE, BLACK, 1);
   console_home (); // if we get here, then there were no errors, so we can safely reset the output cursor
   mlc_printf("Load succeeded\n");
-  mlc_printf("Starting now...\n");
 
-  shutdown_loader ();              // this turns off interrupt handling, ...
+  shutdown_loader ();              // this turns off interrupt handling ...
   mlc_memcpy (entry, buf512, 512); //  ... which allows us to install the first block finally
   return entry;
 }
@@ -796,11 +796,15 @@ redoMenu:
   if( conf->image[menuPos].type == CONFIG_IMAGE_BINARY || forceRockbox ) {
     void *ret;
     ret = loader_handleImage (ipod, conf->image[menuPos].path, forceRockbox);
-    if(ret==NULL) {
-      // load failed - wait 5 seconds so that we can read the error msgs
+    if (ret==NULL) {
+      // load failed
       mlc_show_critical_error();
-      goto redoMenu;
     } else {
+      if (is_applefw_img ((void*)ipod->mem_base)) {
+        lcd_set_contrast (orig_contrast);
+        ipod_set_backlight (0); // this seems to be necessary so that backlight dimming works on 4G and Photo models
+      }
+      mlc_printf("Jmp to %x\n", ret);
       return ret;
     }
   } else if( conf->image[menuPos].type == CONFIG_IMAGE_SPECIAL ) {
@@ -818,6 +822,7 @@ redoMenu:
       }
       lcd_set_contrast (orig_contrast); // restore contrast in case launch fails and loader() is entered again
       ipod_set_backlight (0); // this seems to be necessary so that backlight dimming works on 4G and Photo models
+      mlc_printf("Jmp to %x\n", ret);
       return (void*)ipod->mem_base;
     } else if (mlc_strcmp ("reboot", cmd) == 0 || mlc_strcmp ("diskmode", cmd) == 0) {
       mlc_printf("Boot command:\n%s\n", cmd);
