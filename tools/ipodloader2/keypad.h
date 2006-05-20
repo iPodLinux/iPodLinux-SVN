@@ -26,5 +26,6 @@ void  keypad_exit(void);
 int   isHoldEngaged (void);
 void  keypad_test (void);
 void  keypad_enable_wheelclicks (int rew_left, int fwd_left);
+void  keypad_flush(void);
 
 #endif

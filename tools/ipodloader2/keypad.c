@@ -28,6 +28,11 @@ int isHoldEngaged (void)
   return (kbd_state & 0x20) != 0;
 }
 
+void keypad_flush(void)
+{
+  do {} while (keypad_getkey ());
+}
+
 int keypad_getkey(void)
   // fetch a key from the buffer
 {
