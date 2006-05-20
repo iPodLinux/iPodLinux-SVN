@@ -59,6 +59,7 @@ mod:	N	near ptr				DONE
 #include "ipodhw.h"
 #include "minilibc.h"
 #include "interrupts.h"
+#include "keypad.h"
 
 /* flags used in processing format string */
 #define	PR_LJ	0x01	/* left justify */
@@ -680,6 +681,7 @@ void mlc_show_critical_error () {
   mlc_set_output_options (0, 0);
   ipod_set_backlight (1);
   mlc_delay_ms (5000); // just pause for 5s
+  keypad_flush ();
 }
 
 // call this if you can not continue, and want to make the user see what you just printed:
