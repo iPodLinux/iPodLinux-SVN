@@ -11,6 +11,7 @@
 
 #include "libtar/libtar.h"
 #include "rawpod/partition.h"
+#include "rawpod/device.h"
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef WIN32
@@ -29,7 +30,10 @@ void usage (int exitcode)
              "\n"
              "  Options:\n"
              "       -h  This help screen.\n"
+             "   -c COW  Perform all writes to the file COW instead of to the iPod. Useful\n"
+             "           for testing. COW must exist, but it can be empty.\n"
              "   -d DIR  Store temporary files in DIR instead of the current directory.\n"
+             "  -i IPOD  Look for the iPod at IPOD instead of probing for it.\n"
              "  -l FILE  Use FILE as the package list file.\n"
              "\n");
     exit (exitcode);
@@ -43,12 +47,18 @@ int main (int argc, char *argv[])
     QApplication app (argc, argv);
 
     char ch;
-    while ((ch = getopt (argc, argv, "d:l:h")) != EOF) switch (ch) {
+    while ((ch = getopt (argc, argv, "c:d:i:l:h")) != EOF) switch (ch) {
+    case 'c':
+        LocalRawDevice::setCOWFile (strdup (optarg));
+        break;
     case 'd':
         InstallerHome = QString (optarg);
         break;
     case 'h':
         usage (0);
+        break;
+    case 'i':
+        LocalRawDevice::setOverride (strdup (optarg));
         break;
     case 'l':
         PackageListFile = QString (optarg);

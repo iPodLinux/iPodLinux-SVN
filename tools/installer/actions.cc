@@ -245,7 +245,7 @@ DoActionsPage::DoActionsPage (Installer *wiz, InstallerPage *next)
     totalProgress->setRange (0, PendingActions->size());
     totalProgress->setValue (0);
 
-#ifdef WIN32
+#ifndef MY_QT_KNOWS_HOW_GRIDLAYOUT_IS_SUPPOSED_TO_WORK
     QHBoxLayout *pkgProgressLayout = new QHBoxLayout;
     pkgProgressLayout->addWidget (pkgProgressLabel);
     pkgProgressLayout->addSpacing (5);
@@ -276,6 +276,7 @@ DoActionsPage::DoActionsPage (Installer *wiz, InstallerPage *next)
     layout->setRowMinimumHeight (6, 10);
     layout->setColumnMinimumWidth (1, 5);
     layout->setRowStretch (8, 1);
+    layout->setColumnStretch (2, 1);
 #endif
     setLayout (layout);
 
