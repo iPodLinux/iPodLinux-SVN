@@ -73,10 +73,19 @@ class LocalRawDevice : public VFS::BlockDevice
 {
 public:
     LocalRawDevice (int n);
+    ~LocalRawDevice() { if (_wf != _f) delete _wf; delete _f; }
 
     int error() {
         if (_valid < 0) return _valid;
         return 0;
+    }
+
+    static void setOverride (const char *filename) {
+        _override = filename;
+    }
+    static bool overridden() { return (_override != 0); }
+    static void setCOWFile (const char *filename) {
+        _cowfile = filename;
     }
 
 protected:
@@ -84,9 +93,10 @@ protected:
     virtual int doWrite (const void *buf, u64 sec);
 
 private:
-    LocalFile *_f;
+    LocalFile *_f, *_wf;
     int _valid;
-        
+    static const char *_override;
+    static const char *_cowfile;
 };
 
 class PartitionDevice : public VFS::BlockDevice
