@@ -139,6 +139,9 @@ int LocalDir::readdir (struct VFS::dirent *de)
 
 /**************************************************************/
 
+const char *LocalRawDevice::_override = 0;
+const char *LocalRawDevice::_cowfile = 0;
+
 LocalRawDevice::LocalRawDevice (int n)
     : BlockDevice()
 {
@@ -150,7 +153,10 @@ LocalRawDevice::LocalRawDevice (int n)
     drive[7] = n + 'a';
 #endif
     setBlocksize (512);
-    _f = new LocalFile (drive, OPEN_READ | OPEN_WRITE | OPEN_DEV);
+    if (_override)
+        _f = new LocalFile (_override, OPEN_READ | OPEN_WRITE);
+    else
+        _f = new LocalFile (drive, OPEN_READ | OPEN_WRITE | OPEN_DEV);
     if (_f->error()) _valid = -_f->error();
     else {
         _valid = 1;
@@ -159,6 +165,15 @@ LocalRawDevice::LocalRawDevice (int n)
         _f->lseek (0, SEEK_SET);
         setSize ((offset <= 0)? 0 : (offset >> _blocksize_bits));
     }
+
+    if (_cowfile) {
+        _wf = new LocalFile (_cowfile, OPEN_READ | OPEN_WRITE);
+        if (_wf->error()) {
+            fprintf (stderr, "Warning: error opening %s, COW disabled\n", _cowfile);
+            delete _wf;
+            _wf = _f;
+        }
+    } else _wf = _f;
 }
 
 int LocalRawDevice::doRead (void *buf, u64 sec) 
@@ -171,6 +186,18 @@ int LocalRawDevice::doRead (void *buf, u64 sec)
 
     s64 err;
     if (_valid <= 0) return _valid;
+    // Check the COW file first
+    if (_wf != _f) {
+        if (_wf->lseek (sec << 9, SEEK_SET) >= 0) {
+            if ((err = _wf->read (buf, 512)) > 0) {
+                for (int i = 0; i < err; i++) {
+                    if (((char *)buf)[i] != 0)
+                        return err;
+                }
+            }
+        }
+    }
+    // Else read from the real dev
     if ((err = _f->lseek (sec << 9, SEEK_SET)) < 0) return err;
 #ifdef RAW_DEVICE_ACCESS
     if ((err = _f->read (alignedbuf, 512) < 0)) return err;
@@ -194,11 +221,11 @@ int LocalRawDevice::doWrite (const void *buf, u64 sec)
 
     s64 err;
     if (_valid <= 0) return _valid;
-    if ((err = _f->lseek (sec << 9, SEEK_SET)) < 0) return err;
+    if ((err = _wf->lseek (sec << 9, SEEK_SET)) < 0) return err;
 #ifdef RAW_DEVICE_ACCESS
-    if ((err = _f->write (alignedbuf, 512) < 0)) return err;
+    if ((err = _wf->write (alignedbuf, 512) < 0)) return err;
 #else
-    if ((err = _f->write (buf, 512) < 0)) return err;
+    if ((err = _wf->write (buf, 512) < 0)) return err;
 #endif
     return 0;
 }

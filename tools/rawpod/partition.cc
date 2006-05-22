@@ -113,6 +113,13 @@ int devReadMBR (int devnr, unsigned char *buf)
 
 int devWriteMBR (int devnr, unsigned char *buf)
 {
+    if (LocalRawDevice::overridden()) {
+        LocalRawDevice dev (devnr);
+        if (dev.write (buf, 512) != 512)
+            return dev.error();
+        return 0;
+    }
+
 #ifdef WIN32
     HANDLE fh;
     DWORD len;
@@ -153,6 +160,10 @@ int devWriteMBR (int devnr, unsigned char *buf)
 
 u64 devGetSize (int devnr) 
 {
+    if (LocalRawDevice::overridden()) {
+        return LocalRawDevice(devnr).size() << 9;
+    }
+
 #ifdef WIN32
     DISK_GEOMETRY geo;
     DWORD junk;
@@ -223,6 +234,11 @@ void ERR(int e) {
 
 int find_iPod() 
 {
+    if (LocalRawDevice::overridden()) {
+        printf ("Pretending override file is an iPod\n");
+        return 0;
+    }
+
     int disknr;
     unsigned char mbr[512];
     for (disknr = 0; disknr < 8; disknr++) {
