@@ -204,15 +204,19 @@ PodLocationPage::PodLocationPage (Installer *wizard)
                 break;
             }
             status = BadSysInfo;
+            errno = EINVAL;
             break;
         }
 
         p = strchr (p, '\n');
     }
-    if (!rev || !(rev >> 16) || (rev >> 20))
+    if (!rev || !(rev >> 16) || (rev >> 20)) {
+        errno = EINVAL;
+        printf ("Invalid hw rev: %x (%d)\n", rev, rev);
         status = BadSysInfo;
-    else
+    } else {
         hw_ver = rev >> 16;
+    }
 
     if (!(INSTALLER_WORKING_IPODS & (1 << hw_ver)))
         status = UnsupPod;
