@@ -223,6 +223,9 @@ void pz_enable_header_decorations( char * name )
 	header_info * d = headerDecorations;
 	int found = 0;
 
+	/* make sure we're trying to actually do something */
+	if( !name || strlen( name ) == 0 ) return;
+
 	while( d ) {
 		if( d->name != NULL && !strcmp( name, d->name )) {
 			/* found it!  Set the bit! */
@@ -1793,7 +1796,8 @@ void pz_header_init()
 		/* set up "Plain" as the default */
 		pz_enable_header_decorations( "Plain" );
 
-		/* and save it out */
+		/* and save them out */
+		pz_set_string_setting( pz_global_config, DECORATIONS, "Plain" );
 		header_settings_save();
 	} else {
 
