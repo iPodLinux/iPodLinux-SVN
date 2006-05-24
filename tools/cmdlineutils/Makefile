@@ -30,6 +30,7 @@ endif
 	@$(CC) -o lsi lsi.c -Wall $(LIBS)
 	@$(CC) -o pause pause.c -Wall $(LIBS)
 	@$(CC) -o raise raise.c -Wall $(LIBS)
+	@$(CC) -o font font.c -Wall $(LIBS)
 
 clean:
 	@rm -f asciichart asciichart.gdb
@@ -38,6 +39,7 @@ clean:
 	@rm -f lsi lsi.gdb
 	@rm -f pause pause.gdb
 	@rm -f raise raise.gdb
+	@rm -f font font.gdb
 
 install:
 ifdef IPOD
@@ -49,9 +51,11 @@ ifdef IPOD
 	@install -m 755 lsi $(DESTDIR)/sbin/lsi
 	@install -m 755 pause $(DESTDIR)/sbin/pause
 	@install -m 755 raise $(DESTDIR)/sbin/raise
+	@install -m 755 font $(DESTDIR)/sbin/font
 else
 	@install -m 755 asciichart /bin/asciichart
 	@install -m 755 lsi /bin/lsi
 	@install -m 755 pause /bin/pause
 	@install -m 755 raise /bin/raise
+	@install -m 755 font /bin/font
 endif
