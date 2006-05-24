@@ -151,11 +151,13 @@ static void mcp_draw_position(PzWidget *wid, ttk_surface srf)
 	int w, h;
 
 	h = ttk_text_height(ttk_textfont);
-	mcp_draw_percent(wid, srf, status.elapsedTime * 100 / status.totalTime);
-	num2time(status.elapsedTime, tmp);
+	mcp_draw_percent(wid, srf, status.totalTime ?
+			(status.elapsedTime * 100 / status.totalTime) : 100);
+	num2time(status.totalTime ? status.elapsedTime : 0, tmp);
 	ttk_text(srf, ttk_textfont, wid->w / 12, wid->h -
 			(8 + h), ttk_ap_getx("window.fg")->color, tmp);
-	num2time(status.totalTime - status.elapsedTime, tmp);
+	num2time(status.totalTime ? (status.totalTime - status.elapsedTime) :
+			status.elapsedTime, tmp);
 	w = ttk_text_width(ttk_textfont,  tmp);
 	ttk_text(srf, ttk_textfont, wid->w - wid->w / 12 - w, wid->h - (8 + h),
 			ttk_ap_getx("window.fg")->color, tmp);
