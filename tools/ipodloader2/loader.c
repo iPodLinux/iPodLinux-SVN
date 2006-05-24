@@ -794,9 +794,8 @@ redoMenu:
   
   int forceRockbox = conf->image[menuPos].type == CONFIG_IMAGE_ROCKBOX;
   if( conf->image[menuPos].type == CONFIG_IMAGE_BINARY || forceRockbox ) {
-    void *ret;
-    ret = loader_handleImage (ipod, conf->image[menuPos].path, forceRockbox);
-    if (ret==NULL) {
+    ret = (int) loader_handleImage (ipod, conf->image[menuPos].path, forceRockbox);
+    if (!ret) {
       // load failed
       mlc_show_critical_error();
     } else {
@@ -805,7 +804,7 @@ redoMenu:
         ipod_set_backlight (0); // this seems to be necessary so that backlight dimming works on 4G and Photo models
       }
       mlc_printf("Jmp to %x\n", ret);
-      return ret;
+      return (void*) ret;
     }
   } else if( conf->image[menuPos].type == CONFIG_IMAGE_SPECIAL ) {
     char *cmd = conf->image[menuPos].path;
@@ -822,8 +821,9 @@ redoMenu:
       }
       lcd_set_contrast (orig_contrast); // restore contrast in case launch fails and loader() is entered again
       ipod_set_backlight (0); // this seems to be necessary so that backlight dimming works on 4G and Photo models
+	  ret = ipod->mem_base;
       mlc_printf("Jmp to %x\n", ret);
-      return (void*)ipod->mem_base;
+      return (void*) ret;
     } else if (mlc_strcmp ("reboot", cmd) == 0 || mlc_strcmp ("diskmode", cmd) == 0) {
       mlc_printf("Boot command:\n%s\n", cmd);
       userconfirm ();
