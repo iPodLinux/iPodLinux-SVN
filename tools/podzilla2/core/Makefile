@@ -24,7 +24,7 @@ MYCFLAGS = `$(TTKCONF) --x11 --sdl --cflags` -DVERSION=\"$(VERSION)\" -Wall
 endif
 MYCFLAGS += -I/sw/include
 
-OBJS= pz.o module.o ipod.o dialog.o secrets.o header.o settings.o fonts.o \
+OBJS= pz.o module.o ipod.o dialog.o header.o settings.o fonts.o \
       menu.o legacy.o gui.o browser.o vector.o oss.o appearance.o input.o \
       priority.o icons.o
 HDRS= pz.h
