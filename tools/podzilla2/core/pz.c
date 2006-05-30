@@ -30,6 +30,19 @@
 #include "ucdl.h"
 #endif
 
+const char *PZ_Developers[] = {
+    "Bernard Leach",
+    "Joshua Oreman",
+    "David Carne",
+    "Courtney Cavin",
+    "Scott Lawrence",
+    "James Jacobsson",
+    "Adam Johnston",
+    "Alastair Stuart",
+    "Jonathan Bettencourt",
+    0
+};
+
 FILE *errout;
 
 void ____Spurious_references_to_otherwise_unreferenced_symbols() 
@@ -207,19 +220,20 @@ int pz_event_handler (int ev, int earg, int time)
 	    pz_header_fix_hold();
 	    break;
 	case TTK_BUTTON_PREVIOUS:
-	    if (pz_has_secret ("vtswitch") &&
+	    if (pz_get_int_setting (pz_global_config, ENABLE_VTSWITCH) &&
 		ttk_button_pressed (TTK_BUTTON_MENU) && ttk_button_pressed (TTK_BUTTON_PLAY)) {
 		// vt switch code <<
 		printf ("VT SWITCH <<\n");
 		vtswitched = 1;
 		return 1;
-	    } else if (pz_has_secret ("vtswitch") &&
+	    } else if (pz_get_int_setting (pz_global_config, ENABLE_VTSWITCH) &&
 		       ttk_button_pressed (TTK_BUTTON_MENU) && ttk_button_pressed (TTK_BUTTON_NEXT)) {
 		// vt switch code [0]
 		printf ("VT SWITCH 0 (N-P)\n");
 		vtswitched = 1;
 		return 1;
-	    } else if (pz_has_secret ("window") && ttk_button_pressed (TTK_BUTTON_MENU) && !vtswitched) {
+	    } else if (pz_get_int_setting (pz_global_config, ENABLE_WINDOWMGMT) &&
+                       ttk_button_pressed (TTK_BUTTON_MENU) && !vtswitched) {
 		TWindowStack *lastwin = ttk_windows;
 		while (lastwin->next) lastwin = lastwin->next;
 		if (lastwin->w != ttk_windows->w) {
@@ -231,19 +245,20 @@ int pz_event_handler (int ev, int earg, int time)
 	    }
 	    break;
 	case TTK_BUTTON_NEXT:
-	    if (pz_has_secret ("vtswitch") &&
+	    if (pz_get_int_setting (pz_global_config, ENABLE_VTSWITCH) &&
 		ttk_button_pressed (TTK_BUTTON_MENU) && ttk_button_pressed (TTK_BUTTON_PLAY)) {
 		// vt switch code >>
 		printf ("VT SWITCH >>\n");
 		vtswitched = 1;
 		return 1;
-	    } else if (pz_has_secret ("vtswitch") &&
+	    } else if (pz_get_int_setting (pz_global_config, ENABLE_VTSWITCH) &&
 		       ttk_button_pressed (TTK_BUTTON_MENU) && ttk_button_pressed (TTK_BUTTON_PREVIOUS)) {
 		// vt switch code [0]
 		printf ("VT SWITCH 0 (P-N)\n");
 		vtswitched = 1;
 		return 1;
-	    } else if (pz_has_secret ("window") && ttk_button_pressed (TTK_BUTTON_MENU) && !vtswitched) {
+	    } else if (pz_get_int_setting (pz_global_config, ENABLE_WINDOWMGMT) &&
+                       ttk_button_pressed (TTK_BUTTON_MENU) && !vtswitched) {
 		printf ("WINDOW CYCLE <<\n");
 		if (ttk_windows->next) {
 		    ttk_move_window (ttk_windows->w, 0, TTK_MOVE_END);
@@ -252,7 +267,8 @@ int pz_event_handler (int ev, int earg, int time)
 	    }
 	    break;
 	case TTK_BUTTON_PLAY:
-	    if (pz_has_secret ("window") && ttk_button_pressed (TTK_BUTTON_MENU) && !vtswitched) {
+	    if (pz_get_int_setting (pz_global_config, ENABLE_WINDOWMGMT) &&
+                ttk_button_pressed (TTK_BUTTON_MENU) && !vtswitched) {
 		printf ("WINDOW MINIMIZE\n");
 		if (ttk_windows->next) {
 		    ttk_windows->minimized = 1;
@@ -541,7 +557,6 @@ main(int argc, char **argv)
 	pz_ipod_fix_settings (pz_global_config);
 	pz_load_font (&ttk_textfont, "Espy Sans", TEXT_FONT, pz_global_config);
 	pz_load_font (&ttk_menufont, "Chicago",   MENU_FONT, pz_global_config);
-	pz_secrets_init();
 	pz_menu_init();
 	pz_modules_init();
 	pz_header_init();

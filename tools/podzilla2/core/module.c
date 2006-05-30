@@ -200,9 +200,9 @@ static void load_modinf (PzModule *mod)
             } else if (strcmp (key, "License") == 0) {
                 // nothing
             } else if (strcmp (key, "Unstable") == 0) {
-                // You can override "beta" with secret=testing but you can't
+                // You can override "beta" with Advanced > Beta Testing but you can't
                 // override other things, e.g. "alpha" or "does not work".
-                if (strcmp (value, "beta") == 0 && !pz_has_secret ("testing"))
+                if (strcmp (value, "beta") == 0 && !pz_get_int_setting (pz_global_config, MODULE_TESTING))
                     pz_warning (_("Module %s is in beta. Use at your own risk."), mod->name);
                 else
                     pz_warning (_("Module %s is unstable: %s. Use at your own risk."), mod->name, value);
