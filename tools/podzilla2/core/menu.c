@@ -300,7 +300,7 @@ void pz_menu_init()
 
     pz_menu_add_setting ("/Settings/Appearance/Menu Transition", SLIDE_TRANSIT, pz_global_config, transit_options);
     item = pz_menu_add_ttkh ("/Settings/Appearance/Menu Font", pz_select_font, &ttk_menufont);
-    item->cdata = MENU_FONT;;
+    item->cdata = MENU_FONT;
     item->flags |= TTK_MENU_ICON_SUB;
     item = pz_menu_add_ttkh ("/Settings/Appearance/Text Font", pz_select_font, &ttk_textfont);
     item->cdata |= TEXT_FONT;
@@ -332,6 +332,22 @@ TWindow *(*pz_new_menu_window)(TWidget *) = pz_default_new_menu_window;
 TWindow *pz_menu_get() 
 {
     // Want to add these at end so modules get stuff put in appropriate place...
+    const char *advanced_settings_info =
+    ("These are various advanced settings you can turn on. They're left off by default, "
+     "so as not to confuse new users.\n"
+     "      Load Unstable Modules will cause you not to be warned when loading modules that "
+     "are marked as being in beta-testing.\n"
+     "      Window Management enables you to switch between open windows onscreen, instead of "
+     "having the top one always cover up the others. Use MENU+<< and MENU+>> to cycle windows "
+     "in one direction or the other, and MENU+PLAY to minimize a window.\n"
+     "      VT Switching enables you to switch virtual terminals. Use MENU+PLAY+<< to switch "
+     "left, MENU+PLAY+>> to switch right, and MENU+<<+>> to switch back to terminal 0.\n");     
+
+    pz_menu_add_ttkh ("/Settings/Advanced/What's this?", ttk_mh_textarea,
+                      ttk_md_textarea (strdup (advanced_settings_info), ttk_text_height (ttk_textfont) + 2));
+    pz_menu_add_setting ("/Settings/Advanced/Load Unstable Modules", MODULE_TESTING, pz_global_config, 0);
+    pz_menu_add_setting ("/Settings/Advanced/Window Management", ENABLE_WINDOWMGMT, pz_global_config, 0);
+    pz_menu_add_setting ("/Settings/Advanced/VT Switching", ENABLE_VTSWITCH, pz_global_config, 0);
     pz_menu_add_action ("/Settings/Exit Without Saving", PZ_MENU_UPONE);
     pz_menu_add_action ("/Settings/Reset All Settings/Cancel", PZ_MENU_UPONE);
     pz_menu_add_action ("/Settings/Reset All Settings/Absolutely", reset_settings);

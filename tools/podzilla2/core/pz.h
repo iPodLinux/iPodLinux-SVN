@@ -16,31 +16,6 @@
  * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-
-/*********************************************************************
- * If you're smart enough to be reading this file, you probably want *
- * to know this.                                                     *
- *********************************************************************
-
- * Since Podzilla can do some things that would only cause confusion
-   for newbies, there is a file  /etc/secrets  that unlocks the more
- * confusable (and also more interesting) aspects of podzilla. The file
-   contains keywords in any format you want - if the keyword is there,
- * you're allowed to do whatever it is.
-
- * If there's something you think Podzilla should do but doesn't, check
-   the source for a call to pz_has_secret - you may figure out exactly
- * how to fix that.
-
- * Please don't publicize these secrets, as we want them to remain quasi-
-   secret. You are, however, free to discreetly tell people you trust to be
- * intelligent enough to handle them wisely.
-
- * Have fun.
-
- ********************************************************************/
-
-
 #ifndef _PZ_H_
 #define _PZ_H_
 
@@ -51,6 +26,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+extern const char *PZ_Developers[];
 
 #ifndef PZ_COMPAT
 #define MWBACKEND /* no mwin emu */
@@ -108,10 +85,12 @@ extern void (*__pz_builtin_init_functions[])();
 extern const char *__pz_builtin_names[];
 extern int __pz_builtin_number_of_init_functions;
 #define PZ_MOD_INIT(fn) \
-    __attribute__((__constructor__)) static void __init_module__ () { \
+    static void __init_module__ () { \
         __pz_builtin_init_functions[__pz_builtin_number_of_init_functions] = fn; \
         __pz_builtin_names[__pz_builtin_number_of_init_functions++] = __PZ_MODULE_NAME; \
-    }
+    } \
+    static void (*__init_module_constructor_reference__)() __attribute__ ((__section__ (".ctors"))) = \
+        __init_module__;
 #else
 // The _init_module__ one is to make it transparent
 // on systems with leading underscores on C symbols.
@@ -315,12 +294,6 @@ void pz_widget_set_timer (PzWidget *wid, int ms);
 void pz_hide_window (PzWindow *win);
 void pz_close_window (PzWindow *win);
 void pz_show_window (PzWindow *win);
-
-/** Secrets - secrets.c **/
-#ifndef PZ_MOD
-void pz_secrets_init();
-#endif
-int pz_has_secret (const char *key);
 
 
 /** Header - header.c **/
@@ -616,6 +589,10 @@ void pz_reset_idle_timer();
 #define DECORATION_RATE   (62)   /* update rate for decorations */
 #define HEADER_WIDGETS    (63)	 /* settings for header widgets */
 
+/**** ADVANCED SETTINGS ****/
+#define MODULE_TESTING    (70)   /* don't warn for modules in beta */
+#define ENABLE_VTSWITCH   (71)   /* Enable VT switching. */
+#define ENABLE_WINDOWMGMT (72)   /* Enable window management. */
 
 #define 	BATTERY_UPDATE_OFF (5)
 
