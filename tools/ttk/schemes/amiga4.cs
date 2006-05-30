@@ -67,8 +67,8 @@
 	  button.sel.bg => bluebar, button.sel.fg => black,
 	  button.sel.border => red, button.sel.inner => white +1
 
-   input: bg => ltgray, fg => black, selbg => bluebar, selfg => black,
-	  border => purpledk, cursor => white
+   input: bg => ltgray, fg => black, selbg => ltblue4, selfg => black,
+	  border => purpledk, cursor => purpledk
 
 textarea: bg => ltgray, fg => black
 
