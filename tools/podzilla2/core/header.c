@@ -999,6 +999,30 @@ void dec_draw_AmigaXX( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 
 	dec_plain( hdr, srf );
 
+	/* draw the backing */
+	if( WhichAmigaDOS == 40 ) {
+		int r1, g1, b1, r2, g2, b2;
+		ttk_color halfway;
+		ttk_unmakecol_ex( pz_dec_ap_get_solid( "header.shine" ),
+					&r1, &g1, &b1, srf);
+		ttk_unmakecol_ex( pz_dec_ap_get_solid( "header.shadow" ),
+					&r2, &g2, &b2, srf);
+		halfway = ttk_makecol( (r1+r2)>>1, (g1+g2)>>1, (b1+b2)>>1 );
+
+		/* 3d box */
+		dec_draw_3d( srf, 0, 0, 
+			ttk_screen->w-1, hdr->widg->h-1, RAISED );
+		/* gradient */
+		ttk_vgradient( srf, 1, 2, 
+			    ttk_screen->w-1, hdr->widg->h-2,
+			    ttk_ap_getx( "header.shadow" )->color,
+			    ttk_ap_getx( "header.shine" )->color );
+		/* transitional */
+		ttk_line( srf, 1, 1, ttk_screen->w-2, 1, halfway );
+		ttk_line( srf, 1, hdr->widg->h-2, 
+				ttk_screen->w-2, hdr->widg->h-2, halfway );
+	}
+
 	/* draw the faux close box, if applicable. */
 	if( hdr->widg->x == 0 ) {
 		xp1 = hdr->widg->h-1;	/* square gadget */
@@ -1018,13 +1042,33 @@ void dec_draw_AmigaXX( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 					(int) (xo*3.1), (int) (yo*3.1),
 					(int) (xo*4.8), (int) (yo*4.8),
 					pz_dec_ap_get_solid ("header.accent"));
-		} else {
+		} else if( WhichAmigaDOS < 40 ) {
 			dec_draw_3d( srf, 0, 0, hdr->widg->h-2, 
 				hdr->widg->h-1, RAISED );
 			ttk_fillrect( srf, hw-1, xo*2+2, hw+2, xo*6-1,
 				pz_dec_ap_get_solid( "header.shine" ));
 			ttk_rect( srf, hw-2, xo*2+1, hw+2, xo*6-1,
 				pz_dec_ap_get_solid( "header.shadow" ));
+		} else { /* 4.0 */
+#define AD40CS	(4)
+			/* shadow */
+			ttk_rect( srf, hw-AD40CS-1, hw-AD40CS, 
+				hw+AD40CS, hw+AD40CS,
+				pz_dec_ap_get_solid( "header.shadow" ));
+
+			/* shine */
+			ttk_rect( srf, hw-AD40CS+1, hw-AD40CS+1,
+				hw+AD40CS+1, hw+AD40CS+1,
+				pz_dec_ap_get_solid( "header.shine" ));
+
+			/* fill it... */
+			ttk_fillrect( srf, hw-AD40CS, hw-AD40CS,
+				hw+AD40CS, hw+AD40CS, 
+				pz_dec_ap_get_solid( "header.accent" ));
+
+			/* black overlay border */
+			ttk_rect( srf, hw-AD40CS, hw-AD40CS,
+				hw+AD40CS, hw+AD40CS, ttk_makecol( BLACK ) );
 		}
 
 	} else if( WhichAmigaDOS == 20 ) {
@@ -1032,6 +1076,7 @@ void dec_draw_AmigaXX( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 		dec_draw_3d( srf, 0, 0, hdr->widg->x - 1, 
 				hdr->widg->h-1, RAISED );
 	}
+
 
 	/* draw drag bars */
 	if( WhichAmigaDOS == 11 ) {
@@ -1052,13 +1097,26 @@ void dec_draw_AmigaXX( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 			xp1 + o,  hdr->widg->h - o*2 + 1,
 			xp2 - o,  hdr->widg->h - o,
 			pz_dec_ap_get_solid( "header.fg" ));
-	} else {
+	} else if( WhichAmigaDOS == 20 ) {
 		dec_draw_3d( srf, xp1, 0, xp2,
 			hdr->widg->h-1, RAISED );
-	}
+	} 
 
 
-	if( WhichAmigaDOS == 20 ) {
+	if( WhichAmigaDOS == 40 ) {
+		/* left separator */
+		ttk_ap_vline( srf, ttk_ap_get( "header.shadow" ),
+		    xp1, 5, ttk_screen->wy-5 );
+		ttk_ap_vline( srf, ttk_ap_get( "header.shine" ),
+		    xp1+1, 5, ttk_screen->wy-5 );
+
+		/* right separator */
+		ttk_ap_vline( srf, ttk_ap_get( "header.shadow" ),
+		    xp2, 5, ttk_screen->wy-5 );
+		ttk_ap_vline( srf, ttk_ap_get( "header.shine" ),
+		    xp2+1, 5, ttk_screen->wy-5 );
+
+	} else if( WhichAmigaDOS == 20 ) {
 		if( hdr->widg->x + hdr->widg->w != ttk_screen->w ) {
 		    dec_draw_3d( srf, hdr->widg->x + hdr->widg->w, 0,
 				      ttk_screen->w-1, hdr->widg->h-1,
@@ -1076,7 +1134,7 @@ void dec_draw_AmigaXX( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 	/* blot out the backing for the text */
 	pz_header_justification_helper( xp1+3, xp2-3 );
 
-	if( WhichAmigaDOS < 20 ) {
+	if( WhichAmigaDOS != 20 ) {
 		switch( just ) {
 		case( TTK_TEXT_LEFT ):
 			tx1 = xp1+1;
@@ -1090,8 +1148,10 @@ void dec_draw_AmigaXX( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 			tx1 = (ttk_screen->w - tw - 5) >> 1;
 			tx2 = tx1 + tw + 5;
 		}
-		ttk_fillrect( srf, tx1, 0, tx2, hdr->widg->h,
+		if( WhichAmigaDOS < 20 ) {
+			ttk_fillrect( srf, tx1, 0, tx2, hdr->widg->h,
 				pz_dec_ap_get_solid( "header.bg" ));
+		}
 	}
 }
 
@@ -1114,6 +1174,11 @@ void dec_draw_Amiga11( struct header_info * hdr, ttk_surface srf )
 void dec_draw_Amiga20( struct header_info * hdr, ttk_surface srf )
 {
 	dec_draw_AmigaXX( hdr, srf, 20 ); /* AmigaDOS 2.0 */
+}
+
+void dec_draw_Amiga40( struct header_info * hdr, ttk_surface srf )
+{
+	dec_draw_AmigaXX( hdr, srf, 40 ); /* AmigaDOS 4.0 */
 }
 
 
@@ -1756,6 +1821,8 @@ void pz_header_init()
 		pz_add_header_decoration( "Amiga 1.4", NULL, dec_draw_Amiga14,
 					"Thanks, =RJ=!" );
 		pz_add_header_decoration( "Amiga 2.0", NULL, dec_draw_Amiga20,
+					"BleuLlama" );
+		pz_add_header_decoration( "Amiga 4.0", NULL, dec_draw_Amiga40,
 					"BleuLlama" );
 
 		/* Be! */
