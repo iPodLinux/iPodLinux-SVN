@@ -474,9 +474,10 @@ int pz_start_input_n_for (TWindow *win);
 TWindow *pz_select_color_scheme();
 
 /** Icons - icons.c **/
-extern unsigned char pz_icon_play[],    pz_icon_pause[];
-extern unsigned char pz_icon_battery[], pz_icon_charging[];
-extern unsigned char pz_icon_hold[],    pz_icon_dot[];
+extern unsigned char pz_icon_play[], pz_icon_pause[];
+extern unsigned char pz_icon_hold[], pz_icon_dot[];
+extern unsigned char pz_icon_battery_horiz[], pz_icon_battery_vert[];
+extern unsigned char pz_icon_charging[];
 
 
 /** Other things - pz.c **/
