@@ -16,13 +16,43 @@
  * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-/* issues/hackiness with the current design:
+/*
+    Note:
+	This file is pretty large.  I recognize that.  It's arranged
+	in a few sections:
+
+	- c-file meta stuff
+		- license, header includes, externs, globals
+	- List Manipulations 
+		- manage the header widget and decorations lists 
+	- Settings 
+		- loading and saving of the settings and such
+	- Various utility, maintenance functions 
+		- draw, update, cycle, management functions
+	- Transient widget functions
+		- Working with widget groups that can come and go easily
+	- Header Decorations
+		- pre-canned header decoration draw routines
+	- Widgets
+		- pre-canned header widget update and draw routines
+	- Initialization
+		- startup time functions, registering widgets, decos, etc.
+	- Settings For Decorations
+		- callbacks for dealing with the decorations settings menu
+	- Settings For Widgets
+		- callbacks for dealing with the widget settings menu
+
+    -BleuLlama
+*/
+
+/* issues/hackiness:
 	- timeouts should be stored as milliseconds, not references 
 		into an arbitrary array
 	- resolution should go to 250ms, rather than 1000ms (1s)
 	- the left/right selection should be more streamlined
 		- work the information (rate, countdown, etc) into a sub
 		  structure, so it can be referenced like an array
+	- groups are untested.
 */
 
 #include <stdio.h>
@@ -310,7 +340,7 @@ void pz_header_widget_set_rate( int milliseconds, char * name )
 
 
 /* ********************************************************************** */ 
-/* settings */
+/* Settings */
 
 static char hs[1024];
 
@@ -1572,17 +1602,17 @@ typedef struct powerstuff {
 
 static powerstuff the_power_state;
 
-static void w_powericon_update( struct header_info * hdr )
+static void w_hpowericon_update( struct header_info * hdr )
 {
 	powerstuff * ps = (powerstuff *)hdr->data;
 
 	if( ps != NULL ) {
 		ipod_read_apm( &ps->fill, &ps->is_charging );
 	}
-	hdr->widg->w = pz_icon_battery[0] + 6;
+	hdr->widg->w = pz_icon_battery_horiz[0] + 6;
 }
 
-static void w_powericon_draw( struct header_info * hdr, ttk_surface srf )
+static void w_hpowericon_draw( struct header_info * hdr, ttk_surface srf )
 {
 	powerstuff * ps = (powerstuff *)hdr->data;
 	int ypos;
@@ -1606,7 +1636,7 @@ static void w_powericon_draw( struct header_info * hdr, ttk_surface srf )
                 ap = ttk_ap_get( "battery.bg" );
         }
 
-	ypos = hdr->widg->y + ((hdr->widg->h - pz_icon_battery[1])>>1),
+	ypos = hdr->widg->y + ((hdr->widg->h - pz_icon_battery_horiz[1])>>1),
 	xadd = 3;
 
         /* back fill the container... */
@@ -1614,7 +1644,7 @@ static void w_powericon_draw( struct header_info * hdr, ttk_surface srf )
                                 hdr->widg->x + xadd +22, ypos + 9);
 
 	/* draw the framework */
-	ttk_draw_icon (ttk_icon_battery, srf, hdr->widg->x+xadd, ypos,
+	ttk_draw_icon (pz_icon_battery_horiz, srf, hdr->widg->x+xadd, ypos,
 			ttk_ap_getx ("battery.border"),
 			ttk_ap_getx ("header.bg")->color);
 
@@ -1645,6 +1675,93 @@ static void w_powericon_draw( struct header_info * hdr, ttk_surface srf )
 			ttk_ap_getx ("header.bg")->color);
 }
 
+
+static void w_vpowericon_update( struct header_info * hdr )
+{
+	powerstuff * ps = (powerstuff *)hdr->data;
+
+	if( ps != NULL ) {
+		ipod_read_apm( &ps->fill, &ps->is_charging );
+	}
+	hdr->widg->w = pz_icon_battery_vert[0] + 6;
+}
+
+static void w_vpowericon_draw( struct header_info * hdr, ttk_surface srf )
+{
+	powerstuff * ps = (powerstuff *)hdr->data;
+	int xpos = hdr->widg->x + ((hdr->widg->w - pz_icon_battery_vert[0])>>1);
+	int ypos = hdr->widg->y + ((hdr->widg->h - pz_icon_battery_vert[1])>>1);
+	int lvl = 0;
+	TApItem fill;
+	TApItem *ap;
+
+        if (ps->is_charging) {
+		ypos = hdr->widg->y + ((hdr->widg->h - pz_icon_charging[1])>>1);
+		xpos = hdr->widg->x + ((hdr->widg->w - pz_icon_charging[0])>>1);
+
+		ttk_draw_icon( pz_icon_charging, srf,
+			xpos, ypos,
+			ttk_ap_getx ("battery.chargingbolt"),
+			ttk_ap_getx ("header.bg")->color);
+		return;
+
+        } else if (ps->fill < 64) {
+                memcpy (&fill, ttk_ap_getx ("battery.fill.low"),
+                        sizeof(TApItem));
+                ap = ttk_ap_get( "battery.bg.low" );
+
+        } else {
+                memcpy (&fill, ttk_ap_getx ("battery.fill.normal"),
+                        sizeof(TApItem));
+                ap = ttk_ap_get( "battery.bg" );
+        }
+
+        /* back fill the container... */
+        ttk_ap_fillrect (srf, ap, xpos+1, ypos+1,
+				xpos+pz_icon_battery_vert[0]-1,
+				ypos+pz_icon_battery_vert[1]-1);
+
+	/* draw the framework */
+	ttk_draw_icon (pz_icon_battery_vert, srf, xpos, ypos,
+			ttk_ap_getx ("battery.border"),
+			ttk_ap_getx ("header.bg")->color);
+
+	/* compute the level offset */
+	lvl = (pz_icon_battery_vert[1]-3)-
+		 (((pz_icon_battery_vert[1]-3) * ps->fill) / 512);
+
+	/* boundary case tweaks */
+	if( lvl >= (pz_icon_battery_vert[1]-3) ) 
+		lvl = pz_icon_battery_vert[1]-3;
+	if( lvl <= 0 ) lvl = 1;
+
+	/* fill the container with stuff */
+        if (fill.type & TTK_AP_SPACING) {
+                fill.type &= ~TTK_AP_SPACING;
+
+		ttk_ap_fillrect (srf, &fill, xpos+fill.spacing+1,
+				ypos+lvl+fill.spacing+1,
+				xpos+pz_icon_battery_vert[0]-fill.spacing-1,
+				ypos+pz_icon_battery_vert[1]-1-fill.spacing );
+        } else {
+		if( lvl < 2 ) lvl = 2; /* fix */
+		ttk_ap_fillrect (srf, &fill, xpos+1, ypos+lvl,
+				xpos+pz_icon_battery_vert[0]-1,
+				ypos+pz_icon_battery_vert[1]-1 );
+        }
+}
+
+
+static void w_powertext_update( struct header_info * hdr )
+{
+	powerstuff * ps = (powerstuff *)hdr->data;
+
+	if( ps != NULL ) {
+		ipod_read_apm( &ps->fill, &ps->is_charging );
+	}
+	hdr->widg->w = 30;
+}
+
 static void w_powertext_draw( struct header_info * hdr, ttk_surface srf )
 {
 	char buf[8];
@@ -1668,11 +1785,9 @@ static void w_powertext_draw( struct header_info * hdr, ttk_surface srf )
 	}
 
 	if( ps->is_charging >= 1000 )
-		strcpy (buf, "Chrg");
+		strcpy (buf, "Chg");
 	else
-		snprintf( buf, 32, "%c%d", 
-			    (ps->is_charging)?'+':' ',
-			    ps->fill );
+		snprintf( buf, 32, "%3d", ps->fill );
 
 	pz_vector_string_center( srf, buf, hdr->widg->x+1 + (hdr->widg->w>>1),
 			hdr->widg->y + (hdr->widg->h>>1),
@@ -1773,7 +1888,7 @@ static void w_lav_draw( struct header_info * hdr, ttk_surface srf )
 
 
 /* ********************************************************************** */ 
-/* Initialization */ 
+/* Initialization */
 
 void pz_header_init() 
 {
@@ -1789,10 +1904,12 @@ void pz_header_init()
 					&lav_data,	/* data */
 					0 );		/* group */
 
-		int_add_header_widget( "Power Icon", w_powericon_update, 
-					w_powericon_draw, &the_power_state, 0 );
-		int_add_header_widget( "Power Text", w_powericon_update, 
-					w_powertext_draw, &the_power_state, 0 );
+		int_add_header_widget( "Power Icon", w_vpowericon_update, 
+				    w_vpowericon_draw, &the_power_state, 0 );
+		int_add_header_widget( "Big Power Icon", w_hpowericon_update,
+				    w_hpowericon_draw, &the_power_state, 0 );
+		int_add_header_widget( "Power Text", w_powertext_update, 
+				    w_powertext_draw, &the_power_state, 0 );
 
 #ifdef NEVER_EVER
 		int_add_header_widget("T1", test_update_widget, 
@@ -1876,10 +1993,10 @@ void pz_header_init()
 	if( headerBar ) ttk_remove_header_widget( headerBar );
 	ttk_add_header_widget( headerBar = new_headerBar_widget() );
 }
-
+ 
 
 /* ********************************************************************** */ 
-/* menu stuff */
+/* Settings For Decorations */
 
 static int decorations_scroll( TWidget *this, int dir )
 {
@@ -1944,7 +2061,7 @@ TWindow * pz_select_decorations( void )
 
 
 /* ********************************************************************** */ 
-/* settings for widgets */
+/* Settings For Widgets */
 
 
 static void lw_set_setting( ttk_menu_item *item, int sid )
