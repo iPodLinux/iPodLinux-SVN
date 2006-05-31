@@ -14,25 +14,29 @@
 
 int main (int argc, char **argv)
 {
-	(void)argc; // gets rid of "unused arg" warning
-	
-	FILE *fp;
-	if ((fp = fopen ("flashrom.bin", "wb")) == NULL) {
-		perror(argv[0]);
-		exit(2);
-	}
+  (void)argc; // gets rid of "unused arg" warning
 
-	// map the Flash ROM to 0x20000000
-	//
-	// (note: this assumes that the 4th mapping register is unused,
-	//  which is the case with current kernel versions.)
-	*(volatile long*)0xf000f018 = 0x3a00 | 0x20000000; // logical addr
-	*(volatile long*)0xf000f01c = 0x3f84 | 0; // physical addr
+  FILE *fp;
+  if ((fp = fopen ("flashrom.bin", "wb")) == NULL) {
+    perror(argv[0]);
+    exit(2);
+  }
 
-	// copy 1MB from the ROM to the file, the current size of the Flash ROM (in 1G to 5G iPods):
-	fwrite ((void*)0x20000000, 0x1000, 0x100, fp);
+  // map the Flash ROM to 0x20000000
+  //
+  // (note: this assumes that the 4th mapping register is unused,
+  //  which is the case with current kernel versions.)
+  *(volatile long*)0xf000f018 = 0x3a00 | 0x20000000; // logical addr
+  *(volatile long*)0xf000f01c = 0x3f84 | 0; // physical addr
 
-	fclose (fp);
+  // copy 1MB from the ROM to the file, the current size of the Flash ROM (in 1G to 5G iPods):
+  fwrite ((void*)0x20000000, 0x1000, 0x100, fp);
 
-	return 0;
+  // remove the mapping again
+  *(volatile long*)0xf000f018 = 0; // logical addr
+  *(volatile long*)0xf000f01c = 0; // physical addr
+
+  fclose (fp);
+
+  return 0;
 }
