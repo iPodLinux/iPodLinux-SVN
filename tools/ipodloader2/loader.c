@@ -198,9 +198,9 @@ static void setArgs (char* baseAddr, int size, char* args) {
     strlen = size;
   }
   // offset 0: "Args", ofs 4: 2-byte checksum of strlen+string, ofs 6: 2-byte strlen, ofs 8: 0-terminated string
-  mlc_strncpy (baseAddr, "Args", 4);
+  mlc_memcpy (baseAddr, "Args", 4);
   *(short*)(baseAddr+6) = strlen;
-  mlc_strncpy (baseAddr+8, args, strlen);
+  mlc_memcpy (baseAddr+8, args, strlen);
   baseAddr[8+strlen] = 0;
   *(short*)(baseAddr+4) = calc_checksum2 (baseAddr+6, strlen+2);
   if (mlc_strcmp (args, getArgs (baseAddr)) != 0) {

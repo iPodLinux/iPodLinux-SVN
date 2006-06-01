@@ -494,17 +494,24 @@ int mlc_strcasecmp(const char *s1,const char *s2) {
 	return( mlc_strncasecmp( s1,s2,max ) );
 }
 
-char  *mlc_strncpy(char *dest,const char *src,size_t count) {
+size_t mlc_strlcpy(char *dest,const char *src,size_t space)
+{
+  size_t destlen = 0;
+  if (--space > 0) {
+    do {
+      if ((*dest++ = *src++) == 0) return destlen;
+      destlen++;
+    } while (--space);
+    *dest++ = 0;
+  }
+  return destlen;
+}
 
-	while( (*src != 0) && count ) {
-		*dest = *src;
-		src++;
-		dest++;
-		count--;
-	}
-
-	if(count) return(dest);
-	else      return(0x00);
+size_t mlc_strlcat(char *dest,const char *src,size_t count)
+{
+  size_t len = mlc_strlen(dest);
+  if (len >= count) return count;
+  return len + mlc_strlcpy (dest + len, src, count - len);
 }
 
 /* gcc emits code that calls memcpy() */

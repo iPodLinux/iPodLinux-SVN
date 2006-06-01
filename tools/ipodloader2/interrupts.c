@@ -314,22 +314,25 @@ static void restore_intr_handler ()
   }
 }
 
-static long memory_map_value[2];
+static long memory_map_value[8];
 static int memory_mapped = 0;
 
 static void remap_memory (char enable)
 {
   if (enable) {
     if (!memory_mapped) {
-      memory_map_value[0] = *(volatile long*)0xf000f010;
-      memory_map_value[1] = *(volatile long*)0xf000f014;
+      for (int i = 0; i < 8; ++i) { memory_map_value[i] = ((volatile long*)0xf000f000)[i]; }
     }
-    *(volatile long*)0xf000f010 = 0x3a00; // logical addr
-    *(volatile long*)0xf000f014 = ipod_get_hwinfo()->mem_base | 0x3f84; // physical addr
+    // map SDRAM from 0x10000000 or 0x28000000 to 0, Flash ROM from 0 to 0x20000000:
+    //for debug: mlc_hexdump (0, 32);
+    *(volatile long*)0xf000f010 = 0x3a00 | 0; // logical addr
+    *(volatile long*)0xf000f014 = 0x3f84 | ipod_get_hwinfo()->mem_base; // physical addr
+    *(volatile long*)0xf000f008 = 0x3a00 | 0x20000000; // logical addr
+    *(volatile long*)0xf000f00c = 0x3f84 | 0; // physical addr
     memory_mapped = 1;
+    //for debug: mlc_hexdump ((void*)0x20000000, 32); mlc_show_critical_error ();
   } else if (memory_mapped) {
-    *(volatile long*)0xf000f010 = memory_map_value[0];
-    *(volatile long*)0xf000f014 = memory_map_value[1];
+    for (int i = 0; i < 8; ++i) { ((volatile long*)0xf000f000)[i] = memory_map_value[i]; }
     memory_mapped = 0;
   }
 }

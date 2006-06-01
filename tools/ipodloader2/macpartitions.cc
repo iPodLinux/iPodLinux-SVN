@@ -463,7 +463,7 @@ static hfsplus_file *hfsplus_findfile (hfsplus_t *fsdata, char *fname)
 		} else {
 			len = mlc_strlen (fname);
 		}
-		mlc_strncpy (name, fname, len);
+		mlc_memcpy (name, fname, len);
 		name[len] = 0;
 		
 		// locate the dir entry
