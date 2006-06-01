@@ -36,9 +36,7 @@ static const char * find_somewhere (const char **names, const char *what, int *f
     return *names;
 }
 
-const char *confnames[] = { // the following are for FAT short naming on the music partition:
-                            "(hd0,1)/IPODLO~1.CON", "(hd0,1)/NOTES/IPODLO~1.CON",
-                            // the following are for HFS long naming on the music partition:
+const char *confnames[] = { // the following are for the music partition:
                             "(hd0,1)/ipodloader.conf", "(hd0,1)/Notes/ipodloader.conf",
                             "(hd0,1)/loader.cfg", "(hd0,1)/Notes/loader.cfg",
                             // the following are for the ext2 partition (WinPods only):
@@ -47,7 +45,7 @@ const char *confnames[] = { // the following are for FAT short naming on the mus
                             // we can also read from the firmware partition:
                             "(hd0,0)/lcnf",
                             0 };
-const char *kernnames[] = { // the following are for HFS and FAT naming on the music partition:
+const char *kernnames[] = { // the following are for the music partition:
                             "(hd0,1)/kernel.bin", "(hd0,1)/Notes/kernel.bin",
                             "(hd0,1)/linux.bin", "(hd0,1)/Notes/linux.bin",
                             "(hd0,1)/vmlinux", "(hd0,1)/Notes/vmlinux",
@@ -108,9 +106,6 @@ void config_init(void)
         config.image[i].path  = "(hd0,1)/rockbox.ipod";
         if (vfs_open (config.image[i].path) >= 0) {
           i++;
-        } else {
-          config.image[i].path  = "(hd0,1)/ROCKBO~1.IPO";
-          if (vfs_open (config.image[i].path) >= 0) i++;
         }
 
         config.image[i].type  = CONFIG_IMAGE_SPECIAL;
