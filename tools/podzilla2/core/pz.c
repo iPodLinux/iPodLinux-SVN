@@ -39,7 +39,7 @@ const char *PZ_Developers[] = {
     "James Jacobsson",
     "Adam Johnston",
     "Alastair Stuart",
-    "Jonathan Bettencourt",
+    "Jonathynne Bettencourt",
     0
 };
 
