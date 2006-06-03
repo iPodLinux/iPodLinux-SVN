@@ -1188,8 +1188,99 @@ quad1:	ldr	r1, =sine_table		@ r0 = sine_table
 	bx	lr
 
 
-__ASM_functions_end:
+	@@ void _HD_PalettizedRotateBlit (uint32 *dest, int sw, int sh,
+	@@                                int dy, int dx, int dw, int dh,
+	@@                                uint32 palette[], uint8 *src)
+
+	@@ void _MAME_Rotate(unsigned int *fb, unsigned int *lcd_framebuffer, int bit_height,
+	@@                   int bit_width, int ipod_yoffs, int ipod_xoffs, int ipod_lcdw,
+	@@                   int ipod_lcdh, unsigned int pallette[], unsigned char* line) {
+	@@  
+	@@     int r,c;
+	@@              
+	@@     for( r=bit_height-1 ; r >= 0 ; r--) {         
+	@@         fb = &lcd_framebuffer[ipod_yoffs*ipod_lcdw+ipod_xoffs+r];
+	@@             for( c=0 ; c<bit_width ; c++ ) {
+	@@                 *fb = pallette[*(line++)];
+	@@                 fb+= ipod_lcdw;
+	@@             }
+	@@         }
+	@@     }
+	@@ }
+
+__ASM_functions_end:	
+
+	@@ This one is just a bonus.
+	.globl	_HD_PalettizedRotateBlit
+_HD_PalettizedRotateBlit:
+	stmdb	sp!, {r4-r12, lr}	@ store ten regs
+
+	@@ Arguments:
+	@@    dest  at  r0
+	@@      sw  at  r1
+	@@      sh  at  r2
+	@@      dy  at  r3
+	@@      dx  at [sp, #40]
+	@@      dw  at [sp, #44]
+	@@      dh  at [sp, #48]
+	@@ palette  at [sp, #52]
+	@@     src  at [sp, #56]
+
+	@@ Registers:
+	@@     r0  dest ptr
+	@@     r1  pointer to beginning of line-after-last in area of dst we're writing to
+	@@     r2  src ptr
+	@@     r3  dw*4 (pitch of dest)
+	@@     r4  current four pixels on MAME screen
+	@@     r5  pointer to end of src
+	@@     r6  #0xff
+	@@     r7  pointer to beginning of current column in dst
+	@@     r8  palette
+	@@ r9-r12  first, second, third, fourth pixels in current thingy, conv'ed to 32bpp
+
+	@@ Set up r7 = pointer to top of first column. 9S 3I 1N
+	add	r4, sp, #40
+	ldmia	r4, {r4-r6, r8-r9}	@ r3 = dy, r4 = dx, r5 = dw, r6 = dh, r8 = palette, r9 = src
+	mov	r5, r5, lsl #2		@ r5 = pitch
+	add	r7, r0, r4		@ r7 = dest + dx
+	mla	r7, r5, r3, r7		@ r7 = dest + dy*pitch + dx = top of first column
+
+	@@ Set up r5 = pointer to end of src. 1S 2I
+	mla	r5, r1, r2, r9		@ r5 = src + sw*sh
 	
+	@@ Set up r1 = pointer to beginning of line-after-last in area of dst we're writing to. 2S 2I
+	add	r1, r3, r1		@ r1 = dy + sw = line# of line after area of dst we're blitting to
+	mla	r1, r5, r1, r0		@ r1 = dest + (dy + sw)*pitch
+
+	@@ Misc setups. 3S
+	mov	r2, r9			@ r2 = src
+	mov	r3, r5			@ r3 = pitch of dest
+	mov	r6, #0xff		@ r6 = 0xff
+
+	@@ Da Loop. 5S 1N for the outer, 12S 5I 15N for the inner. (5S 2I 5N) * 4 = 20S 8I 20N
+1:	mov	r0, r7			@ r0 = pointer to beginning of this column, will be inc'ed. 1S
+2:	ldr	r4, [r2], #4		@ Load four palettized pixels.		1S 1I 1N
+	and	r9,  r6, r4		@ r9 = first pixel, as palette index.	1S
+	and	r10, r6, r4, lsr #8	@ r10 = second				1S
+	and	r11, r6, r4, lsr #16	@ r11 = third				1S
+	and	r12, r6, r4, lsr #24	@ r12 = fourth				1S
+	ldr	r9,  [r8, r9,  lsl #2]	@ r9 = first pixel, as 32bpp value	1S 1I 1N
+	ldr	r10, [r8, r10, lsl #2]	@ r10 = second				1S 1I 1N
+	ldr	r11, [r8, r11, lsl #2]	@ r11 = third				1S 1I 1N
+	ldr	r12, [r8, r12, lsl #2]	@ r12 = fourth				1S 1I 1N
+	str	r9,  [r0], r3		@ store first pixel			      2N
+	str	r10, [r0], r3		@ second				      2N
+	str	r11, [r0], r3		@ third					      2N
+	str	r12, [r0], r3		@ fourth				      2N
+	cmp	r0, r1			@ r0 >= end of column?			1S
+	blo	2b			@ if not, keep looping			2S    1N
+	
+	add	r7, r7, #1		@ inc to next column			1S
+	cmp	r2, r5			@ src >= end of src?			1S
+	blo	1b			@ if not, keep looping			2S    1N
+
+	ldmia	sp!, {r4-r12, pc}	@ return
+
 	.section .data
 need_finishup:	.long 0
 	

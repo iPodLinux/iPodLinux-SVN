@@ -165,22 +165,26 @@ static void lcd_update_display(uint16 *fb, int sx, int sy, int width, int height
 
 static long iPod_GetGeneration() 
 {
-	int i;
-	char cpuinfo[256];
-	char *ptr;
-	FILE *file;
-	
-	if ((file = fopen("/proc/cpuinfo", "r")) != NULL) {
-		while (fgets(cpuinfo, sizeof(cpuinfo), file) != NULL)
-			if (strncmp(cpuinfo, "Revision", 8) == 0)
-				break;
-		fclose(file);
+	static long gen = 0;
+	if (gen == 0) {
+		int i;
+		char cpuinfo[256];
+		char *ptr;
+		FILE *file;
+		
+		if ((file = fopen("/proc/cpuinfo", "r")) != NULL) {
+			while (fgets(cpuinfo, sizeof(cpuinfo), file) != NULL)
+				if (strncmp(cpuinfo, "Revision", 8) == 0)
+					break;
+			fclose(file);
+		}
+		for (i = 0; !isspace(cpuinfo[i]); i++);
+		for (; isspace(cpuinfo[i]); i++);
+		ptr = cpuinfo + i + 2;
+		
+		gen = strtol (ptr, NULL, 16);
 	}
-	for (i = 0; !isspace(cpuinfo[i]); i++);
-	for (; isspace(cpuinfo[i]); i++);
-	ptr = cpuinfo + i + 2;
-	
-	return strtol(ptr, NULL, 16);
+	return gen;
 }
 
 void HD_LCD_GetInfo (int *hwv, int *lw, int *lh, int *lt) 
@@ -209,14 +213,18 @@ void HD_LCD_Init()
 		lcd_width = 220;
 		lcd_height = 176;
 
-		int gpio_a01, gpio_a04;
-		gpio_a01 = (inl(0x6000D030) & 0x2) >> 1;
-		gpio_a04 = (inl(0x6000D030) & 0x10) >> 4;
-		if (((gpio_a01 << 1) | gpio_a04) == 0 || ((gpio_a01 << 1) | gpio_a04) == 2) {
+		if (iPod_GetGeneration() == 0x60000) {
 			lcd_type = 0;
 		} else {
-			lcd_type = 1;
-		}		
+			int gpio_a01, gpio_a04;
+			gpio_a01 = (inl(0x6000D030) & 0x2) >> 1;
+			gpio_a04 = (inl(0x6000D030) & 0x10) >> 4;
+			if (((gpio_a01 << 1) | gpio_a04) == 0 || ((gpio_a01 << 1) | gpio_a04) == 2) {
+				lcd_type = 0;
+			} else {
+				lcd_type = 1;
+			}
+		}
 		break;
 	default:
 		fprintf (stderr, "Unsupported LCD\n");
