@@ -140,7 +140,7 @@ int main(int argc, char *argv[]) {
 	uint32 done = 0;
 	char ch, benchmark = 0, noinput = 0;
 	hd_engine *engine;
-	circle_object obj[5];
+	circle_object obj[6];
 
 	for (i = 1; i < argc; i++) {
 		if (*argv[i] == '-') {
@@ -206,11 +206,23 @@ int main(int argc, char *argv[]) {
 	obj[3].object->w = 75 * WIDTH / 220;
 	obj[3].object->h = 150 * WIDTH / 220;
 
+	obj[5].object    = HD_Canvas_Create (100, 100);
+	obj[5].object->x = 100;
+	obj[5].object->y = 100;
+	hd_font *f = HD_Font_LoadFNT ("Chicago.fnt");
+	if (!f) {
+		fprintf (stderr, "error loading Chicago.fnt\n");
+		HD_Destroy (obj[5].object);
+		obj[5].object = NULL;
+	}
+	HD_Font_Draw (obj[5].object->canvas, f, 10, 10, HD_RGBA (255, 0, 0, 128), "Hello World!");
+
 	HD_Register(engine,obj[4].object);
 	HD_Register(engine,obj[0].object);
 	HD_Register(engine,obj[1].object);
 	HD_Register(engine,obj[2].object);
 	HD_Register(engine,obj[3].object);
+	if (obj[5].object) HD_Register(engine,obj[5].object);
 
 	obj[0].position = 0;
 	obj[1].position = 1024;
