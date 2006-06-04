@@ -125,6 +125,52 @@ int LocalFile::close()
 
 /**************************************************************/
 
+std::list <BlockCache *> BlockCache::_caches;
+int BlockCache::_cleaning_up = 0;
+
+BlockCache::BlockCache (int nsec, int ssize)
+    : _nsec (nsec), _ssize (ssize), _log_ssize (0)
+{
+    int t = 1;
+    while (t < _ssize) {
+        t <<= 1;
+        _log_ssize++;
+    }
+    _ssize = (1 << _log_ssize);
+    _cache = (char *)malloc (_nsec * _ssize);
+    _sectors = new u64[_nsec];
+    _atimes = new u64[_nsec];
+    memset (_sectors, 0, _nsec * sizeof(u64));
+    memset (_atimes, 0, _nsec * sizeof(u64));
+
+    _caches.push_back (this);
+}
+
+BlockCache::~BlockCache() 
+{
+    if (!_cleaning_up) _caches.remove (this);
+    
+    flush();
+    invalidate();
+
+    delete[] _sectors;
+    delete[] _atimes;
+    free (_cache);
+}
+
+int BlockCache::cleanup() 
+{
+    _cleaning_up = 1;
+
+    std::list<BlockCache*>::iterator it = _caches.begin();
+    while (it != _caches.end()) {
+        delete *it;
+        ++it;
+    }
+}
+
+/**************************************************************/
+
 int LocalDir::readdir (struct VFS::dirent *de) 
 {
     if (!_dp) return 0;
@@ -143,7 +189,7 @@ const char *LocalRawDevice::_override = 0;
 const char *LocalRawDevice::_cowfile = 0;
 
 LocalRawDevice::LocalRawDevice (int n)
-    : BlockDevice()
+    : BlockDevice(), BlockCache(16384)
 {
 #ifdef WIN32
     char drive[] = "\\\\.\\PhysicalDriveN";
@@ -176,7 +222,7 @@ LocalRawDevice::LocalRawDevice (int n)
     } else _wf = _f;
 }
 
-int LocalRawDevice::doRead (void *buf, u64 sec) 
+int LocalRawDevice::doRawRead (void *buf, u64 sec) 
 {
 #ifdef RAW_DEVICE_ACCESS
     static void *alignedbuf = 0;
@@ -209,7 +255,7 @@ int LocalRawDevice::doRead (void *buf, u64 sec)
     return 0;
 }
 
-int LocalRawDevice::doWrite (const void *buf, u64 sec) 
+int LocalRawDevice::doRawWrite (const void *buf, u64 sec) 
 {
 #ifdef RAW_DEVICE_ACCESS
     static void *alignedbuf = 0;

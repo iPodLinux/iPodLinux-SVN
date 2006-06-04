@@ -9,6 +9,7 @@
 
 #include "vfs.h"
 #include <dirent.h>
+#include <list>
 
 #define OPEN_READ    1
 #define OPEN_WRITE   2
@@ -69,7 +70,34 @@ private:
 #endif
 };
 
-class LocalRawDevice : public VFS::BlockDevice
+class BlockCache 
+{
+protected:
+    BlockCache (int nsec = 2048, int ssize = 512);
+    virtual ~BlockCache();
+    
+    virtual int doRead (void *buf, u64 sec) { doRawRead (buf, sec); }
+    virtual int doWrite (const void *buf, u64 sec) { doRawWrite (buf, sec); }
+    virtual int doRawRead (void *buf, u64 sec) = 0;
+    virtual int doRawWrite (const void *buf, u64 sec) = 0;
+
+    int flush() {}
+    int invalidate() {}
+    
+    static int cleanup();
+    
+private:
+    int _nsec;
+    int _ssize, _log_ssize;
+    char *_cache;
+    u64 *_sectors;
+    u64 *_atimes;
+
+    static int _cleaning_up;
+    static std::list <BlockCache*> _caches;
+};
+
+class LocalRawDevice : public VFS::BlockDevice, public BlockCache
 {
 public:
     LocalRawDevice (int n);
@@ -89,8 +117,10 @@ public:
     }
 
 protected:
-    virtual int doRead (void *buf, u64 sec);
-    virtual int doWrite (const void *buf, u64 sec);
+    virtual int doRead (void *buf, u64 sec) { BlockCache::doRead (buf, sec); }
+    virtual int doWrite (const void *buf, u64 sec) { BlockCache::doWrite (buf, sec); }
+    virtual int doRawRead (void *buf, u64 sec);
+    virtual int doRawWrite (const void *buf, u64 sec);
 
 private:
     LocalFile *_f, *_wf;
