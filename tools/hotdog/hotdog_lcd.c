@@ -144,8 +144,11 @@ static void lcd_update_display(uint16 *fb, int sx, int sy, int width, int height
 			for (x = 0; x < width; x += 2) {
 				unsigned two_pixels;
 
-				two_pixels = ( ((addr[0]&0xFF)<<8) | ((addr[0]&0xFF00)>>8) ) | 
-				             ((((addr[1]&0xFF)<<8) | ((addr[1]&0xFF00)>>8) )<<16);
+				if (lcd_type == 0)
+					two_pixels = (addr[1] << 16) | addr[0];
+				else
+					two_pixels = ( ((addr[0]&0xFF)<<8) | ((addr[0]&0xFF00)>>8) ) | 
+						((((addr[1]&0xFF)<<8) | ((addr[1]&0xFF00)>>8) )<<16);
 
 				addr += 2;
 
