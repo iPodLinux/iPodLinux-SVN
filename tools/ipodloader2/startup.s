@@ -102,12 +102,13 @@ startup_loc:
 .align 8        /* starts at 0x100 */
 .global boot_table
 boot_table:
-        /* Here comes the boot table, don't move its offset
+        /* Here comes the bootloader table, don't move its offset
          *
-         * "make_fw" patches a "boot table", which is a list of up to
-         * 5 image entries, into this place.
+         * "make_fw" patches of list of up to 5 "sub image" entries
+         * into this place.
          * This was used by the older loader to locate the
-         * Apple or Linux sub-image inside this loaded image
+         * Apple or Linux sub-image inside this loaded image.
+         * (See also http://ipodlinux.org/Firmware)
          */
         .space 0x100
 
