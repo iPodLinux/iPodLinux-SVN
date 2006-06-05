@@ -19,7 +19,7 @@
  * as "make_fw". The ipod's flash ROM bootloader loads the entire "osos"
  * file to memory, starting at either 0x28000000 or 0x10000000, which is
  * the iPod's SDRAM start.
- * The osos file's directory entry also maintains a entry address, which was
+ * The "osos" file's directory entry also maintains a entry address, which was
  * changed to point to this code here, which is effectively the start of
  * the "loader.bin" file (you can see this by issuing the command
  *   "arm-uclinux-elf-objdump -d loader.elf | less")
@@ -102,8 +102,14 @@ startup_loc:
 .align 8        /* starts at 0x100 */
 .global boot_table
 boot_table:
-        /* here comes the boot table, don't move its offset */
-        .space 400
+        /* Here comes the boot table, don't move its offset
+         *
+         * "make_fw" patches a "boot table", which is a list of up to
+         * 5 image entries, into this place.
+         * This was used by the older loader to locate the
+         * Apple or Linux sub-image inside this loaded image
+         */
+        .space 0x100
 
 
 start_loc:      /* this code runs in Fast RAM now */
