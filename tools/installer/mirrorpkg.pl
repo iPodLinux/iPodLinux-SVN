@@ -6,6 +6,7 @@ use Cwd qw/realpath/;
 
 our($PackagesDir) = "";
 our($UsingPackagesDir) = 0;
+our($NewPackages) = 0;
 
 sub extension($) {
     my($name) = shift;
@@ -86,6 +87,7 @@ sub mirror_file($$) {
             my($stat) = getstore ($remote, $reallocal);
             is_success $stat or die "error $stat\n";
             print STDERR "ok\n";
+            $NewPackages++ unless $local =~ /packages.ipl.in/;
         } else {
             print STDERR "no need\n";
         }
@@ -95,6 +97,7 @@ sub mirror_file($$) {
         copy ($remote, $reallocal) or die "$!\n";
         symlink $reallocal, $local unless $reallocal eq $local;
         print STDERR "ok\n";
+        $NewPackages++ unless $local =~ /packages.ipl.in/;
     }
 }
 
@@ -151,5 +154,5 @@ $UsingPackagesDir = 1 if $#ARGV == 3;
 print "Packages dir: $PackagesDir\n" if $#ARGV == 3;
 
 handle_pkglist $PackageListFile, $LocalPath, $RemotePath;
-print "Done.\n";
-exit 0;
+print "Done. $NewPackages packages downloaded.\n";
+exit ($NewPackages == 0);
