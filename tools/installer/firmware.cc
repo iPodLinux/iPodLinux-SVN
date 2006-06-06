@@ -298,7 +298,7 @@ void ChangeLoaderAction::run()
             fw_rename_image ("osos1", "osos0");
     } else {
         // osos0 or osos1 -> linx, then swap osos0 and osos1 if necessary
-        fw_rename_image ((_old == Loader1Linux)? "osos1" : "osos0", "linx");
+        fw_rename_image ((_old == Loader1Linux)? "osos0" : "osos1", "linx");
         if (_old == Loader1Linux)
             fw_rename_image ("osos1", "osos0");
     }
