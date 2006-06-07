@@ -3,15 +3,6 @@
 
 static int printing_disasms = 1;
 
-void dprintf (const char *fmt, ...) 
-{
-    va_list ap;
-    va_start (ap, fmt);
-    if (printing_disasms)
-        vprintf (fmt, ap);
-    va_end (ap);
-}
-
 void execute (machine_t *mach, cpu_t *cpu) 
 {
     u32 instr;
@@ -25,7 +16,7 @@ void execute (machine_t *mach, cpu_t *cpu)
     }
 
     char *disasm = disassemble (instr, cpu->r[PC] - 8);
-    dprintf ("%08x:   %08x\t%s\n", cpu->r[PC] - 8, instr, disasm);
+    if (mach->verbose >= 2) printf ("%08x:   %08x\t%s\n", cpu->r[PC] - 8, instr, disasm);
     free (disasm);
 
     if (!cond (cpu, instr >> 28))
@@ -41,20 +32,25 @@ void execute (machine_t *mach, cpu_t *cpu)
             cpu->r[CPSR] &= ~CPSR_T;
         }
         PCup = 1;
-        printf ("\t\tPC = %08x\n", cpu->r[PC]);
+        if (mach->verbose >= 3) printf ("\t\tPC = %08x\n", cpu->r[PC]);
     }
 
     // SWI
     else if ((instr & 0x0f000000) == 0x0f000000) {
         switch (instr & 0x00ffffff) {
-        case 0:
-            printing_disasms = 0;
-            break;
         case 1:
-            printing_disasms = 1;
+            mach->verbose = cpu->r[0];
             break;
         case 2:
             exit (0);
+            break;
+        case 3:
+            if (mach->verbose >= 1) printf ("Writing memory @%08x len=%08x to memory.out... ", cpu->r[0], cpu->r[1]);
+            fflush (stdout);
+            FILE *fp = fopen ("memory.out", "w");
+            fwrite ((u8 *)mach->dram + cpu->r[0], 1, cpu->r[1], fp);
+            fclose (fp);
+            if (mach->verbose >= 1) printf ("done\n");
             break;
         default:
             interrupt (cpu, IVEC_swi, CPSR_mode_svc);
@@ -73,7 +69,7 @@ void execute (machine_t *mach, cpu_t *cpu)
         
         cpu->r[PC] += soff;
         PCup = 1;
-        dprintf ("\t\tPC = %08x\n", cpu->r[PC]);
+        if (mach->verbose >= 3) printf ("\t\tPC = %08x\n", cpu->r[PC]);
     }
 
     // MSR, MRS
@@ -87,7 +83,7 @@ void execute (machine_t *mach, cpu_t *cpu)
             else
                 src = CPSR;
             cpu->r[reg (cpu, (instr >> 12) & 0xf)] = cpu->r[reg (cpu, src)];
-            dprintf ("\t\tr%d = %08x\n", (instr >> 12) & 0xf, cpu->r[reg (cpu, (instr >> 12) & 0xf)]);
+            if (mach->verbose >= 3) printf ("\t\tr%d = %08x\n", (instr >> 12) & 0xf, cpu->r[reg (cpu, (instr >> 12) & 0xf)]);
         } else if ((instr & 0x0fbffff0) == 0x0129f000) { // MSR_cxsf
             int dest;
             if (instr & (1 << 22))
@@ -103,7 +99,7 @@ void execute (machine_t *mach, cpu_t *cpu)
             } else {
                 cpu->r[reg (cpu, dest)] = val;
             }
-            dprintf ("\t\tCPSR = %08x\n", cpu->r[reg (cpu, dest)]);
+            if (mach->verbose >= 3) printf ("\t\tCPSR = %08x\n", cpu->r[reg (cpu, dest)]);
         } else if ((instr & 0x0dbff000) == 0x0128f000) { // MSR_f
             int dest;
             if (instr & (1 << 22))
@@ -121,7 +117,7 @@ void execute (machine_t *mach, cpu_t *cpu)
             }
             val &= 0xf0000000;
             cpu->r[reg (cpu, dest)] = (cpu->r[reg (cpu, dest)] & ~0xf0000000) | val;
-            dprintf ("\t\tCPSR = %08x\n", cpu->r[reg (cpu, dest)]);
+            if (mach->verbose >= 3) printf ("\t\tCPSR = %08x\n", cpu->r[reg (cpu, dest)]);
         }
     }
 
@@ -153,7 +149,7 @@ void execute (machine_t *mach, cpu_t *cpu)
         cpu->r[reg (cpu, regD)] = result;
         if (regD == PC)
             PCup = 1;
-        dprintf ("\t\tr%d = %08x * %08x + %08x = %08x\n", regD, valM, valS, ((instr & (1 << 21))? valN : 0),
+        if (mach->verbose >= 3) printf ("\t\tr%d = %08x * %08x + %08x = %08x\n", regD, valM, valS, ((instr & (1 << 21))? valN : 0),
                 cpu->r[reg (cpu, regD)]);
     }
 
@@ -232,7 +228,7 @@ void execute (machine_t *mach, cpu_t *cpu)
                 PCup = 1;
             if ((cpu->r[CPSR] & CPSR_mode) != mode) // caused a fault
                 PCmod = 1;
-            dprintf ("\t\tr%d = [%08x] = %08x\n", regD, taddr, cpu->r[reg (cpu, regD)]);
+            if (mach->verbose >= 3) printf ("\t\tr%d = [%08x] = %08x\n", regD, taddr, cpu->r[reg (cpu, regD)]);
         } else { // str
             mode = cpu->r[CPSR] & CPSR_mode;
 
@@ -243,7 +239,7 @@ void execute (machine_t *mach, cpu_t *cpu)
 
             if ((cpu->r[CPSR] & CPSR_mode) != mode) // caused a fault
                 PCmod = 1;
-            dprintf ("\t\t[%08x] = r%d = %08x\n", taddr, regD, cpu->r[reg (cpu, regD)]);
+            if (mach->verbose >= 3) printf ("\t\t[%08x] = r%d = %08x\n", taddr, regD, cpu->r[reg (cpu, regD)]);
         }
 
         if ((IPUBWL & 0x12) != 0x10) { // write back
@@ -256,7 +252,7 @@ void execute (machine_t *mach, cpu_t *cpu)
                     cpu->r[reg (cpu, regN)] = taddr - postinc;
                 }
             }
-            dprintf ("\t\tr%d = %08x\n", regN, cpu->r[reg (cpu, regN)]);
+            if (mach->verbose >= 3) printf ("\t\tr%d = %08x\n", regN, cpu->r[reg (cpu, regN)]);
         }
     }
 
@@ -415,7 +411,7 @@ void execute (machine_t *mach, cpu_t *cpu)
                         stw (mach, cpu, taddr, cpu->r[r]);
                     else
                         stw (mach, cpu, taddr, cpu->r[reg (cpu, r)]);
-                    dprintf ("\t\t[%08x] = r%d = %08x\n", taddr, r, cpu->r[reg (cpu, r)]);
+                    if (mach->verbose >= 3) printf ("\t\t[%08x] = r%d = %08x\n", taddr, r, cpu->r[reg (cpu, r)]);
                 }
 
                 if (r == PC)
@@ -430,7 +426,7 @@ void execute (machine_t *mach, cpu_t *cpu)
 
         if (PUSWL & (1 << 1)) { // (W)rite-back
             cpu->r[reg (cpu, regN)] = base;
-            dprintf ("\t\tr%d = %08x\n", regN, base);
+            if (mach->verbose >= 3) printf ("\t\tr%d = %08x\n", regN, base);
         }
     }
 
@@ -521,10 +517,10 @@ void execute (machine_t *mach, cpu_t *cpu)
 
         char ops[] = "&^-_+asr&^-+|mbM";
         if (writeres)
-            dprintf ("\t\tr%d = r%d %c opB = %08x %c %08x = %08x\n",
+            if (mach->verbose >= 3) printf ("\t\tr%d = r%d %c opB = %08x %c %08x = %08x\n",
                     regD, regA, ops[opcode], opA, ops[opcode], opB, result);
         else
-            dprintf ("\t\tset flags for r%d %c opB = %08x %c %08x = %08x\n",
+            if (mach->verbose >= 3) printf ("\t\tset flags for r%d %c opB = %08x %c %08x = %08x\n",
                     regA, ops[opcode], opA, ops[opcode], opB, result);
 
         // update flags
@@ -563,6 +559,11 @@ void execute (machine_t *mach, cpu_t *cpu)
     else {
         interrupt (cpu, CPSR_mode_und, IVEC_und);
         PCmod = 1;
+    }
+
+    if ((cpu->r[PC] == 0xDEADC0DE) && mach->quickie) {
+        if (mach->verbose >= 1) printf ("Done.\n");
+        exit (0);
     }
 
  skip:

@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <string.h>
 
 typedef unsigned char u8;
 typedef unsigned short u16;
@@ -104,6 +105,9 @@ typedef struct machine
 
     int hw_ver;
     char pp_ver[8];
+
+    int quickie;
+    int verbose;
 } machine_t;
 
 void fatal (const char *err);

@@ -1,20 +1,5 @@
-        .global IVEC_rst
-IVEC_rst:
-	b	start
-IVEC_und:
-	b	IVEC_rst
-IVEC_swi:
-	movs	PC, R14
-IVEC_pabt:
-	b	IVEC_rst
-IVEC_dabt:
-	b	IVEC_rst
-IVEC_irq:
-	subs	PC, R14, #4
-IVEC_fiq:
-	subs	PC, R14, #4
-
-start:	mov	r0, #0x40
+	.globl	_start
+_start:	mov	r0, #0x40
 	mov	r1, #0x80
 loop:	cmp	r0, r1
 	bhi	done
@@ -29,9 +14,13 @@ done:	mov	r2, #0x70000000
 	str	r3, [r2, #-12]
 	ldr	r3, =1000000
 	str	r3, [r2, #-8]
-	b	.
+	mov	pc, lr
 string:	.asciz	"Hello, world!"
 
 @ Local Variables:
+@ asm-comment-char: ?@
+@ comment-start: "@ "
+@ block-comment-start: "/*"
+@ block-comment-end: "*/"
 @ indent-tabs-mode: t
 @ End:
