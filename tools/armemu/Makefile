@@ -16,7 +16,7 @@ $(OBJS): %.o: %.c armemu.h
 
 app.bin: app.s
 	$(ARMAS) -o app.o app.s
-	$(ARMLD) -e IVEC_rst -o app app.o
+	$(ARMLD) -e _start -o app app.o
 	$(ARMOC) -O binary app app.bin
 
 clean:

@@ -55,13 +55,12 @@ int is_mmio (machine_t *mach, u32 paddr)
         return (((paddr & 0xf0000000) == 0xc0000000) ||
                 ((paddr & 0xf0000000) == 0xf0000000));
     } else {
-        if (((paddr & 0xf0000000) == 0x30000000) && ((mach->hw_ver >> 16) == 0xB))
+        if (((paddr & 0xf0000000) == 0x30000000) && ((mach->hw_ver >> 16) == 0xB)) /* MIO */
             return 1;
 
-        return (((paddr & 0xf0000000) == 0x60000000) ||
-                ((paddr & 0xf0000000) == 0x70000000) ||
-                ((paddr & 0xf0000000) == 0xc0000000) ||
-                ((paddr & 0xf0000000) == 0xf0000000));
+        return (((paddr & 0xf0000000) == 0x60000000) || /* PSB */
+                ((paddr & 0xf0000000) == 0x70000000) || /* APB */
+                ((paddr & 0xc0000000) == 0xc0000000)); /* AHB and CCH */
     }
 }
 
@@ -221,6 +220,8 @@ struct mmio {
     { 0, 0, 0, 0, 0, 0 },
 };
 
+#undef RELAXED_MMIOS
+
 u32 mmio_read32 (machine_t *mach, cpu_t *cpu, u32 paddr) 
 {
     struct mmio *mmiop = mmios;
@@ -249,8 +250,12 @@ u32 mmio_read32 (machine_t *mach, cpu_t *cpu, u32 paddr)
         mmiop++;
     }
 
+#ifdef RELAXED_MMIOS
     printf (">>! Read32 from unimplemented MMIO address %p! Returning 0.\n", paddr);
     return 0;
+#endif
+    fprintf (stderr, ">>! Read32 from unimplemented MMIO address %p. Aborting.\n", paddr);
+    exit (1);
 }
 
 u16 mmio_read16 (machine_t *mach, cpu_t *cpu, u32 paddr) 
@@ -281,8 +286,12 @@ u16 mmio_read16 (machine_t *mach, cpu_t *cpu, u32 paddr)
         mmiop++;
     }
 
+#ifdef RELAXED_MMIOS
     printf (">>! Read16 from unimplemented MMIO address %p! Returning 0.\n", paddr);
     return 0;
+#endif
+    fprintf (stderr, ">>! Read16 from unimplemented MMIO address %p. Aborting.\n", paddr);
+    exit (1);
 }
 
 u8 mmio_read8 (machine_t *mach, cpu_t *cpu, u32 paddr) 
@@ -309,8 +318,12 @@ u8 mmio_read8 (machine_t *mach, cpu_t *cpu, u32 paddr)
         mmiop++;
     }
 
+#ifdef RELAXED_MMIOS
     printf (">>! Read8 from unimplemented MMIO address %p! Returning 0.\n", paddr);
     return 0;
+#endif
+    fprintf (stderr, ">>! Read8 from unimplemented MMIO address %p! Returning 0.\n", paddr);
+    exit (1);
 }
 
 void mmio_write32 (machine_t *mach, u32 paddr, u32 value) 
@@ -342,7 +355,12 @@ void mmio_write32 (machine_t *mach, u32 paddr, u32 value)
         mmiop++;
     }
 
+#ifdef RELAXED_MMIOS
     printf (">>! Write32 of 0x%08x to unimplemented MMIO address %p! Ignoring.\n", value, paddr);
+#else
+    fprintf (stderr, ">>! Write32 of 0x%08x to unimplemented MMIO address %p! Aborting.\n", value, paddr);
+    exit (1);
+#endif
 }
 
 void mmio_write16 (machine_t *mach, u32 paddr, u16 value)
@@ -375,7 +393,12 @@ void mmio_write16 (machine_t *mach, u32 paddr, u16 value)
         mmiop++;
     }
 
+#ifdef RELAXED_MMIOS
     printf (">>! Write16 of 0x%04x to unimplemented MMIO address %p! Ignoring.\n", value, paddr);
+#else
+    fprintf (stderr, ">>! Write16 of 0x%04x to unimplemented MMIO address %p! Aborting.\n", value, paddr);
+    exit (1);
+#endif
 }
 
 void mmio_write8 (machine_t *mach, u32 paddr, u8 value)
@@ -410,7 +433,12 @@ void mmio_write8 (machine_t *mach, u32 paddr, u8 value)
         mmiop++;
     }
 
+#ifdef RELAXED_MMIOS
     printf (">>! Write8 of 0x%02x to unimplemented MMIO address %p! Ignoring.\n", value, paddr);
+#else
+    fprintf (stderr, ">>! Write8 of 0x%02x to unimplemented MMIO address %p! Aborting.\n", value, paddr);
+    exit (1);
+#endif
 }
 
 #define LD_FUNC(name,size,abt) \
@@ -546,17 +574,100 @@ u32 barrel_shift (cpu_t *cpu, u32 shdesc, int *cflagp)
     return opB;
 }
 
+void usage (int exitcode) 
+{
+    fprintf (stderr,
+             "Usage: armemu [-qvh] [-f flashimg] [-r hwver] [-e entry]\n\n"
+             ""
+             " Options:\n"
+             "   -f flashimg  Load the file `flashimg' as a flash ROM image.\n"
+             "   -d dramimg . Load the file `dramimg' to the beginning of SDRAM.\n"
+             "   -i iramimg . Load the file `iramimg' to the beginning of IRAM.\n"
+             "   -r hwver . . Emulate an iPod with hardware version 0x`hwver'.\n"
+             "   -e entry . . Start executing at address 0x`entry'.\n"
+             "   -q . . . . . `Quickie' mode; exit after returning from the top-level\n"
+             "                subroutine.\n"
+             "   -v . . . . . Increase the verbosity.\n"
+             "   -h . . . . . This screen.\n");
+    exit (exitcode);
+}
+
+void load_image (const char *filename_const, void *address, int maxsize) 
+{
+    int fileoff = 0, addroff = 0;
+    
+    char *filename = strdup (filename_const);
+
+    if (strchr (filename, '@')) addroff = strtol (strchr (filename, '@') + 1, 0, 0);
+    if (strchr (filename, '+')) fileoff = strtol (strchr (filename, '+') + 1, 0, 0);
+    if (strchr (filename, '@')) *strchr (filename, '@') = 0;
+    if (strchr (filename, '+')) *strchr (filename, '+') = 0;
+
+    while (strlen (filename) > 0 && isspace (filename[strlen (filename) - 1]))
+        filename[strlen (filename) - 1] = 0;
+
+    errno = 0;
+    int fd = open (filename, O_RDONLY);
+    lseek (fd, fileoff, SEEK_SET);
+    read (fd, (char *)address + addroff, maxsize);
+    close (fd);
+    if (errno) {
+        fprintf (stderr, "Error loading %s: %s\n", filename, strerror (errno));
+        exit (3);
+    }
+}
+
 int main (int argc, char **argv) 
 {
     machine_t *mach = malloc (sizeof(machine_t));
     mach->cpu = malloc (sizeof(cpu_t));
-    mach->iramsize = 96*1024;
-    mach->dramsize = 32*1024*1024;
-    mach->irambase = 0x40000000;
-    mach->drambase = 0x10000000;
+    mach->hw_ver = 0xB0005;
+    mach->iramsize = 0x00020000;
+    mach->flashsize = 0x00100000;
+    mach->dramsize = 0x04000000;
     mach->iram = malloc (mach->iramsize);
     mach->dram = malloc (mach->dramsize);
-    mach->hw_ver = 0xB0005;
+    mach->flash = malloc (mach->flashsize);
+    reset (mach->cpu);
+
+    char ch;
+    while ((ch = getopt (argc, argv, "f:i:d:r:e:q:vh")) != EOF) {
+        switch (ch) {
+        case 'f':
+            load_image (optarg, mach->flash, mach->flashsize);
+            break;
+        case 'i':
+            load_image (optarg, mach->iram, mach->iramsize);
+            break;
+        case 'd':
+            load_image (optarg, mach->dram, mach->dramsize);
+            break;
+        case 'r':
+            mach->hw_ver = strtol (optarg, 0, 16);
+            break;
+        case 'e':
+            mach->cpu->r[PC] = strtol (optarg, 0, 16);
+            break;
+        case 'q':
+            mach->cpu->r[LR] = mach->cpu->r[R14_fiq] = mach->cpu->r[R14_svc]
+                = mach->cpu->r[R14_irq] = mach->cpu->r[R14_und] = 0xDEADC0DE;
+            mach->quickie = 1;
+            mach->cpu->r[PC] = 0x10000000;
+            load_image (optarg, mach->dram, mach->dramsize);
+            break;
+        case 'v':
+            mach->verbose++;
+            break;
+        case 'h':
+            usage (0);
+        case '?':
+            usage (1);
+        }
+    }
+
+    if (optind <= 1)
+        usage (0);
+
     memcpy (mach->pp_ver, " A..05PP", 8);
     if (mach->hw_ver < 0x40000)
         memcpy (mach->pp_ver + 2, "20", 2);
@@ -564,28 +675,12 @@ int main (int argc, char **argv)
         memcpy (mach->pp_ver + 2, "02", 2);
     else
         memcpy (mach->pp_ver + 2, "22", 2);
-
-    reset (mach->cpu);
-    mach->cpu->r[PC] = 0x40000000;
-
-    if (!argv[1]) {
-        fprintf (stderr, "%s: usage: %s <app.bin>\n"
-                 "      <app.bin> will be loaded to 0x40000000. It should have interrupt\n"
-                 "      vectors at the start, and be raw binary.\n", argv[0], argv[0]);
-        return 1;
-    }
-
-    int fd = open (argv[1], O_RDONLY);
-    if (fd < 0) {
-        fprintf (stderr, "%s: %s: %s\n", argv[0], argv[1], strerror (errno));
-        return 2;
-    }
-    read (fd, mach->iram, mach->iramsize);
-    close (fd);
-
-    mach->flash = malloc (128);
-    mach->flashsize = 128;
-    memcpy (mach->flash, mach->iram, (mach->iramsize > 128)? 128 : mach->iramsize);
+    mach->dramsize = ((mach->hw_ver >> 16) == 0xB)? 0x04000000 : 0x02000000;
+    mach->iramsize = (mach->hw_ver > 0x70000)? 0x20000 : 0x18000;
+    mach->drambase = (mach->hw_ver > 0x40000)? 0x10000000 : 0x28000000;
+    mach->irambase = 0x40000000;
+    mach->iram = realloc (mach->iram, mach->iramsize);
+    mach->dram = realloc (mach->dram, mach->dramsize);
 
     fill_pipeline (mach->cpu);
 
