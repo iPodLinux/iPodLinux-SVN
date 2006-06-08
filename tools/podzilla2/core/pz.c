@@ -436,6 +436,7 @@ main(int argc, char **argv)
 
 	if (argc > 1) {
 		if (argv[1][0] == '-') {
+			/* predefined sizes */
 			if (!strcmp (argv[1], "-g")) {
 				if( !strcmp( argv[2], "1g" ))	  ttk_set_emulation( 160, 128, 2 );
 				if( !strcmp( argv[2], "2g" ))	  ttk_set_emulation( 160, 128, 2 );
@@ -453,19 +454,21 @@ main(int argc, char **argv)
 				if( !strcmp( argv[2], "nano" ))	  ttk_set_emulation( 176, 132, 16 );
 				if( !strcmp( argv[2], "video" ))  ttk_set_emulation( 320, 240, 16 );
 
+			/* remove these four eventually... */
 			} else if (!strcmp (argv[1], "-photo")) {
-				fprintf( stderr, "WARNING: \"-photo\" is deprecated, use \"-g photo\" instead.\n" );
-				ttk_set_emulation (220, 176, 16);
+				fprintf( stderr, "ERROR: \"-photo\" is deprecated, use \"-g photo\" instead.\n" );
+				exit( -42 );
 			} else if (!strcmp (argv[1], "-nano")) {
-				fprintf( stderr, "WARNING: \"-nano\" is deprecated, use \"-g nano\" instead.\n" );
-				ttk_set_emulation (176, 132, 16);
+				fprintf( stderr, "ERROR: \"-nano\" is deprecated, use \"-g nano\" instead.\n" );
+				exit( -42 );
 			} else if (!strcmp (argv[1], "-mini")) {
-				fprintf( stderr, "WARNING: \"-mini\" is deprecated, use \"-g mini\" instead.\n" );
-				ttk_set_emulation (138, 110, 2);
+				fprintf( stderr, "ERROR: \"-mini\" is deprecated, use \"-g mini\" instead.\n" );
+				exit( -42 );
 			} else if (!strcmp (argv[1], "-video")) {
-				fprintf( stderr, "WARNING: \"-video\" is deprecated, use \"-g video\" instead.\n" );
-				ttk_set_emulation (320, 240, 16);
+				fprintf( stderr, "ERROR: \"-video\" is deprecated, use \"-g video\" instead.\n" );
+				exit( -42 );
 
+			/* arbitrary size... */
 			} else if (!strcmp (argv[1], "-2")) {
 				if( argc != 4 ) {
 					usage( argv[0] );
@@ -480,6 +483,7 @@ main(int argc, char **argv)
 				}
 				ttk_set_emulation ( atoi( argv[2] ),
 						    atoi( argv[3] ), 16 );
+
                         } else if (!strcmp (argv[1], "-errout")) {
                                 if( argc != 3 ) {
                                         usage( argv[0] );
