@@ -11,7 +11,7 @@
 #include "config.h"
 #include "interrupts.h"
 
-#define LOADERNAME "iPL Loader 2.4"
+#define LOADERNAME "iPL Loader 2.5d1" // "d" stands for development version, "b" for beta version
 
 static uint16 *framebuffer;
 static int orig_contrast;
@@ -625,6 +625,13 @@ void *loader(void) {
 
   keypad_init();
 
+  /* use this to test for keys held down at startup:
+    uint8 startup_keys = keypad_getstate ();
+    if (startup_keys & IPOD_KEYPAD_SCRL) {
+      // Rewind is held down at start
+    }
+  */
+
   ret = ata_init();
   if( ret ) {
     mlc_printf("ATAinit: %i\n",ret);
@@ -691,6 +698,8 @@ void *loader(void) {
   for(menuPos=0;menuPos<conf->items;menuPos++) {
     menu_additem( conf->image[menuPos].title );
   }
+
+  keypad_flush (); // discard buttons that were already pressed at start
 
   /*---------------------------------------
    * This is the "event loop" for the menu

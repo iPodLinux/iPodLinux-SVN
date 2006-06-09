@@ -163,33 +163,9 @@ static uint8 was_hold = 0;
 
 static int last_source, last_state;
 
-static void check_hold_5002 (uint8 state)
+static void process_keys_5002 (uint8 source)
 {
-  if (ipod_hw_ver == 0x3) {
-    // 3g hold switch is active low
-    if (state & 0x20) {
-      handle_scancode (HOLD_SC, 0);
-      handle_scroll_wheel (-1, 0); // reset
-      was_hold = 1;
-    } else {
-      handle_scancode (HOLD_SC, 1);
-    }
-  } else {
-    handle_scancode (HOLD_SC, (state & 0x20));
-    handle_scroll_wheel (-1, 0); // reset
-  }
-}
-
-static void kbd_intr_5002 (int irq, void *dev_id, struct pt_regs *regs)
-{
-  uint8 source, state;
-  
-  // we need some delay for g3, cause hold generates several interrupts, some of them delayed
-  if (ipod_hw_ver == 0x3) mlc_delay_us(250);
-
-  // get source of interupts
-  source = inb(0xcf000040);
-  if (source == 0) return;   // not for us
+  uint8 state;
 
   // get current keypad status
   state = inb(0xcf000030);
@@ -207,8 +183,22 @@ static void kbd_intr_5002 (int irq, void *dev_id, struct pt_regs *regs)
   }
 
   if (source & 0x20) {
-    check_hold_5002 (state);
-  } else if (!(kbd_state & HOLD_SC)) {
+    if (ipod_hw_ver == 0x3) {
+      // 3g hold switch is active low
+      if (state & 0x20) {
+        handle_scancode (HOLD_SC, 0);
+        handle_scroll_wheel (-1, 0); // reset
+        was_hold = 1;
+      } else {
+        handle_scancode (HOLD_SC, 1);
+        state = 0x1f; // clear all keys
+      }
+    } else {
+      handle_scancode (HOLD_SC, (state & 0x20));
+      handle_scroll_wheel (-1, 0); // reset
+    }
+  }
+  if (!(kbd_state & HOLD_SC)) {
     check_key (source, state, 0x01, RIGHT_SC);
     check_key (source, state, 0x02, ACTION_SC);
     check_key (source, state, 0x04, DOWN_SC);
@@ -222,6 +212,20 @@ static void kbd_intr_5002 (int irq, void *dev_id, struct pt_regs *regs)
 finish:
   // ack any active interrupts
   outb(source, 0xcf000070);
+}
+
+static void kbd_intr_5002 (int irq, void *dev_id, struct pt_regs *regs)
+{
+  uint8 source;
+  
+  // we need some delay for g3, cause hold generates several interrupts, some of them delayed
+  if (ipod_hw_ver == 0x3) mlc_delay_us(250);
+
+  // get source of interupts
+  source = inb(0xcf000040);
+  if (source == 0) return;   // not for us
+
+  process_keys_5002 (source);
 }
 
 static void opto_i2c_init(void)
@@ -369,17 +373,48 @@ static void key_i2c_interrupt(int irq, void *dev_id, struct pt_regs * regs)
   outl(inl(0x6000d024) | 0x10, 0x6000d024); /* port B bit 4 = 1 */
 }
 
-static void check_hold_502x (uint8 state)
+static void process_keys_502x (uint8 source, uint8 wheel_source, uint8 wheel_state)
 {
-  // mini hold switch is active low
-  int engaged = !(state & 0x20);
-  handle_scancode (HOLD_SC, engaged);
-  if (!engaged) handle_scroll_wheel (-1, 0); // reset
+  uint8 state;
+
+  /* get current keypad & wheel status */
+  state = inb(0x6000d030) & 0x3f;
+  if (source) {
+    last_source = source;
+    last_state = state;
+  }
+
+  outb(~state, 0x6000d060);  // toggle interrupt level
+  if (ipod_hw_ver == 0x4) {
+    wheel_state = inb(0x6000d034) & 0x30;
+    outb(~wheel_state, 0x6000d064);  // toggle interrupt level
+  }
+
+  if (source & 0x20) {
+    // hold switch is active low
+    int engaged = !(state & 0x20);
+    handle_scancode (HOLD_SC, engaged);
+    if (!engaged) {
+      handle_scroll_wheel (-1, 0); // reset
+    } else {
+      state = 0x1f; // clear all keys
+    }
+  }
+  if (ipod_hw_ver == 0x4) {
+    check_key (source, state, 0x01, ACTION_SC);
+    check_key (source, state, 0x02, UP_SC);
+    check_key (source, state, 0x04, DOWN_SC);
+    check_key (source, state, 0x08, RIGHT_SC);
+    check_key (source, state, 0x10, LEFT_SC);
+    if (wheel_source & 0x30) {
+      handle_scroll_wheel ((wheel_state >> 4) & 3, 1);
+    }
+  }
 }
 
 static void key_mini_interrupt(int irq, void *dev_id, struct pt_regs * regs)
 {
-  unsigned char source, wheel_source, state, wheel_state = 0;
+  uint8 source, wheel_source, wheel_state = 0;
 
   /* we need some delay for mini, cause hold generates several interrupts,
    * some of them delayed
@@ -398,31 +433,7 @@ static void key_mini_interrupt(int irq, void *dev_id, struct pt_regs * regs)
     return;   // not for us
   }
 
-  /* get current keypad & wheel status */
-  state = inb(0x6000d030) & 0x3f;
-  if (source) {
-    last_source = source;
-    last_state = state;
-  }
-
-  outb(~state, 0x6000d060);  // toggle interrupt level
-  if (ipod_hw_ver == 0x4) {
-    wheel_state = inb(0x6000d034) & 0x30;
-    outb(~wheel_state, 0x6000d064);  // toggle interrupt level
-  }
-
-  if (source & 0x20) {
-    check_hold_502x (state);
-  } else if (ipod_hw_ver == 0x4) {
-    check_key (source, state, 0x01, ACTION_SC);
-    check_key (source, state, 0x02, UP_SC);
-    check_key (source, state, 0x04, DOWN_SC);
-    check_key (source, state, 0x08, RIGHT_SC);
-    check_key (source, state, 0x10, LEFT_SC);
-    if (wheel_source & 0x30) {
-      handle_scroll_wheel ((wheel_state >> 4) & 3, 1);
-    }
-  }
+  process_keys_502x (source, wheel_source, wheel_state);
 
   /* ack any active interrupts */
   if (source) {
@@ -446,8 +457,8 @@ void keypad_test (void)
       src = inb(0xcf000040);
       stt = inb(0xcf000030);
     } else {
-      src = (int)inb(0x6000d040);
-      stt = (int)inb(0x6000d030);
+      src = inb(0x6000d040);
+      stt = inb(0x6000d030);
     }
     mlc_printf (" source %02x (%02x)\n", src, last_source);
     mlc_printf (" state1 %02x (%02x)\n", stt, last_state);
@@ -506,16 +517,16 @@ void keypad_init(void)
       outb(inb(0xcf000024) | 0x1, 0xcf000024);
     }
   
-    check_hold_5002 (inb(0xcf000030)); // we need this to know the current HOLD state
-    
     if ((err = request_irq (PP5002_GPIO_IRQ, kbd_intr_5002, 1, KEYBOARD_DEV_ID)) != 0) {
       mlc_printf("ipodkb: IRQ %d failed: %d\n", PP5002_GPIO_IRQ, err);
       mlc_show_critical_error();
     }
+
+    process_keys_5002 (0x3f); // get the current state of keys and hold switch
     
     // enable interrupts
     outb(0xff, 0xcf000050);
-
+    
   } else if( ipod_hw_ver == 4 ) {
 
     // mini keyboard init
@@ -535,18 +546,18 @@ void keypad_init(void)
     /* scroll wheel - set interrupt levels */
     outl(~(inl(0x6000d034) & 0x30), 0x6000d064);
     outl((inl(0x6000d044) & 0x30), 0x6000d074);
-  
-    check_hold_502x (inb(0x6000d030)); // we need this to know the current HOLD state
 
     if ((err = request_irq (PP5020_GPIO_IRQ, key_mini_interrupt, 1, KEYBOARD_DEV_ID)) != 0) {
       mlc_printf("ipodkb: IRQ %d failed: %d\n", PP5020_GPIO_IRQ, err);
       mlc_show_critical_error();
     }
+    
+    process_keys_502x (0x3f, 0, 0); // get the current state of keys and hold switch
 
     // enable interrupts
     outl(0x3f, 0x6000d050);
     outl(0x30, 0x6000d054);
-    
+
   } else {
 
     // 4g, photo, mini2, nano etc.
@@ -558,8 +569,6 @@ void keypad_init(void)
     
     opto_i2c_init();
   
-    check_hold_502x (inb(0x6000d030)); // we need this to know the current HOLD state
-
     if ((err = request_irq (PP5020_GPIO_IRQ, key_mini_interrupt, 1, KEYBOARD_DEV_ID)) != 0) {
       mlc_printf("ipodkb: IRQ %d failed: %d\n", PP5020_GPIO_IRQ, err);
       mlc_show_critical_error();
@@ -570,16 +579,18 @@ void keypad_init(void)
       mlc_show_critical_error();
     }
 
+    process_keys_502x (0x3f, 0, 0); // get the current state of keys and hold switch
+
     // hold switch - enable as input
     outl(inl(0x6000d000) | 0x20, 0x6000d000);
     outl(inl(0x6000d010) & ~0x20, 0x6000d010);
+
     // hold switch - set interrupt levels
     outl(~(inl(0x6000d030) & 0x20), 0x6000d060);
     outl((inl(0x6000d040) & 0x20), 0x6000d070);
 
     // enable interrupts
     outl(0x20, 0x6000d050);
-
   }
 }
 
