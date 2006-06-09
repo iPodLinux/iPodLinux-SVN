@@ -625,12 +625,14 @@ void *loader(void) {
 
   keypad_init();
 
-  /* use this to test for keys held down at startup:
-    uint8 startup_keys = keypad_getstate ();
-    if (startup_keys & IPOD_KEYPAD_SCRL) {
+  // use this to test for keys held down at startup:
+  uint8 startup_keys = keypad_getstate ();
+  if (startup_keys) {
+    mlc_printf("keys: %x\n", startup_keys);
+    if (startup_keys & IPOD_KEYPAD_PREV) {
       // Rewind is held down at start
     }
-  */
+  }
 
   ret = ata_init();
   if( ret ) {
