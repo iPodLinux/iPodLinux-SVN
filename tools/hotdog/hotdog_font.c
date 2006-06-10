@@ -157,14 +157,18 @@ static inline draw_func *_do_pick_draw_func (int bpp, int blend_parts)
 static void _do_draw_lat8 (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str,
                            int blend_all, int blend_parts) 
 {
-    int cx = x;
+    int cx = x, cy = y;
     const char *p = str;
     draw_func *func = _do_pick_draw_func (font->bpp, blend_parts);
 
     while (*p) {
         if (*p > font->firstchar && *p < font->firstchar + font->nchars) {
-            (*func)(srf, font, cx, y, color, *p, blend_all);
+            (*func)(srf, font, cx, cy, color, *p, blend_all);
             cx += font->width[*p - font->firstchar];
+        }
+        else if (*p == '\n') {
+            cx = x;
+            cy += font->height + 1;
         }
         p++;
     }
@@ -173,14 +177,18 @@ static void _do_draw_lat8 (hd_surface srf, hd_font *font, int x, int y, uint32 c
 static void _do_draw_uc16 (hd_surface srf, hd_font *font, int x, int y, uint32 color, const uint16 *str,
                            int blend_all, int blend_parts)
 {
-    int cx = x;
+    int cx = x, cy = y;
     const uint16 *p = str;
     draw_func *func = _do_pick_draw_func (font->bpp, blend_parts);
 
     while (*p) {
         if (*p > font->firstchar && *p < font->firstchar + font->nchars) {
-            (*func)(srf, font, cx, y, color, *p, blend_all);
+            (*func)(srf, font, cx, cy, color, *p, blend_all);
             cx += font->width[*p - font->firstchar];
+        }
+        else if (*p == '\n') {
+            cx = x;
+            cy += font->height + 1;
         }
         p++;
     }
