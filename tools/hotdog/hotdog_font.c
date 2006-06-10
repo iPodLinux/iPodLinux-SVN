@@ -168,7 +168,7 @@ static void _do_draw_lat8 (hd_surface srf, hd_font *font, int x, int y, uint32 c
         }
         else if (*p == '\n') {
             cx = x;
-            cy += font->height + 1;
+            cy += font->h + 1;
         }
         p++;
     }
@@ -188,7 +188,7 @@ static void _do_draw_uc16 (hd_surface srf, hd_font *font, int x, int y, uint32 c
         }
         else if (*p == '\n') {
             cx = x;
-            cy += font->height + 1;
+            cy += font->h + 1;
         }
         p++;
     }
