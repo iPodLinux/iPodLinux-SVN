@@ -23,6 +23,8 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
+#include <dirent.h>
+#include <sys/stat.h>
 
 TWindowStack *ttk_windows = 0;
 ttk_font ttk_menufont, ttk_textfont;
@@ -109,17 +111,16 @@ void ttk_header_set_text_justification( enum ttk_justification j )
 }
 
 
-static void ttk_parse_fonts_list() 
+// Returns the number of fonts loaded.
+static int ttk_parse_fonts_list (const char *flf) 
 {
     char buf[128];
     ttk_fontinfo *current = 0;
-    FILE *fp = fopen (FONTSDIR "/fonts.lst", "r");
+    int fonts = 0;
 
-    if (!fp) {
-	fprintf (stderr, "No fonts list. Make one.\n");
-	ttk_quit();
-	exit (1);
-    }
+    FILE *fp = fopen (flf, "r");
+    if (!fp) return 0;
+    
     while (fgets (buf, 128, fp)) {
 	if (buf[0] == '#') {
 	    continue;
@@ -133,8 +134,7 @@ static void ttk_parse_fonts_list()
 	if (!strchr (buf, '[') || !strchr (buf, ']') || !strchr (buf, '(') || !strchr (buf, ')') ||
 	    !strchr (buf, '<') || !strchr (buf, '>')) {
 	    fprintf (stderr, "Invalid fonts.lst (bad line: |%s|)\n", buf);
-	    ttk_quit();
-	    exit (1);
+            break;
 	}
 
 	if (!ttk_fonts) {
@@ -171,7 +171,34 @@ static void ttk_parse_fonts_list()
 	current->refs = 0;
 	current->loaded = 0;
 	current->next = 0;
+        fonts++;
     }
+
+    fclose (fp);
+    return fonts;
+}
+
+static int ttk_parse_fonts_list_dir (const char *dirname) 
+{
+    int nfonts = 0;
+    int cwdfd = open (".", O_RDONLY);
+    if (chdir (dirname) < 0) {
+        close (cwdfd);
+        return 0;
+    }
+    DIR *dir = opendir (".");
+    struct dirent *d;
+    while ((d = readdir (dir)) != 0) {
+        if (d->d_name[0] != '.') {
+            struct stat st;
+            if (stat (d->d_name, &st) >= 0 && S_ISREG (st.st_mode))
+                nfonts += ttk_parse_fonts_list (d->d_name);
+        }
+    }
+    closedir (dir);
+    fchdir (cwdfd);
+    close (cwdfd);
+    return nfonts;
 }
 
 // Get the font [name] sized closest to [size].
@@ -316,7 +343,14 @@ TWindow *ttk_init()
     ttk_fillellipse (ttk_screen->srf, ttk_screen->w/2 + 35, ttk_screen->h/2, 5, 5, ttk_makecol (0, 0, 0));
     ttk_gfx_update (ttk_screen->srf);
 
-    ttk_parse_fonts_list();
+    int nfonts = 0;
+    nfonts += ttk_parse_fonts_list (FONTSDIR "/fonts.lst");
+    nfonts += ttk_parse_fonts_list_dir (FONTSDIR "/fonts.lst.d");
+    if (!nfonts) {
+	fprintf (stderr, "No fonts list, or no fonts in it. Make one, or put some in.\n");
+	ttk_quit();
+	exit (1);
+    }
     
     ret = ttk_new_window();
 
