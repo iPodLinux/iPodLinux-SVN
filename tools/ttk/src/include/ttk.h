@@ -421,7 +421,7 @@ void ttk_free_surface (ttk_surface srf);
 #undef MIN
 #undef MAX
 #define MIN(x,y)	(((x)<(y))?(x):(y))
-#define MAX(x,y)	(((x)<(y))?(x):(y))
+#define MAX(x,y)	(((x)>(y))?(x):(y))
 
 /* Steve Brown's scroll wheel acceleration macro, version 2-poit-oh
  * Amplifies scroll events with a timeout
