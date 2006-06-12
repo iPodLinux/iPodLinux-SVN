@@ -679,17 +679,24 @@ fw_iterate_images (const char *filename, void *data, void (*fn)(fw_image_t *, co
     in->read (in, &ver, 2);
     fw_version = switch_16 (ver);
 
-    if (fw_version != 2 && fw_version != 3 && offset < 1024) {
-        fprintf (stderr, "%s: no image at offset %d, looking at offset %d...\n", filename, offset, offset + 512);
+    if (fw_version != 2 && fw_version != 3 && offset < 131072) {
+        if (offset == 0)
+            fprintf (stderr, "%s: no image at offset %d, looking at offset "); 
+        fprintf (stderr, "%d... ", filename, offset, offset + 512);
         offset += 512;
         goto read_version;
     }
 
     if (verbose >= 2) printf ("Version: %d\n", fw_version);
     if (fw_version < 2 || fw_version > 3) {
+        if (offset != 0)
+            fprintf (stderr, "nothing found\n");
         fprintf (stderr, "%s: invalid version (0x%04x); are you sure that's a dump file?\n", filename, fw_version);
         ERROR_EXIT (10);
     }
+
+    if (offset != 0)
+        fprintf (stderr, "found\n");
 
     int idx;
     for (idx = 0; idx < 10; idx++) {
