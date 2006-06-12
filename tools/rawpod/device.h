@@ -9,7 +9,6 @@
 
 #include "vfs.h"
 #include <dirent.h>
-#include <list>
 
 #define OPEN_READ    1
 #define OPEN_WRITE   2
@@ -76,15 +75,15 @@ protected:
     BlockCache (int nsec = 2048, int ssize = 512);
     virtual ~BlockCache();
     
-    virtual int doRead (void *buf, u64 sec) { doRawRead (buf, sec); }
-    virtual int doWrite (const void *buf, u64 sec) { doRawWrite (buf, sec); }
+    virtual int doRead (void *buf, u64 sec) { return doRawRead (buf, sec); }
+    virtual int doWrite (const void *buf, u64 sec) { return doRawWrite (buf, sec); }
     virtual int doRawRead (void *buf, u64 sec) = 0;
     virtual int doRawWrite (const void *buf, u64 sec) = 0;
 
-    int flush() {}
-    int invalidate() {}
+    int flush() { return 0; }
+    int invalidate() { return 0; }
     
-    static int cleanup();
+    static void cleanup();
     
 private:
     int _nsec;
@@ -92,9 +91,8 @@ private:
     char *_cache;
     u64 *_sectors;
     u64 *_atimes;
-
-    static int _cleaning_up;
-    static std::list <BlockCache*> _caches;
+    BlockCache *_cache_next;
+    static BlockCache *_cache_head;
 };
 
 class LocalRawDevice : public VFS::BlockDevice, public BlockCache
@@ -117,8 +115,8 @@ public:
     }
 
 protected:
-    virtual int doRead (void *buf, u64 sec) { BlockCache::doRead (buf, sec); }
-    virtual int doWrite (const void *buf, u64 sec) { BlockCache::doWrite (buf, sec); }
+    virtual int doRead (void *buf, u64 sec) { return BlockCache::doRead (buf, sec); }
+    virtual int doWrite (const void *buf, u64 sec) { return BlockCache::doWrite (buf, sec); }
     virtual int doRawRead (void *buf, u64 sec);
     virtual int doRawWrite (const void *buf, u64 sec);
 

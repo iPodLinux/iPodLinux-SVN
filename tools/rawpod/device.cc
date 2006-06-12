@@ -125,8 +125,7 @@ int LocalFile::close()
 
 /**************************************************************/
 
-std::list <BlockCache *> BlockCache::_caches;
-int BlockCache::_cleaning_up = 0;
+BlockCache *BlockCache::_cache_head = 0;
 
 BlockCache::BlockCache (int nsec, int ssize)
     : _nsec (nsec), _ssize (ssize), _log_ssize (0)
@@ -143,13 +142,24 @@ BlockCache::BlockCache (int nsec, int ssize)
     memset (_sectors, 0, _nsec * sizeof(u64));
     memset (_atimes, 0, _nsec * sizeof(u64));
 
-    _caches.push_back (this);
+    if (!_cache_head) _cache_head = this;
+    else {
+        BlockCache *cur = _cache_head;
+        while (cur->_cache_next) cur = cur->_cache_next;
+        cur->_cache_next = this;
+    }
+    _cache_next = 0;
 }
 
 BlockCache::~BlockCache() 
 {
-    if (!_cleaning_up) _caches.remove (this);
-    
+    BlockCache *cur = _cache_head;
+    if (cur == this) _cache_head = this->_cache_next;
+    else {
+        while (cur && cur->_cache_next != this) cur = cur->_cache_next;
+        cur->_cache_next = this->_cache_next;
+    }
+
     flush();
     invalidate();
 
@@ -158,14 +168,10 @@ BlockCache::~BlockCache()
     free (_cache);
 }
 
-int BlockCache::cleanup() 
+void BlockCache::cleanup() 
 {
-    _cleaning_up = 1;
-
-    std::list<BlockCache*>::iterator it = _caches.begin();
-    while (it != _caches.end()) {
-        delete *it;
-        ++it;
+    while (_cache_head) {
+        delete _cache_head;
     }
 }
 
