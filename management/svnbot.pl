@@ -59,6 +59,8 @@ sub parse_data($;$) {
 	chomp;
 	if (!$headers) {
 	    next if /^$/;
+            next if /^_+$/;
+            next if /^https:..OpenSVN.csie.org/;
 	    if (/^([a-zA-Z0-9]+)\t(.*)/) { # username line
 		($user,$date) = ($1,$2);
 	    } elsif (/^\s\s([A-Z][a-z ]*):/) {
@@ -69,10 +71,10 @@ sub parse_data($;$) {
 		$val = $1;
 		if ($key eq "Log") {
 		    push @log, $val;
-		} elsif ($key eq "Trac view") {
-		    ($tracurl = $val) =~ s#https://OpenSVN.csie.org/traccgi/courtc/trac.cgi/changeset#http://tinyurl.com/bukaa#;
+                } elsif ($key eq "Revision") {
+                    $tracurl = "http://tinyurl.com/bukaa/$val";
 		} elsif ($key eq "Changes") {
-		    /\s\s([A-Z_]{1,2})\s*\+\d+\s*-\d+\s*(.*)/ or print "Couldn't figure out email\n";
+		    /^\s*([A-Z_]{1,2}).*\s(.*)/ or print "Couldn't figure out email\n";
 		    my($flags,$file) = ($1,$2);
                     my($mflag,$pflag) = (substr($flags,0,1), substr($flags,1));
                     my($bits) = "";
