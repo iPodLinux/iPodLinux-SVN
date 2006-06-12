@@ -418,13 +418,17 @@ void ttk_free_surface (ttk_surface srf);
 #define   CKEY   255, 255, 255
 #endif
 
+#undef MIN
+#undef MAX
+#define MIN(x,y)	(((x)<(y))?(x):(y))
+#define MAX(x,y)	(((x)<(y))?(x):(y))
+
 /* Steve Brown's scroll wheel acceleration macro, version 2-poit-oh
  * Amplifies scroll events with a timeout
  * arg1: (variable) event to be amplified
  * arg2: (constant int) slow accel by this factor
  * arg3: (constant int) maximum acceleration factor
  */
-#define MIN(x,y)	(((x)<(y))?(x):(y))
 	/* TODO: these timers need to be fine-tuned on a real iPod */
 #define TTK_ACCEL_L	150 /* events below this delay are accel'ed */
 #define TTK_ACCEL_H	250 /* events between the two are decel'ed */
