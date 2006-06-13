@@ -46,5 +46,6 @@ int find_iPod();
 
 // returns 0 for failure and prints a message
 VFS::Device *setup_partition (int disknr, int partnr);
+VFS::Device *setup_partition (VFS::Device *disk, int partnr);
 
 #endif

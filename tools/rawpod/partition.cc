@@ -298,3 +298,22 @@ VFS::Device *setup_partition (int disknr, int partnr)
     return partdev;
 }
 
+VFS::Device *setup_partition (VFS::Device *fulldev, int partnr) 
+{
+    partnr--;
+
+    unsigned char mbr[512];
+    fulldev->lseek (0, SEEK_SET);
+    if (fulldev->read (mbr, 512) != 512)
+        return 0;
+    
+    PartitionTable ptbl;
+    if ((ptbl = partCopyFromMBR (mbr)) == 0)
+        return 0;
+
+    PartitionDevice *partdev = new PartitionDevice (fulldev, ptbl[partnr].offset,
+                                                    ptbl[partnr].length);
+    partFreeTable (ptbl);
+    
+    return partdev;
+}

@@ -125,7 +125,11 @@ int LocalFile::close()
 
 /**************************************************************/
 
+#include <sys/time.h>
+
 BlockCache *BlockCache::_cache_head = 0;
+bool BlockCache::_disabled = false;
+int BlockCache::_comint = 5;
 
 BlockCache::BlockCache (int nsec, int ssize)
     : _nsec (nsec), _ssize (ssize), _log_ssize (0)
@@ -139,8 +143,10 @@ BlockCache::BlockCache (int nsec, int ssize)
     _cache = (char *)malloc (_nsec * _ssize);
     _sectors = new u64[_nsec];
     _atimes = new u64[_nsec];
+    _mtimes = new u64[_nsec];
     memset (_sectors, 0, _nsec * sizeof(u64));
     memset (_atimes, 0, _nsec * sizeof(u64));
+    memset (_mtimes, 0, _nsec * sizeof(u64));
 
     if (!_cache_head) _cache_head = this;
     else {
@@ -157,23 +163,152 @@ BlockCache::~BlockCache()
     if (cur == this) _cache_head = this->_cache_next;
     else {
         while (cur && cur->_cache_next != this) cur = cur->_cache_next;
-        cur->_cache_next = this->_cache_next;
+        if (cur) cur->_cache_next = this->_cache_next;
     }
 
-    flush();
     invalidate();
 
     delete[] _sectors;
     delete[] _atimes;
+    delete[] _mtimes;
     free (_cache);
+}
+
+void BlockCache::invalidate() 
+{
+    memset (_atimes, 0, _nsec * sizeof(u64));
+    memset (_mtimes, 0, _nsec * sizeof(u64));
+}
+
+s64 BlockCache::getTimeval() 
+{
+    struct timeval tv;
+    struct timezone tz;
+    gettimeofday (&tv, &tz);
+    return ((s64)tv.tv_sec << 20) + tv.tv_usec;
+}
+
+int BlockCache::dirtySectors()
+{
+    int ret = 0;
+    for (int i = 0; i < _nsec; i++) {
+        if (_mtimes[i]) ret++;
+    }
+    return ret;
+}
+
+int BlockCache::isDirty (int idx)
+{
+    return !!_mtimes[idx];
+}
+
+int BlockCache::flushIndex (int idx)
+{
+    int ret;
+    if (_mtimes[idx]) {
+        ret = doRawWrite (_cache + (idx << _log_ssize), _sectors[idx]);
+        if (ret < 0) return ret;
+        _mtimes[idx] = 0;
+    }
+    return 0;
+}
+
+int BlockCache::flushOlderThan (s64 us)
+{
+    if (_disabled) return 0;
+
+    int ret;
+    for (int i = 0; i < _nsec; i++) {
+        if (_mtimes[i] && ((us < 0) || (_mtimes[i] < us))) {
+            ret = doRawWrite (_cache + (i << _log_ssize), _sectors[i]);
+            if (ret < 0) return ret;
+            _mtimes[i] = 0;
+        }
+    }
+    return 0;
+}
+
+int BlockCache::doRead (void *buf, u64 sec) 
+{
+    if (_disabled) return doRawRead (buf, sec);
+
+    int lruIdx = 0;
+    u64 lruTime = _atimes[0];
+    int ret;
+    for (int i = 0; i < _nsec; i++) {
+        if ((_sectors[i] == sec) && (_atimes[i] != 0)) {
+            memcpy (buf, _cache + (i << _log_ssize), _ssize);
+            _atimes[i] = getTimeval();
+            return 0;
+        }
+        if (lruTime && (_atimes[i] < lruTime)) {
+            lruIdx = i;
+            lruTime = _atimes[i];
+        }
+    }
+    if (_mtimes[lruIdx] != 0) {
+        ret = doRawWrite (_cache + (lruIdx << _log_ssize), _sectors[lruIdx]);
+        if (ret < 0) return ret;
+        _mtimes[lruIdx] = 0;
+    }
+
+    ret = doRawRead (buf, sec);
+    if (ret < 0) return ret;
+
+    _sectors[lruIdx] = sec;
+    _atimes[lruIdx] = getTimeval();
+    memcpy (_cache + (lruIdx << _log_ssize), buf, _ssize);
+    return 0;
+}
+
+int BlockCache::doWrite (const void *buf, u64 sec) 
+{
+    if (_disabled) return doRawWrite (buf, sec);
+
+    int lruIdx = 0;
+    u64 lruTime = _atimes[0];
+    int ret;
+
+    ret = flushOlderThan (getTimeval() - (_comint << 20));
+    if (ret < 0) return ret;
+
+    for (int i = 0; i < _nsec; i++) {
+        if ((_sectors[i] == sec) && _atimes[i]) {
+            if (memcmp (_cache + (i << _log_ssize), buf, _ssize) != 0) {
+                memcpy (_cache + (i << _log_ssize), buf, _ssize);
+                _mtimes[i] = _atimes[i] = getTimeval();
+                return 0;
+            } else {
+                _atimes[i] = getTimeval();
+                return 0;
+            }
+        }
+        if (lruTime && (_atimes[i] < lruTime)) {
+            lruIdx = i;
+            lruTime = _atimes[i];
+        }
+    }
+    if (_mtimes[lruIdx] != 0) {
+        ret = doRawWrite (_cache + (lruIdx << _log_ssize), _sectors[lruIdx]);
+        if (ret < 0) return ret;
+        _mtimes[lruIdx] = 0;
+    }
+
+    _sectors[lruIdx] = sec;
+    _atimes[lruIdx] = _mtimes[lruIdx] = getTimeval();
+    memcpy (_cache + (lruIdx << _log_ssize), buf, _ssize);
+    return 0;
 }
 
 void BlockCache::cleanup() 
 {
     while (_cache_head) {
+        _cache_head->flush();
         delete _cache_head;
     }
 }
+
+struct CacheCleaner { ~CacheCleaner() { BlockCache::cleanup(); } } __cleaner;
 
 /**************************************************************/
 
@@ -193,9 +328,10 @@ int LocalDir::readdir (struct VFS::dirent *de)
 
 const char *LocalRawDevice::_override = 0;
 const char *LocalRawDevice::_cowfile = 0;
+int LocalRawDevice::_cachesize = 16384;
 
 LocalRawDevice::LocalRawDevice (int n)
-    : BlockDevice(), BlockCache(16384)
+    : BlockDevice(), BlockCache (_cachesize)
 {
 #ifdef WIN32
     char drive[] = "\\\\.\\PhysicalDriveN";
@@ -226,6 +362,13 @@ LocalRawDevice::LocalRawDevice (int n)
             _wf = _f;
         }
     } else _wf = _f;
+}
+
+LocalRawDevice::~LocalRawDevice() 
+{
+    BlockCache::flush();
+    if (_wf != _f) delete _wf;
+    delete _f;
 }
 
 int LocalRawDevice::doRawRead (void *buf, u64 sec) 

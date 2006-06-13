@@ -69,37 +69,52 @@ private:
 #endif
 };
 
-class BlockCache 
+class BlockCache
 {
+public:
+    static void cleanup();
+    static void disable() { _disabled = true; }
+    static void enable() { _disabled = false; }
+    static bool enabled() { return !_disabled; }
+    static void setCommitInterval (int secs) { _comint = secs; }
+
+    int dirtySectors();
+    int totalSectors() { return _nsec; }
+    int isDirty (int idx);
+    int flushIndex (int idx);
+
+    int flush() { return flushOlderThan (-1); }
+    void invalidate();
+    
 protected:
     BlockCache (int nsec = 2048, int ssize = 512);
     virtual ~BlockCache();
     
-    virtual int doRead (void *buf, u64 sec) { return doRawRead (buf, sec); }
-    virtual int doWrite (const void *buf, u64 sec) { return doRawWrite (buf, sec); }
+    virtual int doRead (void *buf, u64 sec);
+    virtual int doWrite (const void *buf, u64 sec);
     virtual int doRawRead (void *buf, u64 sec) = 0;
     virtual int doRawWrite (const void *buf, u64 sec) = 0;
 
-    int flush() { return 0; }
-    int invalidate() { return 0; }
-    
-    static void cleanup();
-    
 private:
+    int flushOlderThan (s64 us);
+    s64 getTimeval();
+
     int _nsec;
     int _ssize, _log_ssize;
     char *_cache;
     u64 *_sectors;
-    u64 *_atimes;
+    u64 *_atimes, *_mtimes;
     BlockCache *_cache_next;
     static BlockCache *_cache_head;
+    static bool _disabled;
+    static int _comint;
 };
 
 class LocalRawDevice : public VFS::BlockDevice, public BlockCache
 {
 public:
     LocalRawDevice (int n);
-    ~LocalRawDevice() { if (_wf != _f) delete _wf; delete _f; }
+    ~LocalRawDevice();
 
     int error() {
         if (_valid < 0) return _valid;
@@ -113,6 +128,9 @@ public:
     static void setCOWFile (const char *filename) {
         _cowfile = filename;
     }
+    static void setCachedSectors (int num) {
+        _cachesize = num;
+    }
 
 protected:
     virtual int doRead (void *buf, u64 sec) { return BlockCache::doRead (buf, sec); }
@@ -125,6 +143,7 @@ private:
     int _valid;
     static const char *_override;
     static const char *_cowfile;
+    static int _cachesize;
 };
 
 class PartitionDevice : public VFS::BlockDevice
