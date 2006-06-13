@@ -20,6 +20,7 @@
 #include <QCheckBox>
 #include <QRadioButton>
 #include <QSpinBox>
+#include <QTimer>
 
 #include <string.h>
 #include <ctype.h>
@@ -41,6 +42,7 @@ bool iPodDoBackup;
 QString iPodBackupLocation;
 QString InstallerHome;
 QString PackageListFile;
+bool InstallAutomatically;
 Installer *installer;
 
 Installer::Installer (QWidget *parent)
@@ -420,6 +422,8 @@ PodLocationPage::PodLocationPage (Installer *wizard)
         connect (upgradeRadio, SIGNAL(clicked(bool)), this, SLOT(upgradeRadioClicked(bool)));
         connect (changeLoaderRadio, SIGNAL(clicked(bool)), this, SLOT(changeLoaderRadioClicked(bool)));
         connect (uninstallRadio, SIGNAL(clicked(bool)), this, SLOT(uninstallRadioClicked(bool)));
+
+        if (Mode == Uninstall) QTimer::singleShot (100, uninstallRadio, SLOT(animateClick()));
 
         QVBoxLayout *layout = new QVBoxLayout;
         layout->addWidget (blurb);
@@ -847,6 +851,10 @@ UninstallPage::UninstallPage (Installer *wiz)
     connect (backupBrowse, SIGNAL(released()), this, SLOT(openBrowseDialog()));
 
     setBackupBlurb (true);
+    if (InstallAutomatically && iPodDoBackup) {
+        backupPath->setText (iPodBackupLocation);
+        emit completeStateChanged();
+    }
 }
 
 void UninstallPage::setBackupBlurb (bool chk) 
@@ -901,9 +909,10 @@ InstallPage::InstallPage (Installer *wiz)
     ldrblurb = new QLabel (tr ("First, you need to pick how you're going to load Linux. There are three ways: "));
     ldrblurb->setWordWrap (true);
     loader1apple = new QRadioButton (tr ("Standard loader with Apple firmware default"));
-    loader1apple->setChecked (true);
     loader1linux = new QRadioButton (tr ("Standard loader with iPodLinux default"));
     loader2 = new QRadioButton (tr ("iPodLoader2 (nice menu interface, but still experimental)"));
+    loader1apple->setChecked (true);
+    
     ldrchoiceblurb = new QLabel;
     ldrchoiceblurb->setWordWrap (true);
 
@@ -947,6 +956,19 @@ InstallPage::InstallPage (Installer *wiz)
 
     setLoader1Blurb (true);
     setBackupBlurb (true);
+
+    if (iPodLoader == Loader1Linux) {
+        loader1linux->animateClick (50);
+    } else if (iPodLoader == Loader2) {
+        loader1linux->animateClick (50);
+    }
+
+    if (InstallAutomatically) {
+        if (iPodDoBackup)
+            backupPath->setText (iPodBackupLocation);
+        else
+            makeBackup->animateClick (50);
+    }
 }
 
 void InstallPage::setLoader1Blurb (bool chk) 
