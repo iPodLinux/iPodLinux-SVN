@@ -8,6 +8,7 @@
 #define _PACKAGES_H_
 #include "installer.h"
 #include <QTreeWidget>
+#include <QTextEdit>
 #include <QDialog>
 
 class Package 
