@@ -681,8 +681,8 @@ fw_iterate_images (const char *filename, void *data, void (*fn)(fw_image_t *, co
 
     if (fw_version != 2 && fw_version != 3 && offset < 131072) {
         if (offset == 0)
-            fprintf (stderr, "%s: no image at offset %d, looking at offset "); 
-        fprintf (stderr, "%d... ", filename, offset, offset + 512);
+            fprintf (stderr, "%s: no image at offset %d, looking at offset ", filename, offset); 
+        fprintf (stderr, "%d... ", offset + 512);
         offset += 512;
         goto read_version;
     }

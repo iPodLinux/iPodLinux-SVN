@@ -233,7 +233,7 @@ void Package::readPackingList (VFS::Device *dev)
                 if (rdlen < 0)
                     qWarning ("Reading packing list for %s: %s", d.d_name, strerror (-rdlen));
                 else
-                    qWarning ("Packling list for %s is empty", d.d_name);
+                    qWarning ("Packing list for %s is empty", d.d_name);
                 delete[] buf;
                 delete packlist;
                 delete ext2;
@@ -393,12 +393,6 @@ PackagesPage::PackagesPage (Installer *wiz, bool atm)
         
     blurb->setWordWrap (true);
     progressStmt = new QLabel (tr ("<b>Initializing...</b>"));
-
-    if (!automatic) {
-        wizard->resize (640, 520);
-        wizard->setMinimumSize (500, 410);
-        wizard->setMaximumSize (1280, 1024);
-    }
 
     QStringList headers;
     headers << "Name" << "Version" << "Action" << "Description";
@@ -839,6 +833,13 @@ Package *PackagesPage::parsePackageListLine (QString line, bool makeBold, QDir *
             if (pkg.category() != "" && categories[pkg.category()]) {
                 pkgparent = categories[pkg.category()];
             }
+            if (pkg.requires().size()) {
+                QList <QTreeWidgetItem *> reqlist =
+                    packages->findItems (pkg.requires()[0], Qt::MatchExactly | Qt::MatchRecursive);
+                if (reqlist.size() && (!pkgparent || pkgparent == reqlist[0]->parent())) {
+                    pkgparent = reqlist[0];
+                }
+            }
         
             if (pkg.provides().size()) {
                 QList <QTreeWidgetItem *> provlist =
@@ -985,8 +986,22 @@ void PackagesPage::fixupPackageItem (PkgTreeWidgetItem *item)
 void PackagesPage::done() 
 {
     if (!automatic) {
-        blurb->setText (tr ("<p>Here you may select packages to install for iPodLinux. Check the boxes "
-                            "next to each package you would like to install.</p>"));
+        if (Mode == Update) {
+            blurb->setText (tr ("<p>Here you may modify your installed iPodLinux packages. Check the box "
+                                "next to a package to have it installed; uncheck it to have it removed. "
+                                "If an upgrade is available, the Status column will read \"Upgrade\"; "
+                                "if you do not want this upgrade for some reason, uncheck the box "
+                                "next to that text.</p>"));
+            wizard->resize (640, 580);
+        } else {
+            blurb->setText (tr ("<p>Here you may select packages to install for iPodLinux. Check the boxes "
+                                "next to each package you would like to install.</p>"));
+            wizard->resize (640, 520);
+        }
+
+        wizard->setMinimumSize (500, 410);
+        wizard->setMaximumSize (1280, 1024);
+
         progressStmt->hide();
     }
     
@@ -1024,6 +1039,7 @@ void PackagesPage::done()
     }
     
     if (!automatic) {
+        packages->resizeColumnToContents (0);
         packages->show();
         loadpkg->show();
         savesel->show();
@@ -1332,6 +1348,8 @@ void PkgTreeWidgetItem::update()
     setText (3, _pkg.description());
     if (_pkg.unsupported())
         setTextColor (0, Qt::darkRed);
+    else
+        setTextColor (0, Qt::black);
     _setsel();
 }
 
@@ -1683,15 +1701,15 @@ void PackageInstallAction::run()
 PackageEditDialog::PackageEditDialog (QWidget *parent, Package& pkg, PkgTreeWidgetItem *item)
     : QDialog (parent), _pkg (pkg), _item (item)
 {
-    name = new QLineEdit (_pkg.name());
-    version = new QLineEdit (_pkg.version());
-    desc = new QLineEdit (_pkg.description());
-    url = new QLineEdit (_pkg.url());
-    dest = new QLineEdit (_pkg.destination());
-    subfile = new QLineEdit (_pkg.subfile());
-    category = new QLineEdit (_pkg.category());
-    requires = new QLineEdit (_pkg.requires().join (", "));
-    provides = new QLineEdit (_pkg.provides().join (", "));
+    name = new QLineEdit (_pkg.name()); name->home (false);
+    version = new QLineEdit (_pkg.version()); version->home (false);
+    desc = new QLineEdit (_pkg.description()); desc->home (false);
+    url = new QLineEdit (_pkg.url()); url->home (false);
+    dest = new QLineEdit (_pkg.destination()); dest->home (false);
+    subfile = new QLineEdit (_pkg.subfile()); subfile->home (false);
+    category = new QLineEdit (_pkg.category()); category->home (false);
+    requires = new QLineEdit (_pkg.requires().join (", ")); requires->home (false);
+    provides = new QLineEdit (_pkg.provides().join (", ")); provides->home (false);
 
     unsupported = new QCheckBox (tr ("Package is unsupported by the iPodLinux team"));
     unsupported->setChecked (_pkg.unsupported());
@@ -1741,6 +1759,7 @@ PackageEditDialog::PackageEditDialog (QWidget *parent, Package& pkg, PkgTreeWidg
     tboxlayout->addWidget (requires, 5, 1);
     tboxlayout->addWidget (new QLabel (tr ("Provides:")), 5, 2, Qt::AlignRight);
     tboxlayout->addWidget (provides, 5, 3);
+    tboxlayout->setRowStretch (6, 1);
     tboxbox->setLayout (tboxlayout);
     
     QGroupBox *typebox = new QGroupBox (tr ("Package type"));
