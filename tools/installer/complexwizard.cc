@@ -22,8 +22,10 @@
  ****************************************************************************/
 
 #include <QtGui>
+#include <QTimer>
 
 #include "complexwizard.h"
+#include "installer.h"
 
 ComplexWizard::ComplexWizard(QWidget *parent)
     : QWidget(parent)
@@ -112,6 +114,8 @@ void ComplexWizard::completeStateChanged()
 {
     WizardPage *currentPage = history.last();
     nextButton->setEnabled(currentPage->isComplete());
+    if (InstallAutomatically && currentPage->isComplete())
+        QTimer::singleShot (100, nextButton, SLOT(animateClick()));
 }
 
 void ComplexWizard::switchPage(WizardPage *oldPage)

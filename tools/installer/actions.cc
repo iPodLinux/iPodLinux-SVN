@@ -90,13 +90,13 @@ void DelayAction::run()
 
 void BackupAction::run() 
 {
-    emit setTaskDescription (QString (tr ("Backing up the iPod to %1...")).arg (_path));
+    emit setTaskDescription (QString (tr ("Backing up the iPod to %1.")).arg (_path));
     emit setTotalProgress (0);
     emit setCurrentProgress (0);
     emit setCurrentAction (tr ("Preparing..."));
 
     VFS::Device *ipoddev = new LocalRawDevice (_dev);
-    VFS::Device *fwpart = setup_partition (_dev, 1);
+    VFS::Device *fwpart = setup_partition (ipoddev, 1);
     VFS::File *backup = new LocalFile (_path.toAscii().data(), OPEN_WRITE | OPEN_CREATE);
     if (backup->error())
         FATAL_T (tr ("Error creating the backup file %1: %2 (%3)").arg (_path).arg (strerror (backup->error())).arg (backup->error()));
@@ -108,7 +108,6 @@ void BackupAction::run()
         FATAL ("Error reading the partition table from the iPod.");
     if (backup->write (buf, 512) != 512)
         FATAL ("Error writing the partition table to the backup file.");
-    delete ipoddev;
     
     u32 fwplen = fwpart->lseek (0, SEEK_END);
     u32 fwpread = 0;
@@ -137,6 +136,7 @@ void BackupAction::run()
     emit setCurrentProgress (fwplen);
 
     delete fwpart;
+    delete ipoddev;
     backup->close();
     delete backup;
 }
@@ -145,7 +145,7 @@ void RestoreBackupAction::run()
 {
     bool needsMusicReformat = false;
 
-    emit setTaskDescription (QString (tr ("Restoring backup from %1...")).arg (_path));
+    emit setTaskDescription (QString (tr ("Restoring backup from %1.")).arg (_path));
     emit setTotalProgress (0);
     emit setCurrentProgress (0);
     emit setCurrentAction (tr ("Preparing..."));
@@ -172,9 +172,8 @@ void RestoreBackupAction::run()
     ipoddev->lseek (0, SEEK_SET);
     if (ipoddev->write (buf + 512, 512) != 512)
         FATAL ("Error writing the partition table to the iPod.");
-    delete ipoddev;
 
-    VFS::Device *fwpart = setup_partition (_dev, 1);
+    VFS::Device *fwpart = setup_partition (ipoddev, 1);
     
     u32 bkplen = backup->lseek (0, SEEK_END);
     u32 bkpread = 512;
@@ -203,7 +202,7 @@ void RestoreBackupAction::run()
         emit setCurrentAction (tr ("Formatting the music partition."));
         emit setTotalProgress (0);
 
-        VFS::Device *musicpart = setup_partition (_dev, 2);
+        VFS::Device *musicpart = setup_partition (ipoddev, 2);
         int prog = 0;
         RunnerThread <int(*)(VFS::Device*), VFS::Device*> *rthr =
             new RunnerThread <int(*)(VFS::Device*), VFS::Device*> (CreateFATFilesystem, musicpart);
@@ -211,15 +210,34 @@ void RestoreBackupAction::run()
         while (rthr->isRunning()) {
             emit setCurrentProgress (prog++);
             usleep (300000);
-        }        
+        }
+        delete musicpart;
     }
 
     emit setCurrentAction (tr ("Restore complete."));
     emit setCurrentProgress (bkplen);
 
     delete fwpart;
+    delete ipoddev;
     backup->close();
     delete backup;
+}
+
+void CacheFlushAction::run() 
+{
+    int ncblk = _cdev->dirtySectors();
+    int prog = 0;
+    if (!ncblk) return;
+    emit setTaskDescription ("Flushing cache.");
+    emit setTotalProgress (ncblk);
+    emit setCurrentProgress (0);
+    for (int i = 0; i < _cdev->totalSectors(); i++) {
+        if (_cdev->isDirty (i)) {
+            _cdev->flushIndex (i);
+            prog++;
+            emit setCurrentProgress (prog);
+        }
+    }
 }
 
 DoActionsPage::DoActionsPage (Installer *wiz, InstallerPage *next) 
@@ -290,6 +308,13 @@ DoActionsPage::DoActionsPage (Installer *wiz, InstallerPage *next)
         done = true;
         emit completeStateChanged();
     } else {
+        if (BlockCache::enabled()) {
+            BlockCache *cdev;
+            if ((cdev = dynamic_cast<BlockCache *>(iPodDevice)) != 0)
+                PendingActions->append (new CacheFlushAction (cdev));
+            else
+                fprintf (stderr, "Warning: iPodDevice %p does not seem to be a BlockCache\n", iPodDevice);
+        }
         currentAction = PendingActions->takeFirst();
         connect (currentAction, SIGNAL(finished()), this, SLOT(nextAction()));
         currentAction->start (this);

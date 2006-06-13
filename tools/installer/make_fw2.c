@@ -575,15 +575,15 @@ fw_rename_image (const char *oldname, const char *newname)
         } else if (isdigit (oldname[4]) && !isdigit (newname[4])) {
             int oldsub = oldname[4] - '0';
             fw_image_info *img = inf->subs[oldsub]; // take it out of the subs list
+            if (!img) {
+                fprintf (stderr, "Error: image %s does not exist\n", oldname);
+                ERROR_EXIT (11);
+            }
             inf->subs[oldsub] = 0;
             fw_image_info *next = inf->next;
             inf->next = img; // and put it in the top one
             img->next = next;
             inf = img;
-            if (!inf) {
-                fprintf (stderr, "Error: image %s does not exist\n", oldname);
-                ERROR_EXIT (11);
-            }
         } else if (!isdigit (oldname[4]) && isdigit (newname[4])) {
             fw_image_info *cur = images;
             while (cur->next && (strncmp (cur->next->header.id, oldname, 4) != 0))

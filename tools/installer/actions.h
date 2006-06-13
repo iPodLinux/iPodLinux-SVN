@@ -8,6 +8,7 @@
 #include "installer.h"
 #include "packages.h"
 #include "libtar/libtar.h"
+#include "rawpod/device.h"
 #include <QThread>
 #include <QList>
 #include <QHttp>
@@ -261,6 +262,19 @@ protected:
     void run_sub();
 
     char *fw_file;
+};
+
+class CacheFlushAction : public Action
+{
+public:
+    CacheFlushAction (BlockCache *cdev)
+        : _cdev (cdev)
+    {}
+    
+protected:
+    virtual void run();
+
+    BlockCache *_cdev;
 };
 
 class FSSetupAction : public Action 
