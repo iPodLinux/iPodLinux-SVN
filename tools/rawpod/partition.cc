@@ -161,7 +161,7 @@ int devWriteMBR (int devnr, unsigned char *buf)
 u64 devGetSize (int devnr) 
 {
     if (LocalRawDevice::overridden()) {
-        return LocalRawDevice(devnr).size() << 9;
+        return LocalRawDevice(devnr).size();
     }
 
 #ifdef WIN32
