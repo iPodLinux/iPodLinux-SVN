@@ -50,8 +50,8 @@ const int ti_dial_flchars[][32] = {
 	{' ',192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,216,217,218,219,220,221,222,376},
 	{160,338,339,223,402,169,174,8482,170,186,185,178,179,188,189,190,167,182,181,166,164,175,172,173,183,8364,8211,8212,8216,8217,8220,8221}
 };
-const char ti_dial_eta_lc[] = "etaoinshrdlucmfwypvbgkqjxz"; //26
-const char ti_dial_eta_uc[] = "ETAOINSHRDLUCMFWYPVBGKQJXZ"; //26
+const char ti_dial_eta_lc[] = "abcdefghijklmnopqrstuvwxyz"; //26
+const char ti_dial_eta_uc[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; //26
 const char ti_dial_number[] = "0123456789"; //10
 const char ti_dial_stuff1[] = "=+?!@#$%^&*()[]{}_-<>~`"; //23
 const char ti_dial_stuff2[] = "\"\'\\/|:;.,M"; //10
