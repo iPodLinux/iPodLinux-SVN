@@ -26,7 +26,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#ifdef Q_OS_DARWIN
+#ifdef __APPLE__
   #include <sys/mount.h>  // for unmount()
 #endif
 
@@ -140,34 +140,7 @@ PodLocationPage::PodLocationPage (Installer *wizard)
 
     if (podloc < 0) { status = CantFindIPod; goto err; }
 
-    iPodDevice = new LocalRawDevice (podloc);
-    if (iPodDevice->read (mbr, 512) != 512) { status = InvalidPartitionTable; goto err; }
-
-    ptbl = PartitionTable::create (podloc);
-    if (!ptbl || !*ptbl) { status = InvalidPartitionTable; goto err; }
-
-    ipodtype = ptbl->figureOutType (mbr);
-    
-    switch (ipodtype) {
-    case PART_WINPOD:
-        status = WinPod;
-        break;
-    case PART_MACPOD:
-        status = MacPod;
-        goto err;
-    case PART_SLINPOD:
-        status = SLinPod;
-        break;
-    case PART_BLINPOD:
-        status = BLinPod;
-        break;
-    default:
-    case PART_NOT_IPOD:
-        status = NotAnIPod;
-        goto err;
-    }
-
-#ifdef Q_OS_DARWIN
+#ifdef __APPLE__
     // we need to unmount the iPod before we can access it on block level
     // we cannot use the unmount() function on the mac (would return "disk is busy")
     char path[32];
@@ -195,6 +168,33 @@ PodLocationPage::PodLocationPage (Installer *wizard)
     }
     sleep (1); // pause for a second, otherwise the next device access in write mode might fail sometimes
 #endif
+
+    iPodDevice = new LocalRawDevice (podloc);
+    if (iPodDevice->read (mbr, 512) != 512) { status = InvalidPartitionTable; goto err; }
+
+    ptbl = PartitionTable::create (podloc, true);
+    if (!ptbl || !*ptbl) { status = InvalidPartitionTable; goto err; }
+
+    ipodtype = ptbl->figureOutType (mbr);
+    
+    switch (ipodtype) {
+    case PART_WINPOD:
+        status = WinPod;
+        break;
+    case PART_MACPOD:
+        status = MacPod;
+        goto err;
+    case PART_SLINPOD:
+        status = SLinPod;
+        break;
+    case PART_BLINPOD:
+        status = BLinPod;
+        break;
+    default:
+    case PART_NOT_IPOD:
+        status = NotAnIPod;
+        goto err;
+    }
 
     part = setup_partition (iPodDevice, 2);
     if (!part) { status = CantFindIPod; goto err; }
