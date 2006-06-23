@@ -82,14 +82,14 @@ protected:
 class BackupAction : public Action
 {
 public:
-    BackupAction (int device, QString bkppath)
+    BackupAction (VFS::Device *device, QString bkppath)
         : _dev (device), _path (bkppath)
     {}
 
 protected:
     virtual void run();
     
-    int _dev;
+    VFS::Device *_dev;
     QString _path;
 };
 
@@ -125,20 +125,20 @@ class PartitionAction : public Action
     Q_OBJECT
 
 public:
-    PartitionAction (int device, int oldpart, int newpart, int newtype, int newsize)
+    PartitionAction (VFS::Device *device, int oldpart, int newpart, Partition::Type newtype, int newsize)
         : _dev (device), _oldnr (oldpart), _newnr (newpart),
           _newtype (newtype), _newsize (newsize)
     {}
 
 signals:
-    void doDeviceSetup (Partition *t);
+    void doDeviceSetup (PartitionTable *t);
 
 protected:
     virtual void run();
     
-    int _dev;
+    VFS::Device *_dev;
     int _oldnr, _newnr;
-    int _newtype;
+    Partition::Type _newtype;
     int _newsize;
 };
 

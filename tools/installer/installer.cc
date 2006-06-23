@@ -21,9 +21,14 @@
 #include <QRadioButton>
 #include <QSpinBox>
 #include <QTimer>
+#include <QAbstractEventDispatcher>
 
 #include <string.h>
 #include <ctype.h>
+
+#ifdef Q_OS_DARWIN
+  #include <sys/mount.h>  // for unmount()
+#endif
 
 InstallerMode Mode;
 LoaderType iPodLoader = UnknownLoader;
@@ -32,7 +37,7 @@ QList<Action*> *PendingActions;
 
 int iPodLocation;
 int iPodVersion;
-PartitionTable iPodPartitionTable;
+PartitionTable *iPodPartitionTable;
 int iPodPartitionToShrink;
 int iPodLinuxPartitionSize;
 VFS::Device *iPodDevice;
@@ -109,12 +114,12 @@ PodLocationPage::PodLocationPage (Installer *wizard)
     : InstallerPage (wizard), wasError (0)
 {
     enum { CantFindIPod, InvalidPartitionTable, FSErr, BadSysInfo,
-           NotAnIPod, MacPod, WinPod, SLinPod, BLinPod, UnsupPod } status;
+           NotAnIPod, MacPod, WinPod, SLinPod, BLinPod, UnsupPod, UnmountFailed } status;
     int hw_ver = 0;
     int podloc = find_iPod();
     int ipodtype = PART_NOT_IPOD;
     unsigned char mbr[512];
-    PartitionTable ptbl;
+    PartitionTable *ptbl;
     char *p = 0;
     int rev = 0;
     VFS::Device *part = 0;
@@ -134,11 +139,14 @@ PodLocationPage::PodLocationPage (Installer *wizard)
     char sysinfo_contents[4096];
 
     if (podloc < 0) { status = CantFindIPod; goto err; }
-    if (devReadMBR (podloc, mbr) != 0) { status = InvalidPartitionTable; goto err; }
-    ptbl = partCopyFromMBR (mbr);
-    if (!ptbl) { status = InvalidPartitionTable; goto err; }
 
-    ipodtype = partFigureOutType (ptbl, mbr);
+    iPodDevice = new LocalRawDevice (podloc);
+    if (iPodDevice->read (mbr, 512) != 512) { status = InvalidPartitionTable; goto err; }
+
+    ptbl = PartitionTable::create (podloc);
+    if (!ptbl || !*ptbl) { status = InvalidPartitionTable; goto err; }
+
+    ipodtype = ptbl->figureOutType (mbr);
     
     switch (ipodtype) {
     case PART_WINPOD:
@@ -159,7 +167,36 @@ PodLocationPage::PodLocationPage (Installer *wizard)
         goto err;
     }
 
-    part = setup_partition (podloc, 2);
+#ifdef Q_OS_DARWIN
+    // we need to unmount the iPod before we can access it on block level
+    // we cannot use the unmount() function on the mac (would return "disk is busy")
+    char path[32];
+    int pid, pstatus;
+    strcpy (path, "/dev/diskXs2"); // !TT should fill in the correct partition number here
+    path[strlen(path)-3] = podloc + '0';
+
+    if (!fork()) execlp ("diskutil", "diskutil", "unmount", path);
+    // otherwise, in parent
+
+    do {
+        // Wait for the cmd to finish - it may take a while
+        //
+        // At this point event dispatching needs to happen - the diskutil call
+        // wants to talk to apps on a high level thru the event dispatcher.
+        // Therefore, processEvents() is called. Note that this also allows
+        // the user to press the Cancel button, which is good.
+        QAbstractEventDispatcher::instance()->processEvents(QEventLoop::AllEvents);
+        pid = wait4 (0, &pstatus, WNOHANG, NULL);
+    } while (pid != -1);
+
+    if (pstatus) {
+        status = UnmountFailed;
+        goto err;
+    }
+    sleep (1); // pause for a second, otherwise the next device access in write mode might fail sometimes
+#endif
+
+    part = setup_partition (iPodDevice, 2);
     if (!part) { status = CantFindIPod; goto err; }
     
     fat32 = new FATFS (part);
@@ -297,6 +334,11 @@ PodLocationPage::PodLocationPage (Installer *wizard)
             err = tr("<p><b>Unsupported iPod type.</b> You appear to have a very new iPod that "
                      "we don't know about and thus can't support. Please be patient, and "
                      "don't bug the developers about this. Support will be developed eventually.</p>");
+            restoreOK = true;
+            break;
+        case UnmountFailed:
+            err = tr("<p><b>Unmount failed.</b> The iPod could not be unmounted. "
+                     "Make sure you have no files or folders open on the iPod, then try again.</p>");
             restoreOK = true;
             break;
         default:
@@ -439,7 +481,6 @@ PodLocationPage::PodLocationPage (Installer *wizard)
     }
 
     iPodLocation = podloc;
-    iPodDevice = new LocalRawDevice (podloc);
     iPodVersion = hw_ver;
     iPodPartitionTable = ptbl;
 }
@@ -494,23 +535,20 @@ void PodLocationPage::resetPage()
     emit completeStateChanged();
 }
 
-void Installer::setupDevices (PartitionTable ptbl)
+void Installer::setupDevices (PartitionTable *ptbl)
 {
     if (iPodFirmwarePartitionDevice) delete iPodFirmwarePartitionDevice;
     if (iPodMusicPartitionDevice) delete iPodMusicPartitionDevice;
     if (iPodLinuxPartitionDevice) delete iPodLinuxPartitionDevice;
     
-    if (iPodPartitionTable != ptbl) iPodPartitionTable = partDupTable (ptbl);
+    // Yes, this is a memory leak. Oh well. I don't really care.
+    if (iPodPartitionTable != ptbl) iPodPartitionTable = ptbl;
 
-    iPodFirmwarePartitionDevice = new PartitionDevice (iPodDevice,
-                                                       iPodPartitionTable[0].offset,
-                                                       iPodPartitionTable[0].length);
-    iPodMusicPartitionDevice = new PartitionDevice (iPodDevice,
-                                                    iPodPartitionTable[1].offset,
-                                                    iPodPartitionTable[1].length);
-    iPodLinuxPartitionDevice = new PartitionDevice (iPodDevice,
-                                                    iPodPartitionTable[2].offset,
-                                                    iPodPartitionTable[2].length);
+    PartitionTable& t = *iPodPartitionTable;
+
+    iPodFirmwarePartitionDevice = new PartitionDevice (iPodDevice, t[0]->offset(), t[0]->length());
+    iPodMusicPartitionDevice = new PartitionDevice (iPodDevice, t[1]->offset(), t[1]->length());
+    iPodLinuxPartitionDevice = new PartitionDevice (iPodDevice, t[2]->offset(), t[2]->length());
 }
 
 void Installer::setupFilesystems() 
@@ -562,15 +600,15 @@ WizardPage *PodLocationPage::nextPage()
         if (iPodVersion >= 0xA) {
             iPodPartitionToShrink = 2;
             iPodLinuxPartitionSize = 128 * 2048; /* 128M */
-            if (iPodPartitionTable[1].length > 8192 * 2048)
+            if (iPodPartitionTable->length(1) > 8192 * 2048)
                 iPodLinuxPartitionSize = 256 * 2048; /* 256M if data ptn is >=8GB */
         } else {
             iPodPartitionToShrink = 1;
-            iPodLinuxPartitionSize = iPodPartitionTable[0].length / 2;
+            iPodLinuxPartitionSize = iPodPartitionTable->length(0) / 2;
             if (iPodLinuxPartitionSize < 24 * 2048)
                 iPodLinuxPartitionSize = 24 * 2048; /* make it at least 24M */
-            if ((iPodPartitionTable[0].length - iPodLinuxPartitionSize) < 8 * 2048)
-                iPodLinuxPartitionSize = iPodPartitionTable[0].length - 8 * 2048; /* keep at least 8MB for the firmware */
+            if ((iPodPartitionTable->length(0) - iPodLinuxPartitionSize) < 8 * 2048)
+                iPodLinuxPartitionSize = iPodPartitionTable->length(0) - 8 * 2048; /* keep at least 8MB for the firmware */
         }
     }
 
@@ -583,8 +621,8 @@ WizardPage *PodLocationPage::nextPage()
         return new PartitioningPage (wizard);
     case Update:
     case ChangeLoader:
-        ((Installer *)wizard)->setupDevices (iPodPartitionTable);
-        ((Installer *)wizard)->setupFilesystems();
+        installer->setupDevices (iPodPartitionTable);
+        installer->setupFilesystems();
 
         fh = iPodLinuxPartitionFS->open ("/etc/loadertype", O_RDONLY);
         if (fh && !fh->error()) {
@@ -679,13 +717,13 @@ void PartitioningPage::setStuff (int newVal)
     (void)newVal;
     
     if (iPodPartitionToShrink == 2) {
-        size->setRange (24, (iPodPartitionTable[1].length / 2048) / 2);
+        size->setRange (24, (iPodPartitionTable->length(1) / 2048) / 2);
     } else {
-        size->setRange (16, (iPodPartitionTable[0].length / 2048) - 8);
+        size->setRange (16, (iPodPartitionTable->length(1) / 2048) - 8);
     }
     spaceLeft->setText (QString (tr ("This size configuration gives <b>%1MB</b> of space "
                                      "left for music and data."))
-                        .arg ((iPodPartitionTable[iPodPartitionToShrink - 1].length / 2048) -
+                        .arg ((iPodPartitionTable->length(iPodPartitionToShrink - 1) / 2048) -
                               size->value()));
     if (iPodPartitionToShrink != 2) spaceLeft->hide();
     else spaceLeft->show();
@@ -696,7 +734,7 @@ void PartitioningPage::setBigStuff (bool chk)
     if (chk) {
         iPodPartitionToShrink = 2;
         iPodLinuxPartitionSize = 128 * 2048; /* 128M */
-        if (iPodPartitionTable[1].length > 8192 * 2048)
+        if (iPodPartitionTable->length(1) > 8192 * 2048)
             iPodLinuxPartitionSize = 256 * 2048; /* 256M if data ptn is >=8GB */
         setStuff(0);
         size->setValue (iPodLinuxPartitionSize / 2048);
@@ -707,11 +745,11 @@ void PartitioningPage::setSmallStuff (bool chk)
 {
     if (chk) {
         iPodPartitionToShrink = 1;
-        iPodLinuxPartitionSize = iPodPartitionTable[0].length / 2;
+        iPodLinuxPartitionSize = iPodPartitionTable->length(0) / 2;
         if (iPodLinuxPartitionSize < 24 * 2048)
             iPodLinuxPartitionSize = 24 * 2048; /* make it at least 24M */
-        if ((iPodPartitionTable[0].length - iPodLinuxPartitionSize) < 8 * 2048)
-            iPodLinuxPartitionSize = iPodPartitionTable[0].length - 8 * 2048; /* keep at least 8MB for the firmware */
+        if ((iPodPartitionTable->length(0) - iPodLinuxPartitionSize) < 8 * 2048)
+            iPodLinuxPartitionSize = iPodPartitionTable->length(0) - 8 * 2048; /* keep at least 8MB for the firmware */
         setStuff(0);
         size->setValue (iPodLinuxPartitionSize / 2048);
     }
@@ -1015,7 +1053,7 @@ WizardPage *InstallPage::nextPage()
     if (makeBackup->isChecked()) {
         iPodDoBackup = true;
         iPodBackupLocation = backupPath->text();
-        PendingActions->append (new BackupAction (iPodLocation, iPodBackupLocation));
+        PendingActions->append (new BackupAction (iPodDevice, iPodBackupLocation));
     } else {
         iPodDoBackup = false;
         iPodBackupLocation = QString ("");
@@ -1029,8 +1067,8 @@ WizardPage *InstallPage::nextPage()
         iPodLoader = Loader2;
     }
 
-    PendingActions->append (new PartitionAction (iPodLocation, iPodPartitionToShrink,
-                                                 3, 0x83, iPodLinuxPartitionSize));
+    PendingActions->append (new PartitionAction (iPodDevice, iPodPartitionToShrink,
+                                                 3, Partition::Ext2, iPodLinuxPartitionSize));
     if (iPodPartitionToShrink == 2) {
         PendingActions->append (new FormatAction (2, CreateFATFilesystem, "Formatting the music partition."));
     }

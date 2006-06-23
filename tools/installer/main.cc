@@ -137,7 +137,6 @@ int main (int argc, char *argv[])
 #endif
 
     qRegisterMetaType <QHttpResponseHeader> ("QHttpResponseHeader");
-    qRegisterMetaType <PartitionTable> ("PartitionTable");
 
     Installer *inst = new Installer;
     inst->show();
