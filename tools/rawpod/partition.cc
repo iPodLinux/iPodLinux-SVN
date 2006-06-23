@@ -4,7 +4,7 @@
 
 #ifndef WIN32
 #ifndef linux
-#ifndef __darwin__
+#ifndef __APPLE__
 #error Unknown platform
 #endif
 #endif
@@ -24,7 +24,7 @@
 #define BLKGETSIZE _IO(0x12,96) /* get size of device in 512-byte blocks (long *arg) */
 #endif
 
-#ifdef __darwin__
+#ifdef __APPLE__
     #include <sys/types.h>
     #include <sys/disk.h>
     #include <sys/stat.h>
@@ -208,7 +208,7 @@ int devWriteMBR (int devnr, unsigned char *buf)
     CloseHandle (fh);
 #else
     int fd;
-#ifdef __darwin__
+#ifdef __APPLE__
     char dev[] = "/dev/rdiskX";
     dev[strlen(dev)-1] = devnr + '0';
 #else
@@ -223,7 +223,7 @@ int devWriteMBR (int devnr, unsigned char *buf)
     if (write (fd, buf, 512) < 0)
         return errno;
 
-#ifndef __darwin__
+#ifndef __APPLE__
     ioctl (fd, BLKRRPART);
 #endif
 
@@ -278,7 +278,7 @@ int find_iPod()
     int disknr;
     unsigned char mbr[512];
     for (disknr = 0; disknr < 8; disknr++) {
-        PartitionTable *ptbl = PartitionTable::create (disknr);
+        PartitionTable *ptbl = PartitionTable::create (disknr, false);
         int type, err;
 
         if ((err = devReadMBR (disknr, mbr)) != 0) {

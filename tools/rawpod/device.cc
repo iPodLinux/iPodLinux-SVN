@@ -8,7 +8,7 @@
 // faster but writes will get about 50 times slower.
 /* #define RAW_DEVICE_ACCESS */
 
-#ifdef __darwin__
+#ifdef __APPLE__
 #include <sys/disk.h>
 #endif
 
@@ -354,7 +354,7 @@ LocalRawDevice::LocalRawDevice (int n, bool writable)
 #ifdef WIN32
     char drive[] = "\\\\.\\PhysicalDriveN";
     drive[17] = n + '0';
-#elif defined (Q_OS_DARWIN)
+#elif defined (__APPLE__)
     char drive[] = "/dev/rdiskX";
     drive[10] = n + '0';
 #else
@@ -370,7 +370,8 @@ LocalRawDevice::LocalRawDevice (int n, bool writable)
     else {
         _valid = 1;
 
-#ifdef __darwin__
+#ifdef __APPLE__
+        u64 sectors = 0;
         _f->ioctl (DKIOCGETBLOCKCOUNT, &sectors, sizeof(sectors));
         setSize (sectors);
 #else

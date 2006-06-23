@@ -154,7 +154,7 @@ u16 swab16 (u16 x)
 #define L2C32(x) x = ntohl(swab32(x))
 #define L2C16(x) x = ntohs(swab16(x))
 
-#elif defined (__darwin__)
+#elif defined (__APPLE__)
 
 #define C2L32(x) x = OSSwapHostToLittleInt32(x)
 #define C2L16(x) x = OSSwapHostToLittleInt16(x)

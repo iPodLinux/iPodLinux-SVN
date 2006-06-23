@@ -83,7 +83,7 @@ typedef   signed int s32;
 typedef   signed long slong;
 typedef   signed long long s64;
 
-#ifdef __darwin__
+#ifdef __APPLE__
 typedef off_t loff_t;
 #endif
 
