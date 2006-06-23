@@ -4,7 +4,9 @@
 
 #ifndef WIN32
 #ifndef linux
+#ifndef __darwin__
 #error Unknown platform
+#endif
 #endif
 #endif
 
@@ -22,90 +24,155 @@
 #define BLKGETSIZE _IO(0x12,96) /* get size of device in 512-byte blocks (long *arg) */
 #endif
 
-PartitionTable partCopyFromMBR (unsigned char *mbr) 
+#ifdef __darwin__
+    #include <sys/types.h>
+    #include <sys/disk.h>
+    #include <sys/stat.h>
+#endif
+
+void DOSPartition::setType (Partition::Type t) 
 {
-    PartitionTable ret = new Partition[4];
-
-    if (mbr[510] != 0x55 || mbr[511] != 0xaa)
-        return 0;
-
-    memcpy (ret, mbr + 446, 64);
-    return ret;
+    switch (t) {
+    case Firmware:
+        _desc->type = 0;
+        break;
+    case FAT32:
+        _desc->type = 0xB;
+        break;
+    case Ext2:
+        _desc->type = 0x83;
+        break;
+    case HFS:
+    case Other:
+        break;
+    }
 }
 
-int partFigureOutType (PartitionTable t, unsigned char *mbr) 
+void DOSPartitionTable::readFrom (VFS::Device *dev) 
+{
+    unsigned char buf[512];
+
+    if (dev->lseek (0, SEEK_SET) < 0) {
+        valid = false;
+        return;
+    }
+
+    if (dev->read (buf, 512) != 512) {
+        valid = false;
+        return;
+    }
+
+    if (buf[510] != 0x55 || buf[511] != 0xAA) {
+        valid = false;
+        return;
+    }
+
+    memcpy (_pdata, buf + 446, 64);
+    
+    for (int i = 0; i < 4; i++) {
+        parts[i] = new DOSPartition (_pdata + i);
+    }
+
+    valid = true;
+}
+
+int DOSPartitionTable::writeTo (VFS::Device *dev) 
+{
+    unsigned char buf[512];
+    int err;
+
+    if ((err = dev->lseek (0, SEEK_SET)) < 0)
+        return -err;
+    if ((err = dev->read (buf, 512)) != 512)
+        return -err;
+
+    memcpy (buf + 446, _pdata, 64);
+
+    if ((err = dev->lseek (0, SEEK_SET)) < 0)
+        return -err;
+    if ((err = dev->write (buf, 512)) != 512)
+        return -err;
+
+#ifdef linux
+    LocalRawDevice *lrdev;
+    if ((lrdev = dynamic_cast<LocalRawDevice*>(dev)) != 0) {
+        ioctl (lrdev->fileno(), BLKRRPART);
+    }
+#endif
+
+    return 0;
+}
+
+int DOSPartitionTable::figureOutType (unsigned char *mbr) 
 {
     if (!memcmp (mbr + 0x1ae, "Apple iPod", 10) &&
-        t[0].type == 0 && t[1].type == 0xb &&
-        t[0].offset < 1024 && t[0].length < (200 << 11)) {
+        parts[0]->type() == Partition::Firmware && parts[1]->type() == Partition::FAT32 &&
+        parts[0]->offset() < 1024 && parts[0]->length() < (200 << 11)) {
         // WinPod or LinPod
-        if (t[2].type == 0x83) {
+        if (parts[2]->type() == Partition::Ext2) {
             // LinPod
-            if (t[2].offset > t[0].offset && t[2].offset < t[1].offset &&
-                t[2].offset < (64 << 11))
+            if (parts[2]->offset() > parts[0]->offset() && parts[2]->offset() < parts[1]->offset() &&
+                parts[2]->offset() < (64 << 11))
                 return PART_SLINPOD;
             return PART_BLINPOD;
         }
         return PART_WINPOD;
     }
 
-    // XXX can't detect MacPods yet.
-    
     return PART_NOT_IPOD;
 }
 
-int partShrinkAndAdd (PartitionTable t, int oldnr, int newnr, int newtype, int newsize) 
+int PartitionTable::shrinkAndAdd (int oldnr, int newnr, Partition::Type newtype, int newsize) 
 {
     oldnr--; newnr--;
     
     if (oldnr >= 4 || newnr >= 4)
         return EINVAL;
-    if (t[oldnr].length < (unsigned int)newsize)
+    if (parts[oldnr]->length() < (unsigned int)newsize)
         return ENOSPC;
-    if (t[newnr].type != 0)
+    if (parts[newnr]->type() != Partition::Firmware) /* == Empty */
         return EEXIST;
 
     // Round it to the nearest cylinder.
     unsigned int cylsize = 255 /* heads */ * 63 /* sectors/track */;
     int roundDownFuzz = newsize % cylsize, roundUpFuzz = cylsize - roundDownFuzz;
     if (newsize < cylsize) roundDownFuzz = -1;
-    if ((newsize + cylsize) >= t[oldnr].length) roundUpFuzz = -1;
+    if ((newsize + cylsize) >= parts[oldnr]->length()) roundUpFuzz = -1;
     if (roundDownFuzz != -1 || roundUpFuzz != -1) {
         if (roundDownFuzz > roundUpFuzz && roundUpFuzz != -1)
             newsize = newsize + cylsize - 1;
         newsize = newsize - (newsize % cylsize);
     }
     
-    t[oldnr].length -= newsize;
-    t[newnr].active = 0;
-    t[newnr].type = newtype;
-    t[newnr].offset = t[oldnr].offset + t[oldnr].length;
-    t[newnr].length = newsize;
+    parts[oldnr]->setLength (parts[oldnr]->length() - newsize);
+    parts[newnr]->setActive (false);
+    parts[newnr]->setType (newtype);
+    parts[newnr]->setOffset (parts[oldnr]->offset() + parts[oldnr]->length());
+    parts[newnr]->setLength (newsize);
 
     return 0;
 }
 
-void partCopyToMBR (PartitionTable t, unsigned char *mbr) 
+PartitionTable *PartitionTable::create (VFS::Device *dev) 
 {
-    memcpy (mbr + 446, t, 64);
-}
+    unsigned char mbr[512];
 
-PartitionTable partDupTable (PartitionTable t) 
-{
-    PartitionTable ret = new Partition[4];
-    memcpy (ret, t, sizeof(Partition)*4);
-    return ret;
+    if (dev->lseek (0, SEEK_SET) < 0)
+        return 0;
+    
+    if (dev->read (mbr, 512) != 512)
+        return 0;
+    
+    if (mbr[510] == 0x55 && mbr[511] == 0xAA)
+        return new DOSPartitionTable (dev);
+    
+    // XXX add MacPod detection stuff here
+    return 0;
 }
-
-void partFreeTable (PartitionTable t) 
-{
-    delete[] t;
-}
-
 
 int devReadMBR (int devnr, unsigned char *buf)
 {
-    LocalRawDevice dev (devnr);
+    LocalRawDevice dev (devnr, false);
     if (dev.read (buf, 512) != 512)
         return dev.error();
     return 0;
@@ -120,6 +187,8 @@ int devWriteMBR (int devnr, unsigned char *buf)
         return 0;
     }
 
+    //!TT why not use the same code here as above when overridden?? (ok, linux also appears to need the ioctl call, but that could be added here still)
+    
 #ifdef WIN32
     HANDLE fh;
     DWORD len;
@@ -139,9 +208,14 @@ int devWriteMBR (int devnr, unsigned char *buf)
     CloseHandle (fh);
 #else
     int fd;
+#ifdef __darwin__
+    char dev[] = "/dev/rdiskX";
+    dev[strlen(dev)-1] = devnr + '0';
+#else
     char dev[] = "/dev/sdX";
-
     dev[7] = devnr + 'a';
+#endif
+
     fd = open (dev, O_RDWR);
     if (fd < 0)
         return errno;
@@ -149,8 +223,9 @@ int devWriteMBR (int devnr, unsigned char *buf)
     if (write (fd, buf, 512) < 0)
         return errno;
 
-    if (ioctl (fd, BLKRRPART) < 0)
-        return errno;
+#ifndef __darwin__
+    ioctl (fd, BLKRRPART);
+#endif
 
     close (fd);
 #endif
@@ -160,49 +235,10 @@ int devWriteMBR (int devnr, unsigned char *buf)
 
 u64 devGetSize (int devnr) 
 {
-    if (LocalRawDevice::overridden()) {
-        return LocalRawDevice(devnr).size();
-    }
-
-#ifdef WIN32
-    DISK_GEOMETRY geo;
-    DWORD junk;
-    HANDLE fh;
-    DWORD len;
-    TCHAR drive[] = TEXT("\\\\.\\PhysicalDriveN");
-    
-    drive[17] = devnr + '0';
-    fh = CreateFile (drive, GENERIC_READ | GENERIC_WRITE,
-                     FILE_SHARE_READ | FILE_SHARE_WRITE,
-                     NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
-                     NULL);
-    if (fh == INVALID_HANDLE_VALUE)
-        return GetLastError();
-    
-    DeviceIoControl (fh, IOCTL_DISK_GET_DRIVE_GEOMETRY, NULL, 0, &geo, sizeof(geo), &junk, NULL);
-
-    CloseHandle (fh);
-    u64 size = (geo.Cylinders.QuadPart *
-                (u64)geo.TracksPerCylinder *
-                (u64)geo.SectorsPerTrack *
-                (u64)geo.BytesPerSector);
-    return size >> 9;
-#else
-    int fd;
-    unsigned long sectors;
-    char dev[] = "/dev/sdX";
-    
-    dev[7] = devnr + 'a';
-    fd = open (dev, O_RDWR);
-    if (fd < 0)
-        return -errno;
-
-    if (ioctl (fd, BLKGETSIZE, &sectors) < 0)
-        return -errno;
-
-    close (fd);
-    return sectors;
-#endif
+  // josh, here I replaced the individual code with just this call,
+  // which seems to work just fine - or do i miss something here?
+    u64 l = LocalRawDevice(devnr, false).size();
+    return l;
 }
 
 #ifdef WIN32
@@ -242,28 +278,33 @@ int find_iPod()
     int disknr;
     unsigned char mbr[512];
     for (disknr = 0; disknr < 8; disknr++) {
-        PartitionTable ptbl;
-        int type;
-	int err;
+        PartitionTable *ptbl = PartitionTable::create (disknr);
+        int type, err;
 
         if ((err = devReadMBR (disknr, mbr)) != 0) {
-	    printf ("Disk %d: cannot read MBR\n", disknr);
+            printf ("Disk %d: cannot read MBR (%d)\n", disknr, err);
 #ifdef WIN32
 #ifdef DEBUG
-	    ERR(err);
+            ERR(err);
 #endif
 #endif
-            continue;
-        }
-        if ((ptbl = partCopyFromMBR (mbr)) == 0) {
-	    printf ("Disk %d: cannot copy ptbl from MBR\n", disknr);
-            continue;
-        }
-        if ((type = partFigureOutType (ptbl, mbr)) == PART_NOT_IPOD) {
-	    printf ("Disk %d: not an iPod\n", disknr);
+            delete ptbl;
             continue;
         }
         
+        if (!ptbl || !*ptbl) {
+            printf ("Disk %d: cannot set up partition table\n", disknr);
+            delete ptbl;
+            continue;
+        }
+
+        if ((type = ptbl->figureOutType (mbr)) == PART_NOT_IPOD) {
+            printf ("Disk %d: not an iPod\n", disknr);
+            delete ptbl;
+            continue;
+        }
+        
+        delete ptbl;
         return disknr;
     }
     return -1;
@@ -273,28 +314,22 @@ VFS::Device *setup_partition (int disknr, int partnr)
 {
     partnr--;
 
-    LocalRawDevice *fulldev = new LocalRawDevice (disknr);
+    LocalRawDevice *fulldev = new LocalRawDevice (disknr, true);
     if (fulldev->error()) {
         printf ("drive %d: %s\n", disknr, strerror (fulldev->error()));
         return 0;
     }
 
-    unsigned char mbr[512];
-    if (devReadMBR (disknr, mbr) != 0) {
-        printf ("drive %d: could not read MBR\n", disknr);
-        return 0;
-    }
-
-    PartitionTable ptbl;
-    if ((ptbl = partCopyFromMBR (mbr)) == 0) {
+    PartitionTable *ptbl = PartitionTable::create (fulldev);
+    if (!ptbl || !*ptbl) {
         printf ("drive %d: invalid partition table\n", disknr);
         return 0;
     }
 
-    PartitionDevice *partdev = new PartitionDevice (fulldev, ptbl[partnr].offset,
-                                                    ptbl[partnr].length);
-    partFreeTable (ptbl);
-    
+    PartitionDevice *partdev = new PartitionDevice (fulldev, (*ptbl)[partnr]->offset(),
+                                                    (*ptbl)[partnr]->length());
+
+    delete ptbl;
     return partdev;
 }
 
@@ -302,18 +337,13 @@ VFS::Device *setup_partition (VFS::Device *fulldev, int partnr)
 {
     partnr--;
 
-    unsigned char mbr[512];
-    fulldev->lseek (0, SEEK_SET);
-    if (fulldev->read (mbr, 512) != 512)
-        return 0;
-    
-    PartitionTable ptbl;
-    if ((ptbl = partCopyFromMBR (mbr)) == 0)
+    PartitionTable *ptbl = PartitionTable::create (fulldev);
+    if (!ptbl || !*ptbl)
         return 0;
 
-    PartitionDevice *partdev = new PartitionDevice (fulldev, ptbl[partnr].offset,
-                                                    ptbl[partnr].length);
-    partFreeTable (ptbl);
-    
+    PartitionDevice *partdev = new PartitionDevice (fulldev, (*ptbl)[partnr]->offset(),
+                                                    (*ptbl)[partnr]->length());
+
+    delete ptbl;
     return partdev;
 }

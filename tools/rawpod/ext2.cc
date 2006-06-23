@@ -71,6 +71,7 @@ int Ext2FS::init()
         cerr << "EXT2-fs IO error reading group descriptors\n";
         return -EIO;
     }
+    gdesc_to_cpu ();
 
     _ok = 1;
     return 0;
@@ -152,11 +153,21 @@ u16 swab16 (u16 x)
 #define C2L16(x) x = swab16(htons(x))
 #define L2C32(x) x = ntohl(swab32(x))
 #define L2C16(x) x = ntohs(swab16(x))
+
+#elif defined (__darwin__)
+
+#define C2L32(x) x = OSSwapHostToLittleInt32(x)
+#define C2L16(x) x = OSSwapHostToLittleInt16(x)
+#define L2C32(x) x = OSSwapLittleToHostInt32(x)
+#define L2C16(x) x = OSSwapLittleToHostInt16(x)
+
 #else
+
 #define C2L32(x)
 #define C2L16(x)
 #define L2C32(x)
 #define L2C16(x)
+
 #endif
 
 void Ext2FS::sb_to_little() 
@@ -330,6 +341,7 @@ ext2_inode *Ext2FS::geti (u32 ino)
     
     _device->lseek ((_group_desc[group].bg_inode_table << _blocksize_bits) + (ino_off * _sb->s_inode_size), SEEK_SET);
     _device->read (ret, _sb->s_inode_size);
+    inode_to_cpu (ret);
     return ret;
 }
 
@@ -338,6 +350,7 @@ void Ext2FS::puti (u32 ino, ext2_inode *inode)
     int i = ino - 1; // inodes numbered from 1, stored from 0
     _device->lseek ((_group_desc[i / _ino_per_group].bg_inode_table << _blocksize_bits) +
                     (i % _ino_per_group) * _sb->s_inode_size, SEEK_SET);
+    inode_to_little (inode);
     _device->write (inode, _sb->s_inode_size);
     delete inode;
 }
@@ -1013,7 +1026,9 @@ int Ext2File::close()
         _inode->i_size = _size;
         _ext2->_device->lseek ((_ext2->_group_desc[i / _ext2->_ino_per_group].bg_inode_table << _blocksize_bits) +
                                (i % _ext2->_ino_per_group) * _ext2->_sb->s_inode_size, SEEK_SET);
+        _ext2->inode_to_little (_inode);
         _ext2->_device->write (_inode, _ext2->_sb->s_inode_size);
+        _ext2->inode_to_cpu (_inode);
     }
     _open = 0;
     return 0;
@@ -1409,19 +1424,16 @@ s32 Ext2File::balloc (int group)
     _ext2->_group_desc[group].bg_free_blocks_count--;
     _ext2->_sb->s_free_blocks_count--;
     
-    _ext2->gdesc_to_little();
-    _ext2->sb_to_little();
-    
     _ext2->_device->lseek (0x400, SEEK_SET);
+    _ext2->sb_to_little();
     _ext2->_device->write (_ext2->_sb, sizeof(ext2_super_block));
+    _ext2->sb_to_cpu();
+    _ext2->gdesc_to_little();
     _ext2->writeblocks (_ext2->_group_desc, 1 + _ext2->_sb->s_first_data_block, _ext2->_groups * sizeof(ext2_group_desc));
+    _ext2->gdesc_to_cpu();
     _ext2->writeblocks (blkmap, _ext2->_group_desc[group].bg_block_bitmap, _blocksize);
     
-    _ext2->sb_to_cpu();
-    _ext2->gdesc_to_cpu();
-    
     pblk = freeblk + (group * _ext2->_blk_per_group) + 1;
-    
 
     _inode->i_blocks += _blocksize / 512;
 
@@ -1609,24 +1621,25 @@ s32 Ext2FS::creat (const char *path, int type, int newmode)
     _group_desc[group].bg_free_inodes_count--;
     _sb->s_free_inodes_count--;
     
-    inode_to_little (inode);
-    gdesc_to_little();
-    sb_to_little();
-    
     // superblock...
     _device->lseek (0x400, SEEK_SET);
+    sb_to_little();
     _device->write (_sb, sizeof(ext2_super_block));
+    sb_to_cpu();
+
     // inode...
     _device->lseek ((_group_desc[group].bg_inode_table << _blocksize_bits) +
                     freeino * _sb->s_inode_size, SEEK_SET);
+    inode_to_little (inode);
     _device->write (inode, _sb->s_inode_size);
+
     // group descriptors...
+    gdesc_to_little();
     writeblocks (_group_desc, 1 + _sb->s_first_data_block, _groups * sizeof(ext2_group_desc));
+    gdesc_to_cpu();
+
     // inode bitmap...
     writeblocks (inomap, _group_desc[group].bg_inode_bitmap, _blocksize);
-    
-    sb_to_cpu();
-    gdesc_to_cpu();
     
     delete inode;
     delete[] inomap;

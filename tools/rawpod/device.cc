@@ -8,11 +8,19 @@
 // faster but writes will get about 50 times slower.
 /* #define RAW_DEVICE_ACCESS */
 
-#ifndef WIN32
-#include <fcntl.h> /* get the *nix O_* constants, instead of
-                    ours */
+#ifdef __darwin__
+#include <sys/disk.h>
+#endif
+
+#ifdef WIN32
+#include <windows.h>
+#include <winioctl.h>
+#else
+#include <fcntl.h> /* get the *nix O_* constants, instead of ours */
+#include <sys/ioctl.h>
 #define DONT_REDEFINE_OPEN_CONSTANTS
 #endif
+
 #include "device.h"
 
 #ifdef WIN32
@@ -64,6 +72,13 @@ s64 LocalFile::lseek (s64 off, int whence) {
     return newptr.QuadPart;
 }
 
+int LocalFile::ioctl (unsigned long code, void *dataPtr, size_t dataSize) {
+    DWORD junk;
+    if (!DeviceIoControl (_fh, code, NULL, 0, dataPtr, dataSize, &junk, NULL))
+        return -GetLastError();
+    return 0;
+}
+
 int LocalFile::error() {
     if (GetLastError() == NO_ERROR)
         return 0;
@@ -111,6 +126,9 @@ int LocalFile::write (const void *buf, int len) {
 }
 s64 LocalFile::lseek (s64 off, int whence) {
     return ::lseek (_fd, off, whence);
+}
+int LocalFile::ioctl (unsigned long code, void *dataPtr, size_t) {
+    return ::ioctl (_fd, code, dataPtr);
 }
 int LocalFile::error() {
     if (_fd < 0) return errno;
@@ -183,8 +201,8 @@ void BlockCache::invalidate()
 s64 BlockCache::getTimeval() 
 {
     struct timeval tv;
-    struct timezone tz;
-    gettimeofday (&tv, &tz);
+    struct { int a; int b; } tz;
+    gettimeofday (&tv, (struct timezone *)&tz);
     return ((s64)tv.tv_sec << 20) + tv.tv_usec;
 }
 
@@ -330,28 +348,37 @@ const char *LocalRawDevice::_override = 0;
 const char *LocalRawDevice::_cowfile = 0;
 int LocalRawDevice::_cachesize = 16384;
 
-LocalRawDevice::LocalRawDevice (int n)
-    : BlockDevice(), BlockCache (_cachesize)
+LocalRawDevice::LocalRawDevice (int n, bool writable)
+    : BlockDevice (), BlockCache (_cachesize)
 {
 #ifdef WIN32
     char drive[] = "\\\\.\\PhysicalDriveN";
     drive[17] = n + '0';
+#elif defined (Q_OS_DARWIN)
+    char drive[] = "/dev/rdiskX";
+    drive[10] = n + '0';
 #else
     char drive[] = "/dev/sdX";
     drive[7] = n + 'a';
 #endif
     setBlocksize (512);
     if (_override)
-        _f = new LocalFile (_override, OPEN_READ | OPEN_WRITE);
+        _f = new LocalFile (_override, OPEN_READ | (writable?OPEN_WRITE:0) );
     else
-        _f = new LocalFile (drive, OPEN_READ | OPEN_WRITE | OPEN_DEV);
+        _f = new LocalFile (drive, OPEN_READ | OPEN_DEV | (writable?OPEN_WRITE:0) );
     if (_f->error()) _valid = -_f->error();
     else {
         _valid = 1;
 
-        u64 offset = _f->lseek (0, SEEK_END);
+#ifdef __darwin__
+        _f->ioctl (DKIOCGETBLOCKCOUNT, &sectors, sizeof(sectors));
+        setSize (sectors);
+#else
+        // this does not work on OSX (neither with /dev/diskX nor with /dev/rdiskX):
+        s64 offset = _f->lseek (0, SEEK_END);
         _f->lseek (0, SEEK_SET);
         setSize ((offset <= 0)? 0 : (offset >> _blocksize_bits));
+#endif
     }
 
     if (_cowfile) {
@@ -438,7 +465,7 @@ int PartitionDevice::doRead (void *buf, u64 sec)
 {
     s64 err;
     
-    if (sec > _length)
+    if (sec >= _length)
         return 0;
     if ((err = _dev->lseek ((_start + sec) << 9, SEEK_SET)) < 0)
         return err;
@@ -451,7 +478,7 @@ int PartitionDevice::doWrite (const void *buf, u64 sec)
 {
     s64 err;
     
-    if (sec > _length)
+    if (sec >= _length)
         return 0;
     if ((err = _dev->lseek ((_start + sec) << 9, SEEK_SET)) < 0)
         return err;
