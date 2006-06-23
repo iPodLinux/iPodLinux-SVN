@@ -18,35 +18,31 @@
 
 void PartitionAction::run()
 {
-    unsigned char mbr[512];
-    PartitionTable ptbl;
+    PartitionTable *ptbl;
 
     emit setTaskDescription (tr ("Partitioning the iPod."));
     emit setTotalProgress (3);
     emit setCurrentProgress (0);
-    emit setCurrentAction (tr ("Reading MBR..."));
+    emit setCurrentAction (tr ("Reading existing partition table..."));
 
-    if (devReadMBR (_dev, mbr) != 0)
-        FATAL ("Error reading the partition table.");
+    ptbl = PartitionTable::create (_dev);
+    if (!ptbl || !*ptbl)
+        FATAL ("Invalid MBR on the iPod.");
 
     emit setCurrentProgress (1);
     emit setCurrentAction (tr ("Modifying the partition table..."));
 
-    ptbl = partCopyFromMBR (mbr);
-    if (!ptbl)
-        FATAL ("Invalid MBR on the iPod.");
-    if (partShrinkAndAdd (ptbl, _oldnr, _newnr, _newtype, _newsize) != 0)
+    if (ptbl->shrinkAndAdd (_oldnr, _newnr, _newtype, _newsize) != 0)
         FATAL ("Error modifying the partition table. Nothing has been written to your iPod; your data is safe.");
-    partCopyToMBR (ptbl, mbr);
     
     emit setCurrentProgress (2);
-    emit setCurrentAction (tr ("Writing MBR..."));
-    
-    if (devWriteMBR (_dev, mbr) != 0)
+    emit setCurrentAction (tr ("Writing new partition table..."));
+
+    if (ptbl->writeTo (_dev) != 0)
         FATAL ("Error writing the partition table. This shouldn't happen. Your iPod is probably fine, but "
                "it might not be; check and see.");
 
-    connect (this, SIGNAL(doDeviceSetup(Partition*)), installer, SLOT(setupDevices(Partition*)));
+    connect (this, SIGNAL(doDeviceSetup(PartitionTable*)), installer, SLOT(setupDevices(PartitionTable*)));
     emit doDeviceSetup (ptbl);
 
     emit setCurrentProgress (3);
@@ -56,8 +52,9 @@ void PartitionAction::run()
 void FormatAction::run() 
 {
     int prog = 0;
-    VFS::Device *dev = new PartitionDevice (iPodDevice, iPodPartitionTable[_part-1].offset,
-                                            iPodPartitionTable[_part-1].length);
+    PartitionTable& ptbl = *iPodPartitionTable;
+    VFS::Device *dev = new PartitionDevice (iPodDevice, ptbl[_part-1]->offset(),
+                                            ptbl[_part-1]->length());
 
     emit setTaskDescription (tr (_str));
     emit setTotalProgress (0);
@@ -95,7 +92,7 @@ void BackupAction::run()
     emit setCurrentProgress (0);
     emit setCurrentAction (tr ("Preparing..."));
 
-    VFS::Device *ipoddev = new LocalRawDevice (_dev);
+    VFS::Device *ipoddev = _dev;
     VFS::Device *fwpart = setup_partition (ipoddev, 1);
     VFS::File *backup = new LocalFile (_path.toAscii().data(), OPEN_WRITE | OPEN_CREATE);
     if (backup->error())
@@ -158,19 +155,20 @@ void RestoreBackupAction::run()
     emit setCurrentAction (tr ("Restoring the partition table"));
     u8 *buf = new u8[4096];
     ipoddev->lseek (0, SEEK_SET);
-    PartitionTable podtbl, bkptbl;
-    if (ipoddev->read (buf, 512) != 512)
-        FATAL ("Error reading the existing MBR from the iPod.");
-    if (backup->read (buf + 512, 512) != 512)
+
+    PartitionTable *podtbl = PartitionTable::create (ipoddev),
+        *bkptbl = PartitionTable::create (new VFS::LoopbackDevice (backup));
+
+    if (backup->read (buf, 512) != 512)
         FATAL ("Error reading the MBR from the backup file.");
-    if ((podtbl = partCopyFromMBR (buf)) != NULL) {
-        if ((bkptbl = partCopyFromMBR (buf + 512)) == NULL)
+    if (podtbl && *podtbl) {
+        if (!bkptbl || !*bkptbl)
             FATAL ("Error in partition table in the backup.");
-        if (bkptbl[1].offset != podtbl[1].offset || bkptbl[1].length != podtbl[1].length)
+        if (bkptbl->offset(1) != podtbl->offset(1) || bkptbl->length(1) != podtbl->length(1))
             needsMusicReformat = true;
     }
     ipoddev->lseek (0, SEEK_SET);
-    if (ipoddev->write (buf + 512, 512) != 512)
+    if (ipoddev->write (buf, 512) != 512)
         FATAL ("Error writing the partition table to the iPod.");
 
     VFS::Device *fwpart = setup_partition (ipoddev, 1);

@@ -5,6 +5,8 @@
 #ifndef INSTALLER_H
 #define INSTALLER_H
 
+#include <qglobal.h>
+
 #include "complexwizard.h"
 #include "rawpod/partition.h"
 
@@ -37,7 +39,7 @@ extern int iPodPartitionToShrink;
 // new partition size in sectors
 extern int iPodLinuxPartitionSize;
 // iPod's partition table
-extern PartitionTable iPodPartitionTable;
+extern PartitionTable *iPodPartitionTable;
 // VFS::Device for the whole iPod.
 extern VFS::Device *iPodDevice;
 // VFS::Device for each partition. NOTE: These are 0 until partitioning is set in stone!
@@ -83,7 +85,7 @@ public:
     Installer (QWidget *parent = 0);
     
 public slots:
-    void setupDevices (Partition *t);
+    void setupDevices (PartitionTable *t);
     void setupFilesystems();
 
     friend class IntroductionPage;
