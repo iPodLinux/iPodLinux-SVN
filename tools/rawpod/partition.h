@@ -91,7 +91,7 @@ public:
     virtual int figureOutType (unsigned char *mbr) = 0;
     int shrinkAndAdd (int oldnr, int newnr, Partition::Type newtype, int newsize);
 
-    static PartitionTable *create (int devnr) { LocalRawDevice dev (devnr); return create (&dev); }
+    static PartitionTable *create (int devnr, bool writable) { LocalRawDevice dev (devnr, writable); return create (&dev); }
     static PartitionTable *create (VFS::Device *dev);
 
 protected:

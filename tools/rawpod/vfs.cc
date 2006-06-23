@@ -236,7 +236,7 @@ namespace VFS
         st->st_blksize = s->st_blksize;
         st->st_blocks = s->st_blocks;
 #ifdef ST_XTIME_ARE_MACROS
-#ifdef Q_OS_DARWIN
+#ifdef __APPLE__
         st->st_atime = s->st_atimespec.tv_sec;
         st->st_mtime = s->st_mtimespec.tv_sec;
         st->st_ctime = s->st_ctimespec.tv_sec;
