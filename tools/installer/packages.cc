@@ -975,7 +975,7 @@ void PackagesPage::httpDone (bool err)
 void PackagesPage::fixupPackageItem (PkgTreeWidgetItem *item) 
 {
     item->package().readPackingList (iPodLinuxPartitionDevice);
-    if (item->package().selected()) item->select();
+    if (item->package().selected()) item->select (false);
     else if (item->package().required() && (!item->isProv() || !item->parent())) item->select();
     // XXX this is a rather silly special case, but I was too lazy to do a whole
     // "default if certain iPod gens" thing.
@@ -1078,7 +1078,7 @@ void PackagesPage::httpResponseHeaderReceived (const QHttpResponseHeader& resp)
     }
 }
 
-void PkgTreeWidgetItem::select() 
+bool PkgTreeWidgetItem::select (bool force) 
 {
     _pkg.select();
 
@@ -1095,8 +1095,13 @@ void PkgTreeWidgetItem::select()
 
         if (!haveAny) {
             if (satisfants.size()) {
-                satisfants[0]->setCheckState (0, Qt::Checked);
-                satisfants[0]->select();
+                if (force) {
+                    satisfants[0]->setCheckState (0, Qt::Checked);
+                    satisfants[0]->select (force);
+                } else {
+                    deselect();
+                    return false;
+                }
             } else {
                 QMessageBox::warning (_page, QObject::tr ("Missing dependency"),
                                       QObject::tr ("The package you selected, `%1', has a dependency \n"
@@ -1119,13 +1124,19 @@ void PkgTreeWidgetItem::select()
             if (parent()->child(i)->checkState(0) == Qt::Checked) {
                 parent()->child(i)->setCheckState (0, Qt::Unchecked);
                 if ((ptwi = dynamic_cast<PkgTreeWidgetItem*>(parent()->child(i))) != 0) {
-                    ptwi->deselect();
+                    if (force) {
+                        ptwi->deselect();
+                    } else {
+                        deselect();
+                        return false;
+                    }
                 }
             }
         }
     }
     
     _setsel();
+    return true;
 }
 
 void PkgTreeWidgetItem::deselect() 

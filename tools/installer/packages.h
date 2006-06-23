@@ -98,7 +98,10 @@ class PkgTreeWidgetItem : public QTreeWidgetItem
 public:
     PkgTreeWidgetItem (PackagesPage *page, QTreeWidget *widget, Package& pkg);
     PkgTreeWidgetItem (PackagesPage *page, QTreeWidgetItem *parent, Package& pkg);
-    void select();
+    // If `force', then it'll force dependencies checked and competing provides unchecked
+    // in order to get checked. In that case, it always returns true. Otherwise, it
+    // returns true only if it was actually able to be checked based on deps and provides.
+    bool select (bool force = true);
     void deselect();
     void makeDefault() { _pkg.makeDefault(); }
     void update();
