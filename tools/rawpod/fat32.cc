@@ -190,19 +190,19 @@ int FATFile::read(void *ptr, int size) {
 s64 FATFile::lseek(s64 offset,int whence) {
   switch(whence) {
   case SEEK_SET:
-    position = (offset < 0)? 0 : offset;
     break;
   case SEEK_CUR:
-    if (offset < -position) position = 0;
-    else position += offset;
+    offset += position;
     break;
   case SEEK_END:
-    if (offset > length) position = 0;
-    else position = length - offset;
+    offset += length;
     break;
+  default:
+    return -EINVAL;
   }
-
-  if (position > length) position = length - 1;
+  if (offset < 0) offset = 0;
+  if (offset > length) offset = length;
+  position = offset;
   return position;
 }
 

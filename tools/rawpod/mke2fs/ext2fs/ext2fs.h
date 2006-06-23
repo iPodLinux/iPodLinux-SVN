@@ -29,6 +29,10 @@
 #define NO_INLINE_FUNCS
 #endif
 
+#if (defined(BYTE_ORDER) && (BYTE_ORDER == BIG_ENDIAN)) || defined(__BIG_ENDIAN__) || defined (__ppc__) || defined(__powerpc__)
+#define WORDS_BIGENDIAN
+#endif
+
 /*
  * Build in support for byte-swapping filesystems if we the feature
  * has been configured or if we're being built on a CPU architecture

@@ -55,6 +55,7 @@ public:
     int read (void *buf, int len);
     int write (const void *buf, int len);
     s64 lseek (s64 off, int whence);
+    int ioctl (unsigned long code, void *dataPtr, size_t dataSize);
     int error();
     int close();
 #ifndef WIN32
@@ -113,13 +114,16 @@ private:
 class LocalRawDevice : public VFS::BlockDevice, public BlockCache
 {
 public:
-    LocalRawDevice (int n);
+    LocalRawDevice (int n, bool writable = true);
     ~LocalRawDevice();
 
     int error() {
         if (_valid < 0) return _valid;
         return 0;
     }
+#ifdef linux
+    int fileno() { return _f->fileno(); }
+#endif
 
     static void setOverride (const char *filename) {
         _override = filename;
@@ -141,6 +145,7 @@ protected:
 private:
     LocalFile *_f, *_wf;
     int _valid;
+    
     static const char *_override;
     static const char *_cowfile;
     static int _cachesize;

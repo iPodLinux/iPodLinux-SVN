@@ -46,7 +46,7 @@
 #ifndef FIGURED_OUT_ENDIAN
 # if defined(i386) || defined(__i386__) || defined(_M_IX86) || defined(vax) || defined(__alpha)
 #  define FIGURED_OUT_ENDIAN
-# elif defined(__powerpc__) || defined(__BIG_ENDIAN__)
+# elif (defined(BYTE_ORDER) && (BYTE_ORDER == BIG_ENDIAN)) || defined(__BIG_ENDIAN__) || defined (__ppc__) || defined(__powerpc__)
 #  define RAWPOD_BIG_ENDIAN
 #  define FIGURED_OUT_ENDIAN
 # endif
@@ -82,6 +82,10 @@ typedef   signed short s16;
 typedef   signed int s32;
 typedef   signed long slong;
 typedef   signed long long s64;
+
+#ifdef __darwin__
+typedef off_t loff_t;
+#endif
 
 #ifdef st_atime
 #define ST_XTIME_ARE_MACROS

@@ -90,21 +90,23 @@ namespace VFS
 
     s64 BlockDevice::lseek (s64 off, int whence) 
     {
+        s64 newpos = _pos;
         switch (whence) {
         case SEEK_SET:
-            _pos = off;
+            newpos = off;
             break;
         case SEEK_CUR:
-            _pos += off;
+            newpos += off;
             break;
         case SEEK_END:
-            _pos = (_blocks << _blocksize_bits) + off;
+            newpos = (_blocks << _blocksize_bits) + off;
             break;
         default:
             return -EINVAL;
         }
-
-        return _pos;
+        if (newpos < 0) newpos = 0;
+        if (newpos > (_blocks << _blocksize_bits)) newpos = (_blocks << _blocksize_bits);
+        return (_pos = newpos);
     }
 
     int BlockFile::read (void *d, int n) 
@@ -191,20 +193,23 @@ namespace VFS
 
     s64 BlockFile::lseek (s64 off, int whence) 
     {
+        s64 newpos = _pos;
         switch (whence) {
         case SEEK_SET:
-            _pos = off;
+            newpos = off;
             break;
         case SEEK_CUR:
-            _pos += off;
+            newpos += off;
             break;
         case SEEK_END:
-            _pos = _size + off;
+            newpos = _size + off;
             break;
         default:
             return -EINVAL;
         }
-        return _pos;
+        if (newpos < 0) newpos = 0;
+        if (newpos > _size) newpos = _size;
+        return (_pos = newpos);
     }
 
     File *MountedFilesystem::open (const char *path, int flags) {
@@ -231,9 +236,15 @@ namespace VFS
         st->st_blksize = s->st_blksize;
         st->st_blocks = s->st_blocks;
 #ifdef ST_XTIME_ARE_MACROS
+#ifdef Q_OS_DARWIN
+        st->st_atime = s->st_atimespec.tv_sec;
+        st->st_mtime = s->st_mtimespec.tv_sec;
+        st->st_ctime = s->st_ctimespec.tv_sec;
+#else
         st->st_atime = s->st_atim.tv_sec;
         st->st_mtime = s->st_mtim.tv_sec;
         st->st_ctime = s->st_ctim.tv_sec;
+#endif
 #else
         st->st_atime = s->st_atime;
         st->st_mtime = s->st_mtime;
