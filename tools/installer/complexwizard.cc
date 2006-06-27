@@ -80,6 +80,11 @@ ComplexWizard::ComplexWizard(QWidget *parent)
     setLayout(mainLayout);
 }
 
+void ComplexWizard::setBackEnabled (bool enabled) 
+{
+    backButton->setEnabled (enabled);
+}
+
 void ComplexWizard::setFirstPage(WizardPage *page)
 {
     page->resetPage();

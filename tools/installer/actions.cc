@@ -243,6 +243,7 @@ DoActionsPage::DoActionsPage (Installer *wiz, InstallerPage *next)
 {
     wiz->setInfoText (tr ("<b>Installing</b>"),
                       tr ("Please wait while the requested actions are performed."));
+    wiz->setBackEnabled (false);
 
     action = new QLabel (tr ("Initializing..."));
     action->setAlignment (Qt::AlignLeft);
@@ -304,6 +305,7 @@ DoActionsPage::DoActionsPage (Installer *wiz, InstallerPage *next)
         action->setText ("Done.");
         specific->setText ("(There was nothing to do.)");
         done = true;
+        wizard->setBackEnabled (true);
         emit completeStateChanged();
     } else {
         if (BlockCache::enabled()) {
@@ -335,11 +337,12 @@ void DoActionsPage::nextAction()
         pkgProgress->hide();
         pkgProgressLabel->hide();
         emit completeStateChanged();
+        wizard->setBackEnabled (true);
         wizard->clickNextButton();
         return;
     }
     totalProgress->setValue (totalProgress->value() + 1);
     pkgProgress->setRange (0, 1);
     pkgProgress->setValue (0);
-    specific->setText ("Done.");
+    specific->setText ("");
 }
