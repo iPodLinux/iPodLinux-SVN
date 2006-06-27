@@ -1184,6 +1184,7 @@ int Ext2File::writeblock (void *buf, u32 block)
         int group = (_ino - 1) / _ext2->_ino_per_group;
         u32 blk_per_blk = _blocksize >> 2;
         s32 newblk;
+        int init = 0;
         
         pblk = balloc (group);
         
@@ -1218,6 +1219,7 @@ int Ext2File::writeblock (void *buf, u32 block)
                         if ((newblk = balloc (group)) < 0)
                             return newblk;
                         _diblock[block >> (_blocksize_bits - 2)] = newblk;
+                        init = 1;
                         _ext2->writeblocks (_diblock, _inode->i_block[EXT2_DIND_BLOCK], _blocksize);
                     }
 
@@ -1226,6 +1228,7 @@ int Ext2File::writeblock (void *buf, u32 block)
                         delete[] iblock;
                         return -EIO;
                     }
+                    if (init) memset (iblock, 0, _blocksize);
                     iblock[block & (blk_per_blk - 1)] = pblk;
                     _ext2->writeblocks (iblock, _diblock[block >> (_blocksize_bits - 2)], _blocksize);
                     delete[] iblock;
@@ -1245,6 +1248,7 @@ int Ext2File::writeblock (void *buf, u32 block)
                             if ((newblk = balloc (group)) < 0)
                                 return newblk;
                             _tiblock[block >> ((_blocksize_bits << 1) - 4)] = newblk;
+                            init = 1;
                             _ext2->writeblocks (_tiblock, _inode->i_block[EXT2_TIND_BLOCK], _blocksize);
                         }
 
@@ -1254,12 +1258,14 @@ int Ext2File::writeblock (void *buf, u32 block)
                             return -EIO;
                         }
 
+                        if (init) memset (diblock, 0, _blocksize), init = 0;
                         if (!diblock[(block >> (_blocksize_bits - 2)) & (blk_per_blk - 1)]) {
                             if ((newblk = balloc (group)) < 0) {
                                 delete[] diblock;
                                 return newblk;
                             }
                             diblock[(block >> (_blocksize_bits - 2)) & (blk_per_blk - 1)] = newblk;
+                            init = 1;
                             _ext2->writeblocks (diblock, _tiblock[block >> ((_blocksize_bits << 1) - 4)], _blocksize);
                         }
 
@@ -1269,6 +1275,7 @@ int Ext2File::writeblock (void *buf, u32 block)
                             delete[] diblock;
                             return -EIO;
                         }
+                        if (init) memset (iblock, 0, _blocksize);
                         iblock[block & (blk_per_blk - 1)] = pblk;
                         _ext2->writeblocks (iblock, diblock[(block >> (_blocksize_bits - 2)) & (blk_per_blk - 1)], _blocksize);
                         delete[] iblock;
@@ -1370,6 +1377,8 @@ s32 Ext2File::translateblock (u32 lblock)
         }
     }
     
+    if (pblock < 0) return -EIO;
+
     return pblock;
 }
 

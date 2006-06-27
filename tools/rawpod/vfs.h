@@ -216,7 +216,7 @@ namespace VFS
     class DeviceFile : public File 
     {
     public:
-        DeviceFile (Device *dev) : _dev (dev) {}
+        DeviceFile (Device *dev) : _dev (dev) { _dev->lseek (0, SEEK_SET); }
         virtual ~DeviceFile() {}
 
         virtual int read (void *buf, int n) { return _dev->read (buf, n); }

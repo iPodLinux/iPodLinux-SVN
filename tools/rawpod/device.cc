@@ -237,7 +237,7 @@ int BlockCache::flushOlderThan (s64 us)
 
     int ret;
     for (int i = 0; i < _nsec; i++) {
-        if (_mtimes[i] && ((us < 0) || (_mtimes[i] < us))) {
+        if (_mtimes[i] && ((us < 0) || (_mtimes[i] < (u64)us))) {
             ret = doRawWrite (_cache + (i << _log_ssize), _sectors[i]);
             if (ret < 0) return ret;
             _mtimes[i] = 0;
@@ -371,15 +371,17 @@ LocalRawDevice::LocalRawDevice (int n, bool writable)
         _valid = 1;
 
 #ifdef __APPLE__
-        u64 sectors = 0;
-        _f->ioctl (DKIOCGETBLOCKCOUNT, &sectors, sizeof(sectors));
-        setSize (sectors);
-#else
-        // this does not work on OSX (neither with /dev/diskX nor with /dev/rdiskX):
-        s64 offset = _f->lseek (0, SEEK_END);
-        _f->lseek (0, SEEK_SET);
-        setSize ((offset <= 0)? 0 : (offset >> _blocksize_bits));
+        if (!_override && NEED_SIZE_IOCTL) {
+            u64 sectors = 0;
+            _f->ioctl (DKIOCGETBLOCKCOUNT, &sectors, sizeof(sectors));
+            setSize (sectors);
+        } else
 #endif
+        {
+            s64 offset = _f->lseek (0, SEEK_END);
+            _f->lseek (0, SEEK_SET);
+            setSize ((offset <= 0)? 0 : (offset >> _blocksize_bits));
+        }
     }
 
     if (_cowfile) {
@@ -411,11 +413,15 @@ int LocalRawDevice::doRawRead (void *buf, u64 sec)
     if (_valid <= 0) return _valid;
     // Check the COW file first
     if (_wf != _f) {
-        if (_wf->lseek (sec << 9, SEEK_SET) >= 0) {
-            if ((err = _wf->read (buf, 512)) > 0) {
-                for (int i = 0; i < err; i++) {
-                    if (((char *)buf)[i] != 0)
+        if (_wf->lseek (sec >> 3, SEEK_SET) >= 0) {
+            unsigned char bits;
+            if ((err = _wf->read (&bits, 1)) > 0) {
+                // Got that block?
+                if (bits & (1 << (sec & 7))) {
+                    if (_wf->lseek ((_blocks >> 3) + (sec << 9), SEEK_SET) >= 0) {
+                        if ((err = _wf->read (buf, 512)) == 512) return 0;
                         return err;
+                    }
                 }
             }
         }
@@ -442,13 +448,33 @@ int LocalRawDevice::doRawWrite (const void *buf, u64 sec)
     memcpy (alignedbuf, buf, 512);
 #endif
 
+    if (_valid <= 0) return _valid;
+
+    if (_wf != _f) {
+        s64 err;
+
+        // Write the block
+        if ((err = _wf->lseek ((_blocks >> 3) + (sec << 9), SEEK_SET)) < 0) return err;
+        if ((err = _wf->write (buf, 512) < 0)) return err;
+
+        // Mark the block as used in the COW
+        unsigned char bits;
+        if ((err = _wf->lseek (sec >> 3, SEEK_SET)) < 0) return err;
+        if ((err = _wf->read (&bits, 1)) != 1) return err;
+        bits |= (1 << (sec & 7));
+        if ((err = _wf->lseek (sec >> 3, SEEK_SET)) < 0) return err;
+        if ((err = _wf->write (&bits, 1)) != 1) return err;
+
+        return 0;
+    }
+
     s64 err;
     if (_valid <= 0) return _valid;
-    if ((err = _wf->lseek (sec << 9, SEEK_SET)) < 0) return err;
+    if ((err = _f->lseek (sec << 9, SEEK_SET)) < 0) return err;
 #ifdef RAW_DEVICE_ACCESS
-    if ((err = _wf->write (alignedbuf, 512) < 0)) return err;
+    if ((err = _f->write (alignedbuf, 512) < 0)) return err;
 #else
-    if ((err = _wf->write (buf, 512) < 0)) return err;
+    if ((err = _f->write (buf, 512) < 0)) return err;
 #endif
     return 0;
 }
