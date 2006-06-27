@@ -124,6 +124,7 @@ tar_extract_regfile(TAR *t, VFS::Filesystem *fs, const char *realname)
 	int i, k;
 	char buf[T_BLOCKSIZE];
 	const char *filename;
+        int err;
 
 #ifdef DEBUG
 	printf("==> tar_extract_regfile(t=0x%lx, realname=\"%s\")\n", t,
@@ -156,7 +157,7 @@ tar_extract_regfile(TAR *t, VFS::Filesystem *fs, const char *realname)
 #ifdef DEBUG
 		fprintf(stderr, "open(): %s", fhout? strerror (fhout->error()) : "unknown error");
 #endif
-                int err = fhout? fhout->error() : EINVAL;
+                err = fhout? fhout->error() : EINVAL;
                 delete fhout;
 		return err;
 	}
@@ -174,18 +175,18 @@ tar_extract_regfile(TAR *t, VFS::Filesystem *fs, const char *realname)
 		}
 
 		/* write block to output file */
-		if (fhout->write(buf,
-                                 ((i > T_BLOCKSIZE) ? T_BLOCKSIZE : i)) < 0) {
+		if ((err = fhout->write(buf,
+                                        ((i > T_BLOCKSIZE) ? T_BLOCKSIZE : i))) < 0) {
                     delete fhout;
-                    return -1;
+                    return err;
                 }
 
                 if (t->progressfunc) t->progressfunc (t);
 	}
 
 	/* close output file */
-	if (fhout->close() < 0)
-		return -1;
+	if ((err = fhout->close()) < 0)
+            return err;
         delete fhout;
 
 #ifdef DEBUG
