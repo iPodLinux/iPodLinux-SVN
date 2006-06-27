@@ -1039,6 +1039,8 @@ void PackagesPage::done()
     }
     
     if (!automatic) {
+        packages->resizeColumnToContents (1);
+        packages->resizeColumnToContents (2);
         packages->resizeColumnToContents (0);
         packages->show();
         loadpkg->show();
@@ -1121,10 +1123,11 @@ bool PkgTreeWidgetItem::select (bool force)
             PkgTreeWidgetItem *ptwi;
 
             if (parent()->child(i) == this) continue;
-            if (parent()->child(i)->checkState(0) == Qt::Checked) {
-                parent()->child(i)->setCheckState (0, Qt::Unchecked);
-                if ((ptwi = dynamic_cast<PkgTreeWidgetItem*>(parent()->child(i))) != 0) {
+            if ((ptwi = dynamic_cast<PkgTreeWidgetItem*>(parent()->child(i))) != 0) {
+                if (!ptwi->package().provides().contains (package().provides()[0])) continue;
+                if (ptwi->checkState(0) == Qt::Checked) {
                     if (force) {
+                        ptwi->setCheckState (0, Qt::Unchecked);
                         ptwi->deselect();
                     } else {
                         deselect();
