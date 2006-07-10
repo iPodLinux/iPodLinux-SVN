@@ -198,6 +198,21 @@ void BlockCache::invalidate()
     memset (_mtimes, 0, _nsec * sizeof(u64));
 }
 
+#ifdef WIN32
+int gettimeofday (struct timeval *tv, void* tz)
+{
+    union {
+        LONG_LONG ns100; /*time since 1 Jan 1601 in 100ns units */
+        FILETIME ft;
+    } now;
+    
+    GetSystemTimeAsFileTime (&now.ft);
+    tv->tv_usec = (long) ((now.ns100 / 10LL) % 1000000LL);
+    tv->tv_sec = (long) ((now.ns100 - 116444736000000000LL) / 10000000LL);
+    return 0;
+}
+#endif
+
 s64 BlockCache::getTimeval() 
 {
     struct timeval tv;
