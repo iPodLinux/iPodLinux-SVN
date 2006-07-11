@@ -202,7 +202,7 @@ void BlockCache::invalidate()
 int gettimeofday (struct timeval *tv, void* tz)
 {
     union {
-        LONG_LONG ns100; /*time since 1 Jan 1601 in 100ns units */
+        unsigned long long ns100; /*time since 1 Jan 1601 in 100ns units */
         FILETIME ft;
     } now;
     
