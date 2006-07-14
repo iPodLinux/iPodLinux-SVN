@@ -143,7 +143,7 @@ else
 	@echo "Then, to run it,"
 	@echo "  ./podzilla"
 	@echo "or, for a different screen size,"
-	@echo "  ./podzilla [-nano | -mini | -photo | -video]"
+	@echo "  ./podzilla [-g nano | -g mini | -g photo | -g video]"
 	@echo "Enjoy."
 	@echo "---------------------------------------------------------------"
 endif
