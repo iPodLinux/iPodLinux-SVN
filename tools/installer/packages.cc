@@ -1413,7 +1413,7 @@ void PackageRemoveAction::run()
         
         while (it.hasNext()) {
             PkgTreeWidgetItem *twi = dynamic_cast<PkgTreeWidgetItem*>(it.next());
-            if (!twi || twi == this) continue;
+            if (!twi || twi == _twi) continue;
             filesOwnedByOtherPackages += twi->package().getPackingList();
         }
     }
