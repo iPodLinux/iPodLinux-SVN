@@ -94,4 +94,4 @@ DEFINES += EMBED_MAKEFW
 nocrypto:DEFINES += DONT_HAVE_LIBCRYPTO
 !nocrypto:LIBS += -lcrypto
 
-CONFIG += release
+#CONFIG += release
