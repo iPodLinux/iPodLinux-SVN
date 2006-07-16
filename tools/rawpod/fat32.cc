@@ -113,6 +113,7 @@ FATFile::FATFile (FATFS *fat,const char *fname) {
 int FATFile::read(void *ptr, int size) {
   u32 read,toRead,clusterNum,clust,i;
   u64 lba;
+  s64 seekerr;
   u32 offsetInCluster, toReadInCluster;
 
   read   = 0;
@@ -141,8 +142,8 @@ int FATFile::read(void *ptr, int size) {
 
   toReadInCluster = (_fat->sectors_per_cluster * _fat->bytes_per_sector) - offsetInCluster;
 
-  if ((_err = _device->lseek (lba << 9, SEEK_SET)) < 0)
-      return _err;
+  if ((seekerr = _device->lseek (lba << 9, SEEK_SET)) < 0)
+      return (_err = seekerr);
   if ((_err = _device->read (clusterBuffer, toReadInCluster)) < 0)
       return _err;
 
@@ -172,8 +173,8 @@ int FATFile::read(void *ptr, int size) {
     clust = findnextcluster( clust );
     lba  = _fat->number_of_reserved_sectors + (_fat->number_of_fats * _fat->sectors_per_fat);
     lba += (u64)(clust - 2) * (u64)_fat->sectors_per_cluster;
-    if ((_err = _device->lseek (lba << 9, SEEK_SET)) < 0)
-        return _err;
+    if ((seekerr = _device->lseek (lba << 9, SEEK_SET)) < 0)
+        return (_err = seekerr);
     if ((_err = _device->read (clusterBuffer, _fat->sectors_per_cluster << 9)) < 0)
         return _err;
     
