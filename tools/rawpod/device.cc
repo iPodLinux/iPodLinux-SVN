@@ -385,11 +385,22 @@ LocalRawDevice::LocalRawDevice (int n, bool writable)
     else {
         _valid = 1;
 
-#ifdef __APPLE__
-        if (!_override && NEED_SIZE_IOCTL) {
+#if defined(__APPLE__)
+        if (!_override) {
             u64 sectors = 0;
             _f->ioctl (DKIOCGETBLOCKCOUNT, &sectors, sizeof(sectors));
             setSize (sectors);
+        } else
+#elif defined(WIN32)
+        if (!_override) {
+            DISK_GEOMETRY geo;
+            u64 size = 0;
+            if (_f->ioctl (IOCTL_DISK_GET_DRIVE_GEOMETRY, &geo, sizeof(geo)) == 0)
+                size = (geo.Cylinders.QuadPart *
+                        (u64)geo.TracksPerCylinder *
+                        (u64)geo.SectorsPerTrack *
+                        (u64)geo.BytesPerSector);
+            setSize (size >> 9);
         } else
 #endif
         {
