@@ -229,12 +229,14 @@ protected:
 class PackageRemoveAction : public PackageAction
 {
 public:
-    PackageRemoveAction (Package& pkg, QString label)
-        : PackageAction (pkg, label)
+    PackageRemoveAction (Package& pkg, QString label, PkgTreeWidgetItem *twi = 0)
+        : PackageAction (pkg, label), _twi (twi)
     {}
 
 protected:
     virtual void run();
+
+    PkgTreeWidgetItem *_twi;
 };
 
 class ChangeLoaderAction : public Action

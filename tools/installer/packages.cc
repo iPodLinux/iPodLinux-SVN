@@ -975,7 +975,7 @@ void PackagesPage::httpDone (bool err)
 void PackagesPage::fixupPackageItem (PkgTreeWidgetItem *item) 
 {
     item->package().readPackingList (iPodLinuxPartitionDevice);
-    if (item->package().selected()) item->select (false);
+    if (item->package().selected()) item->select (Mode == Update);
     else if (item->package().required() && (!item->isProv() || !item->parent())) item->select();
     // XXX this is a rather silly special case, but I was too lazy to do a whole
     // "default if certain iPod gens" thing.
@@ -1403,12 +1403,28 @@ void PackageRemoveAction::run()
     emit setTotalProgress (_pkg.getPackingList().size());
 
     int prog = 0;
+
+    QStringList filesOwnedByOtherPackages;
+    if (_twi) {
+        // Check for file overlap.
+        QList<QTreeWidgetItem*> allPackages = _twi->treeWidget()->findItems (".*", Qt::MatchRegExp);
+        QListIterator<QTreeWidgetItem*> it = allPackages;
+        bool overlap = false;
+        
+        while (it.hasNext()) {
+            PkgTreeWidgetItem *twi = dynamic_cast<PkgTreeWidgetItem*>(it.next());
+            if (!twi || twi == this) continue;
+            filesOwnedByOtherPackages += twi->package().getPackingList();
+        }
+    }
+
     QStringListIterator it (_pkg.getPackingList());
     while (it.hasNext()) {
         QString file = it.next();
         emit setCurrentProgress (prog++);
         emit setCurrentAction (file);
-        iPodLinuxPartitionFS->unlink (file.toAscii());
+        if (!filesOwnedByOtherPackages.contains (file))
+            iPodLinuxPartitionFS->unlink (file.toAscii());
     }
     emit setCurrentProgress (prog);
     emit setCurrentAction ("Removing package metadata...");
