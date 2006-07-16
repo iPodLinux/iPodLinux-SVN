@@ -218,12 +218,14 @@ PodLocationPage::PodLocationPage (Installer *wizard)
     
     if (rdlen <= 0) {
         status = BadSysInfo;
+	fprintf (stderr, "sysinfo read error %d\n", -rdlen);
 #ifndef WIN32
         errno = -rdlen;
 #endif
         goto err;
     } else if (rdlen >= 4096) {
         status = BadSysInfo;
+	fprintf (stderr, "sysinfo too big\n");
 #ifndef WIN32
         errno = E2BIG;
 #endif
@@ -243,6 +245,7 @@ PodLocationPage::PodLocationPage (Installer *wizard)
                 break;
             }
             status = BadSysInfo;
+	    fprintf (stderr, "sysinfo line has and does not have colon (?)\n");
             errno = EINVAL;
             break;
         }
@@ -250,11 +253,13 @@ PodLocationPage::PodLocationPage (Installer *wizard)
         p = strchr (p, '\n');
     }
     if (!rev || !(rev >> 16) || (rev >> 20)) {
+	fprintf (stderr, "sysinfo has bad hw rev\n");
         errno = EINVAL;
         printf ("Invalid hw rev: %x (%d)\n", rev, rev);
         status = BadSysInfo;
     } else {
         hw_ver = rev >> 16;
+	fprintf (stderr, "sysinfo OK, rev %05x\n", rev);
     }
 
     if (!(INSTALLER_WORKING_IPODS & (1 << hw_ver)))
