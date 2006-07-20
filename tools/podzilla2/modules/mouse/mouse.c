@@ -82,6 +82,7 @@ int ttk_mouse_scroll(TWidget * wid, int dir)
 	ttk_mousedata * m = (ttk_mousedata *)wid->data;
 	
 	TTK_SCROLLMOD (dir,4);
+	TTK_SCROLL_ACCEL (dir,10,50); /* TODO: Tune these constants */
 	
 	if (!m->scrollaxis) {
 		m->x += dir;
