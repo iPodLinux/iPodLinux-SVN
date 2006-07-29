@@ -1701,19 +1701,19 @@ leave_func:
 static int h2d(char *s, int len)
 {
 	int i, ret = 0;
-	for (i = 0; i < len; i++) {
-		ret = ret << 4;
-		if (*s > 0x40 && *s < 0x47) ret |= *s - 0x37;
-		if (*s > 0x2f && *s < 0x3a) ret |= *s - 0x30;
-		if (*s > 0x60 && *s < 0x67) ret |= *s - 0x57;
-		s++;
+	for (i = 0; i < len; ++i) {
+		ret <<= 4;
+		if (*s >= 'A' && *s <= 'F') ret |= *s - 'A' + 0xa;
+		if (*s >= '0' && *s <= '9') ret |= *s - '0';
+		if (*s >= 'a' && *s <= 'f') ret |= *s - 'a' + 0xa;
+		++s;
 	}
 	return ret;
 }
 
 static void load_fff(Bitmap_Font *bf, const char *fname)
 {
-	char tmp[1024];
+	char tmp[1024], res;
 	FILE *ip;
 	long n_bits = 0;
 	unsigned short *bits = NULL;
@@ -1727,12 +1727,13 @@ static void load_fff(Bitmap_Font *bf, const char *fname)
 	}
 
 	fgets(tmp, 1024, ip);
-	if (tmp[0] != '\\') {
+	res = sscanf(tmp, "\\size %dx%d", &bf->maxwidth, (int *)&bf->height);
+	res += sscanf(tmp, "%d%d", &bf->maxwidth, (int *)&bf->height);
+	if (res != 2) {
 		fputs("Invalid fff\n", stderr);
 		ttk_quit();
 		exit(1);
 	}
-	sscanf(tmp, "\\size %dx%d", &bf->maxwidth, (int *)&bf->height);
 	while (fgets(tmp, 1024, ip)) {
 		unsigned short index;
 		int i, len = bf->height * 2;
