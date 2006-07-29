@@ -110,8 +110,10 @@ mkdirhier (VFS::Filesystem *fs, const char *path)
                 int ret;
 		if ((ret = fs->mkdir (dst)) < 0)
 		{
-			if (ret != -EEXIST)
-				return ret;
+                    if (ret != -EEXIST) {
+                        errno = -ret;
+                        return -1;
+                    }
 		}
 		else
 			retval = 0;

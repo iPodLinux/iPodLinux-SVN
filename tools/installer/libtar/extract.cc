@@ -63,7 +63,7 @@ tar_extract_file(TAR *t, VFS::Filesystem *fs, const char *realname)
 		if ((ret = fs->lstat(realname, &s)) >= 0 || ret != -ENOENT)
 		{
 			errno = EEXIST;
-			return -1;
+			return -errno;
 		}
 	}
 
@@ -95,7 +95,7 @@ tar_extract_file(TAR *t, VFS::Filesystem *fs, const char *realname)
 
 	lnp = (linkname_t *)malloc(sizeof(linkname_t));
 	if (lnp == NULL)
-		return -1;
+		return -ENOMEM;
         memset (lnp, 0, sizeof(linkname_t));
 	strncpy(lnp->ln_save, th_get_pathname(t), sizeof(lnp->ln_save) - 1);
 	strncpy(lnp->ln_real, realname, sizeof(lnp->ln_real) - 1);
@@ -106,7 +106,7 @@ tar_extract_file(TAR *t, VFS::Filesystem *fs, const char *realname)
 	       "value=\"%s\"\n", th_get_pathname(t), realname);
 #endif
 	if (libtar_hash_add(t->h, lnp) != 0)
-		return -1;
+		return -ENOMEM;
 
 	return 0;
 }
@@ -134,7 +134,7 @@ tar_extract_regfile(TAR *t, VFS::Filesystem *fs, const char *realname)
 	if (!TH_ISREG(t))
 	{
 		errno = EINVAL;
-		return -1;
+		return -errno;
 	}
 
 	filename = (realname ? realname : th_get_pathname(t));
@@ -144,7 +144,7 @@ tar_extract_regfile(TAR *t, VFS::Filesystem *fs, const char *realname)
 	gid = th_get_gid(t);
 
 	if (mkdirhier(fs, filename) == -1)
-		return -1;
+		return -errno;
 
 #ifdef DEBUG
 	printf("  ==> extracting: %s (mode %04o, uid %d, gid %d, %d bytes)\n",
@@ -154,10 +154,8 @@ tar_extract_regfile(TAR *t, VFS::Filesystem *fs, const char *realname)
 
 	if (!fhout || fhout->error())
 	{
-#ifdef DEBUG
 		fprintf(stderr, "open(): %s", fhout? strerror (fhout->error()) : "unknown error");
-#endif
-                err = fhout? fhout->error() : EINVAL;
+                err = fhout? -fhout->error() : -EINVAL;
                 delete fhout;
 		return err;
 	}
@@ -171,7 +169,7 @@ tar_extract_regfile(TAR *t, VFS::Filesystem *fs, const char *realname)
 			if (k != -1)
 				errno = EINVAL;
                         delete fhout;
-			return -1;
+			return -errno;
 		}
 
 		/* write block to output file */
@@ -208,7 +206,7 @@ tar_skip_regfile(TAR *t)
 	if (!TH_ISREG(t))
 	{
 		errno = EINVAL;
-		return -1;
+		return -errno;
 	}
 
 	size = th_get_size(t);
@@ -219,7 +217,7 @@ tar_skip_regfile(TAR *t)
 		{
 			if (k != -1)
 				errno = EINVAL;
-			return -1;
+			return -errno;
 		}
 	}
 
@@ -239,12 +237,12 @@ tar_extract_hardlink(TAR * t, VFS::Filesystem *fs, const char *realname)
 	if (!TH_ISLNK(t))
 	{
 		errno = EINVAL;
-		return -1;
+		return -errno;
 	}
 
 	filename = (realname ? realname : th_get_pathname(t));
 	if (mkdirhier(fs, filename) == -1)
-		return -1;
+		return -errno;
 	libtar_hashptr_reset(&hp);
 	if (libtar_hash_getkey(t->h, &hp, th_get_linkname(t),
 			       (libtar_matchfunc_t)libtar_str_match) != 0)
@@ -258,12 +256,11 @@ tar_extract_hardlink(TAR * t, VFS::Filesystem *fs, const char *realname)
 #ifdef DEBUG
 	printf("  ==> extracting: %s (link to %s)\n", filename, linktgt);
 #endif
-	if (fs->link (linktgt, filename) < 0)
+        int err;
+	if ((err = fs->link (linktgt, filename)) < 0)
 	{
-#ifdef DEBUG
 		perror("link()");
-#endif
-		return -1;
+		return -err;
 	}
 
 	return 0;
@@ -279,27 +276,26 @@ tar_extract_symlink(TAR *t, VFS::Filesystem *fs, const char *realname)
 	if (!TH_ISSYM(t))
 	{
 		errno = EINVAL;
-		return -1;
+		return -errno;
 	}
 
 	filename = (realname ? realname : th_get_pathname(t));
 	if (mkdirhier(fs, filename) == -1)
-		return -1;
+		return -errno;
 
         int ret;
 	if ((ret = fs->unlink(filename)) < 0 && ret != -ENOENT)
-		return -1;
+		return ret;
 
 #ifdef DEBUG
 	printf("  ==> extracting: %s (symlink to %s)\n",
 	       filename, th_get_linkname(t));
 #endif
-	if (fs->symlink (th_get_linkname(t), filename) == -1)
+	if ((ret = fs->symlink (th_get_linkname(t), filename)) < 0)
 	{
-#ifdef DEBUG
+            errno = -ret;
 		perror("symlink()");
-#endif
-		return -1;
+		return ret;
 	}
 
 	return 0;
@@ -371,14 +367,14 @@ tar_extract_dir(TAR *t, VFS::Filesystem *fs, const char *realname)
 	if (!TH_ISDIR(t))
 	{
 		errno = EINVAL;
-		return -1;
+		return -errno;
 	}
 
 	filename = (realname ? realname : th_get_pathname(t));
 	mode = th_get_mode(t);
 
 	if (mkdirhier(fs, filename) == -1)
-		return -1;
+		return -errno;
 
 #ifdef DEBUG
 	printf("  ==> extracting: %s (mode %04o, directory)\n", filename,
@@ -389,12 +385,11 @@ tar_extract_dir(TAR *t, VFS::Filesystem *fs, const char *realname)
 	{
 		if (ret == -EEXIST)
 		{
-			if (fs->chmod (filename, mode) < 0)
+			if ((ret = fs->chmod (filename, mode)) < 0)
 			{
-#ifdef DEBUG
+                            errno = -ret;
 				perror("chmod()");
-#endif
-				return -1;
+				return ret;
 			}
 			else
 			{
@@ -406,10 +401,9 @@ tar_extract_dir(TAR *t, VFS::Filesystem *fs, const char *realname)
 		}
 		else
 		{
-#ifdef DEBUG
+                    errno = -ret;
 			perror("mkdir()");
-#endif
-			return -1;
+			return ret;
 		}
 	}
 
