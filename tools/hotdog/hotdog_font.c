@@ -70,7 +70,7 @@ static void _do_draw_char32 (hd_surface srf, hd_font *font, int x, int y, uint32
             x++;
         }
         if (font->bitstype == HD_FONT_PITCHED)
-            pixels += (font->pitch >> 2) - width;
+            pixels += font->pitch - width;
         y++;
     }
 }
@@ -166,8 +166,12 @@ static void _do_draw_lat8 (hd_surface srf, hd_font *font, int x, int y, uint32 c
             cx = x;
             cy += font->h + 1;
         }
+        else if (*p == ' ') {
+            int ch = 0x20 - font->firstchar; 
+            cx += font->width[ch < 0 ? 0 : ch];
+        }
         else if (*p > font->firstchar && *p < font->firstchar + font->nchars) {
-            (*func)(srf, font, cx, cy, color, *p, blend_all);
+            (*func)(srf, font, cx, cy, color, *p - font->firstchar, blend_all);
             cx += font->width[*p - font->firstchar];
         }
         p++;
@@ -187,7 +191,7 @@ static void _do_draw_uc16 (hd_surface srf, hd_font *font, int x, int y, uint32 c
             cy += font->h + 1;
         }
         else if (*p > font->firstchar && *p < font->firstchar + font->nchars) {
-            (*func)(srf, font, cx, cy, color, *p, blend_all);
+            (*func)(srf, font, cx, cy, color, *p - font->firstchar, blend_all);
             cx += font->width[*p - font->firstchar];
         }
         p++;
@@ -1015,4 +1019,109 @@ hd_font *HD_Font_LoadPCF (const char *fname)
 
     fprintf (stderr, "Error loading PCF font file %s: %s\n", fname, strerror (err));
     return 0;
+}
+
+hd_font *HD_Font_LoadSFont (const char *fname)
+{
+	hd_font *font;
+	int iw, ih, x, i;
+	hd_surface srf;
+	uint32 pink;
+
+	if (!(srf = HD_PNG_Load(fname, &iw, &ih)))
+		return NULL;
+
+	pink = HD_RGB(255, 0, 255);
+
+	font = malloc(sizeof(hd_font));
+	font->bitstype = HD_FONT_PITCHED;
+	font->pitch = iw;
+	font->h = ih - 1;
+	font->pixbytes = (ih - 1) * iw * 4;
+	font->pixels = HD_SRF_ROWF(srf, 1);
+	font->bpp = 32;
+	font->firstchar = 32;
+	font->offset = malloc(512 * sizeof(uint32));
+	font->width = malloc(512 * sizeof(uint8));
+	font->defaultchar = 32;
+	font->offset[0] = 0;
+
+	for (i = x = 0; x < iw; ++x) {
+		if (HD_SRF_PIXF(srf, x, 0) == pink) {
+			font->width[i] = x - font->offset[i];
+			while (x < iw && HD_SRF_PIXF(srf, x, 0) == pink) ++x;
+			if (x < iw) font->offset[++i] = x;
+		}
+	}
+	font->width[i] = x - font->offset[i];
+	font->nchars = i+1;
+	font->offset = realloc(font->offset, (i+1) * sizeof(uint32));
+	font->width = realloc(font->width, (i+1) * sizeof(uint8));
+
+	return font;
+}
+
+static int h2d(char *s, int len)
+{
+	int i, ret = 0;
+	for (i = 0; i < len; ++i) {
+		ret <<= 4;
+		if (*s >= 'A' && *s <= 'F') ret |= *s - 'A' + 0xa;
+		if (*s >= '0' && *s <= '9') ret |= *s - '0';
+		if (*s >= 'a' && *s <= 'f') ret |= *s - 'a' + 0xa;
+		++s;
+	}
+	return ret;
+}
+
+hd_font *HD_Font_LoadFFF (const char *fname)
+{
+	char tmp[1024], res;
+	hd_font *font;
+	FILE *ip;
+	long n_bits = 0;
+	int i, w, lc = 0;
+
+	if ((ip = fopen(fname, "r")) == NULL)
+		return NULL;
+
+	font = malloc(sizeof(hd_font));
+	font->bitstype = HD_FONT_CLUMPED;
+	font->pitch = 2;
+	font->pixels = NULL;
+	font->nchars = 0;
+	font->firstchar = 0xffff;
+	font->bpp = 1;
+
+	fgets(tmp, 1024, ip);
+	res = sscanf(tmp, "\\size %dx%d", &w, (int *)&font->h);
+	res += sscanf(tmp, "%d%d", &w, (int *)&font->h);
+	if (res != 2) {
+		free(font);
+		fclose(ip);
+		return NULL;
+	}
+	while (fgets(tmp, 1024, ip)) {
+		unsigned short index = h2d(tmp, 4);
+		if (index < font->firstchar) font->firstchar = index;
+		if (index > lc) lc = index;
+		if (n_bits < index + 1) {
+			n_bits = (index + 0x100) & ~0xff;
+			font->pixels = realloc(font->pixels, n_bits*font->h*2);
+		}
+		for (i = 0; i < (int)font->h; ++i)
+			*((unsigned short *)font->pixels + index*font->h + i) =
+				h2d(tmp + 5 + (i * 2), 2) << 8;
+	}
+	font->defaultchar = font->firstchar;
+	font->nchars = lc - font->firstchar;
+	font->pixbytes = font->nchars * font->h * 2;
+	font->offset = malloc(font->nchars * sizeof(uint32));
+	font->width = malloc(font->nchars * sizeof(uint8));
+	for (i = 0; i <= font->nchars; ++i) {
+		font->offset[i] = (i + font->firstchar) * font->h * 2;
+		font->width[i] = w;
+	}
+	fclose(ip);
+	return font;
 }
