@@ -106,6 +106,16 @@ int main(int argc, char **argv)
 		HD_Bitmap(srf, WIDTH - WIDTH/4, 0, 16, 9, bits, 0xffff0000);
 	}
 	HD_Blur(srf, 0, HEIGHT/2, WIDTH, 24, 5);
+	if (!access("Aiken14.png", R_OK)) {
+		hd_font *font = HD_Font_LoadSFont("Aiken14.png");
+		HD_FillRect(srf, 0, HEIGHT-16, WIDTH/2, HEIGHT, 0xff00ffff);
+		HD_Font_Draw(srf, font, 4, HEIGHT-15, 0xffffffff,
+				"This is an SFont.");
+	}
+	if (!access("6x13.fff", R_OK)) {
+		hd_font *font = HD_Font_LoadFFF("6x13.fff");
+		HD_Font_Draw(srf, font, 20, 15, 0xffffffff, "This is a FFF.");
+	}
 
 	while (!eop) {
 #ifndef IPOD
