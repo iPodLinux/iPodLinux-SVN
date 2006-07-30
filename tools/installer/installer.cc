@@ -201,10 +201,20 @@ PodLocationPage::PodLocationPage (Installer *wizard)
     
     fat32 = new FATFS (part);
     int e;
-    if ((e = fat32->init()) < 0) { status = FSErr; errno = -e; goto err; }
+    if ((e = fat32->init()) < 0) {
+        fprintf (stderr, "FAT32 init failed: error %d (%s)\n", -e, strerror (-e));
+        status = FSErr;
+        errno = -e;
+        goto err;
+    }
 
     sysinfo = fat32->open ("/IPOD_C~1/DEVICE/SYSINFO", O_RDONLY);
     if (!sysinfo || sysinfo->error()) {
+        if (!sysinfo)
+            fprintf (stderr, "sysinfo open failed ?\n");
+        else
+            fprintf (stderr, "sysinfo open failed: error %d (%s)\n", sysinfo->error(),
+                     strerror (sysinfo->error()));
         status = FSErr;
 #ifndef WIN32
         errno = sysinfo? sysinfo->error() : 0;
