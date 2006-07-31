@@ -20,7 +20,7 @@ ipodshell: librawpod.a ipodshell.cc
 ipodrm: librawpod.a ipodrm.cc
 	g++ $(CXXFLAGS) -o $@ ipodrm.cc librawpod.a $(LDFLAGS)
 
-librawpod.a: partition.o ext2.o fat32.o device.o vfs.o mkdosfs.o mke2fs/mke2fs.o
+librawpod.a: partition.o ext2.o fat32.o device.o vfs.o mkdosfs.o rawpod.o mke2fs/mke2fs.o
 	ar cru $@ $?
 
 partition.o: partition.h device.h vfs.h partition.cc
@@ -29,6 +29,7 @@ device.o: device.h vfs.h device.cc
 ext2.o: ext2.h vfs.h ext2.cc
 fat32.o: fat32.h vfs.h fat32.cc
 mkdosfs.o: vfs.h
+rawpod.o: rawpod.h
 mke2fs/mke2fs.o:
 	make -C mke2fs
 
