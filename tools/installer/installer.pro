@@ -19,9 +19,11 @@ win32:SOURCES += getopt.c
 
 # Rawpod
 SOURCES += rawpod/device.cc rawpod/ext2.cc rawpod/fat32.cc \
-           rawpod/partition.cc rawpod/vfs.cc rawpod/mkdosfs.cc
+           rawpod/partition.cc rawpod/vfs.cc rawpod/mkdosfs.cc \
+           rawpod/rawpod.cc
 HEADERS += rawpod/device.h rawpod/errors.h rawpod/ext2.h \
-           rawpod/fat32.h rawpod/partition.h rawpod/vfs.h
+           rawpod/fat32.h rawpod/partition.h rawpod/vfs.h \
+           rawpod/rawpod.h
 
 # Rawpod mke2fs
 INCLUDEPATH += rawpod rawpod/mke2fs rawpod/mke2fs/e2p rawpod/mke2fs/et \
