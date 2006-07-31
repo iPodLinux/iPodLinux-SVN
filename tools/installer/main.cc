@@ -10,8 +10,7 @@
 #include "installer.h"
 
 #include "libtar/libtar.h"
-#include "rawpod/partition.h"
-#include "rawpod/device.h"
+#include "rawpod/rawpod.h"
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef WIN32
@@ -26,7 +25,12 @@ extern "C" int getopt (int nargc, char *const *nargv, const char *ostr);
 void usage (int exitcode) 
 {
     fprintf (stderr,
-             "Usage: installer [-h] [-d DIR]\n"
+             "Usage: installer [-h|-a|-r BACKUP] [-A|-L|-2] [-b BACKUP] [-d DIR] [-l PKGLIST]\n"
+#ifdef WIN32
+             "                 [-i IPOD] [-w COWFILE] [-C | [-c] [-I COMINT] [-s CSIZE]]\n"
+#else
+             "                 [-i IPOD] [-w COWFILE] [-C | -c [-I COMINT] [-s CSIZE]]\n"
+#endif
              "\n"
              " Mode:\n"
              "       -h  This help screen.\n"
@@ -39,25 +43,10 @@ void usage (int exitcode)
              "  -b FILE  Back up the iPod firmware to FILE during the install.\n"
              "  -r FILE  Open, restore a backup from FILE, and quit.\n\n"
              " Options:\n"
-#ifdef WIN32
-             "       -C  Do not use a block cache. Expect MASSIVE SLOWNESS, but no problems\n"
-             "           in case of a hastily unplugged iPod.\n"
-             "       -c  Use a block cache. [default]\n"
-#else
-             "       -C  Do not use an additional block cache. [default]\n"
-             "       -c  Use a block cache. On Linux, this is not really necessary, since the\n"
-             "           kernel does a much better job at caching than we ever could.\n"
-#endif
              "   -d DIR  Store temporary files in DIR instead of the current directory.\n"
-             "  -i IPOD  Look for the iPod at IPOD instead of probing for it.\n"
-             "   -I NUM  Allow writes to rest in cache no longer than NUM seconds before\n"
-             "           being flushed to disk (the `commit interval'). [default 5]\n"
              "  -l FILE  Use FILE as the package list file.\n"
-             "   -w COW  Perform all writes to the file COW instead of to the iPod. Useful\n"
-             "           for testing. COW must exist, but it can be empty.\n"
-             "   -s NUM  Set the cache size to NUM sectors. This will use NUM*515 bytes of\n"
-             "           memory. [default 16384]\n"
-             "\n");
+             "\n"
+             RAWPOD_OPTIONS_USAGE);
     exit (exitcode);
 }
 
@@ -73,7 +62,7 @@ int main (int argc, char *argv[])
     QApplication app (argc, argv);
 
     char ch;
-    while ((ch = getopt (argc, argv, "haAL2b:r:" "Ccw:d:i:l:I:s:")) != EOF) switch (ch) {
+    while ((ch = getopt (argc, argv, "haAL2b:r:" "d:l:" RAWPOD_OPTIONS_STR)) != EOF) switch (ch) {
     case 'a':
         InstallAutomatically = true;
         Mode = StandardInstall;
@@ -99,35 +88,19 @@ int main (int argc, char *argv[])
         iPodDoBackup = true;
         iPodBackupLocation = QString (optarg);
         break;
-    case 'w':
-        LocalRawDevice::setCOWFile (strdup (optarg));
-        break;
     case 'd':
         InstallerHome = QString (optarg);
         break;
     case 'h':
         usage (0);
         break;
-    case 'i':
-        LocalRawDevice::setOverride (strdup (optarg));
-        break;
-    case 'I':
-        BlockCache::setCommitInterval (atoi (optarg));
-        break;
-    case 's':
-        LocalRawDevice::setCachedSectors (atoi (optarg));
-        break;
     case 'l':
         PackageListFile = QString (optarg);
         break;
-    case 'c':
-        BlockCache::enable();
-        break;
-    case 'C':
-        BlockCache::disable();
-        break;
-    case '?':
     default:
+        if (rawpod_parse_option (ch, optarg))
+            break;
+    case '?':
         usage (1);
         break;
     }
