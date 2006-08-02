@@ -20,9 +20,9 @@ static void _do_draw_char8 (hd_surface srf, hd_font *font, int x, int y, uint32 
         while (x < ex) {
             pix = HD_MASKPIX (color, *pixels++);
             if (cblend)
-                HD_SRF_BLENDPIX (srf, x, y, color);
+                HD_SRF_BLENDPIX (srf, x, y, pix);
             else
-                HD_SRF_SETPIX (srf, x, y, color);
+                HD_SRF_SETPIX (srf, x, y, pix);
             x++;
         }
         if (font->bitstype == HD_FONT_CLUMPED)
@@ -1026,7 +1026,8 @@ hd_font *HD_Font_LoadSFont (const char *fname)
 	hd_font *font;
 	int iw, ih, x, i;
 	hd_surface srf;
-	uint32 pink;
+	uint32 pink, *p;
+	uint8 *buf, *b;
 
 	if (!(srf = HD_PNG_Load(fname, &iw, &ih)))
 		return NULL;
@@ -1037,9 +1038,9 @@ hd_font *HD_Font_LoadSFont (const char *fname)
 	font->bitstype = HD_FONT_PITCHED;
 	font->pitch = iw;
 	font->h = ih - 1;
-	font->pixbytes = (ih - 1) * iw * 4;
+	font->pixbytes = (ih - 1) * iw;
 	font->pixels = HD_SRF_ROWF(srf, 1);
-	font->bpp = 32;
+	font->bpp = 8;
 	font->firstchar = 32;
 	font->offset = malloc(512 * sizeof(uint32));
 	font->width = malloc(512 * sizeof(uint8));
@@ -1057,6 +1058,12 @@ hd_font *HD_Font_LoadSFont (const char *fname)
 	font->nchars = i+1;
 	font->offset = realloc(font->offset, (i+1) * sizeof(uint32));
 	font->width = realloc(font->width, (i+1) * sizeof(uint8));
+
+	buf = malloc((ih - 1) * iw);
+	for (p = (uint32 *)font->pixels, b = buf; b - buf < (ih - 1) * iw; ++b)
+		*b = (*p++ >> 24) & 0xff;
+	font->pixels = buf;
+	free(srf);
 
 	return font;
 }

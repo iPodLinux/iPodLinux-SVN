@@ -108,8 +108,7 @@ int main(int argc, char **argv)
 	HD_Blur(srf, 0, HEIGHT/2, WIDTH, 24, 5);
 	if (!access("Aiken14.png", R_OK)) {
 		hd_font *font = HD_Font_LoadSFont("Aiken14.png");
-		HD_FillRect(srf, 0, HEIGHT-16, WIDTH/2, HEIGHT, 0xff00ffff);
-		HD_Font_Draw(srf, font, 4, HEIGHT-15, 0xffffffff,
+		HD_Font_Draw(srf, font, 4, HEIGHT-15, PREM(0xfeaa66ff),
 				"This is an SFont.");
 	}
 	if (!access("6x13.fff", R_OK)) {
