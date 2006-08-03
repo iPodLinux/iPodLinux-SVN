@@ -4,7 +4,7 @@
 
 #include "kernel-list.h"
 #ifdef WIN32
-#include <winsock.h>
+//#include <winsock.h>
 #else
 #include <netinet/in.h>
 #endif
