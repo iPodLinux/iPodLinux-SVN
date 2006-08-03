@@ -12,6 +12,7 @@
 #include <sys/disk.h>
 #endif
 
+#include "vfs.h"
 #ifdef WIN32
 #include <windows.h>
 #include <winioctl.h>
