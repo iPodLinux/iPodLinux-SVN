@@ -105,7 +105,12 @@ int main(int argc, char **argv)
 			0x3800};// ..## #... .... ....
 		HD_Bitmap(srf, WIDTH - WIDTH/4, 0, 16, 9, bits, 0xffff0000);
 	}
-	HD_AABezier(srf, 0,0, 0,HEIGHT, WIDTH,0, WIDTH,HEIGHT, 6, 0xffffffff);
+	{
+		hd_point fre[] = {
+			{0,0}, {0,HEIGHT}, {WIDTH,0}, {WIDTH,HEIGHT}
+		};
+		HD_AABezier(srf, 3, fre, 6, 0xffffffff);
+	}
 	HD_Blur(srf, 0, HEIGHT/2, WIDTH, 24, 5);
 	if (!access("Aiken14.png", R_OK)) {
 		hd_font *font = HD_Font_LoadSFont("Aiken14.png");

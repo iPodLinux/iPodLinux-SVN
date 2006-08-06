@@ -329,10 +329,10 @@ void HD_AAEllipse(hd_surface srf, int xc, int yc, int rx, int ry, uint32 col);
 void HD_Ellipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col);
 void HD_FillEllipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col);
 void HD_AAFillEllipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col);
-void HD_Bezier(hd_surface srf, int x1, int y1, int x2, int y2, int x3, int y3,
-		int x4, int y4, int level, uint32 col);
-void HD_AABezier(hd_surface srf, int x1, int y1, int x2, int y2, int x3, int y3,
-		int x4, int y4, int level, uint32 col);
+void HD_Bezier(hd_surface srf, int order, hd_point *points,
+		int resolution, uint32 col);
+void HD_AABezier(hd_surface srf, int order, hd_point *points,
+		int resolution, uint32 col);
 void HD_Blur(hd_surface srf, int x, int y, int w, int h, int rad);
 
 #ifdef IPOD
