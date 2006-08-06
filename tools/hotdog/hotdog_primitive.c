@@ -998,73 +998,74 @@ void HD_AAFillEllipse(hd_surface srf, int xc, int yc, int rx, int ry,uint32 col)
 	}
 }
 
+static double lpow(double x, signed char p)
+{
+	double i = x;
+	if (p > 0) while (--p > 0) x *= i;
+	else if (p-- < 0) while (p++ < 0) x /= i;
+	else return 1;
+	return x;
+}
 
+static long factorial(long d)
+{
+	if (d==0 || d==1) return 1;
+	if (d<13)
+	 	switch (d) {
+	 		case 2: return 2; break;
+	 		case 3: return 6; break;
+	 		case 4: return 24; break;
+	 		case 5: return 120; break;
+	 		case 6: return 720; break;
+	 		case 7: return 5040; break;
+	 		case 8: return 40320; break;
+	 		case 9: return 362880; break;
+	 		case 10: return 3628800; break;
+	 		case 11: return 39916800; break;
+	 		case 12: return 479001600; break;
+	 	}
+	return factorial(d-1)*d;
+}
 
-#define DO_HD_BEZIER(function)						\
-  /*  Note: I don't think there is any great performance win in		\
-   *  translating this to fixed-point integer math, most of the time	\
-   *  is spent in the line drawing routine. */				\
-  float x = (float)x1, y = (float)y1;					\
-  float xp = x, yp = y;							\
-  float delta;								\
-  float dx, d2x, d3x;							\
-  float dy, d2y, d3y;							\
-  float a, b, c;							\
-  int i;								\
-  int n = 1;								\
-  int16 xmax=x1, ymax=y1, xmin=x1, ymin=y1;				\
-  									\
-  /* compute number of iterations */					\
-  if(level < 1) level = 1;						\
-  if(level >= 15) level=15;						\
-  while (level-- > 0)							\
-    n*= 2;								\
-  delta = (float)( 1.0 / (float)n );					\
-									\
-  /* compute finite differences						\
-   * a, b, c are the coefficient of the polynom in t defining the	\
-   * parametric curve. The computation is done independently for x and y */\
-  a = (float)(-x1 + 3*x2 - 3*x3 + x4);					\
-  b = (float)(3*x1 - 6*x2 + 3*x3);					\
-  c = (float)(-3*x1 + 3*x2);						\
-									\
-  d3x = 6 * a * delta*delta*delta;					\
-  d2x = d3x + 2 * b * delta*delta;					\
-  dx = a * delta*delta*delta + b * delta*delta + c * delta;		\
-									\
-  a = (float)(-y1 + 3*y2 - 3*y3 + y4);					\
-  b = (float)(3*y1 - 6*y2 + 3*y3);					\
-  c = (float)(-3*y1 + 3*y2);						\
-									\
-  d3y = 6 * a * delta*delta*delta;					\
-  d2y = d3y + 2 * b * delta*delta;					\
-  dy = a * delta*delta*delta + b * delta*delta + c * delta;		\
-									\
-  /* iterate */								\
-  for (i = 0; i < n; i++) {						\
-    x += dx; dx += d2x; d2x += d3x;					\
-    y += dy; dy += d2y; d2y += d3y;					\
-      if((int16)xp != (int16)x || (int16)yp != (int16)y){		\
-        function(srf, xp, yp, x, y, col);				\
-        xmax= (xmax>(int16)xp)? xmax : (int16)xp;			\
-        ymax= (ymax>(int16)yp)? ymax : (int16)yp;			\
-        xmin= (xmin<(int16)xp)? xmin : (int16)xp;			\
-        ymin= (ymin<(int16)yp)? ymin : (int16)yp;			\
-        xmax= (xmax>(int16)x)? xmax : (int16)x;				\
-        ymax= (ymax>(int16)y)? ymax : (int16)y;				\
-        xmin= (xmin<(int16)x)? xmin : (int16)x;				\
-        ymin= (ymin<(int16)y)? ymin : (int16)y;				\
-      }									\
-    xp = x; yp = y;							\
-  }
+/**
+ * 2D bezier function:
+ * u is the parametric value on interval [0,1], where u is 0 
+ * 	at the first point in 'points', and u is 1 at the last. 
+ * retval is the bezier value at u.
+ * points is the vector of points
+ **/
+static void b2dim(float u,  int order, hd_point *points, hd_point *retval)
+{
+	uint32 ui;
+	float mult;
+	retval->x = 0;
+	retval->y = 0;
+	for (ui = 0; ui <= order; ++ui) {
+		mult = factorial(order) * lpow(u, ui) * lpow(1-u, order-ui) /
+			(factorial(ui) * factorial(order - ui));
+		retval->x += mult * points[ui].x;
+		retval->y += mult * points[ui].y;
+	}
+}
 
-void HD_Bezier(hd_surface srf, int x1, int y1, int x2, int y2, int x3, int y3,
-		int x4, int y4, int level, uint32 col)
-{ DO_HD_BEZIER(HD_Line) }
-void HD_AABezier(hd_surface srf, int x1, int y1, int x2, int y2, int x3, int y3,
-		int x4, int y4, int level, uint32 col)
-{ DO_HD_BEZIER(HD_AALine) }
+#define DO_HD_BEZIER(function)			\
+  float u, fi;					\
+  hd_point *hs, *p;				\
+  int i = (order + 1) * resolution;		\
+  u = (float)(1.0f / (float)i);			\
+  p = hs = malloc(++i * sizeof(hd_point));	\
+						\
+  for (fi = 0.0f; p - hs < i; fi += u)		\
+    b2dim(fi, order, points, p++);		\
+  function(srf, hs, p - hs, col);		\
+  free(hs);
 
+void HD_Bezier(hd_surface srf, int order, hd_point *points,
+		int resolution, uint32 col)
+{ DO_HD_BEZIER(HD_Lines) }
+void HD_AABezier(hd_surface srf, int order, hd_point *points,
+		int resolution, uint32 col)
+{ DO_HD_BEZIER(HD_AALines) }
 
 void HD_Blur(hd_surface srf, int x, int y, int w, int h, int rad)
 {
