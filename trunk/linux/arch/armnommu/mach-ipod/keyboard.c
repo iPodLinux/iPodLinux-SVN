@@ -596,7 +596,6 @@ static void key_i2c_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 			if ((status & 0x40000000) != 0) {
 				/* scroll wheel down */
 				new_button_mask |= 0x20;
-				ikb_push_event (EV_TOUCH | TOUCH(new_wheel_value));
 
 				if (wheel_bits16_22 != -1) {
 					wheel_delta = new_wheel_value - wheel_bits16_22;
@@ -617,6 +616,7 @@ static void key_i2c_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 				} else {
 					ikb_pressed_at = jiffies;
 					ikb_first_loc = new_wheel_value;
+					ikb_push_event (EV_TOUCH | TOUCH(new_wheel_value));
 				}
 				wheel_bits16_22 = new_wheel_value;
 			}
