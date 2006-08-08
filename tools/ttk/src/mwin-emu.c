@@ -213,7 +213,7 @@ void t_GrSetGCMode (t_GR_GC_ID gc, int mode)
 }
 void t_GrGetGCInfo (t_GR_GC_ID gc, t_GR_GC_INFO *inf) 
 {
-#ifdef SDL
+#if defined(SDL) || !defined(MWIN)
     inf->foreground = gc->fg;
     inf->background = gc->bg;
     inf->usebackground = gc->usebg;

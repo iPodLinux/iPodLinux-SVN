@@ -34,6 +34,9 @@ endif
 
 FLEX ?= flex
 
+ifdef HDOG
+GFXLIB = hotdog
+else
 ifdef SDL
 GFXLIB = SDL
 else
@@ -56,6 +59,7 @@ dist:
 endif
 endif
 endif
+endif
 
 ifdef TTF
 OBJS += SDL_ttf.o
@@ -74,6 +78,20 @@ LIBS += -lintl
 endif
 endif
 
+ifeq ($(GFXLIB),hotdog)
+MYCFLAGS += -DHDOG
+OBJS += hotdog.o
+MYCFLAGS += -I../../hotdog -I../../../hotdog
+ifdef IPOD
+LIBSA += ../../../hotdog/ipod/libhotdog.a
+else
+LIBSA += ../../../hotdog/x11/libhotdog.a
+MYCFLAGS += -I/usr/include/SDL -I/usr/local/include/SDL `sdl-config --cflags`
+LIBS += `sdl-config --libs` -lSDL_image -lpng -ljpeg
+endif
+LIBS += -lm
+
+else
 ifeq ($(GFXLIB),SDL)
 MYCFLAGS += -DSDL
 OBJS += sdl.o SDL_gfxPrimitives.o SDL_gfxPrimitives_Byte.o SDL_rotozoom.o SFont.o
@@ -105,6 +123,7 @@ LIBS += -lm
 else
 default:
 	make -C..
+endif
 endif
 endif
 
