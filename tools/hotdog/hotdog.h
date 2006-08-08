@@ -42,12 +42,6 @@ typedef   signed short  int16;
 typedef unsigned char  uint8;
 typedef   signed char   int8;
 
-/**** Primitives [xxx] ****/
-typedef struct hd_primitive {
-    uint32 type;
-    uint32 color; // ARGB
-} hd_primitive;
-
 /**** Surfaces ****/
 
 /* Surfaces are just things for drawing graphics.
@@ -190,7 +184,6 @@ typedef struct hd_object {
     /* private */ int dirty;
     
     hd_surface   canvas;
-    hd_primitive *primitive;
     void       *data;
     
     struct hd_engine *eng;
@@ -232,20 +225,33 @@ typedef struct hd_engine {
 
 /**** Optimized ops [need some more, plus ARM ASM optim versions] ****/
 
+/* The "idst ^= 0xFF000000; isrc &= ~0xFF000000;" line makes the alphas composite correctly.
+ * Witness:
+ *                     |                             |
+ * light, 100%   -->   |   --> 30% of original -->   |   --> 30%*40%=12% of original
+ *                     |                             |
+ *                  alpha=70%                     alpha=60%
+ *                 transp=30%                    transp=40%
+ *
+ * It's the *transparencies* that multiply, not the alphas (opacities).
+ * The XOR changes opacity to transparency for the calculation, and the mask-out prevents the
+ * src alpha channel from getting in there twice.
+ */
 #define _HD_ALPHA_BLEND(dst_argb, src_argb, ret_argb, opac)         \
 {                                                              \
  uint32 alpha,dst[2];                                          \
  uint32 idst = (dst_argb);                                      \
  uint32 isrc = (src_argb);                                      \
  if ((opac) != 0xff) { \
-    dst[0] = ((isrc & 0x00FF00FF) * (opac) + 0x00800080) & 0xFF00FF00; \
-    dst[1] = (((isrc >> 8) & 0x00FF00FF) * (opac) + 0x00800080) & 0xFF00FF00; \
+    dst[0] = ((isrc & 0x00FF00FF) * (opac) + 0x00FF00FF) & ~0x00FF00FF; \
+    dst[1] = (((isrc >> 8) & 0x00FF00FF) * (opac) + 0x00FF00FF) & ~0x00FF00FF; \
     isrc = (dst[0]>>8) + dst[1]; \
  } \
  alpha = 255 - (isrc >> 24); \
  idst ^= 0xFF000000; isrc &= ~0xFF000000; \
- dst[0] = ((idst & 0x00FF00FF) * alpha + 0x00800080) & 0xFF00FF00;          \
- dst[1] = (((idst>>8) & 0x00FF00FF) * alpha + 0x00800080) & 0xFF00FF00;          \
+ dst[0] = ((idst & 0x00FF00FF) * alpha + 0x00FF00FF) & 0x00FF00FF;          \
+ dst[1] = (((idst>>8) & 0x00FF00FF) * alpha + 0x00FF00FF) & 0x00FF00FF;          \
+ dst[1] ^= 0xFF000000; \
  (ret_argb) = (dst[0]>>8) + dst[1] + isrc;                      \
 }
 
@@ -253,9 +259,9 @@ typedef struct hd_engine {
 
 #define HD_RGB(r,g,b) (0xff000000 | ((r) << 16) | ((g) << 8) | (b))
 #define HD_RGBA(r,g,b,a) (((a) << 24) | \
-                          (((((r)*(a)) + 0x80) >> 8) << 16) | \
-                          (((((g)*(a)) + 0x80)     ) & 0xFF00) | \
-                           ((((b)*(a)) + 0x80) >> 8))
+                          (((((r)*(a)) + 0xFF) >> 8) << 16) | \
+                          (((((g)*(a)) + 0xFF)     ) & 0xFF00) | \
+                           ((((b)*(a)) + 0xFF) >> 8))
 #define HD_RGBAM(mr,mg,mb,a) (((a) << 24) | ((mr) << 16) | ((mg) << 8) | (mb))
 #define HD_MASKPIX(argb,a) ({ \
  uint32 __dst[2]; \
@@ -337,9 +343,17 @@ void HD_Blur(hd_surface srf, int x, int y, int w, int h, int rad);
 
 #ifdef IPOD
 /****** LCD ******/
+#define HD_LCD_TYPE_PHOTO  0
+#define HD_LCD_TYPE_COLOR  1
+#define HD_LCD_TYPE_MONO   2
+#define HD_LCD_TYPE_MINI2G 3
+#define HD_LCD_TYPE_VIDEO  5
+
+#define HD_LCD_BPP(type) ((type == 2 || type == 3)? 2 : 16)
+
 void HD_LCD_Init();
 void HD_LCD_GetInfo (int *hw_ver, int *lcd_width, int *lcd_height, int *lcd_type);
-void HD_LCD_Update (uint16 *fb, int x, int y, int w, int h);
+void HD_LCD_Update (void *fb, int x, int y, int w, int h);
 void HD_LCD_Quit(); // restore to text mode before quitting
 #endif
 

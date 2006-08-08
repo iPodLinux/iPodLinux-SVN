@@ -15,15 +15,25 @@
 #define outw(a,b) (*(volatile unsigned short *) (b) = (a))
 
 static int hw_ver, lcd_type, lcd_width, lcd_height;
+static unsigned int ipod_rtc, ipod_lcd_base;
 
-/* get current usec counter */
+#define LCD_CMD  0x8
+#define LCD_DATA 0x10
+
+/* get current usec counter - any type */
 static int timer_get_current(void)
 {
-	return inl(0x60005010);
+	return inl(ipod_rtc);
 }
 
-/* wait for LCD with timeout */
-static void lcd_wait_write(void)
+/* check if number of useconds has past - any type */
+static int timer_check (int clock_start, int usecs)
+{
+	return ((timer_get_current() - clock_start) >= usecs);
+}
+
+/* wait for LCD with timeout - type 0 or 1 */
+static void lcd_wait_write_01(void)
 {
 	if ((inl(0x70008A0C) & 0x80000000) != 0) {
 		int start = timer_get_current();
@@ -35,18 +45,21 @@ static void lcd_wait_write(void)
 	}
 }
 
+// Sends "lo" part - type 0 or 1
 static void lcd_send_lo(int v)
 {
-	lcd_wait_write();
+	lcd_wait_write_01();
 	outl(v | 0x80000000, 0x70008A0C);
 }
 
+// Sends "hi" part - type 0 or 1
 static void lcd_send_hi(int v)
 {
-	lcd_wait_write();
+	lcd_wait_write_01();
 	outl(v | 0x81000000, 0x70008A0C);
 }
 
+// Sends command + data - type 0 or 1
 static void lcd_cmd_data(int cmd, int data)
 {
 	if (lcd_type == 0) {
@@ -60,7 +73,100 @@ static void lcd_cmd_data(int cmd, int data)
 	}
 }
 
-static void lcd_update_display(uint16 *fb, int sx, int sy, int width, int height)
+// Waits for the LCD to become available - type 2 or 3
+static void lcd_wait_write_23 (void) 
+{
+	int start = timer_get_current();
+	do {
+		if ((inl (ipod_lcd_base) & 0x8000) == 0) break;
+	} while (timer_check (start, 1000) == 0);
+}
+
+// Sends data to the LCD - type 2
+static void lcd_send_data_2 (int data_lo, int data_hi) 
+{
+	lcd_wait_write_23();
+	outl (data_lo, ipod_lcd_base + LCD_DATA);
+	lcd_wait_write_23();
+	outl (data_lo, ipod_lcd_base + LCD_DATA);
+}
+
+// Sends a command to the LCD - type 2
+static void lcd_prepare_cmd_2 (int cmd) 
+{
+	lcd_wait_write_23();
+	outl(0x0, ipod_lcd_base + LCD_CMD);
+	lcd_wait_write_23();
+	outl(cmd, ipod_lcd_base + LCD_CMD);
+}
+
+// Sends data to the LCD - type 3
+static void lcd_send_data_3 (int data_lo, int data_hi) 
+{
+	lcd_wait_write_23();
+	outl ((inl (0x70003000) & ~0x1f00000) | 0x1700000, 0x70003000);
+	outl (data_hi | (data_lo << 8) | 0x760000, 0x70003008);
+}
+
+// Sends a command to the LCD - type 3
+static void lcd_prepare_cmd_3 (int cmd) 
+{
+	lcd_wait_write_23();
+	outl((inl(0x70003000) & ~0x1f00000) | 0x1700000, 0x70003000);
+	outl(cmd | 0x740000, 0x70003008);
+}
+
+// Sends command + data - type 2 or 3
+static void lcd_cmd_and_data (int cmd, int data_lo, int data_hi, int type)
+{
+	if (type == 2) {
+		lcd_prepare_cmd_2 (cmd);
+		lcd_send_data_2 (data_lo, data_hi);
+	} else if (type == 3) {
+		lcd_prepare_cmd_3 (cmd);
+		lcd_send_data_3 (data_lo, data_hi);
+	}
+}
+
+static void lcd_update_mono_display (uint8 *fb, int sx, int sy, int width, int height) 
+{
+	int linelen = (lcd_width + 3) / 4;
+	int cursor_pos, y, x;
+	int mx = sx + width - 1, my = sy + height - 1;
+	int type = lcd_type;
+
+	sx >>= 3;
+	mx >>= 3;
+
+	cursor_pos = sx + (sy << 5);
+
+	uint8 *img_data = fb + (sy * linelen);
+	for (y = sy; y <= my; y++) {
+		// move the cursor
+		lcd_cmd_and_data (0x11, cursor_pos >> 8, cursor_pos & 0xff, type);
+
+		// display one line
+		if (type == 3) {
+			lcd_prepare_cmd_3 (0x12);
+			for (x = sx; x <= mx; x++) {
+				// display 8 pixels
+				lcd_send_data_3 (img_data[2*x+1], img_data[2*x]);
+			}
+		} else {
+			lcd_prepare_cmd_2 (0x12);
+			for (x = sx; x <= mx; x++) {
+				// display 8 pixels
+				lcd_send_data_2 (img_data[2*x+1], img_data[2*x]);
+			}
+		}
+
+		// update cursor pos counter
+		cursor_pos += 0x20;
+		img_data += linelen;
+	}
+}
+
+static void lcd_update_color_display (uint16 *fb, int sx, int sy, int width, int height)
 {
 	int rect1, rect2, rect3, rect4;
 	uint16 *addr = fb;
@@ -202,23 +308,23 @@ void HD_LCD_Init()
 {
 	hw_ver = iPod_GetGeneration() >> 16;
 	switch (hw_ver) {
-	case 0xB:
+	case 0xB: // video
 		lcd_width = 320;
 		lcd_height = 240;
 		lcd_type = 5;
 		break;
-	case 0xC:
+	case 0xC: // nano
 		lcd_width = 176;
 		lcd_height = 132;
 		lcd_type = 1;
 		break;
-	case 0x6:
+	case 0x6: // photo, color
 		lcd_width = 220;
 		lcd_height = 176;
 
 		if (iPod_GetGeneration() == 0x60000) {
-			lcd_type = 0;
-		} else {
+			lcd_type = 0; // photo
+		} else { // color
 			int gpio_a01, gpio_a04;
 			gpio_a01 = (inl(0x6000D030) & 0x2) >> 1;
 			gpio_a04 = (inl(0x6000D030) & 0x10) >> 4;
@@ -228,6 +334,23 @@ void HD_LCD_Init()
 				lcd_type = 1;
 			}
 		}
+		break;
+	case 0x7: // mini2g
+	case 0x4: // mini1g
+		lcd_width = 138;
+		lcd_height = 110;
+		if (hw_ver == 0x7) // mini2g
+			lcd_type = 3;
+		else
+			lcd_type = 2;
+		break;
+	case 0x5: // 4g
+	case 0x3: // 3g
+	case 0x2: // 2g
+	case 0x1: // 1g
+		lcd_width = 160;
+		lcd_height = 128;
+		lcd_type = 2;
 		break;
 	default:
 		fprintf (stderr, "Unsupported LCD\n");
@@ -241,18 +364,22 @@ void HD_LCD_Init()
 
 extern void _HD_ARM_Update5G (uint16 *fb, int x, int y, int w, int h);
 extern void _HD_ARM_UpdatePhoto (uint16 *fb, int x, int y, int w, int h, int lcd_type);
-void HD_LCD_Update (uint16 *fb, int x, int y, int w, int h) 
+void HD_LCD_Update (void *fb, int x, int y, int w, int h) 
 {
 	switch (lcd_type) {
-	case 0:
-	case 1:
+	case 0: // photo
+	case 1: // color, nano
 #if 1
-		lcd_update_display (fb, x, y, w, h);
+		lcd_update_color_display (fb, x, y, w, h);
 #else
 		_HD_ARM_UpdatePhoto (fb, x, y, w, h, lcd_type);
 #endif
 		break;
-	case 5:
+	case 2: // mono
+	case 3: // new mono (mini2g)
+		lcd_update_mono_display (fb, x, y, w, h);
+		break;
+	case 5: // video
 		_HD_ARM_Update5G (fb, x, y, w, h);
 		break;
 	}

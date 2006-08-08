@@ -78,11 +78,15 @@ void HD_Primitive_Render(hd_engine *eng,hd_object *obj, int cx, int cy, int cw, 
 #define MAX(a,b) (((a)>(b))?(a):(b))
 #define ABS(a) (((a)>0)?(a):(-(a)))
 
+/* Draws from (x1, y) to (x2, y); (x1, y) is included but (x2, y) is *not*. */
 static void hLine(hd_surface srf, int x1, int x2, int y, uint32 col)
 {
 	uint32 *p;
-	/* TODO: check bounds */
+        if (y < 0 || >= HD_SRF_HEIGHT(srf)) return; // if the line is off-surface
 	if (x1 > x2) SWAP(x1, x2);
+        if (x1 < 0) x1 = 0;
+        if (x2 > HD_SRF_WIDTH(srf)) x2 = HD_SRF_WIDTH(srf);
+        if (x1 >= x2) return; // if x1 was off to the right, or there's no line to draw at all
 	p = HD_SRF_ROWF(srf, y);
 	for (; x1 < x2; ++x1)
 		BLEND_ARGB8888_ON_ARGB8888(*(p + x1), col, 0xff)
