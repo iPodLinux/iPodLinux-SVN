@@ -4,6 +4,14 @@ export MBD = yes
 
 all: build-dirs
 	@echo ">>> Building TTK..."
+ifndef NOHDOG
+ifndef NOIPOD
+	make -C build/ipod-hdog IPOD=1 HDOG=1 all
+endif
+ifndef NOX11
+	make -C build/x11-hdog HDOG=1 all
+endif
+endif
 ifndef NOSDL
 ifndef NOIPOD
 	make -C build/ipod-sdl IPOD=1 SDL=1 all
@@ -25,6 +33,14 @@ endif
 
 examples:
 	@echo ">>> Compiling examples..."
+ifndef NOHDOG
+ifndef NOIPOD
+	make -C build/ipod-hdog IPOD=1 HDOG=1 examples
+endif
+ifndef NOX11
+	make -C build/x11-hdog HDOG=1 examples
+endif
+endif
 ifndef NOSDL
 ifndef NOIPOD
 	make -C build/ipod-sdl IPOD=1 SDL=1 examples
@@ -50,6 +66,7 @@ build-dirs:
 	./make-build-dirs.sh; \
 	ln -s ../../fonts ../../schemes build/x11-mwin/; \
 	ln -s ../../fonts ../../schemes build/x11-sdl/; \
+	ln -s ../../fonts ../../schemes build/x11-hdog/; \
 	ln -s ../libs ../mwincludes ../sdlincludes build/; \
 	echo "<<< Done."; \
 	echo; \
@@ -58,6 +75,14 @@ build-dirs:
 install: all
 	@echo ">>> Installing TTK..."
 	cp ttk-config.in ttk-config.tmp
+ifndef NOHDOG
+ifndef NOIPOD
+	make -C build/ipod-hdog IPOD=1 HDOG=1 install
+endif
+ifndef NOX11
+	make -C build/x11-hdog HDOG=1 install
+endif
+endif
 ifndef NOSDL
 ifndef NOIPOD
 	make -C build/ipod-sdl IPOD=1 SDL=1 install
@@ -79,6 +104,7 @@ endif
 	install -d $(PREFIX)/include/ttk/ttk
 	install -m 644 src/include/*.h $(PREFIX)/include/ttk/ttk/
 	install -m 644 src/ttk.h $(PREFIX)/include/ttk/
+	-install -m 644 ../hotdog/hotdog.h $(PREFIX)/include/ttk/
 	sed 's:@PREFIX@:$(PREFIX):g' < ttk-config.tmp > ttk-config
 	install -m 755 ttk-config $(PREFIX)/bin/
 	cp -pR mwincludes sdlincludes $(PREFIX)/include/ttk/
@@ -88,8 +114,14 @@ endif
 
 clean:
 	@echo ">>> Cleaning..."
+ifndef NOHDOG
+	make -C build/ipod-hdog IPOD=1 HDOG=1 clean
+	make -C build/x11-hdog HDOG=1 clean
+endif
+ifndef NOSDL
 	make -C build/ipod-sdl IPOD=1 SDL=1 clean
 	make -C build/x11-sdl SDL=1 clean
+endif
 ifdef DOMWIN
 	make -C build/ipod-mwin IPOD=1 MWIN=1 clean
 	make -C build/x11-mwin MWIN=1 clean

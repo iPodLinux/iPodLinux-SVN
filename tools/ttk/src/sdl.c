@@ -8,7 +8,7 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful, 
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -491,7 +491,7 @@ void ttk_poly (ttk_surface srf, int nv, short *vx, short *vy, ttk_color col)
     else
 	polygonColor (srf, (Sint16 *)vx, (Sint16 *)vy, nv, fetchcolor (col));
 }
-void ttk_poly_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v) 
+void ttk_poly_pt (ttk_surface srf, ttk_point *v, int n, ttk_color col) 
 {
     int i;
     short *vx = malloc (n*sizeof(short)), *vy = malloc (n*sizeof(short));
@@ -507,12 +507,16 @@ void ttk_poly_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v)
     }
     
     if (ttk_screen->bpp == 2)
-	polygonByte (srf, vx, vy, n, gc->fg);
+	polygonByte (srf, vx, vy, n, col);
     else
-	polygonColor (srf, vx, vy, n, fetchcolor (gc->fg));
+	polygonColor (srf, vx, vy, n, col);
     
     free (vx);
     free (vy);
+}
+void ttk_poly_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v) 
+{
+    ttk_poly_pt (srf, v, n, gc->fg);
 }
 
 void ttk_aapoly (ttk_surface srf, int nv, short *vx, short *vy, ttk_color col)
@@ -522,7 +526,7 @@ void ttk_aapoly (ttk_surface srf, int nv, short *vx, short *vy, ttk_color col)
     else
 	aapolygonColor (srf, (Sint16 *)vx, (Sint16 *)vy, nv, fetchcolor (col));
 }
-void ttk_aapoly_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v) 
+void ttk_aapoly_pt (ttk_surface srf, ttk_point *v, int n, ttk_color col) 
 {
     int i;
     short *vx = malloc (n*sizeof(short)), *vy = malloc (n*sizeof(short));
@@ -538,12 +542,16 @@ void ttk_aapoly_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v)
     }
     
     if (ttk_screen->bpp == 2)
-	aapolygonByte (srf, vx, vy, n, gc->fg);
+	aapolygonByte (srf, vx, vy, n, col);
     else
-	aapolygonColor (srf, vx, vy, n, fetchcolor (gc->fg));
+	aapolygonColor (srf, vx, vy, n, col);
     
     free (vx);
     free (vy);
+}
+void ttk_aapoly_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v) 
+{
+    ttk_aapoly_pt (srf, v, n, gc->fg);
 }
 
 void ttk_polyline (ttk_surface srf, int nv, short *vx, short *vy, ttk_color col)
@@ -553,7 +561,7 @@ void ttk_polyline (ttk_surface srf, int nv, short *vx, short *vy, ttk_color col)
     else
 	polylineColor (srf, (Sint16 *)vx, (Sint16 *)vy, nv, fetchcolor (col));
 }
-void ttk_polyline_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v) 
+void ttk_polyline_pt (ttk_surface srf, ttk_point *v, int n, ttk_color col) 
 {
     int i;
     short *vx = malloc (n*sizeof(short)), *vy = malloc (n*sizeof(short));
@@ -569,12 +577,16 @@ void ttk_polyline_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v)
     }
     
     if (ttk_screen->bpp == 2)
-	polylineByte (srf, vx, vy, n, gc->fg);
+	polylineByte (srf, vx, vy, n, col);
     else
-	polylineColor (srf, vx, vy, n, fetchcolor (gc->fg));
+	polylineColor (srf, vx, vy, n, col);
     
     free (vx);
     free (vy);
+}
+void ttk_polyline_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v) 
+{
+    ttk_polyline_pt (srf, v, n, gc->fg);
 }
 
 #define DO_BEZIER(function)\
@@ -666,7 +678,7 @@ void ttk_fillpoly (ttk_surface srf, int nv, short *vx, short *vy, ttk_color col)
     else
 	filledPolygonColor (srf, (Sint16 *)vx, (Sint16 *)vy, nv, fetchcolor (col));
 }
-void ttk_fillpoly_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v) 
+void ttk_fillpoly_pt (ttk_surface srf, ttk_point *v, int n, ttk_color col) 
 {
     int i;
     short *vx = malloc (n*sizeof(short)), *vy = malloc (n*sizeof(short));
@@ -682,12 +694,16 @@ void ttk_fillpoly_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v)
     }
     
     if (ttk_screen->bpp == 2)
-	filledPolygonByte (srf, vx, vy, n, gc->fg);
+	filledPolygonByte (srf, vx, vy, n, col);
     else
-	filledPolygonColor (srf, vx, vy, n, fetchcolor (gc->fg));
+	filledPolygonColor (srf, vx, vy, n, col);
     
     free (vx);
     free (vy);
+}
+void ttk_fillpoly_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v) 
+{
+    ttk_fillpoly_pt (srf, v, n, gc->fg);
 }
 
 void ttk_ellipse (ttk_surface srf, int x, int y, int rx, int ry, ttk_color col)

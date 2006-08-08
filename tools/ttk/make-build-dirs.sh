@@ -2,7 +2,7 @@
 
 PATH=$PATH:/usr/X11R6/bin
 
-builddirs="ipod-sdl x11-sdl ipod-mwin x11-mwin"
+builddirs="ipod-hdog x11-hdog ipod-sdl x11-sdl ipod-mwin x11-mwin"
 
 if test x$MBD = x; then
     echo "*** Don't call me directly; I should be called"

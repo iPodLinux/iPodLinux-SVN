@@ -113,7 +113,7 @@ typedef struct _ttk_font {
 } ttk_font;
 typedef struct ttk_point { int x, y; } ttk_point;
 typedef struct _ttk_gc { int fg, bg, usebg, xormode; ttk_font font; } *ttk_gc;
-#else
+#elif defined(MWIN)
 #include "nano-X.h"
 typedef unsigned int TTK_ID;
 typedef GR_COLOR    ttk_color;
@@ -127,6 +127,22 @@ typedef struct
     int ofs;
     struct ttk_fontinfo *fi;
 } ttk_font;
+#else /* Hotdog */
+#include "hotdog.h"
+typedef uint32 ttk_color;
+typedef hd_surface ttk_surface;
+typedef hd_point ttk_point;
+typedef struct _ttk_font 
+{
+    hd_font *f;
+    int ofs;
+    struct ttk_fontinfo *fi;
+} ttk_font;
+typedef struct _ttk_gc {
+    ttk_color fg, bg;
+    int usebg, xormode;
+    ttk_font font;
+} *ttk_gc;
 #endif
 
 typedef struct TWidgetList 
@@ -296,6 +312,14 @@ void ttk_input_end();
 
 // -- Implemented by GFX driver --
 
+#if !defined(SDL) && !defined(MWIN) /* Hotdog */
+#define TTK_ACOLOR(r,g,b,a) HD_RGBA(r,g,b,a)
+#define TTK_COLOR(r,g,b) HD_RGB(r,g,b)
+#else
+#define TTK_ACOLOR(r,g,b,a) ttk_makecol(r,g,b)
+#define TTK_COLOR(r,g,b) ttk_makecol(r,g,b)
+#endif
+
 ttk_color ttk_makecol (int r, int g, int b);
 ttk_color ttk_makecol_ex (int r, int g, int b, ttk_surface srf);
 void ttk_unmakecol (ttk_color col, int *r, int *g, int *b);
@@ -334,11 +358,22 @@ void ttk_vgradient(ttk_surface srf, int x1, int y1, int x2, int y2,
                         ttk_color top, ttk_color bottom );
 
 void ttk_poly (ttk_surface srf, int nv, short *vx, short *vy, ttk_color col);
+void ttk_poly_pt (ttk_surface srf, ttk_point *v, int n, ttk_color col);
 void ttk_poly_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v);
 void ttk_aapoly (ttk_surface srf, int nv, short *vx, short *vy, ttk_color col);
+void ttk_aapoly_pt (ttk_surface srf, ttk_point *v, int n, ttk_color col);
 void ttk_aapoly_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v);
 void ttk_fillpoly (ttk_surface srf, int nv, short *vx, short *vy, ttk_color col);
+void ttk_fillpoly_pt (ttk_surface srf, ttk_point *v, int n, ttk_color col);
 void ttk_fillpoly_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v);
+#if !defined(SDL) && !defined(MWIN) /* Hotdog */
+void ttk_polyline (ttk_surface srf, int nv, short *vx, short *vy, ttk_color col);
+void ttk_polyline_pt (ttk_surface srf, ttk_point *v, int n, ttk_color col);
+void ttk_polyline_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v);
+void ttk_aapolyline (ttk_surface srf, int nv, short *vx, short *vy, ttk_color col);
+void ttk_aapolyline_pt (ttk_surface srf, ttk_point *v, int n, ttk_color col);
+void ttk_aapolyline_gc (ttk_surface srf, ttk_gc gc, int n, ttk_point *v);
+#endif
 
 void ttk_ellipse (ttk_surface srf, int x, int y, int rx, int ry, ttk_color col);
 void ttk_ellipse_gc (ttk_surface srf, ttk_gc gc, int x, int y, int rx, int ry);
@@ -414,8 +449,10 @@ void ttk_free_surface (ttk_surface srf);
 #define  BLACK     0,   0,   0
 #ifdef SDL
 #define   CKEY   255,   0, 255
-#else
+#elif defined(MWIN)
 #define   CKEY   255, 255, 255
+#else /* Hotdog */
+#define   CKEY   -1, -1, 0x00000000 /* zero-alpha */
 #endif
 
 #undef MIN
@@ -454,6 +491,9 @@ do { 			\
 #define TTK_BUTTON_DOWN  1
 #define TTK_BUTTON_UP    2
 #define TTK_SCROLL       3
+#define TTK_TOUCH        4
+#define TTK_LIFT         5
+#define TTK_TAP          6
 
 void ttk_gfx_init();
 void ttk_gfx_update (ttk_surface srf);
