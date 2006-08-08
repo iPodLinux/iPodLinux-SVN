@@ -34,7 +34,7 @@
 
 #define HD_PRIM_RECTANGLE 0x00
 
-/**** Basic typedefs ****/
+/****** Basic typedefs ******/
 typedef unsigned int   uint32;
 typedef   signed int    int32;
 typedef unsigned short uint16;
@@ -42,7 +42,7 @@ typedef   signed short  int16;
 typedef unsigned char  uint8;
 typedef   signed char   int8;
 
-/**** Surfaces ****/
+/****** Surfaces ******/
 
 /* Surfaces are just things for drawing graphics.
  * However, the actual pixels don't start until (h+2)*4
@@ -108,7 +108,7 @@ void HD_FreeSurface (hd_surface srf); // you can just use free if you want
 /* Premultiplies the alpha in [srf]. You must be careful to only call this once. */
 void HD_PremultiplyAlpha (hd_surface srf);
 
-/**** Fonts ****/
+/****** Fonts ******/
 
 /* There are two commonly-used ways to store font character
  * data in an array of pixels. One, which we'll call `pitched',
@@ -155,17 +155,24 @@ hd_font *HD_Font_LoadPCF (const char *filename);
 hd_font *HD_Font_LoadSFont (const char *filename);
 hd_font *HD_Font_LoadFFF (const char *filename);
 
-int HD_Font_TextWidth (hd_font *font, const char *str);
+int HD_Font_TextWidth (hd_font *font, const char *str); // UTF-8
+int HD_Font_TextWidthLatin1 (hd_font *font, const char *str);
+int HD_Font_TextWidthUnicode (hd_font *font, const uint16 *str);
 /* TextHeight is just font->h */
 
 /** Draws with the TOP LEFT CORNER at (x,y) */
 void HD_Font_Draw (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str);
-/* Fast = no blending. May have unpredictable results for AA fonts on non-white surfaces. */
+void HD_Font_DrawLatin1 (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str);
+void HD_Font_DrawUnicode (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str);
+/* Fast = no blending. May have unpredictable results for AA fonts on non-white surfaces.
+   Only draws black or white for 8-bpp fonts. */
 void HD_Font_DrawFast (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str);
+void HD_Font_DrawFastLatin1 (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str);
+void HD_Font_DrawFastUnicode (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str);
 
 struct hd_object *HD_Font_MakeObject (hd_font *font, const char *str);
 
-/**** Compositing [need to implement per-object alpha] ****/
+/****** Compositing ******/
 
 struct hd_engine;
 struct hd_object;
@@ -223,7 +230,7 @@ typedef struct hd_engine {
     hd_obj_list *list;
 } hd_engine;
 
-/**** Optimized ops [need some more, plus ARM ASM optim versions] ****/
+/**** Optimized ops ****/
 
 /* The "idst ^= 0xFF000000; isrc &= ~0xFF000000;" line makes the alphas composite correctly.
  * Witness:
@@ -303,7 +310,8 @@ int32 fsin (int32 angle); // angle is in units of 1024 per pi/2 radians - that i
 int32 fcos (int32 angle); // same
 
 /****** Canvasses ******/
-/* Canvas_Create() takes ownership of srf; it'll free it when the object is freed. */
+hd_object *HD_Canvas_Create (int w, int h);
+/* Canvas_CreateFrom() takes ownership of srf; it'll free it when the object is freed. */
 hd_object *HD_Canvas_CreateFrom(hd_surface srf);
 void       HD_Canvas_Destroy(hd_object *obj);
 void       HD_Canvas_Render(hd_engine *eng,hd_object *obj, int x, int y, int w, int h);
@@ -312,7 +320,7 @@ void       HD_Canvas_Render(hd_engine *eng,hd_object *obj, int x, int y, int w, 
 hd_object *HD_PNG_Create(const char *fname);
 hd_surface HD_PNG_Load (const char *fname, int *w, int *h);
 
-/*** PRIMITIVES ***/
+/****** Primitives ******/
 typedef struct _hd_point {
 	int x, y;
 } hd_point;
@@ -336,9 +344,9 @@ void HD_Ellipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col);
 void HD_FillEllipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col);
 void HD_AAFillEllipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col);
 void HD_Bezier(hd_surface srf, int order, hd_point *points,
-		int resolution, uint32 col);
+               int resolution, uint32 col);
 void HD_AABezier(hd_surface srf, int order, hd_point *points,
-		int resolution, uint32 col);
+                 int resolution, uint32 col);
 void HD_Blur(hd_surface srf, int x, int y, int w, int h, int rad);
 
 #ifdef IPOD

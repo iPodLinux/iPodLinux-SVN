@@ -198,11 +198,11 @@ static void _do_draw_uc16 (hd_surface srf, hd_font *font, int x, int y, uint32 c
     }
 }
 
-void HD_Font_Draw (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str) 
+void HD_Font_DrawLatin1 (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str) 
 {
     _do_draw_lat8 (srf, font, x, y, color, str, (color & 0xff000000) != 0xff000000, 1);
 }
-void HD_Font_DrawFast (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str) 
+void HD_Font_DrawFastLatin1 (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str) 
 {
     int luminance;
     luminance = (((color & 0x00FF0000) >> (16 + 2)) +
@@ -211,8 +211,108 @@ void HD_Font_DrawFast (hd_surface srf, hd_font *font, int x, int y, uint32 color
                  ((color & 0x000000FF) >> ( 0 + 3)));
     _do_draw_lat8 (srf, font, x, y, (font->bpp == 1)? color : (luminance > 128)? 0xffffffff : 0, str, 0, 0);
 }
+void HD_Font_DrawUnicode (hd_surface srf, hd_font *font, int x, int y, uint32 color, const uint16 *str) 
+{
+    _do_draw_uc16 (srf, font, x, y, color, str, (color & 0xff000000) != 0xff000000, 1);
+}
+void HD_Font_DrawFastUnicode (hd_surface srf, hd_font *font, int x, int y, uint32 color, const uint16 *str) 
+{
+    int luminance;
+    luminance = (((color & 0x00FF0000) >> (16 + 2)) +
+                 ((color & 0x0000FF00) >> ( 8 + 1)) +
+                 ((color & 0x0000FF00) >> ( 8 + 3)) +
+                 ((color & 0x000000FF) >> ( 0 + 3)));
+    _do_draw_uc16 (srf, font, x, y, (font->bpp == 1)? color : (luminance > 128)? 0xffffffff : 0, str, 0, 0);
+}
 
-int HD_Font_TextWidth (hd_font *font, const char *str) 
+static int IsASCII (const char *str) 
+{
+    const char *p = str;
+    while (*p) {
+        if (*p & 0x80) return 0;
+        p++;
+    }
+    return 1;
+}
+
+static int ConvertUTF8 (const unsigned char *src, unsigned short *dst)
+{
+    const unsigned char *sp = src;
+    unsigned short *dp = dst;
+    int len = 0;
+    while (*sp) {
+        *dp = 0;
+        if (*sp < 0x80) *dp = *sp++;
+        else if (*sp >= 0xC0 && *sp < 0xE0) {
+            *dp |= (*sp++ - 0xC0) << 6;  if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80);
+        }
+        else if (*sp >= 0xE0 && *sp < 0xF0) {
+            *dp |= (*sp++ - 0xE0) << 12; if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80) << 6;  if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80);
+        }
+        else if (*sp >= 0xF0 && *sp < 0xF8) {
+            *dp |= (*sp++ - 0xF0) << 18; if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80) << 12; if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80) << 6;  if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80);
+        }
+        else if (*sp >= 0xF8 && *sp < 0xFC) {
+            *dp |= (*sp++ - 0xF8) << 24; if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80) << 18; if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80) << 12; if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80) << 6;  if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80);
+        }
+        else if (*sp >= 0xFC && *sp < 0xFE) {
+            *dp |= (*sp++ - 0xF8) << 30; if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80) << 24; if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80) << 18; if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80) << 12; if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80) << 6;  if (!*sp) goto err;
+            *dp |= (*sp++ - 0x80);
+        }
+        else goto err;
+        
+        dp++;
+        len++;
+        continue;
+        
+    err:
+        *dp++ = '?';
+        sp++;
+        len++;
+    }
+    *dp = 0;
+    return len;
+}
+
+void HD_Font_Draw (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str) 
+{
+    if (IsASCII (str))
+        HD_Font_DrawLatin1 (srf, font, x, y, color, str);
+    else {
+        unsigned short *buf = malloc (strlen (str) * 2 + 2);
+        int len = ConvertUTF8 (str, buf);
+        HD_Font_DrawUnicode (srf, font, x, y, color, buf);
+        free (buf);
+    }
+}
+
+void HD_Font_DrawFast (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str) 
+{
+    if (IsASCII (str))
+        HD_Font_DrawFastLatin1 (srf, font, x, y, color, str);
+    else {
+        unsigned short *buf = malloc (strlen (str) * 2 + 2);
+        int len = ConvertUTF8 (str, buf);
+        HD_Font_DrawFastUnicode (srf, font, x, y, color, buf);
+        free (buf);
+    }
+}
+
+int HD_Font_TextWidthLatin1 (hd_font *font, const char *str) 
 {
     const char *p = str;
     int ret = 0;
@@ -228,10 +328,42 @@ int HD_Font_TextWidth (hd_font *font, const char *str)
     return ret;
 }
 
-hd_object *HD_Font_MakeObject (hd_font *font, const char *str) 
+int HD_Font_TextWidthUnicode (hd_font *font, const uint16 *str) 
 {
-    /* ... */
-    return 0;
+    const uint16 *p = str;
+    int ret = 0;
+    
+    if (!font || !str || !font->width) return -1;
+
+    while (*p) {
+        if (*p - font->firstchar <= font->nchars)
+            ret += font->width[*p - font->firstchar];
+        p++;
+    }
+
+    return ret;
+}
+
+int HD_Font_TextWidth (hd_font *font, const char *str) 
+{
+    if (IsASCII (str))
+        return HD_Font_TextWidthLatin1 (font, str);
+    else {
+        unsigned short *buf = malloc (strlen (str) * 2 + 2);
+        int len = ConvertUTF8 (str, buf);
+        int ret = HD_Font_TextWidthUnicode (font, buf);
+        free (buf);
+        return ret;
+    }
+}
+
+hd_object *HD_Font_MakeObject (hd_font *font, const char *str, uint32 col) 
+{
+    hd_object *ret = HD_Canvas_Create (HD_Font_TextWidth (font, str), font->h);
+    if (!ret) return 0;
+    
+    HD_Font_Draw (ret->canvas, font, 0, 0, col, str);
+    return ret;
 }
 
 /*********************** HDF ***********************/
@@ -249,7 +381,7 @@ typedef struct HDF_header
     uint32  pitch;              /* width in bytes of a scanline in the data surface, for PITCHED fonts.
                                    Has a different meaning for CLUMPED fonts; see hotdog.h. */
     uint32  nbytes;             /* Number of bytes of character data to read */
-    /* 32-bit AARRGGBB bytes are NOT premultiplied! */
+    /* 32-bit AARRGGBB bytes are premultiplied! */
 } __attribute__ ((packed)) HDF_header;
 
 /* Following the header are <nchars> 32-bit BE values indicating the offset
