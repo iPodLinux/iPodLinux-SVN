@@ -294,7 +294,8 @@ void HD_ScaleBlendClip (hd_surface sbuf, int sx, int sy, int sw, int sh,
                         hd_surface dbuf, int dx, int dy, int dw, int dh,
                         int speed, uint8 opacity);
 
-hd_object *HD_New_Object();
+#define HD_New_Object HD_NewObject
+hd_object *HD_NewObject();
 hd_obj_list *HD_StackObjects (hd_obj_list *head);
 
 /****** Animation ******/
