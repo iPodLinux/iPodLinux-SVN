@@ -314,6 +314,14 @@ void HD_Font_DrawFast (hd_surface srf, hd_font *font, int x, int y, uint32 color
     }
 }
 
+void HD_Font_Free(hd_font *f)
+{
+	free(f->pixels);
+	free(f->offset);
+	free(f->width);
+	free(f);
+}
+
 int HD_Font_TextWidthLatin1 (hd_font *font, const char *str) 
 {
     const char *p = str;
