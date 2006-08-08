@@ -53,19 +53,23 @@ hd_engine *HD_Initialize(uint32 width,uint32 height,uint8 bpp, void *framebuffer
 	eng = (hd_engine *)malloc( sizeof(hd_engine) );
 	assert(eng != NULL);
 
-	eng->buffer = HD_NewSurface (width, height);
-	assert(eng->buffer != NULL);
-
 	eng->screen.width  = width;
 	eng->screen.height = height;
         if (bpp == 2) {
             eng->screen.fb2bpp = framebuffer;
+            // The LCD update funcs assume that each line starts on a byte boundary; for the 138x110
+            // Mini, this is not the case, so we "fudge" it a bit. The 2bpp converter works with the
+            // FB as a whole, not line-by-line, so the 2px of padding is necessary.
+            eng->screen.width  = (eng->screen.width + 3) & ~3; // round up to a multiple of 4px - IMPORTANT
             eng->screen.framebuffer = 0;
         } else {
             eng->screen.framebuffer = framebuffer;
             eng->screen.fb2bpp = 0;
         }
         eng->screen.update = update;
+
+	eng->buffer = HD_NewSurface (eng->screen.width, eng->screen.height);
+	assert(eng->buffer != NULL);
 
 	eng->list = NULL;
 
