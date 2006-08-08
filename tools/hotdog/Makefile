@@ -54,19 +54,26 @@ LD = $(CROSS)-ld
 AR = $(CROSS)-ar rc
 AR2 = $(CROSS)-ranlib
 CPPFLAGS = -DIPOD
+OBJDIR = ipod
 else
 CC ?= gcc
 LD ?= ld
 AR = ar rc
 AR2 = ranlib
 AS = as
+OBJDIR = x11
 endif
 
+$(shell mkdir -p ipod x11)
+
 MYCFLAGS+= -Wall
-LIB = libhotdog.a
-LIBOBJS=  hotdog.o hotdog_png.o hotdog_font.o hotdog_animation.o hotdog_canvas.o hotdog_surface.o hotdog_ops.o hotdog_primitive.o zsort.o
+LIB = $(OBJDIR)/libhotdog.a
+LIBOBJS = $(OBJDIR)/hotdog.o $(OBJDIR)/hotdog_png.o $(OBJDIR)/hotdog_font.o \
+          $(OBJDIR)/hotdog_animation.o $(OBJDIR)/hotdog_canvas.o \
+          $(OBJDIR)/hotdog_surface.o $(OBJDIR)/hotdog_ops.o \
+          $(OBJDIR)/hotdog_primitive.o $(OBJDIR)/zsort.o
 ifdef IPOD
-LIBOBJS += hotdog_lcd.o
+LIBOBJS += $(OBJDIR)/hotdog_lcd.o
 endif
 
 DEMO = hd-demo
@@ -81,10 +88,10 @@ $(LIB): $(LIBOBJS)
 main_anim.o main_select.o main_prim.o: %.o: %.c
 	$(CC) $(CFLAGS) $(MYCFLAGS) $(DEMOCFLAGS) -c -o $@ $<
 
-%.o: %.c
+$(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $(MYCFLAGS) -c -o $@ $<
 
-%.o: %.S
+$(OBJDIR)/%.o: %.S
 	$(CC) $(CPPFLAGS) -c -o $@ $<
 
 $(DEMO): $(LIB) main_anim.o
@@ -98,3 +105,4 @@ prim-demo: $(LIB) main_prim.o
 
 clean:
 	$(RM) *.o *.elf *.elf2flt *.a *.gdb *~ $(DEMO) prim-demo hd-demo2
+	$(RM) -rf ipod x11

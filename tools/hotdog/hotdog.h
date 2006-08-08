@@ -311,7 +311,7 @@ int32 fsin (int32 angle); // angle is in units of 1024 per pi/2 radians - that i
 int32 fcos (int32 angle); // same
 
 /****** Canvasses ******/
-hd_object *HD_Canvas_Create (int w, int h);
+hd_object *HD_Canvas_Create (uint32 w, uint32 h);
 /* Canvas_CreateFrom() takes ownership of srf; it'll free it when the object is freed. */
 hd_object *HD_Canvas_CreateFrom(hd_surface srf);
 void       HD_Canvas_Destroy(hd_object *obj);
