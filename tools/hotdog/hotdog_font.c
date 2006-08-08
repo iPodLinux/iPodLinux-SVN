@@ -295,6 +295,7 @@ void HD_Font_Draw (hd_surface srf, hd_font *font, int x, int y, uint32 color, co
     else {
         unsigned short *buf = malloc (strlen (str) * 2 + 2);
         int len = ConvertUTF8 (str, buf);
+        buf[len] = 0;
         HD_Font_DrawUnicode (srf, font, x, y, color, buf);
         free (buf);
     }
@@ -307,6 +308,7 @@ void HD_Font_DrawFast (hd_surface srf, hd_font *font, int x, int y, uint32 color
     else {
         unsigned short *buf = malloc (strlen (str) * 2 + 2);
         int len = ConvertUTF8 (str, buf);
+        buf[len] = 0;
         HD_Font_DrawFastUnicode (srf, font, x, y, color, buf);
         free (buf);
     }
@@ -351,13 +353,14 @@ int HD_Font_TextWidth (hd_font *font, const char *str)
     else {
         unsigned short *buf = malloc (strlen (str) * 2 + 2);
         int len = ConvertUTF8 (str, buf);
+        buf[len] = 0;
         int ret = HD_Font_TextWidthUnicode (font, buf);
         free (buf);
         return ret;
     }
 }
 
-hd_object *HD_Font_MakeObject (hd_font *font, const char *str, uint32 col) 
+hd_object *HD_Font_MakeObject (hd_font *font, uint32 col, const char *str) 
 {
     hd_object *ret = HD_Canvas_Create (HD_Font_TextWidth (font, str), font->h);
     if (!ret) return 0;
