@@ -82,7 +82,7 @@ void HD_Primitive_Render(hd_engine *eng,hd_object *obj, int cx, int cy, int cw, 
 static void hLine(hd_surface srf, int x1, int x2, int y, uint32 col)
 {
 	uint32 *p;
-        if (y < 0 || >= HD_SRF_HEIGHT(srf)) return; // if the line is off-surface
+        if (y < 0 || y >= HD_SRF_HEIGHT(srf)) return; // if the line is off-surface
 	if (x1 > x2) SWAP(x1, x2);
         if (x1 < 0) x1 = 0;
         if (x2 > HD_SRF_WIDTH(srf)) x2 = HD_SRF_WIDTH(srf);

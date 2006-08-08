@@ -163,14 +163,14 @@ int HD_Font_TextWidthUnicode (hd_font *font, const uint16 *str);
 /** Draws with the TOP LEFT CORNER at (x,y) */
 void HD_Font_Draw (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str);
 void HD_Font_DrawLatin1 (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str);
-void HD_Font_DrawUnicode (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str);
+void HD_Font_DrawUnicode (hd_surface srf, hd_font *font, int x, int y, uint32 color, const uint16 *str);
 /* Fast = no blending. May have unpredictable results for AA fonts on non-white surfaces.
    Only draws black or white for 8-bpp fonts. */
 void HD_Font_DrawFast (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str);
 void HD_Font_DrawFastLatin1 (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str);
-void HD_Font_DrawFastUnicode (hd_surface srf, hd_font *font, int x, int y, uint32 color, const char *str);
+void HD_Font_DrawFastUnicode (hd_surface srf, hd_font *font, int x, int y, uint32 color, const uint16 *str);
 
-struct hd_object *HD_Font_MakeObject (hd_font *font, const char *str);
+struct hd_object *HD_Font_MakeObject (hd_font *font, uint32 col, const char *str);
 
 /****** Compositing ******/
 
