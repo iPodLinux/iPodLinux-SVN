@@ -314,14 +314,6 @@ void HD_Font_DrawFast (hd_surface srf, hd_font *font, int x, int y, uint32 color
     }
 }
 
-void HD_Font_Free(hd_font *f)
-{
-	free(f->pixels);
-	free(f->offset);
-	free(f->width);
-	free(f);
-}
-
 int HD_Font_TextWidthLatin1 (hd_font *font, const char *str) 
 {
     const char *p = str;
@@ -375,6 +367,15 @@ hd_object *HD_Font_MakeObject (hd_font *font, uint32 col, const char *str)
     
     HD_Font_Draw (ret->canvas, font, 0, 0, col, str);
     return ret;
+}
+
+/********************* Freeing *********************/
+void HD_Font_Free (hd_font *font) 
+{
+    if (font->offset) free (font->offset);
+    if (font->width)  free (font->width);
+    if (font->pixels) free (font->pixels);
+    free (font);
 }
 
 /*********************** HDF ***********************/
