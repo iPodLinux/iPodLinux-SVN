@@ -155,6 +155,7 @@ hd_font *HD_Font_LoadPCF (const char *filename);
 hd_font *HD_Font_LoadSFont (const char *filename);
 hd_font *HD_Font_LoadFFF (const char *filename);
 
+void HD_Font_Free(hd_font *font);
 int HD_Font_TextWidth (hd_font *font, const char *str); // UTF-8
 int HD_Font_TextWidthLatin1 (hd_font *font, const char *str);
 int HD_Font_TextWidthUnicode (hd_font *font, const uint16 *str);
