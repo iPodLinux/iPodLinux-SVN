@@ -29,7 +29,9 @@ typedef struct podpaint_tool {
 	ttk_surface cursor;
 	void (* click)(ttk_surface srf, int x, int y, ttk_color c);
 	void (* drag)(ttk_surface srf, int x1, int y1, int x2, int y2, ttk_color c);
+	void (* dragClick)(ttk_surface srf, int x1, int y1, int x2, int y2, ttk_color c);
 	void (* dragContinue)(ttk_surface srf, int x1, int y1, int x2, int y2, ttk_color c);
+	void (* dragClickContinue)(ttk_surface srf, int x1, int y1, int x2, int y2, ttk_color c);
 	int (* visible)();
 } podpaint_tool;
 
@@ -156,7 +158,9 @@ extern TWidget * ttk_new_mouse_widget_with(int x, int y, int w, int h, ttk_surfa
 podpaint_tool * new_podpaint_tool(ttk_surface i, ttk_surface si, ttk_surface cu,
 	void (* c)(ttk_surface srf, int x, int y, ttk_color c),
 	void (* d)(ttk_surface srf, int x1, int y1, int x2, int y2, ttk_color c),
+	void (* dk)(ttk_surface srf, int x1, int y1, int x2, int y2, ttk_color c),
 	void (* dc)(ttk_surface srf, int x1, int y1, int x2, int y2, ttk_color c),
+	void (* dck)(ttk_surface srf, int x1, int y1, int x2, int y2, ttk_color c),
 	int (* v)()
 )
 {
@@ -167,7 +171,9 @@ podpaint_tool * new_podpaint_tool(ttk_surface i, ttk_surface si, ttk_surface cu,
 		t->cursor = cu;
 		t->click = c;
 		t->drag = d;
+		t->dragClick = dk;
 		t->dragContinue = dc;
+		t->dragClickContinue = dck;
 		t->visible = v;
 	}
 	return t;
@@ -444,6 +450,79 @@ void podpaint_grabc(ttk_surface srf, int x, int y, ttk_color c)
 	podpaint_scrollsavey = podpaint_scrolly;
 }
 
+static int podpaint_bezier_x[4];
+static int podpaint_bezier_y[4];
+static int podpaint_bezier_curpoint = 0;
+
+void podpaint_bezierstart(ttk_surface srf, int x, int y, ttk_color c)
+{
+	podpaint_bezier_x[0] = x;
+	podpaint_bezier_y[0] = y;
+	podpaint_bezier_curpoint = 1;
+}
+
+void podpaint_bezier(ttk_surface srf, int px, int py, int x, int y, ttk_color c)
+{
+	podpaint_bezier_x[podpaint_bezier_curpoint] = x;
+	podpaint_bezier_y[podpaint_bezier_curpoint] = y;
+	switch (podpaint_bezier_curpoint+1) {
+	case 4:
+		ttk_bezier(srf, podpaint_bezier_x[0], podpaint_bezier_y[0], podpaint_bezier_x[1], podpaint_bezier_y[1],
+			podpaint_bezier_x[2], podpaint_bezier_y[2], podpaint_bezier_x[3], podpaint_bezier_y[3], 50, c);
+		ttk_line(srf, podpaint_bezier_x[2], podpaint_bezier_y[2], podpaint_bezier_x[3], podpaint_bezier_y[3], c);
+	case 3:
+		ttk_line(srf, podpaint_bezier_x[1], podpaint_bezier_y[1], podpaint_bezier_x[2], podpaint_bezier_y[2], c);
+	case 2:
+		ttk_line(srf, podpaint_bezier_x[0], podpaint_bezier_y[0], podpaint_bezier_x[1], podpaint_bezier_y[1], c);
+	}
+}
+
+void podpaint_bezierclick(ttk_surface srf, int px, int py, int x, int y, ttk_color c)
+{
+	podpaint_bezier_x[podpaint_bezier_curpoint] = x;
+	podpaint_bezier_y[podpaint_bezier_curpoint] = y;
+	podpaint_bezier_curpoint++;
+	switch (podpaint_bezier_curpoint) {
+	case 4:
+		podpaint_dragging = 0;
+		podpaint_bezier_curpoint = 0;
+		ttk_bezier(srf, podpaint_bezier_x[0], podpaint_bezier_y[0], podpaint_bezier_x[1], podpaint_bezier_y[1],
+			podpaint_bezier_x[2], podpaint_bezier_y[2], podpaint_bezier_x[3], podpaint_bezier_y[3], 50, c);
+		break;
+	}
+}
+
+void podpaint_aabezier(ttk_surface srf, int px, int py, int x, int y, ttk_color c)
+{
+	podpaint_bezier_x[podpaint_bezier_curpoint] = x;
+	podpaint_bezier_y[podpaint_bezier_curpoint] = y;
+	switch (podpaint_bezier_curpoint+1) {
+	case 4:
+		ttk_aabezier(srf, podpaint_bezier_x[0], podpaint_bezier_y[0], podpaint_bezier_x[1], podpaint_bezier_y[1],
+			podpaint_bezier_x[2], podpaint_bezier_y[2], podpaint_bezier_x[3], podpaint_bezier_y[3], 50, c);
+		ttk_aaline(srf, podpaint_bezier_x[2], podpaint_bezier_y[2], podpaint_bezier_x[3], podpaint_bezier_y[3], c);
+	case 3:
+		ttk_aaline(srf, podpaint_bezier_x[1], podpaint_bezier_y[1], podpaint_bezier_x[2], podpaint_bezier_y[2], c);
+	case 2:
+		ttk_aaline(srf, podpaint_bezier_x[0], podpaint_bezier_y[0], podpaint_bezier_x[1], podpaint_bezier_y[1], c);
+	}
+}
+
+void podpaint_aabezierclick(ttk_surface srf, int px, int py, int x, int y, ttk_color c)
+{
+	podpaint_bezier_x[podpaint_bezier_curpoint] = x;
+	podpaint_bezier_y[podpaint_bezier_curpoint] = y;
+	podpaint_bezier_curpoint++;
+	switch (podpaint_bezier_curpoint) {
+	case 4:
+		podpaint_dragging = 0;
+		podpaint_bezier_curpoint = 0;
+		ttk_aabezier(srf, podpaint_bezier_x[0], podpaint_bezier_y[0], podpaint_bezier_x[1], podpaint_bezier_y[1],
+			podpaint_bezier_x[2], podpaint_bezier_y[2], podpaint_bezier_x[3], podpaint_bezier_y[3], 50, c);
+		break;
+	}
+}
+
 /* BMP Writing Helper Functions */
 
 static int write_word(FILE * fp, unsigned short w)
@@ -636,24 +715,66 @@ void podpaint_init_ui()
 	podpaint_add_menuitem(mOptions, _(" Filled "), podpaint_switchfill);
 	
 	/* add tools */
-	podpaint_add_tool(new_podpaint_tool( TLI("eyedropper"), TSI("eyedropper"), BIC("eyedropper"), podpaint_eyedropper, 0, 0, 0 ));
-	podpaint_add_tool(new_podpaint_tool( TLI("pencil"), TSI("pencil"), BIC("pencil"), ttk_pixel, 0, 0, 0 ));
-	podpaint_add_tool(new_podpaint_tool( TLI("brush"), TSI("brush"), BIC("brush"), podpaint_paintbrush, 0, 0, 0 ));
-	podpaint_add_tool(new_podpaint_tool( TLI("spraypaint"), TSI("spraypaint"), BIC("spraypaint"), podpaint_spraypaint, 0, 0, 0 ));
-	podpaint_add_tool(new_podpaint_tool( TLI("fill"), TSI("fill"), BIC("bucket"), podpaint_fill, 0, 0, 0 ));
-	podpaint_add_tool(new_podpaint_tool( TLI("eraser"), TSI("eraser"), BIC("eraser2"), podpaint_eraser, 0, 0, 0 ));
-	podpaint_add_tool(new_podpaint_tool( TLI("line"), TSI("line"), BIC("cross"), 0, ttk_line, 0, PPTV_A ));
-	podpaint_add_tool(new_podpaint_tool( TLI("lineaa"), TSI("lineaa"), BIC("cross"), 0, ttk_aaline, 0, PPTV_AA ));
-	podpaint_add_tool(new_podpaint_tool( TLI("rect"), TSI("rect"), BIC("cross"), 0, ttk_rect, 0, PPTV_H ));
-	podpaint_add_tool(new_podpaint_tool( TLI("rectf"), TSI("rectf"), BIC("cross"), 0, ttk_fillrect, 0, PPTV_F ));
-	podpaint_add_tool(new_podpaint_tool( TLI("oval"), TSI("oval"), BIC("cross"), 0, podpaint_ellipse, 0, PPTV_AH ));
-	podpaint_add_tool(new_podpaint_tool( TLI("ovalf"), TSI("ovalf"), BIC("cross"), 0, podpaint_fillellipse, 0, PPTV_AF ));
-	podpaint_add_tool(new_podpaint_tool( TLI("ovalaa"), TSI("ovalaa"), BIC("cross"), 0, podpaint_aaellipse, 0, PPTV_AAH ));
-	podpaint_add_tool(new_podpaint_tool( TLI("ovalfaa"), TSI("ovalfaa"), BIC("cross"), 0, podpaint_aafillellipse, 0, PPTV_AAF ));
-	podpaint_add_tool(new_podpaint_tool( TLI("poly"), TSI("poly"), BIC("cross"), 0, 0, ttk_line, PPTV_A ));
-	podpaint_add_tool(new_podpaint_tool( TLI("polyaa"), TSI("polyaa"), BIC("cross"), 0, 0, ttk_aaline, PPTV_AA ));
-	podpaint_add_tool(new_podpaint_tool( TLI("text"), TSI("text"), BIC("ibeam"), podpaint_text_tool, 0, 0, 0 ));
-	podpaint_add_tool(new_podpaint_tool( TLI("hand"), TSI("hand"), BIC("hand"), podpaint_grabc, podpaint_grabd, 0, 0 ));
+	podpaint_add_tool(new_podpaint_tool(
+		TLI("eyedropper"), TSI("eyedropper"), BIC("eyedropper"),
+		podpaint_eyedropper, 0, 0, 0, 0, 0 ));
+	podpaint_add_tool(new_podpaint_tool(
+		TLI("pencil"), TSI("pencil"), BIC("pencil"),
+		ttk_pixel, 0, 0, 0, 0, 0 ));
+	podpaint_add_tool(new_podpaint_tool(
+		TLI("brush"), TSI("brush"), BIC("brush"),
+		podpaint_paintbrush, 0, 0, 0, 0, 0 ));
+	podpaint_add_tool(new_podpaint_tool(
+		TLI("spraypaint"), TSI("spraypaint"), BIC("spraypaint"),
+		podpaint_spraypaint, 0, 0, 0, 0, 0 ));
+	podpaint_add_tool(new_podpaint_tool(
+		TLI("fill"), TSI("fill"), BIC("bucket"),
+		podpaint_fill, 0, 0, 0, 0, 0 ));
+	podpaint_add_tool(new_podpaint_tool(
+		TLI("eraser"), TSI("eraser"), BIC("eraser2"),
+		podpaint_eraser, 0, 0, 0, 0, 0 ));
+	podpaint_add_tool(new_podpaint_tool(
+		TLI("line"), TSI("line"), BIC("cross"),
+		0, ttk_line, ttk_line, 0, 0, PPTV_A ));
+	podpaint_add_tool(new_podpaint_tool(
+		TLI("lineaa"), TSI("lineaa"), BIC("cross"),
+		0, ttk_aaline, ttk_aaline, 0, 0, PPTV_AA ));
+	podpaint_add_tool(new_podpaint_tool(
+		TLI("rect"), TSI("rect"), BIC("cross"),
+		0, ttk_rect, ttk_rect, 0, 0, PPTV_H ));
+	podpaint_add_tool(new_podpaint_tool(
+		TLI("rectf"), TSI("rectf"), BIC("cross"),
+		0, ttk_fillrect, ttk_fillrect, 0, 0, PPTV_F ));
+	podpaint_add_tool(new_podpaint_tool(
+		TLI("oval"), TSI("oval"), BIC("cross"),
+		0, podpaint_ellipse, podpaint_ellipse, 0, 0, PPTV_AH ));
+	podpaint_add_tool(new_podpaint_tool(
+		TLI("ovalf"), TSI("ovalf"), BIC("cross"),
+		0, podpaint_fillellipse, podpaint_fillellipse, 0, 0, PPTV_AF ));
+	podpaint_add_tool(new_podpaint_tool(
+		TLI("ovalaa"), TSI("ovalaa"), BIC("cross"),
+		0, podpaint_aaellipse, podpaint_aaellipse, 0, 0, PPTV_AAH ));
+	podpaint_add_tool(new_podpaint_tool(
+		TLI("ovalfaa"), TSI("ovalfaa"), BIC("cross"),
+		0, podpaint_aafillellipse, podpaint_aafillellipse, 0, 0, PPTV_AAF ));
+	podpaint_add_tool(new_podpaint_tool(
+		TLI("poly"), TSI("poly"), BIC("cross"),
+		0, 0, 0, ttk_line, ttk_line, PPTV_A ));
+	podpaint_add_tool(new_podpaint_tool(
+		TLI("polyaa"), TSI("polyaa"), BIC("cross"),
+		0, 0, 0, ttk_aaline, ttk_aaline, PPTV_AA ));
+	podpaint_add_tool(new_podpaint_tool(
+		TLI("curve"), TSI("curve"), BIC("cross"),
+		podpaint_bezierstart, podpaint_bezier, podpaint_bezierclick, podpaint_bezier, podpaint_bezierclick, PPTV_A ));
+	podpaint_add_tool(new_podpaint_tool(
+		TLI("curve"), TSI("curve"), BIC("cross"),
+		podpaint_bezierstart, podpaint_aabezier, podpaint_aabezierclick, podpaint_aabezier, podpaint_aabezierclick, PPTV_AA ));
+	podpaint_add_tool(new_podpaint_tool(
+		TLI("text"), TSI("text"), BIC("ibeam"),
+		podpaint_text_tool, 0, 0, 0, 0, 0 ));
+	podpaint_add_tool(new_podpaint_tool(
+		TLI("hand"), TSI("hand"), BIC("hand"),
+		podpaint_grabc, podpaint_grabd, podpaint_grabd, 0, 0, 0 ));
 	
 	/* add colors */
 	switch (ttk_screen->bpp) {
@@ -984,11 +1105,23 @@ void podpaint_click(TWidget * wid, int x, int y)
 		ttk_blit_image(podpaint_area, podpaint_area_undo, 0, 0);
 		switch (podpaint_dragging) {
 		case 1:
-			if (t->drag) {
+			if (t->dragClick) {
+				t->dragClick(podpaint_area, podpaint_last_x, podpaint_last_y, rx, ry, podpaint_sel_color);
+				ttk_blit_image(podpaint_area, podpaint_area_temp, 0, 0);
+				wid->dirty = 1;
+				if (podpaint_dragging && (t->dragContinue || t->dragClickContinue)) {
+					podpaint_last_x = rx;
+					podpaint_last_y = ry;
+					podpaint_dragging = 2;
+				} else {
+					podpaint_dragging = 0;
+				}
+				return;
+			} else if (t->drag) {
 				t->drag(podpaint_area, podpaint_last_x, podpaint_last_y, rx, ry, podpaint_sel_color);
 				ttk_blit_image(podpaint_area, podpaint_area_temp, 0, 0);
 				wid->dirty = 1;
-				if (t->dragContinue) {
+				if (podpaint_dragging && (t->dragContinue || t->dragClickContinue)) {
 					podpaint_last_x = rx;
 					podpaint_last_y = ry;
 					podpaint_dragging = 2;
@@ -998,13 +1131,15 @@ void podpaint_click(TWidget * wid, int x, int y)
 				return;
 			}
 		case 2:
-			if (t->dragContinue) {
+			if (t->dragClickContinue) {
+				t->dragClickContinue(podpaint_area, podpaint_last_x, podpaint_last_y, rx, ry, podpaint_sel_color);
+			} else if (t->dragContinue) {
 				t->dragContinue(podpaint_area, podpaint_last_x, podpaint_last_y, rx, ry, podpaint_sel_color);
 			}
 		}
 		ttk_blit_image(podpaint_area, podpaint_area_temp, 0, 0);
 		wid->dirty = 1;
-		if (t->dragContinue) {
+		if (podpaint_dragging && (t->dragContinue || t->dragClickContinue)) {
 			podpaint_last_x = rx;
 			podpaint_last_y = ry;
 			podpaint_dragging = 2;
