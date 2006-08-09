@@ -26,10 +26,12 @@ LDFLAGS = -Wl,-elf2flt
 MYCFLAGS = -DIPOD -I$(PNGINCLUDE) -I$(ZINCLUDE) -I.. -O3 -fomit-frame-pointer -funroll-loops
 MYCFLAGS += -I$(SDLINCLUDE)
 LDFLAGS += $(SDLLIB)/libSDL.a $(PNGLIB)/libpng.a $(ZLIB)/libz.a -lm
+HDLIB = ../ipod/libhotdog.a
 else
-MYCFLAGS+= `libpng-config --cflags` `freetype-config --cflags`
+MYCFLAGS+= `libpng-config --cflags` `freetype-config --cflags` -I..
 LDFLAGS = `sdl-config --libs` `libpng-config --ldflags` `freetype-config --libs`
 MYCFLAGS += `sdl-config --cflags`
+HDLIB = ../x11/libhotdog.a
 endif
 
 ifdef IPOD
@@ -58,7 +60,7 @@ $(OBJS):
 	$(CC) $(CFLAGS) $(MYCFLAGS) -c -o $@ $*.c
 
 $(APP): $(OBJS) 
-	$(CC) $? -o $@ $(LIB) $(LDFLAGS) $(MYLDFLAGS)
+	$(CC) $? -o $@ $(LIB) $(LDFLAGS) $(MYLDFLAGS) $(HDLIB)
 
 clean:
 	$(RM) *.o *.elf *.elf2flt *.gdb *~ $(APP)

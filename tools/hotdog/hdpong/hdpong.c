@@ -155,6 +155,7 @@ int main(int argc, char *argv[]) {
 						break;
 					case SDLK_ESCAPE:
 						done = 1;
+					default:
 						break;
 				}
 				break;
@@ -170,6 +171,7 @@ int main(int argc, char *argv[]) {
 					case SDLK_LEFT:
 						break;
 					case SDLK_RIGHT:
+					default:
 						break;
 				}
 				break;
