@@ -764,10 +764,10 @@ void podpaint_init_ui()
 		TLI("polyaa"), TSI("polyaa"), BIC("cross"),
 		0, 0, 0, ttk_aaline, ttk_aaline, PPTV_AA ));
 	podpaint_add_tool(new_podpaint_tool(
-		TLI("curve"), TSI("curve"), BIC("cross"),
+		TLI("bezier"), TSI("bezier"), BIC("cross"),
 		podpaint_bezierstart, podpaint_bezier, podpaint_bezierclick, podpaint_bezier, podpaint_bezierclick, PPTV_A ));
 	podpaint_add_tool(new_podpaint_tool(
-		TLI("curve"), TSI("curve"), BIC("cross"),
+		TLI("bezieraa"), TSI("bezieraa"), BIC("cross"),
 		podpaint_bezierstart, podpaint_aabezier, podpaint_aabezierclick, podpaint_aabezier, podpaint_aabezierclick, PPTV_AA ));
 	podpaint_add_tool(new_podpaint_tool(
 		TLI("text"), TSI("text"), BIC("ibeam"),
