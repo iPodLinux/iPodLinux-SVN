@@ -1235,7 +1235,7 @@ void mpd_sendListCommand(mpd_Connection * connection, int table,
 		return;
 	}
 	string = connection->buffer;
-	if(arg1) {
+	if (arg1 && arg1[0]) {
 		char * sanitArg1 = connection->errorStr;
 		mpd_sanitizeArg_st(sanitArg1,arg1);
 		sprintf(string,"list %s \"%s\"\n",st,sanitArg1);
