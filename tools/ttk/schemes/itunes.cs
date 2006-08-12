@@ -48,12 +48,9 @@
 
 #TTK appearance only gives me 10 /defs - feh!
 
-  header: bg => metalbg, fg => metalfg, line => #666666 -1, accent => #d6d6d6
-	  shadow => #333, shine => #ddd,
-	  gradient.top => #c5c5c5,
-	  gradient.middle => #acacac,
-	  gradient.bottom => #969696,
-	  gradient.bar => #acacac +1
+  header: bg => <#c5c5c5, #acacac, #969696 with #acacac @:1,0,50%,1>,
+	  fg => metalfg, line => #666666 -1, accent => #d6d6d6
+	  shadow => #333, shine => #ddd
    music: bar => <vert graptop to grapmid to grapbot with #d5dbfb @:1,1,5,1>
  battery: border => metalfg, bg => grapmid, fill.normal => metalfg +1, fill.low => metalwid +1, fill.charge => metalfg +1,
 	  bg.low => red, bg.charging => blue, chargingbolt => metalfg

@@ -12,16 +12,12 @@
 \def creme #F0F0F0
 \def black #000000
 
-  header: bg => light,
+  header: bg => <light, medium, lightish with medium @:1,0,50%,0>,
 	  fg => black,
 	  line => gray,
 	  accent => medium
 	  shadow => dark,
-	  shine => pink,
-	  gradient.top => light,
-	  gradient.middle => medium,
-	  gradient.bottom => lightish,
-	  gradient.bar => medium +1
+	  shine => pink
 
    music: bar.bg => <vert white to ltgray to white>,
 	  bar => <vert light to medium to lightish> +1
