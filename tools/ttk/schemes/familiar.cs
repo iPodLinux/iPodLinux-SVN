@@ -13,14 +13,10 @@
 \def grapbot    #D0D8D8
 \def grapmid    #F0F4F8
 \def graptop    #F0F4F8
-\def grapbar    #F0F4F8
 
-  header: bg => white, fg => black, line => #808888, accent => #6ae,
-          shadow => #0039b3, shine => #87d0ff,
-          gradient.top => graptop,
-          gradient.middle => grapmid,
-          gradient.bottom => grapbot,
-          gradient.bar => grapbar +1
+  header: bg => <graptop, grapmid, grapbot with #f0f4f8 @:1,0,50%,0>,
+          fg => black, line => #808888, accent => #6ae,
+          shadow => #0039b3, shine => #87d0ff
    music: bar => @familiar-(music.bar).png ,
           bar.bg => @familiar-(music.bar.bg).png
  battery: border => #606C78,

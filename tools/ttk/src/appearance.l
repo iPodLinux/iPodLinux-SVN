@@ -340,7 +340,7 @@ DEC	[0-9]+
 <VALUE>(v|vert|y)[ \t]*center	ap->type |= TTK_AP_IMG_VCENTER; ap->type &= ~TTK_AP_IMG_VBOTTOM;
 <VALUE>(v|vert|y)[ \t]*bot(tom)? ap->type|= TTK_AP_IMG_VBOTTOM; ap->type &= ~TTK_AP_IMG_VCENTER;
 
-<VALUE,GRADSTART,GRADEND>{ID} {
+<VALUE,GRADSTART,GRADEND,GRADWITH>{ID} {
     char *str = 0;
     int i;
     for (i = 0; i < nextdef; i++) {
