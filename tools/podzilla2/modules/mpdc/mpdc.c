@@ -158,7 +158,7 @@ int mpdc_tickle()
 		mpdc_destroy();
 		mpdc_init();
 		if (mpdc_status(mpdz) < 0) {
-			if (err) { /* already have an error */
+			if (!err) { /* already have an error */
 				pz_error(_("Unable to determine MPD status."));
 			}
 			return -1;
