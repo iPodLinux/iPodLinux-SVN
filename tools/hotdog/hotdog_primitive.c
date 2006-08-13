@@ -298,6 +298,15 @@ void HD_FillRect(hd_surface srf, int x1, int y1, int x2, int y2, uint32 col)
 
 	if (x2 <= x1 || y2 <= y1) return;
 
+        if (col == HD_CLEAR) {
+            // 0x00FFFFFF - "clear"
+            for (; y1 < y2; ++y1) {
+                // set to 0x00000000
+                memset (HD_SRF_ROWF (srf, y1) + x1, 0, (x2 - x1) << 2);
+            }
+            return;
+        }
+
 	for (; y1 < y2; ++y1) {
 		/* TODO: increment rather than assign? */
 		p = HD_SRF_ROWF(srf, y1);
