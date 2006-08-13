@@ -39,6 +39,7 @@
 
 #ifdef IPOD
 extern void _HD_ARM_Setup();
+extern void _HD_ARM_Convert2(uint32 *buffer, uint8 *fb2bpp, int npix);
 #endif
 
 hd_engine *HD_Initialize(uint32 width,uint32 height,uint8 bpp, void *framebuffer, void (*update)(struct hd_engine*, int, int, int, int)) {
@@ -455,10 +456,10 @@ void HD_Render(hd_engine *eng) {
         // Translate to Y2
         if (eng->screen.fb2bpp) {
             uint32 *sPix = HD_SRF_PIXELS (eng->buffer);
-            uint32 *endPix = HD_SRF_END (eng->buffer);
             uint8 *dPix = eng->screen.fb2bpp;
-            
 #ifndef IPOD
+            uint32 *endPix = HD_SRF_END (eng->buffer);
+
             while (sPix < endPix) {
                 uint8 pix0, pix1, pix2, pix3;
                 

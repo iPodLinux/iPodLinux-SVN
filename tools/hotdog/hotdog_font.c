@@ -235,7 +235,7 @@ static int IsASCII (const char *str)
     return 1;
 }
 
-static int ConvertUTF8 (const unsigned char *src, unsigned short *dst)
+static unsigned int ConvertUTF8 (const unsigned char *src, unsigned short *dst)
 {
     const unsigned char *sp = src;
     unsigned short *dp = dst;
@@ -294,7 +294,7 @@ void HD_Font_Draw (hd_surface srf, hd_font *font, int x, int y, uint32 color, co
         HD_Font_DrawLatin1 (srf, font, x, y, color, str);
     else {
         unsigned short *buf = malloc (strlen (str) * 2 + 2);
-        int len = ConvertUTF8 (str, buf);
+        unsigned int len = ConvertUTF8 ((unsigned const char *)str, buf);
         buf[len] = 0;
         HD_Font_DrawUnicode (srf, font, x, y, color, buf);
         free (buf);
@@ -307,7 +307,7 @@ void HD_Font_DrawFast (hd_surface srf, hd_font *font, int x, int y, uint32 color
         HD_Font_DrawFastLatin1 (srf, font, x, y, color, str);
     else {
         unsigned short *buf = malloc (strlen (str) * 2 + 2);
-        int len = ConvertUTF8 (str, buf);
+        unsigned int len = ConvertUTF8 ((unsigned const char *)str, buf);
         buf[len] = 0;
         HD_Font_DrawFastUnicode (srf, font, x, y, color, buf);
         free (buf);
@@ -352,7 +352,7 @@ int HD_Font_TextWidth (hd_font *font, const char *str)
         return HD_Font_TextWidthLatin1 (font, str);
     else {
         unsigned short *buf = malloc (strlen (str) * 2 + 2);
-        int len = ConvertUTF8 (str, buf);
+        unsigned int len = ConvertUTF8 ((unsigned const char *)str, buf);
         buf[len] = 0;
         int ret = HD_Font_TextWidthUnicode (font, buf);
         free (buf);
@@ -1011,6 +1011,7 @@ hd_font *HD_Font_LoadPCF (const char *fname)
     int glyph_count;
     uint32 *goffset = 0;
     unsigned char *gwidth = 0;
+    hd_font *font = NULL;
     
     file = fopen (fname, "rb");
     if (!file) {
@@ -1038,7 +1039,7 @@ hd_font *HD_Font_LoadPCF (const char *fname)
 	goto leave_func;
     }
 
-    hd_font *font = malloc (sizeof(hd_font));
+    font = malloc (sizeof(hd_font));
     font->firstchar = encoding->min_byte2 * (encoding->min_byte1 + 1);
     
     count = pcf_readmetrics (file, &metrics);
