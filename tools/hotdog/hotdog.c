@@ -76,28 +76,42 @@ hd_engine *HD_Initialize(uint32 width,uint32 height,uint8 bpp, void *framebuffer
 	return(eng);
 }
 
-void HD_Register(hd_engine *eng,hd_object *obj) {
-	hd_obj_list *curr;
+void HD_Register(hd_engine *eng,hd_object *obj)
+{
+    if (eng->list) {
+        hd_obj_list *cur = eng->list;
+        while (cur->next) {
+            if (cur->obj == obj) return; // already registered
+            cur = cur->next;
+        }
+        if (cur->obj == obj) return; // maybe it was the last object
+        cur->next = (hd_obj_list *)malloc (sizeof(hd_obj_list));
+        cur->next->obj = obj;
+        cur->next->next = 0;
+    } else {
+        eng->list = (hd_obj_list *)malloc (sizeof(hd_obj_list));
+        eng->list->obj = obj;
+        eng->list->next = 0;
+    }
+}
 
-        obj->eng = eng;
+void HD_Deregister (hd_engine *eng, hd_object *obj) 
+{
+    hd_obj_list *cur = eng->list, *previous = 0, *next;
+    while (cur) {
+        next = cur->next;
+        
+        if (cur->obj == obj) {
+            if (previous) previous->next = cur->next;
+            else          eng->list = cur->next;
 
-	// Special case for first entry
-	if( eng->list == NULL ) {
-		eng->list = (hd_obj_list *)malloc( sizeof(hd_obj_list) );
-		eng->list->obj = obj;
-		eng->list->next = NULL;
+            free (cur);
+        } else {
+            previous = cur;
+        }
 
-		return;
-	}
-
-	curr = eng->list;
-	while(curr->next != NULL) curr = curr->next;
-
-	curr->next = (hd_obj_list *)malloc( sizeof(hd_obj_list) );
-	assert(curr->next);
-
-	curr->next->obj = obj;
-	curr->next->next = NULL;
+        cur = next;
+    }
 }
 
 void HD_Animate(hd_engine *eng) {
@@ -143,6 +157,14 @@ void HD_Render(hd_engine *eng) {
             cur = eng->list;
             while (cur) {
                 hd_object *obj = cur->obj;
+
+                if ((obj->x + obj->w < 0) || (obj->y + obj->h < 0) || // off to the left or top
+                    (obj->x > eng->screen.width) || (obj->y > eng->screen.height) || // off to the right or btm
+                    !obj->opacity || !obj->render) { // transparent or undrawable
+                    cur = cur->next;
+                    continue;
+                }
+
                 if ((obj->last.x != obj->x || obj->last.y != obj->y ||
                      obj->last.w != obj->w || obj->last.h != obj->h ||
                      obj->last.z != obj->z || obj->dirty) && (obj->dirty >= 0)) {
@@ -185,7 +207,8 @@ void HD_Render(hd_engine *eng) {
                                 (rlap->obj->x <= MAX (obj->x, 0)) && (rlap->obj->y <= MAX (obj->y, 0)) &&
                                 (rlap->obj->x + rlap->obj->w >= MIN (obj->x + obj->w, eng->screen.width)) &&
                                 (rlap->obj->y + rlap->obj->h >= MIN (obj->y + obj->h, eng->screen.height)) && // fully envelops
-                                (rlap->obj->z > obj->z)) { // and is below
+                                (rlap->obj->z > obj->z) && // and is below
+                                rlap->obj->renderpart) { // and can render parts
                                 rlap->obj->dirty = -2;
                             } else {
                                 rlap->obj->dirty = 1;
@@ -201,6 +224,14 @@ void HD_Render(hd_engine *eng) {
 #else
         while (cur) {
             hd_object *obj = cur->obj;
+            
+            if ((obj->x + obj->w < 0) || (obj->y + obj->h < 0) || // off to the left or top
+                (obj->x > eng->screen.width) || (obj->y > eng->screen.height) || // off to the right or btm
+                !obj->opacity || !obj->render) { // transparent or undrawable
+                cur = cur->next;
+                continue;
+            }
+            
             if (obj->last.x != obj->x || obj->last.y != obj->y ||
                 obj->last.w != obj->w || obj->last.h != obj->h ||
                 obj->last.z != obj->z || obj->dirty) {
@@ -272,10 +303,8 @@ void HD_Render(hd_engine *eng) {
                     if ((rect->x >= cur->obj->x) && (rect->y >= cur->obj->y) &&
                         (rect->x + rect->w <= cur->obj->x + cur->obj->w) &&
                         (rect->y + rect->h <= cur->obj->y + cur->obj->h)) {
-                        int32 fx = (cur->obj->natw << 16) / cur->obj->w, fy = (cur->obj->nath << 16) / cur->obj->h;
-                        cur->obj->render (eng, cur->obj, ((rect->x - cur->obj->x) * fx) >> 16,
-                                          ((rect->y - cur->obj->y) * fy) >> 16, 
-                                          (rect->w * fx) >> 16, (rect->h * fy) >> 16);
+                        cur->obj->renderpart (cur->obj, eng->buffer, rect->x - cur->obj->x,
+                                              rect->y - cur->obj->y, rect->w, rect->h, 0, 0);
                     }
                     rect = rect->next;
                 }
@@ -287,7 +316,7 @@ void HD_Render(hd_engine *eng) {
         cur = eng->list;
         while (cur) {
             if (cur->obj->dirty == -1) {
-                cur->obj->render (eng, cur->obj, 0, 0, cur->obj->natw, cur->obj->nath);
+                cur->obj->render (cur->obj, eng->buffer, 0, 0);
             }
             cur->obj->last.x = cur->obj->x;
             cur->obj->last.y = cur->obj->y;
@@ -351,14 +380,10 @@ void HD_Render(hd_engine *eng) {
                         }
 
                         // Draw it.
-                        if (obj->natw + obj->nath) {
-                            int32 fx = (obj->natw << 16) / obj->w, fy = (obj->nath << 16) / obj->h;
-                            obj->render (eng, obj, ((x - obj->x) * fx) >> 16,
-                                         ((y - obj->y) * fy) >> 16, ((w * fx) >> 16) + 1,
-                                         ((h * fy) >> 16) + 1);
-                        } else {
-                            obj->render (eng, obj, x, y, w, h);
-                        }
+                        if (obj->renderpart)
+                            obj->renderpart (obj, eng->buffer, x - obj->x, y - obj->y, w, h, 0, 0);
+                        else
+                            obj->render (obj, eng->buffer, 0, 0);
                     }
                 }
                 cur = cur->next;
@@ -371,7 +396,7 @@ void HD_Render(hd_engine *eng) {
             hd_object *obj = cur->obj;
             if (obj->dirty) {
                 // This is the dirty one. Draw it and update last.
-                obj->render (eng, obj, 0, 0, obj->natw, obj->nath);
+                obj->render (obj, eng->buffer, 0, 0);
                 obj->last.x = obj->x;
                 obj->last.y = obj->y;
                 obj->last.w = obj->w;
@@ -385,7 +410,7 @@ void HD_Render(hd_engine *eng) {
         // Draw everything
         cur = eng->list;
         while (cur) {
-            cur->obj->render (eng, cur->obj, 0, 0, cur->obj->natw, cur->obj->nath);
+            cur->obj->render (cur->obj, eng->buffer, 0, 0);
             cur->obj->last.x = cur->obj->x;
             cur->obj->last.y = cur->obj->y;
             cur->obj->last.w = cur->obj->w;
@@ -423,7 +448,7 @@ void HD_Render(hd_engine *eng) {
                 srcptr = HD_SRF_PIXELS (eng->buffer);
                 dstptr = eng->screen.framebuffer;
                 
-                uint32 count = eng->screen.width*eng->screen.height / 2;
+                uint32 count = eng->screen.width*eng->screen.height;
                 _HD_ARM_Convert16 (srcptr, dstptr, count);
 #endif
 	}
@@ -447,63 +472,7 @@ void HD_Render(hd_engine *eng) {
                 *dPix++ = (pix3 << 6) | (pix2 << 4) | (pix1 << 2) | pix0;
             }
 #else
-            // Y = 1/8*B + (1/2+1/8)*G + 1/4*R
-            asm volatile (""
-                          "1:\t"
-                          "ldmia %[spix]!, { r5, r6, r7, r8 }\n\t"
-                          "mov   r4,     #0\n\t" /* r4 = byte we're building */
-
-                          "mov   r0,     #0xff\n\t" /* mask to extract colors */
-                          "and   r1, r5, r0, lsl #16\n\t" /* extract (red << 16) -> r1 */
-                          "and   r2, r5, r0, lsl #8\n\t" /* (green << 8) -> r2 */
-                          "and   r3, r5, r0\n\t"         /* blue -> r3 */
-                          "mov   r0,     r1, lsr #18\n\t" /* gray = red/4 */
-                          "add   r0, r0, r2, lsr #11\n\t" /*      + green/8 */
-                          "add   r0, r0, r2, lsr #9\n\t"  /*      + green/2 */
-                          "add   r0, r0, r3, lsr #3\n\t" /*       + blue/8 */
-                          "mov   r5,     #3\n\t" /* r5 dead, will use in latter blocks too */
-                          "sub   r0, r5, r0, lsr #6\n\t" /* gray >>= 6 (becomes 2bpp val),
-                                                       2bppval = 3 - 2bppval (0=white) */
-                          "orr   r4, r4, r0, lsl #0\n\t" /* put in pix 0 */
-
-                          "mov   r0,     #0xff\n\t"
-                          "and   r1, r6, r0, lsl #16\n\t"
-                          "and   r2, r6, r0, lsl #8\n\t"
-                          "and   r3, r6, r0\n\t"
-                          "mov   r6,     r0\n\t" /* r6 dead, use to store mask for next two -
-                                                    saves having to reload it */
-                          "mov   r0,     r1, lsr #18\n\t"
-                          "add   r0, r0, r2, lsr #11\n\t"
-                          "add   r0, r0, r2, lsr #9\n\t"
-                          "add   r0, r0, r3, lsr #3\n\t"
-                          "sub   r0, r5, r0, lsr #6\n\t"
-                          "orr   r4, r4, r0, lsl #2\n\t" /* put in pix 1 */
-
-                          "and   r1, r7, r6, lsl #16\n\t"
-                          "and   r2, r7, r6, lsl #8\n\t"
-                          "and   r3, r7, r6\n\t"
-                          "mov   r0,     r1, lsr #18\n\t"
-                          "add   r0, r0, r2, lsr #11\n\t"
-                          "add   r0, r0, r2, lsr #9\n\t"
-                          "add   r0, r0, r3, lsr #3\n\t"
-                          "sub   r0, r5, r0, lsr #6\n\t"
-                          "orr   r4, r4, r0, lsl #4\n\t" /* put in pix 2 */
-
-                          "and   r1, r8, r6, lsl #16\n\t"
-                          "and   r2, r8, r6, lsl #8\n\t"
-                          "and   r3, r8, r6\n\t"
-                          "mov   r0,     r1, lsr #18\n\t"
-                          "add   r0, r0, r2, lsr #11\n\t"
-                          "add   r0, r0, r2, lsr #9\n\t"
-                          "add   r0, r0, r3, lsr #3\n\t"
-                          "sub   r0, r5, r0, lsr #6\n\t"
-                          "orr   r4, r4, r0, lsl #6\n\t" /* put in pix 3 */
-
-                          "strb  r4, [%[dpix]], #1\n\t"
-                          "cmp   %[spix], %[endpix]\n\t"
-                          "bcc   1b"
-                          :: [spix] "r" (sPix), [endpix] "r" (endPix), [dpix] "r" (dPix)
-                          : "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8");
+            _HD_ARM_Convert2 (sPix, dPix, eng->screen.width * eng->screen.height);
 #endif
         }
 
@@ -543,14 +512,16 @@ void HD_ScaleBlendClip (hd_surface ssrf, int sx, int sy, int sw, int sh,
   int32 x,y;
   int32 startx,starty,endx,endy;
   uint32 buffOff, imgOff;
+
+  // Source clipping
+  if (sx < 0) { sw += sx; sx = 0; }
+  if (sy < 0) { sh += sy; sy = 0; }
+  if (sx+sw > stw) { sw = stw - sx; }
+  if (sy+sh > sth) { sh = sth - sy; }
   
-  dw = dw * sw / stw;
-  dh = dh * sh / sth;
   if (!dw || !dh) return;
   fp_step_x = (sw << 16) / dw;
   fp_step_y = (sh << 16) / dh;
-  dx += ((sx << 16) / fp_step_x);
-  dy += ((sy << 16) / fp_step_y);
 
   // 1st, check if we need to do anything at all
   if( (dx > dtw) || (dy > dth) ||
@@ -632,36 +603,36 @@ void HD_ScaleBlendClip (hd_surface ssrf, int sx, int sy, int sw, int sh,
 
 void HD_Destroy (hd_object *obj) 
 {
-    hd_obj_list *cur, *last = 0;
-
-    cur = obj->eng->list;
-    if (cur->obj == obj) {
-        obj->eng->list = cur->next;
-        free (cur);
-    } else {
-        last = cur;
-        cur = cur->next;
-        while (cur) {
-            if (cur->obj == obj) {
-                last->next = cur->next;
-                free (cur);
-                cur = last->next;
-            } else {
-                cur = cur->next;
-            }
-        }
-    }
+    if (obj->eng) HD_Deregister (obj->eng, obj);
     
     obj->destroy (obj);
-    free (obj);
+    if (!obj->dontfree)
+        free (obj);
 }
 
-hd_object *HD_New_Object() 
+static int newobj_lz = 65535;
+
+static void donothing_O (hd_object *O) {}
+static void donothing_OSii (hd_object *O, hd_surface S, int i1, int i2) {}
+static void call_render (hd_object *O, hd_surface S, int x, int y, int w, int h, int dxo, int dyo) 
 {
-    static int lz = 65535;
-    hd_object *ret = calloc (1, sizeof(hd_object));
+    O->render (O, S, dxo, dyo);
+}
+
+void HD_NewObjectAt (hd_object *obj) 
+{
+    memset (obj, 0, sizeof(hd_object));
+    obj->last.z = obj->z = newobj_lz--;
+    obj->opacity = 0xff;
+    obj->render = donothing_OSii;
+    obj->renderpart = call_render;
+    obj->destroy = donothing_O;
+}
+
+hd_object *HD_NewObject() 
+{
+    hd_object *ret = malloc (sizeof(hd_object));
     assert (ret != NULL);
-    ret->last.z = ret->z = lz--;
-    ret->opacity = 0xff;
+    HD_NewObjectAt (ret);
     return ret;
 }

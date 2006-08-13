@@ -30,7 +30,8 @@
 
 #define HD_TYPE_CANVAS    0x01
 #define HD_TYPE_PRIMITIVE 0x02
-#define HD_TYPE_OTHER     0x03
+#define HD_TYPE_BAG       0x03
+#define HD_TYPE_OTHER     0xFF
 
 #define HD_PRIM_RECTANGLE 0x00
 
@@ -196,17 +197,21 @@ typedef struct hd_object {
     
     struct hd_engine *eng;
     
-    void (*render)(struct hd_engine *eng, struct hd_object *obj, int x, int y, int w, int h);
+    void (*render)(struct hd_object *obj, hd_surface srf, int dxoff, int dyoff);
+    void (*renderpart)(struct hd_object *obj, hd_surface srf, int psx, int psy, int psw, int psh, int dxoff, int dyoff); /* optional; psx/psy/etc. are post-scale coordinates */
     void (*destroy)(struct hd_object *obj);
     
     void (*animate)(struct hd_object *obj);
     void *animdata;
 
+    /* Only for simple "blit-it-and-forget-it" objects: */
 #define HD_SPEED_NOALPHA   1   /* every pixel is opaque, alpha ignored - major speedup */
 #define HD_SPEED_BINALPHA  2   /* any nonzero alpha is like 0xFF - medium speedup */
 #define HD_SPEED_NOSCALE   4   /* it's always a 1:1 scale - minor speedup */
 #define HD_SPEED_CSPRITE   8   /* compile the sprite - ignored currently, would be major speedup if it was impl */
     int speed;
+
+    int dontfree; // Object isn't malloc()ed, don't free() it
 
     /* private */ hd_rect last;
 } hd_object;
@@ -287,16 +292,20 @@ typedef struct hd_engine {
 } while(0)
 
 hd_engine *HD_Initialize(uint32 width,uint32 height,uint8 bpp, void *framebuffer, void (*update)(struct hd_engine*, int, int, int, int));
-void HD_Register(hd_engine *eng,hd_object *obj);
+void HD_Register(hd_engine *eng, hd_object *obj);
+void HD_Deregister (hd_engine *eng, hd_object *obj);
 void HD_Render(hd_engine *eng);
 void HD_Animate(hd_engine *eng);
 void HD_Destroy(hd_object *obj);
+#define HD_FreeObject HD_Destroy
+#define HD_DestroyObject HD_Destroy
 void HD_ScaleBlendClip (hd_surface sbuf, int sx, int sy, int sw, int sh,
                         hd_surface dbuf, int dx, int dy, int dw, int dh,
                         int speed, uint8 opacity);
 
 #define HD_New_Object HD_NewObject
 hd_object *HD_NewObject();
+void HD_NewObjectAt (hd_object *obj);
 hd_obj_list *HD_StackObjects (hd_obj_list *head);
 
 /****** Animation ******/
@@ -313,16 +322,19 @@ int32 fcos (int32 angle); // same
 
 /****** Canvasses ******/
 hd_object *HD_Canvas_Create (uint32 w, uint32 h);
+void       HD_Canvas_CreateAt (hd_object *obj, uint32 w, uint32 h);
 /* Canvas_CreateFrom() takes ownership of srf; it'll free it when the object is freed. */
 hd_object *HD_Canvas_CreateFrom(hd_surface srf);
 void       HD_Canvas_Destroy(hd_object *obj);
-void       HD_Canvas_Render(hd_engine *eng,hd_object *obj, int x, int y, int w, int h);
+void       HD_Canvas_Render(hd_object *obj, hd_surface srf, int dxoff, int dyoff);
+void       HD_Canvas_RenderPart (hd_object *obj, hd_surface srf, int psx, int psy, int psw, int psh, int dxoff, int dyoff);
 
 /****** PNGs ******/
 hd_object *HD_PNG_Create(const char *fname);
 hd_surface HD_PNG_Load (const char *fname, int *w, int *h);
 
 /****** Primitives ******/
+#define HD_CLEAR  0x00FFFFFF // magic value that says "clear this part to 0x00000000, no blending"
 typedef struct _hd_point {
 	int x, y;
 } hd_point;

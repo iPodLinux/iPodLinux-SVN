@@ -213,7 +213,7 @@ _HD_ARM_Convert2:
 	orr	r3, r3, r0, lsr #6	@ put this pixel into spot #4 of r3
 
 	@@ Dec the counter, store the 4 pixels, and loop.
-	subs	r14, r14, #1		@ dec the counter
+	subs	r14, r14, #4		@ dec the counter
 	strb	r4, [r12], #1		@ store the byte. 2 cyc.
 	bne	1b			@ loop if counter != 0. 3 cyc.
 
