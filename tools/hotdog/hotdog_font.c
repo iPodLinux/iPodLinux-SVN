@@ -1239,7 +1239,7 @@ hd_font *HD_Font_LoadFFF (const char *fname)
 
 	font = malloc(sizeof(hd_font));
 	font->bitstype = HD_FONT_CLUMPED;
-	font->pitch = 2;
+	font->pitch = 1;
 	font->pixels = NULL;
 	font->nchars = 0;
 	font->firstchar = 0xffff;
@@ -1259,19 +1259,19 @@ hd_font *HD_Font_LoadFFF (const char *fname)
 		if (index > lc) lc = index;
 		if (n_bits < index + 1) {
 			n_bits = (index + 0x100) & ~0xff;
-			font->pixels = realloc(font->pixels, n_bits*font->h*2);
+			font->pixels = realloc(font->pixels, n_bits*font->h);
 		}
 		for (i = 0; i < (int)font->h; ++i)
-			*((unsigned short *)font->pixels + index*font->h + i) =
-				h2d(tmp + 5 + (i * 2), 2) << 8;
+			*((unsigned char *)font->pixels + index*font->h + i) =
+				h2d(tmp + 5 + (i * 2), 2);
 	}
 	font->defaultchar = font->firstchar;
 	font->nchars = lc - font->firstchar;
-	font->pixbytes = font->nchars * font->h * 2;
+	font->pixbytes = font->nchars * font->h;
 	font->offset = malloc(font->nchars * sizeof(uint32));
 	font->width = malloc(font->nchars * sizeof(uint8));
 	for (i = 0; i <= font->nchars; ++i) {
-		font->offset[i] = (i + font->firstchar) * font->h * 2;
+		font->offset[i] = (i + font->firstchar) * font->h;
 		font->width[i] = w;
 	}
 	fclose(ip);
