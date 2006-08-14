@@ -252,20 +252,20 @@ typedef struct hd_engine {
  */
 #define _HD_ALPHA_BLEND(dst_argb, src_argb, ret_argb, opac)         \
 {                                                              \
- uint32 alpha,dst[2];                                          \
- uint32 idst = (dst_argb);                                      \
- uint32 isrc = (src_argb);                                      \
+ uint32 __alpha,__dst[2];                                          \
+ uint32 __idst = (dst_argb);                                      \
+ uint32 __isrc = (src_argb);                                      \
  if ((opac) != 0xff) { \
-    dst[0] = ((isrc & 0x00FF00FF) * (opac) + 0x00FF00FF) & ~0x00FF00FF; \
-    dst[1] = (((isrc >> 8) & 0x00FF00FF) * (opac) + 0x00FF00FF) & ~0x00FF00FF; \
-    isrc = (dst[0]>>8) + dst[1]; \
+    __dst[0] = ((__isrc & 0x00FF00FF) * (opac) + 0x00FF00FF) & ~0x00FF00FF; \
+    __dst[1] = (((__isrc >> 8) & 0x00FF00FF) * (opac) + 0x00FF00FF) & ~0x00FF00FF; \
+    __isrc = (__dst[0]>>8) + __dst[1]; \
  } \
- alpha = 255 - (isrc >> 24); \
- idst ^= 0xFF000000; isrc &= ~0xFF000000; \
- dst[0] = ((idst & 0x00FF00FF) * alpha + 0x00FF00FF) & ~0x00FF00FF;          \
- dst[1] = (((idst>>8) & 0x00FF00FF) * alpha + 0x00FF00FF) & ~0x00FF00FF;          \
- dst[1] ^= 0xFF000000; \
- (ret_argb) = (dst[0]>>8) + dst[1] + isrc;                      \
+ __alpha = 255 - (__isrc >> 24); \
+ __idst ^= 0xFF000000; __isrc &= ~0xFF000000; \
+ __dst[0] = ((__idst & 0x00FF00FF) * __alpha + 0x00FF00FF) & ~0x00FF00FF;          \
+ __dst[1] = (((__idst>>8) & 0x00FF00FF) * __alpha + 0x00FF00FF) & ~0x00FF00FF;          \
+ __dst[1] ^= 0xFF000000; \
+ (ret_argb) = (__dst[0]>>8) + __dst[1] + __isrc;                      \
 }
 
 #define BLEND_ARGB8888_ON_ARGB8888(dst_argb, src_argb, opac) _HD_ALPHA_BLEND(dst_argb, src_argb, dst_argb, opac)

@@ -18,6 +18,8 @@ static void HD_DoLinearAnimation (hd_object *obj)
     anim_lineardata *a = (anim_lineardata *)obj->animdata;
     a->cur.x += a->delta.x; a->cur.y += a->delta.y;
     a->cur.w += a->delta.w; a->cur.h += a->delta.h;
+    obj->x = a->cur.x >> 16; obj->y = a->cur.y >> 16;
+    obj->w = a->cur.w >> 16; obj->h = a->cur.h >> 16;
     if (--a->frames <= 0) {
         void (*done)(hd_object *) = a->done;
         free (a); // so it works if done() calls HD_Animate*.

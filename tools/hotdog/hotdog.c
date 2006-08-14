@@ -182,16 +182,20 @@ void HD_Render(hd_engine *eng) {
                     rect->w = (obj->x + obj->w > eng->screen.width)? eng->screen.width - obj->x : obj->w;
                     rect->h = (obj->y + obj->h > eng->screen.height)? eng->screen.height-obj->y : obj->h;
                     rect->z = obj->z;
-                    // Next rect: old position
-                    rect->next = malloc (sizeof(hd_rect));
-                    rect = rect->next;
-                    
-                    rect->x = (obj->last.x < 0)? 0 : obj->last.x;
-                    rect->y = (obj->last.y < 0)? 0 : obj->last.y;
-                    rect->w = (obj->last.x + obj->last.w > eng->screen.width)? eng->screen.width - obj->last.x : obj->last.w;
-                    rect->h = (obj->last.y + obj->last.h > eng->screen.height)? eng->screen.height - obj->last.y : obj->last.h;
-                    rect->z = obj->last.z;
-                    
+
+                    if (!(obj->last.x + obj->last.w < 0 || obj->last.y + obj->last.h < 0 ||
+                          obj->last.x > eng->screen.width || obj->last.y > eng->screen.height)) {
+                        // Next rect: old position
+                        rect->next = malloc (sizeof(hd_rect));
+                        rect = rect->next;
+                        
+                        rect->x = (obj->last.x < 0)? 0 : obj->last.x;
+                        rect->y = (obj->last.y < 0)? 0 : obj->last.y;
+                        rect->w = (obj->last.x + obj->last.w > eng->screen.width)? eng->screen.width - obj->last.x : obj->last.w;
+                        rect->h = (obj->last.y + obj->last.h > eng->screen.height)? eng->screen.height - obj->last.y : obj->last.h;
+                        rect->z = obj->last.z;
+                    }
+                        
                     rect->next = 0;
 
                     dirtied++;
@@ -249,17 +253,22 @@ void HD_Render(hd_engine *eng) {
                 rect->w = (obj->x + obj->w > eng->screen.width)? eng->screen.width - obj->x : obj->w;
                 rect->h = (obj->y + obj->h > eng->screen.height)? eng->screen.height-obj->y : obj->h;
                 rect->z = obj->z;
-                // Next rect: old position
-                rect->next = malloc (sizeof(hd_rect));
-                rect = rect->next;
-                
-                rect->x = (obj->last.x < 0)? 0 : obj->last.x;
-                rect->y = (obj->last.y < 0)? 0 : obj->last.y;
-                rect->w = (obj->last.x + obj->last.w > eng->screen.width)? eng->screen.width - obj->last.x : obj->last.w;
-                rect->h = (obj->last.y + obj->last.h > eng->screen.height)? eng->screen.height - obj->last.y : obj->last.h;
-                rect->z = obj->last.z;
 
+                if (!(obj->last.x + obj->last.w < 0 || obj->last.y + obj->last.h < 0 ||
+                      obj->last.x > eng->screen.width || obj->last.y > eng->screen.height)) {
+                    // Next rect: old position
+                    rect->next = malloc (sizeof(hd_rect));
+                    rect = rect->next;
+                    
+                    rect->x = (obj->last.x < 0)? 0 : obj->last.x;
+                    rect->y = (obj->last.y < 0)? 0 : obj->last.y;
+                    rect->w = (obj->last.x + obj->last.w > eng->screen.width)? eng->screen.width - obj->last.x : obj->last.w;
+                    rect->h = (obj->last.y + obj->last.h > eng->screen.height)? eng->screen.height - obj->last.y  : obj->last.h;
+                    rect->z = obj->last.z;
+                }
+                
                 rect->next = 0;
+                
                 obj->dirty = 1;
                 if (obj->last.z != obj->z) needsort = 1;
             }
