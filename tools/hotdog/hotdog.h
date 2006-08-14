@@ -263,7 +263,7 @@ typedef struct hd_engine {
  __alpha = 255 - (__isrc >> 24); \
  __idst ^= 0xFF000000; __isrc &= ~0xFF000000; \
  __dst[0] = ((__idst & 0x00FF00FF) * __alpha + 0x00FF00FF) & ~0x00FF00FF;          \
- __dst[1] = (((__idst>>8) & 0x00FF00FF) * __alpha + 0x00FF00FF) & ~0x00FF00FF;          \
+ __dst[1] = (((__idst>>8) & 0x00FF00FF) * __alpha + 0x008000FF) & ~0x00FF00FF;          \
  __dst[1] ^= 0xFF000000; \
  (ret_argb) = (__dst[0]>>8) + __dst[1] + __isrc;                      \
 }
