@@ -337,7 +337,7 @@ void HD_Rect(hd_surface srf, int x1, int y1, int x2, int y2, uint32 col)
 
 	b = HD_SRF_ROWF(srf, y1);
 	e = HD_SRF_ROWF(srf, y2 - 1);
-	for (xi = x1; xi < x2; ++xi) {
+	for (xi = x1 + 1; xi < x2 - 1; ++xi) {
 		BLEND_ARGB8888_ON_ARGB8888(*(b + xi), col, 0xff)
 		BLEND_ARGB8888_ON_ARGB8888(*(e + xi), col, 0xff)
 	}
