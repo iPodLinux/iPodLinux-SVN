@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005 Jonathan Bettencourt (jonrelay)
+ * Copyright (C) 2005 Jonathynne Bettencourt (jonrelay)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -129,6 +129,8 @@ static TiBuffer * podpaint_text = 0;
 static TWidget * podpaint_controller = 0;
 static PzWindow * podpaint_window = 0;
 static ttk_menu_item podpaint_fbx;
+
+static int (*podpaint_colorpicker)(const char *, ttk_color *) = 0;
 
 /* Dependent on Mouse Emulation Module */
 
@@ -1260,9 +1262,10 @@ void podpaint_click(TWidget * wid, int x, int y)
 				wid->dirty = 1;
 			}
 		} else {
-			/* stub for color picker */
-			podpaint_sel_color = ttk_makecol(rand() & 0xFF, rand() & 0xFF, rand() & 0xFF);
-			wid->dirty = 1;
+			if (podpaint_colorpicker) {
+				podpaint_colorpicker(_("Paint Color"), &podpaint_sel_color);
+				wid->dirty = 1;
+			}
 		}
 	} else if (x < podpaint_toolbox_width) {
 		/* click on the toolbox */
@@ -1394,6 +1397,8 @@ void podpaint_mod_init()
 	podpaint_fbx.name = _("Open with PodPaint");
 	podpaint_fbx.makesub = podpaint_open_handler;
 	pz_browser_add_action (podpaint_openable, &podpaint_fbx);
+	
+	podpaint_colorpicker = pz_module_softdep("colorpicker", "pz_colorpicker");
 }
 
 PZ_MOD_INIT(podpaint_mod_init)
