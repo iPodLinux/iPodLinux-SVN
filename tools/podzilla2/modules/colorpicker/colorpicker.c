@@ -41,6 +41,13 @@ static unsigned short colorpicker_icon_right[] = { 0x4000, 0xE000, 0x7000, 0x380
 #define PICKER_ICON 5
 #define PICKER_BOX 6
 
+#ifndef MIN
+#define MIN(a,b) ( ((a)<(b))?(a):(b) )
+#endif
+#ifndef MAX
+#define MAX(a,b) ( ((a)>(b))?(a):(b) )
+#endif
+
 /* OTHER COLOR MODELS FOR TTK */
 
 ttk_color ttk_makecmy(int c, int m, int y)
