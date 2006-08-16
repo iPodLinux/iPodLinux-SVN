@@ -4,12 +4,47 @@
 
 #include "hotdog.h"
 
+/********* Overall animation funcs **********/
+
+void HD_SetAnimation (hd_object *obj, void (*setup)(hd_object *), void (*animate)(hd_object *),
+                      void *animdata) 
+{
+    if (obj->animating) {
+        hd_pending_animation *next;
+        if (obj->pending_animations) {
+            next = obj->pending_animations;
+            while (next->next) next = next->next;
+            next = next->next = malloc (sizeof(hd_pending_animation));
+        } else {
+            next = obj->pending_animations = malloc (sizeof(hd_pending_animation));
+        }
+        next->setup = setup;
+        next->animate = animate;
+        next->animdata = animdata;
+        next->next = 0;
+    } else {
+        obj->animate = animate;
+        obj->animdata = animdata;
+        setup (obj);
+        obj->animating = 1;
+    }
+}
+
+void HD_StopAnimation (hd_object *obj) 
+{
+    if (obj->animdata) free (obj->animdata);
+    obj->animdata = 0;
+    obj->animate = 0;
+    obj->animating = 0;
+}
+
 /********* Linear animation *********/
 
 typedef struct 
 {
     hd_rect cur, delta, dest;
     int frames;
+    int absolute;
     void (*done)(hd_object *);
 } anim_lineardata;
 
@@ -31,12 +66,20 @@ static void HD_DoLinearAnimation (hd_object *obj)
     }
 }
 
-void HD_StopAnimation (hd_object *obj) 
+static void HD_SetupLinearAnimation (hd_object *obj) 
 {
-    if (obj->animdata) free (obj->animdata);
-    obj->animdata = 0;
-    obj->animate = 0;
-    obj->animating = 0;
+    anim_lineardata *a = (anim_lineardata *)obj->animdata;
+    if (!a->absolute) {
+        a->cur.x += (obj->x << 16); a->cur.y += (obj->y << 16);
+        a->cur.w *= obj->w; a->cur.h *= obj->h;
+        a->dest.x += (obj->x << 16); a->dest.y += (obj->y << 16);
+        a->dest.w *= obj->w; a->dest.h *= obj->h;
+        a->delta.w = (a->dest.w - a->cur.w) / a->frames;
+        a->delta.h = (a->dest.h - a->cur.h) / a->frames;
+    } else {
+        obj->x = (a->cur.x >> 16); obj->y = (a->cur.y >> 16);
+        obj->w = (a->cur.w >> 16); obj->h = (a->cur.h >> 16);
+    }
 }
 
 void HD_AnimateLinear (hd_object *obj, int sx, int sy, int sw, int sh,
@@ -46,20 +89,28 @@ void HD_AnimateLinear (hd_object *obj, int sx, int sy, int sw, int sh,
     assert (obj != NULL);
     assert (a != NULL);
 
-    obj->animating = 1;
-    obj->x = sx; obj->y = sy; obj->w = sw; obj->h = sh;
-    obj->animdata = a;
+    int absolute = frames & HD_ANIM_ABSOLUTE;
+    frames &= ~HD_ANIM_ABSOLUTE;
+
     a->frames = frames;
-    a->cur.x = (sx << 16); a->cur.y = (sy << 16);
-    a->cur.w = (sw << 16); a->cur.h = (sh << 16);
-    a->dest.x = (dx << 16); a->dest.y = (dy << 16);
-    a->dest.w = (dw << 16); a->dest.h = (dh << 16);
+    a->absolute = absolute;
+    if (a->absolute) {
+        a->cur.x = (sx << 16); a->cur.y = (sy << 16);
+        a->cur.w = (sw << 16); a->cur.h = (sh << 16);
+        a->dest.x = (dx << 16); a->dest.y = (dy << 16);
+        a->dest.w = (dw << 16); a->dest.h = (dh << 16);
+    } else {
+        a->cur.x = ((sx - obj->x) << 16); a->cur.y = ((sy - obj->y) << 16);
+        a->cur.w = ((sw << 16) / obj->w); a->cur.h = ((sh << 16) / obj->h);
+        a->dest.x = ((dx - sx) << 16); a->dest.y = ((dy - sy) << 16);
+        a->dest.w = ((dw << 16) / obj->w); a->dest.h = ((dh << 16) / obj->h);
+    }
     a->delta.x = (a->dest.x - a->cur.x) / frames;
     a->delta.y = (a->dest.y - a->cur.y) / frames;
     a->delta.w = (a->dest.w - a->cur.w) / frames;
     a->delta.h = (a->dest.h - a->cur.h) / frames;
     a->done = done;
-    obj->animate = HD_DoLinearAnimation;
+    HD_SetAnimation (obj, HD_SetupLinearAnimation, HD_DoLinearAnimation, a);
 }
 
 /********** Sine table, for all circular-ish stuff. *************/
@@ -265,6 +316,18 @@ static void HD_DoCircleAnimation (hd_object *obj)
     }
 }
 
+void HD_SetupCircleAnimation (hd_object *obj) 
+{
+    anim_circledata *a = obj->animdata;
+
+    obj->x = a->x + ((a->xr * fcos (a->angle >> 16)) >> 16);
+    obj->y = a->y + ((a->yr * fsin (a->angle >> 16)) >> 16);
+    if (a->fbot != 0x10000 || a->ftop != 0x10000) {
+        obj->w = (a->w * (a->fbot + ((a->fdelta >> 8) * ((fsin (a->angle >> 16) + 0x10000) >> 9)))) >> 16;
+        obj->h = (obj->w * a->aspect_ratio) >> 16;
+    }
+}
+
 void HD_AnimateCircle (hd_object *obj, int32 x, int32 y, int32 r, int32 fbot, int32 ftop,
                        int32 astart, int32 adist, int frames) 
 {
@@ -272,8 +335,6 @@ void HD_AnimateCircle (hd_object *obj, int32 x, int32 y, int32 r, int32 fbot, in
     assert (obj != NULL);
     assert (a != NULL);
 
-    obj->animating = 1;
-    obj->animdata = a;
     if (frames < 0) {
         a->frames = 0;
         frames = -frames;
@@ -288,13 +349,7 @@ void HD_AnimateCircle (hd_object *obj, int32 x, int32 y, int32 r, int32 fbot, in
     a->angle = astart << 16;
     a->adelta = (adist << 16) / frames;
     a->extd = 0;
-    obj->animate = HD_DoCircleAnimation;    
-    obj->x = a->x + ((a->xr * fcos (a->angle >> 16)) >> 16);
-    obj->y = a->y + ((a->yr * fsin (a->angle >> 16)) >> 16);
-    if (a->fbot != 0x10000 || a->ftop != 0x10000) {
-        obj->w = (a->w * (a->fbot + ((a->fdelta >> 8) * ((fsin (a->angle >> 16) + 0x10000) >> 9)))) >> 16;
-        obj->h = (obj->w * a->aspect_ratio) >> 16;
-    }
+    HD_SetAnimation (obj, HD_SetupCircleAnimation, HD_DoCircleAnimation, a);
 }
 
 void HD_XAnimateCircle (hd_object *obj, int32 x, int32 y, int32 xr, int32 yr, int32 fbot, int32 ftop,
@@ -303,6 +358,5 @@ void HD_XAnimateCircle (hd_object *obj, int32 x, int32 y, int32 xr, int32 yr, in
     HD_AnimateCircle (obj, x, y, xr, fbot, ftop, astart, adist, frames);
     anim_circledata *a = obj->animdata;
     a->yr = yr;
-    obj->y = a->y + ((a->yr * fsin (a->angle >> 16)) >> 16);
     a->extd = 1;
 }

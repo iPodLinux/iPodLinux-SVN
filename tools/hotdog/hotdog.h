@@ -184,6 +184,13 @@ typedef struct hd_rect {
     struct hd_rect *next; /* used only sometimes */
 } hd_rect;
 
+typedef struct hd_pending_animation {
+    void (*setup)(struct hd_object *obj);
+    void (*animate)(struct hd_object *obj);
+    void *animdata;
+    struct hd_pending_animation *next;
+} hd_pending_animation;
+
 typedef struct hd_object {
     int32 x, y, w, h, z;
     int32 natw, nath; /* natural width and height */
@@ -203,6 +210,7 @@ typedef struct hd_object {
     
     void (*animate)(struct hd_object *obj);
     void *animdata;
+    hd_pending_animation *pending_animations;
 
     /* Only for simple "blit-it-and-forget-it" objects: */
 #define HD_SPEED_NOALPHA   1   /* every pixel is opaque, alpha ignored - major speedup */
@@ -309,6 +317,10 @@ void HD_NewObjectAt (hd_object *obj);
 hd_obj_list *HD_StackObjects (hd_obj_list *head);
 
 /****** Animation ******/
+void HD_SetAnimation (hd_object *obj, void (*setup)(hd_object *),
+                      void (*animate)(hd_object *), void *animdata);
+#define HD_ANIM_ABSOLUTE  0x10000000 /* OR with frames to make the obj actually move to (sx,sy)swxsh */
+#define HD_ANIM_RELATIVE  0x00000000
 void HD_AnimateLinear (hd_object *obj, int sx, int sy, int sw, int sh,
                        int dx, int dy, int dw, int dh, int frames, void (*done)(hd_object *));
 void HD_AnimateCircle (hd_object *obj, int x, int y, int r, int32 fbot, int32 ftop,

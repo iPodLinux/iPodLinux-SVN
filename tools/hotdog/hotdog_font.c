@@ -19,10 +19,7 @@ static void _do_draw_char8 (hd_surface srf, hd_font *font, int x, int y, uint32 
         x = sx;
         while (x < ex) {
             pix = HD_MASKPIX (color, *pixels++);
-            if (cblend)
-                HD_SRF_BLENDPIX (srf, x, y, pix);
-            else
-                HD_SRF_SETPIX (srf, x, y, pix);
+            HD_SRF_BLENDPIX (srf, x, y, pix);
             x++;
         }
         if (font->bitstype == HD_FONT_CLUMPED)
@@ -1270,7 +1267,7 @@ hd_font *HD_Font_LoadFFF (const char *fname)
 	font->pixbytes = font->nchars * font->h;
 	font->offset = malloc(font->nchars * sizeof(uint32));
 	font->width = malloc(font->nchars * sizeof(uint8));
-	for (i = 0; i <= font->nchars; ++i) {
+	for (i = 0; i < font->nchars; ++i) {
 		font->offset[i] = (i + font->firstchar) * font->h;
 		font->width[i] = w;
 	}

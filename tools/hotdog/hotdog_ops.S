@@ -259,7 +259,7 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	@@  r5 = dest+buffOff+x
 	@@  r0, r6, r7, r8, r11 (5 regs) = scratch
 	@@  r9 = 0x00ff00ff
-	@@ r10 = 0x00800080
+	@@ r10 = 0x008000ff
 	@@ r14 = opacity
 
 	@@ Increment the src and dest pointers on the stack by 8,
@@ -277,7 +277,7 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	@@ Setup. 7 cyc.
 	mov	r9, #0xff
 	orr	r9, r9, #0xff0000
-	bic	r10, r9, r9, lsr #1
+	bic	r10, r9, #0x7f0000	@ r10 = 0x008000ff
 	ldr	r14, [sp, #80]
 	
 	@@ Outer loop. 48 + 27*w cycles.
@@ -331,7 +331,7 @@ _HD_ARM_LowerBlit_ScaleBlend:
 .macro	ablend	src, dst, opac=0
 	@@ Blends src on dst and stores the result in dst.
 	@@ Clobbers src, r0, r8, r11.
-	@@ Requires r14 = opacity unless opac=0, r9 = 0xff00ff, r10 = 0x800080.
+	@@ Requires r14 = opacity unless opac=0, r9 = 0xff00ff, r10 = 0x8000ff.
 	@@ Time:  4 cyc for alpha=0 opac=0,
 	@@        7 cyc for alpha=255 opac=0,
 	@@       15 cyc for alpha=0 opac=1,
@@ -343,10 +343,10 @@ _HD_ARM_LowerBlit_ScaleBlend:
 	@@ If we have opacity to deal with, we need to scale down *all* parts of src by opac/256.
 	@@ This is almost exactly like the blend loop below.
 	and	r0, r9, \src, lsr #8	@ r0 = (src >> 8) & 0x00ff00ff
-	mla	r11, r0, r14, r10	@ r11 = r0 * opac + 0x00800080
+	mla	r11, r0, r14, r9	@ r11 = r0 * opac + 0x00ff00ff
 	bic	r11, r11, r9		@ r11 &= 0xff00ff00
 	and	r0, r9, \src		@ r0 = src & 0x00ff00ff
-	mla	r8, r0, r14, r10	@ r8 = r0 * opac + 0x00800080
+	mla	r8, r0, r14, r10	@ r8 = r0 * opac + 0x008000ff
 	bic	r8, r8, r9		@ r8 &= 0xff00ff00
 	add	\src, r11, r8, lsr #8	@ src = (r8 >> 8) + r11
 .endif
