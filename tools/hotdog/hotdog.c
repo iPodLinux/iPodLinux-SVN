@@ -118,8 +118,18 @@ void HD_Deregister (hd_engine *eng, hd_object *obj)
 void HD_Animate(hd_engine *eng) {
     hd_obj_list *cur = eng->list;
     while (cur) {
-        if (cur->obj->animating && cur->obj->animate)
-            cur->obj->animate (cur->obj);
+        hd_object *obj = cur->obj;
+        
+        if (obj->animating && obj->animate)
+            obj->animate (obj);
+        if (!obj->animating && obj->pending_animations) {
+            hd_pending_animation *pa = obj->pending_animations;
+            obj->pending_animations = pa->next;
+            obj->animdata = pa->animdata;
+            obj->animate = pa->animate;
+            if (pa->setup) pa->setup (obj);
+            obj->animating = 1;
+        }
         cur = cur->next;
     }
 }

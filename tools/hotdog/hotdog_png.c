@@ -90,7 +90,7 @@ hd_surface HD_PNG_Load (const char *fname, int *retw, int *reth)
             png_set_strip_16 (png_ptr);
         /* Convert palette to RGB: */
         if (color_type == PNG_COLOR_TYPE_PALETTE)
-            png_set_palette_to_rgb (png_ptr);
+            png_set_palette_to_rgb (png_ptr), color_type = PNG_COLOR_TYPE_RGB;
         /* Extract 1/2/4bpp to 8bpp: */
         if (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8)
             png_set_gray_1_2_4_to_8 (png_ptr);
@@ -99,7 +99,7 @@ hd_surface HD_PNG_Load (const char *fname, int *retw, int *reth)
             png_set_tRNS_to_alpha (png_ptr);
         /* Convert gray to RGB: */
         if (color_type == PNG_COLOR_TYPE_GRAY || color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
-            png_set_gray_to_rgb (png_ptr);
+            png_set_gray_to_rgb (png_ptr), color_type = PNG_COLOR_TYPE_RGB;
 #ifndef _BIG_ENDIAN
         /* Convert RGB(A) to BGR(A), for little-endian reasons. */
         if (color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_RGB_ALPHA)
