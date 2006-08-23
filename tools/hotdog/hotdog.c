@@ -54,8 +54,10 @@ hd_engine *HD_Initialize(uint32 width,uint32 height,uint8 bpp, void *framebuffer
 	eng = (hd_engine *)malloc( sizeof(hd_engine) );
 	assert(eng != NULL);
 
+        eng->screen.__r0 = eng->screen.__r1 = 0;
 	eng->screen.width  = width;
 	eng->screen.height = height;
+
         if (bpp == 2) {
             eng->screen.fb2bpp = framebuffer;
             // The LCD update funcs assume that each line starts on a byte boundary; for the 138x110
@@ -77,6 +79,26 @@ hd_engine *HD_Initialize(uint32 width,uint32 height,uint8 bpp, void *framebuffer
 	return(eng);
 }
 
+void HD_ClipRect (hd_rect *rect, hd_rect *clip) 
+{
+    if (!rect || !clip) return;
+    
+    if (rect->x < clip->x) rect->x = clip->x;
+    if (rect->y < clip->y) rect->y = clip->y;
+    if (rect->x + rect->w > clip->x + clip->w) rect->w = clip->w + clip->x - rect->x;
+    if (rect->y + rect->h > clip->y + clip->h) rect->h = clip->h + clip->y - rect->y;
+}
+
+void HD_ExpandRect (hd_rect *rect, hd_rect *strut) 
+{
+    if (!rect || !strut) return;
+    
+    if (rect->x > strut->x) rect->x = strut->x;
+    if (rect->y > strut->y) rect->y = strut->y;
+    if (rect->x + rect->w < strut->x + strut->w) rect->w = strut->w + strut->x - rect->x;
+    if (rect->y + rect->h < strut->y + strut->h) rect->h = strut->h + strut->y - rect->y;
+}
+
 void HD_Register(hd_engine *eng,hd_object *obj)
 {
     if (eng->list) {
@@ -94,10 +116,14 @@ void HD_Register(hd_engine *eng,hd_object *obj)
         eng->list->obj = obj;
         eng->list->next = 0;
     }
+
+    obj->eng = eng;
 }
 
 void HD_Deregister (hd_engine *eng, hd_object *obj) 
 {
+    if (obj->eng != eng) return;
+    
     hd_obj_list *cur = eng->list, *previous = 0, *next;
     while (cur) {
         next = cur->next;
@@ -106,6 +132,29 @@ void HD_Deregister (hd_engine *eng, hd_object *obj)
             if (previous) previous->next = cur->next;
             else          eng->list = cur->next;
 
+            // Add it to the deregistered dirty list: first cur pos
+            if (obj->x + obj->w > 0 && obj->x < obj->eng->screen.width &&
+                obj->y + obj->h > 0 && obj->y < obj->eng->screen.height)
+            {
+                hd_rect *der = eng->deregistered;
+                eng->deregistered = malloc (sizeof(hd_rect));
+                HD_CopyRect (eng->deregistered, &cur->obj->x);
+                HD_ClipRect (eng->deregistered, &eng->screen.rect);
+                eng->deregistered->next = der;
+            }
+
+            // then old pos
+            if (obj->last.x + obj->last.w > 0 && obj->last.x < obj->eng->screen.width &&
+                obj->last.y + obj->last.h > 0 && obj->last.y < obj->eng->screen.height &&
+                !HD_SameRect (eng->deregistered, &cur->obj->last))
+            {
+                hd_rect *der = eng->deregistered;
+                eng->deregistered = malloc (sizeof(hd_rect));
+                HD_CopyRect (eng->deregistered, &cur->obj->last);
+                HD_ClipRect (eng->deregistered, &eng->screen.rect);
+                eng->deregistered->next = der;
+            }
+
             free (cur);
         } else {
             previous = cur;
@@ -113,13 +162,16 @@ void HD_Deregister (hd_engine *eng, hd_object *obj)
 
         cur = next;
     }
+
+    obj->eng = 0;
 }
 
-void HD_Animate(hd_engine *eng) {
+void HD_Animate (hd_engine *eng) {
     hd_obj_list *cur = eng->list;
     while (cur) {
         hd_object *obj = cur->obj;
-        
+        hd_obj_list *next = cur->next; // in case the obj is dereg'ed at end of anim
+
         if (obj->animating && obj->animate)
             obj->animate (obj);
         if (!obj->animating && obj->pending_animations) {
@@ -129,8 +181,10 @@ void HD_Animate(hd_engine *eng) {
             obj->animate = pa->animate;
             if (pa->setup) pa->setup (obj);
             obj->animating = 1;
+            HD_CopyRect (&obj->preanim, &obj->x);
         }
-        cur = cur->next;
+        
+        cur = next;
     }
 }
 
@@ -154,6 +208,8 @@ void HD_Render(hd_engine *eng) {
         int needsort = 0;
         int needrender = 0;
 
+        rect = dirties = calloc (1, sizeof(hd_rect)); // just a NULL rect
+
         // Make a list of all dirty rects. Rects are clipped
         // to screen from the beginning.
 #ifdef OBJECT_DIRTIES
@@ -169,32 +225,25 @@ void HD_Render(hd_engine *eng) {
             while (cur) {
                 hd_object *obj = cur->obj;
 
-                if ((obj->x + obj->w < 0) || (obj->y + obj->h < 0) || // off to the left or top
-                    (obj->x > eng->screen.width) || (obj->y > eng->screen.height) || // off to the right or btm
-                    !obj->opacity || !obj->render) { // transparent or undrawable
-                    cur = cur->next;
-                    continue;
-                }
-
                 if ((obj->last.x != obj->x || obj->last.y != obj->y ||
                      obj->last.w != obj->w || obj->last.h != obj->h ||
                      obj->last.z != obj->z || obj->dirty) && (obj->dirty >= 0)) {
                     needrender = 1;
-                    // One rect: current position
-                    if (!rect) {
-                        rect = dirties = malloc (sizeof(hd_rect));
-                    } else {
+
+                    if (obj->x + obj->w > 0 && obj->x < eng->screen.width &&
+                        obj->y + obj->h > 0 && obj->y < eng->screen.height) {
+                        // One rect: current position
                         rect->next = malloc (sizeof(hd_rect));
                         rect = rect->next;
+                        rect->x = (obj->x < 0)? 0 : obj->x;
+                        rect->y = (obj->y < 0)? 0 : obj->y;
+                        rect->w = (obj->x + obj->w > eng->screen.width)? eng->screen.width - obj->x : obj->w;
+                        rect->h = (obj->y + obj->h > eng->screen.height)? eng->screen.height-obj->y : obj->h;
+                        rect->z = obj->z;
                     }
-                    rect->x = (obj->x < 0)? 0 : obj->x;
-                    rect->y = (obj->y < 0)? 0 : obj->y;
-                    rect->w = (obj->x + obj->w > eng->screen.width)? eng->screen.width - obj->x : obj->w;
-                    rect->h = (obj->y + obj->h > eng->screen.height)? eng->screen.height-obj->y : obj->h;
-                    rect->z = obj->z;
-
-                    if (!(obj->last.x + obj->last.w < 0 || obj->last.y + obj->last.h < 0 ||
-                          obj->last.x > eng->screen.width || obj->last.y > eng->screen.height)) {
+                    
+                    if (obj->last.x + obj->last.w > 0 && obj->last.x < eng->screen.width &&
+                        obj->last.y + obj->last.h > 0 && obj->last.y < eng->screen.height) {
                         // Next rect: old position
                         rect->next = malloc (sizeof(hd_rect));
                         rect = rect->next;
@@ -240,32 +289,25 @@ void HD_Render(hd_engine *eng) {
         while (cur) {
             hd_object *obj = cur->obj;
             
-            if ((obj->x + obj->w < 0) || (obj->y + obj->h < 0) || // off to the left or top
-                (obj->x > eng->screen.width) || (obj->y > eng->screen.height) || // off to the right or btm
-                !obj->opacity || !obj->render) { // transparent or undrawable
-                cur = cur->next;
-                continue;
-            }
-            
             if (obj->last.x != obj->x || obj->last.y != obj->y ||
                 obj->last.w != obj->w || obj->last.h != obj->h ||
                 obj->last.z != obj->z || obj->dirty) {
                 needrender = 1;
-                // One rect: current position
-                if (!rect) {
-                    rect = dirties = malloc (sizeof(hd_rect));
-                } else {
+
+                if (obj->x + obj->w > 0 && obj->x < eng->screen.width &&
+                    obj->y + obj->h > 0 && obj->y < eng->screen.height) {
+                    // One rect: current position
                     rect->next = malloc (sizeof(hd_rect));
                     rect = rect->next;
+                    rect->x = (obj->x < 0)? 0 : obj->x;
+                    rect->y = (obj->y < 0)? 0 : obj->y;
+                    rect->w = (obj->x + obj->w > eng->screen.width)? eng->screen.width - obj->x : obj->w;
+                    rect->h = (obj->y + obj->h > eng->screen.height)? eng->screen.height-obj->y : obj->h;
+                    rect->z = obj->z;
                 }
-                rect->x = (obj->x < 0)? 0 : obj->x;
-                rect->y = (obj->y < 0)? 0 : obj->y;
-                rect->w = (obj->x + obj->w > eng->screen.width)? eng->screen.width - obj->x : obj->w;
-                rect->h = (obj->y + obj->h > eng->screen.height)? eng->screen.height-obj->y : obj->h;
-                rect->z = obj->z;
 
-                if (!(obj->last.x + obj->last.w < 0 || obj->last.y + obj->last.h < 0 ||
-                      obj->last.x > eng->screen.width || obj->last.y > eng->screen.height)) {
+                if (obj->last.x + obj->last.w > 0 && obj->last.x < eng->screen.width &&
+                    obj->last.y + obj->last.h > 0 && obj->last.y < eng->screen.height) {
                     // Next rect: old position
                     rect->next = malloc (sizeof(hd_rect));
                     rect = rect->next;
@@ -285,6 +327,11 @@ void HD_Render(hd_engine *eng) {
             cur = cur->next;
         }
 #endif
+
+        // Tack on the deregistered dirties
+        if (rect) rect->next = eng->deregistered;
+        else rect = eng->deregistered;
+        eng->deregistered = 0;
 
         // Sort 'em if necessary
         if (needsort)

@@ -25,8 +25,9 @@ void HD_SetAnimation (hd_object *obj, void (*setup)(hd_object *), void (*animate
     } else {
         obj->animate = animate;
         obj->animdata = animdata;
-        setup (obj);
+        if (setup) setup (obj);
         obj->animating = 1;
+        HD_CopyRect (&obj->preanim, &obj->x);
     }
 }
 
@@ -56,6 +57,9 @@ static void HD_DoLinearAnimation (hd_object *obj)
     obj->x = a->cur.x >> 16; obj->y = a->cur.y >> 16;
     obj->w = a->cur.w >> 16; obj->h = a->cur.h >> 16;
     if (--a->frames <= 0) {
+        obj->x = a->dest.x >> 16; obj->y = a->dest.y >> 16;
+        obj->w = a->dest.w >> 16; obj->h = a->dest.h >> 16;
+
         void (*done)(hd_object *) = a->done;
         free (a); // so it works if done() calls HD_Animate*.
         obj->animdata = 0;
@@ -91,6 +95,8 @@ void HD_AnimateLinear (hd_object *obj, int sx, int sy, int sw, int sh,
 
     int absolute = frames & HD_ANIM_ABSOLUTE;
     frames &= ~HD_ANIM_ABSOLUTE;
+
+    if (frames <= 0) frames = 1;
 
     a->frames = frames;
     a->absolute = absolute;
