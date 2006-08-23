@@ -393,6 +393,7 @@ void HD_Bezier(hd_surface srf, int order, hd_point *points,
 void HD_AABezier(hd_surface srf, int order, hd_point *points,
                  int resolution, uint32 col);
 void HD_Blur(hd_surface srf, int x, int y, int w, int h, int rad);
+void HD_Chrome(hd_surface srf, int x, int y, int w, int h);
 
 #ifdef IPOD
 /****** LCD ******/

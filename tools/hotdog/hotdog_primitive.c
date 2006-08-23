@@ -1059,9 +1059,26 @@ void HD_AABezier(hd_surface srf, int order, hd_point *points,
 		int resolution, uint32 col)
 { DO_HD_BEZIER(HD_AALines) }
 
+void HD_Chrome(hd_surface srf, int x, int y, int w, int h)
+{
+	int lx, ly, c;
+	uint32 col;
+
+	for (ly = 0; ly < h; ++ly) {
+		for (lx = 0; lx < w; ++lx) {
+			col = HD_SRF_PIXF(srf, x + lx, y + ly);
+			c = (((col & 0xff0000) >> 16) +
+			     ((col & 0x00ff00) >>  8) +
+			      (col & 0x0000ff)         ) / 3;
+			HD_SRF_PIXF(srf, x + lx, y + ly) =
+				0xff000000 | c << 16 | c << 8 | c;
+		}
+	}
+}
+
 void HD_Blur(hd_surface srf, int x, int y, int w, int h, int rad)
 {
-	int  kx, ky;
+	int kx, ky;
 	int lx, ly;
 	int rsum, gsum, bsum, amt;
 	uint32 col;
