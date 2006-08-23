@@ -51,7 +51,7 @@ hd_engine *HD_Initialize(uint32 width,uint32 height,uint8 bpp, void *framebuffer
 #endif
 #endif
 
-	eng = (hd_engine *)malloc( sizeof(hd_engine) );
+	eng = (hd_engine *)calloc( 1, sizeof(hd_engine) );
 	assert(eng != NULL);
 
         eng->screen.__r0 = eng->screen.__r1 = 0;

@@ -89,7 +89,7 @@ static void hLine(hd_surface srf, int x1, int x2, int y, uint32 col)
         if (x2 > HD_SRF_WIDTH(srf)) x2 = HD_SRF_WIDTH(srf);
         if (x1 >= x2) return; // if x1 was off to the right, or there's no line to draw at all
 	p = HD_SRF_ROWF(srf, y);
-	for (; x1 < x2; ++x1)
+	for (; x1 <= x2; ++x1)
 		BLEND_ARGB8888_ON_ARGB8888(*(p + x1), col, 0xff)
 }
 
@@ -98,8 +98,7 @@ void HD_Pixel(hd_surface srf, int x, int y, uint32 col)
 	HD_SRF_BLENDPIX(srf,x,y,col);
 }
 
-/* NOTE: last time I tried using this algorithm the line always was a pixel
- * short. check for inconsistancies. */
+/* TODO: offscreen clipping */
 void HD_Line(hd_surface srf, int x0, int y0, int x1, int y1, uint32 col)
 {
 	char steep;
@@ -124,7 +123,7 @@ void HD_Line(hd_surface srf, int x0, int y0, int x1, int y1, uint32 col)
 	dy = ABS(y1 - y0);
 	y = y0;
 	yi = (y0 < y1) ? 1 : -1;
-	for (x = x0; x < x1; ++x) {
+	for (x = x0; x <= x1; ++x) {
 		/* TODO: extract this if/else out of the loop */
 		if (steep) HD_SRF_BLENDPIX(srf,y,x,col);
 		else HD_SRF_BLENDPIX(srf,x,y,col);
@@ -134,27 +133,6 @@ void HD_Line(hd_surface srf, int x0, int y0, int x1, int y1, uint32 col)
 			err -= dx;
 		}
 	}
-#if 0 /* Bresenham's line algorithm */
-function line(x0, x1, y0, y1)
-     boolean steep := abs(y1 - y0) > abs(x1 - x0)
-     if steep then
-         swap(x0, y0)
-         swap(x1, y1)
-     if x0 > x1 then
-         swap(x0, x1)
-         swap(y0, y1)
-     int deltax := x1 - x0
-     int deltay := abs(y1 - y0)
-     int error := 0
-     int y := y0
-     if y0 < y1 then ystep := 1 else ystep := -1
-     for x from x0 to x1
-         if steep then plot(y,x) else plot(x,y)
-         error := error + deltay
-         if 2*error >= deltax
-             y := y + ystep
-             error := error - deltax
-#endif
 }
 
 #define BLENDPIX_WEIGHT(srf,x,y,pix,wei)			\
@@ -945,9 +923,9 @@ void HD_AAFillEllipse(hd_surface srf, int xc, int yc, int rx, int ry,uint32 col)
 		/* Fill */
 		if (i < dxt) {
 			if (sty != y)
-				hLine(srf, x, xx+1, y, col);
+				hLine(srf, x, xx, y, col);
 			if (styy != yy)
-				hLine(srf, x, xx+1, yy, col);
+				hLine(srf, x, xx, yy, col);
 			sty = y;
 			styy = yy;
 		}
