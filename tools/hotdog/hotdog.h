@@ -212,6 +212,8 @@ typedef struct hd_object {
     void *animdata;
     hd_pending_animation *pending_animations;
 
+    /* readonly */ hd_rect preanim, postanim;
+
     /* Only for simple "blit-it-and-forget-it" objects: */
 #define HD_SPEED_NOALPHA   1   /* every pixel is opaque, alpha ignored - major speedup */
 #define HD_SPEED_BINALPHA  2   /* any nonzero alpha is like 0xFF - medium speedup */
@@ -232,7 +234,13 @@ typedef struct hd_obj_list {
 
 typedef struct hd_engine {
     struct {
-        int32  width,height;
+        union {
+            hd_rect rect;
+            struct {
+                int __r0, __r1;
+                int width, height;
+            };
+        };
         uint16 *framebuffer;
         uint8  *fb2bpp;
         void (*update)(struct hd_engine *, int, int, int, int);
@@ -242,6 +250,7 @@ typedef struct hd_engine {
     hd_surface  buffer;
     
     hd_obj_list *list;
+    hd_rect *deregistered; // Rects on here are used for dirties once, then deleted.
 } hd_engine;
 
 /**** Optimized ops ****/
@@ -299,7 +308,15 @@ typedef struct hd_engine {
  HD_SRF_SETPIX (srf,x,y,p); \
 } while(0)
 
+/* Rects */
+#define HD_SameRect(r1,r2) (memcmp(r1,r2, 5*sizeof(int)) == 0)
+#define HD_CopyRect(dstr,srcr) memcpy(dstr, srcr, 5*sizeof(int))
+void HD_ClipRect (hd_rect *rect, hd_rect *clip); // clips rect to clip
+void HD_ExpandRect (hd_rect *rect, hd_rect *strut); // extends rect to strut
+
+/* Basic funcs */
 hd_engine *HD_Initialize(uint32 width,uint32 height,uint8 bpp, void *framebuffer, void (*update)(struct hd_engine*, int, int, int, int));
+#define HD_IsRegistered(obj) ((obj)->eng != 0)
 void HD_Register(hd_engine *eng, hd_object *obj);
 void HD_Deregister (hd_engine *eng, hd_object *obj);
 void HD_Render(hd_engine *eng);
@@ -317,8 +334,11 @@ void HD_NewObjectAt (hd_object *obj);
 hd_obj_list *HD_StackObjects (hd_obj_list *head);
 
 /****** Animation ******/
+#define HD_IsAnimating(obj) ((obj)->animating != 0)
 void HD_SetAnimation (hd_object *obj, void (*setup)(hd_object *),
                       void (*animate)(hd_object *), void *animdata);
+void HD_StopAnimation (hd_object *obj);
+
 #define HD_ANIM_ABSOLUTE  0x10000000 /* OR with frames to make the obj actually move to (sx,sy)swxsh */
 #define HD_ANIM_RELATIVE  0x00000000
 void HD_AnimateLinear (hd_object *obj, int sx, int sy, int sw, int sh,
@@ -327,7 +347,6 @@ void HD_AnimateCircle (hd_object *obj, int x, int y, int r, int32 fbot, int32 ft
                        int astart, int adist, int frames);
 void HD_XAnimateCircle (hd_object *obj, int x, int y, int xr, int yr, int32 fbot, int32 ftop,
                         int astart, int adist, int frames);
-void HD_StopAnimation (hd_object *obj);
 int32 fsin (int32 angle); // angle is in units of 1024 per pi/2 radians - that is, rad*2048/pi
                           // ret is a 16.16 fixpt - 0x10000 is 1, 0x0000 is 0
 int32 fcos (int32 angle); // same
