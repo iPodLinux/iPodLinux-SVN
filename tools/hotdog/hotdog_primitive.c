@@ -977,7 +977,7 @@ void HD_AAFillEllipse(hd_surface srf, int xc, int yc, int rx, int ry,uint32 col)
 	
 		BLENDPIX_WEIGHT(srf, x, yy, col, iweight);
 		BLENDPIX_WEIGHT(srf, xx, yy, col, iweight);
-		hLine(srf, x+1, xx, y-1, col);
+		hLine(srf, x+1, xx-1, y-1, col);
 
 		/* Right half */
 		xx = xc2 - xs;
@@ -986,7 +986,7 @@ void HD_AAFillEllipse(hd_surface srf, int xc, int yc, int rx, int ry,uint32 col)
 
 		BLENDPIX_WEIGHT(srf, xs, yy, col, weight);
 		BLENDPIX_WEIGHT(srf, xx, yy, col, weight);
-		hLine(srf, x+1, xc2 - x, yy+1, col);
+		hLine(srf, x+1, xc2 - x - 1, yy+1, col);
 	}
 }
 
