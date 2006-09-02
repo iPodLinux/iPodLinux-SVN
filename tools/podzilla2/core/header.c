@@ -154,7 +154,8 @@ void int_add_header_widget( char * widgetDisplayName,
 		while( h->next ) {
 			h = h->next;
 		}
-		h->next = new;
+		h = h->next = new;
+		h->updfcn( h );
 	}
 }
 
