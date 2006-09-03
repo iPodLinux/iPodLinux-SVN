@@ -77,10 +77,12 @@ long hw_version;
 ttk_gc pz_root_gc;
 
 /* static stuff */
-static int usb_connected = 0;
-static int fw_connected = 0;
 static ttk_timer connection_timer = 0;
 static int bl_forced_on = 0;
+
+/* Is something connected? */
+int usb_connected = 0;
+int fw_connected = 0;
 
 /* Set to tell ipod.c not to actually set the wheel debounce,
  * since we don't want it set *while we're setting it*.
@@ -96,21 +98,27 @@ PzConfig *pz_global_config;
 static void check_connection() 
 {
     int this_usb_conn = pz_ipod_usb_is_connected();
-    int this_fw_conn = pz_ipod_fw_is_connected();
+    int this_fw_conn  = pz_ipod_fw_is_connected();
+    int show_popup    = pz_get_int_setting (pz_global_config, USB_FW_POPUP);
 
-    if (this_usb_conn && !usb_connected &&
+    if (show_popup && this_usb_conn && !usb_connected &&
         pz_dialog (_("USB Connect"), _("Go to disk mode?"), 2, 10, "No", "Yes"))
         pz_ipod_go_to_diskmode();
 
     if( pz_ipod_get_hw_version() < 0x000B0000 ) {
-	if (this_fw_conn && !fw_connected &&
-	    pz_dialog (_("FireWire Connect"), _("Go to disk mode?"), 2, 10, "No", "Yes"))
-	    pz_ipod_go_to_diskmode();
+        if (show_popup && this_fw_conn && !fw_connected &&
+            pz_dialog (_("FireWire Connect"), _("Go to disk mode?"), 2, 10, "No", "Yes"))
+            pz_ipod_go_to_diskmode();
     }
 
     usb_connected = this_usb_conn;
     fw_connected = this_fw_conn;
     connection_timer = ttk_create_timer (1000, check_connection);
+}
+
+int usb_fw_connected()
+{
+    return !!(usb_connected + fw_connected);
 }
 
 static ttk_timer bloff_timer = 0;
