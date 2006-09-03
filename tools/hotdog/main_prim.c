@@ -1,10 +1,17 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "hotdog.h"
+#include <sys/time.h>
+
+uint32 get_ticks(void)
+{
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return (uint32)(((tv.tv_sec % 0xffff) * 1000 * 1000) + tv.tv_usec);
+}
 
 #ifdef IPOD
 uint32 *screen;
-
 static uint32 WIDTH, HEIGHT;
 #else
 #include "SDL.h"
@@ -110,6 +117,19 @@ int main(int argc, char **argv)
 			{0,0}, {0,HEIGHT}, {WIDTH,0}, {WIDTH,HEIGHT}
 		};
 		HD_AABezier(srf, 3, fre, 6, 0xffffffff);
+	}
+	{
+		hd_point fro[] = {
+			{WIDTH-40,120}, {WIDTH-20,140},
+			{WIDTH-40,140}, {WIDTH-20,120},
+			
+			{WIDTH-40, 50}, {WIDTH-20, 30},
+			{WIDTH,    50}, {WIDTH-20, 50},
+			{WIDTH-10, 40}, {WIDTH-30, 40},
+			{WIDTH-20, 50}
+		};
+		HD_FillPoly(srf, fro, 4, PREM(0x80ffffff));
+		//HD_FillPoly(srf, fro + 4, 7, PREM(0x80ffff50));
 	}
 	HD_Blur(srf, 0, HEIGHT/2, WIDTH, 24, 5);
 	if (!access("Aiken14.png", R_OK)) {
