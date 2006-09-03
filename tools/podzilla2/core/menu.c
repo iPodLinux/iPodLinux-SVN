@@ -22,6 +22,7 @@
 static TWidget *root_menu;
 static int inited = 0;
 extern int pz_setting_debounce;
+extern int usb_fw_connected();
 
 // Structure:
 // [menu]
@@ -58,6 +59,11 @@ static TWindow *reboot_ipod()
 static TWindow *poweroff_ipod() 
 {
     pz_ipod_powerdown();
+    return TTK_MENU_DONOTHING;
+}
+static TWindow *diskmode_ipod() 
+{
+    pz_ipod_go_to_diskmode();
     return TTK_MENU_DONOTHING;
 }
 static TWindow *reset_settings() 
@@ -248,6 +254,7 @@ void pz_menu_init()
     pz_menu_add_action ("/Settings/Wheel Sensitivity", set_wheeldebounce);
     pz_menu_add_setting ("/Settings/Backlight Timer", BACKLIGHT_TIMER, pz_global_config, backlight_options);
     pz_menu_add_setting ("/Settings/Clicker", CLICKER, pz_global_config, 0);
+    pz_menu_add_setting ("/Settings/USB & FW Popup", USB_FW_POPUP, pz_global_config, 0);
 
     item = pz_menu_add_action ("/Settings/Appearance/Color Scheme", pz_select_color_scheme);
     item->flags |= TTK_MENU_ICON_SUB;
@@ -314,6 +321,9 @@ void pz_menu_init()
     pz_menu_add_action ("/Power/Reboot iPod/Absolutely", reboot_ipod);
     pz_menu_add_action ("/Power/Turn Off iPod/Cancel", PZ_MENU_UPONE);
     pz_menu_add_action ("/Power/Turn Off iPod/Absolutely", poweroff_ipod);
+    pz_menu_add_action ("/Power/Diskmode/Cancel", PZ_MENU_UPONE);
+    pz_menu_add_action ("/Power/Diskmode/Absolutely", diskmode_ipod);
+    pz_get_menu_item ("/Power/Diskmode")->visible = usb_fw_connected;
 
     ((TWidget *)pz_get_menu_item ("/Settings")->data)->button = settings_button;
 }

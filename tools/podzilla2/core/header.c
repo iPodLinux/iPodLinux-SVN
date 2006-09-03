@@ -70,6 +70,10 @@ extern int ipod_read_apm(int *battery, int *charging);
 
 static int make_dirty (TWidget *this) { this->dirty++; ttk_dirty |= TTK_DIRTY_HEADER; return 0; }
 
+extern int usb_connected;
+
+extern int fw_connected;
+
 extern int pz_hold_is_on;
 
 static TWidget *headerBar = 0;
@@ -1555,6 +1559,39 @@ void test_draw_widget( struct header_info * hdr, ttk_surface srf )
 #endif
 
 
+/* USB/FW connected Widget ****************** */ 
+
+static void w_usb_fw_update( struct header_info * hdr )
+{
+	/* If usb/fw is connected the width of our widget to be a little bigger
+	   than the size of the icon itself. 
+	   If usb/fw is not connected, set the width to be 0, so it doesn't get drawn
+        */
+	if( usb_connected ) {
+		hdr->widg->w = pz_icon_usb[0] + 6;
+	} else if( fw_connected ) {
+		hdr->widg->w = pz_icon_fw[0] + 6;
+	} else {
+		hdr->widg->w = 0;
+	}
+}
+
+static void w_usb_fw_draw( struct header_info * hdr, ttk_surface srf )
+{
+	if( usb_connected ) {
+		ttk_draw_icon( pz_icon_usb, srf, hdr->widg->x+3, 
+			       hdr->widg->y  + ((hdr->widg->h - pz_icon_usb[1])>>1),
+			       ttk_ap_getx ("battery.border"),
+			       ttk_ap_getx ("header.bg")->color );			
+	} else if( fw_connected ) {
+		ttk_draw_icon( pz_icon_fw, srf, hdr->widg->x+3, 
+			       hdr->widg->y  + ((hdr->widg->h - pz_icon_fw[1])>>1),
+			       ttk_ap_getx ("battery.border"),
+			       ttk_ap_getx ("header.bg")->color );			
+	}
+}
+
+
 /* Hold Widget ****************** */ 
 
 void pz_header_fix_hold() 
@@ -1896,6 +1933,9 @@ void pz_header_init()
 	char * t;
 	if( !initted ) {
 		/* register all internal widgets */
+		int_add_header_widget( "USB/Firewire", w_usb_fw_update,
+					w_usb_fw_draw, (void *)NULL, 0 );
+
 		int_add_header_widget( "Hold", w_hold_update,
 					w_hold_draw, (void *)NULL, 0 );
 
@@ -1976,6 +2016,7 @@ void pz_header_init()
 	if( !t || (strlen( t ) <3 ) ){
 		/* some default widgets */
 		pz_enable_widget_on_side( HEADER_SIDE_LEFT, "Hold" );
+		pz_enable_widget_on_side( HEADER_SIDE_LEFT, "USB/Firewire" );
 		pz_enable_widget_on_side( HEADER_SIDE_RIGHT, "Power Icon" );
 
 		/* set up "Plain" as the default */

@@ -475,6 +475,7 @@ TWindow *pz_select_color_scheme();
 
 /** Icons - icons.c **/
 extern unsigned char pz_icon_play[], pz_icon_pause[];
+extern unsigned char pz_icon_usb[],  pz_icon_fw[];
 extern unsigned char pz_icon_hold[], pz_icon_dot[];
 extern unsigned char pz_icon_battery_horiz[], pz_icon_battery_vert[];
 extern unsigned char pz_icon_charging[];
@@ -551,6 +552,7 @@ void pz_reset_idle_timer();
 /* OTHER SETTINGS 30 - 99 */
 
 #define LANGUAGE        (30)
+#define USB_FW_POPUP    (33)
 #define WHEEL_DEBOUNCE  (34)
 
 #define TIME_ZONE	(35)
