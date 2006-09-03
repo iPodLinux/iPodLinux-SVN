@@ -374,8 +374,9 @@ void HD_Line(hd_surface srf, int x0, int y0, int x1, int y1, uint32 col);
 void HD_AALine(hd_surface srf, int x0, int y0, int x1, int y1, uint32 col);
 void HD_Lines(hd_surface srf, hd_point *points, int n, uint32 col);
 void HD_AALines(hd_surface srf, hd_point *points, int n, uint32 col);
-void HD_Poly(hd_surface srf,  hd_point *points, int n, uint32 col);
+void HD_Poly(hd_surface srf, hd_point *points, int n, uint32 col);
 void HD_AAPoly(hd_surface srf, hd_point *points, int n, uint32 col);
+void HD_FillPoly(hd_surface srf, hd_point *points, int n, uint32 col);
 void HD_Bitmap(hd_surface srf, int x, int y, int w, int h,
 		const unsigned short *bits, uint32 col);
 void HD_FillRect(hd_surface srf, int x1, int y1, int x2, int y2, uint32 col);

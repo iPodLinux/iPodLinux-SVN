@@ -79,15 +79,15 @@ void HD_Primitive_Render(hd_engine *eng,hd_object *obj, int cx, int cy, int cw, 
 #define MAX(a,b) (((a)>(b))?(a):(b))
 #define ABS(a) (((a)>0)?(a):(-(a)))
 
-/* Draws from (x1, y) to (x2, y); (x1, y) is included but (x2, y) is *not*. */
+/* Draws from (x1, y) to (x2, y) */
 static void hLine(hd_surface srf, int x1, int x2, int y, uint32 col)
 {
 	uint32 *p;
-        if (y < 0 || y >= HD_SRF_HEIGHT(srf)) return; // if the line is off-surface
+        if (y < 0 || y >= HD_SRF_HEIGHT(srf)) return; /* off-surface */
 	if (x1 > x2) SWAP(x1, x2);
         if (x1 < 0) x1 = 0;
         if (x2 > HD_SRF_WIDTH(srf)) x2 = HD_SRF_WIDTH(srf);
-        if (x1 >= x2) return; // if x1 was off to the right, or there's no line to draw at all
+        if (x1 > x2) return; /* x1 off to the right, or no line to draw */
 	p = HD_SRF_ROWF(srf, y);
 	for (; x1 <= x2; ++x1)
 		BLEND_ARGB8888_ON_ARGB8888(*(p + x1), col, 0xff)
@@ -95,6 +95,7 @@ static void hLine(hd_surface srf, int x1, int x2, int y, uint32 col)
 
 void HD_Pixel(hd_surface srf, int x, int y, uint32 col)
 {
+        if (y < 0 || x < 0) return;
 	HD_SRF_BLENDPIX(srf,x,y,col);
 }
 
@@ -257,6 +258,208 @@ void HD_Bitmap(hd_surface srf, int x, int y, int w, int h,
 			count = 0;
 		}
 	}
+}
+
+typedef struct _hd_bucket {
+	int n;
+	int allocd;
+	hd_point *x;
+} hd_bucket;
+typedef struct _hd_hsls {
+	int y;
+	int xl, xr;
+} hd_hsls;
+typedef struct _hd_poly {
+	int ymax, ymin, n;
+	hd_bucket *net;	
+	hd_bucket *ppoly;	
+} hd_poly;
+
+static void record_point(hd_bucket *b, hd_point *p)
+{
+	if (b->n + 1 > b->allocd) {
+		b->allocd += 256;
+		/* allocate for hd_hsls so we don't have to realloc later */
+		b->x = realloc(b->x, b->allocd * sizeof(hd_hsls));
+	}
+	/* in order for us to be able to translate this to hd_hsls, we have
+	 * to swap x and y for now, don't panic. */
+	b->x[b->n].x = p->y;
+	b->x[b->n++].y = p->x;
+}
+
+/* simple bresenham algo */
+static void record_line(hd_bucket *ppoly, hd_point *a, hd_point *b)
+{
+#define RECORD(xp,yp)                \
+do { hd_point r;                     \
+     if (steep) r.x = yp, r.y = xp;  \
+     else r.x = xp, r.y = yp;        \
+     record_point(ppoly, &r); } while (0);
+	char steep;
+	int dy, dx, yi, xi;
+	int x0, y0, x1, y1;
+	int err = 0;
+
+	x0 = a->x; x1 = b->x;
+	y0 = a->y; y1 = b->y;
+
+	steep = (ABS(y1 - y0) > ABS(x1 - x0));
+	if (steep) {
+		SWAP(x0, y0);
+		SWAP(x1, y1);
+	}
+
+	dx = ABS(x1 - x0);
+	dy = ABS(y1 - y0);
+	yi = (y0 < y1) ? 1 : -1;
+	xi = (x0 > x1) ? -1 : 1;
+	while (x0 != x1) {
+		RECORD(x0,y0);
+		err += dy;
+		if (2*err >= dx) {
+			y0 += yi;
+			err -= dx;
+		}
+		x0 += xi;
+	}
+#undef RECORD
+}
+
+static int cmp_coord(const void *a, const void *b)
+{
+	return *(int *)a - *(int *)b;
+}
+
+/* converts an array of hd_points (2 ints) to an array of hd_hsls (3 ints)
+ * x and y are already swapped for fast translation ex: YXYXYXYX => YXXYXX */
+static inline void hsls(hd_point *d, int **dest)
+{
+	int i;
+	hd_hsls h;
+
+	for (i = 1, h.xr = h.xl = d->y;
+			(int *)(d + i) < *dest &&
+			(d + i)->x == d->x; ++i) {
+		h.xl = MIN(h.xl, (d+i)->y);
+		h.xr = MAX(h.xr, (d+i)->y);
+	}
+	if (!(--i)) { /* zero consecutive, shortest hsls: YX => YXX */
+		memmove(d + 1, (int *)d + 1,
+				(*dest - ((int *)d + 1)) * sizeof(int));
+		*dest += 1;
+	}
+	else { /* we have -i- consecutive pixels: YXYXYX => YXX */
+		memmove((int *)d + 3, d + i + 1,
+				(*dest - (int *)(d + i + 1)) * sizeof(int));
+		*((int *)d + 1) = h.xl;
+		*((int *)d + 2) = h.xr;
+		*dest -= 2 * i - 1;
+	}
+}
+
+/* take preconverted hsls array and merge end hsls if needed */
+static inline void end_hsls(hd_hsls *h, int *n)
+{
+	if (h->y != (h + *n - 1)->y) return;
+
+	--(*n);
+	h->xl = MIN(h->xl, (h + *n)->xl);
+	h->xr = MAX(h->xr, (h + *n)->xr);
+}
+
+/* simplify an array of hd_points into hd_hsls, remember x and y are swapped */
+static void simplify(hd_bucket *b)
+{
+	int *d;
+	int *dest;
+
+	if (!b->x || !b->n) return;
+
+	dest = (int *)(b->x + b->n);
+	for (d = (int *)b->x; d < dest; d += 3)
+		hsls((hd_point *)d, &dest);
+	b->n = (dest - (int *)b->x) / 3;
+
+	end_hsls((hd_hsls *)b->x, &b->n);
+}
+
+/* back to a two int set of values, but in fresh memory this time */
+static void insert_node(hd_bucket *b, hd_hsls *l)
+{
+	if (b->n + 2 > b->allocd) {
+		b->allocd += 32;
+		b->x = realloc(b->x, b->allocd * sizeof(hd_point));
+	}
+	b->x[b->n].x = l->xl;
+	b->x[b->n++].y = l->xr;
+}
+
+/* Liu's Criterion for even number decision:
+ * 1. If ( Py > Cy && Ny < Cy || Py < Cy && Ny > Cy ) then sort and insert a
+ *  node with field values xL and xR of Cy into a proper position(indexed by y)
+ *  in the y Nbucket.
+ *
+ * 2. If ( Py > Cy && Ny > Cy || Py < Cy && Ny < Cy ) then sort and insert a
+ *  pair of identical nodes with field values xL and xR of Cy into two proper
+ *  consecutive positions in the y Nbucket respectively.
+ **/
+static void lius_criterion(hd_poly *poly)
+{
+	int i;
+	hd_bucket *b = poly->ppoly;
+	hd_bucket *net = poly->net;
+	hd_hsls *p, *c, *n;
+
+	for (i = 0; i < b->n; ++i) {
+		c = &((hd_hsls *)b->x)[i];
+		p = &((hd_hsls *)b->x)[(i == 0) ? (b->n - 1) : (i - 1)];
+		n = &((hd_hsls *)b->x)[(i == b->n - 1) ? 0 : (i + 1)];
+
+		if ((p->y>c->y && n->y<c->y) || (p->y<c->y && n->y>c->y))
+			insert_node(&net[c->y - poly->ymin], c);
+		else if ((p->y>c->y && n->y>c->y) || (p->y<c->y && n->y<c->y)) {
+			insert_node(&net[c->y - poly->ymin], c);
+			insert_node(&net[c->y - poly->ymin], c);
+		}
+	}
+}
+
+void HD_FillPoly(hd_surface srf, hd_point *points, int n, uint32 col)
+{
+#define safe_free(a) do { if (a) free(a), a = NULL; } while (0)
+	hd_poly *poly;
+	int i, y;
+
+	if (n < 3) return;
+	poly = calloc(1, sizeof(hd_poly));
+	poly->ymin = points[0].y;
+	for (i = n; i--;) {
+		poly->ymax = MAX(poly->ymax, points[i].y);
+		poly->ymin = MIN(poly->ymin, points[i].y);
+	}
+	poly->n = (poly->ymax - poly->ymin) + 1;
+	poly->net = calloc(poly->n + 1, sizeof(hd_bucket));
+	poly->ppoly = poly->net++;
+
+	for (i = 0; i < n - 1; ++i)
+		record_line(poly->ppoly, &points[i], &points[i + 1]);
+	record_line(poly->ppoly, &points[n - 1], &points[0]);
+
+	simplify(poly->ppoly);
+	lius_criterion(poly);
+	for (y = poly->ymin; y <= poly->ymax; ++y) {
+		hd_bucket *p = &poly->net[y - poly->ymin];
+		hd_point *s;
+		qsort(p->x, p->n, sizeof(int) * 2, cmp_coord);
+		for (s = (hd_point * )p->x; p->n > 1; s += 2, p->n -= 2)
+			hLine(srf, s->x, (s + 1)->y, y, col);
+		//if (p->n) hLine(srf, *x, *(x + 1), y, col);
+		safe_free(p->x);
+	}
+	safe_free(poly->ppoly->x);
+	safe_free(poly->ppoly);
+	safe_free(poly);
 }
 
 void HD_FillRect(hd_surface srf, int x1, int y1, int x2, int y2, uint32 col)
