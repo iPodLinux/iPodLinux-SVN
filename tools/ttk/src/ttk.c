@@ -1745,23 +1745,58 @@ void ttk_stop_cop() {}
 void ttk_sleep_cop() {}
 void ttk_wake_cop() {}
 
-
+/* don't hurt yourself; I know I did. */
 ttk_timer ttk_create_timer (int ms, void (*fn)()) 
 {
+#define TIMER_ALLOCD (head->delay)
+    /* yes, static variables are not entirely clean, but timers will probably
+     * be running until program exit, if not call ttk_create_timer with 0,0 */
+    static ttk_timer head;
     ttk_timer cur;
-    if (!ttk_timers) {
-	cur = ttk_timers = malloc (sizeof(struct _ttk_timer));
-    } else {
-	cur = ttk_timers;
-	while (cur->next) cur = cur->next;
-	cur->next = malloc (sizeof(struct _ttk_timer));
-	cur = cur->next;
+    int num;
+
+    /* special case so that -head- can be free'd */
+    if (!ms && !fn) {
+	free(head);
+	head = 0;
+	return 0;
     }
+    /* count the number of timers used */
+    for (cur = head; cur && cur->next; cur = cur->next);
+    num = (cur) ? cur - head : 0;
+
+    /* if ttk_timers moved, make sure we don't leave a empty timer spot */
+    if (head && ttk_timers && ttk_timers != head->next) {
+	head->next = ttk_timers;
+    }
+    if (!head || ++num > TIMER_ALLOCD) {
+	int a = head ? TIMER_ALLOCD + 64 : 63;
+	/* if this realloc relocates the memory, all timers are screwed. */
+	cur = realloc(head, (a + 1) * sizeof(struct _ttk_timer));
+	if (head && cur != head) {
+	     pz_error("realloc relocated timers. All timers are now broken. "
+	     	      "Why did you have over %d timers anyway? Please report.",
+		      a - 64);
+	}
+	if (!head) cur->next = 0;
+	head = cur;
+	TIMER_ALLOCD = a;
+    }
+
+    cur = head;
+    while (cur->next == cur + 1)
+	cur = cur->next;
+    (cur + 1)->next = cur->next;
+    cur->next = cur + 1;
+    cur = cur->next;
+    /* reset ttk_timers so we aren't missing a timer in spot 1 */
+    ttk_timers = head->next;
+
     cur->started = ttk_getticks();
     cur->delay = ms;
     cur->fn = fn;
-    cur->next = 0;
     return cur;
+#undef TIMER_ALLOCD
 }
 
 void ttk_destroy_timer (ttk_timer tim) 
@@ -1778,10 +1813,8 @@ void ttk_destroy_timer (ttk_timer tim)
 
     if (last) {
 	last->next = cur->next;
-	free (cur);
     } else {
 	ttk_timers = cur->next;
-	free (cur);
     }
 }
 
