@@ -1774,9 +1774,9 @@ ttk_timer ttk_create_timer (int ms, void (*fn)())
 	/* if this realloc relocates the memory, all timers are screwed. */
 	cur = realloc(head, (a + 1) * sizeof(struct _ttk_timer));
 	if (head && cur != head) {
-	     pz_error("realloc relocated timers. All timers are now broken. "
-	     	      "Why did you have over %d timers anyway? Please report.",
-		      a - 64);
+	    fprintf(stderr, "realloc relocated timers. All timers are now "
+	    		    "broken. Why did you have over %d timers anyway? "
+			    "Please report.", a - 64);
 	}
 	if (!head) cur->next = 0;
 	head = cur;
