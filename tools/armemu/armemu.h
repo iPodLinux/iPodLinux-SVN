@@ -134,5 +134,6 @@ u32 barrel_shift (cpu_t *cpu, u32 shdesc, int *cflagp);
 void execute (machine_t *mach, cpu_t *cpu);
 char *disassemble (u32 instr, u32 addr);
 void update_screen (machine_t *mach);
+void disassemble_image(const char *filename);
 
 #endif
