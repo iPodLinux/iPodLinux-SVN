@@ -580,6 +580,7 @@ void usage (int exitcode)
              "Usage: armemu [-qvh] [-f flashimg] [-r hwver] [-e entry]\n\n"
              ""
              " Options:\n"
+             "   -D img . . . Disassemble file `img'\n"
              "   -f flashimg  Load the file `flashimg' as a flash ROM image.\n"
              "   -d dramimg . Load the file `dramimg' to the beginning of SDRAM.\n"
              "   -i iramimg . Load the file `iramimg' to the beginning of IRAM.\n"
@@ -631,8 +632,11 @@ int main (int argc, char **argv)
     reset (mach->cpu);
 
     char ch;
-    while ((ch = getopt (argc, argv, "f:i:d:r:e:q:vh")) != EOF) {
+    while ((ch = getopt (argc, argv, "D:f:i:d:r:e:q:vh")) != EOF) {
         switch (ch) {
+	case 'D':
+	    disassemble_image(optarg);
+	    return 0;
         case 'f':
             load_image (optarg, mach->flash, mach->flashsize);
             break;

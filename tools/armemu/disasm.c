@@ -323,3 +323,24 @@ char *disassemble (u32 instr, u32 addr)
     *retp = 0;
     return ret;
 }
+
+void disassemble_image(const char *filename)
+{
+	FILE *fp;
+	char *str;
+	int op, addr = 0;
+	
+	if (!(fp = fopen(filename, "rb"))) {
+		perror(filename);
+		return;
+	}
+
+	while (fread(&op, 4, 1, fp)) {
+		if ((str = disassemble(op, addr))) {
+			printf("% 4x:   %08x\t%s\n", addr, op, str);
+			free(str);
+		}
+		addr += 4;
+	}
+	fclose(fp);
+}
