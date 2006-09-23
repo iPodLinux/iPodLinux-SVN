@@ -679,11 +679,14 @@ void HD_Destroy (hd_object *obj)
 
 static int newobj_lz = 65535;
 
-static void donothing_O (hd_object *O) {}
-static void donothing_OSii (hd_object *O, hd_surface S, int i1, int i2) {}
-static void call_render (hd_object *O, hd_surface S, int x, int y, int w, int h, int dxo, int dyo) 
+static void donothing_O (hd_object *obj) {}
+static void call_render (hd_object *obj, hd_surface srf, int x, int y, int w, int h, int dxo, int dyo) 
 {
-    O->render (O, S, dxo, dyo);
+    obj->render (obj, srf, dxo, dyo);
+}
+static void call_renderpart_if (hd_object *obj, hd_surface srf, int dxo, int dyo) 
+{
+    if (obj->renderpart != call_render) obj->renderpart (obj, srf, 0, 0, obj->w, obj->h, dxo, dyo);
 }
 
 void HD_NewObjectAt (hd_object *obj) 
@@ -691,7 +694,7 @@ void HD_NewObjectAt (hd_object *obj)
     memset (obj, 0, sizeof(hd_object));
     obj->last.z = obj->z = newobj_lz--;
     obj->opacity = 0xff;
-    obj->render = donothing_OSii;
+    obj->render = call_renderpart_if;
     obj->renderpart = call_render;
     obj->destroy = donothing_O;
 }
