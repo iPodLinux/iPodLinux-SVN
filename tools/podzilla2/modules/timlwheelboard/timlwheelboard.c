@@ -75,8 +75,7 @@ void ti_mlwlb_load_language(char * fn)
 			ti_mlwlb_langs = l;
 			ti_mlwlb_langs[ti_mlwlb_langcount].csetcount = 0;
 			while (!feof(fp)) {
-				fread((char *)(&ti_mlwlb_langs[ti_mlwlb_langcount].charsets[ti_mlwlb_langs[ti_mlwlb_langcount].csetcount]), sizeof(ti_mlwlb_cset), 1, fp);
-				if (!ti_mlwlb_langs[ti_mlwlb_langcount].charsets[ti_mlwlb_langs[ti_mlwlb_langcount].csetcount].chars[0]) { break; }
+				if (!fread((char *)(&ti_mlwlb_langs[ti_mlwlb_langcount].charsets[ti_mlwlb_langs[ti_mlwlb_langcount].csetcount]), sizeof(ti_mlwlb_cset), 1, fp)) break;
 				ti_mlwlb_langs[ti_mlwlb_langcount].csetcount++;
 			}
 			if (ti_mlwlb_langs[ti_mlwlb_langcount].csetcount) {
