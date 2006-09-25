@@ -25,6 +25,17 @@
  * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+/* NOTE:
+	This is known non-working on 5.5g iPods.
+
+	The firmware partition format has changed slightly.  On the
+	5g, there was 512-bytes of padding before the firmware
+	image.  On the 5.5g this is now 2048 bytes.  i.e.  one
+	logical sector.  This will mean make_fw etc will need
+	adapting.
+*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
