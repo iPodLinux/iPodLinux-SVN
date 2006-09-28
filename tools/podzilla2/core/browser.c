@@ -477,7 +477,17 @@ static TWindow *browser_do_delete (ttk_menu_item *item)
 	} else {
 		unlink (filename);
 	}
-	return TTK_MENU_QUIT;
+	
+	/* hide the top two windows */
+	if (ttk_hide_window (ttk_windows->w) != -1 &&
+			ttk_hide_window (ttk_windows->w) != -1) {
+		/* -ttk_windows->w->widgets->v- is the top window's menu */
+		ttk_menu_remove_by_ptr(ttk_windows->w->widgets->v,
+			ttk_menu_get_selected_item(ttk_windows->w->widgets->v));
+	} else {
+		pz_error("Unable to close windows");
+	}
+	return TTK_MENU_DONOTHING; /* we are now back at the directory */
 }
 
 static ttk_menu_item rmdir_menu[] = {
