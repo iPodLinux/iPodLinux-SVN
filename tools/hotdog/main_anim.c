@@ -215,7 +215,8 @@ int main(int argc, char *argv[]) {
 		HD_Destroy (obj[5].object);
 		obj[5].object = NULL;
 	}
-	HD_Font_Draw (obj[5].object->canvas, f, 10, 10, HD_RGBA (255, 0, 0, 128), "Hello World!");
+	else
+		HD_Font_Draw (obj[5].object->canvas, f, 10, 10, HD_RGBA (255, 0, 0, 128), "Hello World!");
 
 	HD_Register(engine,obj[4].object);
 	HD_Register(engine,obj[0].object);
