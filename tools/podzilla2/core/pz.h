@@ -357,11 +357,6 @@ void pz_header_widget_set_rate( int milliseconds, char * name );
 
 void pz_header_settings_load( void ); /* force a load of all settings */
 
-/* the list of all available header widgets */
-header_info * headerWidgets;
-/* the list of all available decorations */
-header_info * headerDecorations;
-
 /* for transient widget groups (game stats, etc.) */
 int pz_header_group_create( void );
 void pz_header_group_destroy( int group );
