@@ -279,6 +279,7 @@ void ttk_menu_remove_by_name (TWidget *this, const char *name)
 	if (!strcmp (data->menu[xi]->name, name))
 	    data->menu[xi]->visible = menu_return_false;
     }
+    MakeVIXI(this);
     render (this, data->top, data->visible);
 }
 
@@ -287,6 +288,7 @@ void ttk_menu_remove_by_ptr (TWidget *this, ttk_menu_item *item)
     _MAKETHIS;
 
     item->visible = menu_return_false;
+    MakeVIXI(this);
     render (this, data->top, data->visible);
 }
 
@@ -295,6 +297,7 @@ void ttk_menu_remove (TWidget *this, int xi)
     _MAKETHIS;
     
     data->menu[xi]->visible = menu_return_false;
+    MakeVIXI(this);
     render (this, data->top, data->visible);
 }
 
