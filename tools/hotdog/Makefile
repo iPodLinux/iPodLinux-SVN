@@ -5,7 +5,7 @@ endif
 ifeq ($(OSTYPE),Darwin)
 	PREFIX =
 ifdef DEBUG
-	MYCFLAGS = -DDARWIN -g
+	MYCFLAGS = -DDARWIN -g -pg
 else
 	MYCFLAGS = -DDARWIN -O3 -mcpu=750 -maltivec -mabi=altivec -fomit-frame-pointer -funroll-loops
 endif
@@ -13,7 +13,7 @@ endif
 endif
 ifeq ($(OSTYPE),Linux)
 ifdef DEBUG
-	MYCFLAGS = -g
+	MYCFLAGS = -g -pg
 else
 	MYCFLAGS = -O3 -fomit-frame-pointer -funroll-loops
 endif
@@ -28,6 +28,9 @@ SDLINCLUDE ?= ../ttk/sdlincludes
 SDLLIB ?= ../ttk/libs/SDL
 LDFLAGS = -Wl,-elf2flt
 MYCFLAGS = -DIPOD -I$(PNGINCLUDE) -I$(ZINCLUDE) -O3 -funroll-loops
+ifdef DEBUG
+LDFLAGS = -pg
+endif
 ifneq ($(PHOTO),)
 MYCFLAGS += -DPHOTO
 else
@@ -64,8 +67,6 @@ AS = as
 OBJDIR = x11
 endif
 
-$(shell mkdir -p ipod x11)
-
 MYCFLAGS+= -Wall
 LIB = $(OBJDIR)/libhotdog.a
 LIBOBJS = $(OBJDIR)/hotdog.o $(OBJDIR)/hotdog_png.o $(OBJDIR)/hotdog_font.o \
@@ -80,13 +81,16 @@ DEMO = hd-demo
 
 all: $(LIB)
 
-$(LIB): $(LIBOBJS)
+$(LIB): $(OBJDIR) $(LIBOBJS)
 	$(RM) $(LIB)
 	$(AR) $(LIB) $(LIBOBJS)
 	$(AR2) $(LIB)
 
 main_anim.o main_select.o main_prim.o: %.o: %.c
 	$(CC) $(CFLAGS) $(MYCFLAGS) $(DEMOCFLAGS) -c -o $@ $<
+
+$(OBJDIR):
+	mkdir $(OBJDIR)
 
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $(MYCFLAGS) -c -o $@ $<

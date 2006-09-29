@@ -465,11 +465,10 @@ void HD_FillPoly(hd_surface srf, hd_point *points, int n, uint32 col)
 void HD_FillRect(hd_surface srf, int x1, int y1, int x2, int y2, uint32 col)
 {
 	int xi;
-	uint32 *p;
+	uint32 *p, alpha;
 
-	if (x1 == x2) return;
+	if (x1 == x2 || y1 == y2) return;
 	if (x1 > x2) SWAP(x1, x2);
-	if (y1 == y2) return;
 	if (y1 > y2) SWAP(y1, y2);
 
 	y2 = MIN(HD_SRF_HEIGHT(srf), y2);
@@ -480,17 +479,21 @@ void HD_FillRect(hd_surface srf, int x1, int y1, int x2, int y2, uint32 col)
 
 	if (x2 <= x1 || y2 <= y1) return;
 
-        if (col == HD_CLEAR) {
-            // 0x00FFFFFF - "clear"
-            for (; y1 < y2; ++y1) {
-                // set to 0x00000000
-                memset (HD_SRF_ROWF (srf, y1) + x1, 0, (x2 - x1) << 2);
-            }
-            return;
-        }
+	if (col == HD_CLEAR) {
+		alpha = 0xff;
+		col = 0x00000000;
+	}
+	else alpha = (col & 0xff000000) >> 24;
 
-	for (; y1 < y2; ++y1) {
-		/* TODO: increment rather than assign? */
+	if (alpha == 0) return;
+	else if (alpha == 0xff) {
+		for (; y1 < y2; ++y1) {
+			p = HD_SRF_ROWF(srf, y1);
+			for (xi = x1; xi < x2; ++xi)
+				*(p + xi) = col;
+		}
+	}
+	else for (; y1 < y2; ++y1) {
 		p = HD_SRF_ROWF(srf, y1);
 		for (xi = x1; xi < x2; ++xi)
 			BLEND_ARGB8888_ON_ARGB8888(*(p + xi), col, 0xff)
@@ -503,9 +506,8 @@ void HD_Rect(hd_surface srf, int x1, int y1, int x2, int y2, uint32 col)
 	int xi;
 	uint32 *b, *e;
 
-	if (x1 == x2) return;
+	if (x1 == x2 || y1 == y2) return;
 	if (x1 > x2) SWAP(x1, x2);
-	if (y1 == y2) return;
 	if (y1 > y2) SWAP(y1, y2);
 
 	y2 = MIN(HD_SRF_HEIGHT(srf), y2);
