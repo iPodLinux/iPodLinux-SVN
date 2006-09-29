@@ -347,19 +347,17 @@ long pz_ipod_get_hw_version(void)
 void pz_ipod_go_to_diskmode()
 {
 #ifdef IPOD
-	unsigned char * storage_ptr = (unsigned char *)0x40017F00;
-	char * diskmode = "diskmode\0";
-	char * hotstuff = "hotstuff\0";
+	unsigned char * storage_ptr;
+	unsigned int iram_len;
 
 	if (pz_ipod_get_hw_version() < 0x40000) {
 	    pz_ipod_reboot();
 	    return;
 	}
+	iram_len = ((((inl(0x70000000) << 8) >> 24) == 0x32) ? 128 : 96) * 1024;
+	storage_ptr = (unsigned char *)0x40000000 + iram_len - 0x100;
 
-	memcpy(storage_ptr, diskmode, 9);
-	storage_ptr = (unsigned char *)0x40017f08;
-	memcpy(storage_ptr, hotstuff, 9);
-	outl(1, 0x40017F10);	
+	memcpy(storage_ptr, "diskmode\0\0hotstuff\0\0\1", 21);
 	sleep (1);
 	pz_ipod_reboot();
 #endif
