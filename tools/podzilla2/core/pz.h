@@ -225,6 +225,13 @@ void pz_menu_sort (const char *menupath);
 void pz_menu_remove (const char *menupath);
 
 
+/** Menuconf stuff - menuconf.c **/
+int pz_menuconf_runargs(int argc, char * argv[]);
+int pz_menuconf_runstr(char * str);
+int pz_menuconf_runfile(char * fn);
+void pz_menuconf_init();
+
+
 /** Widget/window/event stuff and premade GUI stuff - gui.c **/
 
 TWindow *pz_create_stringview (const char *str, const char *title);
