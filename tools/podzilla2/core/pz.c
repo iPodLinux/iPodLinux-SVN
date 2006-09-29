@@ -576,6 +576,7 @@ main(int argc, char **argv)
 	pz_menu_sort ("/Extras/Games");
 	pz_menu_sort ("/Extras/Utilities");
 	pz_menu_sort ("/Extras");
+    pz_menuconf_init();
 	ttk_show_window (pz_menu_get());
 
 	connection_timer = ttk_create_timer (1000, check_connection);
