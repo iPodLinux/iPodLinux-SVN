@@ -69,10 +69,10 @@ endif
 
 MYCFLAGS+= -Wall
 LIB = $(OBJDIR)/libhotdog.a
-LIBOBJS = $(OBJDIR)/hotdog.o $(OBJDIR)/hotdog_png.o $(OBJDIR)/hotdog_font.o \
-          $(OBJDIR)/hotdog_animation.o $(OBJDIR)/hotdog_canvas.o \
-          $(OBJDIR)/hotdog_surface.o $(OBJDIR)/hotdog_ops.o \
-          $(OBJDIR)/hotdog_primitive.o $(OBJDIR)/zsort.o
+LIBOBJS = $(OBJDIR)/hotdog.o $(OBJDIR)/hotdog_png.o $(OBJDIR)/hotdog_ipg.o \
+          $(OBJDIR)/hotdog_font.o $(OBJDIR)/hotdog_animation.o \
+          $(OBJDIR)/hotdog_canvas.o $(OBJDIR)/hotdog_surface.o \
+          $(OBJDIR)/hotdog_ops.o $(OBJDIR)/hotdog_primitive.o $(OBJDIR)/zsort.o
 ifdef IPOD
 LIBOBJS += $(OBJDIR)/hotdog_lcd.o
 endif
