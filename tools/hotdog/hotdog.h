@@ -364,6 +364,14 @@ void       HD_Canvas_RenderPart (hd_object *obj, hd_surface srf, int psx, int ps
 hd_object *HD_PNG_Create(const char *fname);
 hd_surface HD_PNG_Load (const char *fname, int *w, int *h);
 
+/****** RAWLCD5s ******/
+hd_object *HD_RAWLCD5_Create(const char *fname);
+hd_surface HD_RAWLCD5_Load (const char *fname, int *w, int *h);
+
+/****** IPDs & ANMs ******/
+hd_object *HD_IPD_ANM_Create(const char *fname);
+hd_surface HD_IPD_ANM_Load (const char *fname, int *w, int *h);
+
 /****** Primitives ******/
 #define HD_CLEAR  0x00FFFFFF // magic value that says "clear this part to 0x00000000, no blending"
 typedef struct _hd_point {
