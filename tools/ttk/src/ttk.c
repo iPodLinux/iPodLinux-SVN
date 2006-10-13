@@ -70,6 +70,9 @@ void ttk_widget_noaction_0 (TWidget *w) {}
 #define SCHEMESDIR "schemes"
 #endif
 
+static int C_timer_get_current();
+static int C_timer_check();
+
 int ttk_version_check (int otherver) 
 {
     int myver = TTK_API_VERSION;
@@ -832,18 +835,22 @@ int ttk_run()
 }
 
 
-void ttk_click()
+void ttk_click_ex(int period, int duration)
 {
+// period: 40=2286Hz, 30=3024Hz, 20=4465Hz, 10=8547Hz
+
+    period = period ? MIN(MAX(period, 5), 250) : 20;
+    duration = MIN(MAX(duration, 1), 500);
+	
 #ifdef IPOD
     if (ttk_get_podversion() & TTK_POD_PP502X) {
-	int i, j;
 	outl(inl(0x70000010) & ~0xc, 0x70000010);
 	outl(inl(0x6000600c) | 0x20000, 0x6000600c);    /* enable device */
-	for (j = 0; j < 10; j++) {
-	    for (i = 0; i < 0x888; i++ ) {
-		outl(0x80000000 | 0x800000 | i, 0x7000a000); /* set pitch */
-	    }
-	}
+	outl(0x80000000 | 0x800000 | (period & 0xffff), 0x7000a000); /* set pitch */
+
+	int starttime = C_timer_get_current(); 
+	while (!C_timer_check (starttime, duration * 50)); 
+
 	outl(0x0, 0x7000a000);    /* piezo off */
     } else {
 	static int fd = -1; 
@@ -858,6 +865,9 @@ void ttk_click()
     }
 #endif
 }
+
+void ttk_click()
+{ ttk_click_ex(20, 30); }
 
 
 void ttk_quit() 

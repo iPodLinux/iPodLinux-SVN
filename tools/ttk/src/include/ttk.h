@@ -247,8 +247,9 @@ int ttk_run();
 void ttk_quit();
 int ttk_get_podversion();
 void ttk_get_screensize (int *w, int *h, int *bpp);
-void ttk_click(); // the "click" sound
 void ttk_set_emulation (int w, int h, int bpp);
+void ttk_click_ex(int period, int duration); // the "click" sound
+void ttk_click(); // the "click" sound
 
 TWindow *ttk_new_window();
 void ttk_free_window (TWindow *win);
