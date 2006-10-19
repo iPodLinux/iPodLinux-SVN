@@ -837,10 +837,8 @@ int ttk_run()
 
 void ttk_click_ex(int period, int duration)
 {
-// period: 40=2286Hz, 30=3024Hz, 20=4465Hz, 10=8547Hz
-
-    period = period ? MIN(MAX(period, 5), 250) : 20;
-    duration = MIN(MAX(duration, 1), 500);
+    period = period ? MIN(MAX(period, 5), 250) : 20; // period: 40=2286Hz, 30=3024Hz, 20=4465Hz, 10=8547Hz
+    duration = MIN(MAX(duration, 1), 1000); //duration in millieconds.
 	
 #ifdef IPOD
     if (ttk_get_podversion() & TTK_POD_PP502X) {
@@ -849,7 +847,7 @@ void ttk_click_ex(int period, int duration)
 	outl(0x80000000 | 0x800000 | (period & 0xffff), 0x7000a000); /* set pitch */
 
 	int starttime = C_timer_get_current(); 
-	while (!C_timer_check (starttime, duration * 50)); 
+	while (!C_timer_check (starttime, duration * 1000)); // milliseconds to microseconds (ms*1000)
 
 	outl(0x0, 0x7000a000);    /* piezo off */
     } else {
@@ -867,7 +865,7 @@ void ttk_click_ex(int period, int duration)
 }
 
 void ttk_click()
-{ ttk_click_ex(20, 30); }
+{ ttk_click_ex(20, 2); }
 
 
 void ttk_quit() 
