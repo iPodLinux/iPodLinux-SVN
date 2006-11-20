@@ -11,7 +11,7 @@
 #include "config.h"
 #include "interrupts.h"
 
-#define LOADERNAME "iPL Loader 2.5d1" // "d" stands for development version, "b" for beta version
+#define LOADERNAME "iPL Loader 2.5d5" // "d" stands for development version, "b" for beta version
 
 static uint16 *framebuffer;
 static int orig_contrast;
@@ -289,7 +289,7 @@ uint32 calc_checksum_fw (char* dest, int size) {
 // ----------------------
 
 static void load_rockbox(ipod_t *ipod, int fd, uint32 fsize, uint32 read, void *entry, void *firstblock) {
-  char header[12];
+  uint8 header[12];
   unsigned long chksum;
   unsigned long sum;
   int i;
@@ -812,7 +812,7 @@ redoMenu:
     } else {
       if (is_applefw_img ((void*)ipod->mem_base)) {
         lcd_set_contrast (orig_contrast);
-        ipod_set_backlight (0); // this seems to be necessary so that backlight dimming works on 4G and Photo models
+        if (!conf->debug) ipod_set_backlight (0); // this seems to be necessary so that backlight dimming works on 4G and Photo models
       }
       mlc_printf("Jmp to %x\n", ret);
       return (void*) ret;
@@ -831,7 +831,7 @@ redoMenu:
         mlc_printf("Launching from RAM\n");
       }
       lcd_set_contrast (orig_contrast); // restore contrast in case launch fails and loader() is entered again
-      ipod_set_backlight (0); // this seems to be necessary so that backlight dimming works on 4G and Photo models
+      if (!conf->debug) ipod_set_backlight (0); // this seems to be necessary so that backlight dimming works on 4G and Photo models
 	  ret = ipod->mem_base;
       mlc_printf("Jmp to %x\n", ret);
       return (void*) ret;

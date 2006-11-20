@@ -9,4 +9,4 @@
  * written by Thomas Tempelmann (http://ipodlinux.org/User:Tempel)
  */
 
-void check_mac_partitions ();
+void check_mac_partitions (uint8 *blk0);
