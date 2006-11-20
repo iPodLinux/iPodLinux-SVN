@@ -112,7 +112,8 @@ void vfs_init(void) {
 
     mlc_printf("Detected WinPod partition\n");
 
-	uint32 logBlkMultiplier = ((buff[12]<<8) | buff[11]) / 512;
+    uint32 logBlkMultiplier = (buff[12] | buff[11]) / 2; // we usually find 02 00, 00 02 or 00 08 here
+    if((logBlkMultiplier < 1) | (logBlkMultiplier > 4)) logBlkMultiplier = 1;
 	
     /* Check each primary partition for a supported FS */
     for(i=0;i<4;i++) {
