@@ -103,7 +103,7 @@ static void hfsplus_newfs (uint8 part, uint32 offset);
 static uint8 *gBlkBuf = 0;
 
 
-extern "C" void check_mac_partitions ()
+extern "C" void check_mac_partitions (uint8 *blk0)
 /*
  * used references:
  *	http://developer.apple.com/technotes/tn/tn1189.html#SecretsOfThePartitionMap
@@ -120,14 +120,16 @@ extern "C" void check_mac_partitions ()
 	}
 	
     if (!gBlkBuf) gBlkBuf = (uint8*) mlc_malloc (512);
-        
+    
+	int partBlkSizMul = blk0[2] / 2;	// = size of partition blocks times 512
+	
 	while (blkNo <= partBlkCount) {
 		MacPart *pm = (MacPart*) gBlkBuf;
 		
 		// read next block
-		err = ata_readblock (gBlkBuf, blkNo);
+		err = ata_readblock (gBlkBuf, blkNo * partBlkSizMul);
 		if (err) {
-			mlc_printf ("!Read error blk %d: %d\n", blkNo, err);
+			mlc_printf ("!Read error blk %d: %d\n", blkNo * partBlkSizMul, err);
 			mlc_show_critical_error();
 			break; // read error -> leave the loop
 		}
@@ -137,7 +139,7 @@ extern "C" void check_mac_partitions ()
 		
 		// update the number of part map blocks
 		partBlkCount = pm->pmMapBlkCnt;
-		long partBlk = pm->pmPyPartStart;
+		long partBlk = pm->pmPyPartStart * partBlkSizMul;
 		
 		#if DEBUG
 			mlc_printf ("part name: %s, type: %s\n", pm->pmPartName, pm->pmParType);

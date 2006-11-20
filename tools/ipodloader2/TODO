@@ -1,6 +1,5 @@
 TODO:
 * Make FAT32 use DOS-convention filenames instead of on-disk encoding
-* Similarly, make FAT32 support LFNs
 * add support for piezo on PP5002 models (ipod_beep)
 
 Notes about TODOs:

@@ -112,6 +112,8 @@ void vfs_init(void) {
 
     mlc_printf("Detected WinPod partition\n");
 
+	uint32 logBlkMultiplier = ((buff[12]<<8) | buff[11]) / 512;
+	
     /* Check each primary partition for a supported FS */
     for(i=0;i<4;i++) {
       uint32 offset;
@@ -122,13 +124,13 @@ void vfs_init(void) {
 
       switch(type) {
       case 0x00:
-        fwfs_newfs(i,offset);
+        fwfs_newfs(i,offset*logBlkMultiplier);
         break;
       case 0x83:
-        ext2_newfs(i,offset);
+        ext2_newfs(i,offset*logBlkMultiplier);
         break;
       case 0xB:
-        fat32_newfs(i,offset);
+        fat32_newfs(i,offset*logBlkMultiplier);
         break;
       default:
         /* printf("  Unsupported..\n"); */
@@ -141,11 +143,14 @@ void vfs_init(void) {
 
     mlc_printf("Detected MacPod partition\n");
 
-    check_mac_partitions ();
+    check_mac_partitions (buff);
 
   } else {
 
     mlc_printf("Invalid MBR\n");
+	mlc_hexdump (buff, 16);
+	mlc_hexdump (buff+512-16, 16);
+    mlc_show_critical_error();
     return;
   }
 
