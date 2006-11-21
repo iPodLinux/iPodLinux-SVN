@@ -95,24 +95,23 @@ void vfs_registerfs( filesystem *newfs ) {
   fs[newfs->partnum] = newfs;
 }
 
-void vfs_init(void) {
-  uint8 *buff;
+void vfs_init( void) {
   uint32 i;
 
   fsCnt = 0;
-
-  buff = mlc_malloc (512);
   
-  ata_readblocks( buff, 0, 1 );
+  mbr_t *iPodMBR;
+  iPodMBR = mlc_malloc( sizeof(mbr_t));
+  
+  ata_readblocks( iPodMBR, 0, 1 );
 
   for(i=0;i<MAX_FILES;i++) vfs_handle[i].fd = -1;
 
-  if( (buff[510] == 0x55) && (buff[511] == 0xAA) ) {
+  if( iPodMBR->MBR_signature == 0xaa55 ) {
     /* this is a WinPod with a DOS/ext2 partition scheme */
+    mlc_printf("Detected WinPod MBR\n");
 
-    mlc_printf("Detected WinPod partition\n");
-
-    uint32 logBlkMultiplier = (buff[12] | buff[11]) / 2; // we usually find 02 00, 00 02 or 00 08 here
+    uint32 logBlkMultiplier = (iPodMBR->code[12] | iPodMBR->code[11]) / 2; // we usually find 02 00, 00 02 or 00 08 here
     if((logBlkMultiplier < 1) | (logBlkMultiplier > 4)) logBlkMultiplier = 1;
 	
     /* Check each primary partition for a supported FS */
@@ -120,8 +119,8 @@ void vfs_init(void) {
       uint32 offset;
       uint8  type;
 
-      type   = buff[446 + (i*16) + 4];
-      offset = (buff[446 + (i*16) + 11]<<24) | (buff[446 + (i*16) + 10]<<16) | (buff[446 + (i*16) + 9]<<8) | (buff[446 + (i*16) + 8]);
+      type   = iPodMBR->partition_table[i].type;
+      offset = iPodMBR->partition_table[i].lba_offset;
 
       switch(type) {
       case 0x00:
@@ -139,18 +138,18 @@ void vfs_init(void) {
       }
     }
 
-  } else if( (buff[0] == 'E') && (buff[1] == 'R') ) {
+  } else if( iPodMBR->code[0] == 'E' && iPodMBR->code[1] == 'R') {
     /* this is a MacPod with a HFS partition scheme */
 
     mlc_printf("Detected MacPod partition\n");
 
-    check_mac_partitions (buff);
+    check_mac_partitions ((uint8 *)iPodMBR);
 
   } else {
 
     mlc_printf("Invalid MBR\n");
-	mlc_hexdump (buff, 16);
-	mlc_hexdump (buff+512-16, 16);
+	mlc_hexdump (iPodMBR, 16);
+	mlc_hexdump (((uint8*) iPodMBR)+512-16, 16);
     mlc_show_critical_error();
     return;
   }
