@@ -631,6 +631,15 @@ void HD_FillCircle(hd_surface srf, int x, int y, int r, uint32 col)
 				hLine(srf, xmcx, xpcx, y, col);
 			ocy = cy;
 		}
+		else if (cx > ocx) {
+			xmcx = x - ocx - 1;
+			xpcx = x + ocx + 1;
+			hLine(srf, x - cx, xmcx, y - cy, col);
+			hLine(srf, x - cx, xmcx, y + cy, col);
+			hLine(srf, xpcx, x + cx, y - cy, col);
+			hLine(srf, xpcx, x + cx, y + cy, col);
+		}
+		
 		if (ocx != cx) {
 			xpcy = x + cy;
 			xmcy = x - cy;
@@ -1304,8 +1313,8 @@ void HD_Blur(hd_surface srf, int x, int y, int w, int h, int rad)
 				for (kx = 0; kx < diam; ++kx) {
 					tx = x + lx + kx - rad;
 					ty = y + ly + ky - rad;
-					if (tx < 0 || tx > HD_SRF_WIDTH(srf) ||
-					    ty < 0 || ty > HD_SRF_HEIGHT(srf))
+					if (tx < 0 || tx >= HD_SRF_WIDTH(srf) ||
+					    ty < 0 || ty >= HD_SRF_HEIGHT(srf))
 						continue;
 					col = HD_SRF_PIXF(srf, tx, ty);
 					rsum += (col & 0xff0000) >> 16;
