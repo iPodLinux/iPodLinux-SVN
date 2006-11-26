@@ -215,8 +215,11 @@ int main(int argc, char *argv[]) {
 		HD_Destroy (obj[5].object);
 		obj[5].object = NULL;
 	}
-	else
-		HD_Font_Draw (obj[5].object->canvas, f, 10, 10, HD_RGBA (255, 0, 0, 128), "Hello World!");
+	else {
+		HD_Font_Draw (obj[5].object->canvas, f, 10, 10,
+				HD_RGBA (255, 0, 0, 128), "Hello World!");
+		HD_Font_Free(f);
+	}
 
 	HD_Register(engine,obj[4].object);
 	HD_Register(engine,obj[0].object);
@@ -390,6 +393,7 @@ int main(int argc, char *argv[]) {
 	sleep (5);
 	reset_keypress();
 #endif
+	HD_Deinitialize(engine);
 	return(0);
 }
 
