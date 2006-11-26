@@ -389,7 +389,7 @@ void HD_Render(hd_engine *eng) {
         rect = dirties;
         while (rect) {
             uint32 *p = HD_SRF_PIXPTR (eng->buffer, rect->x, rect->y);
-            uint32 *endp = HD_SRF_END (eng->buffer);
+            uint32 *endp = HD_SRF_PIXPTR (eng->buffer, rect->x, rect->y + rect->h);
             while (p < endp) {
                 memset (p, 0, rect->w*4);
                 p += eng->screen.width;
