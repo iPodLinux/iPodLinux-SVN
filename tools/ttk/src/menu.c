@@ -159,6 +159,7 @@ static void render (TWidget *this, int first, int n)
         }
         
         ttk_text (data->itemsrf[xi], data->font, 3, ofs, menu_fg_color, truncname);
+	free(truncname);
 
 	// Selected
 	if (data->itemsrfI[xi]) ttk_free_surface (data->itemsrfI[xi]);
