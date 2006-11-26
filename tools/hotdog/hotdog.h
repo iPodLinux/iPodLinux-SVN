@@ -316,6 +316,7 @@ void HD_ExpandRect (hd_rect *rect, hd_rect *strut); // extends rect to strut
 
 /* Basic funcs */
 hd_engine *HD_Initialize(uint32 width,uint32 height,uint8 bpp, void *framebuffer, void (*update)(struct hd_engine*, int, int, int, int));
+void HD_Deinitialize(hd_engine *eng);
 #define HD_IsRegistered(obj) ((obj)->eng != 0)
 void HD_Register(hd_engine *eng, hd_object *obj);
 void HD_Deregister (hd_engine *eng, hd_object *obj);

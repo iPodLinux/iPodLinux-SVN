@@ -79,6 +79,37 @@ hd_engine *HD_Initialize(uint32 width,uint32 height,uint8 bpp, void *framebuffer
 	return(eng);
 }
 
+#define safe_free(x) do { if (x) free(x), x = 0; } while (0)
+void HD_Deinitialize(hd_engine *eng)
+{
+    if (!eng) return;
+
+    /* go ahead and free all registered objects */
+    while (eng->list) {
+    	hd_obj_list *ol;
+	ol = eng->list;
+	eng->list = eng->list->next;
+
+	if (ol->obj->animating)
+		HD_StopAnimation(ol->obj);
+	ol->obj->destroy(ol->obj);
+	if (!ol->obj->dontfree)
+		free(ol->obj);
+	free(ol);
+    }
+
+    while (eng->deregistered) {
+	hd_rect *r;
+	r = eng->deregistered;
+	eng->deregistered = eng->deregistered->next;
+	free(r);
+    }
+
+
+    safe_free(eng->buffer);
+    safe_free(eng);
+}
+
 void HD_ClipRect (hd_rect *rect, hd_rect *clip) 
 {
     if (!rect || !clip) return;
@@ -337,7 +368,14 @@ void HD_Render(hd_engine *eng) {
         if (needsort)
             eng->list = HD_StackObjects (eng->list);
 
-        if (!needrender) return;
+        if (!needrender) {
+		while (dirties) {
+			rect = dirties->next;
+			free(dirties);
+			dirties = rect;
+		}
+		return;
+	}
 
 #if !defined(PRECISE_DIRTIES) && !defined(OBJECT_DIRTIES)
         // Clear FB
