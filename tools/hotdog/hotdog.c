@@ -211,6 +211,7 @@ void HD_Animate (hd_engine *eng) {
             obj->animdata = pa->animdata;
             obj->animate = pa->animate;
             if (pa->setup) pa->setup (obj);
+            free(pa);
             obj->animating = 1;
             HD_CopyRect (&obj->preanim, &obj->x);
         }
