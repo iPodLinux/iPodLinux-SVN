@@ -152,10 +152,13 @@ static void render (TWidget *this, int first, int n)
             truncname = strdup (data->menu[xi]->name);
 
         if (ttk_text_width (data->font, truncname) > data->menu[xi]->linewidth) {
-            sprintf (truncname + strlen (truncname) - 4, "...");
-            while (strlen (truncname) > 3 && ttk_text_width (data->font, truncname) > data->menu[xi]->linewidth) {
-                sprintf (truncname + strlen (truncname) - 5, "...");
-            }
+	    int len = strlen(truncname);
+	    while (--len > 4) {
+	        memcpy (truncname + len - 4, "...\0", 4);
+	        if (ttk_text_width (data->font, truncname) >
+			data->menu[xi]->linewidth)
+		    break;
+	    }
         }
         
         ttk_text (data->itemsrf[xi], data->font, 3, ofs, menu_fg_color, truncname);
