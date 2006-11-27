@@ -168,6 +168,7 @@ static TWidget *read_directory(const char *dirname)
 		ttk_menu_append(ret, item);
 	}
 	ttk_menu_sort_my_way(ret, entry_cmp);
+	closedir(dir);
 
 	ret->button = button_handler;
 	ret->held = held_handler;
