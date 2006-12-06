@@ -49,7 +49,7 @@ namespace TTK
     }
 
     ttk_fontinfo *Font::info() 
-    { return _fnt.fi; }
+    { return _fnt->fi; }
 
     int Font::width (const char *str) 
     {

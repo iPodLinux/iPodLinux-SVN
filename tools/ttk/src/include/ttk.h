@@ -110,9 +110,13 @@ typedef struct _ttk_font {
     int height;
     int ofs;
     struct ttk_fontinfo *fi;
-} ttk_font;
+} * ttk_font;
 typedef struct ttk_point { int x, y; } ttk_point;
-typedef struct _ttk_gc { int fg, bg, usebg, xormode; ttk_font font; } *ttk_gc;
+typedef struct _ttk_gc
+{
+	int fg, bg, usebg, xormode;
+	ttk_font font;
+} *ttk_gc;
 #elif defined(MWIN)
 #include "nano-X.h"
 typedef unsigned int TTK_ID;
@@ -120,13 +124,13 @@ typedef GR_COLOR    ttk_color;
 typedef GR_POINT    ttk_point;
 typedef TTK_ID      ttk_gc;
 typedef TTK_ID      ttk_surface;
-typedef struct 
+typedef struct _ttk_font
 {
     GR_FONT_ID f;
     GR_FONT_INFO inf;
     int ofs;
     struct ttk_fontinfo *fi;
-} ttk_font;
+} * ttk_font;
 #else /* Hotdog */
 #include "hotdog.h"
 typedef uint32 ttk_color;
@@ -137,7 +141,7 @@ typedef struct _ttk_font
     hd_font *f;
     int ofs;
     struct ttk_fontinfo *fi;
-} ttk_font;
+} * ttk_font;
 typedef struct _ttk_gc {
     ttk_color fg, bg;
     int usebg, xormode;

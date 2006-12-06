@@ -679,21 +679,21 @@ void ttk_bitmap_gc (ttk_surface srf, ttk_gc gc, int x, int y, int w, int h, unsi
 
 void ttk_text (ttk_surface srf, ttk_font fnt, int x, int y, ttk_color col, const char *str) 
 {
-    HD_Font_Draw (srf, fnt.f, x, y + fnt.ofs, col, str);
+    HD_Font_Draw (srf, fnt->f, x, y + fnt->ofs, col, str);
 }
 void ttk_text_lat1 (ttk_surface srf, ttk_font fnt, int x, int y, ttk_color col, const char *str) 
 {
-    HD_Font_DrawLatin1 (srf, fnt.f, x, y + fnt.ofs, col, str);
+    HD_Font_DrawLatin1 (srf, fnt->f, x, y + fnt->ofs, col, str);
 }
 void ttk_text_uc16 (ttk_surface srf, ttk_font fnt, int x, int y, ttk_color col, const uc16 *str) 
 {
-    HD_Font_DrawUnicode (srf, fnt.f, x, y + fnt.ofs, col, str);
+    HD_Font_DrawUnicode (srf, fnt->f, x, y + fnt->ofs, col, str);
 }
 void ttk_text_gc (ttk_surface srf, ttk_gc gc, int x, int y, const char *str) 
 {
     if (gc->usebg)
-        ttk_fillrect (srf, x, y, x + ttk_text_width (gc->font, str), y + gc->font.f->h, gc->bg);
-    HD_Font_Draw (srf, gc->font.f, x, y + gc->font.ofs, gc->fg, str);
+        ttk_fillrect (srf, x, y, x + ttk_text_width (gc->font, str), y + gc->font->f->h, gc->bg);
+    HD_Font_Draw (srf, gc->font->f, x, y + gc->font->ofs, gc->fg, str);
 }
 
 void ttk_textf (ttk_surface srf, ttk_font fnt, int x, int y, ttk_color col, const char *fmt, ...) 
@@ -706,32 +706,32 @@ void ttk_textf (ttk_surface srf, ttk_font fnt, int x, int y, ttk_color col, cons
     va_start (ap, fmt);
     vsnprintf (buffer, 4096, fmt, ap);
     va_end (ap);
-    HD_Font_Draw (srf, fnt.f, x, y + fnt.ofs, col, buffer);
+    HD_Font_Draw (srf, fnt->f, x, y + fnt->ofs, col, buffer);
 }
 
 int ttk_text_width (ttk_font fnt, const char *str) 
 {
-    return HD_Font_TextWidth (fnt.f, str);
+    return HD_Font_TextWidth (fnt->f, str);
 }
 int ttk_text_width_lat1 (ttk_font fnt, const char *str) 
 {
-    return HD_Font_TextWidthLatin1 (fnt.f, str);
+    return HD_Font_TextWidthLatin1 (fnt->f, str);
 }
 int ttk_text_width_uc16 (ttk_font fnt, const uc16 *str) 
 {
-    return HD_Font_TextWidthUnicode (fnt.f, str);
+    return HD_Font_TextWidthUnicode (fnt->f, str);
 }
 int ttk_text_width_gc (ttk_gc gc, const char *str) 
 {
-    return HD_Font_TextWidth (gc->font.f, str);
+    return HD_Font_TextWidth (gc->font->f, str);
 }
 int ttk_text_height (ttk_font fnt) 
 {
-    return fnt.f->h;
+    return fnt->f->h;
 }
 int ttk_text_height_gc (ttk_gc gc) 
 {
-    return gc->font.f->h;
+    return gc->font->f->h;
 }
 
 ttk_surface ttk_load_image (const char *path) 
@@ -794,8 +794,8 @@ void ttk_load_font (ttk_fontinfo *fi, const char *fnbase, int size)
     
     sprintf (fname, "%s.png", fnbase);
     if (stat (fname, &st) >= 0) {
-        fi->f.f = HD_Font_LoadSFont (fname);
-        if (fi->f.f) return;
+        fi->f->f = HD_Font_LoadSFont (fname);
+        if (fi->f->f) return;
     }
 
     sprintf (fname, "%s.ttf", fnbase);
@@ -808,20 +808,20 @@ void ttk_load_font (ttk_fontinfo *fi, const char *fnbase, int size)
 
     sprintf (fname, "%s.fnt", fnbase);
     if (stat (fname, &st) >= 0) {
-        fi->f.f = HD_Font_LoadFNT (fname);
-        if (fi->f.f) return;
+        fi->f->f = HD_Font_LoadFNT (fname);
+        if (fi->f->f) return;
     }
 
     sprintf (fname, "%s.pcf", fnbase);
     if (stat (fname, &st) >= 0) {
-        fi->f.f = HD_Font_LoadPCF (fname);
-        if (fi->f.f) return;
+        fi->f->f = HD_Font_LoadPCF (fname);
+        if (fi->f->f) return;
     }
 
     sprintf (fname, "%s.fff", fnbase);
     if (stat (fname, &st) >= 0) {
-        fi->f.f = HD_Font_LoadFFF (fname);
-        if (fi->f.f) return;
+        fi->f->f = HD_Font_LoadFFF (fname);
+        if (fi->f->f) return;
     }
 
     fi->good = 0;
@@ -830,7 +830,7 @@ void ttk_load_font (ttk_fontinfo *fi, const char *fnbase, int size)
 
 void ttk_unload_font (ttk_fontinfo *fi) 
 {
-    HD_Font_Free (fi->f.f);
+    HD_Font_Free (fi->f->f);
     fi->loaded = fi->good = 0;
 }
 
