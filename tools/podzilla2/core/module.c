@@ -573,7 +573,7 @@ static void updateprogress( TWindow * sliderwin, TWidget * slider,
 			textw = ttk_text_width(ttk_textfont, lineTwo);
 			ttk_text(sliderwin->srf,ttk_textfont,
 				ttk_screen->w/ 2 - textw/2, 
-				ttk_screen->h/2 + ttk_textfont.height + 5,
+				ttk_screen->h/2 + ttk_textfont->height + 5,
 				menu_fg_color, lineTwo);
 		}
 	}
