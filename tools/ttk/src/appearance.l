@@ -311,6 +311,8 @@ DEC	[0-9]+
     }
 
     free (path);
+    free (fileprefix);
+    fileprefix = NULL;
  skipimg: ;
 }
 
@@ -363,6 +365,8 @@ DEC	[0-9]+
 
 <<EOF>> {
     if (--expansion_stack_ptr < 0) {
+        free(topid);
+        free(Topid);
         yyterminate();
     } else {
         yy_delete_buffer (YY_CURRENT_BUFFER);
