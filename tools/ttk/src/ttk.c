@@ -256,8 +256,8 @@ ttk_fontinfo *ttk_get_fontinfo (const char *name, int size)
 
 	bestmatch->good = 1; // will be unset if bad
 	ttk_load_font (bestmatch, tmp, bestmatch->size);
-	bestmatch->f.ofs = bestmatch->offset;
-	bestmatch->f.fi = bestmatch;
+	bestmatch->f->ofs = bestmatch->offset;
+	bestmatch->f->fi = bestmatch;
 	bestmatch->loaded = 1;
 	if (!bestmatch->good) return ttk_get_fontinfo ("Any Font", 0);
     }
@@ -281,7 +281,7 @@ void ttk_done_fontinfo (ttk_fontinfo *fi)
 }
 void ttk_done_font (ttk_font f) 
 {
-    ttk_done_fontinfo (f.fi);
+	ttk_done_fontinfo (f->fi);
 }
 
 TWindow *ttk_init() 
