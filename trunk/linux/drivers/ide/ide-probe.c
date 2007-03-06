@@ -57,6 +57,11 @@
 #include <asm/uaccess.h>
 #include <asm/io.h>
 
+#ifdef CONFIG_IDE_IPOD
+#define MAX_HD		2
+static int hd_hardsectsizes[MAX_HD<<6];
+#endif
+
 /**
  *	generic_id		-	add a generic drive id
  *	@drive:	drive to make an ID block for
@@ -261,6 +266,27 @@ static inline void do_identify (ide_drive_t *drive, u8 cmd)
 	}
 	drive->media = ide_disk;
 	printk("%s DISK drive\n", (drive->is_flash) ? "CFA" : "ATA" );
+
+#ifdef CONFIG_IDE_IPOD
+#define ID_WORD_106(id)	((id)->words104_125[2])
+	/* bits 14 & 13 are set */
+	if ((ID_WORD_106(id) & 0xe000) == 0x6000) {
+		int d;
+		int logical_sec_per_phys_sec = 1 << (ID_WORD_106(id) & 0xf);
+		printk("%s: logical sector size %d\n", drive->name, logical_sec_per_phys_sec);
+
+		if (!hardsect_size[hwif->major]) {
+			hardsect_size[hwif->major] = hd_hardsectsizes;
+		}
+
+		for(d=0; d < (MAX_HD << 6); d++) {
+			hardsect_size[hwif->major][d] = 512 * logical_sec_per_phys_sec;
+		}
+	}
+#undef ID_WORD_106
+#undef MAX_HD
+#endif
+
 	QUIRK_LIST(drive);
 	return;
 
