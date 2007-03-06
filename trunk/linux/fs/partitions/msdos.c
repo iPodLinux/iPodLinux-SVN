@@ -17,6 +17,8 @@
  *  Check partition table on IDE disks for common CHS translations
  *
  *  Re-organised Feb 1998 Russell King
+ *
+ *  20060226: Improved iPod partitiontable detection by Vincent Huisman (dataghost at dataghost dot com)
  */
 
 #include <linux/config.h>
@@ -96,6 +98,17 @@ msdos_magic_present(unsigned char *p)
 {
 	return (p[0] == MSDOS_LABEL_MAGIC1 && p[1] == MSDOS_LABEL_MAGIC2);
 }
+
+#ifdef CONFIG_IDE_IPOD
+#define EXT3_LABEL_MAGIC1	0x53
+#define EXT3_LABEL_MAGIC2	0xEF
+
+static inline int
+ext3_magic_present(unsigned char *p)
+{
+	return (p[0] == EXT3_LABEL_MAGIC1 && p[1] == EXT3_LABEL_MAGIC2);
+}
+#endif
 
 /*
  * Create devices for each logical partition in an extended partition.
@@ -561,6 +574,9 @@ int msdos_partition(struct gendisk *hd, struct block_device *bdev,
 	int sector_size = get_hardsect_size(to_kdev_t(bdev->bd_dev)) / 512;
 	int current_minor = first_part_minor;
 	int err;
+#ifdef CONFIG_IDE_IPOD
+	int sector_mult = 1;
+#endif
 
 	err = handle_ide_mess(bdev);
 	if (err <= 0)
@@ -573,6 +589,43 @@ int msdos_partition(struct gendisk *hd, struct block_device *bdev,
 		return 0;
 	}
 	p = (struct partition *) (data + 0x1be);
+
+#ifdef CONFIG_IDE_IPOD
+	/*
+	 * Addition for iPods: check for actual filesystems to figure out the correct partition layout
+	 */
+	for (i=1 ; i<=4 ; i++,p++) {
+		unsigned char *partdata;
+
+		if (!NR_SECTS(p))
+			continue;
+		if (SYS_IND(p) == 0xb) {
+			partdata = read_dev_sector(bdev, first_sector+START_SECT(p)*sector_size*2, &sect);
+			if (msdos_magic_present(partdata + 510))
+				sector_mult = 2;
+
+			partdata = read_dev_sector(bdev, first_sector+START_SECT(p)*sector_size, &sect);
+			if (msdos_magic_present(partdata + 510))
+				sector_mult = 1;
+        
+		} else if (SYS_IND(p) == 0x83) {
+			partdata = read_dev_sector(bdev, first_sector+START_SECT(p)*sector_size*2+2, &sect);
+			if (ext3_magic_present(partdata + 56))
+				sector_mult = 2;
+
+			// Verify this
+			partdata = read_dev_sector(bdev, first_sector+START_SECT(p)*sector_size+2, &sect);
+			if (ext3_magic_present(partdata + 56))
+				sector_mult = 1;
+		}
+	}
+
+	printk("Experimental partition and filesystem detection code by Vincent Huisman (dataghost@dataghost.com)\n"); 
+	printk("Partition sector size: %d\n", sector_mult);
+
+	sector_size *= sector_mult;
+	p = (struct partition *) (data + 0x1be); // Reinitialize, duh
+#endif
 
 	/*
 	 * Look for partitions in two passes:
