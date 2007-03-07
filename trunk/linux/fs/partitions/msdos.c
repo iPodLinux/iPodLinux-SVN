@@ -600,6 +600,10 @@ int msdos_partition(struct gendisk *hd, struct block_device *bdev,
 		if (!NR_SECTS(p))
 			continue;
 		if (SYS_IND(p) == 0xb) {
+			partdata = read_dev_sector(bdev, first_sector+START_SECT(p)*sector_size*4, &sect);
+			if (msdos_magic_present(partdata + 510))
+				sector_mult = 4;
+
 			partdata = read_dev_sector(bdev, first_sector+START_SECT(p)*sector_size*2, &sect);
 			if (msdos_magic_present(partdata + 510))
 				sector_mult = 2;
@@ -609,11 +613,14 @@ int msdos_partition(struct gendisk *hd, struct block_device *bdev,
 				sector_mult = 1;
         
 		} else if (SYS_IND(p) == 0x83) {
+			partdata = read_dev_sector(bdev, first_sector+START_SECT(p)*sector_size*4+2, &sect);
+			if (ext3_magic_present(partdata + 56))
+				sector_mult = 4;
+
 			partdata = read_dev_sector(bdev, first_sector+START_SECT(p)*sector_size*2+2, &sect);
 			if (ext3_magic_present(partdata + 56))
 				sector_mult = 2;
 
-			// Verify this
 			partdata = read_dev_sector(bdev, first_sector+START_SECT(p)*sector_size+2, &sect);
 			if (ext3_magic_present(partdata + 56))
 				sector_mult = 1;
