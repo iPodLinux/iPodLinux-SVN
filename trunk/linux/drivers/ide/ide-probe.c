@@ -272,7 +272,9 @@ static inline void do_identify (ide_drive_t *drive, u8 cmd)
 	/* bits 14 & 13 are set */
 	if ((ID_WORD_106(id) & 0xe000) == 0x6000) {
 		int d;
-		int logical_sec_per_phys_sec = 1 << (ID_WORD_106(id) & 0xf);
+		int logical_sec_per_phys_sec = 1;
+		if ((ID_WORD_106(id) & 0xf) == 1)
+			logical_sec_per_phys_sec = 2;
 		printk("%s: logical sector size %d\n", drive->name, logical_sec_per_phys_sec);
 
 		if (!hardsect_size[hwif->major]) {
