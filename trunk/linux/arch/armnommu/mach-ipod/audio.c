@@ -1375,7 +1375,8 @@ static int ipod_mixer_ioctl(struct inode *inode, struct file *filp, unsigned int
 
 			ipod_pcm_level = (left * 80 / 100) + 0x2f;
 			if (codec_chip >= WM8758) {
-				right = (right * 80 / 100) + 0x2f;
+				ipod_pcm_level = ((left * 63) / 100);
+				right = ((right * 63) / 100);
 
 				/* OUT1 */
 				wm_write(WM8758_LOUT1VOL, 0, ipod_pcm_level);
