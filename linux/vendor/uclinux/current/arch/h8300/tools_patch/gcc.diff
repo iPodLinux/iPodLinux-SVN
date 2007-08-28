@@ -1,0 +1,278 @@
+diff -Nru gcc-3.1.1/gcc/config/float-h8300.h gcc-3.1.1.dblfix/gcc/config/float-h8300.h
+--- gcc-3.1.1/gcc/config/float-h8300.h	Thu Jan  1 09:00:00 1970
++++ gcc-3.1.1.dblfix/gcc/config/float-h8300.h	Mon Sep 23 00:40:52 2002
+@@ -0,0 +1,128 @@
++/* float.h for target h8300-elf with optional IEEE 32 bit double format: based float-sh.h */
++#ifndef _FLOAT_H_
++#define _FLOAT_H_
++#include "config/h8300/h8300.h"
++
++/* Produced by enquire version 4.3, CWI, Amsterdam */
++
++   /* Radix of exponent representation */
++#undef FLT_RADIX
++#define FLT_RADIX 2
++   /* Number of base-FLT_RADIX digits in the significand of a float */
++#undef FLT_MANT_DIG
++#define FLT_MANT_DIG 24
++   /* Number of decimal digits of precision in a float */
++#undef FLT_DIG
++#define FLT_DIG 6
++   /* Addition rounds to 0: zero, 1: nearest, 2: +inf, 3: -inf, -1: unknown */
++#undef FLT_ROUNDS
++#define FLT_ROUNDS 1
++   /* Difference between 1.0 and the minimum float greater than 1.0 */
++#undef FLT_EPSILON
++#define FLT_EPSILON 1.19209290e-07F
++   /* Minimum int x such that FLT_RADIX**(x-1) is a normalised float */
++#undef FLT_MIN_EXP
++#define FLT_MIN_EXP (-125)
++   /* Minimum normalised float */
++#undef FLT_MIN
++#define FLT_MIN 1.17549435e-38F
++   /* Minimum int x such that 10**x is a normalised float */
++#undef FLT_MIN_10_EXP
++#define FLT_MIN_10_EXP (-37)
++   /* Maximum int x such that FLT_RADIX**(x-1) is a representable float */
++#undef FLT_MAX_EXP
++#define FLT_MAX_EXP 128
++   /* Maximum float */
++#undef FLT_MAX
++#define FLT_MAX 3.40282347e+38F
++   /* Maximum int x such that 10**x is a representable float */
++#undef FLT_MAX_10_EXP
++#define FLT_MAX_10_EXP 38
++
++   /* Number of base-FLT_RADIX digits in the significand of a double */
++#undef DBL_MANT_DIG
++#define DBL_MANT_DIG (DOUBLE_TYPE_SIZE == 64?53:24)
++   /* Number of decimal digits of precision in a double */
++#undef DBL_DIG
++#define DBL_DIG (DOUBLE_TYPE_SIZE == 64?15:6)
++   /* Difference between 1.0 and the minimum double greater than 1.0 */
++#undef DBL_EPSILON
++#define DBL_EPSILON (DOUBLE_TYPE_SIZE == 64?2.2204460492503131e-16:1.19209290e-07F)
++   /* Minimum int x such that FLT_RADIX**(x-1) is a normalised double */
++#undef DBL_MIN_EXP
++#define DBL_MIN_EXP (DOUBLE_TYPE_SIZE == 64?(-1021):(-125))
++   /* Minimum normalised double */
++#undef DBL_MIN
++#define DBL_MIN (DOUBLE_TYPE_SIZE == 64?2.2250738585072014e-308:1.17549435e-38F)
++   /* Minimum int x such that 10**x is a normalised double */
++#undef DBL_MIN_10_EXP
++#define DBL_MIN_10_EXP (DOUBLE_TYPE_SIZE == 64?(-307):(-37))
++   /* Maximum int x such that FLT_RADIX**(x-1) is a representable double */
++#undef DBL_MAX_EXP
++#define DBL_MAX_EXP (DOUBLE_TYPE_SIZE == 64?1024:128)
++   /* Maximum double */
++#undef DBL_MAX
++#define DBL_MAX (DOUBLE_TYPE_SIZE == 64?1.7976931348623157e+308:3.40282347e+38F)
++   /* Maximum int x such that 10**x is a representable double */
++#undef DBL_MAX_10_EXP
++#define DBL_MAX_10_EXP (DOUBLE_TYPE_SIZE == 64?308:38)
++
++/* Because -m3e and -m4-single-only have 32-bit doubles, we append L
++   to the doubles below, so that they're not truncated.  */
++
++   /* Number of base-FLT_RADIX digits in the significand of a long double */
++#undef LDBL_MANT_DIG
++#define LDBL_MANT_DIG (DOUBLE_TYPE_SIZE == 64?53:24)
++   /* Number of decimal digits of precision in a long double */
++#undef LDBL_DIG
++#define LDBL_DIG (DOUBLE_TYPE_SIZE == 64?15:6)
++   /* Difference between 1.0 and the minimum long double greater than 1.0 */
++#undef LDBL_EPSILON
++#define LDBL_EPSILON (DOUBLE_TYPE_SIZE == 64?2.2204460492503131e-16L:1.19209290e-07F)
++   /* Minimum int x such that FLT_RADIX**(x-1) is a normalised long double */
++#undef LDBL_MIN_EXP
++#define LDBL_MIN_EXP (DOUBLE_TYPE_SIZE == 64?(-1021):(-125))
++   /* Minimum normalised long double */
++#undef LDBL_MIN
++#define LDBL_MIN (DOUBLE_TYPE_SIZE == 64?2.2250738585072014e-308L:1.17549435e-38F)
++   /* Minimum int x such that 10**x is a normalised long double */
++#undef LDBL_MIN_10_EXP
++#define LDBL_MIN_10_EXP (DOUBLE_TYPE_SIZE == 64?(-307):(-37))
++   /* Maximum int x such that FLT_RADIX**(x-1) is a representable long double */
++#undef LDBL_MAX_EXP
++#define LDBL_MAX_EXP (DOUBLE_TYPE_SIZE == 64?1024:128)
++   /* Maximum long double */
++#undef LDBL_MAX
++#define LDBL_MAX (DOUBLE_TYPE_SIZE == 64?1.7976931348623157e+308L:3.40282347e+38F)
++   /* Maximum int x such that 10**x is a representable long double */
++#undef LDBL_MAX_10_EXP
++#define LDBL_MAX_10_EXP (DOUBLE_TYPE_SIZE == 64?308:38)
++
++#if defined (__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
++   /* The floating-point expression evaluation method.
++        -1  indeterminate
++         0  evaluate all operations and constants just to the range and
++            precision of the type
++         1  evaluate operations and constants of type float and double
++            to the range and precision of the double type, evaluate
++            long double operations and constants to the range and
++            precision of the long double type
++         2  evaluate all operations and constants to the range and
++            precision of the long double type
++   */
++# undef FLT_EVAL_METHOD
++# define FLT_EVAL_METHOD	0
++
++   /* Number of decimal digits to enable rounding to the given number of
++      decimal digits without loss of precision.
++         if FLT_RADIX == 10^n:  #mantissa * log10 (FLT_RADIX)
++         else                :  ceil (1 + #mantissa * log10 (FLT_RADIX))
++      where #mantissa is the number of bits in the mantissa of the widest
++      supported floating-point type.
++   */
++# undef DECIMAL_DIG
++# define DECIMAL_DIG	17
++
++#endif	/* C99 */
++
++#endif /*  _FLOAT_H_ */
+diff -Nru gcc-3.1.1/gcc/config/h8300/extfloatlib.c gcc-3.1.1.dblfix/gcc/config/h8300/extfloatlib.c
+--- gcc-3.1.1/gcc/config/h8300/extfloatlib.c	Thu Jan  1 09:00:00 1970
++++ gcc-3.1.1.dblfix/gcc/config/h8300/extfloatlib.c	Sun Sep 22 23:06:11 2002
+@@ -0,0 +1,11 @@
++/* from /gcc/config/m68k/fpgnulib.c */
++
++/* convert float to int */
++long
++__fixdfsi (double a1);
++int
++__fixsfsi (float a1)
++{
++  double foo = a1;
++  return __fixdfsi (foo);
++}
+diff -Nru gcc-3.1.1/gcc/config/h8300/h8300.h gcc-3.1.1.dblfix/gcc/config/h8300/h8300.h
+--- gcc-3.1.1/gcc/config/h8300/h8300.h	Wed May 22 08:44:58 2002
++++ gcc-3.1.1.dblfix/gcc/config/h8300/h8300.h	Sun Sep 22 23:06:11 2002
+@@ -38,9 +38,12 @@
+ extern const char * const *h8_reg_names;
+ 
+ /* Names to predefine in the preprocessor for this target machine.  */
+-
++/*
+ #define CPP_PREDEFINES \
+ "-D__LONG_MAX__=2147483647L -D__LONG_LONG_MAX__=2147483647L"
++*/
++#define CPP_PREDEFINES \
++"-D__LONG_MAX__=2147483647L"
+ 
+ #define CPP_SPEC \
+   "%{!mh:%{!ms:-D__H8300__}} %{mh:-D__H8300H__} %{ms:-D__H8300S__} \
+@@ -51,6 +54,7 @@
+    %{mh:-Acpu=h8300h -Amachine=h8300h} \
+    %{ms:-Acpu=h8300s -Amachine=h8300s} \
+    %{!mint32:-D__INT_MAX__=32767} %{mint32:-D__INT_MAX__=2147483647} \
++   %{!mint32:-D__LONG_LONG_MAX__=2147483647L} %{mint32:-D__LONG_LONG_MAX__=9223372036854775807LL} \
+    %(subtarget_cpp_spec)"
+ 
+ #define SUBTARGET_CPP_SPEC ""
+@@ -220,9 +224,9 @@
+ #define SHORT_TYPE_SIZE	16
+ #define INT_TYPE_SIZE		(TARGET_INT32 ? 32 : 16)
+ #define LONG_TYPE_SIZE		32
+-#define LONG_LONG_TYPE_SIZE	32
++#define LONG_LONG_TYPE_SIZE	(TARGET_INT32 ? 64 : 32)
+ #define FLOAT_TYPE_SIZE	32
+-#define DOUBLE_TYPE_SIZE	32
++#define DOUBLE_TYPE_SIZE	(TARGET_INT32 ? 64 : 32)
+ #define LONG_DOUBLE_TYPE_SIZE	DOUBLE_TYPE_SIZE
+ 
+ #define MAX_FIXED_MODE_SIZE	32
+@@ -1337,4 +1341,20 @@
+ 
+ #define MOVE_RATIO 3
+ 
++#ifdef IN_LIBGCC2
++#undef LONG_LONG_TYPE_SIZE
++#undef DOUBLE_TYPE_SIZE
++#undef LONG_DOUBLE_TYPE_SIZE
++#if __INT_MAX__ == 32767
++#define DI SI
++#define DF SF
++#define LONG_LONG_TYPE_SIZE 32
++#define DOUBLE_TYPE_SIZE 32
++#else
++#define LONG_LONG_TYPE_SIZE 64
++#define DOUBLE_TYPE_SIZE 64
++#endif
++#define LONG_DOUBLE_TYPE_SIZE	DOUBLE_TYPE_SIZE
++#endif
++
+ #endif /* ! GCC_H8300_H */
+diff -Nru gcc-3.1.1/gcc/config/h8300/t-h8300 gcc-3.1.1.dblfix/gcc/config/h8300/t-h8300
+--- gcc-3.1.1/gcc/config/h8300/t-h8300	Fri Aug 31 02:51:04 2001
++++ gcc-3.1.1.dblfix/gcc/config/h8300/t-h8300	Sun Sep 22 23:06:11 2002
+@@ -5,25 +5,7 @@
+ LIB1ASMFUNCS = _cmpsi2 _ucmpsi2 _divhi3 _divsi3 _mulhi3 _mulsi3 \
+   _floatdisf _fixsfdi _fixunssfdi _fixunssfsi_asm
+ 
+-LIB2FUNCS_EXTRA = $(srcdir)/config/h8300/fixunssfsi.c
+-
+-# We do not have DF or DI types, so fake out the libgcc2 compilation.
+-TARGET_LIBGCC2_CFLAGS = -DDF=SF -DDI=SI
+-
+-# We want fine grained libraries, so use the new code to build the
+-# floating point emulation libraries.
+-FPBIT = fp-bit.c
+-
+-fp-bit.c: $(srcdir)/config/fp-bit.c
+-	echo '#define FLOAT' > fp-bit.c
+-	echo '#define FLOAT_ONLY' >> fp-bit.c
+-	echo '#define SMALL_MACHINE' >> fp-bit.c
+-	echo '#ifdef __H8300__' >> fp-bit.c
+-	echo '#define CMPtype HItype' >> fp-bit.c
+-	echo '#else' >> fp-bit.c
+-	echo '#define CMPtype SItype' >> fp-bit.c
+-	echo '#endif' >> fp-bit.c
+-	cat $(srcdir)/config/fp-bit.c >> fp-bit.c
++LIB2FUNCS_EXTRA = $(srcdir)/config/h8300/fixunssfsi.c $(srcdir)/floatlib.c $(srcdir)/config/h8300/extfloatlib.c
+ 
+ MULTILIB_OPTIONS = mh/ms mint32
+ MULTILIB_DIRNAMES = h8300h h8300s int32
+diff -Nru gcc-3.1.1/gcc/config.gcc gcc-3.1.1.dblfix/gcc/config.gcc
+--- gcc-3.1.1/gcc/config.gcc	Sat Jun  8 08:35:31 2002
++++ gcc-3.1.1.dblfix/gcc/config.gcc	Sun Sep 22 23:23:29 2002
+@@ -852,7 +852,7 @@
+ h8300-*-elf*)
+ 	tmake_file="h8300/t-h8300 h8300/t-elf"
+ 	tm_file="h8300/h8300.h h8300/elf.h"
+-	float_format=i32
++	float_format=h8300
+ 	;;
+ h8300-*-*)
+ 	float_format=i32
+diff -Nru gcc-3.1.1/gcc/cp/decl.c gcc-3.1.1.dblfix/gcc/cp/decl.c
+--- gcc-3.1.1/gcc/cp/decl.c	Wed Jul 10 08:46:07 2002
++++ gcc-3.1.1.dblfix/gcc/cp/decl.c	Sun Sep 22 23:06:11 2002
+@@ -3500,7 +3500,7 @@
+      except for any that we copy here from the old type.  */
+   DECL_ATTRIBUTES (newdecl)
+     = (*targetm.merge_decl_attributes) (olddecl, newdecl);
+-  decl_attributes (&newdecl, DECL_ATTRIBUTES (newdecl), 0);
++  /*decl_attributes (&newdecl, DECL_ATTRIBUTES (newdecl), 0);*/
+ 
+   if (TREE_CODE (newdecl) == TEMPLATE_DECL)
+     {
+diff -Nru gcc-3.1.1/gcc/floatlib.c gcc-3.1.1.dblfix/gcc/floatlib.c
+--- gcc-3.1.1/gcc/floatlib.c	Thu Oct 11 12:15:38 2001
++++ gcc-3.1.1.dblfix/gcc/floatlib.c	Sun Sep 22 23:06:11 2002
+@@ -430,13 +430,13 @@
+ float
+ __floatsisf (long a1)
+ {
+-    (float)__floatsidf(a1);
++    return (float)__floatsidf(a1);
+ }
+ 
+ float
+ __floatdisf (long long a1)
+ {
+-    (float)__floatdidf(a1);
++    return (float)__floatdidf(a1);
+ }
+ 
+ /* negate a float */

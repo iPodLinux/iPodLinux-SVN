@@ -1,0 +1,22 @@
+2001-08-27  Miles Bader  <miles@gnu.org>
+
+	* simops.c (OP_12007E0): Don't halt the simulator, just let the
+	halt insn loop (the loop will be exited by any interrupt).
+
+diff -up sim/v850/simops.c.\~2\~ sim/v850/simops.c
+--- sim/v850/simops.c.~2~	Fri Aug 24 15:38:19 2001
++++ sim/v850/simops.c	Mon Aug 27 15:34:48 2001
+@@ -1575,10 +1575,10 @@ int
+ OP_12007E0 ()
+ {
+   trace_input ("halt", OP_NONE, 0);
+-  /* FIXME this should put processor into a mode where NMI still handled */
+   trace_output (OP_NONE);
+-  sim_engine_halt (simulator, STATE_CPU (simulator, 0), NULL, PC,
+-		   sim_stopped, SIM_SIGTRAP);
++  /* We use a PC adjustment of 0, so the halt insn keeps looping, but
++     interrupts handle it specially, and will cause the halt insn to
++     complete.  */
+   return 0;
+ }
+ 

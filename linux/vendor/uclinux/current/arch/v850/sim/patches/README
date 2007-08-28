@@ -1,0 +1,62 @@
+This directory contains patches to gdb and the gdb v850 simulator.
+Some are necessary to run uclinux, others are useful for debugging.
+
+
+ Bug fixes:
+
+   sim-bitop-bug.patch	  Fixes a bug in the simulator implementation of
+			  bit operators.
+
+   sim-trap-addr.patch	  Fixes a bug where the simulator uses the wrong
+			  address for vectoring to a software trap.
+
+
+ New features (necessary):
+
+   sim-interrupt-priority.patch
+			  Adds interrupt priorities to the simulator's
+			  implementation of `hardware' interrupts.
+
+   sim-halt.patch	  Makes the `halt' instruction work like a real
+			  hardware halt instruction.  The implementation
+			  is non-optimal -- it simply busy-waits.
+
+
+ New features (optional):
+
+   gdb-sim-inftty.patch   A patches to make gdb manage tty modes in the
+			  simulator the same way it does with a real
+			  process inferior.  This allows the simulator
+			  to switch to raw mode without interfering with
+			  debugging.
+
+   sim-makeraw.patch      Adds a simulator `syscall' named `make_raw', which
+			  allows a program running on the simulator to
+			  switch the real terminal into raw mode.
+
+   sim-raw-stdio.patch	  Adds the simulator command `stdio on|off',
+			  which allows switching on or off special
+			  treatment of stdio I/O.
+
+   sim-poll.patch	  Adds `poll' as a simulator `syscall', allowing
+			  polling of real file descriptors by the
+			  simulated program.
+
+
+Debugging aids:
+
+These patches must be applied in order, since later patches depend on
+features added by earlier ones.
+
+   sim-record-branches.patch	Adds the simulator command `recent-branches'
+				which will dump information about the last
+				32 branches taken by the simulated program.
+
+   sim-lomem-protect.patch	Adds the simulator commands
+				`read-protect-low-memory BOUNDARY',
+				`write-protect-low-memory BOUNDARY', and
+				`protected-low-memory-info'.
+
+   sim-himem-trace.patch	Adds the simulator command
+				`trace-io-writes on|off' (which traces
+				writes to `I/O space' (above 0xFFFFF000).

@@ -1,0 +1,459 @@
+#############################################################################
+#
+# For a description of the syntax of this configuration file,
+# see Documentation/kbuild/config-language.txt.
+#
+# based mainly on the arch/i386/config.in and bit of the 2.0, m68knommu
+# config.in
+#
+#############################################################################
+
+mainmenu_name 'uClinux/v850 (w/o MMU) Kernel Configuration'
+
+define_bool CONFIG_MMU n
+define_bool CONFIG_UCLINUX y
+define_bool CONFIG_UID16 n
+define_bool CONFIG_RWSEM_GENERIC_SPINLOCK y
+define_bool CONFIG_RWSEM_XCHGADD_ALGORITHM n
+
+# Turn off some random 386 crap that can affect device config
+define_bool CONFIG_ISA n
+define_bool CONFIG_ISAPNP n
+define_bool CONFIG_EISA n
+define_bool CONFIG_MCA n
+
+
+#############################################################################
+
+mainmenu_option next_comment
+   comment 'Code maturity level options'
+   bool 'Prompt for development and/or incomplete code/drivers' CONFIG_EXPERIMENTAL
+endmenu
+
+mainmenu_option next_comment
+   comment 'Loadable module support'
+   bool 'Enable loadable module support' CONFIG_MODULES
+   if [ "$CONFIG_MODULES" = "y" ]; then
+       bool '  Set version information on all module symbols' CONFIG_MODVERSIONS
+       bool '  Kernel module loader' CONFIG_KMOD
+   fi
+endmenu
+
+
+#############################################################################
+#### v850-specific config
+
+# Define the architecture
+define_bool CONFIG_V850 y
+
+mainmenu_option next_comment
+   comment 'Processor type and features'
+
+   choice 'Platform'						\
+	  "GDB			CONFIG_V850E_SIM		\
+	   RTE-V850E/MA1-CB	CONFIG_RTE_CB_MA1		\
+	   RTE-V850E/NB85E-CB	CONFIG_RTE_CB_NB85E		\
+	   RTE-V850E/ME2-CB	CONFIG_RTE_CB_ME2		\
+	   AS85EP1		CONFIG_V850E_AS85EP1		\
+	   sim85e2c		CONFIG_V850E2_SIM85E2C		\
+	   sim85e2s		CONFIG_V850E2_SIM85E2S		\
+	   NA85E2C-FPGA		CONFIG_V850E2_FPGA85E2C		\
+	   Anna			CONFIG_V850E2_ANNA"		\
+	  GDB
+
+
+   #### V850E processor-specific config
+
+   # All CPUs currently supported use the v850e architecture
+   define_bool CONFIG_V850E y
+
+   # The RTE-V850E/MA1-CB is the only type of V850E/MA1 platform we
+   # currently support
+   define_bool CONFIG_V850E_MA1 $CONFIG_RTE_CB_MA1
+   # Similarly for the RTE-V850E/NB85E-CB - V850E/TEG
+   define_bool CONFIG_V850E_TEG $CONFIG_RTE_CB_NB85E
+   # ... and the RTE-V850E/ME2-CB - V850E/ME2
+   define_bool CONFIG_V850E_ME2 $CONFIG_RTE_CB_ME2
+
+   if [	  "$CONFIG_V850E_MA1" = "y"      \
+       -o "$CONFIG_V850E_ME2" = "y"      \
+       -o "$CONFIG_V850E_TEG" = "y"      \
+       -o "$CONFIG_V850E2_ANNA" = "y"    \
+       -o "$CONFIG_V850E_AS85EP1" = "y" ]
+   then
+      bool 'NEC V850E on-chip UART support' CONFIG_V850E_UART
+
+      if [ "$CONFIG_V850E_UART" = "y" ]; then
+        # the V850E/ME2 uses UARTB
+        define_bool CONFIG_V850E_UARTB $CONFIG_V850E_ME2
+      fi
+
+      dep_bool '  Use NEC V850E on-chip UART for console' \
+          CONFIG_V850E_UART_CONSOLE $CONFIG_V850E_UART
+   else
+      define_bool CONFIG_V850E_UART n
+   fi
+
+
+   #### V850E2 processor-specific config
+
+   # Common simulator stuff
+   if [   "$CONFIG_V850E2_SIM85E2C" = "y"  \
+       -o "$CONFIG_V850E2_SIM85E2S" = "y" ]
+   then
+      define_bool CONFIG_V850E2_SIM85E2 y
+   else
+      define_bool CONFIG_V850E2_SIM85E2 n
+   fi
+
+   # V850E2 processors
+   if [	  "$CONFIG_V850E2_SIM85E2" = "y"    \
+       -o "$CONFIG_V850E2_FPGA85E2C" = "y"  \
+       -o "$CONFIG_V850E2_ANNA" = "y"	   ]
+   then
+      define_bool CONFIG_V850E2 y
+   else
+      define_bool CONFIG_V850E2 n
+   fi
+
+
+   #### sim85e2 platform-specific config
+
+   if [ "$CONFIG_V850E2_SIM85E2" = "y" ]; then
+      # Don't bother, as it's already zeroed by the simulator
+      define_bool CONFIG_ZERO_BSS n
+
+      # The crappy-ass zone allocator requires that the start of allocatable
+      # memory be aligned to the largest possible allocation.
+      define_int CONFIG_FORCE_MAX_ZONEORDER 8
+   fi
+
+
+   #### fpga85e2c platform-specific config
+
+   if [ "$CONFIG_V850E2_FPGA85E2C" = "y" ]; then
+      # The crappy-ass zone allocator requires that the start of allocatable
+      # memory be aligned to the largest possible allocation.
+      define_int CONFIG_FORCE_MAX_ZONEORDER 8
+   fi
+
+
+   #### AS85EP1 platform-specific config
+
+   if [ "$CONFIG_V850E_AS85EP1" = "y" ]; then
+      # The crappy-ass zone allocator requires that the start of allocatable
+      # memory be aligned to the largest possible allocation.
+      define_int CONFIG_FORCE_MAX_ZONEORDER 11
+   fi
+
+
+   #### RTE-CB platform-specific config
+
+   # Boards in the RTE-x-CB series
+   if [   "$CONFIG_RTE_CB_MA1" = "y"    \
+       -o "$CONFIG_RTE_CB_ME2" = "y"    \
+       -o "$CONFIG_RTE_CB_NB85E" = "y" ]
+   then
+      define_bool CONFIG_RTE_CB y
+   else
+      define_bool CONFIG_RTE_CB n
+   fi
+
+   if [ "$CONFIG_RTE_CB_MA1" = "y" ]; then
+     # Currently, we only support RTE-MA1-CB boards using the Multi ROM
+     define_bool CONFIG_RTE_CB_MULTI $CONFIG_RTE_CB
+   else
+     dep_bool 'Multi monitor ROM support' CONFIG_RTE_CB_MULTI $CONFIG_RTE_CB
+   fi
+
+   dep_bool 'Pass illegal insn trap / dbtrap to kernel' \
+      CONFIG_RTE_CB_MULTI_DBTRAP $CONFIG_RTE_CB_MULTI
+
+   dep_bool 'Kernel in SRAM (limits size of kernel)' CONFIG_RTE_CB_MA1_KSRAM \
+      $CONFIG_RTE_CB_MA1 $CONFIG_RTE_CB_MULTI
+
+   dep_bool 'Mother-A PCI support' CONFIG_RTE_MB_A_PCI $CONFIG_RTE_CB
+
+   # The GBUS is used to talk to the RTE-MOTHER-A board
+   define_bool CONFIG_RTE_GBUS_INT $CONFIG_RTE_MB_A_PCI
+
+   # The only PCI bus we support is on the RTE-MOTHER-A board
+   define_bool CONFIG_PCI $CONFIG_RTE_MB_A_PCI
+
+
+   #### Some feature-specific configs
+
+   # Everything except for the GDB simulator uses the same interrupt controller
+   if [ "$CONFIG_V850E_SIM" = "n" ]; then
+      define_bool CONFIG_V850E_INTC y
+   else
+      define_bool CONFIG_V850E_INTC n
+   fi
+
+   # Everything except for the various simulators uses the "Timer D" unit
+   if [ "$CONFIG_V850E_SIM" = "n" -a "$CONFIG_V850E2_SIM85E2" = "n" ]; then
+      define_bool CONFIG_V850E_TIMER_D y
+   else
+      define_bool CONFIG_V850E_TIMER_D n
+   fi
+
+   # Cache control used on some v850e1 processors
+   if [ "$CONFIG_V850E_TEG" = "y" -o "$CONFIG_V850E_ME2" = "y" ]; then
+      define_bool CONFIG_V850E_CACHE y
+   else
+      define_bool CONFIG_V850E_CACHE n
+   fi
+
+   # Cache control used on v850e2 processors; I think this should
+   # actually apply to more, but currently only the SIM85E2S uses it
+   define_bool CONFIG_V850E2_CACHE $CONFIG_V850E2_SIM85E2S
+
+   if [ "$CONFIG_V850E_CACHE" = n -a "$CONFIG_V850E2_CACHE" = "n" ]; then
+      define_bool CONFIG_NO_CACHE y
+   else
+      define_bool CONFIG_NO_CACHE n
+   fi
+
+
+   #### Misc config
+
+   if [   "$CONFIG_V850E2_ANNA" = "y"    \
+       -o "$CONFIG_V850E_AS85EP1" = "y"  \
+       -o "$CONFIG_V850E_ME2" = "y"     ]
+   then
+      bool 'Kernel in ROM' CONFIG_ROM_KERNEL
+   fi
+   
+   dep_bool 'High resolution timer support' CONFIG_V850E_HIGHRES_TIMER $CONFIG_V850E_TIMER_D
+   dep_bool '  Time bootup' CONFIG_TIME_BOOTUP $CONFIG_V850E_HIGHRES_TIMER
+
+   bool 'Reset Guard' CONFIG_RESET_GUARD
+
+   # Default some stuff
+   if [ "$CONFIG_ZERO_BSS" != "n" ]; then
+      define_bool CONFIG_ZERO_BSS y
+   fi
+
+endmenu
+
+
+#############################################################################
+
+mainmenu_option next_comment
+   comment 'General setup'
+
+   bool 'Networking support' CONFIG_NET
+
+   # Embedded systems often won't need any hardware disk support, so
+   # only clutter up the menus with it if really necessary
+   bool 'Disk hardware support' CONFIG_DISK
+
+   source drivers/pci/Config.in
+
+   # if [ "$CONFIG_VISWS" != "y" ]; then
+   #	bool 'MCA support' CONFIG_MCA
+   # fi
+
+   bool 'Support for hot-pluggable devices' CONFIG_HOTPLUG
+
+   if [ "$CONFIG_HOTPLUG" = "y" ] ; then
+      source drivers/pcmcia/Config.in
+   else
+      define_bool CONFIG_PCMCIA n
+   fi
+
+   bool 'System V IPC' CONFIG_SYSVIPC
+   bool 'BSD Process Accounting' CONFIG_BSD_PROCESS_ACCT
+   bool 'Sysctl support' CONFIG_SYSCTL
+   if [ "$CONFIG_PROC_FS" = "y" ]; then
+      choice 'Kernel core (/proc/kcore) format' \
+	     "ELF	CONFIG_KCORE_ELF	\
+	      A.OUT	CONFIG_KCORE_AOUT" ELF
+   fi
+   tristate 'Kernel support for flat binaries' CONFIG_BINFMT_FLAT
+   dep_bool '  Enable ZFLAT support' CONFIG_BINFMT_ZFLAT $CONFIG_BINFMT_FLAT
+   #tristate 'Kernel support for a.out binaries' CONFIG_BINFMT_AOUT
+   #tristate 'Kernel support for ELF binaries' CONFIG_BINFMT_ELF
+   tristate 'Kernel support for MISC binaries' CONFIG_BINFMT_MISC
+
+   # bool 'Power Management support' CONFIG_PM
+   #
+   # dep_bool '	 ACPI support' CONFIG_ACPI $CONFIG_PM
+   # if [ "$CONFIG_ACPI" != "n" ]; then
+   #	if [ "$CONFIG_EXPERIMENTAL" = "y" ]; then
+   #	   bool '    ACPI interpreter (EXPERIMENTAL)' CONFIG_ACPI_INTERPRETER
+   #	   bool '    Enter S1 for sleep (EXPERIMENTAL)' CONFIG_ACPI_S1_SLEEP
+   #	fi
+   # fi
+
+   if [ "$CONFIG_EXPERIMENTAL" = "y" ]; then
+      bool 'Non power-of-2 kernel allocator (EXPERIMENTAL)' CONFIG_CONTIGUOUS_PAGE_ALLOC
+      dep_bool '   include /proc/mem_map' CONFIG_MEM_MAP $CONFIG_CONTIGUOUS_PAGE_ALLOC
+   fi
+
+   if [ "$CONFIG_CONTIGUOUS_PAGE_ALLOC" != "y" ]; then
+      bool 'Allow allocating large blocks (> 1MB) of memory' CONFIG_NO_MMU_LARGE_ALLOCS
+   fi
+
+endmenu
+
+#############################################################################
+
+#source drivers/mtd/Config.in
+
+if [ "$CONFIG_PCI" != "n" ]; then
+   source drivers/parport/Config.in
+fi
+
+#source drivers/pnp/Config.in
+
+source drivers/block/Config.in
+
+if [ "$CONFIG_NET" = "y" ]; then
+    source net/Config.in
+fi
+
+#source drivers/telephony/Config.in
+
+#############################################################################
+
+if [ "$CONFIG_DISK" = "y" ]; then
+   mainmenu_option next_comment
+      comment 'ATA/IDE/MFM/RLL support'
+
+      tristate 'ATA/IDE/MFM/RLL support' CONFIG_IDE
+
+      if [ "$CONFIG_IDE" != "n" ]; then
+	 source drivers/ide/Config.in
+      else
+	 define_bool CONFIG_BLK_DEV_IDE_MODES n
+	 define_bool CONFIG_BLK_DEV_HD n
+      fi
+   endmenu
+fi
+
+#############################################################################
+
+if [ "$CONFIG_DISK" = "y" ]; then
+   mainmenu_option next_comment
+      comment 'SCSI support'
+
+      tristate 'SCSI support' CONFIG_SCSI
+
+      if [ "$CONFIG_SCSI" != "n" ]; then
+	 source drivers/scsi/Config.in
+      fi
+   endmenu
+fi
+
+#############################################################################
+
+if [ "$CONFIG_PCI" = "y" ]; then
+   source drivers/ieee1394/Config.in
+fi
+
+if [ "$CONFIG_NET" = "y" ]; then
+   mainmenu_option next_comment
+      comment 'Network device support'
+
+      bool 'Network device support' CONFIG_NETDEVICES
+      if [ "$CONFIG_NETDEVICES" = "y" ]; then
+	 source drivers/net/Config.in
+	 if [ "$CONFIG_ATM" = "y" ]; then
+	    source drivers/atm/Config.in
+	 fi
+      fi
+   endmenu
+fi
+
+if [ "$CONFIG_NET" = "y" ]; then
+   source net/ax25/Config.in
+fi
+
+source net/irda/Config.in
+
+#############################################################################
+
+if [ "$CONFIG_NET" = "y" ]; then
+   mainmenu_option next_comment
+      comment 'ISDN subsystem'
+
+      tristate 'ISDN support' CONFIG_ISDN
+      if [ "$CONFIG_ISDN" != "n" ]; then
+	 source drivers/isdn/Config.in
+      fi
+   endmenu
+fi
+
+#############################################################################
+
+# mainmenu_option next_comment
+#    comment 'Old CD-ROM drivers (not SCSI, not IDE)'
+#
+#    bool 'Support non-SCSI/IDE/ATAPI CDROM drives' CONFIG_CD_NO_IDESCSI
+#    if [ "$CONFIG_CD_NO_IDESCSI" != "n" ]; then
+#	  source drivers/cdrom/Config.in
+#    fi
+# endmenu
+
+#############################################################################
+
+source drivers/char/Config.in
+
+#source drivers/misc/Config.in
+
+source fs/Config.in
+
+if [ "$CONFIG_VT" = "y" ]; then
+   mainmenu_option next_comment
+      comment 'Console drivers'
+      bool 'VGA text console' CONFIG_VGA_CONSOLE
+      bool 'Video mode selection support' CONFIG_VIDEO_SELECT
+      if [ "$CONFIG_EXPERIMENTAL" = "y" ]; then
+	 tristate 'MDA text console (dual-headed) (EXPERIMENTAL)' CONFIG_MDA_CONSOLE
+	 source drivers/video/Config.in
+      fi
+   endmenu
+fi
+
+#############################################################################
+
+mainmenu_option next_comment
+   comment 'Sound'
+
+   tristate 'Sound card support' CONFIG_SOUND
+   if [ "$CONFIG_SOUND" != "n" ]; then
+      source drivers/sound/Config.in
+   fi
+endmenu
+
+#############################################################################
+
+source drivers/usb/Config.in
+
+#############################################################################
+
+mainmenu_option next_comment
+   comment 'Kernel hacking'
+
+   bool 'Full Symbolic/Source Debugging support' CONFIG_FULLDEBUG
+   #bool 'Debug kmalloc/kfree' CONFIG_DEBUG_MALLOC
+   bool 'Magic SysRq key' CONFIG_MAGIC_SYSRQ
+
+   bool 'Kernel profiling support' CONFIG_PROFILE
+   if [ "$CONFIG_PROFILE" = "y" ]; then
+      int ' Profile shift count' CONFIG_PROFILE_SHIFT 2
+      bool 'Use fast second timer for profiling' CONFIG_HIGHPROFILE
+   fi
+
+   bool 'Suppress Kernel BUG Messages' CONFIG_NO_KERNEL_MSG
+
+endmenu
+
+
+#############################################################################
+
+source crypto/Config.in
+source lib/Config.in
+
+#############################################################################

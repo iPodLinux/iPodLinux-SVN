@@ -1,0 +1,234 @@
+#############################################################################
+#
+# For a description of the syntax of this configuration file,
+# see Documentation/kbuild/config-language.txt.
+#
+# based mainly on the arch/i386/config.in and bit of the 2.0, h8300
+# config.in
+#
+#############################################################################
+
+mainmenu_name 'uClinux/h8300 (w/o MMU) Kernel Configuration'
+
+define_bool CONFIG_UCLINUX y
+define_bool CONFIG_UID16 y
+define_bool CONFIG_RWSEM_GENERIC_SPINLOCK y
+define_bool CONFIG_RWSEM_XCHGADD_ALGORITHM n
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'Code maturity level options'
+bool 'Prompt for development and/or incomplete code/drivers' CONFIG_EXPERIMENTAL
+endmenu
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'Loadable module support'
+bool 'Enable loadable module support' CONFIG_MODULES
+if [ "$CONFIG_MODULES" = "y" ]; then
+   bool '  Set version information on all module symbols' CONFIG_MODVERSIONS
+   bool '  Kernel module loader' CONFIG_KMOD
+fi
+endmenu
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'Target Selection'
+define_bool CONFIG_CPU_H8300H n
+define_bool CONFIG_CPU_H8S n
+
+source arch/h8300/target_config.in
+endmenu
+
+if [ "$CONFIG_BOARD_GENERIC" = "y" ]; then
+
+mainmenu_option next_comment
+comment 'Platform dependant setup'
+
+  choice 'CPU' \
+	  "H8/3002			CONFIG_H83002 \
+  	   H8/3006,3007,gdb_simulator	CONFIG_H83007 \
+	   H8/3044,3045,3046,3047,3048,3052	CONFIG_H83048 \
+           H8/3065,3066,3067,3068,3069	CONFIG_H83068 \
+           H8S/2670,2673,2674,2675,2676,2678	CONFIG_H8S2678" 
+
+  int 'Clock Frequency' CONFIG_CLK_FREQ 250000
+
+choice 'Kernel executes from' \
+	"RAM	CONFIG_RAMKERNEL \
+	 ROM	CONFIG_ROMKERNEL" ROM
+
+endmenu
+fi
+
+if [ "$CONFIG_H83002" = "y" -o "$CONFIG_H83007" = "y" -o \
+     "$CONFIG_H83048" = "y" -o "$CONFIG_H83068" = "y" ]; then
+  define_bool CONFIG_CPU_H8S n
+  define_bool CONFIG_CPU_H8300H y
+fi
+
+if [ "$CONFIG_H8S2678" = "y" ]; then
+  define_bool CONFIG_CPU_H8300H n
+  define_bool CONFIG_CPU_H8S y
+fi
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'General setup'
+
+bool 'Networking support' CONFIG_NET
+bool 'System V IPC' CONFIG_SYSVIPC
+bool 'BSD Process Accounting' CONFIG_BSD_PROCESS_ACCT
+bool 'Sysctl support' CONFIG_SYSCTL
+if [ "$CONFIG_PROC_FS" = "y" ]; then
+   choice 'Kernel core (/proc/kcore) format' \
+	"ELF		CONFIG_KCORE_ELF	\
+	 A.OUT		CONFIG_KCORE_AOUT" ELF
+fi
+tristate 'Kernel support for flat binaries' CONFIG_BINFMT_FLAT
+if [ "$CONFIG_BINFMT_FLAT" != "n" ]; then
+   bool '    Enable ZFLAT support' CONFIG_BINFMT_ZFLAT
+   bool '    Enable shared FLAT support' CONFIG_BINFMT_SHARED_FLAT
+fi
+tristate 'Kernel support for a.out binaries' CONFIG_BINFMT_AOUT
+tristate 'Kernel support for ELF binaries' CONFIG_BINFMT_ELF
+tristate 'Kernel support for MISC binaries' CONFIG_BINFMT_MISC
+bool 'Set Default Kernel Command Line' CONFIG_DEFAULT_CMDLINE
+if [ "$CONFIG_DEFAULT_CMDLINE" = "y" ]; then
+  string 'Kernel command line' CONFIG_KERNEL_COMMAND ""
+fi
+bool 'BLKDEV Reserved Memory' CONFIG_BLKDEV_RESERVE n
+if [ "$CONFIG_BLKDEV_RESERVE" = "y" ]; then
+   hex 'Reserved Address' CONFIG_BLKDEV_RESERVE_ADDRESS 0
+fi
+endmenu
+
+#############################################################################
+
+source drivers/mtd/Config.in
+
+source drivers/parport/Config.in
+
+source drivers/pnp/Config.in
+
+source drivers/block/Config.in
+
+if [ "$CONFIG_NET" = "y" ]; then
+   source net/Config.in
+fi
+
+source drivers/telephony/Config.in
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'ATA/IDE/MFM/RLL support'
+
+tristate 'ATA/IDE/MFM/RLL support' CONFIG_IDE
+
+if [ "$CONFIG_IDE" != "n" ]; then
+  source drivers/ide/Config.in
+else
+  define_bool CONFIG_BLK_DEV_IDE_MODES n
+  define_bool CONFIG_BLK_DEV_HD n
+fi
+endmenu
+
+#############################################################################
+
+if [ "$CONFIG_NET" = "y" ]; then
+   mainmenu_option next_comment
+   comment 'Network device support'
+
+   bool 'Network device support' CONFIG_NETDEVICES
+   if [ "$CONFIG_NETDEVICES" = "y" ]; then
+      source drivers/net/Config.in
+      if [ "$CONFIG_ATM" = "y" ]; then
+         source drivers/atm/Config.in
+      fi
+   fi
+   endmenu
+fi
+
+#############################################################################
+
+source drivers/char/Config.in
+
+
+#source drivers/misc/Config.in
+
+source fs/Config.in
+
+if [ "$CONFIG_VT" = "y" ]; then
+   mainmenu_option next_comment
+   comment 'Console drivers'
+   bool 'VGA text console' CONFIG_VGA_CONSOLE
+   bool 'Video mode selection support' CONFIG_VIDEO_SELECT
+   if [ "$CONFIG_EXPERIMENTAL" = "y" ]; then
+      tristate 'MDA text console (dual-headed) (EXPERIMENTAL)' CONFIG_MDA_CONSOLE
+      source drivers/video/Config.in
+   fi
+   endmenu
+fi
+
+#############################################################################
+
+source drivers/usb/Config.in
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'Kernel hacking'
+
+bool 'Full Symbolic/Source Debugging support' CONFIG_FULLDEBUG
+#bool 'Debug kmalloc/kfree' CONFIG_DEBUG_MALLOC
+bool 'Magic SysRq key' CONFIG_MAGIC_SYSRQ
+if [ "$CONFIG_EXPERIMENTAL" = "y" ]; then
+	bool 'Non power-of-2 kernel allocator (EXPERIMENTAL)' CONFIG_CONTIGUOUS_PAGE_ALLOC
+	dep_bool '  include /proc/mem_map' CONFIG_MEM_MAP $CONFIG_CONTIGUOUS_PAGE_ALLOC
+fi
+
+bool 'Kernel profiling support' CONFIG_PROFILE
+if [ "$CONFIG_PROFILE" = "y" ]; then
+  int ' Profile shift count' CONFIG_PROFILE_SHIFT 2
+  bool 'Use fast second timer for profiling' CONFIG_HIGHPROFILE
+fi
+
+bool 'Suppress Kernel BUG Messages' CONFIG_NO_KERNEL_MSG
+
+bool 'Reduce kernel task size to 1 page' CONFIG_SMALL_TASKS
+
+if [ "$CONFIG_EXPERIMENTAL" = "y" -a "$CONFIG_COLDFIRE" = "y" ]; then
+    bool 'Disable BDM signals' CONFIG_BDM_DISABLE
+fi
+
+if [ "$CONFIG_H83007" = "y" -o "$CONFIG_H8S2678" = "y" ]; then
+  bool 'Executing from GDB Simurator' CONFIG_GDB_EXEC 
+  dep_bool 'Message Output for GDB MagicPrint' CONFIG_GDB_MAGICPRINT $CONFIG_GDB_EXEC
+else
+  define_bool CONFIG_GDB_EXEC n
+  define_bool CONFIG_GDB_MAGICPRINT n
+fi
+
+bool 'SystemCall trace print' CONFIG_SYSCALL_PRINT
+
+if [ "$CONFIG_GDB_EXEC" = "n" ]; then
+    bool 'Use gdb stub' CONFIG_GDB_DEBUG
+fi
+
+dep_bool 'Use gdb protocol print' CONFIG_SH_STANDARD_BIOS $CONFIG_GDB_DEBUG
+
+
+endmenu
+
+
+#############################################################################
+
+source crypto/Config.in
+source lib/Config.in
+
+#############################################################################

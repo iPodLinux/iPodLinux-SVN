@@ -1,0 +1,179 @@
+#
+# For a description of the syntax of this configuration file,
+# see the Configure script.
+#
+mainmenu_name 'uClinux/Nios (w/o MMU) Kernel Configuration'
+
+define_bool CONFIG_UCLINUX y
+define_bool CONFIG_UID16 y
+define_bool CONFIG_RWSEM_GENERIC_SPINLOCK y
+define_bool CONFIG_RWSEM_XCHGADD_ALGORITHM n
+define_bool CONFIG_RAMKERNEL y
+
+mainmenu_option next_comment
+comment 'Code maturity level options'
+bool 'Prompt for development and/or incomplete code/drivers' CONFIG_EXPERIMENTAL
+endmenu
+
+mainmenu_option next_comment
+comment 'Loadable module support'
+bool 'Enable loadable module support' CONFIG_MODULES
+# if [ "$CONFIG_MODULES" = "y" ]; then
+#   bool 'Set version information on all symbols for modules' CONFIG_MODVERSIONS
+#   bool 'Kernel daemon support (e.g. autoload of modules)' CONFIG_KERNELD
+# fi
+endmenu
+
+
+mainmenu_option next_comment
+comment 'Platform dependant setup'
+
+choice 'CPU' \
+	"NIOS	CONFIG_NIOS" NIOS
+
+comment 'Platform'
+
+choice 'Platform' \
+	"EXCALIBUR	CONFIG_EXCALIBUR" EXCALIBUR
+
+# choice 'Kernel executes from' \
+#	"RAM	CONFIG_RAMKERNEL \
+#	 ROM	CONFIG_ROMKERNEL" ROM
+
+bool 'Flash CRC support' CONFIG_CRC_CHECK
+if [ "$CONFIG_CRC_CHECK" = "y" ]; then
+  bool '  Prompt for action on failure' CONFIG_PROMPT_ON_MISSING_CRC_TABLES
+fi
+
+endmenu
+
+mainmenu_option next_comment
+comment 'General setup'
+
+# bool 'PCI bios support' CONFIG_PCI
+# if [ "$CONFIG_PCI" = "y" ]; then
+#	bool '    PCI device list support' CONFIG_PCIDEVLIST
+# fi
+
+bool 'Networking support' CONFIG_NET
+bool 'System V IPC' CONFIG_SYSVIPC
+# bool 'Reduced memory footprint' CONFIG_REDUCED_MEMORY
+bool 'BSD Process Accounting' CONFIG_BSD_PROCESS_ACCT
+bool 'Sysctl support' CONFIG_SYSCTL
+if [ "$CONFIG_PROC_FS" = "y" ]; then
+   choice 'Kernel core (/proc/kcore) format' \
+	"ELF		CONFIG_KCORE_ELF	\
+	 A.OUT		CONFIG_KCORE_AOUT" ELF
+fi
+tristate 'Kernel support for flat binaries' CONFIG_BINFMT_FLAT
+# tristate 'Kernel support for a.out binaries' CONFIG_BINFMT_AOUT
+# tristate 'Kernel support for ELF binaries' CONFIG_BINFMT_ELF
+bool 'Compile kernel as ELF - if your GCC is ELF-GCC' CONFIG_KERNEL_ELF
+bool 'Kernel support for remote GDB client' CONFIG_KGDB
+if [ "$CONFIG_KGDB" = "y" ]; then
+  bool '  Include breakpoint trap on kernel startup' CONFIG_BREAK_ON_START
+fi
+endmenu
+
+define_string CONFIG_CMDLINE "CONSOLE=/dev/ttyS0 root=/dev/rom0 ro"
+
+# source drivers/mtd/Config.in
+# source drivers/pnp/Config.in
+
+source drivers/block/Config.in
+
+if [ "$CONFIG_NET" = "y" ]; then
+  source net/Config.in
+fi
+
+mainmenu_option next_comment
+comment 'ATA/IDE/MFM/RLL support'
+
+tristate 'ATA/IDE/MFM/RLL support' CONFIG_IDE
+
+if [ "$CONFIG_IDE" != "n" ]; then
+  source drivers/ide/Config.in
+else
+  define_bool CONFIG_BLK_DEV_IDE_MODES n
+  define_bool CONFIG_BLK_DEV_HD n
+fi
+endmenu
+
+# mainmenu_option next_comment
+# comment 'SCSI support'
+# tristate 'SCSI support' CONFIG_SCSI
+# if [ "$CONFIG_SCSI" != "n" ]; then
+#   source drivers/scsi/Config.in
+# fi
+# endmenu
+
+source drivers/ieee1394/Config.in
+
+# source drivers/i2o/Config.in
+
+if [ "$CONFIG_NET" = "y" ]; then
+   mainmenu_option next_comment
+   comment 'Network device support'
+
+   bool 'Network device support' CONFIG_NETDEVICES
+   if [ "$CONFIG_NETDEVICES" = "y" ]; then
+      source drivers/net/Config.in
+      if [ "$CONFIG_ATM" = "y" ]; then
+         source drivers/atm/Config.in
+      fi
+   fi
+   endmenu
+fi
+
+# source net/ax25/Config.in
+
+# source net/irda/Config.in
+
+# mainmenu_option next_comment
+# comment 'ISDN subsystem'
+# if [ "$CONFIG_NET" != "n" ]; then
+#   tristate 'ISDN support' CONFIG_ISDN
+#   if [ "$CONFIG_ISDN" != "n" ]; then
+#      source drivers/isdn/Config.in
+#   fi
+# fi
+# endmenu
+
+# mainmenu_option next_comment
+# comment 'Old CD-ROM drivers (not SCSI, not IDE)'
+
+# bool 'Support non-SCSI/IDE/ATAPI CDROM drives' CONFIG_CD_NO_IDESCSI
+# if [ "$CONFIG_CD_NO_IDESCSI" != "n" ]; then
+#    source drivers/cdrom/Config.in
+# fi
+# endmenu
+
+source drivers/char/Config.in
+
+source fs/Config.in
+
+if [ "$CONFIG_VT" = "y" ]; then
+  source drivers/video/Config.in
+fi
+
+source drivers/usb/Config.in
+
+mainmenu_option next_comment
+comment 'Kernel hacking'
+
+bool 'Full Symbolic/Source Debugging support' CONFIG_FULLDEBUG
+#bool 'Debug kmalloc/kfree' CONFIG_DEBUG_MALLOC
+bool 'Magic SysRq key' CONFIG_MAGIC_SYSRQ
+
+bool 'Kernel profiling support' CONFIG_PROFILE
+if [ "$CONFIG_PROFILE" = "y" ]; then
+  int ' Profile shift count' CONFIG_PROFILE_SHIFT 2
+  bool 'Use fast second timer for profiling' CONFIG_HIGHPROFILE
+fi
+
+bool 'Suppress Kernel BUG Messages' CONFIG_NO_KERNEL_MSG
+
+endmenu
+
+source crypto/Config.in
+source lib/Config.in

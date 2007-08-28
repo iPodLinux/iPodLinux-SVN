@@ -1,0 +1,687 @@
+diff -Nru gdb-5.2.1/gdb/config/h8300/tm-h8300.h gdb-5.2.1.h8sim/gdb/config/h8300/tm-h8300.h
+--- gdb-5.2.1/gdb/config/h8300/tm-h8300.h	Tue Jan 29 13:42:36 2002
++++ gdb-5.2.1.h8sim/gdb/config/h8300/tm-h8300.h	Wed Sep 11 23:50:22 2002
+@@ -89,7 +89,7 @@
+ #define INNER_THAN(lhs,rhs) ((lhs) < (rhs))
+ 
+ /*#define BREAKPOINT {0x7A, 0xFF} */
+-#define BREAKPOINT {0x01, 0x80}	/* Sleep */
++#define BREAKPOINT {0x01, 0x81}	/* bkpt(?) */
+ #define REMOTE_BREAKPOINT { 0x57, 0x30}		/* trapa #3 */
+ /* If your kernel resets the pc after the trap happens you may need to
+    define this before including this file.    */
+diff -Nru gdb-5.2.1/include/opcode/h8300.h gdb-5.2.1.h8sim/include/opcode/h8300.h
+--- gdb-5.2.1/include/opcode/h8300.h	Mon Jan 21 23:03:26 2002
++++ gdb-5.2.1.h8sim/include/opcode/h8300.h	Wed Sep 11 23:50:22 2002
+@@ -304,7 +304,8 @@
+ #define O_LDM 85
+ #define O_STM 86
+ #define O_STMAC 87
+-#define O_LAST 88
++#define O_BKPT 88
++#define O_LAST 89
+ #define SB 0
+ #define SW 1
+ #define SL 2
+@@ -375,6 +376,8 @@
+   EBITOP(O(O_BTST,SB), IMM3|B30,"btst",0x6,0x3,0x7,0xC,0x7,0xE,0x0),
+   BITOP(O(O_BXOR,SB), IMM3|B30,"bxor",0x7,0x5,0x7,0xC,0x7,0xE,0x0),
+ 
++  SOP(O(O_BKPT,SN),2,"bkpt"),{{E,0,0}},{{ 0x0,0x1,0x8,0x1,E,0,0,0,0}} EOP,
++
+   TWOOP(O(O_CMP,SB), "cmp.b",0xA,0x1,0xC),
+   WTWOP(O(O_CMP,SW), "cmp.w",0x1,0xD),
+ 
+diff -Nru gdb-5.2.1/sim/h8300/Makefile.in gdb-5.2.1.h8sim/sim/h8300/Makefile.in
+--- gdb-5.2.1/sim/h8300/Makefile.in	Fri Apr 16 10:35:02 1999
++++ gdb-5.2.1.h8sim/sim/h8300/Makefile.in	Wed Sep 11 23:50:22 2002
+@@ -18,7 +18,7 @@
+ 
+ ## COMMON_PRE_CONFIG_FRAG
+ 
+-SIM_OBJS = compile.o sim-load.o
++SIM_OBJS = compile.o sim-load.o io.o
+ 
+ ## COMMON_POST_CONFIG_FRAG
+ 
+diff -Nru gdb-5.2.1/sim/h8300/compile.c gdb-5.2.1.h8sim/sim/h8300/compile.c
+--- gdb-5.2.1/sim/h8300/compile.c	Fri May 17 22:24:13 2002
++++ gdb-5.2.1.h8sim/sim/h8300/compile.c	Fri Oct 18 12:56:11 2002
+@@ -81,7 +81,7 @@
+ #define HIGH_BYTE(x) (((x) >> 8) & 0xff)
+ #define P(X,Y) ((X << 8) | Y)
+ 
+-#define BUILDSR()   cpu.ccr = (N << 3) | (Z << 2) | (V << 1) | C;
++#define BUILDSR()   cpu.ccr = (cpu.ccr & 0xf0) | (N << 3) | (Z << 2) | (V<<1) | C;
+ 
+ #define GETSR()		    \
+   c = (cpu.ccr >> 0) & 1;\
+@@ -319,6 +319,10 @@
+ 
+ 		  bit = thisnib;
+ 		}
++                else if (looking_for & (L_2 | IMM))
++		{
++		  plen = 1;
++                }  
+ 	      else if (looking_for == E)
+ 		{
+ 		  dst->op = q;
+@@ -443,7 +447,7 @@
+ 		  return;
+ 		}
+ 	      else
+-		printf ("Don't understand %x \n", looking_for);
++		printf ("Don't understand %x:%x \n", addr, looking_for);
+ 	    }
+ 
+ 	  len++;
+@@ -485,6 +489,8 @@
+   cpu.cache_idx[pc] = idx;
+ }
+ 
++extern int iosimulation(cpu_state_type *cpu,int cycles);
++extern void init_ioregs(cpu_state_type *cpu);
+ 
+ static unsigned char *breg[18];
+ static unsigned short *wreg[18];
+@@ -515,18 +521,33 @@
+   (x < memory_size ? (cpu.memory[x]) : (cpu.eightbit[x & 0xff]))
+ 
+ #define SET_MEMORY_L(x,y)  \
++if (x >= 0x100) \
+ {  register unsigned char *_p; register int __y = y; \
+    _p = (x < memory_size ? cpu.memory+x : cpu.eightbit + (x & 0xff)); \
+    _p[0] = (__y)>>24; _p[1] = (__y)>>16; \
+-   _p[2] = (__y)>>8; _p[3] = (__y)>>0;}
++   _p[2] = (__y)>>8; _p[3] = (__y)>>0;} \
++else \
++{ cpu.state = SIM_STATE_STOPPED; \
++  cpu.exception = SIGSEGV; \
++}
+ 
+ #define SET_MEMORY_W(x,y) \
++if (x >= 0x100) \
+ {  register unsigned char *_p; register int __y = y; \
+    _p = (x < memory_size ? cpu.memory+x : cpu.eightbit + (x & 0xff)); \
+-   _p[0] = (__y)>>8; _p[1] =(__y);}
++   _p[0] = (__y)>>8; _p[1] =(__y);} \
++else \
++{ cpu.state = SIM_STATE_STOPPED; \
++  cpu.exception = SIGSEGV; \
++}
+ 
+ #define SET_MEMORY_B(x,y) \
+-  (x < memory_size ? (cpu.memory[(x)] = y) : (cpu.eightbit[x & 0xff] = y))
++if (x >= 0x100) { \
++  (x < memory_size ? (cpu.memory[(x)] = y) : (cpu.eightbit[x & 0xff] = y)); \
++} else \
++{ cpu.state = SIM_STATE_STOPPED; \
++  cpu.exception = SIGSEGV; \
++}
+ 
+ int
+ fetch (arg, n)
+@@ -918,12 +939,13 @@
+   return 1;
+ }
+ 
++
+ void
+ sim_resume (sd, step, siggnal)
+      SIM_DESC sd;
+ {
+   static int init1;
+-  int cycles = 0;
++  static int cycles = 0;
+   int insts = 0;
+   int tick_start = get_now ();
+   void (*prev) ();
+@@ -936,6 +958,7 @@
+   int pc;
+   int c, nz, v, n;
+   int oldmask;
++  int vector;
+   init_pointers ();
+ 
+   prev = signal (SIGINT, control_c);
+@@ -994,6 +1017,15 @@
+ 
+ #endif
+ 
++      if ((vector=iosimulation(&cpu,cycles)) && !(cpu.ccr & 0x80)) 
++	{
++	  BUILDSR();
++          cpu.regs[7]-=4;
++          SET_MEMORY_L(cpu.regs[7],(cpu.ccr<<24)|pc);
++          pc=GET_MEMORY_L(vector*(h8300hmode?4:2));
++          cpu.ccr|=0x80;
++          goto top;
++        }
+       if (code->opcode)
+        {
+         cycles += code->cycles;
+@@ -1066,12 +1098,21 @@
+ 
+ 	case O (O_MOV_TO_MEM, SB):
+ 	  res = GET_B_REG (code->src.reg);
++	  if ( (code->dst.type == X (OP_DEC, SB)) &&
++	       (code->src.reg == code->dst.reg))
++	    res -= 1;
+ 	  goto log8;
+ 	case O (O_MOV_TO_MEM, SW):
+ 	  res = GET_W_REG (code->src.reg);
++	  if ( (code->dst.type == X (OP_DEC, SW)) &&
++	       (code->src.reg == code->dst.reg))
++	    res -= 2;
+ 	  goto log16;
+ 	case O (O_MOV_TO_MEM, SL):
+ 	  res = GET_L_REG (code->src.reg);
++	  if ( (code->dst.type == X (OP_DEC, SL)) &&
++	       (code->src.reg == code->dst.reg))
++	    res -= 4;
+ 	  goto log32;
+ 
+ 
+@@ -1355,6 +1396,7 @@
+ 	  cpu.state = SIM_STATE_STOPPED;
+ 	  cpu.exception = SIGILL;
+ 	  goto end;
++#if 0
+ 	case O (O_SLEEP, SN):
+ 	  /* FIXME: Doesn't this break for breakpoints when r0
+ 	     contains just the right (er, wrong) value?  */
+@@ -1368,6 +1410,29 @@
+ 	  else
+ 	    cpu.exception = SIGTRAP;
+ 	  goto end;
++#endif
++#define SIM_WIFEXITED(v) (((v) & 0xff) == 0)
++#define SIM_WIFSIGNALED(v) (((v) & 0x7f) > 0 && (((v) & 0x7f) < 0x7f))
++  	case O (O_SLEEP, SN):
++          if (cpu.ccr & 0x80)
++  	    {
++  	      cpu.state = SIM_STATE_STOPPED;
++              cpu.exception = SIGTRAP;
++            } else 
++	    while (cpu.state = SIM_STATE_RUNNING) {
++              if ((vector=iosimulation(&cpu,cycles)) && !(cpu.ccr & 0x80)) 
++	        {
++		  usleep(100);
++	          BUILDSR();
++                  cpu.regs[7]-=4;
++                  SET_MEMORY_L(cpu.regs[7],(cpu.ccr<<24)|pc+2);
++                  pc=GET_MEMORY_L(vector*(h8300hmode?4:2));
++                  cpu.ccr|=0x80;
++                  goto top;
++                }
++	      cycles++;
++ 	    }
++  	  goto end;
+ 	case O (O_BPT, SN):
+ 	  cpu.state = SIM_STATE_STOPPED;
+ 	  cpu.exception = SIGTRAP;
+@@ -1528,7 +1593,143 @@
+ 	      }
+ 	  }
+ 	  goto next;
+-
++	case O (O_LDC, SB):
++	  {
++	    switch(GET_MEMORY_B(pc)) {
++	    case 0x03:
++	      cpu.ccr = GET_B_REG(code->src.reg);
++	      break;
++	    case 0x07:
++	      cpu.ccr = code->src.literal;
++	      break;
++	    case 0x01:
++	      {
++		switch(GET_MEMORY_B(pc+2)) {
++		case 0x69:
++		  cpu.ccr = GET_MEMORY_W(GET_L_REG(code->dst.reg));
++		  break;
++		case 0x6f:
++		case 0x78:
++		  code->src.type=X(OP_DISP,SW);
++		  cpu.ccr = fetch (&code->src);
++		  break;
++		case 0x6d:
++		  code->src.type=X(OP_INC,SW);
++		  cpu.ccr = fetch (&code->src);
++		break;
++		case 0x6b:
++		  cpu.ccr = GET_MEMORY_W(code->src.literal);
++		  break;
++		}
++	      }
++	    }
++	    GETSR();
++	  }
++	  goto next;
++	case O (O_STC, SB):
++	  {
++	    BUILDSR();
++	    switch(GET_MEMORY_B(pc)) {
++	    case 0x02:
++	      SET_B_REG(code->dst.reg,cpu.ccr);
++	      break;
++	    case 0x01:
++	      switch(GET_MEMORY_B(pc+2)) {
++	      case 0x69:
++		SET_MEMORY_W(GET_L_REG(code->dst.reg),cpu.ccr);
++		break;
++	      case 0x6f:
++	      case 0x78:
++		code->dst.type=X(OP_DISP,SW);
++		store (&code->dst,cpu.ccr);
++		break;
++	      case 0x6d:
++		code->dst.type=X(OP_DEC,SW);
++		store (&code->dst,cpu.ccr);
++		break;
++	      case 0x6b:
++		SET_MEMORY_W(code->dst.literal,cpu.ccr);
++		break;
++	      }
++	    }	  
++	  }
++	  goto next;
++	case O (O_EEPMOV, SB):
++	  {
++            int cnt=GET_B_REG(4);
++	    if(cnt==0) cnt=0x100; 
++	    while(cnt!=0) {
++	      SET_MEMORY_B(cpu.regs[6],GET_MEMORY_B(cpu.regs[5]));
++	      cpu.regs[5]++;
++	      cpu.regs[6]++;
++	      --cnt;
++	    }
++	    SET_B_REG(4,cnt);
++	  }
++	  goto next;
++	case O (O_EEPMOV, SW):
++	  {
++            int cnt=GET_W_REG(4);
++	    if(cnt==0) cnt=0x10000; 
++	    while(cnt!=0) {
++	      SET_MEMORY_B(cpu.regs[6],GET_MEMORY_B(cpu.regs[5]));
++	      cpu.regs[5]++;
++	      cpu.regs[6]++;
++	      --cnt;
++	    }
++	    SET_W_REG(4,cnt);
++	  }
++	  goto next;
++	case O (O_RTE, SN):
++	  {
++            unsigned int frame;
++            frame  = GET_MEMORY_L (cpu.regs[7]);
++            cpu.ccr=frame>>24;
++            GETSR();
++            pc=frame & 0xffffff;
++	    cpu.regs[7]+=4;
++	  };
++          goto end;
++	case O (O_TRAPA, SB):
++	  {
++	    int v;
++	    v=GET_MEMORY_W(pc)>>4;
++            v&=3;
++ 	    BUILDSR();
++            cpu.regs[7]-=4;
++            SET_MEMORY_L(cpu.regs[7],(cpu.ccr<<24)|code->next_pc);
++            pc=GET_MEMORY_L(v*(h8300hmode?4:2)+0x08*(h8300hmode?4:2));
++            cpu.ccr|=0x80;
++          };
++          goto end;
++	case O (O_BKPT, SN):
++	  /* The format of r0 is defined by devo/include/wait.h.  */
++#if 0 /* FIXME: Ugh.  A breakpoint is the sleep insn.  */
++	  if (WIFEXITED (cpu.regs[0]))
++	    {
++	      cpu.state = SIM_STATE_EXITED;
++	      cpu.exception = WEXITSTATUS (cpu.regs[0]);
++	    }
++	  else if (WIFSTOPPED (cpu.regs[0]))
++	    {
++	      cpu.state = SIM_STATE_STOPPED;
++	      cpu.exception = WSTOPSIG (cpu.regs[0]);
++	    }
++	  else
++	    {
++	      cpu.state = SIM_STATE_SIGNALLED;
++	      cpu.exception = WTERMSIG (cpu.regs[0]);
++	    }
++#else
++	  /* FIXME: Doesn't this break for breakpoints when r0
++	     contains just the right (er, wrong) value?  */
++          cpu.state = SIM_STATE_STOPPED;
++	  if (! SIM_WIFEXITED (cpu.regs[0]) && SIM_WIFSIGNALED (cpu.regs[0]))
++	    cpu.exception = SIGILL;
++          else
++            cpu.exception = SIGTRAP;
++#endif
++	  goto end;
+ 	default:
+ 	  cpu.state = SIM_STATE_STOPPED;
+ 	  cpu.exception = SIGILL;
+@@ -2016,10 +2217,14 @@
+      char **argv;
+ {
+   /* FIXME: Much of the code in sim_load can be moved here.  */
++  char *ptyname;
+ 
+   sim_kind = kind;
+   myname = argv[0];
+   sim_callback = ptr;
++  if((ptyname=openpty())!=NULL) 
++    (*sim_callback->printf_filtered) (sim_callback,
++	  			      "SCI0 = %s\n",ptyname);
+   /* Fudge our descriptor.  */
+   return (SIM_DESC) 1;
+ }
+@@ -2030,6 +2235,7 @@
+      int quitting;
+ {
+   /* Nothing to do.  */
++  closepty();
+ }
+ 
+ /* Called by gdb to load a program into memory.  */
+@@ -2100,6 +2306,7 @@
+     abort ();
+   cpu.mask = memory_size - 1;
+ 
++  init_ioregs(&cpu);
+   if (sim_load_file (sd, myname, sim_callback, prog, prog_bfd,
+ 		     sim_kind == SIM_OPEN_DEBUG,
+ 		     0, sim_write)
+diff -Nru gdb-5.2.1/sim/h8300/inst.h gdb-5.2.1.h8sim/sim/h8300/inst.h
+--- gdb-5.2.1/sim/h8300/inst.h	Fri Apr 16 10:35:02 1999
++++ gdb-5.2.1.h8sim/sim/h8300/inst.h	Wed Sep 11 23:50:22 2002
+@@ -15,7 +15,7 @@
+    can only happen when simulating H8/300H programs).  We make no attempt
+    to catch overlapping addresses, wrapped addresses, etc etc.  */
+ #define H8300_MSIZE (1<<16)
+-#define H8300H_MSIZE (1<<18)
++#define H8300H_MSIZE (1<<24)
+ 
+ #define CSIZE 1000
+ 
+diff -Nru gdb-5.2.1/sim/h8300/io.c gdb-5.2.1.h8sim/sim/h8300/io.c
+--- gdb-5.2.1/sim/h8300/io.c	Thu Jan  1 09:00:00 1970
++++ gdb-5.2.1.h8sim/sim/h8300/io.c	Mon Sep 16 12:01:28 2002
+@@ -0,0 +1,272 @@
++/*
++ H8 simulator Internal Peripheral Support
++*/
++
++#include <unistd.h>
++#include <termios.h>
++#include <errno.h>
++#include <fcntl.h>
++#include <sys/time.h>
++
++#include "inst.h"
++
++#define SMR (cpu->memory[0xffffb0])
++#define BRR (cpu->memory[0xffffb1])
++#define SCR (cpu->memory[0xffffb2])
++#define TDR (cpu->memory[0xffffb3])
++#define SSR (cpu->memory[0xffffb4])
++#define RDR (cpu->memory[0xffffb5])
++
++#define TCR 0
++#define TCSR 2
++#define TCORA 4
++#define TCORB 6
++#define TCNT 8
++
++static int scifd=-1;
++static struct termios old_attr;
++static unsigned char ssr=0;
++static unsigned char tcsr[4]={0x00,0x00,0x00,0x00};
++static int prescale[3]={8,64,8192};
++const int base[4]={0xffff80,0xffff81,0xffff90,0xffff91};
++const int prescale_div[3]={8,64,8192};
++static unsigned int prev_cycle=0;
++
++static void
++timer8(cpu_state_type *cpu,int cycles)
++{
++  int tm,cnt,cyc,pcnt;
++  cyc=(unsigned int)cycles-prev_cycle;
++  prev_cycle=cycles;
++  for (pcnt = 0; pcnt < 3; pcnt++) {
++    prescale[pcnt] -= cyc;
++    if (prescale[pcnt]<=0) 
++    {
++      for(tm=0;tm<4;tm++) {
++	tcsr[tm] &= (cpu->memory[base[tm]+TCSR] & 0xe0);
++        if ((cpu->memory[base[tm]+TCR]&0x07) == (pcnt+1))
++          {
++            cnt=++cpu->memory[base[tm]+TCNT];
++            if (cnt>=0x100)
++              {
++                tcsr[tm]|=0x20;
++                cnt=0;
++              }
++            cpu->memory[base[tm]+TCNT]=cnt;
++          }
++	if (cpu->memory[base[tm]+TCNT] >= cpu->memory[base[tm]+TCORA])
++	  {
++	    tcsr[tm]|=0x40;
++	    if ((cpu->memory[base[tm]+TCR]&0x18) == 0x08)
++	      cpu->memory[base[tm]+TCNT] = 0;
++	  }
++	if (cpu->memory[base[tm]+TCNT] >= cpu->memory[base[tm]+TCORB])
++	  {
++	    tcsr[tm]|=0x80;
++	    if ((cpu->memory[base[tm]+TCR]&0x18) == 0x10)
++	      cpu->memory[base[tm]+TCNT] = 0;
++	  }
++	cpu->memory[base[tm]+TCSR] &= 0x1f;
++	cpu->memory[base[tm]+TCSR] |= (tcsr[tm] & 0xe0);
++      }
++      prescale[pcnt]+=prescale_div[pcnt];
++    }
++  }
++}
++
++static unsigned int complete_time(cpu_state_type *cpu,int cycles)
++{
++	int length;
++	int div[]={1,4,16,64};
++	length=(SMR & 0x40)?7:8;
++	length+=(SMR & 0x20)?1:0;
++	length+=(SMR & 0x08)?1:0;
++	length+=2;
++	return length*32*div[SMR & 0x03]*BRR+cycles;
++}
++
++static void send_data(int txd)
++{
++	char dt;
++	dt=txd;
++	write(scifd,&dt,1);
++	fsync(scifd);
++}
++
++static int rcv_data(int *rxd)
++{
++	char rd;
++	if(read(scifd,&rd,1)>0) {
++		*rxd=rd;
++		return 1;
++	} else
++		return 0;
++}
++
++static int sci(cpu_state_type *cpu,int cycles)
++{
++	static int tx_end_time=0;
++	static int rx_end_time=0;
++	static int data=-1;
++	ssr &= SSR;
++	if((SCR & 0x20) && !(ssr & 0x80)) {
++		send_data(TDR);
++		ssr |= 0x80;
++		tx_end_time=complete_time(cpu,cycles);
++	}
++	if ((data == -1) && !rcv_data(&data))
++		data = -1;
++	if((data != -1) && (SCR & 0x10) && ((rx_end_time==0) || (rx_end_time-cycles)<0)) {
++		if(ssr & 0x40) {
++			ssr |= 0x20;
++		} else {
++			RDR=data;
++			ssr |= 0x40;
++			data=-1;
++		}
++		rx_end_time=complete_time(cpu,cycles);
++	}
++	if((tx_end_time>0) && (tx_end_time-cycles)<0) {
++		if(ssr & 0x80) {
++			ssr |= 0x04;
++		}
++	}
++	SSR = ssr;
++}
++
++static int 
++intcont(cpu_state_type *cpu)
++{
++  struct INT_LIST {
++    int vector;
++    int isr_adr;
++    unsigned char isr_mask;
++    int ier_adr;
++    unsigned char ier_mask;
++  } int_table[]= {
++    {36,0xffff82,0x40,0xffff80,0x40},
++    {37,0xffff82,0x80,0xffff80,0x80},
++    {38,0xffff83,0x40,0xffff81,0x40},
++    {38,0xffff83,0x80,0xffff81,0x40},
++    {39,0xffff82,0x20,0xffff80,0x20},
++    {39,0xffff83,0x20,0xffff81,0x20},
++    {40,0xffff92,0x40,0xffff90,0x40},
++    {41,0xffff92,0x80,0xffff90,0x80},
++    {42,0xffff93,0x40,0xffff91,0x40},
++    {42,0xffff93,0x80,0xffff91,0x40},
++    {43,0xffff92,0x20,0xffff90,0x20},
++    {43,0xffff93,0x20,0xffff91,0x20},
++    {52,0xffffb4,0x38,0xffffb2,0x40},
++    {53,0xffffb4,0x40,0xffffb2,0x40},
++    {54,0xffffb4,0x80,0xffffb2,0x80},
++    {55,0xffffb4,0x04,0xffffb2,0x04}
++  };
++  int irqno;
++  for (irqno=0;irqno<sizeof(int_table)/sizeof(struct INT_LIST);irqno++)
++    {
++      if(cpu->memory[int_table[irqno].ier_adr]&int_table[irqno].ier_mask)
++        if(cpu->memory[int_table[irqno].isr_adr]&int_table[irqno].isr_mask)
++          return int_table[irqno].vector;
++    }
++  return 0;
++}
++
++int 
++iosimulation(cpu_state_type *cpu,int cycles)
++{
++  timer8(cpu,cycles);
++  sci(cpu,cycles);
++  return intcont(cpu);
++}
++
++void init_ioregs(cpu_state_type *cpu)
++{
++  struct INITTABLE {
++    int addr;
++    short data;
++  } reg_ini[] = {
++    0xffff80,0x00,
++    0xffff81,0x00,
++    0xffff82,0x00,
++    0xffff83,0x00,
++    0xffff84,0xff,
++    0xffff85,0xff,
++    0xffff86,0xff,
++    0xffff87,0xff,
++    0xffff88,0x00,
++    0xffff89,0x00,
++    0xffff90,0x00,
++    0xffff91,0x00,
++    0xffff92,0x00,
++    0xffff93,0x00,
++    0xffff94,0xff,
++    0xffff95,0xff,
++    0xffff96,0xff,
++    0xffff97,0xff,
++    0xffff98,0x00,
++    0xffff99,0x00,
++    0xffffb0,0x00,
++    0xffffb1,0xff,
++    0xffffb2,0x00,
++    0xffffb3,0xff,
++    0xffffb4,0x84,
++    0xffffb8,0x00,
++    0xffffb9,0xff,
++    0xffffba,0x00,
++    0xffffbb,0xff,
++    0xffffbc,0x84,
++    0xffffc0,0x00,
++    0xffffc1,0xff,
++    0xffffc2,0x00,
++    0xffffc3,0xff,
++    0xffffc4,0x84,
++  };
++  int c;
++  for(c=0;c<sizeof(reg_ini)/sizeof(struct INITTABLE);c++)
++    cpu->memory[reg_ini[c].addr]=reg_ini[c].data;
++  ssr = 0x84;
++}
++
++char *openpty(void)
++{
++	const char nm[]="0123456789ABCDEF";
++	static char ptyname[16];
++	int c1,c2,fd;
++	struct termios attr;
++	fd = open("/dev/ptmx",O_RDWR|O_NONBLOCK);
++	if(fd >= 0) {
++		grantpt(fd);
++		unlockpt(fd);
++		strncpy(ptyname,ptsname(fd),sizeof(ptyname)-1);
++		ptyname[sizeof(ptyname)-1]='\0';
++	} else {
++		for(c1='a';c1<='z';c1++)
++			for(c2=0;c2<sizeof(nm)-1;c2++) {
++				sprintf(ptyname,"/dev/pty%c%c",c1,nm[c2]);
++				fd=open(ptyname,O_RDWR|O_NONBLOCK);
++				if(fd != -1)
++					break ;
++			}
++		ptyname[5]='t';
++	}
++	if (fd >= 0) {
++		scifd=fd;
++		tcgetattr(scifd,&attr);
++		memcpy(&old_attr,&attr,sizeof(struct termios));
++		attr.c_lflag&=~ICANON;
++		attr.c_cc[VMIN]=0;
++		attr.c_cc[VTIME]=0;
++		tcsetattr(scifd,TCSAFLUSH,&attr);
++		return ptyname;
++	} else
++		return NULL;
++}
++
++void closepty(void)
++{
++	struct termios attr;
++	if(scifd!=-1) {
++		tcsetattr(scifd,TCSAFLUSH,&old_attr);
++		close(scifd);
++	}
++}
