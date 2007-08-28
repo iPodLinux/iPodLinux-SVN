@@ -1,4 +1,0 @@
-hostname ipod
-mount -t proc proc /proc
-cat /etc/motd
-ifconfig eth0 192.10.1.2
