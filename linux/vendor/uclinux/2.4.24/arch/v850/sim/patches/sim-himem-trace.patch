@@ -1,0 +1,113 @@
+diff -up sim/v850/sim-main.h.\~5\~ sim/v850/sim-main.h
+--- sim/v850/sim-main.h.~5~	Fri Sep  7 13:56:29 2001
++++ sim/v850/sim-main.h	Tue Sep 18 16:06:02 2001
+@@ -208,6 +208,14 @@ extern address_word sim_lomem_write_prot
+ 			    address_word addr, unsigned len,
+ 			    sim_cia cia, int is_write);
+ 
++/* Boundary above which writes are traced.  */
++extern address_word sim_himem_trace_boundary;
++/* Called to trace loads/stores to memory above sim_himem_trace_boundary.  */
++extern void sim_trace_himem_fw (SIM_DESC sd, sim_cpu *cpu,
++				address_word addr, unsigned len,
++				unsigned long val,
++				sim_cia cia, int is_write);
++
+ #define load_mem(ADDR,LEN)						      \
+   ({									      \
+     address_word _addr = (ADDR);					      \
+@@ -229,6 +237,8 @@ extern void sim_lomem_falt (SIM_DESC sd,
+     sim_cpu *cpu = STATE_CPU (sd, 0);					      \
+     if (_addr < sim_lomem_write_protect_boundary)			      \
+       sim_lomem_fault (sd, cpu, _addr, LEN, PC, 1);			      \
++    else if (_addr > sim_himem_trace_boundary)				      \
++      sim_trace_himem_rw (sd, cpu, _addr, LEN, (unsigned long)_data, PC, 1);  \
+     else								      \
+       sim_core_write_unaligned_##LEN (cpu, PC, write_map, _addr, _data);      \
+   })
+diff -up sim/v850/interp.c.\~5\~ sim/v850/interp.c
+--- sim/v850/interp.c.~5~	Fri Sep  7 14:33:22 2001
++++ sim/v850/interp.c	Tue Sep 18 16:09:22 2001
+@@ -32,6 +32,13 @@ static const char * get_insn_name (sim_c
+ SIM_DESC simulator;
+ 
+ 
++#define stringify(sym)		stringify_1(sym)
++#define stringify_1(sym)	#sym
++
++
++#define IO_MEM_BOUNDARY 0xFFFFF000
++
++
+ 
+ /* Options.  */
+ 
+@@ -39,7 +46,8 @@ enum {
+   OPTION_V850_RECENT_BRANCHES = OPTION_START,
+   OPTION_V850_READ_PROTECT_LOMEM,
+   OPTION_V850_WRITE_PROTECT_LOMEM,
+-  OPTION_V850_PROTECTED_LOMEM_INFO
++  OPTION_V850_PROTECTED_LOMEM_INFO,
++  OPTION_V850_TRACE_IO_WRITES
+ };
+ 
+ static DECLARE_OPTION_HANDLER (v850_option_handler);
+@@ -61,6 +69,11 @@ static const OPTION v850_options[] =
+      OPTION_V850_PROTECTED_LOMEM_INFO },
+     '\0', NULL, "Show which low-memory addresses are protected from reading/writing",
+     v850_option_handler },
++  { {"trace-io-writes", required_argument, NULL,
++     OPTION_V850_TRACE_IO_WRITES },
++    '\0', "on|off",
++    "Trace writes to I/O memory (above " stringify(IO_MEM_BOUNDARY) ")",
++    v850_option_handler },
+   { {NULL, no_argument, NULL, 0}, '\0', NULL, NULL, NULL }
+ };
+ 
+@@ -113,6 +126,20 @@ v850_option_handler (SIM_DESC sd, sim_cp
+       }
+       return SIM_RC_OK;
+ 
++    case OPTION_V850_TRACE_IO_WRITES:
++      {
++	if (strcmp (arg, "on") == 0 || strcmp (arg, "yes") == 0)
++	  sim_himem_trace_boundary = IO_MEM_BOUNDARY;
++	else if (strcmp (arg, "off") == 0 || strcmp (arg, "no") == 0)
++	  sim_himem_trace_boundary = 0xFFFFFFF;
++	else
++	  {
++	    sim_io_eprintf (sd, "Invalid argument `%s'\n", arg);
++	    return SIM_RC_FAIL;
++	  }	  
++      }
++      return SIM_RC_OK;
++
+     default:
+       sim_io_eprintf (sd, "Unknown v850 option %d\n", opt);
+       return SIM_RC_FAIL;
+@@ -527,4 +554,25 @@ address_word sim_lomem_read_protect_boun
+ 	  "core: %d byte %s protected low memory address 0x%lx at 0x%lx\n",
+ 		  len, is_write ? "write to" : "read from", addr, cia);
+   sim_engine_halt (sd, cpu, NULL, cia, sim_stopped, SIM_SIGSEGV);
++}
++
++/* Boundary above which writes are traced.  */
++address_word sim_himem_trace_boundary;
++
++/* Called to trace loads/stores to memory above sim_himem_trace_boundary.  */
++void
++sim_trace_himem_rw (SIM_DESC sd, sim_cpu *cpu,
++		    address_word addr, unsigned len, unsigned long val,
++		    sim_cia cia, int is_write)
++{
++  const char *v = is_write ? "write" : "read";
++  const char *p = is_write ? "to" : "from";
++  if (len == 1 && isascii (val) && isprint ((char)val))
++    sim_io_printf (sd,
++		   "core: %d byte %s at 0x%lx %s high memory address 0x%lx: 0x%02lx ('%c')\n",
++		   len, v, cia, p, addr, val, (char)val);
++  else
++    sim_io_printf (sd,
++		   "core: %d byte %s at 0x%lx %s high memory address 0x%lx: 0x%0*lx (%ld)\n",
++		   len, v, cia, p, addr, len * 2, val, val);
+ }

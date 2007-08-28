@@ -1,0 +1,226 @@
+#
+# Automatically generated make config: don't edit
+#
+CONFIG_ARM=y
+# CONFIG_SBUS is not set
+CONFIG_UID16=y
+CONFIG_UCLINUX=y
+MAGIC_ROM_PTR=y
+
+#
+# Code maturity level options
+#
+# CONFIG_EXPERIMENTAL is not set
+# CONFIG_OBSOLETE is not set
+
+#
+# Loadable module support
+#
+# CONFIG_MODULES is not set
+
+#
+# System Type
+#
+CONFIG_ARCH_DSC21=y
+CONFIG_CPU_ARM710=y
+CONFIG_CPU_32=y
+# CONFIG_CPU_26 is not set
+CONFIG_NO_PGT_CACHE=y
+DRAM_BASE=0x08000000
+DRAM_SIZE=0x01000000
+FLASH_MEM_BASE=0x02000000
+FLASH_SIZE=0x00200000
+# CONFIG_ARCH_ATMEL is not set
+CONFIG_DUMMY_CONSOLE=y
+
+#
+# General setup
+#
+# CONFIG_HOTPLUG is not set
+# CONFIG_PCMCIA is not set
+# CONFIG_NET is not set
+# CONFIG_SYSVIPC is not set
+# CONFIG_REDUCED_MEMORY is not set
+# CONFIG_BSD_PROCESS_ACCT is not set
+# CONFIG_SYSCTL is not set
+# CONFIG_NWFPE is not set
+CONFIG_KCORE_ELF=y
+# CONFIG_KCORE_AOUT is not set
+CONFIG_BINFMT_FLAT=y
+CONFIG_KERNEL_ELF=y
+# CONFIG_ARTHUR is not set
+# CONFIG_ALIGNMENT_TRAP is not set
+
+#
+# ATA/IDE/MFM/RLL support
+#
+# CONFIG_IDE is not set
+# CONFIG_BLK_DEV_IDE_MODES is not set
+# CONFIG_BLK_DEV_HD is not set
+
+#
+# SCSI support
+#
+# CONFIG_SCSI is not set
+
+#
+# ISDN subsystem
+#
+# CONFIG_ISDN is not set
+
+#
+# Parallel port support
+#
+# CONFIG_PARPORT is not set
+
+#
+# Memory Technology Devices (MTD)
+#
+# CONFIG_MTD is not set
+
+#
+# Plug and Play configuration
+#
+# CONFIG_PNP is not set
+
+#
+# Block devices
+#
+# CONFIG_BLK_DEV_FD is not set
+# CONFIG_BLK_DEV_XD is not set
+# CONFIG_BLK_CPQ_DA is not set
+# CONFIG_BLK_CPQ_CISS_DA is not set
+# CONFIG_BLK_DEV_DAC960 is not set
+CONFIG_BLK_DEV_LOOP=y
+CONFIG_BLK_DEV_RAM=y
+CONFIG_BLK_DEV_RAM_SIZE=4096
+# CONFIG_BLK_DEV_INITRD is not set
+CONFIG_BLK_DEV_BLKMEM=y
+
+#
+# File systems
+#
+# CONFIG_QUOTA is not set
+# CONFIG_AUTOFS_FS is not set
+# CONFIG_AUTOFS4_FS is not set
+# CONFIG_FAT_FS is not set
+# CONFIG_CRAMFS is not set
+# CONFIG_RAMFS is not set
+# CONFIG_ISO9660_FS is not set
+# CONFIG_MINIX_FS is not set
+# CONFIG_NTFS_FS is not set
+# CONFIG_HPFS_FS is not set
+# CONFIG_PROC_FS is not set
+# CONFIG_DEVPTS_FS is not set
+CONFIG_ROMFS_FS=y
+CONFIG_EXT2_FS=y
+# CONFIG_SYSV_FS is not set
+# CONFIG_UDF_FS is not set
+# CONFIG_UFS_FS is not set
+# CONFIG_NCPFS_NLS is not set
+# CONFIG_SMB_FS is not set
+
+#
+# Partition Types
+#
+CONFIG_PARTITION_ADVANCED=y
+CONFIG_ACORN_PARTITION=y
+# CONFIG_ACORN_PARTITION_ICS is not set
+CONFIG_ACORN_PARTITION_ADFS=y
+# CONFIG_ACORN_PARTITION_POWERTEC is not set
+# CONFIG_ACORN_PARTITION_RISCIX is not set
+# CONFIG_OSF_PARTITION is not set
+# CONFIG_AMIGA_PARTITION is not set
+# CONFIG_ATARI_PARTITION is not set
+# CONFIG_MAC_PARTITION is not set
+CONFIG_MSDOS_PARTITION=y
+# CONFIG_BSD_DISKLABEL is not set
+# CONFIG_SOLARIS_X86_PARTITION is not set
+# CONFIG_UNIXWARE_DISKLABEL is not set
+# CONFIG_SGI_PARTITION is not set
+# CONFIG_ULTRIX_PARTITION is not set
+# CONFIG_SUN_PARTITION is not set
+# CONFIG_SMB_NLS is not set
+# CONFIG_NLS is not set
+
+#
+# Character devices
+#
+# CONFIG_LEDMAN is not set
+# CONFIG_VT is not set
+# CONFIG_SERIAL is not set
+# CONFIG_SERIAL_NONSTANDARD is not set
+CONFIG_SERIAL_DSC21=y
+CONFIG_SERIAL_DSC21_CONSOLE=y
+CONFIG_UNIX98_PTYS=y
+CONFIG_UNIX98_PTY_COUNT=256
+
+#
+# I2C support
+#
+# CONFIG_I2C is not set
+
+#
+# Mice
+#
+# CONFIG_BUSMOUSE is not set
+CONFIG_MOUSE=y
+CONFIG_PSMOUSE=y
+# CONFIG_82C710_MOUSE is not set
+# CONFIG_PC110_PAD is not set
+
+#
+# Joysticks
+#
+# CONFIG_JOYSTICK is not set
+
+#
+# Input core support is needed for joysticks
+#
+# CONFIG_QIC02_TAPE is not set
+
+#
+# Watchdog Cards
+#
+CONFIG_WATCHDOG=y
+# CONFIG_WATCHDOG_NOWAYOUT is not set
+CONFIG_SOFT_WATCHDOG=y
+# CONFIG_WDT is not set
+# CONFIG_WDTPCI is not set
+# CONFIG_PCWATCHDOG is not set
+# CONFIG_ACQUIRE_WDT is not set
+# CONFIG_60XX_WDT is not set
+# CONFIG_MIXCOMWD is not set
+# CONFIG_I810_TCO is not set
+# CONFIG_INTEL_RNG is not set
+# CONFIG_NVRAM is not set
+# CONFIG_RTC is not set
+# CONFIG_DTLK is not set
+# CONFIG_R3964 is not set
+# CONFIG_APPLICOM is not set
+
+#
+# Ftape, the floppy tape device driver
+#
+# CONFIG_FTAPE is not set
+# CONFIG_AGP is not set
+# CONFIG_DRM is not set
+
+#
+# USB support
+#
+# CONFIG_USB is not set
+
+#
+# I2O device support
+#
+# CONFIG_I2O is not set
+
+#
+# Kernel hacking
+#
+CONFIG_FRAME_POINTER=y
+# CONFIG_REVISIT is not set
+CONFIG_DEBUG_ERRORS=y
+CONFIG_DEBUG_USER=y
+# CONFIG_DEBUG_INFO is not set

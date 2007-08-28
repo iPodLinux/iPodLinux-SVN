@@ -1,0 +1,5 @@
+ks8695_main.o: ks8695_main.c ks8695_drv.h ks8695_kcompat.h \
+ ks8695_chipdef.h platform.h ks8695_fxhw.h
+ks8695_fxhw.o: ks8695_fxhw.c ks8695_drv.h ks8695_kcompat.h \
+ ks8695_chipdef.h platform.h ks8695_fxhw.h
+ks8695_cache.o: ks8695_drv.h ks8695_cache.h
