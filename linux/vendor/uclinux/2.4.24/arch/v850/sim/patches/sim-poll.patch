@@ -1,0 +1,105 @@
+sim/v850/ChangeLog:
+2001-09-03  Miles Bader  <miles@gnu.org>
+
+	* simops.c (OP_10007E0): Add handling of `poll' system call.
+	* configure.in (AC_CHECK_FUNCS): Add `poll'.
+	(AC_CHECK_HEADERS): Add `poll.h'.
+
+libgloss/ChangeLog:
+2001-09-03  Miles Bader  <miles@gnu.org>
+
+	* v850/sys/syscall.h (SYS_poll): New syscall.
+
+diff -up sim/v850/simops.c.\~3\~ sim/v850/simops.c
+--- sim/v850/simops.c.~3~	Mon Aug 27 17:34:08 2001
++++ sim/v850/simops.c	Mon Sep  3 15:50:09 2001
+@@ -22,6 +22,10 @@
+ #endif
+ #endif
+ 
++#ifdef HAVE_POLL_H
++#include <poll.h>
++#endif
++
+ #include "targ-vals.h"
+ 
+ #include "libiberty.h"
+@@ -1773,6 +1777,44 @@ OP_10007E0 ()
+ 	    store_mem (buf + 20, 4, host_stat.st_atime);
+ 	    store_mem (buf + 28, 4, host_stat.st_mtime);
+ 	    store_mem (buf + 36, 4, host_stat.st_ctime);
++	  }
++	  break;
++#endif
++#endif
++
++#ifdef HAVE_POLL
++#ifdef TARGET_SYS_poll
++	case TARGET_SYS_poll:
++	  {
++	    reg_t sfds;
++	    int fd, nevents;
++	    int nfds = PARM2;
++	    int fds_len = nfds * sizeof (struct pollfd);
++	    struct pollfd *fds = zalloc (fds_len);
++
++	    /* Copy the fd structures from sim memory to real memory. */
++	    for (fd = 0, sfds = PARM1; fd < nfds; fd++, sfds += 8)
++	      {
++		fds[fd].fd = load_mem (sfds, 4);
++		fds[fd].events = load_mem (sfds + 4, 2);
++		fds[fd].revents = load_mem (sfds + 6, 2);
++	      }
++
++	    nevents = poll (fds, nfds, PARM3);
++	    RETVAL = nevents;
++
++	    for (fd = 0, sfds = PARM1;
++		 fd < nfds && nevents > 0;
++		 fd++, sfds += 8)
++	      {
++		if (fds[fd].revents)
++		  {
++		    store_mem (sfds + 6, 2, fds[fd].revents);
++		    nevents--;
++		  }
++	      }
++
++	    zfree (fds);
+ 	  }
+ 	  break;
+ #endif
+diff -up sim/v850/configure.in.\~1\~ sim/v850/configure.in
+--- sim/v850/configure.in.~1~	Mon Mar 26 13:20:00 2001
++++ sim/v850/configure.in	Mon Sep  3 13:54:13 2001
+@@ -12,7 +12,7 @@ SIM_AC_OPTION_WARNINGS
+ SIM_AC_OPTION_RESERVED_BITS
+ SIM_AC_OPTION_BITSIZE(32,31)
+ 
+-AC_CHECK_FUNCS(time chmod utime fork execve execv chown)
+-AC_CHECK_HEADERS(unistd.h stdlib.h string.h strings.h utime.h time.h)
++AC_CHECK_FUNCS(time chmod utime fork execve execv chown poll)
++AC_CHECK_HEADERS(unistd.h stdlib.h string.h strings.h utime.h time.h poll.h)
+ 
+ SIM_AC_OUTPUT
+diff -up libgloss/v850/sys/syscall.h.\~1\~ libgloss/v850/sys/syscall.h
+--- libgloss/v850/sys/syscall.h.~1~	Thu Oct  5 19:59:59 2000
++++ libgloss/v850/sys/syscall.h	Mon Sep  3 16:05:02 2001
+@@ -25,14 +25,14 @@
+ #define SYS_fstat       22
+ #define SYS_time        23
+ 
+-
+ #define SYS_ARG         24
+-#define SYS_stat        38
+ 
++#define SYS_stat        38
++#define SYS_poll	29
+ 
+ #define SYS_pipe        42
+ #define SYS_execve      59
+-#define   SYS_times       43
++#define SYS_times       43
+ #define SYS_gettimeofday 116
+ 
+ #define SYS_utime       201 /* not really a system call */

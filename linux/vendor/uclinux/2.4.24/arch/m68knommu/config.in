@@ -1,0 +1,597 @@
+#############################################################################
+#
+# For a description of the syntax of this configuration file,
+# see Documentation/kbuild/config-language.txt.
+#
+# based mainly on the arch/i386/config.in and bit of the 2.0, m68knommu
+# config.in
+#
+#############################################################################
+
+mainmenu_name 'uClinux/68k (w/o MMU) Kernel Configuration'
+
+define_bool CONFIG_UCLINUX y
+define_bool CONFIG_UID16 y
+define_bool CONFIG_RWSEM_GENERIC_SPINLOCK y
+define_bool CONFIG_RWSEM_XCHGADD_ALGORITHM n
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'Code maturity level options'
+bool 'Prompt for development and/or incomplete code/drivers' CONFIG_EXPERIMENTAL
+endmenu
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'Loadable module support'
+bool 'Enable loadable module support' CONFIG_MODULES
+if [ "$CONFIG_MODULES" = "y" ]; then
+   bool '  Set version information on all module symbols' CONFIG_MODVERSIONS
+   bool '  Kernel module loader' CONFIG_KMOD
+fi
+endmenu
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'Processor type and features'
+
+choice 'CPU' \
+	"MC68000	CONFIG_M68000 \
+	 MC68EN302	CONFIG_M68EN302 \
+	 MC68328	CONFIG_M68328 \
+         MC68EZ328	CONFIG_M68EZ328 \
+	 MC68VZ328	CONFIG_M68VZ328 \
+	 MC68332	CONFIG_M68332 \
+	 MC68360	CONFIG_M68360 \
+	 MCF5204	CONFIG_M5204 \
+	 MCF5206	CONFIG_M5206 \
+         MCF5206e	CONFIG_M5206e \
+	 MCF5249	CONFIG_M5249 \
+	 MCF5272	CONFIG_M5272 \
+	 MCF5280	CONFIG_M5280 \
+	 MCF5282	CONFIG_M5282 \
+         MCF5307	CONFIG_M5307 \
+	 MCF5407	CONFIG_M5407" M68EZ328
+
+if [ "$CONFIG_M5204" = "y" -o \
+     "$CONFIG_M5206" = "y" -o \
+     "$CONFIG_M5206e" = "y" -o \
+     "$CONFIG_M5249" = "y" -o \
+     "$CONFIG_M5272" = "y" -o \
+     "$CONFIG_M5280" = "y" -o \
+     "$CONFIG_M5282" = "y" -o \
+     "$CONFIG_M5307" = "y" -o \
+     "$CONFIG_M5407" = "y" ]; then
+	define_bool CONFIG_COLDFIRE y
+fi
+if [ "$CONFIG_M68360" = "y" ]; then
+	define_bool CONFIG_360QUICC y
+fi
+
+choice 'CPU CLOCK Frequency' \
+	" AUTO	CONFIG_CLOCK_AUTO \
+	 11MHz	CONFIG_CLOCK_11MHz \
+	 16MHz	CONFIG_CLOCK_16MHz \
+	 20MHz	CONFIG_CLOCK_20MHz \
+	 24MHz	CONFIG_CLOCK_24MHz \
+	 25MHz	CONFIG_CLOCK_25MHz \
+	 33MHz	CONFIG_CLOCK_33MHz \
+	 40MHz	CONFIG_CLOCK_40MHz \
+	 45MHz	CONFIG_CLOCK_45MHz \
+	 48MHz	CONFIG_CLOCK_48MHz \
+	 50MHz	CONFIG_CLOCK_50MHz \
+	 54MHz	CONFIG_CLOCK_54MHz \
+	 60MHz	CONFIG_CLOCK_60MHz \
+	 64MHz	CONFIG_CLOCK_64MHz \
+	 66MHz	CONFIG_CLOCK_66MHz \
+	 70MHz	CONFIG_CLOCK_70MHz \
+	 140MHz	CONFIG_CLOCK_140MHz" AUTO
+
+if [ "$CONFIG_M5307" = "y" ]; then
+	bool 'Old mask 5307 (1H55J) silicon' CONFIG_OLDMASK
+fi
+
+comment 'Platform'
+
+if [ "$CONFIG_M68328" = "y" -o \
+     "$CONFIG_M68EZ328" = "y" -o \
+     "$CONFIG_M68VZ328" = "y" ]; then
+	bool 'Simulate vectorized exceptions (debugging user apps on 68000)' CONFIG_PSEUDO_EXCEPTION_VECTOR
+fi
+
+if [ "$CONFIG_M68328" = "y" ]; then
+	bool 'Pilot 1000/5000, PalmPilot Personal/Pro, or PalmIII support' CONFIG_PILOT3
+	if [ "$CONFIG_PILOT3" = "y" ]; then
+		bool '  (X)Copilot support' CONFIG_XCOPILOT_BUGS
+		bool '  Compile kernel as ELF - if your GCC is ELF-GCC' CONFIG_KERNEL_ELF
+		bool '  Display memory usage on Pilot screen' CONFIG_PILOT_MEMORY_DISPLAY
+		bool '  Pilot console' CONFIG_PILOT_CONSOLE
+	fi
+fi
+
+if [ "$CONFIG_M68EZ328" = "y" ]; then
+	bool 'Motorola M68EZ328ADS board support' CONFIG_M68EZ328ADS
+	bool 'ALMA Electronics board support' CONFIG_ALMA_ANS
+	bool 'uCsimm module support' CONFIG_UCSIMM
+	if [ "CONFIG_UCSIMM" = "y" ]; then
+		define_bool CONFIG_UCBOOTSTRAP y
+		bool '  Use uCbootstrap system calls' CONFIG_UCBOOTSTRAP
+	fi
+	bool 'Cwlinux cwez328 support' CONFIG_CWEZ328
+	bool 'PalmV support' CONFIG_PILOT5
+	bool 'Use RTC as system timer' CONFIG_M68EZ328_USE_RTC
+fi
+
+if [ "$CONFIG_M68VZ328" = "y" ]; then
+	bool 'uCdimm module support' CONFIG_UCDIMM
+	if [ "$CONFIG_UCDIMM" = "y" ]; then
+		define_bool CONFIG_UCBOOTSTRAP y
+		bool '  Use uCbootstrap system calls' CONFIG_UCBOOTSTRAP
+		bool '  RAM Kernel loads itself from ROM' CONFIG_RELOCATE
+	fi
+	bool 'DragonEngine II board support' CONFIG_DRAGEN2
+	bool 'Dragonix VZ' CONFIG_DRAGONIXVZ
+	bool 'Cwlinux cwvz328 support' CONFIG_CWVZ328
+	if [ "$CONFIG_CWVZ328" = "y" ]; then
+	bool '  2 waitstates for flash' CONFIG_FLASH2WS
+	fi
+fi
+
+if [ "$CONFIG_UCSIMM" = "y" -o "$CONFIG_UCDIMM" = "y" -o "$CONFIG_DRAGEN2" = "y" ]; then
+	bool '  Allow user to access IO directly' CONFIG_DIRECT_IO_ACCESS
+fi
+
+if [ "$CONFIG_UCSIMM" = "y" -o "$CONFIG_UCDIMM" = "y" -o "$CONFIG_DRAGEN2" = "y" -o "$CONFIG_DRAGONIXVZ" = "y" ]; then
+	bool '  Initialize LCD' CONFIG_INIT_LCD
+fi
+
+if [ "$CONFIG_UCSIMM" = "y" -o "$CONFIG_UCDIMM" = "y" -o "$CONFIG_DRAGEN2" = "y" ]; then
+	int '  Memory reservation (MB)' CONFIG_MEMORY_RESERVE 0
+fi
+
+if [ "$CONFIG_UCDIMM" = "y" -o "$CONFIG_DRAGONIXVZ" = "y" ]; then
+	bool '  Use 128HZ RTC scheduler instead of 100HZ timer1' CONFIG_DRAGONBALL_USE_RTC
+fi
+
+if [ "$CONFIG_DRAGONIXVZ" = "y" ]; then
+	bool 'Enable JTAG-FPGA programmer' CONFIG_DRAGONIXVZ_JTAGFPGA
+	if [ "$CONFIG_DRAGONIXVZ_JTAGFPGA" = "y" ]; then
+	choice 'FPGA type' \
+		"EP1K30	CONFIG_FPGA1K30 \
+		EP1K50	CONFIG_FPGA1K50" EP1K30
+	fi
+	bool '2 waitstates for flash' CONFIG_FLASH2WS
+fi
+
+if [ "$CONFIG_M68EN302" = "y" ]; then
+	bool 'Aplio Pro' CONFIG_APLIO_PRO
+	bool 'Aplio Entrecote' CONFIG_APLIO_ENTRECOTE
+fi
+
+if [ "$CONFIG_M68332" = "y" ]; then
+	bool 'SHGLCore support' CONFIG_SHGLCORE
+	if [ "$CONFIG_SHGLCORE" = "y" ]; then
+		bool '  2Meg SHGLCore' CONFIG_SHGLCORE_2MEG
+	fi
+fi
+
+if [ "$CONFIG_M68360" = "y" ]; then
+	bool 'Arcturus uCquicc board support' CONFIG_UCQUICC
+	if [ "$CONFIG_UCQUICC" = "y" ]; then
+		define_bool CONFIG_UCBOOTSTRAP y
+		bool '  Use uCbootstrap system calls' CONFIG_UCBOOTSTRAP
+	fi
+fi
+
+if [ "$CONFIG_M5206" = "y" ]; then
+	bool 'Arnewsh 5206 board support' CONFIG_ARN5206
+fi
+
+if [ "$CONFIG_M5206e" = "y" ]; then
+	bool 'Motorola M5206eC3 board support' CONFIG_M5206eC3
+	bool 'Motorola eLITE-5206e board support' CONFIG_ELITE
+	if [ "$CONFIG_ELITE" = "y" ]; then
+		bool '  SRAM only eLITE-5206e support' CONFIG_SMALL
+	fi
+	bool 'Telos Omnia ToolVox board support' CONFIG_TELOS
+        bool 'Netburner CFV2-40 board support' CONFIG_CFV240
+fi
+
+if [ "$CONFIG_M5249" = "y" ]; then
+	bool 'Motorola M5249C3 board support' CONFIG_M5249C3
+fi
+
+if [ "$CONFIG_M5272" = "y" ]; then
+	bool 'Motorola M5272C3 board support' CONFIG_M5272C3
+	bool 'SecureEdge SE1100 board support' CONFIG_SE1100
+	bool 'Gilbarco/NAP board support' CONFIG_GILBARCONAP
+	bool 'Arcturus Networks uC5272 dimm board support' CONFIG_BOARD_UC5272
+	if [ "$CONFIG_BOARD_UC5272" = "y" ]; then
+		bool '  Use uCbootstrap system calls' CONFIG_UCBOOTSTRAP
+		bool '  Support for Cramfs ' CONFIG_UC5272_CRAMFS
+		if ["$CONFIG_UC5272_CRAMFS" = "y" ]; then
+			define_bool CONFIG_CRAMFS y
+		fi
+		bool '  ROMFS image not RAM resident' CONFIG_ROMFS_FROM_ROM
+	fi
+	bool 'senTec COBRA5272 board support' CONFIG_COBRA5272
+	if [ "$CONFIG_COBRA5272" = "y" ]; then
+		bool '   Include framebuffer support on COBRA5272' CONFIG_FB_COBRA5272
+	fi
+	if [ "$CONFIG_M5272C3" = "y" ]; then
+		bool 'Support for PPCboot environment variables' CONFIG_PPCBOOT
+	fi
+	bool 'Feith CANCam board support' CONFIG_CANCam
+	bool 'Feith Scales board support' CONFIG_SCALES
+fi
+
+if [ "$CONFIG_M5280" = "y" ]; then
+	bool 'SSV DNP5280 board support' CONFIG_DNP5280
+fi
+
+if [ "$CONFIG_M5282" = "y" ]; then
+	bool 'Motorola M5282C3 board support' CONFIG_M5282C3
+ 	bool 'Netburner MOD5282 board support' CONFIG_NETBURNER
+	bool 'Future/Netburner 5282 Badge board support' CONFIG_FUTURENETBURNER
+	bool 'Arcturus Networks uC5282 dimm board support'  CONFIG_BOARD_UC5282
+	if [ "$CONFIG_BOARD_UC5282" = "y" ]; then
+		define_bool CONFIG_ARCTURUS y
+		bool '  Use uCbootstrap system calls' CONFIG_UCBOOTSTRAP
+		bool '  Support for Cramfs ' CONFIG_UC5272_CRAMFS
+		if ["$CONFIG_UC5282_CRAMFS" = "y" ]; then
+			define_bool CONFIG_CRAMFS y
+		fi
+		bool '  ROMFS image not RAM resident' CONFIG_ROMFS_FROM_ROM
+	fi
+fi
+
+if [ "$CONFIG_M5307" = "y" ]; then
+	bool 'Arnewsh 5307 board support' CONFIG_ARN5307
+	bool 'Motorola M5307C3 board support' CONFIG_M5307C3
+	bool 'eLIA board support' CONFIG_eLIA
+	bool 'DISKtel board support' CONFIG_DISKtel
+	bool 'SecureEdge MP3 board support' CONFIG_SECUREEDGEMP3
+fi
+
+if [ "$CONFIG_M5407" = "y" ]; then
+	bool 'Motorola M5407C3 board support' CONFIG_M5407C3
+fi
+
+if [ "$CONFIG_M5307" = "y" -o \
+     "$CONFIG_M5407" = "y" ]; then
+	bool 'Feith CLEOPATRA board support' CONFIG_CLEOPATRA
+fi
+
+if [ "$CONFIG_M5206e" = "y" -o \
+     "$CONFIG_M5272" = "y" -o \
+     "$CONFIG_M5307" = "y" ]; then
+	bool 'SecureEdge/NETtel board support' CONFIG_NETtel
+	bool 'SnapGear router board support' CONFIG_SNAPGEAR
+	bool '  ROMFS image not RAM resident' CONFIG_ROMFS_FROM_ROM
+fi
+
+if [ "$CONFIG_PILOT3" = "y" -o \
+     "$CONFIG_PILOT5" = "y" ]; then
+	define_bool CONFIG_PILOT y
+fi
+if [ "$CONFIG_APLIO_PRO" = "y" -o "$CONFIG_APLIO_ENTRECOTE" = "y" ]; then
+	define_bool CONFIG_APLIO y
+fi
+if [ "$CONFIG_ARN5206" = "y" -o \
+     "$CONFIG_ARN5307" = "y" ]; then
+	define_bool CONFIG_ARNEWSH y
+fi
+if [ "$CONFIG_M5206eC3" = "y" -o \
+     "$CONFIG_M5249C3" = "y" -o \
+     "$CONFIG_M5272C3" = "y" -o \
+     "$CONFIG_M5282C3" = "y" -o \
+     "$CONFIG_M5307C3" = "y" -o \
+     "$CONFIG_M5407C3" = "y" ]; then
+	define_bool CONFIG_MOTOROLA y
+fi
+
+if [ "$CONFIG_CLEOPATRA" = "y" -o \
+     "$CONFIG_CANCam" = "y" -o \
+     "$CONFIG_SCALES" = "y" ]; then
+	define_bool CONFIG_HW_FEITH y
+fi
+
+if [ "$CONFIG_DNP5282" = "y" ]; then
+	define_bool CONFIG_SSV y
+fi
+
+if [ "$CONFIG_DNP5280" = "y" ]; then
+   define_bool CONFIG_SSV y
+fi
+ 
+choice 'RAM size' \
+	"AUTO	CONFIG_RAMAUTO \
+	  4MB	CONFIG_RAM4MB \
+	  8MB	CONFIG_RAM8MB \
+	 16MB	CONFIG_RAM16MB \
+	 32MB	CONFIG_RAM32MB \
+	 64MB	CONFIG_RAM64MB" AUTO
+choice 'RAM bit width' \
+	" AUTO	CONFIG_AUTOBIT \
+	  8bit	CONFIG_RAM8BIT \
+	 16bit	CONFIG_RAM16BIT \
+	 32bit	CONFIG_RAM32bit" AUTO
+
+choice 'Kernel executes from' \
+	"RAM	CONFIG_RAMKERNEL \
+	 ROM	CONFIG_ROMKERNEL \
+	 HIMEM  CONFIG_HIMEMKERNEL" ROM
+
+endmenu
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'General setup'
+
+bool 'Networking support' CONFIG_NET
+bool 'SGI Visual Workstation support' CONFIG_VISWS
+if [ "$CONFIG_VISWS" = "y" ]; then
+   define_bool CONFIG_X86_VISWS_APIC y
+   define_bool CONFIG_X86_LOCAL_APIC y
+   define_bool CONFIG_PCI y
+else
+   if [ "$CONFIG_SMP" = "y" ]; then
+      define_bool CONFIG_X86_IO_APIC y
+      define_bool CONFIG_X86_LOCAL_APIC y
+   fi
+   bool 'PCI support' CONFIG_PCI
+   if [ "$CONFIG_PCI" = "y" ]; then
+      choice '  PCI access mode' \
+	"BIOS		CONFIG_PCI_GOBIOS	\
+	 Direct		CONFIG_PCI_GODIRECT	\
+	 Any		CONFIG_PCI_GOANY"	Any
+      if [ "$CONFIG_PCI_GOBIOS" = "y" -o "$CONFIG_PCI_GOANY" = "y" ]; then
+         define_bool CONFIG_PCI_BIOS y
+      fi
+      if [ "$CONFIG_PCI_GODIRECT" = "y" -o "$CONFIG_PCI_GOANY" = "y" ]; then
+         define_bool CONFIG_PCI_DIRECT y
+      fi
+   fi
+fi
+
+source drivers/pci/Config.in
+
+if [ "$CONFIG_VISWS" != "y" ]; then
+   bool 'MCA support' CONFIG_MCA
+fi
+
+bool 'Support for hot-pluggable devices' CONFIG_HOTPLUG
+
+if [ "$CONFIG_HOTPLUG" = "y" ] ; then
+   source drivers/pcmcia/Config.in
+else
+   define_bool CONFIG_PCMCIA n
+fi
+
+bool 'System V IPC' CONFIG_SYSVIPC
+bool 'BSD Process Accounting' CONFIG_BSD_PROCESS_ACCT
+bool 'Sysctl support' CONFIG_SYSCTL
+if [ "$CONFIG_PROC_FS" = "y" ]; then
+   choice 'Kernel core (/proc/kcore) format' \
+	"ELF		CONFIG_KCORE_ELF	\
+	 A.OUT		CONFIG_KCORE_AOUT" ELF
+fi
+tristate 'Kernel support for flat binaries' CONFIG_BINFMT_FLAT
+if [ "$CONFIG_BINFMT_FLAT" != "n" ]; then
+   bool '    Enable ZFLAT support' CONFIG_BINFMT_ZFLAT
+   bool '    Enable shared FLAT support' CONFIG_BINFMT_SHARED_FLAT
+fi
+tristate 'Kernel support for a.out binaries' CONFIG_BINFMT_AOUT
+tristate 'Kernel support for ELF binaries' CONFIG_BINFMT_ELF
+tristate 'Kernel support for MISC binaries' CONFIG_BINFMT_MISC
+
+bool 'Power Management support' CONFIG_PM
+
+dep_bool '  ACPI support' CONFIG_ACPI $CONFIG_PM
+if [ "$CONFIG_ACPI" != "n" ]; then
+   if [ "$CONFIG_EXPERIMENTAL" = "y" ]; then
+      bool '    ACPI interpreter (EXPERIMENTAL)' CONFIG_ACPI_INTERPRETER
+      bool '    Enter S1 for sleep (EXPERIMENTAL)' CONFIG_ACPI_S1_SLEEP
+   fi
+fi
+
+if [ "$CONFIG_UCSIMM" = "y" -o "$CONFIG_UCDIMM" = "y" ]; then
+   dep_bool '  Doze sleep mode only (clocks running)' CONFIG_PM_DOZE_ONLY $CONFIG_PM
+   dep_bool '  Wake up on power button (IRQ3)' CONFIG_PM_POWER_BUTTON_IRQ3 $CONFIG_PM
+   dep_bool '  Support user level pm_helper (/sbin/pm_helper)' CONFIG_PM_HELPER $CONFIG_PM
+fi
+
+dep_tristate '  Advanced Power Management BIOS support' CONFIG_APM $CONFIG_PM
+if [ "$CONFIG_APM" != "n" ]; then
+   bool '    Ignore USER SUSPEND' CONFIG_APM_IGNORE_USER_SUSPEND
+   bool '    Enable PM at boot time' CONFIG_APM_DO_ENABLE
+   bool '    Make CPU Idle calls when idle' CONFIG_APM_CPU_IDLE
+   bool '    Enable console blanking using APM' CONFIG_APM_DISPLAY_BLANK
+   bool '    RTC stores time in GMT' CONFIG_APM_RTC_IS_GMT
+   bool '    Allow interrupts during APM BIOS calls' CONFIG_APM_ALLOW_INTS
+   bool '    Use real mode APM BIOS call to power off' CONFIG_APM_REAL_MODE_POWER_OFF
+fi
+
+endmenu
+
+#############################################################################
+
+source drivers/mtd/Config.in
+
+source drivers/parport/Config.in
+
+source drivers/pnp/Config.in
+
+source drivers/block/Config.in
+
+if [ "$CONFIG_NET" = "y" ]; then
+   source net/Config.in
+fi
+
+source drivers/telephony/Config.in
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'ATA/IDE/MFM/RLL support'
+
+tristate 'ATA/IDE/MFM/RLL support' CONFIG_IDE
+
+if [ "$CONFIG_IDE" != "n" ]; then
+  source drivers/ide/Config.in
+else
+  define_bool CONFIG_BLK_DEV_IDE_MODES n
+  define_bool CONFIG_BLK_DEV_HD n
+fi
+endmenu
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'SCSI support'
+
+tristate 'SCSI support' CONFIG_SCSI
+
+if [ "$CONFIG_SCSI" != "n" ]; then
+   source drivers/scsi/Config.in
+fi
+endmenu
+
+#############################################################################
+
+source drivers/ieee1394/Config.in
+
+source drivers/message/i2o/Config.in
+
+if [ "$CONFIG_NET" = "y" ]; then
+   mainmenu_option next_comment
+   comment 'Network device support'
+
+   bool 'Network device support' CONFIG_NETDEVICES
+   if [ "$CONFIG_NETDEVICES" = "y" ]; then
+      source drivers/net/Config.in
+      if [ "$CONFIG_ATM" = "y" ]; then
+         source drivers/atm/Config.in
+      fi
+   fi
+   endmenu
+fi
+
+source net/ax25/Config.in
+
+source net/irda/Config.in
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'ISDN subsystem'
+if [ "$CONFIG_NET" != "n" ]; then
+   tristate 'ISDN support' CONFIG_ISDN
+   if [ "$CONFIG_ISDN" != "n" ]; then
+      source drivers/isdn/Config.in
+   fi
+fi
+endmenu
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'Old CD-ROM drivers (not SCSI, not IDE)'
+
+bool 'Support non-SCSI/IDE/ATAPI CDROM drives' CONFIG_CD_NO_IDESCSI
+if [ "$CONFIG_CD_NO_IDESCSI" != "n" ]; then
+   source drivers/cdrom/Config.in
+fi
+endmenu
+
+#############################################################################
+
+source drivers/char/Config.in
+
+
+#source drivers/misc/Config.in
+
+source fs/Config.in
+
+if [ "$CONFIG_VT" = "y" ]; then
+   mainmenu_option next_comment
+   comment 'Console drivers'
+   bool 'VGA text console' CONFIG_VGA_CONSOLE
+   bool 'Video mode selection support' CONFIG_VIDEO_SELECT
+   if [ "$CONFIG_EXPERIMENTAL" = "y" ]; then
+      tristate 'MDA text console (dual-headed) (EXPERIMENTAL)' CONFIG_MDA_CONSOLE
+      source drivers/video/Config.in
+   fi
+   endmenu
+fi
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'Sound'
+
+tristate 'Sound card support' CONFIG_SOUND
+if [ "$CONFIG_SOUND" != "n" ]; then
+   source drivers/sound/Config.in
+fi
+endmenu
+
+#############################################################################
+
+source drivers/usb/Config.in
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'Kernel hacking'
+
+bool 'Full Symbolic/Source Debugging support' CONFIG_FULLDEBUG
+#bool 'Debug kmalloc/kfree' CONFIG_DEBUG_MALLOC
+bool 'Magic SysRq key' CONFIG_MAGIC_SYSRQ
+if [ "$CONFIG_EXPERIMENTAL" = "y" ]; then
+	bool 'Non power-of-2 kernel allocator (EXPERIMENTAL)' CONFIG_CONTIGUOUS_PAGE_ALLOC
+	dep_bool '  include /proc/mem_map' CONFIG_MEM_MAP $CONFIG_CONTIGUOUS_PAGE_ALLOC
+fi
+
+if [ "$CONFIG_HW_FEITH" = "y" ]; then
+  if [ "$CONFIG_CONTIGUOUS_PAGE_ALLOC" != "y" ]; then
+    bool 'Allow allocating large blocks (> 1MB) of memory' CONFIG_NO_MMU_LARGE_ALLOCS
+  fi
+fi
+
+bool 'Kernel profiling support' CONFIG_PROFILE
+if [ "$CONFIG_PROFILE" = "y" ]; then
+  int ' Profile shift count' CONFIG_PROFILE_SHIFT 2
+  bool 'Use fast second timer for profiling' CONFIG_HIGHPROFILE
+fi
+
+if [ "$CONFIG_COLDFIRE" = "y" ]; then
+	bool 'Panic/Dump to FLASH' CONFIG_DUMPTOFLASH
+fi
+
+bool 'Suppress Kernel BUG Messages' CONFIG_NO_KERNEL_MSG
+
+bool 'Reduce kernel task size to 1 page' CONFIG_SMALL_TASKS
+
+if [ "$CONFIG_EXPERIMENTAL" = "y" -a "$CONFIG_COLDFIRE" = "y" -a "$CONFIG_FULLDEBUG" = "n" ]; then
+    bool 'Disable BDM signals' CONFIG_BDM_DISABLE
+fi
+
+bool 'Compiled-in Kernel Boot Parameter' CONFIG_BOOTPARAM
+if [ "$CONFIG_BOOTPARAM" = "y" ]; then
+  string 'Kernel Boot Parameter' CONFIG_BOOTPARAM_STRING ""
+fi
+
+endmenu
+
+
+#############################################################################
+
+source crypto/Config.in
+source lib/Config.in
+
+#############################################################################

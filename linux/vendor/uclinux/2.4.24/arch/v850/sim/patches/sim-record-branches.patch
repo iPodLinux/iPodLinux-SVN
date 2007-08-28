@@ -1,0 +1,158 @@
+2001-09-05  Miles Bader  <miles@gnu.org>
+
+	* sim-main.h (NUM_RECENT_BRANCHES, RECENT_BRANCH): New macros.
+	(struct recent_branch): New type.
+	(recent_branches, next_recent_branch): New declarations.
+	(TRACE_BRANCH0, TRACE_BRANCH1, TRACE_BRANCH2, TRACE_BRANCH3): Use
+	`RECENT_BRANCH'.
+	* interp.c (show_recent_branches, v850_option_handler): New functions.
+	(OPTION_V850_RECENT_BRANCHES): New enum.
+	(v850_options): New variable.
+
+diff -up sim/v850/sim-main.h.\~3\~ sim/v850/sim-main.h
+--- sim/v850/sim-main.h.~3~	Mon Aug 27 15:14:29 2001
++++ sim/v850/sim-main.h	Wed Sep  5 16:14:07 2001
+@@ -264,8 +264,30 @@ extern unsigned32 trace_pc;
+ extern const char *trace_name;
+ extern int trace_module;
+ 
++#define NUM_RECENT_BRANCHES 32
++struct recent_branch {
++  unsigned long from, to, arg1, arg2, arg3;
++  const char *insn_name;
++};
++extern struct recent_branch recent_branches[NUM_RECENT_BRANCHES];
++extern int next_recent_branch;
++#define RECORD_BRANCH(_from, _to, _insn_name, _arg1, _arg2, _arg3)	      \
++do {									      \
++  struct recent_branch *rb;						      \
++  if (next_recent_branch == NUM_RECENT_BRANCHES)			      \
++    next_recent_branch = 0;						      \
++  rb = &recent_branches[next_recent_branch++];				      \
++  rb->from = _from;							      \
++  rb->to = _to;								      \
++  rb->insn_name = _insn_name;						      \
++  rb->arg1 = _arg1;							      \
++  rb->arg2 = _arg2;							      \
++  rb->arg3 = _arg3;							      \
++} while (0)
++
+ #define TRACE_BRANCH0() \
+ do { \
++  RECORD_BRANCH (cia, nia, itable[MY_INDEX].name, 0, 0, 0); \
+   if (TRACE_BRANCH_P (CPU)) { \
+     trace_module = TRACE_BRANCH_IDX; \
+     trace_pc = cia; \
+@@ -277,6 +299,7 @@ do { \
+ 
+ #define TRACE_BRANCH1(IN1) \
+ do { \
++  RECORD_BRANCH (cia, nia, itable[MY_INDEX].name, IN1, 0, 0); \
+   if (TRACE_BRANCH_P (CPU)) { \
+     trace_module = TRACE_BRANCH_IDX; \
+     trace_pc = cia; \
+@@ -289,6 +312,7 @@ do { \
+ 
+ #define TRACE_BRANCH2(IN1, IN2) \
+ do { \
++  RECORD_BRANCH (cia, nia, itable[MY_INDEX].name, IN1, IN2, 0); \
+   if (TRACE_BRANCH_P (CPU)) { \
+     trace_module = TRACE_BRANCH_IDX; \
+     trace_pc = cia; \
+@@ -302,6 +326,7 @@ do { \
+ 
+ #define TRACE_BRANCH3(IN1, IN2, IN3) \
+ do { \
++  RECORD_BRANCH (cia, nia, itable[MY_INDEX].name, IN1, IN2, IN3); \
+   if (TRACE_BRANCH_P (CPU)) { \
+     trace_module = TRACE_BRANCH_IDX; \
+     trace_pc = cia; \
+diff -up sim/v850/interp.c.\~3\~ sim/v850/interp.c
+--- sim/v850/interp.c.~3~	Mon Aug 27 16:15:01 2001
++++ sim/v850/interp.c	Wed Sep  5 16:24:37 2001
+@@ -32,7 +32,41 @@ static const char * get_insn_name (sim_c
+ SIM_DESC simulator;
+ 
+ 
++
++/* Options.  */
+ 
++enum {
++  OPTION_V850_RECENT_BRANCHES = OPTION_START,
++};
++
++static DECLARE_OPTION_HANDLER (v850_option_handler);
++
++static const OPTION v850_options[] =
++{
++  { {"recent-branches", no_argument, NULL, OPTION_V850_RECENT_BRANCHES },
++      '\0', NULL, "Show a list of recent branches",
++      v850_option_handler },
++  { {NULL, no_argument, NULL, 0}, '\0', NULL, NULL, NULL }
++};
++
++static void show_recent_branches (SIM_DESC sd);
++
++static SIM_RC
++v850_option_handler (SIM_DESC sd, sim_cpu *cpu, int opt,
++		     char *arg, int is_command)
++{
++  switch (opt)
++    {
++    case OPTION_V850_RECENT_BRANCHES:
++      show_recent_branches (sd);
++      return SIM_RC_OK;
++    default:
++      sim_io_eprintf (sd, "Unknown v850 option %d\n", opt);
++      return SIM_RC_FAIL;
++    }
++}
++
++
+ /* v850 interrupt model */
+ 
+ enum interrupt_type
+@@ -269,6 +303,8 @@ sim_open (kind, cb, abfd, argv)
+   /* similarly if in the internal RAM region */
+   sim_do_command (sd, "memory region 0xffe000,0x1000,1024");
+ 
++  sim_add_option_table (sd, NULL, v850_options);
++
+   /* getopt will print the error message so we just have to exit if this fails.
+      FIXME: Hmmm...  in the case of gdb we need getopt to call
+      print_filtered.  */
+@@ -398,5 +434,34 @@ sim_do_command (sd, cmd)
+ 	sim_io_eprintf (sd, "`interrupt' command replaced by `sim watch'\n");
+       else
+ 	sim_io_eprintf (sd, "Unknown command `%s'\n", cmd);
++    }
++}
++
++
++
++struct recent_branch recent_branches[NUM_RECENT_BRANCHES] = { 0 };
++int next_recent_branch = 0;
++
++static void
++show_recent_branches (SIM_DESC sd)
++{
++  int wrapped = 0, index = 0, i;
++
++  for (i = next_recent_branch; i != next_recent_branch || !wrapped;)
++    {
++      if (recent_branches[i].insn_name)
++	{
++	  struct recent_branch *rb = &recent_branches[i];
++	  sim_io_printf (sd, "%2d: 0x%08x -> 0x%08x   %s %d, %d, %d\n",
++			 index++,
++			 rb->from, rb->to,
++			 rb->insn_name, rb->arg1, rb->arg2, rb->arg3);
++	}
++
++      if (++i == NUM_RECENT_BRANCHES)
++	{
++	  i = 0;
++	  wrapped = 1;
++	}
+     }
+ }

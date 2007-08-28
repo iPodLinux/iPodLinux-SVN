@@ -1,0 +1,298 @@
+#############################################################################
+#
+# For a description of the syntax of this configuration file,
+# see Documentation/kbuild/config-language.txt.
+#
+# based mainly on the arch/i386/config.in and bit of the 2.0, m68knommu
+# config.in
+#
+#############################################################################
+
+mainmenu_name 'uClinux/Microblaze (w/o MMU) Kernel Configuration'
+
+define_bool CONFIG_UCLINUX y
+define_bool CONFIG_UID16 y
+define_bool CONFIG_RWSEM_GENERIC_SPINLOCK y
+define_bool CONFIG_RWSEM_XCHGADD_ALGORITHM n
+
+# Turn off some random 386 crap that can affect device config
+define_bool CONFIG_ISA n
+define_bool CONFIG_ISAPNP n
+define_bool CONFIG_EISA n
+define_bool CONFIG_MCA n
+
+
+#############################################################################
+
+mainmenu_option next_comment
+  comment 'Code maturity level options'
+  bool 'Prompt for development and/or incomplete code/drivers' CONFIG_EXPERIMENTAL
+endmenu
+
+mainmenu_option next_comment
+  comment 'Loadable module support'
+  bool 'Enable loadable module support' CONFIG_MODULES
+  if [ "$CONFIG_MODULES" = "y" ]; then
+     bool '  Set version information on all module symbols' CONFIG_MODVERSIONS
+     bool '  Kernel module loader' CONFIG_KMOD
+  fi
+endmenu
+
+
+#############################################################################
+#### Microblaze-specific config
+
+# Define the architecture
+define_bool CONFIG_MICROBLAZE y
+
+mainmenu_option next_comment
+  comment 'Processor type and features'
+
+  #### Microblaze processor-specific config
+
+  #bool 'Reset Guard' 		CONFIG_RESET_GUARD
+  bool 'Hardware Multiplier'    CONFIG_MICROBLAZE_HARD_MULT
+  bool 'Hardware Divider'       CONFIG_MICROBLAZE_HARD_DIV
+  bool 'Hardware Barrel Shift'  CONFIG_MICROBLAZE_HARD_BARREL
+  bool 'Instruction Cache' 	CONFIG_MICROBLAZE_ICACHE
+  if [ "$CONFIG_MICROBLAZE_ICACHE" = "y" ]; then
+     hex '  Instruction cache address base' 	CONFIG_MICROBLAZE_ICACHE_BASE 0x80000000
+     hex '  Instruction cache byte size'	CONFIG_MICROBLAZE_ICACHE_SIZE 0x8000
+  fi
+  bool 'Data Cache' 		CONFIG_MICROBLAZE_DCACHE
+  if [ "$CONFIG_MICROBLAZE_DCACHE" = "y" ]; then
+     hex '  Data cache address base' 	CONFIG_MICROBLAZE_DCACHE_BASE 0x80000000
+     hex '  Data cache byte size' 	CONFIG_MICROBLAZE_DCACHE_SIZE 0x8000
+  fi
+  bool 'GPIO driver'		CONFIG_XILINX_GPIO
+  bool 'Ethernet driver'	CONFIG_XILINX_ENET
+  bool 'SystemAce driver'       CONFIG_XILINX_SYSACE
+  bool 'Kernel cmdline support (needs new bootloader)'	CONFIG_MBVANILLA_CMDLINE
+  int 'CPU CLOCK Frequency' CONFIG_CPU_CLOCK_FREQ 66000000
+
+  # Default some stuff
+  if [ "$CONFIG_ZERO_BSS" != "n" ]; then
+    define_bool CONFIG_ZERO_BSS y
+  fi
+
+comment 'Platform'
+  choice 'Platform'						\
+       "MBVanilla		CONFIG_MBVANILLA 		\
+	Egretv0.1		CONFIG_EGRET01" 	MBVanilla
+
+comment 'Debug Logging'
+	bool 'Enable debug logging' CONFIG_MICROBLAZE_DEBUGGING
+
+endmenu
+
+
+#############################################################################
+
+mainmenu_option next_comment
+  comment 'General setup'
+
+  bool 'Networking support' CONFIG_NET
+
+  # Embedded systems often won't need any hardware disk support, so only clutter
+  # up the menus with it if really necessary
+  bool 'Disk hardware support' CONFIG_DISK
+
+  source drivers/pci/Config.in
+
+  # if [ "$CONFIG_VISWS" != "y" ]; then
+  #    bool 'MCA support' CONFIG_MCA
+  # fi
+
+  bool 'Support for hot-pluggable devices' CONFIG_HOTPLUG
+
+  if [ "$CONFIG_HOTPLUG" = "y" ] ; then
+     source drivers/pcmcia/Config.in
+  else
+     define_bool CONFIG_PCMCIA n
+  fi
+
+  bool 'System V IPC' CONFIG_SYSVIPC
+  bool 'BSD Process Accounting' CONFIG_BSD_PROCESS_ACCT
+  bool 'Sysctl support' CONFIG_SYSCTL
+  if [ "$CONFIG_PROC_FS" = "y" ]; then
+     choice 'Kernel core (/proc/kcore) format' \
+	  "ELF		CONFIG_KCORE_ELF	\
+	   A.OUT		CONFIG_KCORE_AOUT" ELF
+  fi
+  tristate 'Kernel support for flat binaries' CONFIG_BINFMT_FLAT
+  dep_bool '  Enable ZFLAT support' CONFIG_BINFMT_ZFLAT $CONFIG_BINFMT_FLAT
+  #tristate 'Kernel support for a.out binaries' CONFIG_BINFMT_AOUT
+  #tristate 'Kernel support for ELF binaries' CONFIG_BINFMT_ELF
+  #tristate 'Kernel support for MISC binaries' CONFIG_BINFMT_MISC
+
+  if [ "$CONFIG_EXPERIMENTAL" = "y" ]; then
+     bool 'Non power-of-2 kernel allocator (EXPERIMENTAL)' CONFIG_CONTIGUOUS_PAGE_ALLOC
+     dep_bool '  include /proc/mem_map' CONFIG_MEM_MAP $CONFIG_CONTIGUOUS_PAGE_ALLOC
+  fi
+
+  if [ "$CONFIG_CONTIGUOUS_PAGE_ALLOC" != "y" ]; then
+    bool 'Allow allocating large blocks (> 1MB) of memory' CONFIG_NO_MMU_LARGE_ALLOCS
+  fi
+
+endmenu
+
+#############################################################################
+
+source drivers/mtd/Config.in
+
+if [ "$CONFIG_PCI" != "n" ]; then
+  source drivers/parport/Config.in
+fi
+
+#source drivers/pnp/Config.in
+
+source drivers/block/Config.in
+
+if [ "$CONFIG_NET" = "y" ]; then
+   source net/Config.in
+fi
+
+#source drivers/telephony/Config.in
+
+#############################################################################
+
+if [ "$CONFIG_DISK" = "y" ]; then
+  mainmenu_option next_comment
+    comment 'ATA/IDE/MFM/RLL support'
+
+    tristate 'ATA/IDE/MFM/RLL support' CONFIG_IDE
+
+    if [ "$CONFIG_IDE" != "n" ]; then
+      source drivers/ide/Config.in
+    else
+      define_bool CONFIG_BLK_DEV_IDE_MODES n
+      define_bool CONFIG_BLK_DEV_HD n
+    fi
+  endmenu
+fi
+
+#############################################################################
+
+if [ "$CONFIG_DISK" = "y" ]; then
+  mainmenu_option next_comment
+    comment 'SCSI support'
+
+    tristate 'SCSI support' CONFIG_SCSI
+
+    if [ "$CONFIG_SCSI" != "n" ]; then
+       source drivers/scsi/Config.in
+    fi
+  endmenu
+fi
+
+#############################################################################
+
+if [ "$CONFIG_PCI" = "y" ]; then
+  source drivers/ieee1394/Config.in
+fi
+
+if [ "$CONFIG_NET" = "y" ]; then
+   mainmenu_option next_comment
+     comment 'Network device support'
+
+     bool 'Network device support' CONFIG_NETDEVICES
+     if [ "$CONFIG_NETDEVICES" = "y" ]; then
+	source drivers/net/Config.in
+	if [ "$CONFIG_ATM" = "y" ]; then
+	   source drivers/atm/Config.in
+	fi
+     fi
+   endmenu
+fi
+
+if [ "$CONFIG_NET" = "y" ]; then
+  source net/ax25/Config.in
+fi
+
+source net/irda/Config.in
+
+#############################################################################
+
+if [ "$CONFIG_NET" = "y" ]; then
+  mainmenu_option next_comment
+    comment 'ISDN subsystem'
+
+    tristate 'ISDN support' CONFIG_ISDN
+    if [ "$CONFIG_ISDN" != "n" ]; then
+      source drivers/isdn/Config.in
+    fi
+  endmenu
+fi
+
+#############################################################################
+
+# mainmenu_option next_comment
+#   comment 'Old CD-ROM drivers (not SCSI, not IDE)'
+#
+#   bool 'Support non-SCSI/IDE/ATAPI CDROM drives' CONFIG_CD_NO_IDESCSI
+#   if [ "$CONFIG_CD_NO_IDESCSI" != "n" ]; then
+#      source drivers/cdrom/Config.in
+#   fi
+# endmenu
+
+#############################################################################
+
+source drivers/char/Config.in
+
+#source drivers/misc/Config.in
+
+source fs/Config.in
+
+if [ "$CONFIG_VT" = "y" ]; then
+   mainmenu_option next_comment
+     comment 'Console drivers'
+     bool 'VGA text console' CONFIG_VGA_CONSOLE
+     bool 'Video mode selection support' CONFIG_VIDEO_SELECT
+     if [ "$CONFIG_EXPERIMENTAL" = "y" ]; then
+	tristate 'MDA text console (dual-headed) (EXPERIMENTAL)' CONFIG_MDA_CONSOLE
+	source drivers/video/Config.in
+     fi
+   endmenu
+fi
+
+#############################################################################
+
+mainmenu_option next_comment
+  comment 'Sound'
+
+  tristate 'Sound card support' CONFIG_SOUND
+  if [ "$CONFIG_SOUND" != "n" ]; then
+     source drivers/sound/Config.in
+  fi
+endmenu
+
+#############################################################################
+
+source drivers/usb/Config.in
+
+#############################################################################
+
+mainmenu_option next_comment
+  comment 'Kernel hacking'
+
+  bool 'Full Symbolic/Source Debugging support' CONFIG_FULLDEBUG
+  #bool 'Debug kmalloc/kfree' CONFIG_DEBUG_MALLOC
+  bool 'Magic SysRq key' CONFIG_MAGIC_SYSRQ
+
+  bool 'Kernel profiling support' CONFIG_PROFILE
+  if [ "$CONFIG_PROFILE" = "y" ]; then
+    int ' Profile shift count' CONFIG_PROFILE_SHIFT 2
+    bool 'Use fast second timer for profiling' CONFIG_HIGHPROFILE
+  fi
+
+  bool 'Suppress Kernel BUG Messages' CONFIG_NO_KERNEL_MSG
+
+endmenu
+
+
+#############################################################################
+
+source crypto/Config.in
+source lib/Config.in
+
+#############################################################################

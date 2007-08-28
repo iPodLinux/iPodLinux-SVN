@@ -1,0 +1,17 @@
+This directory contains some shell and gdb scripts useful for debugging.
+
+
+   example.gdbinit	An example `.gdbinit' file that sets things up
+			to run linux in the gdb v850 simulator.  It
+			assumes that all the patch files in ../patches
+			have been applied.
+
+
+The following are gdb scripts that when loaded into gdb (using the `source'
+command) will install breakpoints which print out information at interesting
+times:
+
+   trace-loadproc.gdb	Print a message for each process exec.
+   trace-switch.gdb	Print a message for each context switch.
+   trace-irq.gdb	Print messages for interrupts/interrupt returns.
+   trace-traps.gdb	Print messages for traps (syscalls) & trap returns.

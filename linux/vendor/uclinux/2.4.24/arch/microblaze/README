@@ -1,0 +1,31 @@
+This is the port of uClinux to the Microblaze softcore processor.
+
+Please note, the port is still experimental!  Many things simply do 
+not work, and more have never been tested.
+
+The port is based *heavily* on the NEC v850 port by Miles Bader.  
+This has potentially introduced some strange coding and design decisions
+in the Microblaze code.  In particular, the low level stuff in entry.S
+may seem a bit odd.  It was done this way to simplify the porting process.
+
+No effort has been made to streamline the low level kernel code.  As Hoare
+said (and restated by Knuth), 
+
+	"Premature optimisation is the root of all Evil"
+
+Words to live by.
+
+As of April 2003, the only hardware target supported is a ficticious 
+Microblaze system called MBVANILLA.  The mhs, mss and other design
+files necessary to synthesise this platform are found in 
+/Vendors/Insight/XC2V1K/hardware.
+
+Contributions to the Microblaze porting effort are welcome!
+Contact jwilliams@itee.uq.edu.au for more info.  Please place the text
+"microblaze uclinux" in the subject line.
+
+Have fun.
+
+John Williams
+2nd April 2003
+
