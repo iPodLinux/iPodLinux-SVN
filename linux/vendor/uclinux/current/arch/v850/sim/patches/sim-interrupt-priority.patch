@@ -1,0 +1,206 @@
+2001-08-24  Miles Bader  <miles@gnu.org>
+
+	* sim-main.h (struct _sim_cpu): New fields `current_interrupts'
+	and `pending_interrupts'.
+	* interp.c (do_interrupt): Don't deliver a maskable interrupt
+	unless it's `higher priority' than any interrupt currently being
+	serviced.  Update current interrupt active/pending state.
+	Automatically adjust the resume address if the PC is currently
+	pointing at a `halt' instruction, to resume at the next insn.
+	* v850.igen ("reti"): Remove the highest-priority interrupt's bit
+	from the current-interrupts mask.
+
+diff -up sim/v850/sim-main.h.\~1\~ sim/v850/sim-main.h
+--- sim/v850/sim-main.h.~1~	Mon Jan 22 13:50:38 2001
++++ sim/v850/sim-main.h	Mon Aug 27 15:14:29 2001
+@@ -50,6 +50,12 @@ struct _sim_cpu
+   sim_event *pending_nmi;
+   /* ... base type ... */
+   sim_cpu_base base;
++  /* One bit for each interrupt currently being serviced.  */
++  unsigned current_interrupts;
++  /* One bit for each interrupt that's been blocked because of a higher
++     priority interrupt.  This is used to avoid multiple pending
++     interrupts stacking up.  */
++  unsigned pending_interrupts;
+ };
+ 
+ #define CIA_GET(CPU) ((CPU)->reg.pc + 0)
+diff -up sim/v850/interp.c.\~1\~ sim/v850/interp.c
+--- sim/v850/interp.c.~1~	Thu Oct  5 19:59:56 2000
++++ sim/v850/interp.c	Mon Aug 27 16:15:01 2001
+@@ -66,8 +66,9 @@ do_interrupt (sd, data)
+      void *data;
+ {
+   char **interrupt_name = (char**)data;
+-  enum interrupt_type inttype;
+-  inttype = (interrupt_name - STATE_WATCHPOINTS (sd)->interrupt_names);
++  enum interrupt_type inttype
++    = (interrupt_name - STATE_WATCHPOINTS (sd)->interrupt_names);
++  unsigned pc_adjust;
+ 
+   /* For a hardware reset, drop everything and jump to the start
+      address */
+@@ -79,6 +80,14 @@ do_interrupt (sd, data)
+       sim_engine_restart (sd, NULL, NULL, NULL_CIA);
+     }
+ 
++  /* How to adjust the PC upon return from this interrupt.  This is zero
++     for everything but a `halt' instruction.  */
++  if (load_mem (PC, 2) == 0x07e0 && load_mem (PC + 2, 2) == 0x0120)
++    /* PC is pointing to a `halt' insn.  */
++    pc_adjust = 4;
++  else
++    pc_adjust = 0;
++
+   /* Deliver an NMI when allowed */
+   if (inttype == int_nmi)
+     {
+@@ -100,7 +109,7 @@ do_interrupt (sd, data)
+ 	  /* NMI can be delivered.  Do not deschedule pending_nmi as
+              that, if still in the event queue, is a second NMI that
+              needs to be delivered later. */
+-	  FEPC = PC;
++	  FEPC = PC + pc_adjust;
+ 	  FEPSW = PSW;
+ 	  /* Set the FECC part of the ECR. */
+ 	  ECR &= 0x0000ffff;
+@@ -116,16 +125,74 @@ do_interrupt (sd, data)
+   /* deliver maskable interrupt when allowed */
+   if (inttype > int_nmi && inttype < num_int_types)
+     {
+-      if ((PSW & PSW_NP) || (PSW & PSW_ID))
++      unsigned int_code, int_pc, int_num, int_mask;
++
++      switch (inttype)
++	{
++	case int_intov1:
++	  int_pc = 0x80;
++	  int_code = 0x80;
++	  int_num = 0;
++	  break;
++	case int_intp10:
++	  int_pc = 0x90;
++	  int_code = 0x90;
++	  int_num = 1;
++	  break;
++	case int_intp11:
++	  int_pc = 0xa0;
++	  int_code = 0xa0;
++	  int_num = 2;
++	  break;
++	case int_intp12:
++	  int_pc = 0xb0;
++	  int_code = 0xb0;
++	  int_num = 3;
++	  break;
++	case int_intp13:
++	  int_pc = 0xc0;
++	  int_code = 0xc0;
++	  int_num = 4;
++	  break;
++	case int_intcm4:
++	  int_pc = 0xd0;
++	  int_code = 0xd0;
++	  int_num = 5;
++	  break;
++	default:
++	  /* Should never be possible.  */
++	  sim_engine_abort (sd, NULL, NULL_CIA,
++			    "do_interrupt - internal error - bad switch");
++	  break;
++	}
++
++      int_mask = 1 << int_num;
++
++      /* A maskable interrupt can't be delivered if:
++  	   (1) A NMI is currently being serviced, or
++	   (2) The interrupt-disable bit is set, or
++	   (3) It's `lower-priority' than the interrupt currently being
++	       serviced.  Here, `lower-priority' really means `has a
++	       higher interrupt number'.  */
++      if ((PSW & PSW_NP) || (PSW & PSW_ID)
++	  || (STATE_CPU (sd, 0)->current_interrupts & (int_mask - 1)))
+ 	{
+-	  /* Can't deliver this interrupt, reschedule it for later */
+-	  sim_events_schedule (sd, 1, do_interrupt, data);
++	  /* Can't deliver this interrupt, reschedule it for later.  If
++	     the interrupt is already pending, though, don't bother,
++	     since there's already an event queued for it (and we only
++	     want to deliver one interrupt when it becomes possible to
++	     do so).  */
++	  if (! (STATE_CPU (sd, 0)->pending_interrupts & int_mask))
++	    {
++	      sim_events_schedule (sd, 1, do_interrupt, data);
++	      STATE_CPU (sd, 0)->pending_interrupts |= int_mask;
++	    }
+ 	  return;
+ 	}
+       else
+ 	{
+ 	  /* save context */
+-	  EIPC = PC;
++	  EIPC = PC + pc_adjust;
+ 	  EIPSW = PSW;
+ 	  /* Disable further interrupts.  */
+ 	  PSW |= PSW_ID;
+@@ -133,38 +200,13 @@ do_interrupt (sd, data)
+ 	  PSW &= ~PSW_EP;
+ 	  /* Clear the EICC part of the ECR, will set below. */
+ 	  ECR &= 0xffff0000;
+-	  switch (inttype)
+-	    {
+-	    case int_intov1:
+-	      PC = 0x80;
+-	      ECR |= 0x80;
+-	      break;
+-	    case int_intp10:
+-	      PC = 0x90;
+-	      ECR |= 0x90;
+-	      break;
+-	    case int_intp11:
+-	      PC = 0xa0;
+-	      ECR |= 0xa0;
+-	      break;
+-	    case int_intp12:
+-	      PC = 0xb0;
+-	      ECR |= 0xb0;
+-	      break;
+-	    case int_intp13:
+-	      PC = 0xc0;
+-	      ECR |= 0xc0;
+-	      break;
+-	    case int_intcm4:
+-	      PC = 0xd0;
+-	      ECR |= 0xd0;
+-	      break;
+-	    default:
+-	      /* Should never be possible.  */
+-	      sim_engine_abort (sd, NULL, NULL_CIA,
+-				"do_interrupt - internal error - bad switch");
+-	      break;
+-	    }
++
++	  /* Set the new program counter and ECR.  */
++	  PC = int_pc;
++	  ECR |= int_code;
++
++	  STATE_CPU (sd, 0)->current_interrupts |= int_mask;
++	  STATE_CPU (sd, 0)->pending_interrupts &= ~int_mask;
+ 	}
+       sim_engine_restart (sd, NULL, NULL, NULL_CIA);
+     }
+diff -up sim/v850/v850.igen.\~1\~ sim/v850/v850.igen
+--- sim/v850/v850.igen.~1~	Mon Mar 26 13:20:00 2001
++++ sim/v850/v850.igen	Mon Aug 27 15:55:47 2001
+@@ -742,6 +742,10 @@ rrrrr,110100,RRRRR + iiiiiiiiiiiiiiii:VI
+     {
+       nia = (EIPC & ~1);
+       PSW = EIPSW;
++      // We must be returning from the highest priority interrupt, so
++      // clear its bit.
++      STATE_CPU (SD, CPU)->current_interrupts
++        &= (STATE_CPU (SD, CPU)->current_interrupts - 1);
+     }
+   TRACE_BRANCH1 (PSW);
+ }

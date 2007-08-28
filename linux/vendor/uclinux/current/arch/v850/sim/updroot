@@ -1,0 +1,27 @@
+#!/bin/sh
+
+SIZE=1024
+SRC=root
+DST=root.ext2
+
+TMP=/tmp/root.ext2
+MNT=/tmp/root.mnt
+
+dd if=/dev/zero of=$TMP bs=1024 count=$SIZE 2>&1 | grep -v 'records \(in\|out\)' 1>&2
+mke2fs -m0 -q -F $TMP 2>&1 | grep -v '^mke2fs ' 1>&2
+
+mkdir -p $MNT
+sudo mount -t ext2 $TMP $MNT -o loop
+
+mkdir -p $MNT/dev
+
+rm -rf $MNT/lost+found
+
+# Not need with devfs
+#sudo mknod $MNT/dev/console c 5 1
+
+(cd $SRC; tar cf - .) | (cd $MNT; tar xvf -)
+
+sudo umount $MNT
+
+mv $TMP .

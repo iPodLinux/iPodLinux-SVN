@@ -1,0 +1,23 @@
+gcc.diff
+Please compile it after applying a patch in gcc.
+It is gcc-3.1.1 only.
+
+Procedure
+$ tar xzf gcc-3.1.1.tar.gz
+$ cd gcc-3.1.1
+$ patch -p1 < gcc.diff
+$ configure --target=h8300-elf --disable-nls -enable-languages='c,c++'
+$ make
+$ make install
+
+gdb.diff
+It is necessary when I execute it on GDB sim.
+It is gdb-5.2.1 only.
+
+Procedure
+$ tar xzf gdb-5.2.1.tar.gz
+$ cd gdb-5.2.1
+$ patch -p1 < gdb.diff
+$ configure --target=h8300-elf
+$ make
+$ make install

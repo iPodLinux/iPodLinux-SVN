@@ -1,0 +1,41 @@
+diff -up sim/v850/simops.c.\~4\~ sim/v850/simops.c
+--- sim/v850/simops.c.~4~	Mon Sep  3 15:50:09 2001
++++ sim/v850/simops.c	Wed Sep  5 11:08:43 2001
+@@ -37,6 +37,11 @@
+ #include <sys/time.h>
+ #endif
+ 
++#ifdef HAVE_TERMIOS_H
++#include <termios.h>
++#define TARGET_SYS_make_raw 1024
++#endif
++
+ /* This is an array of the bit positions of registers r20 .. r31 in
+    that order in a prepare/dispose instruction.  */
+ int type1_regs[12] = { 27, 26, 25, 24, 31, 30, 29, 28, 23, 22, 0, 21 };
+@@ -1898,6 +1903,25 @@ OP_10007E0 ()
+ 	  }
+ 	  break;
+ #endif
++#endif
++
++#ifdef TARGET_SYS_make_raw
++	case TARGET_SYS_make_raw:
++	  {
++	    struct termios termios;
++	    int fd = PARM1;
++	    int rval = tcgetattr (fd, &termios);
++
++	    if (rval >= 0)
++	      {
++		cfmakeraw (&termios);
++		termios.c_oflag |= OPOST;
++		rval = tcsetattr (fd, TCSANOW, &termios);
++	      }
++
++	    RETVAL = rval;
++	  }
++	  break;
+ #endif
+ 
+ 	default:

@@ -1,0 +1,21 @@
+diff -up /proj/soft2/uclinux/src/v850ice-000414-nmit-RELEASE-20010327/sim/v850/simops.c.\~1\~ /proj/soft2/uclinux/src/v850ice-000414-nmit-RELEASE-20010327/sim/v850/simops.c
+--- /proj/soft2/uclinux/src/v850ice-000414-nmit-RELEASE-20010327/sim/v850/simops.c.~1~	Mon Mar 26 13:20:00 2001
++++ /proj/soft2/uclinux/src/v850ice-000414-nmit-RELEASE-20010327/sim/v850/simops.c	Fri Aug 24 15:38:19 2001
+@@ -1892,7 +1892,7 @@ OP_E607E0 (void)
+   temp = load_mem (State.regs[ OP[0] ], 1);
+   
+   PSW &= ~PSW_Z;
+-  if ((temp & (1 << State.regs[ OP[1] & 0x7 ])) == 0)
++  if ((temp & (1 << (State.regs[ OP[1] ] & 0x7))) == 0)
+     PSW |= PSW_Z;
+   
+   trace_output (OP_BIT);
+@@ -1919,7 +1919,7 @@ OP_22207E0 (void)
+   						\
+   trace_input (name, OP_BIT_CHANGE, 0);		\
+   						\
+-  bit  = 1 << State.regs[ OP[1] & 0x7 ];	\
++  bit  = 1 << (State.regs[ OP[1] ] & 0x7);	\
+   temp = load_mem (State.regs[ OP[0] ], 1);	\
+ 						\
+   PSW &= ~PSW_Z;				\

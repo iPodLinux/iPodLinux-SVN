@@ -1,0 +1,197 @@
+2001-09-07  Miles Bader  <miles@gnu.org>
+
+	* v850.igen ("switch r<reg1>"): Use IMEM16 instead of load_mem.
+	* interp.c (do_interrupt): Use IMEM16 instead of load_mem to look
+	for a `halt' instruction.
+	* sim-main.h (IMEM16): Use `STATE_CPU(sd,0)' instead of `CPU',
+	as IMEM16_IMMED does.
+
+	* sim-main.h (sim_lomem_read_protect_boundary)
+	(sim_lomem_write_protect_boundary): New declarations.
+	(sim_lomem_fault): New declaration.
+	(load_mem, store_mem): Test reads/writes against the appropriate
+	boundary and signal an error if below it.
+
+	* interp.c (v850_options): Add entries for read/write-protect-lomem.
+	(v850_option_handler): Parse them.
+	(OPTION_V850_READ_PROTECT_LOMEM, OPTION_V850_WRITE_PROTECT_LOMEM):
+	New enums.
+
+diff -up sim/v850/sim-main.h.\~3\~ sim/v850/sim-main.h
+--- sim/v850/sim-main.h.~3~	Mon Aug 27 15:14:29 2001
++++ sim/v850/sim-main.h	Fri Sep  7 13:56:29 2001
+@@ -195,21 +195,44 @@ nia = PC
+ 
+ /* Function declarations.  */
+ 
++
+ #define IMEM16(EA) \
+-sim_core_read_aligned_2 (CPU, PC, exec_map, (EA))
++sim_core_read_aligned_2 (STATE_CPU (sd, 0), PC, exec_map, (EA))
+ 
+ #define IMEM16_IMMED(EA,N) \
+ sim_core_read_aligned_2 (STATE_CPU (sd, 0), \
+ 			 PC, exec_map, (EA) + (N) * 2)
+ 
+-#define load_mem(ADDR,LEN) \
+-sim_core_read_unaligned_##LEN (STATE_CPU (simulator, 0), \
+-			       PC, read_map, (ADDR))
+-
+-#define store_mem(ADDR,LEN,DATA) \
+-sim_core_write_unaligned_##LEN (STATE_CPU (simulator, 0), \
+-				PC, write_map, (ADDR), (DATA))
+-
++/* Boundary below which memory is write-protected.  */
++extern address_word sim_lomem_write_protect_boundary;
++/* Boundary below which memory is read-protected.  */
++extern address_word sim_lomem_read_protect_boundary;
++/* Called if there's an invalid read/write.  */
++extern void sim_lomem_fault (SIM_DESC sd, sim_cpu *cpu,
++			    address_word addr, unsigned len,
++			    sim_cia cia, int is_write);
++
++#define load_mem(ADDR,LEN)						      \
++  ({									      \
++    address_word _addr = (ADDR);					      \
++    SIM_DESC sd = simulator;						      \
++    sim_cpu *cpu = STATE_CPU (sd, 0);					      \
++    if (_addr < sim_lomem_read_protect_boundary)			      \
++      sim_lomem_fault (sd, cpu, _addr, LEN, PC, 0);			      \
++    sim_core_read_unaligned_##LEN (cpu, PC, read_map, _addr);		      \
++  })
++
++#define store_mem(ADDR,LEN,DATA)					      \
++  ({									      \
++    address_word _addr = (ADDR);					      \
++    unsigned_##LEN _data = (DATA);					      \
++    SIM_DESC sd = simulator;						      \
++    sim_cpu *cpu = STATE_CPU (sd, 0);					      \
++    if (_addr < sim_lomem_write_protect_boundary)			      \
++      sim_lomem_fault (sd, cpu, _addr, LEN, PC, 1);			      \
++    else								      \
++      sim_core_write_unaligned_##LEN (cpu, PC, write_map, _addr, _data);      \
++  })
+ 
+ /* compare cccc field against PSW */
+ int condition_met (unsigned code);
+diff -up sim/v850/interp.c.\~4\~ sim/v850/interp.c
+--- sim/v850/interp.c.~4~	Wed Sep  5 16:24:37 2001
++++ sim/v850/interp.c	Fri Sep  7 14:33:22 2001
+@@ -37,6 +37,9 @@ SIM_DESC simulator;
+ 
+ enum {
+   OPTION_V850_RECENT_BRANCHES = OPTION_START,
++  OPTION_V850_READ_PROTECT_LOMEM,
++  OPTION_V850_WRITE_PROTECT_LOMEM,
++  OPTION_V850_PROTECTED_LOMEM_INFO
+ };
+ 
+ static DECLARE_OPTION_HANDLER (v850_option_handler);
+@@ -46,6 +49,18 @@ static const OPTION v850_options[] =
+   { {"recent-branches", no_argument, NULL, OPTION_V850_RECENT_BRANCHES },
+       '\0', NULL, "Show a list of recent branches",
+       v850_option_handler },
++  { {"read-protect-low-memory", required_argument, NULL,
++     OPTION_V850_READ_PROTECT_LOMEM },
++    '\0', "BOUNDARY", "Signal a fault for any reads below address BOUNDARY",
++    v850_option_handler },
++  { {"write-protect-low-memory", required_argument, NULL,
++     OPTION_V850_WRITE_PROTECT_LOMEM },
++    '\0', "BOUNDARY", "Signal a fault for any writes below address BOUNDARY",
++    v850_option_handler },
++  { {"protected-low-memory-info", no_argument, NULL,
++     OPTION_V850_PROTECTED_LOMEM_INFO },
++    '\0', NULL, "Show which low-memory addresses are protected from reading/writing",
++    v850_option_handler },
+   { {NULL, no_argument, NULL, 0}, '\0', NULL, NULL, NULL }
+ };
+ 
+@@ -60,6 +75,44 @@ v850_option_handler (SIM_DESC sd, sim_cp
+     case OPTION_V850_RECENT_BRANCHES:
+       show_recent_branches (sd);
+       return SIM_RC_OK;
++
++    case OPTION_V850_READ_PROTECT_LOMEM:
++    case OPTION_V850_WRITE_PROTECT_LOMEM:
++      {
++	char *tail;
++	int is_write = (opt == OPTION_V850_WRITE_PROTECT_LOMEM);
++	address_word addr = strtol (arg, &tail, 0);
++	if (addr == 0 && tail == arg)
++	  {
++	    sim_io_eprintf (sd, "Invalid %s-protect boundary `%s'\n",
++			    is_write ? "write" : "read", arg);
++	    return SIM_RC_FAIL;
++	  }
++	if (is_write)
++	  sim_lomem_write_protect_boundary = addr;
++	else
++	  sim_lomem_read_protect_boundary = addr;
++      }
++      return SIM_RC_OK;
++
++    case OPTION_V850_PROTECTED_LOMEM_INFO:
++      {
++	if (sim_lomem_read_protect_boundary == 0)
++	  sim_io_printf (sd, "No addresses protected against reading\n");
++	else
++	  sim_io_printf (sd,
++			 "Addresses below 0x%lx protected against reading\n",
++			 sim_lomem_read_protect_boundary);
++
++	if (sim_lomem_write_protect_boundary == 0)
++	  sim_io_printf (sd, "No addresses protected against writing\n");
++	else
++	  sim_io_printf (sd,
++			 "Addresses below 0x%lx protected against writing\n",
++			 sim_lomem_write_protect_boundary);
++      }
++      return SIM_RC_OK;
++
+     default:
+       sim_io_eprintf (sd, "Unknown v850 option %d\n", opt);
+       return SIM_RC_FAIL;
+@@ -116,7 +169,7 @@ do_interrupt (sd, data)
+ 
+   /* How to adjust the PC upon return from this interrupt.  This is zero
+      for everything but a `halt' instruction.  */
+-  if (load_mem (PC, 2) == 0x07e0 && load_mem (PC + 2, 2) == 0x0120)
++  if (IMEM16 (PC) == 0x07e0 && IMEM16 (PC + 2) == 0x0120)
+     /* PC is pointing to a `halt' insn.  */
+     pc_adjust = 4;
+   else
+@@ -464,4 +517,22 @@ show_recent_branches (SIM_DESC sd)
+ 	  wrapped = 1;
+ 	}
+     }
++}
++
++
++/* Boundary below which memory is write-protected.  */
++address_word sim_lomem_write_protect_boundary = 0;
++/* Boundary below which memory is read-protected.  */
++address_word sim_lomem_read_protect_boundary = 0;
++
++/* Called if there's an invalid read/write.  */
++void
++sim_lomem_fault (SIM_DESC sd, sim_cpu *cpu,
++		 address_word addr, unsigned len,
++		 sim_cia cia, int is_write)
++{
++  sim_io_eprintf (sd,
++	  "core: %d byte %s protected low memory address 0x%lx at 0x%lx\n",
++		  len, is_write ? "write to" : "read from", addr, cia);
++  sim_engine_halt (sd, cpu, NULL, cia, sim_stopped, SIM_SIGSEGV);
+ }
+diff -up sim/v850/v850.igen.\~3\~ sim/v850/v850.igen
+--- sim/v850/v850.igen.~3~	Mon Aug 27 15:55:47 2001
++++ sim/v850/v850.igen	Fri Sep  7 14:31:32 2001
+@@ -1049,7 +1049,7 @@ rrrrr,001100,RRRRR:I:::subr
+   SAVE_1;
+   trace_input ("switch", OP_REG, 0);
+   adr = (cia + 2) + (State.regs[ reg1 ] << 1);
+-  nia = (cia + 2) + (EXTEND16 (load_mem (adr, 2)) << 1);
++  nia = (cia + 2) + (EXTEND16 (IMEM16 (adr)) << 1);
+   trace_output (OP_REG);
+ }
+ 

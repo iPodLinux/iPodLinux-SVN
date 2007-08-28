@@ -1,0 +1,303 @@
+#############################################################################
+#
+# For a description of the syntax of this configuration file,
+# see Documentation/kbuild/config-language.txt.
+#
+# based mainly on the arch/i386/config.in and bit of the 2.0, m68knommu
+# config.in
+#
+#############################################################################
+
+mainmenu_name 'uClinux/frio (w/o MMU) Kernel Configuration'
+
+define_bool CONFIG_UCLINUX y
+define_bool CONFIG_UID16 y
+define_bool CONFIG_RWSEM_GENERIC_SPINLOCK y
+define_bool CONFIG_RWSEM_XCHGADD_ALGORITHM n 
+define_bool CONFIG_BLACKFIN y
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'Code maturity level options'
+bool 'Prompt for development and/or incomplete code/drivers' CONFIG_EXPERIMENTAL
+endmenu
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'Loadable module support'
+bool 'Enable loadable module support' CONFIG_MODULES
+if [ "$CONFIG_MODULES" = "y" ]; then
+   bool '  Set version information on all module symbols' CONFIG_MODVERSIONS
+   bool '  Kernel module loader' CONFIG_KMOD
+fi
+endmenu
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'Processor type and features'
+
+unset CONFIG_SERIAL_SPACE2
+
+comment 'Platform'
+
+choice 	'Board' \
+	"EZ-Kit(533)	CONFIG_BLACKFIN_EZKIT \
+	 Hawk-35(MDS)	CONFIG_HAWK \
+	 Eagle-35(MDS)	CONFIG_EAGLE \
+	 PUB(ADI)	CONFIG_PUB"	Hawk
+
+comment 'Execution Location'
+
+choice 'Kernel executes from' \
+	"RAM	CONFIG_RAMKERNEL \
+	 ROM	CONFIG_ROMKERNEL" ROM
+
+comment 'Cache Support'
+
+bool 'Enable CACHE' CONFIG_BLACKFIN_CACHE
+bool 'Enable DCACHE' CONFIG_BLACKFIN_DCACHE
+
+comment 'Kernel space test program'
+
+bool 'Enable Audio Demonstration' AC97_DEMO
+endmenu
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'General setup'
+
+bool 'Networking support' CONFIG_NET
+bool 'SGI Visual Workstation support' CONFIG_VISWS
+if [ "$CONFIG_VISWS" = "y" ]; then
+   define_bool CONFIG_X86_VISWS_APIC y
+   define_bool CONFIG_X86_LOCAL_APIC y
+   define_bool CONFIG_PCI y
+else
+   if [ "$CONFIG_SMP" = "y" ]; then
+      define_bool CONFIG_X86_IO_APIC y
+      define_bool CONFIG_X86_LOCAL_APIC y
+   fi
+   bool 'PCI support' CONFIG_PCI
+   if [ "$CONFIG_PCI" = "y" ]; then
+      choice '  PCI access mode' \
+	"BIOS		CONFIG_PCI_GOBIOS	\
+	 Direct		CONFIG_PCI_GODIRECT	\
+	 Any		CONFIG_PCI_GOANY"	Any
+      if [ "$CONFIG_PCI_GOBIOS" = "y" -o "$CONFIG_PCI_GOANY" = "y" ]; then
+         define_bool CONFIG_PCI_BIOS y
+      fi
+      if [ "$CONFIG_PCI_GODIRECT" = "y" -o "$CONFIG_PCI_GOANY" = "y" ]; then
+         define_bool CONFIG_PCI_DIRECT y
+      fi
+   fi
+fi
+
+source drivers/pci/Config.in
+
+if [ "$CONFIG_VISWS" != "y" ]; then
+   bool 'MCA support' CONFIG_MCA
+fi
+
+bool 'Support for hot-pluggable devices' CONFIG_HOTPLUG
+
+if [ "$CONFIG_HOTPLUG" = "y" ] ; then
+   source drivers/pcmcia/Config.in
+else
+   define_bool CONFIG_PCMCIA n
+fi
+
+bool 'System V IPC' CONFIG_SYSVIPC
+bool 'BSD Process Accounting' CONFIG_BSD_PROCESS_ACCT
+bool 'Sysctl support' CONFIG_SYSCTL
+if [ "$CONFIG_PROC_FS" = "y" ]; then
+   choice 'Kernel core (/proc/kcore) format' \
+	"ELF		CONFIG_KCORE_ELF	\
+	 A.OUT		CONFIG_KCORE_AOUT" ELF
+fi
+tristate 'Kernel support for flat binaries' CONFIG_BINFMT_FLAT
+if [ "$CONFIG_BINFMT_FLAT" != "n" ]; then
+   bool '    Enable ZFLAT support' CONFIG_BINFMT_ZFLAT
+fi
+tristate 'Kernel support for a.out binaries' CONFIG_BINFMT_AOUT
+tristate 'Kernel support for ELF binaries' CONFIG_BINFMT_ELF
+tristate 'Kernel support for MISC binaries' CONFIG_BINFMT_MISC
+
+bool 'Power Management support' CONFIG_PM
+
+dep_bool '  ACPI support' CONFIG_ACPI $CONFIG_PM
+if [ "$CONFIG_ACPI" != "n" ]; then
+   if [ "$CONFIG_EXPERIMENTAL" = "y" ]; then
+      bool '    ACPI interpreter (EXPERIMENTAL)' CONFIG_ACPI_INTERPRETER
+      bool '    Enter S1 for sleep (EXPERIMENTAL)' CONFIG_ACPI_S1_SLEEP
+   fi
+fi
+
+dep_tristate '  Advanced Power Management BIOS support' CONFIG_APM $CONFIG_PM
+if [ "$CONFIG_APM" != "n" ]; then
+   bool '    Ignore USER SUSPEND' CONFIG_APM_IGNORE_USER_SUSPEND
+   bool '    Enable PM at boot time' CONFIG_APM_DO_ENABLE
+   bool '    Make CPU Idle calls when idle' CONFIG_APM_CPU_IDLE
+   bool '    Enable console blanking using APM' CONFIG_APM_DISPLAY_BLANK
+   bool '    RTC stores time in GMT' CONFIG_APM_RTC_IS_GMT
+   bool '    Allow interrupts during APM BIOS calls' CONFIG_APM_ALLOW_INTS
+   bool '    Use real mode APM BIOS call to power off' CONFIG_APM_REAL_MODE_POWER_OFF
+fi
+
+endmenu
+
+#############################################################################
+
+source drivers/mtd/Config.in
+
+source drivers/parport/Config.in
+
+source drivers/pnp/Config.in
+
+source drivers/block/Config.in
+
+if [ "$CONFIG_NET" = "y" ]; then
+   source net/Config.in
+fi
+
+source drivers/telephony/Config.in
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'ATA/IDE/MFM/RLL support'
+
+tristate 'ATA/IDE/MFM/RLL support' CONFIG_IDE
+
+if [ "$CONFIG_IDE" != "n" ]; then
+  source drivers/ide/Config.in
+else
+  define_bool CONFIG_BLK_DEV_IDE_MODES n
+  define_bool CONFIG_BLK_DEV_HD n
+fi
+endmenu
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'SCSI support'
+
+tristate 'SCSI support' CONFIG_SCSI
+
+if [ "$CONFIG_SCSI" != "n" ]; then
+   source drivers/scsi/Config.in
+fi
+endmenu
+
+#############################################################################
+
+source drivers/ieee1394/Config.in
+
+if [ "$CONFIG_NET" = "y" ]; then
+   mainmenu_option next_comment
+   comment 'Network device support'
+
+   bool 'Network device support' CONFIG_NETDEVICES
+   if [ "$CONFIG_NETDEVICES" = "y" ]; then
+      source drivers/net/Config.in
+      if [ "$CONFIG_ATM" = "y" ]; then
+         source drivers/atm/Config.in
+      fi
+   fi
+   endmenu
+fi
+
+source net/ax25/Config.in
+
+source net/irda/Config.in
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'ISDN subsystem'
+if [ "$CONFIG_NET" != "n" ]; then
+   tristate 'ISDN support' CONFIG_ISDN
+   if [ "$CONFIG_ISDN" != "n" ]; then
+      source drivers/isdn/Config.in
+   fi
+fi
+endmenu
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'Old CD-ROM drivers (not SCSI, not IDE)'
+
+bool 'Support non-SCSI/IDE/ATAPI CDROM drives' CONFIG_CD_NO_IDESCSI
+if [ "$CONFIG_CD_NO_IDESCSI" != "n" ]; then
+   source drivers/cdrom/Config.in
+fi
+endmenu
+
+#############################################################################
+
+source drivers/char/Config.in
+
+
+#source drivers/misc/Config.in
+
+source fs/Config.in
+
+if [ "$CONFIG_VT" = "y" ]; then
+   mainmenu_option next_comment
+   comment 'Console drivers'
+   bool 'VGA text console' CONFIG_VGA_CONSOLE
+   bool 'Video mode selection support' CONFIG_VIDEO_SELECT
+   if [ "$CONFIG_EXPERIMENTAL" = "y" ]; then
+      tristate 'MDA text console (dual-headed) (EXPERIMENTAL)' CONFIG_MDA_CONSOLE
+      source drivers/video/Config.in
+   fi
+   endmenu
+fi
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'Sound'
+
+tristate 'Sound card support' CONFIG_SOUND
+if [ "$CONFIG_SOUND" != "n" ]; then
+   source drivers/sound/Config.in
+fi
+endmenu
+
+#############################################################################
+
+source drivers/usb/Config.in
+
+#############################################################################
+
+mainmenu_option next_comment
+comment 'Kernel hacking'
+
+bool 'Full Symbolic/Source Debugging support' CONFIG_FULLDEBUG
+#bool 'Debug kmalloc/kfree' CONFIG_DEBUG_MALLOC
+bool 'Magic SysRq key' CONFIG_MAGIC_SYSRQ
+bool 'Include kgdb kernel debugger' CONFIG_KGDB
+
+bool 'Kernel profiling support' CONFIG_PROFILE
+if [ "$CONFIG_PROFILE" = "y" ]; then
+  int ' Profile shift count' CONFIG_PROFILE_SHIFT 2
+  bool 'Use fast second timer for profiling' CONFIG_HIGHPROFILE
+fi
+
+if [ "$CONFIG_COLDFIRE" = "y" ]; then
+	bool 'Magic SysRq Key' CONFIG_MAGIC_SYSRQ
+	bool 'Panic/Dump to FLASH' CONFIG_DUMPTOFLASH
+fi
+endmenu
+
+#############################################################################
+
+source lib/Config.in
+source crypto/Config.in
+
+#############################################################################

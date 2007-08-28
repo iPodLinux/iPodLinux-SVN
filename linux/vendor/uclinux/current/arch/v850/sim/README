@@ -1,0 +1,13 @@
+This directory contains some useful files for debugging using the gdb
+v850 simulator.
+
+
+   gdb-scripts/		An example .gdbrc and useful gdb scripts.
+
+   patches/		Patches for the simulator and gdb
+
+   updroot		A shell script that copies a directory tree called
+			`root' into an ext2 filesystem image called
+			`root.ext2', which is the name the simulator-specific
+			startup code in the uclinux v850 port looks for to
+			initialize the root filesystem.

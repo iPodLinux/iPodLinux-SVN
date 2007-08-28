@@ -1,0 +1,43 @@
+# uClinux H8/300 Target Board Selection Menu
+
+define_bool CONFIG_H83068 n
+define_bool CONFIG_H8S2768 n
+
+choice 'Target Board' \
+	"generic	                     CONFIG_BOARD_GENERIC \
+	 Akizuki_H8/3068_Network_Board       CONFIG_BOARD_AKI3068NET \
+	 H8MAX                               CONFIG_BOARD_H8MAX \
+	 HMSE_EDOSK-2674R                    CONFIG_BOARD_EDOSK2674" generic
+
+if [ "$CONFIG_BOARD_AKI3068NET" = "y" ]; then
+  define_bool CONFIG_H83068 y
+  define_int  CONFIG_CLK_FREQ 20000
+  define_bool CONFIG_RAMKERNEL y
+  define_hex  CONFIG_NE_BASE 0x200000
+  define_int  CONFIG_NE_IRQ  5
+  define_bool CONFIG_H8300_DMAMEMCPY n
+  define_bool CONFIG_BOARD_H8MAX n
+  define_bool CONFIG_BOARD_EDOSK2674 n
+fi
+
+if [ "$CONFIG_BOARD_H8MAX" = "y" ]; then
+  define_bool CONFIG_H83068 y
+  define_int  CONFIG_CLK_FREQ 25000
+  define_bool CONFIG_RAMKERNEL y
+  define_hex  CONFIG_NE_BASE 0x800600
+  define_int  CONFIG_NE_IRQ  4
+  define_bool CONFIG_H8300_DMAMEMCPY y
+  define_bool CONFIG_BOARD_AKI3068NET n
+  define_bool CONFIG_BOARD_EDOSK2674 n
+fi
+
+if [ "$CONFIG_BOARD_EDOSK2674" = "y" ]; then
+  define_bool CONFIG_H8S2678 y
+  define_int  CONFIG_CLK_FREQ 33000
+  choice 'Kernel executes from' \
+	"RAM	CONFIG_RAMKERNEL \
+	 ROM	CONFIG_ROMKERNEL" ROM
+  define_bool CONFIG_BOARD_AKI3068NET n
+  define_bool CONFIG_BOARD_H8MAX n
+fi
+
