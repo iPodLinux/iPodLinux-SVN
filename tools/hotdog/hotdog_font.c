@@ -290,7 +290,7 @@ void HD_Font_Draw (hd_surface srf, hd_font *font, int x, int y, uint32 color, co
     if (IsASCII (str))
         HD_Font_DrawLatin1 (srf, font, x, y, color, str);
     else {
-        unsigned short *buf = malloc (strlen (str) * 2 + 2);
+        unsigned short *buf = xmalloc (strlen (str) * 2 + 2);
         unsigned int len = ConvertUTF8 ((const unsigned char *)str, buf);
         buf[len] = 0;
         HD_Font_DrawUnicode (srf, font, x, y, color, buf);
@@ -303,7 +303,7 @@ void HD_Font_DrawFast (hd_surface srf, hd_font *font, int x, int y, uint32 color
     if (IsASCII (str))
         HD_Font_DrawFastLatin1 (srf, font, x, y, color, str);
     else {
-        unsigned short *buf = malloc (strlen (str) * 2 + 2);
+        unsigned short *buf = xmalloc (strlen (str) * 2 + 2);
         unsigned int len = ConvertUTF8 ((const unsigned char *)str, buf);
         buf[len] = 0;
         HD_Font_DrawFastUnicode (srf, font, x, y, color, buf);
@@ -348,7 +348,7 @@ int HD_Font_TextWidth (hd_font *font, const char *str)
     if (IsASCII (str))
         return HD_Font_TextWidthLatin1 (font, str);
     else {
-        unsigned short *buf = malloc (strlen (str) * 2 + 2);
+        unsigned short *buf = xmalloc (strlen (str) * 2 + 2);
         unsigned int len = ConvertUTF8 ((const unsigned char *)str, buf);
         buf[len] = 0;
         int ret = HD_Font_TextWidthUnicode (font, buf);
@@ -440,7 +440,7 @@ hd_font *HD_Font_LoadHDF (const char *filename)
         return 0;
     }
 
-    hd_font *font = malloc (sizeof(hd_font));
+    hd_font *font = xmalloc (sizeof(hd_font));
     font->bitstype    = hdr.bitstype;
     font->pitch       = hdr.pitch;
     font->h           = hdr.height;
@@ -449,9 +449,9 @@ hd_font *HD_Font_LoadHDF (const char *filename)
     font->nchars      = hdr.nchars;
     font->defaultchar = 0;
     font->pixbytes    = hdr.nbytes;
-    font->offset      = malloc (4 * font->nchars);
-    font->width       = malloc (font->nchars);
-    font->pixels      = malloc (font->pixbytes);
+    font->offset      = xmalloc (4 * font->nchars);
+    font->width       = xmalloc (font->nchars);
+    font->pixels      = xmalloc (font->pixbytes);
     
     if (!font->offset || !font->width || !font->pixels) {
         if (font->offset) free (font->offset);
@@ -562,13 +562,12 @@ static int readstr (FILE *fp, char *buf, int count)
 
 hd_font *HD_Font_LoadFNT (const char *filename) 
 {
-    int i;
     FILE *fp = fopen (filename, "rb");
     if (!fp) return 0;
     
     uint16 maxwidth, height, ascent, pad;
     uint32 firstchar, defaultchar, nchars;
-    uint32 nbits, noffset, nwidth;
+    uint32 nbits, noffset, nwidth, i;
     char version[5];
     
     memset (version, 0, 5);
@@ -590,7 +589,7 @@ hd_font *HD_Font_LoadFNT (const char *filename)
     if (!read32 (fp, &noffset)) goto errout;
     if (!read32 (fp, &nwidth)) goto errout;
     
-    hd_font *font     = malloc (sizeof(hd_font));
+    hd_font *font     = xmalloc (sizeof(hd_font));
     font->bitstype    = HD_FONT_CLUMPED;
     font->pitch       = 2;
     font->h           = height;
@@ -598,9 +597,9 @@ hd_font *HD_Font_LoadFNT (const char *filename)
     font->firstchar   = firstchar;
     font->nchars      = nchars;
     font->defaultchar = defaultchar;
-    font->pixels      = malloc (font->pixbytes = 2 * nbits);
-    font->offset      = malloc (4 * nchars);
-    font->width       = malloc (nchars);
+    font->pixels      = xmalloc (font->pixbytes = 2 * nbits);
+    font->offset      = xmalloc (4 * nchars);
+    font->width       = xmalloc (nchars);
 
     if (!font->pixels || !font->offset || !font->width) {
         goto errfree;
@@ -830,7 +829,7 @@ readLSB32(FILEP file)
 static int
 pcf_get_offset(int item)
 {
-	int i;
+	uint32 i;
 
 	for (i = 0; i < toc_size; i++)
 		if (item == toc[i].type)
@@ -862,7 +861,7 @@ pcf_readbitmaps(FILE *file, unsigned char **bits, int *bits_size,
 
 	num_glyphs = readLSB32(file);
 
-	o = *offsets = (uint32 *)malloc(num_glyphs * sizeof(uint32));
+	o = *offsets = (uint32 *)xmalloc(num_glyphs * sizeof(uint32));
 	for (i=0; i < num_glyphs; ++i)
 		o[i] = readLSB32(file);
 
@@ -873,7 +872,7 @@ pcf_readbitmaps(FILE *file, unsigned char **bits, int *bits_size,
 	*bits_size = bmsize[pad]? bmsize[pad] : 1;
 
 	/* alloc and read bitmap data*/
-	b = *bits = (unsigned char *) malloc(*bits_size);
+	b = *bits = (unsigned char *) xmalloc(*bits_size);
 	FREAD(file, b, *bits_size);
 
 	/* convert bitmaps*/
@@ -905,7 +904,7 @@ pcf_readmetrics(FILE * file, struct metric_entry **metrics)
 	if ((format & PCF_FORMAT_MASK) == PCF_DEFAULT_FORMAT) {
 		size = readLSB32(file);		/* 32 bits - Number of metrics*/
 
-		m = *metrics = (struct metric_entry *) malloc(size *
+		m = *metrics = (struct metric_entry *) xmalloc(size *
 			sizeof(struct metric_entry));
 
 		for (i=0; i < size; i++) {
@@ -919,7 +918,7 @@ pcf_readmetrics(FILE * file, struct metric_entry **metrics)
 	} else {
 		size = readLSB16(file);		/* 16 bits - Number of metrics*/
 
-		m = *metrics = (struct metric_entry *) malloc(size *
+		m = *metrics = (struct metric_entry *) xmalloc(size *
 			sizeof(struct metric_entry));
 
 		for (i = 0; i < size; i++) {
@@ -937,8 +936,8 @@ pcf_readmetrics(FILE * file, struct metric_entry **metrics)
 static int
 pcf_read_encoding(FILE * file, struct encoding_entry **encoding)
 {
-	long offset, n;
-	uint32 format;
+	long offset;
+	uint32 format, n;
 	struct encoding_entry *e;
 
 	if ((offset = pcf_get_offset(PCF_BDF_ENCODINGS)) == -1)
@@ -948,7 +947,7 @@ pcf_read_encoding(FILE * file, struct encoding_entry **encoding)
 	format = readLSB32(file);
 
 	e = *encoding = (struct encoding_entry *)
-		malloc(sizeof(struct encoding_entry));
+		xmalloc(sizeof(struct encoding_entry));
 	e->min_byte2 = readLSB16(file);
 	e->max_byte2 = readLSB16(file);
 	e->min_byte1 = readLSB16(file);
@@ -956,7 +955,7 @@ pcf_read_encoding(FILE * file, struct encoding_entry **encoding)
 	e->defaultchar = readLSB16(file);
 	e->count = (e->max_byte2 - e->min_byte2 + 1) *
 		(e->max_byte1 - e->min_byte1 + 1);
-	e->map = (uint16 *) malloc(e->count * sizeof(uint16));
+	e->map = (uint16 *) xmalloc(e->count * sizeof(uint16));
 
 	for (n = 0; n < e->count; ++n) {
 		e->map[n] = readLSB16(file);
@@ -968,8 +967,7 @@ pcf_read_encoding(FILE * file, struct encoding_entry **encoding)
 static int
 pcf_read_toc(FILE * file, struct toc_entry **toc, uint32 *size)
 {
-	long i;
-	uint32 version;
+	uint32 version, i;
 	struct toc_entry *t;
 
 	fseek (file, 0, SEEK_SET);
@@ -980,7 +978,7 @@ pcf_read_toc(FILE * file, struct toc_entry **toc, uint32 *size)
 		return -1;
 
 	*size = readLSB32(file);
-	t = *toc = (struct toc_entry *) calloc(sizeof(struct toc_entry), *size);
+	t = *toc = (struct toc_entry *)xcalloc(sizeof(struct toc_entry), *size);
 	if (!t)
 		return -1;
 
@@ -1036,7 +1034,7 @@ hd_font *HD_Font_LoadPCF (const char *fname)
 	goto leave_func;
     }
 
-    font = malloc (sizeof(hd_font));
+    font = xmalloc (sizeof(hd_font));
     font->firstchar = encoding->min_byte2 * (encoding->min_byte1 + 1);
     
     count = pcf_readmetrics (file, &metrics);
@@ -1058,14 +1056,14 @@ hd_font *HD_Font_LoadPCF (const char *fname)
 
     bwidth = (max_width + 15) / 16;
 
-    font->pixels = calloc (1, (font->pixbytes = max_height * 2 * bwidth * glyph_count));
+    font->pixels = xcalloc (1, (font->pixbytes = max_height * 2 * bwidth * glyph_count));
     if (!font->pixels) {
         err = ENOMEM;
         goto leave_func;
     }
     
-    goffset = malloc (glyph_count * 4);
-    gwidth = malloc (glyph_count);
+    goffset = xmalloc (glyph_count * 4);
+    gwidth = xmalloc (glyph_count);
     output = (uint16 *)font->pixels;
     offset = 0;
 
@@ -1119,9 +1117,9 @@ hd_font *HD_Font_LoadPCF (const char *fname)
 
     
     /* reorder offsets and width according to encoding map */
-    font->offset = malloc(encoding->count * 4);
-    font->width = malloc(encoding->count);
-    for (i = 0; i < encoding->count; ++i) {
+    font->offset = xmalloc(encoding->count * 4);
+    font->width = xmalloc(encoding->count);
+    for (i = 0; i < (int)encoding->count; ++i) {
 	uint16 n = encoding->map[i];
 	if (n == 0xffff)	/* map non-existent chars to default char */
 	    n = encoding->map[encoding->defaultchar];
@@ -1176,7 +1174,7 @@ hd_font *HD_Font_LoadSFont (const char *fname)
 
 	pink = HD_RGB(255, 0, 255);
 
-	font = malloc(sizeof(hd_font));
+	font = xmalloc(sizeof(hd_font));
 	font->bitstype = HD_FONT_PITCHED;
 	font->pitch = iw;
 	font->h = ih - 1;
@@ -1184,8 +1182,8 @@ hd_font *HD_Font_LoadSFont (const char *fname)
 	font->pixels = HD_SRF_ROWF(srf, 1);
 	font->bpp = 8;
 	font->firstchar = 32;
-	font->offset = malloc(512 * sizeof(uint32));
-	font->width = malloc(512 * sizeof(uint8));
+	font->offset = xmalloc(512 * sizeof(uint32));
+	font->width = xmalloc(512 * sizeof(uint8));
 	font->defaultchar = 32;
 	font->offset[0] = 0;
 
@@ -1198,10 +1196,10 @@ hd_font *HD_Font_LoadSFont (const char *fname)
 	}
 	font->width[i] = x - font->offset[i];
 	font->nchars = i+1;
-	font->offset = realloc(font->offset, (i+1) * sizeof(uint32));
-	font->width = realloc(font->width, (i+1) * sizeof(uint8));
+	font->offset = xrealloc(font->offset, (i+1) * sizeof(uint32));
+	font->width = xrealloc(font->width, (i+1) * sizeof(uint8));
 
-	buf = malloc((ih - 1) * iw);
+	buf = xmalloc((ih - 1) * iw);
 	for (p = (uint32 *)font->pixels, b = buf; b - buf < (ih - 1) * iw; ++b)
 		*b = (*p++ >> 24) & 0xff;
 	font->pixels = buf;
@@ -1234,7 +1232,7 @@ hd_font *HD_Font_LoadFFF (const char *fname)
 	if ((ip = fopen(fname, "r")) == NULL)
 		return NULL;
 
-	font = malloc(sizeof(hd_font));
+	font = xmalloc(sizeof(hd_font));
 	font->bitstype = HD_FONT_CLUMPED;
 	font->pitch = 1;
 	font->pixels = NULL;
@@ -1256,7 +1254,7 @@ hd_font *HD_Font_LoadFFF (const char *fname)
 		if (index > lc) lc = index;
 		if (n_bits < index + 1) {
 			n_bits = (index + 0x100) & ~0xff;
-			font->pixels = realloc(font->pixels, n_bits*font->h);
+			font->pixels = xrealloc(font->pixels, n_bits*font->h);
 		}
 		for (i = 0; i < (int)font->h; ++i)
 			*((unsigned char *)font->pixels + index*font->h + i) =
@@ -1265,8 +1263,8 @@ hd_font *HD_Font_LoadFFF (const char *fname)
 	font->defaultchar = font->firstchar;
 	font->nchars = lc - font->firstchar;
 	font->pixbytes = font->nchars * font->h;
-	font->offset = malloc(font->nchars * sizeof(uint32));
-	font->width = malloc(font->nchars * sizeof(uint8));
+	font->offset = xmalloc(font->nchars * sizeof(uint32));
+	font->width = xmalloc(font->nchars * sizeof(uint8));
 	for (i = 0; i < font->nchars; ++i) {
 		font->offset[i] = (i + font->firstchar) * font->h;
 		font->width[i] = w;

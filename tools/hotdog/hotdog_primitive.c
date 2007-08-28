@@ -34,40 +34,9 @@
 #include <string.h>
 #include <assert.h>
 #include <math.h>
+#include <limits.h>
 
 #include "hotdog.h"
-
-#if 0
-void HD_Primitive_Render(hd_engine *eng,hd_object *obj, int cx, int cy, int cw, int ch) {
-  int32 x,y;
-  int32 startx,starty,endx,endy;
-
-  if(  obj->x+cx     <                  0 ) startx = 0; else startx = obj->x + cx;
-  if( (obj->x+cx+cw) >  eng->screen.width ) endx   = eng->screen.width; else endx = obj->x + cx + cw;
-  if(  obj->y+cy     <                  0 ) starty = 0; else starty = obj->y + cy;
-  if( (obj->y+cy+ch) > eng->screen.height ) endy   = eng->screen.height; else endy = obj->y + cy + ch;
-
-
-  for(y=starty;y<endy;y++) {
-    for(x=startx;x<endx;x++) {
-      
-      BLEND_ARGB8888_ON_ARGB8888( eng->buffer[ y * eng->screen.width + x ], obj->sub.prim->color );
-      
-    }
-  }
-
-#if 0
-  for(y=obj->y;y<(obj->y+obj->h);y++) {
-    for(x=obj->x;x<(obj->x+obj->h);x++) {
-      
-      BLEND_ARGB8888_ON_ARGB8888( eng->buffer[ y * eng->screen.width + x ], obj->sub.prim->color );
-      
-    }
-  }
-#endif
-
-}
-#endif
 
 #define SWAP(a,b)	\
   do {			\
@@ -78,15 +47,21 @@ void HD_Primitive_Render(hd_engine *eng,hd_object *obj, int cx, int cy, int cw, 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 #define ABS(a) (((a)>0)?(a):(-(a)))
+#define ROUND(a) ((double)(((a)>0)?(int)((a) + 0.5f):(int)((a) - 0.5f)))
+
+int iround(double x)
+{
+	return (int)ROUND(x);
+}
 
 /* Draws from (x1, y) to (x2, y) */
 static void hLine(hd_surface srf, int x1, int x2, int y, uint32 col)
 {
 	uint32 *p;
-        if (y < 0 || y >= HD_SRF_HEIGHT(srf)) return; /* off-surface */
+        if (y < 0 || y >= (int)HD_SRF_HEIGHT(srf)) return; /* off-surface */
 	if (x1 > x2) SWAP(x1, x2);
         if (x1 < 0) x1 = 0;
-        if (x2 > HD_SRF_WIDTH(srf)) x2 = HD_SRF_WIDTH(srf);
+        if (x2 >= (int)HD_SRF_WIDTH(srf)) x2 = HD_SRF_WIDTH(srf) - 1;
         if (x1 > x2) return; /* x1 off to the right, or no line to draw */
 	p = HD_SRF_ROWF(srf, y);
 	for (; x1 <= x2; ++x1)
@@ -95,11 +70,11 @@ static void hLine(hd_surface srf, int x1, int x2, int y, uint32 col)
 
 void HD_Pixel(hd_surface srf, int x, int y, uint32 col)
 {
+	/* W & H bounding are done in HD_SRF_SETPIX, from HD_SRF_BLENDPIX */
         if (y < 0 || x < 0) return;
 	HD_SRF_BLENDPIX(srf,x,y,col);
 }
 
-/* TODO: offscreen clipping */
 void HD_Line(hd_surface srf, int x0, int y0, int x1, int y1, uint32 col)
 {
 	char steep;
@@ -125,9 +100,8 @@ void HD_Line(hd_surface srf, int x0, int y0, int x1, int y1, uint32 col)
 	y = y0;
 	yi = (y0 < y1) ? 1 : -1;
 	for (x = x0; x <= x1; ++x) {
-		/* TODO: extract this if/else out of the loop */
-		if (steep) HD_SRF_BLENDPIX(srf,y,x,col);
-		else HD_SRF_BLENDPIX(srf,x,y,col);
+		if (steep) HD_Pixel(srf,y,x,col);
+		else HD_Pixel(srf,x,y,col);
 		err += dy;
 		if (2*err >= dx) {
 			y += yi;
@@ -139,6 +113,7 @@ void HD_Line(hd_surface srf, int x0, int y0, int x1, int y1, uint32 col)
 #define BLENDPIX_WEIGHT(srf,x,y,pix,wei)			\
   do {								\
     uint32 p;							\
+    if (x < 0 || y < 0) break;					\
     _HD_ALPHA_BLEND(HD_SRF_GETPIX(srf, x, y), pix, p, wei);	\
     HD_SRF_SETPIX(srf,x,y,p);					\
   } while (0)
@@ -171,7 +146,7 @@ void HD_AALine(hd_surface srf, int x0, int y0, int x1, int y1, uint32 col)
 
 	erracc = 0;
 
-	HD_SRF_BLENDPIX(srf, x0, y0, col);
+	HD_Pixel(srf, x0, y0, col);
 
 	if (dy > dx) {
 		erradj = ((dx << 16) / dy) << 16;
@@ -203,7 +178,7 @@ void HD_AALine(hd_surface srf, int x0, int y0, int x1, int y1, uint32 col)
 		}
 	}
 
-	HD_SRF_BLENDPIX(srf, x1, y1, col);
+	HD_Pixel(srf, x1, y1, col);
 }
 
 #define DO_HD_LINES(function, srf, p, n, col)				\
@@ -247,7 +222,7 @@ void HD_Bitmap(hd_surface srf, int x, int y, int w, int h,
 			value = *bits++;
 		}
 		if (value & (1 << 15))
-			HD_SRF_BLENDPIX(srf, x, y, col);
+			HD_Pixel(srf, x, y, col);
 		value <<= 1;
 		--count;
 
@@ -280,7 +255,7 @@ static void record_point(hd_bucket *b, hd_point *p)
 	if (b->n + 1 > b->allocd) {
 		b->allocd += 256;
 		/* allocate for hd_hsls so we don't have to realloc later */
-		b->x = realloc(b->x, b->allocd * sizeof(hd_hsls));
+		b->x = xrealloc(b->x, b->allocd * sizeof(hd_hsls));
 	}
 	/* in order for us to be able to translate this to hd_hsls, we have
 	 * to swap x and y for now, don't panic. */
@@ -389,7 +364,7 @@ static void insert_node(hd_bucket *b, hd_hsls *l)
 {
 	if (b->n + 2 > b->allocd) {
 		b->allocd += 32;
-		b->x = realloc(b->x, b->allocd * sizeof(hd_point));
+		b->x = xrealloc(b->x, b->allocd * sizeof(hd_point));
 	}
 	b->x[b->n].x = l->xl;
 	b->x[b->n++].y = l->xr;
@@ -427,19 +402,18 @@ static void lius_criterion(hd_poly *poly)
 
 void HD_FillPoly(hd_surface srf, hd_point *points, int n, uint32 col)
 {
-#define safe_free(a) do { if (a) free(a), a = NULL; } while (0)
 	hd_poly *poly;
 	int i, y;
 
 	if (n < 3) return;
-	poly = calloc(1, sizeof(hd_poly));
+	poly = xcalloc(1, sizeof(hd_poly));
 	poly->ymin = points[0].y;
 	for (i = n; i--;) {
 		poly->ymax = MAX(poly->ymax, points[i].y);
 		poly->ymin = MIN(poly->ymin, points[i].y);
 	}
 	poly->n = (poly->ymax - poly->ymin) + 1;
-	poly->net = calloc(poly->n + 1, sizeof(hd_bucket));
+	poly->net = xcalloc(poly->n + 1, sizeof(hd_bucket));
 	poly->ppoly = poly->net++;
 
 	for (i = 0; i < n - 1; ++i)
@@ -454,7 +428,6 @@ void HD_FillPoly(hd_surface srf, hd_point *points, int n, uint32 col)
 		qsort(p->x, p->n, sizeof(int) * 2, cmp_coord);
 		for (s = (hd_point * )p->x; p->n > 1; s += 2, p->n -= 2)
 			hLine(srf, s->x, (s + 1)->y, y, col);
-		//if (p->n) hLine(srf, *x, *(x + 1), y, col);
 		safe_free(p->x);
 	}
 	safe_free(poly->ppoly->x);
@@ -471,8 +444,8 @@ void HD_FillRect(hd_surface srf, int x1, int y1, int x2, int y2, uint32 col)
 	if (x1 > x2) SWAP(x1, x2);
 	if (y1 > y2) SWAP(y1, y2);
 
-	y2 = MIN(HD_SRF_HEIGHT(srf), y2);
-	x2 = MIN(HD_SRF_WIDTH(srf), x2);
+	y2 = MIN((int)HD_SRF_HEIGHT(srf), y2);
+	x2 = MIN((int)HD_SRF_WIDTH(srf), x2);
 
 	x1 = MAX(0, x1);
 	y1 = MAX(0, y1);
@@ -500,44 +473,69 @@ void HD_FillRect(hd_surface srf, int x1, int y1, int x2, int y2, uint32 col)
 	}
 }
 
-/* XXX: resizes rectangle to surface; should clip and remove clipped sides */
 void HD_Rect(hd_surface srf, int x1, int y1, int x2, int y2, uint32 col)
 {
+	char t, b, l, r;
 	int xi;
-	uint32 *b, *e;
+	uint32 *s, *e;
 
 	if (x1 == x2 || y1 == y2) return;
 	if (x1 > x2) SWAP(x1, x2);
 	if (y1 > y2) SWAP(y1, y2);
 
-	y2 = MIN(HD_SRF_HEIGHT(srf), y2);
-	x2 = MIN(HD_SRF_WIDTH(srf), x2);
+	t = b = l = r = 1;
 
-	x1 = MAX(0, x1);
-	y1 = MAX(0, y1);
-
+	if (y1 < 0) {
+		t = 0;
+		y1 = 0;
+	}
+	if (y2 > (int)HD_SRF_HEIGHT(srf)) {
+		b = 0;
+		y2 = HD_SRF_HEIGHT(srf);
+	}
+	if (x1 < 0) {
+		l = 0;
+		x1 = 0;
+	}
+	if (x2 > (int)HD_SRF_WIDTH(srf)) {
+		r = 0;
+		x2 = HD_SRF_WIDTH(srf);
+	}
 	if (x2 <= x1 || y2 <= y1) return;
 
-	b = HD_SRF_ROWF(srf, y1);
+	s = HD_SRF_ROWF(srf, y1);
 	e = HD_SRF_ROWF(srf, y2 - 1);
-	for (xi = x1 + 1; xi < x2 - 1; ++xi) {
-		BLEND_ARGB8888_ON_ARGB8888(*(b + xi), col, 0xff)
-		BLEND_ARGB8888_ON_ARGB8888(*(e + xi), col, 0xff)
+	if (l && r) {
+		for (xi = x1 + 1; xi < x2 - 1; ++xi) {
+			BLEND_ARGB8888_ON_ARGB8888(*(s + xi), col, 0xff)
+			BLEND_ARGB8888_ON_ARGB8888(*(e + xi), col, 0xff)
+		}
+	} else if (l || r) {
+		s = (l) ? s : e;
+		for (xi = x1 + 1; xi < x2 - 1; ++xi)
+			BLEND_ARGB8888_ON_ARGB8888(*(s + xi), col, 0xff)
 	}
-	for (; y1 < y2; ++y1) {
-		b = HD_SRF_ROWF(srf, y1);
-		BLEND_ARGB8888_ON_ARGB8888(*(b + x1), col, 0xff)
-		BLEND_ARGB8888_ON_ARGB8888(*(b + x2 - 1), col, 0xff)
+	if (t && b) {
+		for (; y1 < y2; ++y1) {
+			s = HD_SRF_ROWF(srf, y1);
+			BLEND_ARGB8888_ON_ARGB8888(*(s + x1), col, 0xff)
+			BLEND_ARGB8888_ON_ARGB8888(*(s + x2 - 1), col, 0xff)
+		}
+	} else if (t || b) {
+		xi = (t) ? x1 : x2 - 1;
+		for (; y1 < y2; ++y1) {
+			s = HD_SRF_ROWF(srf, y1);
+			BLEND_ARGB8888_ON_ARGB8888(*(s + xi), col, 0xff)
+		}
 	}
 }
 
-/* XXX: add clipping */
 void HD_Circle(hd_surface srf, int x, int y, int r, uint32 col)
 {
 	int16 cx = 0;
 	int16 cy = r;
-	int16 ocx = 0xffff;
-	int16 ocy = 0xffff;
+	int16 ocx = SHRT_MAX;
+	int16 ocy = SHRT_MAX;
 	int16 df = 1 - r;
 	int16 d_e = 3;
 	int16 d_se = -2 * r + 5;
@@ -546,7 +544,7 @@ void HD_Circle(hd_surface srf, int x, int y, int r, uint32 col)
 
 	if (r < 0) return;
 	if (r == 0) {
-		HD_SRF_BLENDPIX(srf, x, y, col);
+		HD_Pixel(srf, x, y, col);
 		return;
 	}
 
@@ -557,14 +555,14 @@ void HD_Circle(hd_surface srf, int x, int y, int r, uint32 col)
 			if (cy > 0) {
 				ypcy = y + cy;
 				ymcy = y - cy;
-				HD_SRF_BLENDPIX(srf, xmcx, ypcy, col);
-				HD_SRF_BLENDPIX(srf, xpcx, ypcy, col);
-				HD_SRF_BLENDPIX(srf, xmcx, ymcy, col);
-				HD_SRF_BLENDPIX(srf, xpcx, ymcy, col);
+				HD_Pixel(srf, xmcx, ypcy, col);
+				HD_Pixel(srf, xpcx, ypcy, col);
+				HD_Pixel(srf, xmcx, ymcy, col);
+				HD_Pixel(srf, xpcx, ymcy, col);
 			}
 			else {
-				HD_SRF_BLENDPIX(srf, xmcx, y, col);
-				HD_SRF_BLENDPIX(srf, xpcx, y, col);
+				HD_Pixel(srf, xmcx, y, col);
+				HD_Pixel(srf, xpcx, y, col);
 			}
 			ocy = cy;
 			xpcy = x + cy;
@@ -572,14 +570,14 @@ void HD_Circle(hd_surface srf, int x, int y, int r, uint32 col)
 			if (cx > 0) {
 				ypcx = y + cx;
 				ymcx = y - cx;
-				HD_SRF_BLENDPIX(srf, xmcy, ypcx, col);
-				HD_SRF_BLENDPIX(srf, xpcy, ypcx, col);
-				HD_SRF_BLENDPIX(srf, xmcy, ymcx, col);
-				HD_SRF_BLENDPIX(srf, xpcy, ymcx, col);
+				HD_Pixel(srf, xmcy, ypcx, col);
+				HD_Pixel(srf, xpcy, ypcx, col);
+				HD_Pixel(srf, xmcy, ymcx, col);
+				HD_Pixel(srf, xpcy, ymcx, col);
 			}
 			else {
-				HD_SRF_BLENDPIX(srf, xmcy, y, col);
-				HD_SRF_BLENDPIX(srf, xpcy, y, col);
+				HD_Pixel(srf, xmcy, y, col);
+				HD_Pixel(srf, xpcy, y, col);
 			}
 			ocx = cx;
 		}	
@@ -601,13 +599,12 @@ void HD_Circle(hd_surface srf, int x, int y, int r, uint32 col)
 void HD_AACircle(hd_surface srf, int xc, int yc, int r, uint32 col)
 { HD_AAEllipse(srf, xc, yc, r, r, col); }
 
-/* XXX: add clipping */
 void HD_FillCircle(hd_surface srf, int x, int y, int r, uint32 col)
 {
 	int16 cx = 0;
 	int16 cy = r;
-	int16 ocx = 0xffff;
-	int16 ocy = 0xffff;
+	int16 ocx = SHRT_MAX;
+	int16 ocy = SHRT_MAX;
 	int16 df = 1 - r;
 	int16 d_e = 3;
 	int16 d_se = -2 * r + 5;
@@ -615,9 +612,13 @@ void HD_FillCircle(hd_surface srf, int x, int y, int r, uint32 col)
 
 	if (r < 0) return;
 	if (r == 0) {
-		HD_SRF_BLENDPIX(srf, x, y, col);
+		HD_Pixel(srf, x, y, col);
 		return;
 	}
+	if (x + r < 0 || y + r < 0 ||
+			x - r > (int)HD_SRF_WIDTH(srf) ||
+			y - r > (int)HD_SRF_HEIGHT(srf))
+		return;
 
 	do {
 		if (ocy != cy) {
@@ -711,14 +712,14 @@ void HD_Ellipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col)
 				if (k > 0) {
 					ypk = y + k;
 					ymk = y - k;
-					HD_SRF_BLENDPIX(srf, xmh, ypk, col);
-					HD_SRF_BLENDPIX(srf, xph, ypk, col);
-					HD_SRF_BLENDPIX(srf, xmh, ymk, col);
-					HD_SRF_BLENDPIX(srf, xph, ymk, col);
+					HD_Pixel(srf, xmh, ypk, col);
+					HD_Pixel(srf, xph, ypk, col);
+					HD_Pixel(srf, xmh, ymk, col);
+					HD_Pixel(srf, xph, ymk, col);
 				}
 				else {
-					HD_SRF_BLENDPIX(srf, xmh, y, col);
-					HD_SRF_BLENDPIX(srf, xph, y, col);
+					HD_Pixel(srf, xmh, y, col);
+					HD_Pixel(srf, xph, y, col);
 				}
 				ok = k;
 				xpi = x + i;
@@ -726,14 +727,14 @@ void HD_Ellipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col)
 				if (j > 0) {
 					ypj = y + j;
 					ymj = y - j;
-					HD_SRF_BLENDPIX(srf, xmi, ypj, col);
-					HD_SRF_BLENDPIX(srf, xpi, ypj, col);
-					HD_SRF_BLENDPIX(srf, xmi, ymj, col);
-					HD_SRF_BLENDPIX(srf, xpi, ymj, col);
+					HD_Pixel(srf, xmi, ypj, col);
+					HD_Pixel(srf, xpi, ypj, col);
+					HD_Pixel(srf, xmi, ymj, col);
+					HD_Pixel(srf, xpi, ymj, col);
 				}
 				else {
-					HD_SRF_BLENDPIX(srf, xmi, y, col);
-					HD_SRF_BLENDPIX(srf, xpi, y, col);
+					HD_Pixel(srf, xmi, y, col);
+					HD_Pixel(srf, xpi, y, col);
 				}
 				oj = j;
 			}
@@ -760,14 +761,14 @@ void HD_Ellipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col)
 				if (i > 0) {
 					ypi = y + i;
 					ymi = y - i;
-					HD_SRF_BLENDPIX(srf, xmj, ypi, col);
-					HD_SRF_BLENDPIX(srf, xpj, ypi, col);
-					HD_SRF_BLENDPIX(srf, xmj, ymi, col);
-					HD_SRF_BLENDPIX(srf, xpj, ymi, col);
+					HD_Pixel(srf, xmj, ypi, col);
+					HD_Pixel(srf, xpj, ypi, col);
+					HD_Pixel(srf, xmj, ymi, col);
+					HD_Pixel(srf, xpj, ymi, col);
 				}
 				else {
-					HD_SRF_BLENDPIX(srf, xmj, y, col);
-					HD_SRF_BLENDPIX(srf, xpj, y, col);
+					HD_Pixel(srf, xmj, y, col);
+					HD_Pixel(srf, xpj, y, col);
 				}
 				oi = i;
 				xmk = x - k;
@@ -775,14 +776,14 @@ void HD_Ellipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col)
 				if (h > 0) {
 					yph = y + h;
 					ymh = y - h;
-					HD_SRF_BLENDPIX(srf, xmk, yph, col);
-					HD_SRF_BLENDPIX(srf, xpk, yph, col);
-					HD_SRF_BLENDPIX(srf, xmk, ymh, col);
-					HD_SRF_BLENDPIX(srf, xpk, ymh, col);
+					HD_Pixel(srf, xmk, yph, col);
+					HD_Pixel(srf, xpk, yph, col);
+					HD_Pixel(srf, xmk, ymh, col);
+					HD_Pixel(srf, xpk, ymh, col);
 				}
 				else {
-					HD_SRF_BLENDPIX(srf, xmk, y, col);
-					HD_SRF_BLENDPIX(srf, xpk, y, col);
+					HD_Pixel(srf, xmk, y, col);
+					HD_Pixel(srf, xpk, y, col);
 				}
 				oh = h;
 			}
@@ -797,8 +798,9 @@ void HD_AAEllipse(hd_surface srf, int xc, int yc, int rx, int ry, uint32 col)
 {
 	int i;
 	int a2, b2, ds, dt, dxt, t, s, d;
-	int32 x, y, xs, ys, dyt, xx, yy, xc2, yc2;
+	int32 x, y, xs, ys, dyt, od, xx, yy, xc2, yc2;
 	float cp;
+	double sab;
 	unsigned char weight, iweight;
 
 	if (rx < 0 || ry < 0)
@@ -809,6 +811,11 @@ void HD_AAEllipse(hd_surface srf, int xc, int yc, int rx, int ry, uint32 col)
 		return;
 	}
 
+	if (xc + rx < 0 || yc + ry < 0 ||
+			xc - rx > (int)HD_SRF_WIDTH(srf) ||
+			yc - ry > (int)HD_SRF_HEIGHT(srf))
+		return;
+
 	a2 = rx * rx;
 	b2 = ry * ry;
 
@@ -818,7 +825,9 @@ void HD_AAEllipse(hd_surface srf, int xc, int yc, int rx, int ry, uint32 col)
 	xc2 = xc << 1;
 	yc2 = yc << 1;
 
-	dxt = (int)(a2 / sqrt(a2 + b2));
+	sab = sqrt(a2 + b2);
+	od = (int)iround(sab*0.01) + 1;
+	dxt = (int)iround((double)a2 / sab) + od;
 
 	t = 0;
 	s = -2 * a2 * ry;
@@ -827,10 +836,10 @@ void HD_AAEllipse(hd_surface srf, int xc, int yc, int rx, int ry, uint32 col)
 	x = xc;
 	y = yc - ry;
 
-	HD_SRF_BLENDPIX(srf, x, y, col);
-	HD_SRF_BLENDPIX(srf, xc2 - x, y, col);
-	HD_SRF_BLENDPIX(srf, x, yc2 - y, col);
-	HD_SRF_BLENDPIX(srf, xc2 - x, yc2 - y, col);
+	HD_Pixel(srf, x, y, col);
+	HD_Pixel(srf, xc2 - x, y, col);
+	HD_Pixel(srf, x, yc2 - y, col);
+	HD_Pixel(srf, xc2 - x, yc2 - y, col);
 
 	for (i = 1; i <= dxt; ++i) {
 		--x;
@@ -886,7 +895,7 @@ void HD_AAEllipse(hd_surface srf, int xc, int yc, int rx, int ry, uint32 col)
 		BLENDPIX_WEIGHT(srf, xx, yy, col, weight);
 	}
 
-	dyt = ABS(y - yc);
+	dyt = (int)iround((double)b2 / sab) + od;
 
 	for (i = 1; i <= dyt; ++i) {
 		++y;
@@ -959,6 +968,10 @@ void HD_FillEllipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col)
 		HD_Line(srf, x - rx, y - ry, x + rx, y + ry, col);
 		return;
 	}
+	if (x + rx < 0 || y + ry < 0 ||
+			x - rx > (int)HD_SRF_WIDTH(srf) ||
+			y - ry > (int)HD_SRF_HEIGHT(srf))
+		return;
 
 	oh = oi = oj = ok = 0xffff;
 
@@ -1039,7 +1052,7 @@ void HD_FillEllipse(hd_surface srf, int x, int y, int rx, int ry, uint32 col)
 	}
 }
 
-void HD_AAFillEllipse(hd_surface srf, int xc, int yc, int rx, int ry,uint32 col)
+void HD_AAFillEllipse(hd_surface srf, int xc, int yc, int rx, int ry, uint32 col)
 {
 	int i, sty, styy;
 	int a2, b2, ds, dt, dxt, t, s, d;
@@ -1053,6 +1066,10 @@ void HD_AAFillEllipse(hd_surface srf, int xc, int yc, int rx, int ry,uint32 col)
 		HD_Line(srf, xc - rx, yc - ry, xc + rx, yc + ry, col);
 		return;
 	}
+	if (xc + rx < 0 || yc + ry < 0 ||
+			xc - rx > (int)HD_SRF_WIDTH(srf) ||
+			yc - ry > (int)HD_SRF_HEIGHT(srf))
+		return;
 
 	a2 = rx * rx;
 	b2 = ry * ry;
@@ -1072,10 +1089,10 @@ void HD_AAFillEllipse(hd_surface srf, int xc, int yc, int rx, int ry,uint32 col)
 	x = xc;
 	y = yc - ry;
 
-	HD_SRF_BLENDPIX(srf, x, y, col);
-	HD_SRF_BLENDPIX(srf, xc2 - x, y, col);
-	HD_SRF_BLENDPIX(srf, x, yc2 - y, col);
-	HD_SRF_BLENDPIX(srf, xc2 - x, yc2 - y, col);
+	HD_Pixel(srf, x, y, col);
+	HD_Pixel(srf, xc2 - x, y, col);
+	HD_Pixel(srf, x, yc2 - y, col);
+	HD_Pixel(srf, xc2 - x, yc2 - y, col);
 
 	hLine(srf, xc - rx, xc + rx, yc, col);
 	sty = styy = 0;
@@ -1215,22 +1232,23 @@ static double lpow(double x, signed char p)
 
 static long factorial(long d)
 {
-	if (d==0 || d==1) return 1;
-	if (d<13)
-	 	switch (d) {
-	 		case 2: return 2; break;
-	 		case 3: return 6; break;
-	 		case 4: return 24; break;
-	 		case 5: return 120; break;
-	 		case 6: return 720; break;
-	 		case 7: return 5040; break;
-	 		case 8: return 40320; break;
-	 		case 9: return 362880; break;
-	 		case 10: return 3628800; break;
-	 		case 11: return 39916800; break;
-	 		case 12: return 479001600; break;
-	 	}
-	return factorial(d-1)*d;
+	if (d > 12) return factorial(d - 1) * d;
+	switch (d) {
+	case 0:
+	case 1: return          1;
+	case 2: return          2;
+	case 3: return          6;
+	case 4: return         24;
+	case 5: return        120;
+	case 6: return        720;
+	case 7: return       5040;
+	case 8: return      40320;
+	case 9: return     362880;
+	case 10: return   3628800;
+	case 11: return  39916800;
+	case 12: return 479001600;
+	}
+	return 0; /* never happens */
 }
 
 /**
@@ -1246,7 +1264,7 @@ static void b2dim(float u,  int order, hd_point *points, hd_point *retval)
 	float mult;
 	retval->x = 0;
 	retval->y = 0;
-	for (ui = 0; ui <= order; ++ui) {
+	for (ui = 0; (int)ui <= order; ++ui) {
 		mult = factorial(order) * lpow(u, ui) * lpow(1-u, order-ui) /
 			(factorial(ui) * factorial(order - ui));
 		retval->x += mult * points[ui].x;
@@ -1259,7 +1277,7 @@ static void b2dim(float u,  int order, hd_point *points, hd_point *retval)
   hd_point *hs, *p;				\
   int i = (order + 1) * resolution;		\
   u = (float)(1.0f / (float)i);			\
-  p = hs = malloc(++i * sizeof(hd_point));	\
+  p = hs = xmalloc(++i * sizeof(hd_point));	\
 						\
   for (fi = 0.0f; p - hs < i; fi += u)		\
     b2dim(fi, order, points, p++);		\
@@ -1275,17 +1293,33 @@ void HD_AABezier(hd_surface srf, int order, hd_point *points,
 
 void HD_Chrome(hd_surface srf, int x, int y, int w, int h)
 {
-	int lx, ly, c;
+	int lx, ly, a, c;
 	uint32 col;
+
+	if (w <= 0 || h <= 0)
+		return;
+	if (x < 0) {
+		w += x;
+		x = 0;
+	}
+	if (y < 0) {
+		h += y;
+		y = 0;
+	}
+
+	if (x + w > (int)HD_SRF_WIDTH(srf))
+		w = HD_SRF_WIDTH(srf) - x;
+	if (y + h > (int)HD_SRF_HEIGHT(srf))
+		h = HD_SRF_HEIGHT(srf) - y;
 
 	for (ly = 0; ly < h; ++ly) {
 		for (lx = 0; lx < w; ++lx) {
 			col = HD_SRF_PIXF(srf, x + lx, y + ly);
+			a = ((col & 0xff000000) >> 24);
 			c = (((col & 0xff0000) >> 16) +
 			     ((col & 0x00ff00) >>  8) +
 			      (col & 0x0000ff)         ) / 3;
-			HD_SRF_PIXF(srf, x + lx, y + ly) =
-				0xff000000 | c << 16 | c << 8 | c;
+			HD_SRF_PIXF(srf, x + lx, y + ly) = HD_RGBA(c, c, c, a);
 		}
 	}
 }
@@ -1294,37 +1328,43 @@ void HD_Blur(hd_surface srf, int x, int y, int w, int h, int rad)
 {
 	int kx, ky;
 	int lx, ly;
-	int rsum, gsum, bsum, amt;
+	int asum, rsum, gsum, bsum, amt;
 	uint32 col;
 	int tx, ty;
 	int diam = (rad << 1) + 1;
 
 	if (rad <= 0 || w <= 0 || h <= 0)
 		return;
-	x = MIN(MAX(x, 0), HD_SRF_WIDTH(srf));
-	y = MIN(MAX(y, 0), HD_SRF_HEIGHT(srf));
-	w = MIN(w, HD_SRF_WIDTH(srf) - x);
-	h = MIN(h, HD_SRF_HEIGHT(srf) - y);
+	if (x < 0) {
+		w += x;
+		x = 0;
+	}
+	if (y < 0) {
+		h += y;
+		y = 0;
+	}
 
 	for (ly = 0; ly < h; ++ly) {
 		for (lx = 0; lx < w; ++lx) {
-			amt = rsum = gsum = bsum = 0;
+			amt = asum = rsum = gsum = bsum = 0;
 			for (ky = 0; ky < diam; ++ky) {
 				for (kx = 0; kx < diam; ++kx) {
 					tx = x + lx + kx - rad;
 					ty = y + ly + ky - rad;
-					if (tx < 0 || tx >= HD_SRF_WIDTH(srf) ||
-					    ty < 0 || ty >= HD_SRF_HEIGHT(srf))
+					if (tx < 0 || ty < 0 ||
+						tx >= (int)HD_SRF_WIDTH(srf) ||
+						ty >= (int)HD_SRF_HEIGHT(srf))
 						continue;
 					col = HD_SRF_PIXF(srf, tx, ty);
-					rsum += (col & 0xff0000) >> 16;
-					gsum += (col & 0x00ff00) >> 8;
-					bsum += (col & 0x0000ff);
+					asum += (col & 0xff000000) >> 24;
+					rsum += (col & 0x00ff0000) >> 16;
+					gsum += (col & 0x0000ff00) >> 8;
+					bsum += (col & 0x000000ff);
 					++amt;
 				}
 			}
-			HD_SRF_PIXF(srf, x + lx, y + ly) = 0xff000000 |
-				(rsum/amt) << 16 | (gsum/amt) << 8 | (bsum/amt);
+			HD_SRF_PIXF(srf, x + lx, y + ly) =
+					HD_RGBA(rsum/amt, gsum/amt, bsum/amt, asum/amt);
 		}
 	}
 }

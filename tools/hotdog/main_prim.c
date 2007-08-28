@@ -54,7 +54,7 @@ int main(int argc, char **argv)
 #define IMGPREFIX "/mnt/"
 	HD_LCD_Init();
 	HD_LCD_GetInfo(0, &WIDTH, &HEIGHT, 0);
-	screen = malloc(WIDTH * HEIGHT * 2);
+	screen = xmalloc(WIDTH * HEIGHT * 2);
 	engine = HD_Initialize(WIDTH, HEIGHT, 16, screen, update);
 #endif
 #
@@ -81,6 +81,15 @@ int main(int argc, char **argv)
 			 ((a) & 0xff000000) >> 24))
 
 	srf = obj->canvas;
+
+#if 0
+	obj = HD_PNG_Create("bg.png");
+	obj->x = obj->y = 0;
+	obj->w = 60;
+	obj->h = 60;
+	HD_Register(engine, obj);
+#endif
+
 	HD_Rect(srf, WIDTH/4, HEIGHT/3, WIDTH/2, HEIGHT/2, PREM(0xff808080));
 	HD_AALine(srf, 0, 0, WIDTH/2, HEIGHT/2, PREM(0xffff0000));
 	HD_Line(srf, WIDTH/2, HEIGHT/2, WIDTH/2, HEIGHT, PREM(0xffff0000));

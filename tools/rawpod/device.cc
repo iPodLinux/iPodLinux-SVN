@@ -24,6 +24,15 @@
 
 #include "device.h"
 
+struct cow_hdr 
+{
+#define COW_MAGIC    0x574F4372  /* 'rCOW' */
+    u32 magic;
+    u32 dummy;
+    u64 blocks;
+} __attribute__ ((packed));
+#define COW_HDR_SIZE 16
+
 #ifdef WIN32
 
 /**************************************************************/
@@ -411,12 +420,35 @@ LocalRawDevice::LocalRawDevice (int n, bool writable)
         }
     }
 
-    if (_cowfile) {
+    if (_valid > 0 && _cowfile) {
         _wf = new LocalFile (_cowfile, OPEN_READ | OPEN_WRITE);
         if (_wf->error()) {
-            fprintf (stderr, "Warning: error opening %s, COW disabled\n", _cowfile);
-            delete _wf;
-            _wf = _f;
+            _wf = new LocalFile (_cowfile, OPEN_READ | OPEN_WRITE | OPEN_CREATE);
+            if (_wf->error()) {
+                fprintf (stderr, "Warning: could not open or create %s, COW disabled\n", _cowfile);
+                delete _wf;
+                _wf = _f;
+            } else {
+                struct cow_hdr hdr;
+                hdr.magic = COW_MAGIC;
+                hdr.dummy = 0;
+                hdr.blocks = _blocks;
+                _wf->write (&hdr, sizeof(hdr));
+            }
+        } else {
+            struct cow_hdr hdr;
+            _wf->read (&hdr, sizeof(hdr));
+            if (hdr.magic != COW_MAGIC) {
+                fprintf (stderr, "Warning: %s is not a COW file; COW disabled\n", _cowfile);
+                delete _wf;
+                _wf = _f;
+            } else if (hdr.blocks != _blocks) {
+                fprintf (stderr, "Warning: %s is not a COW file for this device; COW disabled.\n"
+                                 "         This device is %lld blocks; the COW file is for a device of %lld blocks.\n",
+                         _cowfile, _blocks, hdr.blocks);
+                delete _wf;
+                _wf = _f;
+            }
         }
     } else _wf = _f;
 }
@@ -440,12 +472,12 @@ int LocalRawDevice::doRawRead (void *buf, u64 sec)
     if (_valid <= 0) return _valid;
     // Check the COW file first
     if (_wf != _f) {
-        if (_wf->lseek (sec >> 3, SEEK_SET) >= 0) {
+        if (_wf->lseek (COW_HDR_SIZE + (sec >> 3), SEEK_SET) >= 0) {
             unsigned char bits;
             if ((err = _wf->read (&bits, 1)) > 0) {
                 // Got that block?
                 if (bits & (1 << (sec & 7))) {
-                    if (_wf->lseek ((_blocks >> 3) + (sec << 9), SEEK_SET) >= 0) {
+                    if (_wf->lseek (COW_HDR_SIZE + (_blocks >> 3) + (sec << 9), SEEK_SET) >= 0) {
                         if ((err = _wf->read (buf, 512)) == 512) return 0;
                         return err;
                     }
@@ -481,15 +513,15 @@ int LocalRawDevice::doRawWrite (const void *buf, u64 sec)
         s64 err;
 
         // Write the block
-        if ((err = _wf->lseek ((_blocks >> 3) + (sec << 9), SEEK_SET)) < 0) return err;
+        if ((err = _wf->lseek (COW_HDR_SIZE + (_blocks >> 3) + (sec << 9), SEEK_SET)) < 0) return err;
         if ((err = _wf->write (buf, 512) < 0)) return err;
 
         // Mark the block as used in the COW
         unsigned char bits;
-        if ((err = _wf->lseek (sec >> 3, SEEK_SET)) < 0) return err;
+        if ((err = _wf->lseek (COW_HDR_SIZE + (sec >> 3), SEEK_SET)) < 0) return err;
         if ((err = _wf->read (&bits, 1)) != 1) return err;
         bits |= (1 << (sec & 7));
-        if ((err = _wf->lseek (sec >> 3, SEEK_SET)) < 0) return err;
+        if ((err = _wf->lseek (COW_HDR_SIZE + (sec >> 3), SEEK_SET)) < 0) return err;
         if ((err = _wf->write (&bits, 1)) != 1) return err;
 
         return 0;

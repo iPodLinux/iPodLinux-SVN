@@ -103,7 +103,7 @@ void config_init(void)
 
         config.image[i].type  = CONFIG_IMAGE_ROCKBOX;
         config.image[i].title = "Rockbox";
-        config.image[i].path  = "(hd0,1)/rockbox.ipod";
+        config.image[i].path  = "(hd0,1)/.rockbox/rockbox.ipod";
         if (vfs_open (config.image[i].path) >= 0) {
           i++;
         }

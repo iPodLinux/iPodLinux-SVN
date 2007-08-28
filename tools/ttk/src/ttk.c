@@ -828,7 +828,7 @@ int ttk_run()
             ttk_gfx_update (ttk_screen->srf);
             ttk_dirty &= ~TTK_DIRTY_SCREEN;
         }
-#ifndef IPOD
+#if !defined(IPOD) && !defined(SDL)
 	ttk_delay(30);
 #endif
     }

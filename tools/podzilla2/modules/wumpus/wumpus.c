@@ -2,6 +2,14 @@
  * wumpus - a recreation of the old "Hunt The Wumpus" game
  * Copyright (C) 2005 Scott Lawrence
  *
+ * Updated 2007 for ttk/pz2
+ *
+ * Note; this has the rules of "Hunt The Wumpus" but the style
+ *       of the display and control is based on a "Dungeons and
+ *       Dragons" LCD game I had when I was a kid.  :D
+ */
+
+/*
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -18,6 +26,19 @@
  *
  */
 
+/* Revision information:
+
+	2007-Jan-13	version 3.0
+		- updated from Legacy calls to TTK
+		- added a 'resume' feature to continue a game.  ;)
+		- changed all of the display to be vector based
+		- adheres to the current color scheme (window.bg/fg/border)
+
+	The legacy version is on the wiki as 2.0, so I decided to
+	start this at 3.0.
+
+*/
+
 /*
  * find the arrow, kill the wumpus 
  * use the hook to get out of a pit
@@ -26,47 +47,46 @@
  * action  moves
  */
 
-/* 
- * $Log: wumpus.c,v $
- * Revision 1.4  2005/08/02 21:14:22  courtc
- * added more i18n
- *
- * Revision 1.3  2005/06/21 16:46:42  yorgle
- * Cleaned up a lot of the code (re-organized it a bit)
- * Made the colors better for Photo.
- * Fixed a bug where getting eaten by the wumpus didn't kill you sometimes
- *
- * Revision 1.2  2005/06/21 04:27:53  yorgle
- * Missed one "Dragon" that should have been "Wumpus".  oops.
- *
- * Revision 1.1  2005/06/21 04:00:27  yorgle
- * "Hunt The Wumpus" game.  find the arrow, find the wumpus, shoot it, win.
- * Fall in a pit, or get eaten by the wumpus, die.
- *
- */
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
-
-#define PZ_COMPAT
 #include "pz.h"
 
-static GR_TIMER_ID 	wumpus_timer = 0;
-static GR_GC_ID		wumpus_gc = 0;
-static GR_WINDOW_ID	wumpus_bufwid = 0;
-static GR_WINDOW_ID	wumpus_wid = 0;
-static GR_SCREEN_INFO	wumpus_screen_info;
-static int 		wumpus_height = 0;
+typedef struct gameInfo {
+	int pos_x;		/* current X position */
+	int pos_y;		/* current Y position */
+	int orientation;	/* current cursor orientation */
+	int hooks;		/* number of hooks */
+	int arrows;		/* number of arrows */
+	int health;		/* current health */
 
-static int wumpus_initialized = 0; /* have the polylines been scaled? */
-static int wumpus_blink = 1; /* hooked up to the timer for blinking cursors */
+	int map[10][10];	/* our map! */
+} GAMEINFO;
 
-/* current map position... */
-static int wumpus_x = 0;
-static int wumpus_y = 0;
+typedef struct myGlobals {
+        PzModule * module;      /* this. */
+        PzWindow * window;      /* our window */
+        PzWidget * widget;      /* our display widget */
+        PzConfig * config;      /* the config/settings */
+
+        int w, h;               /* current display width and heighth */
+	ttk_color bg;		/* bg color */
+	ttk_color fg;		/* fg color */
+	ttk_color rd;		/* border color */
+
+        int paused;             /* are we paused? 1=yes */
+	int blink;		/* for the blinking cursor */
+
+	GAMEINFO game;		/* the current game's information */
+	int initialized;	/* have we loaded a new game? */
+
+	char * messagetext;	/* centerbox display text */
+
+	char * noticetext;	/* for bottom notice */
+	long noticetime;	/* for bottom notice */
+} GLOB;
 
 /* current cursor orientation */
 #define WUMPUS_NORTH 	(0)
@@ -74,535 +94,665 @@ static int wumpus_y = 0;
 #define WUMPUS_SOUTH	(2)
 #define WUMPUS_WEST	(3)
 
-static int wumpus_orientation = WUMPUS_NORTH;
-
-/* inventory */
-static int wumpus_hooks = 1;	
-static int wumpus_arrows = 0;
-static int wumpus_health = 1;
-
-/* map stuff */
-static int wumpus_map[10][10];
+/* map space contents */
 #define WUMPUS_MAP_EMPTY	(0)
 #define WUMPUS_MAP_PIT		(1)
 #define WUMPUS_MAP_ARROW	(2)
 #define WUMPUS_MAP_HOOK		(3)
 #define WUMPUS_MAP_DRAGON	(4)
 
+static GLOB glob;
 
-/* display graphics
-    - all of these are in 1/32 of the full width/height of the screen, and
-      are scaled to fit the ipod screen in the new_game() function below.
-*/
+#define NOTICE_TIME	(10)
 
-static GR_POINT topleft[] = { /* wall element in the top left */
-	{12,14}, {12,10}, {6,10}, {6,14},
-	{12,14}, {13,12}, {13,8}, {12,10}
-};
+/* hot, steamy, polyline action */
 
-static GR_POINT topright[] = { /* wall element in the top right */
-	{20,14}, {20,10}, {26,10}, {26,14},
-	{20,14}, {19,12}, {19,8}, {20,10}
-};
+/* the cursor... 0..255 up and down */
+static short cursor_north_x[] = { 109, 141, 125, 109 };
+static short cursor_north_y[] = { 75, 75, 65, 75 };
 
-static GR_POINT bottomleft[] = { /* wall element in the bottom left */
-	{7,26}, {1,26}, {1,20}, {9,20}, {9,26}, {7,30}, {7,26},
-	{7,24}, {9,20},
-};
+static short cursor_south_x[] = { 75, 175, 125, 75 };
+static short cursor_south_y[] = { 200, 200, 225, 200 };
 
-static GR_POINT bottomright[] = { /* wall element in the bottom right */
-	{25,26}, {31,26}, {31,20}, {23,20}, {23,26}, {25,30}, {25,26},
-	{25,24}, {23,20},
-};
+static short cursor_west_x[] = { 75, 55, 40, 75 };
+static short cursor_west_y[] = { 110, 150, 135, 110 };
 
-/* cursor polylines */
-static GR_POINT cursor_north[] = { {14,13}, {16,12}, {18,13}, {14,13} };
-static GR_POINT cursor_south[] = { {13,26}, {19,26}, {16,28}, {13,26} };
-static GR_POINT cursor_west[] = { {8,17}, {11,16}, {10,18}, {8,17} };
-static GR_POINT cursor_east[] = { {24,17}, {21,16}, {22,18}, {24,17} };
+static short cursor_east_x[] = { 175, 195, 210, 175 };
+static short cursor_east_y[] = { 110, 150, 135, 110 };
 
-/* polyline for the big pit graphic, showing we're in a pit */
-static GR_POINT bigpit[] = {
-    {8,16}, {11,16}, {12,25}, {20,25}, {21,16}, {24,16}
-};
+static short pit_x[] = { 25, 75, 90, 160, 175, 225 };
+static short pit_y[] = { 75, 80, 180, 180, 80, 75 };
 
-static GR_POINT pit_warning[] = { /* icon: a pit is nearby */
-    {2,2}, {3,2}, {4,7}, {7,7}, {8,2}, {9,2}
-};
+static short arrow_x[] = { 50, 25, 75,  50, 200, 200, /* need 3 for polyline */
+			  175, 175, 200,  187, 187, 212,  199, 199, 224 };
+static short arrow_y[] = { 75, 25, 50,  50, 200, 200,
+			  200, 175, 175,  212, 187, 187,  224, 199, 199 };
 
-static GR_POINT arrow_warning[] = { /* icon: an arrow is nearby */
-    {21,7}, {24,3}, {23,3}, {24,3}, {24,5}, {24,3}
-};
+static short hook_x[] = { 50, 25, 25, 75, 125, 150,
+			  50, 200, 200, 225, 225, 200 };
+static short hook_y[] = { 150, 125, 75, 25, 25, 50,
+			  50, 200, 225, 225, 200, 200 };
 
-static GR_POINT hook_warning[] = { /* icon: a hook is nearby */
-    {29,3}, {28,2}, {28,4}, {27,6}, {28,8}, {27,6}
-};
+static short walls_x[] = { 	90, 100, 100, 90, 90, 		/* 11:00 */
+				65, 90, 90, 65, 65, 		/* 10:00 */
+				5, 55, 55, 5, 5,		/* 8:00 */
+				35, 55, 55, 35, 35 };		/* 7:00 */
+
+static short walls_y[] = { 	70, 50, 65, 90, 70,		/* 11:00 */
+				70, 70, 90, 90, 70,		/* 10:00 */
+				170, 170, 205, 205, 170,	/* 8:00 */
+				205, 170, 205, 245, 205 };	/* 7:00 */
 
 
-
-/* a routine to display a text banner - not double-buffered. */
-static void wumpus_text( char * text )
+/* set an item on the map */
+static void wumpus_place( int x, int y, int type )
 {
-	int w = wumpus_screen_info.cols;
-	int h2 = wumpus_height >> 1;
-	int w2 = w >> 1;
-
-	/* backing */
-	GrSetGCForeground( wumpus_gc, ( wumpus_screen_info.bpp == 16 ) ? 
-				GR_RGB( 230, 0, 148 ) : LTGRAY );
-        GrFillRect( wumpus_wid, wumpus_gc, 0, h2-14, w, 28 );
-        GrSetGCForeground( wumpus_gc, ( wumpus_screen_info.bpp == 16 ) ? 
-				GR_RGB( 0, 140, 204 ) : BLACK );
-        GrFillRect( wumpus_wid, wumpus_gc, 0, h2-12, w, 24 );
-        GrSetGCForeground( wumpus_gc, WHITE );
-        GrFillRect( wumpus_wid, wumpus_gc, 0, h2-10, w, 20 );
-	
-	/* text */
-        GrSetGCForeground( wumpus_gc, BLACK );
-	vector_render_string_center( wumpus_wid, wumpus_gc, text,
-				1, 1, w2, h2 );
+	glob.game.map[y][x] = type;
 }
 
+/* set an item here */
+static void wumpus_place_here( int type )
+{
+	wumpus_place( glob.game.pos_x, glob.game.pos_y, type );
+}
 
 /* place a random piece any unoccupied location on the map */
-void wumpus_random_place( int type )
+static void wumpus_random_place( int type )
 {
-	int x = 0;
-	int y = 0;
+        int x = 0;
+        int y = 0;
 
-	while( x==0 && y==0 && wumpus_map[y][x] == WUMPUS_MAP_EMPTY )
-	{
-	    x = rand()%10;
-	    y = rand()%10;
-	}
-	wumpus_map[y][x] = type;
+        while( x==0 && y==0 && glob.game.map[y][x] == WUMPUS_MAP_EMPTY )
+        {
+            x = rand()%10;
+            y = rand()%10;
+        }
+	wumpus_place( x, y, type );
 }
 
+/* return what is underneath us */
+static int wumpus_here( void )
+{
+        return( glob.game.map[glob.game.pos_y][glob.game.pos_x] );
+}
 
 /* generate the entire map for a new game */
-void wumpus_generate_map( void )
+static void wumpus_start_new_game( void )
 {
-	int x, y, c;
-	for( x=0 ; x<10 ; x++ ) for( y=0 ; y<10 ; y++ ){
-		wumpus_map[y][x] = WUMPUS_MAP_EMPTY;
-	}
+        int x, y, c;
 
-	for( c=0 ; c<8 ; c++ ) { /* 8 pits */
-		wumpus_random_place( WUMPUS_MAP_PIT );
+	if( glob.initialized ) {
+		/* ask if we want to continue */
+		/* this concept borrowed from courtc's "Puyo" game. Cheers! */
+		if( glob.game.health ) {
+			if( !pz_dialog(  _("New Game?"), 
+				_("You have an unfinished game; Continue?" ),
+					2, 0, _("Yes"), _("No"))) {
+				glob.initialized = 1; /* state 1 not 2 */
+				return;
+			}
+		}
 	}
+	glob.initialized = 2; /* no input to absorb */
 
-	wumpus_random_place( WUMPUS_MAP_ARROW );
-	wumpus_random_place( WUMPUS_MAP_DRAGON );
+	/* generate a new dungeon */
+	/* clear it out */
+        for( x=0 ; x<10 ; x++ ) for( y=0 ; y<10 ; y++ ){
+		wumpus_place( x, y, WUMPUS_MAP_EMPTY );
+        }
+
+	/* drop 8 pits randomly */
+        for( c=0 ; c<8 ; c++ ) { 
+                wumpus_random_place( WUMPUS_MAP_PIT );
+        }
+
+	/* drop the arrow and the dragon */
+        wumpus_random_place( WUMPUS_MAP_ARROW );
+        wumpus_random_place( WUMPUS_MAP_DRAGON );
+
+	/* set up game variables */
+	glob.game.hooks = 1;			/* grappling hook */
+	glob.game.arrows = 0;			/* ammunition */
+	glob.game.health = 1;
+	glob.game.pos_x = 0;			/* location x */
+	glob.game.pos_y = 0;			/* location y */
+	glob.game.orientation = WUMPUS_NORTH;	/* orientation */
 }
 
 /* attempt to move in the direction we're pointing, handle collisions */
 static void wumpus_move( void )
 {
-	switch( wumpus_orientation ){
-	case( WUMPUS_NORTH ):
-	    wumpus_y--; if( wumpus_y < 0 ) wumpus_y = 9; break;
-	case( WUMPUS_SOUTH ):
-	    wumpus_y++; if( wumpus_y > 9 ) wumpus_y = 0; break;
-	case( WUMPUS_EAST ):
-	    wumpus_x++; if( wumpus_x > 9 ) wumpus_x = 0; break;
-	case( WUMPUS_WEST ):
-	    wumpus_x--; if( wumpus_x < 0 ) wumpus_x = 9; break;
-	}
-
-	/* check for items */
-	if( wumpus_map[wumpus_y][wumpus_x] == WUMPUS_MAP_DRAGON ) {
-		wumpus_text( "THE WUMPUS ATE YOU!");
-		wumpus_health = 0;
-	}
-
-	if( wumpus_map[wumpus_y][wumpus_x] == WUMPUS_MAP_ARROW ) {
-		wumpus_map[wumpus_y][wumpus_x] = WUMPUS_MAP_EMPTY;
-		wumpus_arrows++;
-	}
-
-	if( wumpus_map[wumpus_y][wumpus_x] == WUMPUS_MAP_HOOK ) {
-		wumpus_map[wumpus_y][wumpus_x] = WUMPUS_MAP_EMPTY;
-		wumpus_hooks++;
-	}
-
-	if( wumpus_map[wumpus_y][wumpus_x] == WUMPUS_MAP_PIT )
-	{
-		if( wumpus_hooks ) {
-			wumpus_hooks--;
-			wumpus_random_place( WUMPUS_MAP_HOOK );
-		} else {
-			wumpus_text( "YOU DIED IN A PIT!" );
-			wumpus_health = 0;
-		}
-	}
+        switch( glob.game.orientation ){
+        case( WUMPUS_NORTH ):
+		glob.game.pos_y--;
+		if( glob.game.pos_y < 0 ) glob.game.pos_y = 9;
+		break;
+        case( WUMPUS_SOUTH ):
+		glob.game.pos_y++;
+		if( glob.game.pos_y > 9 ) glob.game.pos_y = 0;
+		break;
+        case( WUMPUS_EAST ):
+		glob.game.pos_x++; 
+	    	if( glob.game.pos_x > 9 ) glob.game.pos_x = 0;
+		break;
+        case( WUMPUS_WEST ):
+		glob.game.pos_x--;
+		if( glob.game.pos_x < 0 ) glob.game.pos_x = 9;
+		break;
+        }
+        
+        /* check for items */
+	switch( wumpus_here() ) {
+	case( WUMPUS_MAP_DRAGON ):
+		glob.messagetext = "THE WUMPUS ATE YOU!";
+                glob.game.health = 0;
+		break;
+        
+	case( WUMPUS_MAP_ARROW ):
+		wumpus_place_here( WUMPUS_MAP_EMPTY );
+                glob.game.arrows++;
+		glob.noticetext = "Found an arrow!";
+		glob.noticetime = NOTICE_TIME;
+		break;
+        
+	case( WUMPUS_MAP_HOOK ):
+		wumpus_place_here( WUMPUS_MAP_EMPTY );
+                glob.game.hooks++;
+		glob.noticetext = "Found a hook!";
+		glob.noticetime = NOTICE_TIME;
+		break;
+        
+	case( WUMPUS_MAP_PIT ):
+                if( glob.game.hooks ) {
+                        glob.game.hooks--;
+                        wumpus_random_place( WUMPUS_MAP_HOOK );
+			glob.noticetext = "Using your hook!";
+			glob.noticetime = NOTICE_TIME;
+                } else {
+			glob.messagetext = "YOU DIED IN A PIT!";
+                        glob.game.health = 0;
+                }
+		break;
+        }
 }
 
-/* find out what item (if any) is in the requested location 
+/* find out what item (if any) is in the requested location
    with relation to the current position */
 static int wumpus_at( int direction )
 {
-	int fx = wumpus_x;
-	int fy = wumpus_y;
+        int fx = glob.game.pos_x;
+        int fy = glob.game.pos_y;
 
-	switch( direction ) {
-	case( WUMPUS_NORTH ):
-	    fy--; if( fy < 0 ) fy = 9; break;
-	case( WUMPUS_SOUTH ):
-	    fy++; if( fy > 9 ) fy = 0; break;
-	case( WUMPUS_EAST ):
-	    fx++; if( fx > 9 ) fx = 0; break;
-	case( WUMPUS_WEST ):
-	    fx--; if( fx < 0 ) fx = 9; break;
-	}
+        switch( direction ) {
+        case( WUMPUS_NORTH ):
+            fy--; if( fy < 0 ) fy = 9; break;
+        case( WUMPUS_SOUTH ):
+            fy++; if( fy > 9 ) fy = 0; break;
+        case( WUMPUS_EAST ):
+            fx++; if( fx > 9 ) fx = 0; break;
+        case( WUMPUS_WEST ):
+            fx--; if( fx < 0 ) fx = 9; break;
+        }
 
-	return( wumpus_map[fy][fx] );
+        return( glob.game.map[fy][fx] );
 }
+
+
+
+/* find out if something is nearby */
+static int wumpus_nearby( int occupant )
+{
+	if(    (wumpus_at( WUMPUS_NORTH ) == occupant) 
+	    || (wumpus_at( WUMPUS_SOUTH ) == occupant) 
+	    || (wumpus_at( WUMPUS_EAST ) == occupant) 
+	    || (wumpus_at( WUMPUS_WEST ) == occupant))
+	{
+		return( 1 );
+	}
+	return( 0 );
+}
+
 
 /* attempt to fire in the direction that we're facing */
 static void wumpus_fire( void )
 {
-	int tile = wumpus_at( wumpus_orientation );
+        int tile = wumpus_at( glob.game.orientation );
 
-	if( !wumpus_arrows ) return;
-	wumpus_arrows--;
+        if( !glob.game.arrows ) return;
+        glob.game.arrows--;
 
-	if( tile == WUMPUS_MAP_DRAGON ) {
-		wumpus_text( "YOU KILLED THE WUMPUS!!" );
-		wumpus_health = 0;
-	} else {
-		new_message_window( "MISS!" );
-		wumpus_random_place( WUMPUS_MAP_ARROW );
+        if( tile == WUMPUS_MAP_DRAGON ) {
+                glob.messagetext = "YOU KILLED THE WUMPUS!!";
+                glob.game.health = 0;
+        } else {
+                glob.messagetext = "MISS!";
+                wumpus_random_place( WUMPUS_MAP_ARROW );
+        }
+}
+
+
+/* antialiased polyline! */
+void aapolyline( ttk_surface srf, int nv, short *vx, short *vy, ttk_color col )
+{
+	int i;
+	if( !srf || !vx || !vy ) return;
+
+	for( i=0 ; i<nv-1 ; i++ )
+	{
+		/* this looks craptastic with libsdl's purple fringing */
+		//ttk_aaline( srf, vx[i], vy[i], vx[i+1], vy[i+1], col );
+		ttk_line( srf, vx[i], vy[i], vx[i+1], vy[i+1], col );
 	}
 }
 
 
-/* initialize everything for a new game */
-void wumpus_new_game( void )
+/* draw the cursor (orientation) to the screen */
+static void wumpus_draw_cursor( ttk_surface srf )
 {
-	int x;
+	short * xx = NULL;
+	short * yy = NULL;
+	short x[4];
+	short y[4];
+	int i;
 
-	/* i hate to use doubles, but this only gets computed the 
-	   first time that wumpus is run.  Otherwise, we end up 
-	   with massive rounding errors for mini/photo rendering,
-	   which looks *really* craptastic. */
-
-	double h32 = (double)wumpus_height/32.0;
-	double w32 = (double)screen_info.cols/32.0;
-
-	if( !wumpus_initialized ) {
-		wumpus_initialized = 1;
-		for( x=0 ; x<8 ; x++ ) {
-		 	topright[x].x *= w32;
-			topright[x].y *= h32;   
-		 	topleft[x].x *= w32;
-			topleft[x].y *= h32;   
-		}
-		for( x=0 ; x<9 ; x++ ) {
-		 	bottomleft[x].x *= w32;
-			bottomleft[x].y *= h32;   
-		 	bottomright[x].x *= w32;
-			bottomright[x].y *= h32;   
-		}
-		for( x=0 ; x<4 ; x++ ) {
-			cursor_north[x].x *= w32;
-			cursor_north[x].y *= h32;
-			cursor_south[x].x *= w32;
-			cursor_south[x].y *= h32;
-			cursor_east[x].x *= w32;
-			cursor_east[x].y *= h32;
-			cursor_west[x].x *= w32;
-			cursor_west[x].y *= h32;
-		}
-		for( x=0 ; x<6 ; x++ ) {
-			bigpit[x].x *= w32;
-			bigpit[x].y *= h32;
-			pit_warning[x].x *= w32;
-			pit_warning[x].y *= h32;
-			arrow_warning[x].x *= w32;
-			arrow_warning[x].y *= h32;
-			hook_warning[x].x *= w32;
-			hook_warning[x].y *= h32;
-		}
-	}
-
-	/* now set up the game variables... */
-	wumpus_x = wumpus_y = 0;		/* location */
-	wumpus_orientation = WUMPUS_NORTH;	/* orientation */
-	wumpus_hooks = 1;			/* grappling hook */
-	wumpus_arrows = 0;			/* ammunition */
-	wumpus_health = 1;
-
-	wumpus_generate_map();
-}
-
-
-/* draw the playfield to the screen */
-static void wumpus_redraw( void )
-{
-	int w2 = wumpus_screen_info.cols >> 1;
-	int h2 = wumpus_height >> 1;
-
-	if( wumpus_health == 0 ) return; /* don't draw anything if we're dead */
-
-        /* start clear */
-        GrSetGCForeground( wumpus_gc, WHITE );
-        GrFillRect( wumpus_bufwid, wumpus_gc, 0, 0,
-                    wumpus_screen_info.cols, wumpus_height );
-
-	/* do graphics routines here */
-	/* draw to wumpus_bufwid */
-
-	/* http://www.so2.sys-techs.com/mwin/microwin/nxapi/ */
-
-	/* fill */
-	GrSetGCForeground( wumpus_gc, ( wumpus_screen_info.bpp == 16 ) ? 
-				GR_RGB( 186, 129, 81 ) : LTGRAY );
-	GrFillPoly( wumpus_bufwid, wumpus_gc, 8, topleft );
-	GrFillPoly( wumpus_bufwid, wumpus_gc, 8, topright );
-	GrFillPoly( wumpus_bufwid, wumpus_gc, 7, bottomleft );
-	GrFillPoly( wumpus_bufwid, wumpus_gc, 7, bottomright );
-
-	/* outlines */
-        GrSetGCForeground( wumpus_gc, BLACK );
-	GrPoly( wumpus_bufwid, wumpus_gc, 8, topleft );
-	GrPoly( wumpus_bufwid, wumpus_gc, 8, topright );
-	GrPoly( wumpus_bufwid, wumpus_gc, 9, bottomleft);
-	GrPoly( wumpus_bufwid, wumpus_gc, 9, bottomright );
-
-	/* pit, if applicable... */
-	if( wumpus_map[wumpus_y][wumpus_x] == WUMPUS_MAP_PIT ) 
-		GrPoly( wumpus_bufwid, wumpus_gc, 6, bigpit );
-
-
-	/* current position */
-	vector_render_char( wumpus_bufwid, wumpus_gc, wumpus_y + 'A', 
-				3, w2-12-4, h2 );
-	vector_render_char( wumpus_bufwid, wumpus_gc, wumpus_x + '0', 
-				3, w2+4, h2 );
-
-	/* cursor */
-	switch( wumpus_orientation ) {
-	case( WUMPUS_NORTH ):
-		if( wumpus_blink ) {
-		    GrSetGCForeground( wumpus_gc, 
-			    ( wumpus_screen_info.bpp == 16 ) ? RED : BLACK );
-		    GrFillPoly( wumpus_bufwid, wumpus_gc, 4, cursor_north );
-		}
-		GrSetGCForeground( wumpus_gc, GRAY );
-		GrPoly( wumpus_bufwid, wumpus_gc, 4, cursor_north );
+	switch( glob.game.orientation ) {
+	case WUMPUS_NORTH:
+		xx = cursor_north_x;
+		yy = cursor_north_y;
 		break;
-
-	case( WUMPUS_SOUTH ):
-		if( wumpus_blink ) {
-		    GrSetGCForeground( wumpus_gc, 
-			    ( wumpus_screen_info.bpp == 16 ) ? RED : BLACK );
-		    GrFillPoly( wumpus_bufwid, wumpus_gc, 4, cursor_south );
-		}
-		GrSetGCForeground( wumpus_gc, GRAY );
-		GrPoly( wumpus_bufwid, wumpus_gc, 4, cursor_south );
+	case WUMPUS_SOUTH:
+		xx = cursor_south_x;
+		yy = cursor_south_y;
 		break;
-
-	case( WUMPUS_WEST ):
-		if( wumpus_blink ) {
-		    GrSetGCForeground( wumpus_gc, 
-			    ( wumpus_screen_info.bpp == 16 ) ? RED : BLACK );
-		    GrFillPoly( wumpus_bufwid, wumpus_gc, 4, cursor_west );
-		}
-		GrSetGCForeground( wumpus_gc, GRAY );
-		GrPoly( wumpus_bufwid, wumpus_gc, 4, cursor_west );
+	case WUMPUS_WEST:
+		xx = cursor_west_x;
+		yy = cursor_west_y;
 		break;
-
-	case( WUMPUS_EAST ):
-		if( wumpus_blink ) {
-		    GrSetGCForeground( wumpus_gc, 
-			    ( wumpus_screen_info.bpp == 16 ) ? RED : BLACK );
-		    GrFillPoly( wumpus_bufwid, wumpus_gc, 4, cursor_east );
-		}
-		GrSetGCForeground( wumpus_gc, GRAY );
-		GrPoly( wumpus_bufwid, wumpus_gc, 4, cursor_east );
-		break;
-
+	case WUMPUS_EAST:
 	default:
+		xx = cursor_east_x;
+		yy = cursor_east_y;
 		break;
 	}
 
-	if( !wumpus_blink ) {
-		GrSetGCForeground( wumpus_gc, 
-			( wumpus_screen_info.bpp == 16 ) ? RED : BLACK );
-	} else {
-		GrSetGCForeground( wumpus_gc, 
-			( wumpus_screen_info.bpp == 16 ) ? LTGRAY : LTGRAY );
-	}
-
-	/* pit warning */
-	if( 	wumpus_at( WUMPUS_NORTH ) == WUMPUS_MAP_PIT 
-	    ||	wumpus_at( WUMPUS_SOUTH ) == WUMPUS_MAP_PIT 
-	    ||	wumpus_at( WUMPUS_EAST ) == WUMPUS_MAP_PIT 
-	    ||	wumpus_at( WUMPUS_WEST ) == WUMPUS_MAP_PIT )
+	for( i=0 ; i<4 ; i++ )
 	{
-		GrPoly( wumpus_bufwid, wumpus_gc, 6, pit_warning );
+		x[i] = 3+(xx[i] * glob.w / 255);
+		y[i] = yy[i] * glob.h / 255;
 	}
 
-	/* hook warning */
-	if( 	wumpus_at( WUMPUS_NORTH ) == WUMPUS_MAP_HOOK 
-	    ||	wumpus_at( WUMPUS_SOUTH ) == WUMPUS_MAP_HOOK 
-	    ||	wumpus_at( WUMPUS_EAST ) == WUMPUS_MAP_HOOK 
-	    ||	wumpus_at( WUMPUS_WEST ) == WUMPUS_MAP_HOOK )
-	{
-		GrPoly( wumpus_bufwid, wumpus_gc, 6, hook_warning );
-	}
-
-	/* arrow warning */
-	if( 	wumpus_at( WUMPUS_NORTH ) == WUMPUS_MAP_ARROW 
-	    ||	wumpus_at( WUMPUS_SOUTH ) == WUMPUS_MAP_ARROW 
-	    ||	wumpus_at( WUMPUS_EAST ) == WUMPUS_MAP_ARROW 
-	    ||	wumpus_at( WUMPUS_WEST ) == WUMPUS_MAP_ARROW )
-	{
-		GrPoly( wumpus_bufwid, wumpus_gc, 6, arrow_warning );
-	}
-
-	/* dragon warning */
-	if( 	wumpus_at( WUMPUS_NORTH ) == WUMPUS_MAP_DRAGON 
-	    ||	wumpus_at( WUMPUS_SOUTH ) == WUMPUS_MAP_DRAGON 
-	    ||	wumpus_at( WUMPUS_EAST ) == WUMPUS_MAP_DRAGON 
-	    ||	wumpus_at( WUMPUS_WEST ) == WUMPUS_MAP_DRAGON )
-	{
-		vector_render_string(  wumpus_bufwid, wumpus_gc, "[W]",
-					1, 2, w2-16, 4 );
-	}
-
-
-	/* inventory display */
-	GrSetGCForeground( wumpus_gc, BLACK );
-	if( wumpus_arrows ) {
-		vector_render_string( wumpus_bufwid, wumpus_gc, "ARROW",
-				1, 1, 1, wumpus_height-10 );
-	}
-
-	if( wumpus_hooks ) {
-		vector_render_string_right( wumpus_bufwid, wumpus_gc, "HOOK", 
-				1, 1,
-				wumpus_screen_info.cols-1,
-				wumpus_height-10 );
-	}
-
-        /* copy the buffer into place */
-        GrCopyArea( wumpus_wid, wumpus_gc, 0, 0,
-                    wumpus_screen_info.cols,
-                    (screen_info.rows - (HEADER_TOPLINE + 1)),
-                    wumpus_bufwid, 0, 0, MWROP_SRCCOPY);
+	ttk_fillpoly( srf, 4, x, y, glob.blink?glob.fg:glob.rd );
+	aapolyline( srf, 4, x, y, glob.blink?glob.rd:glob.fg );
 }
 
-/* the full draw function */
-static void wumpus_do_draw( void )
-{
-	pz_draw_header(_("Hunt The Wumpus"));
-	wumpus_redraw();
-}
 
-/* quit.  dispose of everything */
-void wumpus_exit( void ) 
+static void wumpus_draw_walls( ttk_surface srf )
 {
-	GrDestroyTimer( wumpus_timer );
-	GrDestroyGC( wumpus_gc );
-	pz_close_window( wumpus_wid );
-	GrDestroyWindow( wumpus_bufwid );
-}
+	int i;
+	int j;
+	short x[20];
+	short y[20];
 
-/* event handler */
-static int wumpus_handle_event (GR_EVENT *event)
-{
-	switch( event->type )
+	for( j=0 ; j<4 ; j++ )
 	{
-	    case GR_EVENT_TYPE_TIMER:
-		wumpus_blink ^= 1;
-		wumpus_redraw();
-		break;
+		/* first, do the left side... */
+		for( i=0 ; i<20 ; i++ ) {
+			x[i] = 3+(walls_x[i] * glob.w / 255);
+			y[i] = walls_y[i] * glob.h / 255;
+		}
+		for( j=0 ; j<4 ; j++ ) {
+			ttk_fillpoly( srf, 5, x+(5*j), y+(5*j), glob.rd );
+			aapolyline( srf, 5, x+(5*j), y+(5*j), glob.fg );
+		}
 
-	    case GR_EVENT_TYPE_KEY_DOWN:
-		switch (event->keystroke.ch)
-		{
-		case( IPOD_BUTTON_ACTION ):
-		    if( wumpus_health ) {
-			    wumpus_move();
-			    wumpus_redraw();
-		    }
-		    break;
+		/* then do the right side... */
+		for( i=0 ; i<20 ; i++ ) {
+			x[i] = glob.w - x[i];
+		}
+		for( j=0 ; j<4 ; j++ ) {
+			ttk_fillpoly( srf, 5, x+(5*j), y+(5*j), glob.rd );
+			aapolyline( srf, 5, x+(5*j), y+(5*j), glob.fg );
+		}
+	}
 
-		case( IPOD_BUTTON_PLAY ):
-		    if( wumpus_health ) {
-			    wumpus_fire();
-			    wumpus_redraw();
-		    }
-		    break;
+}
 
-		case( IPOD_WHEEL_ANTICLOCKWISE ):
-		    if( wumpus_health ) {
-			    wumpus_orientation--;
-			    if( wumpus_orientation < 0 ) wumpus_orientation = 3;
-			    wumpus_blink = 0;
-			    wumpus_redraw();
-		    }
-		    break;
+/* draw the current player position to the screen */
+static void wumpus_draw_position( ttk_surface srf )
+{
+	char buf[16];
+	snprintf( buf, 16, "%c%d", glob.game.pos_y + 'A', glob.game.pos_x );
+	pz_vector_string_center( srf, buf, glob.w>>1, glob.h>>1, 
+			glob.w>>3, glob.h>>2, 1, glob.fg );
+}
 
-		case( IPOD_WHEEL_CLOCKWISE ):
-		    if( wumpus_health ) {
-			    wumpus_orientation++;
-			    if( wumpus_orientation > 3 ) wumpus_orientation = 0;
-			    wumpus_blink = 0;
-			    wumpus_redraw();
-		    }
-		    break;
 
-		case 'q': // Quit
-		case( IPOD_BUTTON_MENU ):
-		    wumpus_exit();
-		    break;
+/* draw a textbox encompassing the full screen */
+static void wumpus_draw_textbox( ttk_surface srf, char * buf )
+{
+	int texth;
+	int textw;
+	int inset = 20;
 
-		case( IPOD_BUTTON_REWIND ):
-		case( IPOD_BUTTON_FORWARD ):
-		default:
-		    return EVENT_UNUSED;
-		    break;
-		} // keystroke
-		break;   // key down
+	if( !buf ) return;
 
-	} // event type
+	/* tweak the inset for smaller screens. :( */
+	/* nano = 176, 1g-4g = 160, mini = 138 */
+	if( glob.w < 176 ) {
+		inset = 2;	/* mini, 1g-4g mono*/
+	} 
+	
+	/* draw a purty outline box */
+	ttk_rect( srf, inset-1, 21, glob.w-(inset-1), glob.h-21, glob.fg );
+	ttk_rect( srf, inset,   20, glob.w-inset,     glob.h-20, glob.rd );
+	ttk_rect( srf, inset+1, 19, glob.w-(inset+1), glob.h-19, glob.fg );
 
+	/* and plop the text in the middle of it, yo. */
+	texth = ttk_text_height( ttk_menufont );
+	textw = ttk_text_width( ttk_menufont, buf );
+
+	ttk_text( srf, ttk_menufont,
+			(glob.w-textw)>>1, (glob.h-texth)>>1,
+			glob.fg, buf );
+}
+
+/* draw our polyline arrow */
+static void wumpus_draw_arrow( ttk_surface srf, int xp, int yp, 
+				int sz, ttk_color c )
+{
+	int i;
+	short x[16];
+	short y[16];
+
+	for( i=0 ; i<15 ; i++ )
+	{
+		x[i] = xp + (arrow_x[i] * sz / 255);
+		y[i] = yp + (arrow_y[i] * sz / 255);
+	}
+	aapolyline( srf, 3, x, y, c ); /* head */
+	aapolyline( srf, 3, x+3, y+3, c ); /* stem */
+	aapolyline( srf, 3, x+6, y+6, c ); /* feather 1 */
+	aapolyline( srf, 3, x+9, y+9, c ); /* feather 2 */
+	aapolyline( srf, 3, x+12, y+12, c ); /* feather 3 */
+}
+
+/* draw our polyline hook */
+static void wumpus_draw_hook( ttk_surface srf, int xp, int yp,
+				int sz, ttk_color c )
+{
+	int i;
+	short x[16];
+	short y[16];
+
+	for( i=0 ; i<12 ; i++ )
+	{
+		x[i] = xp + (hook_x[i] * sz / 255);
+		y[i] = yp + (hook_y[i] * sz / 255);
+	}
+
+	aapolyline( srf, 6, x, y, c ); /* head */
+	aapolyline( srf, 6, x+6, y+6, c ); /* stem */
+}
+
+
+/* draw the messagetext in a textbox */
+static int wumpus_draw_text( ttk_surface srf )
+{
+	if( !glob.messagetext ) return 0;
+	wumpus_draw_textbox( srf, glob.messagetext );
 	return 1;
 }
 
-/* entry point - get everything set up for a new game */
-void new_wumpus_window(void)
+/* list out the inventory on the screen */
+static void wumpus_draw_inventory( ttk_surface srf )
 {
-	/* Init randomizer */
-	srand(time(NULL));
+	int sz = glob.h/4;
+	int off = 10;
 
-	GrGetScreenInfo(&wumpus_screen_info);
+	pz_vector_string( srf, "Inventory", 2, 2, 4, 6, 1, glob.fg );
 
-	wumpus_gc = GrNewGC();
-        GrSetGCUseBackground(wumpus_gc, GR_FALSE);
-        GrSetGCForeground(wumpus_gc, BLACK);
-
-	wumpus_height = (screen_info.rows - (HEADER_TOPLINE + 1));
-
-	wumpus_wid = pz_new_window( 0, HEADER_TOPLINE + 1,
-		    screen_info.cols, wumpus_height,
-		    wumpus_do_draw, wumpus_handle_event );
-
-	wumpus_bufwid = GrNewPixmap( screen_info.cols, wumpus_height, NULL );
-
-        GrSelectEvents( wumpus_wid, GR_EVENT_MASK_TIMER
-					| GR_EVENT_MASK_EXPOSURE
-					| GR_EVENT_MASK_KEY_UP
-					| GR_EVENT_MASK_KEY_DOWN );
-
-	wumpus_timer = GrCreateTimer( wumpus_wid, 300 );
-
-	GrMapWindow( wumpus_wid );
-
-	/* intialize game state */
-	wumpus_new_game();
+	if( glob.game.arrows ) {
+		wumpus_draw_arrow( srf, 0, off, sz, glob.fg );
+		off += sz;
+		pz_vector_string( srf, "arrow", 2, off, 4, 6, 1, glob.fg );
+		off += 10;
+	}
+	if( glob.game.hooks ) {
+		wumpus_draw_hook( srf, 0, off, sz, glob.fg );
+		off += sz;
+		pz_vector_string( srf, "hook", 2, off, 4, 6, 1, glob.fg );
+		off += 10;
+	}
 }
 
-PZ_SIMPLE_MOD ("wumpus", new_wumpus_window, "/Extras/Games/Hunt the Wumpus")
+/* draw the pit, if applicable */
+static void wumpus_draw_pit( ttk_surface srf )
+{
+	int i;
+	short x[6];
+	short y[6];
+
+	if( wumpus_here() != WUMPUS_MAP_PIT )  return;
+
+	for( i=0 ; i<6 ; i++ )
+	{
+		x[i] = 3+ (pit_x[i] * glob.w / 255);
+		y[i] = pit_y[i] * glob.h / 255;
+	}
+	aapolyline( srf, 6, x, y, glob.rd );
+
+	for( i=0 ; i<6 ; i++ ) y[i]--;
+	aapolyline( srf, 6, x, y, glob.fg );
+}
+
+
+/* draw the pit-nearby icon if applicable */
+static void wumpus_draw_near( ttk_surface srf )
+{
+	int off = 12;
+	int i;
+	int sz = glob.h/3;
+	short x[16];
+	short y[16];
+	ttk_color c = (glob.blink)?glob.rd:glob.fg;
+
+	pz_vector_string( srf, "Near", glob.w-25, 2, 4, 6, 1, glob.fg );
+
+	if( wumpus_nearby( WUMPUS_MAP_DRAGON )) {
+		pz_vector_string( srf, "WUMPUS", glob.w-70, off, 8, 16, 1, c );
+		pz_vector_string( srf, "WUMPUS", glob.w-70, off+1, 8, 16, 1, c );
+		off += 20;
+	}
+
+	if( wumpus_nearby( WUMPUS_MAP_PIT )) {
+		off -= (sz/4);
+		for( i=0 ; i<6 ; i++ )
+		{
+			x[i] = (glob.w-sz) + (pit_x[i] * sz / 255);
+			y[i] = off+ (pit_y[i] * sz / 255);
+		}
+		aapolyline( srf, 6, x, y, c );
+		for( i=0 ; i<6 ; i++ )  y[i]++;
+		aapolyline( srf, 6, x, y, c );
+		off += sz - (sz/4);;
+	}
+
+	if( wumpus_nearby( WUMPUS_MAP_ARROW )) {
+		wumpus_draw_arrow( srf, (glob.w-sz), off, sz, c );
+		off += sz;
+	}
+
+	if( wumpus_nearby( WUMPUS_MAP_HOOK )) {
+		wumpus_draw_hook( srf, (glob.w-sz), off, sz, c );
+	}
+}
+
+/* draw the timed notice at the bottom of the screen */
+static void wumpus_draw_notice( ttk_surface srf )
+{
+	if( glob.noticetime > 0 && glob.noticetext ) {
+		pz_vector_string_center( srf, glob.noticetext,
+				glob.w>>1, glob.h-10, 4, 6, 1, glob.fg );
+	}
+}
+
+/* draw all of our stuff to the screen */
+static void wumpus_draw( PzWidget * widget, ttk_surface srf )
+{
+	if( glob.paused ) {
+		wumpus_draw_textbox( srf, "PAUSED" );
+		return;
+	}
+	if( wumpus_draw_text( srf )) return;
+
+	wumpus_draw_inventory( srf );
+	wumpus_draw_near( srf );
+
+	wumpus_draw_position( srf );
+	wumpus_draw_cursor( srf );
+	wumpus_draw_walls( srf );
+
+	wumpus_draw_pit( srf );
+
+	wumpus_draw_notice( srf );
+}
+
+
+static void wumpus_destroy( void )
+{
+}
+
+
+static int wumpus_event( PzEvent *ev )
+{
+	switch( ev->type ) {
+	case PZ_EVENT_SCROLL:
+		if( glob.game.health ) {
+			TTK_SCROLLMOD( ev->arg, 10 );
+			if( ev->arg > 0 ) {
+				glob.game.orientation++;
+			} else {
+				glob.game.orientation--;
+			}
+			if( glob.game.orientation < 0 ) 
+				glob.game.orientation = 3;
+			if( glob.game.orientation > 3 ) 
+				glob.game.orientation = 0;
+			glob.blink = 0;
+                        ev->wid->dirty = 1;
+		}
+		break;
+
+        case PZ_EVENT_BUTTON_DOWN:
+                switch( ev->arg ) {
+                case( PZ_BUTTON_HOLD ):
+                        glob.paused = 1;
+                        ev->wid->dirty = 1;
+                        break;          
+		}
+		break;
+
+	case PZ_EVENT_BUTTON_UP:
+                switch( ev->arg ) {     
+		case( PZ_BUTTON_HOLD ):
+                        glob.paused = 0;
+                        ev->wid->dirty = 1;
+                        break;
+
+                case( PZ_BUTTON_MENU ):
+			if( !glob.paused ) {
+                        	pz_close_window (ev->wid->win);
+			}
+                        break;  
+
+                case( PZ_BUTTON_ACTION ):
+			/* make sure the first input gets eaten... */
+			if( !glob.paused ) {
+				if( glob.initialized == 1 ) {
+					glob.initialized = 2;
+				} else {
+					if( glob.game.health ) {
+						wumpus_move();
+						ev->wid->dirty = 1;
+					} else {
+						pz_close_window (ev->wid->win);
+					}
+				}
+			}
+			break;
+
+                case( PZ_BUTTON_PLAY ):
+			if( glob.game.health && !glob.paused ) {
+				wumpus_fire();
+				ev->wid->dirty = 1;
+			}
+			break;
+
+                case( PZ_BUTTON_NEXT ):
+                case( PZ_BUTTON_PREVIOUS ):
+			break;
+		}
+		break;
+
+        case PZ_EVENT_DESTROY:
+                wumpus_destroy();
+                break;
+
+	case PZ_EVENT_TIMER:
+		if( !glob.paused ) {
+			if( glob.noticetime > 0 ) glob.noticetime--;
+			glob.blink ^= 1;
+			ev->wid->dirty = 1;
+		}
+		break;
+	}
+	return 0;
+}
+
+
+static PzWindow * wumpus_new_game( void )
+{
+	srand( time( NULL ));
+
+	/* build our map, init stuff */
+	wumpus_start_new_game();
+
+	/* other minutae */
+	glob.messagetext = NULL;
+	glob.paused = 0;
+
+	glob.noticetext = NULL;
+	glob.noticetime = 0;
+
+	/* set up our window */
+	glob.window = pz_new_window( "Wumpus", PZ_WINDOW_NORMAL );
+	glob.w = glob.window->w;
+	glob.h = glob.window->h;
+	glob.widget = pz_add_widget( glob.window, wumpus_draw, wumpus_event );
+
+	/* set up the colors */
+	glob.fg = ttk_ap_getx( "window.fg" )->color;
+        glob.bg = ttk_ap_getx( "window.bg" )->color;
+        glob.rd = ttk_ap_getx( "window.border" )->color;
+
+	/* our timer - for cursor blink */
+	pz_widget_set_timer( glob.widget, 300 );
+	
+	/* finish and return it */
+	return pz_finish_window( glob.window );
+}
+
+void wumpus_module_init( void )
+{
+	glob.module = pz_register_module( "wumpus", wumpus_destroy );
+	glob.window = NULL;
+	glob.widget = NULL;
+
+	/* stuff we need for saving games -- necessary? nah. BUT FUN! */
+	glob.config = NULL;
+	glob.initialized = 0;
+
+	pz_menu_add_action( "/Extras/Games/Hunt the Wumpus", wumpus_new_game );
+}
+
+PZ_MOD_INIT( wumpus_module_init )

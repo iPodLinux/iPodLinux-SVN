@@ -23,11 +23,6 @@ struct linkname
 };
 typedef struct linkname linkname_t;
 
-#ifdef WIN32
-int my_errno;
-#define errno my_errno
-#endif
-
 static int
 tar_set_file_perms(TAR *t, VFS::Filesystem *fs, const char *realname)
 {

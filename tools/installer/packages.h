@@ -49,9 +49,13 @@ public:
     // Upgrade == should I install this, even though (an old version of) it is already installed?
     bool upgrade() { return _upgrade; }
 
-    void select() { _selected = true; }
+    void select() { _selected = _reallyselected = true; }
+    void depend() { _selected = true; }
     void makeDefault() { _orig = _selected; }
-    void deselect() { _selected = false; }
+    void deselect() { _selected = _reallyselected = false; }
+    void exclude() { _selected = false; }
+    bool constrained() { return (_reallyselected != _selected); }
+    bool unconstrain() { if (_reallyselected != _selected) { _selected = _reallyselected; return true; } return false; }
 
     void debug();
 
@@ -85,7 +89,7 @@ protected:
     bool _unsupported;
     QStringList _reqs, _provs;
     quint16 _ipods;
-    bool _valid, _orig, _upgrade, _selected, _required;
+    bool _valid, _orig, _upgrade, _selected, _reallyselected, _required;
     QStringList _packlist;
 };
 
@@ -96,20 +100,23 @@ const int CategoryHeaderType = QTreeWidgetItem::UserType + 2;
 class PkgTreeWidgetItem : public QTreeWidgetItem 
 {
 public:
+    enum ChangeMode { ChangeIfPossible = 1, ChangeForce, ChangeDependency, ChangeAlways = 0x80 };
+
     PkgTreeWidgetItem (PackagesPage *page, QTreeWidget *widget, Package& pkg);
     PkgTreeWidgetItem (PackagesPage *page, QTreeWidgetItem *parent, Package& pkg);
     // If `force', then it'll force dependencies checked and competing provides unchecked
     // in order to get checked. In that case, it always returns true. Otherwise, it
     // returns true only if it was actually able to be checked based on deps and provides.
-    bool select (bool force = true);
-    void deselect();
+    bool select (ChangeMode mode);
+    bool deselect (ChangeMode mode);
     void makeDefault() { _pkg.makeDefault(); }
-    void update();
+    void update (ChangeMode mode = ChangeForce);
     Package& package() { return _pkg; }
     bool isProv() { return _prov; }
     void setProv (bool p) { _prov = p; }
 
 private:
+    void _chkconst(); // check constraints
     void _setsel();
     Package& _pkg;
     bool _changemarked;

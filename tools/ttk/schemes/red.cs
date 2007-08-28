@@ -55,7 +55,7 @@
 
     menu: bg => black, fg => red, choice => red, icon => red,
           selbg => dkred, selfg => red, selchoice => dkred,
-          icon0 => red, icon1 => ltred, icon2 => dkred, icon3 => black
+          icon0 => red-3, icon1 => red-2, icon2 => red, icon3 => red+1
 
   slider: border => red, bg => black, full => <horiz dkred to red to yellow>
 

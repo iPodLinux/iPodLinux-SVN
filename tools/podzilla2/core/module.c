@@ -751,7 +751,7 @@ void pz_modules_init()
 	if (c->mod->to_load > 0) {
 	    do_load (c->mod);
 	}
-	if( verbosity < 2 && c->mod->longname ) {
+	if( verbosity < VERBOSITY_ERRORS && c->mod->longname ) {
 	    updateprogress(sliderwin, slider, sliderVal, _("Loading Modules"), 
 			    c->mod->longname );
 	}

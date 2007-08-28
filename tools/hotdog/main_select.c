@@ -202,13 +202,13 @@ int main(int argc, char *argv[]) {
 #define IMGPREFIX ""
 #else
 
-	screen = malloc (SWIDTH * SHEIGHT * 2);
+	screen = xmalloc (SWIDTH * SHEIGHT * 2);
 	engine = HD_Initialize (SWIDTH, SHEIGHT, 16, screen, update);
 	HD_LCD_Init();
 #define IMGPREFIX "/mnt/"
 #endif
 
-	obj = objp = calloc (sizeof(circle_object), strlen (objlist) + 1);
+	obj = objp = xcalloc (sizeof(circle_object), strlen (objlist) + 1);
 	for (p = objlist; *p; p++) {
 		int ok = 1;
 		switch (*p) {

@@ -154,7 +154,7 @@ static const char * transit_options[] = {
 };
 
 static const char * verbosity_options[] = {
-    N_("High"), N_("Medium"), N_("Low"), 0
+    N_("All"), N_("Warnings"), N_("Errors"), 0
 };
 
 

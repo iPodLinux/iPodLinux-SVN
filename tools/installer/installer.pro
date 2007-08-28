@@ -12,9 +12,9 @@ win32:LIBS += -lwsock32
 
 # Installer
 HEADERS += installer.h complexwizard.h actions.h panes.h \
-           packages.h make_fw2.h
+           packages.h make_fw2.h scsi_inquiry.h
 SOURCES += installer.cc main.cc complexwizard.cc actions.cc \
-           packages.cc make_fw2.c firmware.cc
+           packages.cc make_fw2.c firmware.cc scsi_inquiry.c
 win32:SOURCES += getopt.c
 
 # Rawpod

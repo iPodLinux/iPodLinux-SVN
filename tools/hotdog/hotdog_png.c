@@ -136,7 +136,7 @@ hd_surface HD_PNG_Load (const char *fname, int *retw, int *reth)
         }
 
         /* Build the array of row pointers. */
-        for (i = 0; i < h; i++) {
+        for (i = 0; i < (int)h; i++) {
             row_pointers[i] = (png_bytep)HD_SRF_ROWF (srf, i);
         }
 

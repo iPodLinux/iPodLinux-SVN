@@ -29,6 +29,7 @@
 #include <sys/time.h>
 #ifdef IPOD
 #include <linux/vt.h>
+#include <linux/kd.h>
 #endif
 #include <dirent.h>
 #include <string.h>
@@ -54,61 +55,58 @@ void setup_sigchld_handler()
 void pz_exec(char *filename)
 {
 #ifdef IPOD
-	static const char *const tty0[] = {"/dev/tty0", "/dev/vc/0", 0};
 	static const char *const vcs[] = {"/dev/vc/%d", "/dev/tty%d", 0};
 	int i, tty0_fd, ttyfd, curvt, fd, status, oldvt = 0;
+	struct vt_stat vtstate;
 	pid_t pid;
 
-	/* query for a free VT */
 	ttyfd = -1;
-	tty0_fd = -1;
-	for (i = 0; tty0[i] && (tty0_fd < 0); ++i) {
-		tty0_fd = open(tty0[i], O_WRONLY, 0);
-	}
+	/* open our VT */
+	if ((tty0_fd = open("/dev/tty0", O_WRONLY, 0)) < 0)
+		if ((tty0_fd = open("/dev/vc/0", O_WRONLY, 0)) < 0)
+			tty0_fd = dup(0); /* STDIN is a VT? */
 
-	if (tty0_fd < 0) {
-		tty0_fd = dup(0); /* STDIN is a VT? */
-	}
+	/* find available VT */
 	ioctl(tty0_fd, VT_OPENQRY, &curvt);
-	close(tty0_fd);
-	
-	if ((geteuid() == 0) && (curvt > 0)) {
-		for (i = 0; vcs[i] && (ttyfd < 0); ++i) {
-			char vtpath[12];
+	if (curvt <= 0) {
+		pz_error("No available VTs.");
+		goto err;
+	}
 
-			sprintf(vtpath, vcs[i], curvt);
-			ttyfd = open(vtpath, O_RDWR);
-		}
+	for (i = 0; vcs[i] && (ttyfd < 0); ++i) {
+		char vtpath[12];
+
+		sprintf(vtpath, vcs[i], curvt);
+		ttyfd = open(vtpath, O_RDWR);
 	}
 	if (ttyfd < 0) {
-		fprintf(stderr, "No available TTYs.\n");
-		return;
+		pz_error("No available TTYs.");
+		goto err;
 	}
 
-	if (ttyfd >= 0) {
-		/* switch to the correct vt */
-		if (curvt > 0) {
-			struct vt_stat vtstate;
-
-			if (ioctl(ttyfd, VT_GETSTATE, &vtstate) == 0) {
-				oldvt = vtstate.v_active;
-			}
-			if (ioctl(ttyfd, VT_ACTIVATE, curvt)) {
-				perror("child VT_ACTIVATE");
-				return;
-			}
-			if (ioctl(ttyfd, VT_WAITACTIVE, curvt)) {
-				perror("child VT_WAITACTIVE");
-				return;
-			}
-		}
+	/* switch to the correct vt */
+	if (ioctl(ttyfd, VT_GETSTATE, &vtstate) == 0)
+		oldvt = vtstate.v_active;
+	/* trick SDL and the kernel both at the same time! */
+	if (ioctl(tty0_fd, KDSETMODE, KD_TEXT) < 0) {
+		pz_error("Can't set graphics.");
+		goto err;
+	}
+	if (ioctl(ttyfd, VT_ACTIVATE, curvt)) {
+		pz_perror("child VT_ACTIVATE");
+		goto err;
+	}
+	if (ioctl(ttyfd, VT_WAITACTIVE, curvt)) {
+		pz_perror("child VT_WAITACTIVE");
+		goto err;
 	}
 
 	switch(pid = vfork()) {
 	case -1: /* error */
 		perror("vfork");
-		break;
+		goto err;
 	case 0: /* child */
+		close(tty0_fd);
 		close(ttyfd);
 		if(setsid() < 0) {
 			perror("setsid");
@@ -134,7 +132,7 @@ void pz_exec(char *filename)
 			_exit(1);
 		}
 
-		execl(filename, filename, NULL);
+		execl("/bin/sh", "sh", "-c", filename, NULL);
 		fprintf(stderr, _("Exec failed! (Check Permissions)\n"));
 		_exit(1);
 		break;
@@ -145,31 +143,31 @@ void pz_exec(char *filename)
 		if (oldvt > 0) {
         		if (ioctl(ttyfd, VT_ACTIVATE, oldvt)) {
 				perror("parent VT_ACTIVATE");
-				return;
+				goto err;
 			}
         		if(ioctl(ttyfd, VT_WAITACTIVE, oldvt)) {
 				perror("parent VT_WAITACTIVE");
-				return;
+				goto err;
 			}
 		}
-		if (ttyfd > 0)
-			close(ttyfd);
 
-		if (curvt > 0) {
-			int oldfd;
+		close(ttyfd);
+		ttyfd = -1;
 
-			if ((oldfd = open("/dev/vc/1", O_RDWR)) < 0)
-				oldfd = open("/dev/tty1", O_RDWR);
-			if (oldfd >= 0) {
-				if (ioctl(oldfd, VT_DISALLOCATE, curvt)) {
-					perror("VT_DISALLOCATE");
-					return;
-				}
-				close(oldfd);
-			}
+		if (ioctl(tty0_fd, KDSETMODE, KD_GRAPHICS) < 0)
+			pz_error("Can't reset graphics.");
+
+		if (ioctl(tty0_fd, VT_DISALLOCATE, curvt)) {
+			perror("VT_DISALLOCATE"); // happens sometimes, no biggy
+			goto err;
 		}
 		break;
 	}
+
+err:
+	close(tty0_fd);
+	if (ttyfd >= 0)
+		close(ttyfd);
 #else
 	pz_message(filename);
 #endif /* IPOD */
@@ -186,7 +184,7 @@ static TWindow *browser_bg_exec (ttk_menu_item *item)
 	setup_sigchld_handler();
 	switch (vfork()) {
 	case 0:
-		execl((char *)item->data, (char *)item->data, NULL);
+		execl("/bin/sh", "sh", "-c", (char *)item->data, NULL);
 		pz_perror("execl");
 		_exit(0);
 	default: break;

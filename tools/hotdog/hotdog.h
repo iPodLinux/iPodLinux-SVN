@@ -79,12 +79,12 @@ typedef uint32 *hd_surface;
 /* "F" variants are (F)ast and need to be pre-clipped. */
 #define HD_SRF_WIDTH(srf) ((srf)[0])
 #define HD_SRF_HEIGHT(srf) ((srf)[1])
-#define HD_SRF_ROW(srf,y) (((y)<((srf)[1]))?((srf) + ((srf)[2 + (y)])):0)
+#define HD_SRF_ROW(srf,y) (((y)<(int)((srf)[1]))?((srf) + ((srf)[2 + (y)])):0)
 #define HD_SRF_ROWF(srf,y) ((srf) + ((srf)[2 + (y)]))
 #define HD_SRF_PIXF(srf,x,y) ((srf)[((srf)[2 + (y)]) + (x)])
-#define HD_SRF_SETPIX(srf,x,y,pix) (((x)<((srf)[0]))&&((y)<((srf)[1]))? (HD_SRF_PIXF(srf,x,y) = (pix)) : (pix))
-#define HD_SRF_GETPIX(srf,x,y) (((x)<((srf)[0]))&&((y)<((srf)[1]))? HD_SRF_PIXF(srf,x,y) : 0)
-#define HD_SRF_PIXPTR(srf,x,y) (((x)<((srf)[0]))&&((y)<((srf)[1]))? &HD_SRF_PIXF(srf,x,y) : 0)
+#define HD_SRF_SETPIX(srf,x,y,pix) (((x)<(int)((srf)[0]))&&((y)<(int)((srf)[1]))? (HD_SRF_PIXF(srf,x,y) = (pix)) : (pix))
+#define HD_SRF_GETPIX(srf,x,y) (((x)<(int)((srf)[0]))&&((y)<(int)((srf)[1]))? HD_SRF_PIXF(srf,x,y) : 0)
+#define HD_SRF_PIXPTR(srf,x,y) (((x)<(int)((srf)[0]))&&((y)<(int)((srf)[1]))? &HD_SRF_PIXF(srf,x,y) : 0)
 #define HD_SRF_PIXELS(srf) ((srf) + 2 + ((srf)[1]))
 #define HD_SRF_END(srf) ((srf) + 2 + ((srf)[1]) + (((srf)[0]) * ((srf)[1])))
 
@@ -108,6 +108,26 @@ void HD_FreeSurface (hd_surface srf); // you can just use free if you want
 
 /* Premultiplies the alpha in [srf]. You must be careful to only call this once. */
 void HD_PremultiplyAlpha (hd_surface srf);
+
+/* Flipping and rotating of surfaces.
+ * 
+ * Constants to be passed to HD_FlipDiagonal:
+ *  HD_FLIP_DIAGONAL_UL_LR => flip over ul-lr diagonal.
+ *  HD_FLIP_DIAGONAL_UR_LL => flip over ur-ll diagonal.
+ *  HD_FLIP_ROTATE_90_CW   => rotate 90° clockwise.
+ *  HD_FLIP_ROTATE_90_CCW  => rotate 90° counter-clockwise.
+ *
+ */
+#define HD_FLIP_DIAGONAL_UL_LR 0
+#define HD_FLIP_DIAGONAL_UR_LL 1
+#define HD_FLIP_ROTATE_90_CW   2
+#define HD_FLIP_ROTATE_90_CCW  3
+
+void HD_SurfaceFlipVertical (hd_surface srf);
+void HD_SurfaceFlipHorizontal (hd_surface srf);
+hd_surface HD_SurfaceFlipDiagonal (hd_surface srf, int direction);
+hd_surface HD_SurfaceRotate (hd_surface srf, int degrees);
+
 
 /****** Fonts ******/
 
@@ -365,6 +385,12 @@ void       HD_Canvas_RenderPart (hd_object *obj, hd_surface srf, int psx, int ps
 hd_object *HD_PNG_Create(const char *fname);
 hd_surface HD_PNG_Load (const char *fname, int *w, int *h);
 
+/****** JPEGs ******/
+#define HD_JPG_Create  HD_JPEG_Create
+#define HD_JPG_Load    HD_JPEG_Load
+hd_object *HD_JPEG_Create(const char *fname);
+hd_surface HD_JPEG_Load (const char *fname, int *w, int *h);
+
 /****** RAWLCD5s ******/
 hd_object *HD_RAWLCD5_Create(const char *fname);
 hd_surface HD_RAWLCD5_Load (const char *fname, int *w, int *h);
@@ -420,5 +446,14 @@ void HD_LCD_GetInfo (int *hw_ver, int *lcd_width, int *lcd_height, int *lcd_type
 void HD_LCD_Update (void *fb, int x, int y, int w, int h);
 void HD_LCD_Quit(); // restore to text mode before quitting
 #endif
+
+/* safe allocation */
+#include <sys/types.h>
+void *xmalloc(size_t size);
+void *xrealloc(void *ptr, size_t size);
+void *xcalloc(size_t nmemb, size_t size);
+char *xstrdup(const char *s);
+void xfree(void *ptr); // doesn't do anything special, but feel -free- to use
+#define safe_free(x) do { if (x) free(x), x = 0; } while (0)
 
 #endif

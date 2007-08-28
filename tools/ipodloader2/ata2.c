@@ -6,6 +6,11 @@
  *  Multiple block reads
  *
  * Author: James Jacobsson ( slowcoder@mac.com )
+ * 
+ * ATA2 code modified to support double sector reads as a single block for the
+ * 5.5G 80GB iPod - by Vincent Huisman ( dataghost at dataghost dot com ) 
+ * at 2007-01-23
+ *
  */
 #include "bootloader.h"
 #include "console.h"
@@ -54,11 +59,21 @@
 unsigned int pio_base_addr1,pio_base_addr2;
 unsigned int pio_reg_addrs[10];
 
-#define CACHE_NUMBLOCKS 16
+/* 
+ * To keep memory usage at the same level, 8 blocks of 1024 instead of 16 of 512
+ * Blocksize _NECESSARY_ for 1024b-sector-devices, unless uncached reads are used
+ * Maybe this needs to be worked around in some way
+ */
+#define CACHE_NUMBLOCKS 8
+#define CACHE_BLOCKSIZE 1024
 static uint8  *cachedata;
 static uint32 *cacheaddr;
 static uint32 *cachetick;
 static uint32  cacheticks;
+
+static uint8 drivetype = 0;
+static uint8 readcommand = COMMAND_READ_SECTORS_VRFY;
+static uint8 sectorcount = 1;
 
 static struct {
   uint16 chs[3];
@@ -153,7 +168,7 @@ uint32 ata_init(void) {
    * Okay, we're sure there's an ATA2 controller and device, so
    * lets set up the caching
    */
-  cachedata  = (uint8 *)mlc_malloc(CACHE_NUMBLOCKS * 512);
+  cachedata  = (uint8 *)mlc_malloc(CACHE_NUMBLOCKS * CACHE_BLOCKSIZE);
   cacheaddr  = (uint32*)mlc_malloc(CACHE_NUMBLOCKS * sizeof(uint32));
   cachetick  = (uint32*)mlc_malloc(CACHE_NUMBLOCKS * sizeof(uint32));
   cacheticks = 0;
@@ -204,7 +219,7 @@ void ata_standby (int cmd_variation)
 
 
 /*
- * Copies one block of data (512bytes) from the device
+ * Copies one block of data (512 or 1024 bytes) from the device
  * to host memory
  */
 static void ata_transfer_block(void *ptr) {
@@ -213,10 +228,58 @@ static void ata_transfer_block(void *ptr) {
 
   dst = (uint16*)ptr;
 
-  words = 256;
+  if(drivetype == 1) { // 1024b sector reads
+    words = 512;
+  } else { // Default: 0 or other
+    words = 256;
+  }
   while(words--) {
     *dst++ = inw( pio_reg_addrs[REG_DATA] );
   }
+}
+
+/*
+ * Detect what type of drive we are dealing with (512b-sectors default drive or
+ * 1024b-sectors for 5.5G 80GB (unable to read odd sectors).
+ * The variable drivetype is set to:
+ * 0: 512b sector reads with COMMAND_READ_SECTORS_VRFY (default assumption)
+ * 1: 2x 512b sector reads with COMMAND_READ_MULTIPLE when unable to read odd 
+ *    sectors
+ */
+void ata_find_transfermode(void) {
+  uint32 sector = 1; /* We need to read an odd sector */
+  uint8 status;
+
+  pio_outbyte( REG_DEVICEHEAD, (1<<6) | DEVICE_0 | ((sector & 0xF000000) >> 24) );
+  DELAY400NS;
+  pio_outbyte( REG_FEATURES  , 0 );
+  pio_outbyte( REG_CONTROL   , CONTROL_NIEN | 0x08); /* 8 = HD15 */
+  pio_outbyte( REG_SECT_COUNT, 1 );
+  pio_outbyte( REG_SECT      ,  sector & 0xFF );
+  pio_outbyte( REG_CYL_LOW   , (sector & 0xFF00) >> 8 );
+  pio_outbyte( REG_CYL_HIGH  , (sector & 0xFF0000) >> 16 );
+
+  pio_outbyte( REG_COMMAND, COMMAND_READ_SECTORS_VRFY );
+  DELAY400NS;  DELAY400NS;
+
+  while( pio_inbyte( REG_ALTSTATUS) & STATUS_BSY ); /* Spin until drive is not busy */
+  DELAY400NS;  DELAY400NS;
+
+  status = pio_inbyte( REG_STATUS );
+  if ((status & (STATUS_ERR)) == STATUS_ERR) {
+    drivetype = 1;
+    readcommand = COMMAND_READ_MULTIPLE;
+    sectorcount = 2;
+  } else {
+    drivetype = 0;
+    readcommand = COMMAND_READ_SECTORS_VRFY;
+    sectorcount = 1;
+  }
+
+#ifdef DEBUG
+  mlc_printf("find_trans: dt=%d\n", drivetype);
+#endif
+
 }
 
 /*
@@ -261,6 +324,12 @@ void ata_identify(void) {
   } else {
     mlc_printf("DRQ not set..\n");
   }
+
+  /*
+   * Now also detect the transfermode. It's done afterwards since ata_identify
+   * expects to get 512 bytes instead of (possibly) 1024.
+   */
+  ata_find_transfermode();
 }
 
 /*
@@ -268,16 +337,35 @@ void ata_identify(void) {
  */
 static int ata_readblock2(void *dst, uint32 sector, int storeInCache) {
   uint8   status,i,cacheindex;
+  uint8 secteven = 1;
+  static uint16 *buff = 0;
+
+  if ((!buff) && (drivetype == 1)) buff = (uint16*)mlc_malloc(1024);
+
+  if (drivetype == 1) {
+    if ((sector % 2) == 0) {
+      secteven = 1;
+    } else {
+      secteven = 0;
+      sector--;
+    }
+  }
 
   /*
    * Check if we have this block in cache first
    */
-  for(i=0;i<CACHE_NUMBLOCKS;i++) {
-    if( cacheaddr[i] == sector ) {
-      mlc_memcpy(dst,cachedata + 512*i,512);  /* We did.. No need to bother the ATA controller */
-      cacheticks++;
-      cachetick[i] = cacheticks;
-      return(0);
+  if (sector != 0) { /* Never EVER try to read sector 0 from cache, it won't be there or needed anyway */
+    for(i=0;i<CACHE_NUMBLOCKS;i++) {
+      if( cacheaddr[i] == sector ) {
+        if ((drivetype == 0) || (secteven == 1)) {
+          mlc_memcpy(dst,cachedata + CACHE_BLOCKSIZE*i,512);  /* We did.. No need to bother the ATA controller */
+        } else { /* drivetype = 1 && secteven == 0 */
+          mlc_memcpy(dst,cachedata + CACHE_BLOCKSIZE*i+512,512);
+        }
+        cacheticks++;
+        cachetick[i] = cacheticks;
+        return(0);
+      }
     }
   }
 
@@ -297,12 +385,12 @@ static int ata_readblock2(void *dst, uint32 sector, int storeInCache) {
   DELAY400NS;
   pio_outbyte( REG_FEATURES  , 0 );
   pio_outbyte( REG_CONTROL   , CONTROL_NIEN | 0x08); /* 8 = HD15 */
-  pio_outbyte( REG_SECT_COUNT, 1 );
+  pio_outbyte( REG_SECT_COUNT, sectorcount );
   pio_outbyte( REG_SECT      ,  sector & 0xFF );
   pio_outbyte( REG_CYL_LOW   , (sector & 0xFF00) >> 8 );
   pio_outbyte( REG_CYL_HIGH  , (sector & 0xFF0000) >> 16 );
 
-  pio_outbyte( REG_COMMAND, COMMAND_READ_SECTORS_VRFY );
+  pio_outbyte( REG_COMMAND, readcommand );
   DELAY400NS;  DELAY400NS;
 
   while( pio_inbyte( REG_ALTSTATUS) & STATUS_BSY ); /* Spin until drive is not busy */
@@ -312,11 +400,25 @@ static int ata_readblock2(void *dst, uint32 sector, int storeInCache) {
   if( (status & (STATUS_BSY | STATUS_DRQ)) == STATUS_DRQ) {
     if (storeInCache) {
       cacheaddr[cacheindex] = sector;
-      ata_transfer_block(cachedata + cacheindex * 512);
-      mlc_memcpy(dst,cachedata + cacheindex*512,512);
+      ata_transfer_block(cachedata + cacheindex * CACHE_BLOCKSIZE);
+      if ((drivetype == 0) || (secteven == 1)) {
+        mlc_memcpy(dst,cachedata + cacheindex*CACHE_BLOCKSIZE,512);
+      } else { /* drivetype == 1 && secteven == 0 */
+          mlc_memcpy(dst,cachedata + cacheindex*CACHE_BLOCKSIZE+512, 512);
+      }
       cacheticks++;
     } else {
-      ata_transfer_block(dst);
+      if (drivetype == 0) {
+        ata_transfer_block(dst);
+      } else { /* drivetype == 1 */
+        ata_transfer_block(buff);
+
+        if (secteven == 1) {
+          mlc_memcpy(dst,buff,512);
+        } else {
+          mlc_memcpy(dst,buff+256,512);
+        }
+      }
     }
   } else {
     mlc_printf("\nATA2 IO Error\n");
@@ -353,4 +455,8 @@ int ata_readblocks_uncached (void *dst, uint32 sector, uint32 count) {
     dst = (char*)dst + 512;
   }
   return 0;
+}
+
+uint8 ata_get_drivetype (void) {
+  return drivetype;
 }

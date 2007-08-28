@@ -148,6 +148,7 @@ protected slots:
     void doLoadExtraPackageList();
     void doSavePackageList();
     void doSaveSelection();
+    void doRemoveConstraints();
 
 protected:
     void loadExternalPackageList (QString filename, bool markBold);
@@ -160,7 +161,8 @@ private:
     QLabel *progressStmt;
     QString host;
     QTreeWidget *packages;
-    QPushButton *loadpkg, *savepkg, *savesel;
+    QPushButton *loadpkg, *savepkg, *savesel, *rmconstraints;
+    QLabel *savelabel;
     QMap <int, PkgTreeWidgetItem*> resolvers;
     QMap <QString, QTreeWidgetItem*> categories;
     QMap <QString, PkgTreeWidgetItem*> packageMap;

@@ -143,11 +143,11 @@ init_bss:
         orr     r0, r0, #MODE_IRQ               @ switch to IRQ mode
         msr     spsr_c, r0
         ldr     sp, =0x40017f00
-        mov     r1, sp
         bic     r0, r0, #MODE_MASK
         orr     r0, r0, #MODE_SVC               @ switch back to SVC mode
         msr     spsr_c, r0
-        add     sp, r1, #-0x0f00                @ this is the amount we give to the IRQ stack
+        ldr     sp, =0x40017f00
+        add     sp, sp, #-0x0f00                @ this is the amount we give to the IRQ stack
 
         /* call the loader function */
         bl      loader

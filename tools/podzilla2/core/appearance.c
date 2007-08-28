@@ -117,7 +117,7 @@ TWindow *pz_select_color_scheme()
     		
     		ttk_menu_append (menu, item);
                 iidx++;
-                if (!strcmp (d->d_name, linktarget)) {
+                if (linktarget[0] && !strcmp (d->d_name, linktarget)) {
                     ttk_menu_scroll (menu, iidx * 5);
                 }
     	}

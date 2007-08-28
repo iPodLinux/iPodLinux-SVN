@@ -42,6 +42,57 @@ extern void _HD_ARM_Setup();
 extern void _HD_ARM_Convert2(uint32 *buffer, uint8 *fb2bpp, int npix);
 #endif
 
+void *xmalloc(size_t size)
+{
+	void *ret;
+	if (size == 0) ++size;
+	if (!(ret = malloc(size))) {
+		fprintf(stderr, "\rmalloc failed, aborting!\r\n");
+		abort();
+	}
+	return ret;
+}
+
+void *xrealloc(void *ptr, size_t size)
+{
+	void *ret;
+	if (size == 0) ++size;
+	if (!(ret = realloc(ptr, size))) {
+		fprintf(stderr, "\rrealloc failed, aborting!\r\n");
+		abort();
+	}
+	return ret;
+}
+
+void *xcalloc(size_t nmemb, size_t size)
+{
+	void *ret;
+	if (nmemb == 0) ++nmemb;
+	if (size == 0) ++size;
+	if (!(ret = calloc(nmemb, size))) {
+		fprintf(stderr, "\rcalloc failed, aborting!\r\n");
+		abort();
+	}
+	return ret;
+}
+
+char *xstrdup(const char *s)
+{
+	char *ret;
+	if (!s) return 0;
+	if (!s[0]) return xcalloc(1, 1);
+	if (!(ret = strdup(s))) {
+		fprintf(stderr, "\rstrdup failed, aborting!\r\n");
+		abort();
+	}
+	return ret;
+}
+
+void xfree(void *ptr) // no magic here
+{
+	free(ptr);
+}
+
 hd_engine *HD_Initialize(uint32 width,uint32 height,uint8 bpp, void *framebuffer, void (*update)(struct hd_engine*, int, int, int, int)) {
 	hd_engine *eng;
 
@@ -51,7 +102,7 @@ hd_engine *HD_Initialize(uint32 width,uint32 height,uint8 bpp, void *framebuffer
 #endif
 #endif
 
-	eng = (hd_engine *)calloc( 1, sizeof(hd_engine) );
+	eng = (hd_engine *)xcalloc( 1, sizeof(hd_engine) );
 	assert(eng != NULL);
 
         eng->screen.__r0 = eng->screen.__r1 = 0;
@@ -139,11 +190,11 @@ void HD_Register(hd_engine *eng,hd_object *obj)
             cur = cur->next;
         }
         if (cur->obj == obj) return; // maybe it was the last object
-        cur->next = (hd_obj_list *)malloc (sizeof(hd_obj_list));
+        cur->next = (hd_obj_list *)xmalloc (sizeof(hd_obj_list));
         cur->next->obj = obj;
         cur->next->next = 0;
     } else {
-        eng->list = (hd_obj_list *)malloc (sizeof(hd_obj_list));
+        eng->list = (hd_obj_list *)xmalloc (sizeof(hd_obj_list));
         eng->list->obj = obj;
         eng->list->next = 0;
     }
@@ -168,7 +219,7 @@ void HD_Deregister (hd_engine *eng, hd_object *obj)
                 obj->y + obj->h > 0 && obj->y < obj->eng->screen.height)
             {
                 hd_rect *der = eng->deregistered;
-                eng->deregistered = malloc (sizeof(hd_rect));
+                eng->deregistered = xmalloc (sizeof(hd_rect));
                 HD_CopyRect (eng->deregistered, &cur->obj->x);
                 HD_ClipRect (eng->deregistered, &eng->screen.rect);
                 eng->deregistered->next = der;
@@ -180,7 +231,7 @@ void HD_Deregister (hd_engine *eng, hd_object *obj)
                 !HD_SameRect (eng->deregistered, &cur->obj->last))
             {
                 hd_rect *der = eng->deregistered;
-                eng->deregistered = malloc (sizeof(hd_rect));
+                eng->deregistered = xmalloc (sizeof(hd_rect));
                 HD_CopyRect (eng->deregistered, &cur->obj->last);
                 HD_ClipRect (eng->deregistered, &eng->screen.rect);
                 eng->deregistered->next = der;
@@ -240,7 +291,7 @@ void HD_Render(hd_engine *eng) {
         int needsort = 0;
         int needrender = 0;
 
-        rect = dirties = calloc (1, sizeof(hd_rect)); // just a NULL rect
+        rect = dirties = xcalloc (1, sizeof(hd_rect)); // just a NULL rect
 
         // Make a list of all dirty rects. Rects are clipped
         // to screen from the beginning.
@@ -265,7 +316,7 @@ void HD_Render(hd_engine *eng) {
                     if (obj->x + obj->w > 0 && obj->x < eng->screen.width &&
                         obj->y + obj->h > 0 && obj->y < eng->screen.height) {
                         // One rect: current position
-                        rect->next = malloc (sizeof(hd_rect));
+                        rect->next = xmalloc (sizeof(hd_rect));
                         rect = rect->next;
                         rect->x = (obj->x < 0)? 0 : obj->x;
                         rect->y = (obj->y < 0)? 0 : obj->y;
@@ -277,7 +328,7 @@ void HD_Render(hd_engine *eng) {
                     if (obj->last.x + obj->last.w > 0 && obj->last.x < eng->screen.width &&
                         obj->last.y + obj->last.h > 0 && obj->last.y < eng->screen.height) {
                         // Next rect: old position
-                        rect->next = malloc (sizeof(hd_rect));
+                        rect->next = xmalloc (sizeof(hd_rect));
                         rect = rect->next;
                         
                         rect->x = (obj->last.x < 0)? 0 : obj->last.x;
@@ -329,7 +380,7 @@ void HD_Render(hd_engine *eng) {
                 if (obj->x + obj->w > 0 && obj->x < eng->screen.width &&
                     obj->y + obj->h > 0 && obj->y < eng->screen.height) {
                     // One rect: current position
-                    rect->next = malloc (sizeof(hd_rect));
+                    rect->next = xmalloc (sizeof(hd_rect));
                     rect = rect->next;
                     rect->x = (obj->x < 0)? 0 : obj->x;
                     rect->y = (obj->y < 0)? 0 : obj->y;
@@ -341,7 +392,7 @@ void HD_Render(hd_engine *eng) {
                 if (obj->last.x + obj->last.w > 0 && obj->last.x < eng->screen.width &&
                     obj->last.y + obj->last.h > 0 && obj->last.y < eng->screen.height) {
                     // Next rect: old position
-                    rect->next = malloc (sizeof(hd_rect));
+                    rect->next = xmalloc (sizeof(hd_rect));
                     rect = rect->next;
                     
                     rect->x = (obj->last.x < 0)? 0 : obj->last.x;
@@ -538,7 +589,7 @@ void HD_Render(hd_engine *eng) {
 		uint32 off,sPix;
 		uint16 dPix;
 
-		for(off=0;off<(eng->screen.width*eng->screen.height);off++) {
+		for(off=0;(int)off<(eng->screen.width*eng->screen.height);off++) {
                 	sPix = HD_SRF_PIXELS(eng->buffer)[off];
 
 			dPix  = ((sPix & 0x00FF0000) >> (16+3)) << 11; // R
@@ -690,6 +741,9 @@ void HD_ScaleBlendClip (hd_surface ssrf, int sx, int sy, int sw, int sh,
 #else
   buffOff = starty * dtw;// + startx;
   
+  if (speed & HD_SPEED_NOSCALE)
+    fp_step_x = fp_step_y = 0x10000;
+  
   fp_iy = fp_initial_iy;
   for(y=starty;y<endy;y++) {
     fp_ix = fp_initial_ix;
@@ -740,7 +794,7 @@ void HD_NewObjectAt (hd_object *obj)
 
 hd_object *HD_NewObject() 
 {
-    hd_object *ret = malloc (sizeof(hd_object));
+    hd_object *ret = xmalloc (sizeof(hd_object));
     assert (ret != NULL);
     HD_NewObjectAt (ret);
     return ret;

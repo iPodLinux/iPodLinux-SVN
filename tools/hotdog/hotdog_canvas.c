@@ -38,7 +38,7 @@ void HD_Canvas_CreateAt (hd_object *obj, uint32 width, uint32 height)
 
 hd_object *HD_Canvas_CreateFrom (hd_surface srf) 
 {
-    hd_object *ret = malloc (sizeof(hd_object));
+    hd_object *ret = xmalloc (sizeof(hd_object));
     HD_Canvas_CreateAtFrom (ret, srf);
     return ret;
 }

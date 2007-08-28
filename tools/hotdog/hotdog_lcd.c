@@ -88,7 +88,7 @@ static void lcd_send_data_2 (int data_lo, int data_hi)
 	lcd_wait_write_23();
 	outl (data_lo, ipod_lcd_base + LCD_DATA);
 	lcd_wait_write_23();
-	outl (data_lo, ipod_lcd_base + LCD_DATA);
+	outl (data_hi, ipod_lcd_base + LCD_DATA);
 }
 
 // Sends a command to the LCD - type 2
@@ -341,13 +341,24 @@ void HD_LCD_Init()
 		lcd_height = 110;
 		if (hw_ver == 0x7) // mini2g
 			lcd_type = 3;
-		else
+		else {
 			lcd_type = 2;
+			ipod_lcd_base = 0x70003000;
+			ipod_rtc = 0x60005010;
+		}
 		break;
 	case 0x5: // 4g
+		ipod_lcd_base = 0x70003000;
+		ipod_rtc = 0x60005010;
+		lcd_width = 160;
+		lcd_height = 128;
+		lcd_type = 2;
+		break;
 	case 0x3: // 3g
 	case 0x2: // 2g
 	case 0x1: // 1g
+		ipod_lcd_base = 0xc0001000;
+		ipod_rtc = 0xcf001110;
 		lcd_width = 160;
 		lcd_height = 128;
 		lcd_type = 2;

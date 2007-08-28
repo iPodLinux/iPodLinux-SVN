@@ -170,6 +170,7 @@ namespace VFS
         virtual s64 lseek (s64 off, int whence);
         u64 size() { return _blocks; }
         int blocksize() { return _blocksize; }
+        int blocksizeBits() { return _blocksize_bits; }
 
     protected:
         virtual int doRead (void *buf, u64 sec) = 0;

@@ -126,7 +126,7 @@ hd_surface HD_SurfaceFromPixels (void *pixels, int32 width, int32 height, int bp
 
 hd_surface HD_NewSurface (int32 width, int32 height) 
 {
-    hd_surface ret = malloc ((2 + height + (width * height)) * 4);
+    hd_surface ret = xmalloc ((2 + height + (width * height)) * 4);
     int i;
     
     ret[0] = width;
@@ -163,4 +163,193 @@ void HD_PremultiplyAlpha (hd_surface srf)
         
         *pp++ = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];        
     }
+}
+
+void HD_SurfaceFlipVertical (hd_surface srf)
+{
+    unsigned int x, y, w, h, *p, *q, t;
+
+    /* Width and height of surface. */
+    w = HD_SRF_WIDTH(srf);
+    h = HD_SRF_HEIGHT(srf);
+
+    /* Flip it. */
+    for (y = 0; y < (h >> 1); y++) {
+        p = HD_SRF_PIXELS(srf) + (y * w);
+        q = HD_SRF_PIXELS(srf) + ((h - 1 - y) * w);
+
+        for (x = 0; x < w; x++) {
+            t = *p; *p++ = *q; *q++ = t;
+        }
+    }
+}
+
+void HD_SurfaceFlipHorizontal (hd_surface srf)
+{
+    unsigned int x, y, w, h, *p, *q, t;
+
+    /* Width and height of surface. */
+    w = HD_SRF_WIDTH(srf);
+    h = HD_SRF_HEIGHT(srf);
+
+    /* Flipping. */
+    for (y = 0; y < h; y++) {
+        p = HD_SRF_PIXELS(srf) + (y * w);
+        q = HD_SRF_PIXELS(srf) + ((y + 1) * w) - 1;
+
+        for (x = 0; x < (w >> 1); x++) {
+            t = *p; *p++ = *q; *q-- = t;
+        }
+    }
+}
+
+hd_surface HD_SurfaceFlipDiagonal (hd_surface srf, int direction)
+{
+    unsigned int x, y, w, h, nw, nh, *p, *q;
+    hd_surface flp;
+
+    /* Width and height of surface. */
+    w = HD_SRF_WIDTH(srf);
+    h = HD_SRF_HEIGHT(srf);
+
+    /* 
+     * Width and height of resulting surface.
+     * Not for ul-lr and ur-ll flipping, but
+     * also needed for that. 
+     */
+    nw = h;
+    nh = w;
+
+    /* Surface to contain flipped image. */
+    flp = HD_NewSurface(h, w);
+
+    /* Source and destination pointers. */
+    p = HD_SRF_PIXELS(srf);
+    q = HD_SRF_PIXELS(flp);
+
+    /* Do the flipping. */
+    switch (direction) {
+        default:
+        case HD_FLIP_DIAGONAL_UL_LR:
+            for (x = 0; x < w; x++) {
+                for (y = 0; y < h; y++) {
+                    q[y+x*nw] = p[x+y*w];
+                }
+            }
+            break;
+        case HD_FLIP_DIAGONAL_UR_LL:
+            for (x = 0; x < w; x++) {
+                for (y = 0; y < h; y++) {
+                    q[h-2-y+x*nw] = p[w-2-x+y*w];
+                }
+            }
+            break;
+        case HD_FLIP_ROTATE_90_CW:
+            for (x = 0; x < w; x++) {
+                for (y = 0; y < h; y++) {
+                    q[h-1-y+x*nw] = p[x+y*w];
+                }
+            }
+            break;
+        case HD_FLIP_ROTATE_90_CCW:
+            for (x = 0; x < w; x++) {
+                for (y = 0; y < h; y++) {
+                    q[y+x*nw] = p[w-1-x+y*w];
+                }
+            }
+            break;
+    }
+
+    /* Free old surface and return flipped one */
+    HD_FreeSurface (srf);
+    return flp;
+}
+
+hd_surface HD_SurfaceRotate (hd_surface srf, int degrees)
+{
+    int x, y, w, h;
+    int xraxis, yraxis;
+    int xp, yp, xpr, ypr, xo, yo;
+    int cosine, sine;
+    hd_surface rtd;
+    uint32 *rowr, *rowo;
+
+    /* Width and height of surface */
+    w = HD_SRF_WIDTH(srf);
+    h = HD_SRF_HEIGHT(srf);
+
+    /* 
+     * Surface which contains rotated image.
+     * Corners will be cut off. Calculation of
+     * new width and height to be added later
+     * when automatic resizing of an objects
+     * surface can be stopped on desktop builds.
+     */
+    rtd = HD_NewSurface (w, h);
+
+    /* Prepare for switch statemant. */
+    degrees =  degrees % 360;
+
+    /* If it's a 90°/180°/270°/360° rotation. */
+    switch (degrees) {
+        case 90:
+        case -270:
+            return HD_SurfaceFlipDiagonal (srf, HD_FLIP_ROTATE_90_CW);
+            break;
+        case 180:
+        case -180:
+            memcpy(rtd, srf, (h+2+w*h)*sizeof(uint32));
+            HD_SurfaceFlipVertical (rtd);
+            HD_SurfaceFlipHorizontal (rtd);
+            HD_FreeSurface (srf);
+            return rtd;
+            break;
+        case -90:
+        case 270:
+            return HD_SurfaceFlipDiagonal (srf, HD_FLIP_ROTATE_90_CCW);
+            break;
+        case 0:
+            memcpy(rtd, srf, (h+2+w*h)*sizeof(uint32));
+            HD_FreeSurface (srf);
+            return rtd;
+            break;
+        default:
+            break;
+    }
+
+    /* Rotate around this point (center of image). */
+    xraxis = w / 2;
+    yraxis = h / 2;
+
+    /* Cosine and sine 16.16 fixed point. */
+    cosine  = fcos(-degrees * 2048 / 180);
+    sine    = fsin(-degrees * 2048 / 180);
+
+    /* Now rotate. */
+    for (y = 0; y < h; y++) {
+        rowr = HD_SRF_ROWF(rtd, y);
+        yp   = 2 * (y - yraxis) + 1;
+
+        for (x = 0; x < w; x++) {
+            xp = 2 * (x - xraxis) + 1;
+
+            xpr = (int)(xp * cosine - yp * sine)/(1<<16);
+            ypr = (int)(xp * sine + yp * cosine)/(1<<16);
+
+            xo = (xpr - 1) / 2 + xraxis;
+            yo = (ypr - 1) / 2 + yraxis;
+
+            if (xo >= 0 && xo < w && yo >= 0 && yo < h) {
+                rowo    = HD_SRF_ROWF(srf, yo);
+                rowr[x] = rowo[xo];
+            }
+            else {
+                rowr[x] = HD_RGBA(0, 0, 0, 0);
+            }
+        }
+    }
+
+    /* Free old surface and return rotated surface. */
+    HD_FreeSurface (srf);
+    return rtd;
 }
