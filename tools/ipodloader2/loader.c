@@ -11,7 +11,7 @@
 #include "config.h"
 #include "interrupts.h"
 
-#define LOADERNAME "iPL Loader 2.5d5" // "d" stands for development version, "b" for beta version
+#define LOADERNAME "iPL Loader 2.5d6" // "d" stands for development version, "b" for beta version
 
 static uint16 *framebuffer;
 static int orig_contrast;
@@ -414,11 +414,6 @@ static void load_rockbox(ipod_t *ipod, int fd, uint32 fsize, uint32 read, void *
   // the rest of the bootloader startup code.
   if (ipod->hw_rev < 0x40000) {  // PP5002
     outl(ipod->hw_rev,0x29fffffc);
-
-    __asm__ volatile(
-      "mov   r0, #0x28000000    \n"
-      "mov   pc, r0             \n"
-    );
   } else {                        // PP502x
 
     // (Note by TT: as of Mar2006, the extra RAM in 60GB iPod is ignored by
@@ -426,11 +421,6 @@ static void load_rockbox(ipod_t *ipod, int fd, uint32 fsize, uint32 read, void *
     // "linuxstb" from their dev team expressed the desire to change this
     // eventually, though):
     outl(ipod->hw_rev,0x11fffffc);
-
-    __asm__ volatile(
-      "mov   r0, #0x10000000    \n"
-      "mov   pc, r0             \n"
-    );
   }
 }
 
@@ -533,7 +523,7 @@ static void *loader_handleImage (ipod_t *ipod, char *imagename, int forceRockbox
     }
     
     load_rockbox (ipod, fd, fsize, 512, entry, buf512);
-    return 0;
+    return entry;
   }
 
   if (args) {

@@ -97,13 +97,24 @@ void vfs_registerfs( filesystem *newfs ) {
 
 void vfs_init( void) {
   uint32 i;
+  uint8 sectormultiplier;
 
   fsCnt = 0;
   
   mbr_t *iPodMBR;
   iPodMBR = mlc_malloc( sizeof(mbr_t));
   
+  fs_header_t *fs_header;
+  fs_header = mlc_malloc( sizeof(fs_header_t));
+
   ata_readblocks( iPodMBR, 0, 1 );
+
+  /* Sector multiplier is for 5.5G 80GB, which has 2048b sectors */
+  if(ata_get_drivetype() == 1) {
+    sectormultiplier = 4;
+  } else {
+    sectormultiplier = 1;
+  }
 
   for(i=0;i<MAX_FILES;i++) vfs_handle[i].fd = -1;
 
@@ -116,21 +127,52 @@ void vfs_init( void) {
 	
     /* Check each primary partition for a supported FS */
     for(i=0;i<4;i++) {
-      uint32 offset;
+      uint32 offset,validoffset;
       uint8  type;
 
       type   = iPodMBR->partition_table[i].type;
       offset = iPodMBR->partition_table[i].lba_offset;
+      validoffset = offset;
 
+      /*
+       * Now find a valid partition table. This is actually a PITA since the 5.5G
+       * does not necessarily have identical MBRs on every machine. On some the
+       * logBlkMultiplier is 4, on some it is 1, while it should be 4. There's no
+       * other way than just peeking for valid partitions.
+       */
       switch(type) {
       case 0x00:
-        fwfs_newfs(i,offset*logBlkMultiplier);
+        ata_readblocks_uncached(fs_header, offset*sectormultiplier,1);
+        if( mlc_strncmp((void*)(fs_header->fwfsmagic),"]ih[",4) ) validoffset = offset*sectormultiplier;
+        
+        if((logBlkMultiplier != 1) && (logBlkMultiplier != sectormultiplier)) {
+          ata_readblocks_uncached(fs_header, offset*logBlkMultiplier,1);
+          if( mlc_strncmp((void*)(fs_header->fwfsmagic),"]ih[",4) ) validoffset = offset*logBlkMultiplier;
+        }
+
+        fwfs_newfs(i,validoffset);
         break;
       case 0x83:
-        ext2_newfs(i,offset*logBlkMultiplier);
+        ata_readblocks_uncached(fs_header, offset*sectormultiplier + 2,1);
+        if(fs_header->ext2magic == 0xEF53) validoffset = offset*sectormultiplier;
+        
+        if((logBlkMultiplier != 1) && (logBlkMultiplier != sectormultiplier)) {
+          ata_readblocks_uncached(fs_header, offset*logBlkMultiplier + 2,1);
+          if(fs_header->ext2magic == 0xEF53) validoffset = offset*logBlkMultiplier;
+        }
+
+        ext2_newfs(i,validoffset);
         break;
       case 0xB:
-        fat32_newfs(i,offset*logBlkMultiplier);
+        ata_readblocks_uncached(fs_header, offset*sectormultiplier,1);
+        if(fs_header->fat32magic == 0xAA55) validoffset = offset*sectormultiplier;
+        
+        if((logBlkMultiplier != 1) && (logBlkMultiplier != sectormultiplier)) {
+          ata_readblocks_uncached(fs_header, offset*logBlkMultiplier,1);
+          if(fs_header->fat32magic == 0xAA55) validoffset = offset*logBlkMultiplier;
+        }
+
+        fat32_newfs(i,validoffset);
         break;
       default:
         /* printf("  Unsupported..\n"); */

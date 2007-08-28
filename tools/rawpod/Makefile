@@ -1,24 +1,12 @@
 ifdef DEBUG
 CXXFLAGS += -g
 endif
-APPS = ipodls ipodfind ipodcopy ipodshell ipodrm
+APPS = ipodls ipodfind ipodcopy ipodshell ipodrm imoo
 
 all: librawpod.a $(APPS)
 
-ipodcopy: librawpod.a ipodcopy.cc
-	g++ $(CXXFLAGS) -o $@ ipodcopy.cc librawpod.a $(LDFLAGS)
-
-ipodls: librawpod.a ipodls.cc
-	g++ $(CXXFLAGS) -o $@ ipodls.cc librawpod.a $(LDFLAGS)
-
-ipodfind: librawpod.a ipodfind.cc
-	g++ $(CXXFLAGS) -o $@ ipodfind.cc librawpod.a $(LDFLAGS)
-
-ipodshell: librawpod.a ipodshell.cc
-	g++ $(CXXFLAGS) -o $@ ipodshell.cc librawpod.a $(LDFLAGS)
-
-ipodrm: librawpod.a ipodrm.cc
-	g++ $(CXXFLAGS) -o $@ ipodrm.cc librawpod.a $(LDFLAGS)
+$(APPS): %: %.cc librawpod.a
+	g++ $(CXXFLAGS) -o $@ $< librawpod.a $(LDFLAGS)
 
 librawpod.a: partition.o ext2.o fat32.o device.o vfs.o mkdosfs.o rawpod.o mke2fs/mke2fs.o
 	ar cru $@ $?

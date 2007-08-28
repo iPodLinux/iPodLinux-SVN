@@ -67,6 +67,9 @@ static void othello_draw(PzWidget *wid, ttk_surface srf)
 	int coordx, coordy;
 	ttk_color fg = ttk_ap_getx("window.fg")->color;
 
+#ifdef SDL
+	ttk_fillrect(srf, 0,0, wid->w, wid->h, ttk_ap_getx("window.bg")->color);
+#endif
 	yline = 0;
 	for (c = 0; c < 64; c++) {
 		xline = c % 8;

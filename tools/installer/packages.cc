@@ -44,7 +44,7 @@ Package::Package()
       _subfile ("."), _category (""), _idinfo (NoIdentifyingInfo), _filesize (0),
       _type (Archive), _unsupported (false), _reqs (QStringList()),
       _provs (QStringList()), _ipods (INSTALLER_WORKING_IPODS), _valid (false),
-      _orig (false), _upgrade (false), _selected (false), _required (false)
+      _orig (false), _upgrade (false), _selected (false), _reallyselected (false), _required (false)
 {}
 
 Package::Package (QString line) 
@@ -52,7 +52,7 @@ Package::Package (QString line)
       _subfile ("."), _category (""), _idinfo (NoIdentifyingInfo), _filesize (0),
       _type (Archive), _unsupported (false), _reqs (QStringList()),
       _provs (QStringList()), _ipods (INSTALLER_WORKING_IPODS), _valid (false),
-      _orig (false), _upgrade (false), _selected (false), _required (false)
+      _orig (false), _upgrade (false), _selected (false), _reallyselected (false), _required (false)
 {
     parseLine (line);
 }
@@ -78,7 +78,7 @@ void Package::parseLine (QString line)
     QRegExp rx ("^"
                 "\\s*" "\\[(kernel|loader|file|archive)\\]"
                 "\\s*" "([a-zA-Z0-9_-]+)"
-                "\\s+" "([0-9.YMDNCVS-]+" "[abc]?)"
+                "\\s+" "([0-9.YMDNCVSabcde-]+)"
                 "\\s*" ":"
                 "\\s*" "\"([^\"]*)\""
                 "\\s*" "at"
@@ -399,8 +399,9 @@ PackagesPage::PackagesPage (Installer *wiz, bool atm)
     packages = new QTreeWidget;
     packages->setHeaderLabels (headers);
     loadpkg = new QPushButton (tr ("Load package(s) information"));
-    savepkg = new QPushButton (tr ("Save package list"));
-    savesel = new QPushButton (tr ("Save package choices"));
+    savepkg = new QPushButton (tr ("list"));
+    savesel = new QPushButton (tr ("choices"));
+    rmconstraints = new QPushButton (tr ("Remove constraints"));
     connect (packages, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)),
              this, SLOT(listDoubleClicked(QTreeWidgetItem*)));
     connect (packages, SIGNAL(itemChanged(QTreeWidgetItem*, int)),
@@ -412,6 +413,7 @@ PackagesPage::PackagesPage (Installer *wiz, bool atm)
     connect (loadpkg, SIGNAL(clicked(bool)), this, SLOT(doLoadExtraPackageList()));
     connect (savepkg, SIGNAL(clicked(bool)), this, SLOT(doSavePackageList()));
     connect (savesel, SIGNAL(clicked(bool)), this, SLOT(doSaveSelection()));
+    connect (rmconstraints, SIGNAL(clicked(bool)), this, SLOT(doRemoveConstraints()));
 
     QVBoxLayout *layout = new QVBoxLayout;
     layout->addWidget (blurb);
@@ -420,13 +422,18 @@ PackagesPage::PackagesPage (Installer *wiz, bool atm)
     layout->addWidget (packages);
     QHBoxLayout *buttons = new QHBoxLayout;
     buttons->addWidget (loadpkg);
+    buttons->addWidget (rmconstraints);
+    buttons->addStretch (1);
+    buttons->addWidget (savelabel = new QLabel ("Save:"));
     buttons->addWidget (savesel);
     buttons->addWidget (savepkg);
     layout->addLayout (buttons);
     packages->hide();
     loadpkg->hide();
+    savelabel->hide();
     savesel->hide();
     savepkg->hide();
+    rmconstraints->hide();
     if (automatic)
         layout->addStretch (1);
     setLayout (layout);
@@ -449,6 +456,24 @@ PackagesPage::PackagesPage (Installer *wiz, bool atm)
     } else {
         loadExternalPackageList (PackageListFile, false);
         QTimer::singleShot (0, this, SLOT(done()));
+    }
+}
+
+void PackagesPage::doRemoveConstraints() 
+{
+    QList <QTreeWidgetItem *> allItems = packages->findItems (".*", Qt::MatchRegExp | Qt::MatchRecursive);
+    QListIterator <QTreeWidgetItem *> it (allItems);
+
+    while (it.hasNext()) {
+        QTreeWidgetItem *i = it.next();
+        PkgTreeWidgetItem *item;
+        if ((item = dynamic_cast<PkgTreeWidgetItem*>(i)) != 0) {
+            if (item->package().constrained()) {
+                if (item->package().selected()) item->package().select();
+                else item->package().deselect();
+                item->update();
+            }
+        }
     }
 }
 
@@ -780,9 +805,9 @@ Package *PackagesPage::parsePackageListLine (QString line, bool makeBold, QDir *
             packages->findItems (srx.cap (2), Qt::MatchRecursive | Qt::MatchExactly);
         if (pkglist.size() == 1) {
             if (srx.cap (1) == "de")
-                ((PkgTreeWidgetItem *)pkglist[0])->deselect();
+                ((PkgTreeWidgetItem *)pkglist[0])->deselect (PkgTreeWidgetItem::ChangeForce);
             else
-                ((PkgTreeWidgetItem *)pkglist[0])->select();
+                ((PkgTreeWidgetItem *)pkglist[0])->select (PkgTreeWidgetItem::ChangeForce);
         }
         return 0;
     }
@@ -904,7 +929,7 @@ Package *PackagesPage::parsePackageListLine (QString line, bool makeBold, QDir *
         
         if (pkg.url().contains ("YYYYMMDD") || pkg.url().contains ("NNN")) {
             QString dir = pkg.url();
-            dir.truncate (dir.lastIndexOf ('/'));
+            dir.truncate (dir.lastIndexOf ('/') + 1);
             if (dir.contains ("://")) {
                 // it's a URL; get a directory listing. It'll be parsed in httpRequestFinished.
                 QUrl url (dir);
@@ -975,12 +1000,12 @@ void PackagesPage::httpDone (bool err)
 void PackagesPage::fixupPackageItem (PkgTreeWidgetItem *item) 
 {
     item->package().readPackingList (iPodLinuxPartitionDevice);
-    if (item->package().selected()) item->select (Mode == Update);
-    else if (item->package().required() && (!item->isProv() || !item->parent())) item->select();
+    if (item->package().required() && (!item->isProv() || !item->parent())) item->select (PkgTreeWidgetItem::ChangeForce);
+    item->update();
     // XXX this is a rather silly special case, but I was too lazy to do a whole
     // "default if certain iPod gens" thing.
-    if ((Mode == StandardInstall || Mode == AdvancedInstall) &&
-        item->package().name() == "pzmodules" && iPodVersion == 0xB) item->select();
+    //if ((Mode == StandardInstall || Mode == AdvancedInstall) &&
+    //    item->package().name() == "pzmodules" && iPodVersion == 0xB) item->select();
 }
 
 void PackagesPage::done() 
@@ -992,11 +1017,11 @@ void PackagesPage::done()
                                 "If an upgrade is available, the Status column will read \"Upgrade\"; "
                                 "if you do not want this upgrade for some reason, uncheck the box "
                                 "next to that text.</p>"));
-            wizard->resize (640, 580);
+            wizard->resize (640, 610);
         } else {
             blurb->setText (tr ("<p>Here you may select packages to install for iPodLinux. Check the boxes "
                                 "next to each package you would like to install.</p>"));
-            wizard->resize (640, 520);
+            wizard->resize (640, 550);
         }
 
         wizard->setMinimumSize (500, 410);
@@ -1044,9 +1069,14 @@ void PackagesPage::done()
         packages->resizeColumnToContents (0);
         packages->show();
         loadpkg->show();
+        savelabel->show();
         savesel->show();
         savepkg->show();
+        rmconstraints->show();
     }
+
+    //***//
+
     advok = true;
     emit completeStateChanged();
     if (automatic) wizard->clickNextButton();
@@ -1080,9 +1110,51 @@ void PackagesPage::httpResponseHeaderReceived (const QHttpResponseHeader& resp)
     }
 }
 
-bool PkgTreeWidgetItem::select (bool force) 
+void PkgTreeWidgetItem::_chkconst() 
 {
-    _pkg.select();
+    QList <QTreeWidgetItem *> allItems = _page->packages->findItems (".*", Qt::MatchRegExp | Qt::MatchRecursive);
+    QListIterator <QTreeWidgetItem *> it (allItems);
+
+    while (it.hasNext()) {
+        QTreeWidgetItem *i = it.next();
+        PkgTreeWidgetItem *item;
+        if ((item = dynamic_cast<PkgTreeWidgetItem*>(i)) != 0) {
+            QStringListIterator rit (item->_pkg.requires());
+            bool haveAny = false;
+            while (rit.hasNext()) {
+                QString req = rit.next();
+                
+                QList <PkgTreeWidgetItem *> satisfants = _page->packageProvides.values (req);
+                for (int i = 0; i < satisfants.size(); i++) {
+                    if (satisfants[i]->package().selected() && !satisfants[i]->package().constrained())
+                        haveAny = true;
+                }
+
+                if (haveAny || !item->package().selected()) {
+                    for (int i = 0; i < satisfants.size(); i++) {
+                        if (satisfants[i]->package().unconstrain())
+                            satisfants[i]->update (ChangeIfPossible);
+                    }
+                }
+            }
+
+            if (haveAny && !item->package().selected())
+                if (item->package().unconstrain()) item->update (ChangeIfPossible);
+        }
+    }
+}
+
+bool PkgTreeWidgetItem::select (ChangeMode mode) 
+{
+    if (_pkg.selected() && !(mode & ChangeAlways))
+        return true;
+    
+    mode = (ChangeMode)(mode & ~ChangeAlways);
+    
+    if (mode == ChangeDependency)
+        _pkg.depend();
+    else
+        _pkg.select();
 
     QStringListIterator rit (_pkg.requires());
     while (rit.hasNext()) {
@@ -1097,11 +1169,10 @@ bool PkgTreeWidgetItem::select (bool force)
 
         if (!haveAny) {
             if (satisfants.size()) {
-                if (force) {
-                    satisfants[0]->setCheckState (0, Qt::Checked);
-                    satisfants[0]->select (force);
+                if (mode != ChangeIfPossible) {
+                    satisfants[0]->select (ChangeDependency);
                 } else {
-                    deselect();
+                    deselect (ChangeForce);
                     return false;
                 }
             } else {
@@ -1112,11 +1183,12 @@ bool PkgTreeWidgetItem::select (bool force)
                                       .arg (package().name())
                                       .arg (req),
                                       QObject::tr ("Ok"));
-                setCheckState (0, Qt::Unchecked);
-                deselect();
+                deselect (ChangeForce);
             }
         }
     }
+
+    _chkconst();
 
     if (_prov && parent()) {
         for (int i = 0; i < parent()->childCount(); i++) {
@@ -1126,11 +1198,10 @@ bool PkgTreeWidgetItem::select (bool force)
             if ((ptwi = dynamic_cast<PkgTreeWidgetItem*>(parent()->child(i))) != 0) {
                 if (!ptwi->package().provides().contains (package().provides()[0])) continue;
                 if (ptwi->checkState(0) == Qt::Checked) {
-                    if (force) {
-                        ptwi->setCheckState (0, Qt::Unchecked);
-                        ptwi->deselect();
+                    if (mode != ChangeIfPossible) {
+                        ptwi->deselect (ChangeForce);
                     } else {
-                        deselect();
+                        deselect (ChangeForce);
                         return false;
                     }
                 }
@@ -1142,14 +1213,22 @@ bool PkgTreeWidgetItem::select (bool force)
     return true;
 }
 
-void PkgTreeWidgetItem::deselect() 
+bool PkgTreeWidgetItem::deselect (ChangeMode mode) 
 {
+    if (!_pkg.selected() && !(mode & ChangeAlways))
+        return true;
+
+    mode = (ChangeMode)(mode & ~ChangeAlways);
+
     if (_pkg.required() && (!_prov || !parent())) {
         setCheckState (0, Qt::Checked);
-        return;
+        return true;
     }
 
-    _pkg.deselect();
+    if (mode == ChangeDependency)
+        _pkg.exclude();
+    else
+        _pkg.deselect();
 
     QList <QTreeWidgetItem *> allItems = _page->packages->findItems (".*", Qt::MatchRegExp | Qt::MatchRecursive);
     QListIterator <QTreeWidgetItem *> it (allItems);
@@ -1170,12 +1249,18 @@ void PkgTreeWidgetItem::deselect()
                 }
                 
                 if (!haveAny) {
-                    item->setCheckState (0, Qt::Unchecked);
-                    item->deselect();
+                    if (mode != ChangeIfPossible)
+                        item->deselect (ChangeDependency);
+                    else {
+                        _pkg.select();
+                        return false;
+                    }
                 }
             }
         }
     }
+
+    _chkconst();
 
     if (_prov && parent()) {
         bool required_provide = false;
@@ -1197,9 +1282,8 @@ void PkgTreeWidgetItem::deselect()
                 
                 if (parent()->child(i) == this) continue;
                 if (parent()->child(i)->checkState(0) == Qt::Unchecked) {
-                    parent()->child(i)->setCheckState (0, Qt::Checked);
                     if ((ptwi = dynamic_cast<PkgTreeWidgetItem*>(parent()->child(i))) != 0) {
-                        ptwi->select();
+                        ptwi->select (ChangeForce);
                     }
                 }
             }
@@ -1207,6 +1291,8 @@ void PkgTreeWidgetItem::deselect()
     }
 
     _setsel();
+
+    return true;
 }
 
 static int ice = 0;
@@ -1255,9 +1341,9 @@ void PackagesPage::listClicked (QTreeWidgetItem *item, int column)
     PkgTreeWidgetItem *ptwi;
     if ((ptwi = dynamic_cast<PkgTreeWidgetItem*>(item)) != 0) {
         if (ptwi->checkState(0) == Qt::Checked)
-            ptwi->select();
+            ptwi->select (PkgTreeWidgetItem::ChangeForce);
         else
-            ptwi->deselect();
+            ptwi->deselect (PkgTreeWidgetItem::ChangeForce);
     }
 
     depth--;
@@ -1341,22 +1427,20 @@ PkgTreeWidgetItem::PkgTreeWidgetItem (PackagesPage *page, QTreeWidget *parent, P
     : QTreeWidgetItem (parent, PackageItemType), _pkg (pkg), _changemarked (false), _page (page), _prov (false)
 {
     setFlags (Qt::ItemIsSelectable | Qt::ItemIsUserCheckable | Qt::ItemIsEnabled);
-    update();
 }
 
 PkgTreeWidgetItem::PkgTreeWidgetItem (PackagesPage *page, QTreeWidgetItem *parent, Package& pkg)
     : QTreeWidgetItem (parent, PackageItemType), _pkg (pkg), _changemarked (false), _page (page), _prov (false)
 {
     setFlags (Qt::ItemIsSelectable | Qt::ItemIsUserCheckable | Qt::ItemIsEnabled);
-    update();
 }
 
-void PkgTreeWidgetItem::update() 
+void PkgTreeWidgetItem::update (ChangeMode mode) 
 {
     if (_pkg.selected())
-        setCheckState (0, Qt::Checked);
+        select ((ChangeMode)(mode | ChangeAlways));
     else
-        setCheckState (0, Qt::Unchecked);
+        deselect ((ChangeMode)(mode | ChangeAlways));
     setText (0, _pkg.name());
     setText (1, _pkg.version());
     setText (3, _pkg.description());
@@ -1374,23 +1458,27 @@ void PkgTreeWidgetItem::_setsel()
         ice++;
         _page->packages->expandItem (this);
         ice--;
+
+        QString constraint = _pkg.constrained()? " [D]" : "";
         if (_pkg.upgrade()) {
-            setText (2, QObject::tr ("Upgrade"));
+            setText (2, QObject::tr ("Upgrade") + constraint);
             setCheckState (2, Qt::Checked);
         } else if (_pkg.changed()) {
-            setText (2, QObject::tr ("Install"));
+            setText (2, QObject::tr ("Install") + constraint);
         } else {
-            setText (2, QObject::tr ("Keep"));
+            setText (2, QObject::tr ("Keep") + constraint);
         }
     } else {
         setCheckState (0, Qt::Unchecked);
         ice++;
         _page->packages->collapseItem (this);
         ice--;
+
+        QString constraint = _pkg.constrained()? " [D]" : "";
         if (_pkg.changed()) {
-            setText (2, QObject::tr ("Uninstall"));
+            setText (2, QObject::tr ("Uninstall") + constraint);
         } else {
-            setText (2, QObject::tr ("None"));
+            setText (2, QObject::tr ("None") + constraint);
         }
     }
 }
@@ -1409,7 +1497,6 @@ void PackageRemoveAction::run()
         // Check for file overlap.
         QList<QTreeWidgetItem*> allPackages = _twi->treeWidget()->findItems (".*", Qt::MatchRegExp);
         QListIterator<QTreeWidgetItem*> it = allPackages;
-        bool overlap = false;
         
         while (it.hasNext()) {
             PkgTreeWidgetItem *twi = dynamic_cast<PkgTreeWidgetItem*>(it.next());

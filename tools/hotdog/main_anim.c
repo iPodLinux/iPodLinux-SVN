@@ -171,7 +171,7 @@ int main(int argc, char *argv[]) {
 
 	HD_LCD_Init();
 	HD_LCD_GetInfo (0, &WIDTH, &HEIGHT, 0);
-	screen = malloc (WIDTH * HEIGHT * 2);
+	screen = xmalloc (WIDTH * HEIGHT * 2);
 	engine = HD_Initialize (WIDTH, HEIGHT, 16, screen, update);
 #define IMGPREFIX "/mnt/"
 #endif

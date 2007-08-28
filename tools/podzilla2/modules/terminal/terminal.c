@@ -888,39 +888,21 @@ int terminal_timer(TWidget * wid)
 #define vfork fork
 #endif
 
-int vforkpty(int * m, char * n, struct termios * t, struct winsize * w)
-{
-	/*
-		forkpty() uses fork(), which is not supported on iPodLinux.
-		So we need to write a version of forkpty that uses vfork() instead.
-		I call this vforkpty.
-	*/
-	int slavenum;
-	int p;
-	if (openpty(m, &slavenum, n, t, w)) return -1;
-	p = vfork();
-	if (p == -1) {
-		return -1;
-	} else if (p) {
-		close(slavenum);
-		return p;
-	} else {
-		close(*m);
-		login_tty(slavenum);
-		return 0;
-	}
-}
-
 int terminal_pty_open(int * master, int * slave, char * pty_name, struct termios * tios, struct winsize * twin, char * termtype, char * signon, char * exec_path, char * exec_name, char * exec_arg)
 {
+	int slavenum;
 	int p;
-	p = vforkpty(master, pty_name, tios, twin);
+	if (openpty(master, &slavenum, pty_name, tios, twin)) return -1;
+	p = vfork();
 	if (p == -1) {
 		close(*master);
 		return -1; /* could not vfork */
 	} else if (p) {
+		close(slavenum);
 		return p;
 	} else {
+		close(*master);
+		login_tty(slavenum);
 		if (twin) {
 			char se[50];
 			snprintf(se, 50, "LINES=%d", twin->ws_row);
@@ -940,8 +922,9 @@ int terminal_pty_open(int * master, int * slave, char * pty_name, struct termios
 		if (*slave < 0) {
 			_exit(0);
 		}
-		dup(*slave);
-		dup(*slave);
+		dup2(*slave,0);
+		dup2(*slave,1);
+		dup2(*slave,2);
 		if (signon) {
 			printf("%s\n", signon);
 		}

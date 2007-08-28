@@ -155,7 +155,7 @@ static void render (TWidget *this, int first, int n)
 	    int len = strlen(truncname);
 	    while (--len > 4) {
 	        memcpy (truncname + len - 4, "...\0", 4);
-	        if (ttk_text_width (data->font, truncname) >
+	        if (ttk_text_width (data->font, truncname) <
 			data->menu[xi]->linewidth)
 		    break;
 	    }

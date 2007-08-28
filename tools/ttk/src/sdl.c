@@ -140,15 +140,27 @@ int ttk_get_rawevent (int *arg)
     return TTK_NO_EVENT;
 }
 
+static int wait_event(SDL_Event *e, unsigned int ms)
+{
+    unsigned int time = SDL_GetTicks();
+    while (SDL_GetTicks() < time + ms) {
+    	if (SDL_PollEvent(e)) return 1;
+    	SDL_Delay(10);
+    }
+    return 0;
+}
+
 int ttk_get_event (int *arg) 
 {
+#define TIME 30
     SDL_Event ev;
-    int tev = TTK_NO_EVENT;
+    int ms, tev = TTK_NO_EVENT;
+    unsigned int time = SDL_GetTicks();
     
     *arg = 0;
 
     // We amalgamate adjacent scroll events to reduce lag.
-    while (SDL_PollEvent (&ev)) {
+    while ((ms = TIME - (SDL_GetTicks() - time)) > 0 && wait_event (&ev, ms)) {
 	switch (ev.type) {
 	case SDL_QUIT:
 	    ttk_quit();
@@ -156,42 +168,60 @@ int ttk_get_event (int *arg)
 	    break;
 	case SDL_KEYDOWN:
 	case SDL_KEYUP:
-	    if (ev.key.keysym.sym == SDLK_l || ev.key.keysym.sym == SDLK_r) {
+	    switch (ev.key.keysym.sym) {
+	    case SDLK_l:
+	    case SDLK_r:
 		if (ev.type == SDL_KEYUP) continue;
 		tev = TTK_SCROLL;
 		if (ev.key.keysym.sym == SDLK_l) (*arg)--;
 		else (*arg)++;
+		continue;
+	    case SDLK_w:
+	    case SDLK_LEFT:
+		*arg = TTK_BUTTON_PREVIOUS;
+		break;
+	    case SDLK_f:
+	    case SDLK_RIGHT:
+		*arg = TTK_BUTTON_NEXT;
+		break;
+	    case SDLK_m:
+	    case SDLK_UP:
+		*arg = TTK_BUTTON_MENU;
+		break;
+	    case SDLK_d:
+	    case SDLK_DOWN:
+		*arg = TTK_BUTTON_PLAY;
+		break;
+	    case SDLK_h:
+		*arg = TTK_BUTTON_HOLD;
+		break;
+	    case SDLK_RETURN:
+		*arg = TTK_BUTTON_ACTION;
+		break;
+#ifndef IPOD
+	    case SDLK_KP0: *arg = '0'; break;
+	    case SDLK_KP1: *arg = '1'; break;
+	    case SDLK_KP2: *arg = '2'; break;
+	    case SDLK_KP3: *arg = '3'; break;
+	    case SDLK_KP4: *arg = '4'; break;
+	    case SDLK_KP5: *arg = '5'; break;
+	    case SDLK_KP6: *arg = '6'; break;
+	    case SDLK_KP7: *arg = '7'; break;
+	    case SDLK_KP8: *arg = '8'; break;
+	    case SDLK_KP9: *arg = '9'; break;
+#endif
+	    default:
+#ifdef WARN_UNRECOG_KEYS
+		fprintf (stderr, "Unrecognized key\n");
+		*arg = ev.key.keysym.sym;
+#endif
 		break;
 	    }
-
-	    tev = (ev.type == SDL_KEYDOWN)? TTK_BUTTON_DOWN : TTK_BUTTON_UP;
-	    
-	    if (ev.key.keysym.sym == SDLK_w || ev.key.keysym.sym == SDLK_LEFT) *arg = TTK_BUTTON_PREVIOUS;
-	    else if (ev.key.keysym.sym == SDLK_f || ev.key.keysym.sym == SDLK_RIGHT) *arg = TTK_BUTTON_NEXT;
-	    else if (ev.key.keysym.sym == SDLK_m || ev.key.keysym.sym == SDLK_UP) *arg = TTK_BUTTON_MENU;
-	    else if (ev.key.keysym.sym == SDLK_d || ev.key.keysym.sym == SDLK_DOWN) *arg = TTK_BUTTON_PLAY;
-	    else if (ev.key.keysym.sym == SDLK_h) *arg = TTK_BUTTON_HOLD;
-	    else if (ev.key.keysym.sym == SDLK_RETURN) *arg = TTK_BUTTON_ACTION;
-	    
-#ifndef IPOD
-	    else if (ev.key.keysym.sym == SDLK_KP0) *arg = '0';
-	    else if (ev.key.keysym.sym == SDLK_KP1) *arg = '1';
-	    else if (ev.key.keysym.sym == SDLK_KP2) *arg = '2';
-	    else if (ev.key.keysym.sym == SDLK_KP3) *arg = '3';
-	    else if (ev.key.keysym.sym == SDLK_KP4) *arg = '4';
-	    else if (ev.key.keysym.sym == SDLK_KP5) *arg = '5';
-	    else if (ev.key.keysym.sym == SDLK_KP6) *arg = '6';
-	    else if (ev.key.keysym.sym == SDLK_KP7) *arg = '7';
-	    else if (ev.key.keysym.sym == SDLK_KP8) *arg = '8';
-	    else if (ev.key.keysym.sym == SDLK_KP9) *arg = '9';
-#endif
-#ifdef WARN_UNRECOG_KEYS
-	    else fprintf (stderr, "Unrecognized key\n"), *arg = ev.key.keysym.sym;
-#endif
-	    return tev;
+	    return (ev.type == SDL_KEYDOWN)? TTK_BUTTON_DOWN : TTK_BUTTON_UP;
 	}
     }
     return tev;
+#undef TIME
 }
 
 int ttk_getticks() 

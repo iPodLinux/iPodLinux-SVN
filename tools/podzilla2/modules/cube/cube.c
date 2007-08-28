@@ -262,7 +262,7 @@ static void cube_draw(PzWidget *wid, ttk_surface srf)
 	ttk_color col = ttk_ap_getx("window.fg")->color;
 	int colors[] = {
 		0xff0000, 0x00ff00, 0x0000ff,
-		0xffff00, 0xff00ff, 0x00ffff,
+		0xffff00, 0xff00f0, 0x00ffff,
 		0xa0a0a0, 0xa0a0a0, 0x505050,
 		0x505050, 0x000000, 0x000000
 	};
@@ -280,6 +280,9 @@ static void cube_draw(PzWidget *wid, ttk_surface srf)
 		{YFACES(3)}, {YFACES(4)}, {YFACES(5)}
 	};
 
+#ifdef SDL
+	ttk_fillrect(srf, 0,0, wid->w, wid->h, ttk_ap_getx("window.bg")->color);
+#endif
 	if (solid & SOLID) {
 		for (i = 0; i < 6; i++) {
 			if (0 >= (xfaces[i][1] - xfaces[i][0]) *

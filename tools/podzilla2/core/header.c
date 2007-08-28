@@ -1026,7 +1026,7 @@ void dec_draw_AmigaXX( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 	enum ttk_justification just = pz_get_int_setting( 
 					pz_global_config, TITLE_JUSTIFY);
 	int i;
-	int xp1 = hdr->widg->x;
+	int xp1 = hdr->widg->x + 2;
 	int xp2 = hdr->widg->x + hdr->widg->w -1;
 	int tx1 = 0, tx2 = 0;
 	double yo, xo;
@@ -1035,7 +1035,7 @@ void dec_draw_AmigaXX( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 	dec_plain( hdr, srf );
 
 	/* draw the backing */
-	if( WhichAmigaDOS == 40 ) {
+	if( WhichAmigaDOS == 40 || WhichAmigaDOS == 41 ) {
 		int r1, g1, b1, r2, g2, b2;
 		ttk_color halfway;
 		ttk_unmakecol_ex( pz_dec_ap_get_solid( "header.shine" ),
@@ -1059,7 +1059,7 @@ void dec_draw_AmigaXX( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 	}
 
 	/* draw the faux close box, if applicable. */
-	if( hdr->widg->x == 0 ) {
+	if( hdr->widg->x == 0 && WhichAmigaDOS != 41 ) {
 		xp1 = hdr->widg->h-1;	/* square gadget */
 		xo = ((float)hdr->widg->h) / 8.0;
 		yo = ((float)hdr->widg->h) / 8.0;
@@ -1157,7 +1157,7 @@ void dec_draw_AmigaXX( struct header_info * hdr, ttk_surface srf, int WhichAmiga
 				      ttk_screen->w-1, hdr->widg->h-1,
 				      RAISED );
 		}
-	} else if( WhichAmigaDOS != 14 ) {
+	} else if( WhichAmigaDOS != 14 && WhichAmigaDOS != 41 ) {
 		/* draw vertical separators - 1.3, 1.1, not 1.4 */
 		ttk_fillrect( srf, xp1, 0, xp1+2, hdr->widg->h,
 				pz_dec_ap_get_solid( "header.fg" ));
@@ -1214,6 +1214,11 @@ void dec_draw_Amiga20( struct header_info * hdr, ttk_surface srf )
 void dec_draw_Amiga40( struct header_info * hdr, ttk_surface srf )
 {
 	dec_draw_AmigaXX( hdr, srf, 40 ); /* AmigaDOS 4.0 */
+}
+
+void dec_draw_Amiga40_plus( struct header_info * hdr, ttk_surface srf )
+{
+	dec_draw_AmigaXX( hdr, srf, 41 ); /* AmigaDOS 4.0 plus */
 }
 
 
@@ -1982,6 +1987,8 @@ void pz_header_init()
 					"BleuLlama" );
 		pz_add_header_decoration( "Amiga 4.0", NULL, dec_draw_Amiga40,
 					"BleuLlama" );
+		pz_add_header_decoration( "Amiga 4.0+", NULL,
+					dec_draw_Amiga40_plus, "BleuLlama" );
 
 		/* Be! */
 		pz_add_header_decoration( "BeOS", NULL, dec_draw_BeOS, 

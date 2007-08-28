@@ -546,10 +546,17 @@ void pz_reset_idle_timer();
 #define EQUALIZER       (12)
 #define DSPFREQUENCY    (13)
 
-/* PLAYLIST SETTINGS 20 - 29 */
+/* PLAYLIST SETTINGS 20 - 29, with their associated values */
  
 #define SHUFFLE         (20)
+#define SHUFFLE_OFF     (0)
+#define SHUFFLE_SONGS   (1)
+#define SHUFFLE_ALBUMS	(2)	/* not implemented yet. */
+
 #define REPEAT          (21)
+#define REPEAT_OFF      (0)
+#define REPEAT_ONE      (1)
+#define REPEAT_ALL      (2)
 
 /* OTHER SETTINGS 30 - 99 */
 
@@ -579,6 +586,9 @@ void pz_reset_idle_timer();
 #define TITLE_JUSTIFY	(52)	/* appearance */
 
 #define VERBOSITY	(53)	/* startup verbosity */
+#define VERBOSITY_ALL		(0)	/* info, warnings and errors */
+#define VERBOSITY_WARNINGS	(1)	/* only warnings and errors */
+#define VERBOSITY_ERRORS	(2) 	/* only errors */
 
 /****  modular header widget stuff  *** */
 #define HEADER_METHOD_L   (54)	 /*  display method - LEFT  */

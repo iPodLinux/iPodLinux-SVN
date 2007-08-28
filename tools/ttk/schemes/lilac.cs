@@ -15,7 +15,7 @@
   header: bg => <light, medium, lightish with medium @:1,0,50%,0>,
 	  fg => black,
 	  line => gray,
-	  accent => medium
+	  accent => medium,
 	  shadow => dark,
 	  shine => pink
 

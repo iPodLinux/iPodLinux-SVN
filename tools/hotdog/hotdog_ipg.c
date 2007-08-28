@@ -43,7 +43,7 @@ int big_endian()
     char ch[4] = { '\0', '\1', '\2', '\3' };
     unsigned i = 0x00010203;
 
-    if (*((int *)ch) == i) 
+    if (*((unsigned int *)ch) == i) 
 	return 1;
     else
 	return 0;
@@ -85,7 +85,7 @@ hd_surface HD_RAWLCD5_Load (const char *fname, int *retw, int *reth)
 	}
 
 	/* Allocate space for RGB565 pixel data and read it */
-	rgb565 = calloc(width*height*2, sizeof(char));
+	rgb565 = xcalloc(width*height*2, sizeof(char));
 	fread(rgb565, 1, width*height*2, in);
         
         /* Allocate our surface. */
@@ -97,8 +97,8 @@ hd_surface HD_RAWLCD5_Load (const char *fname, int *retw, int *reth)
 
 	/* Set pixels */
 	i = 0;
-	for(y=0; y<height; y++){
-		for(x=0; x<width; x++){
+	for(y=0; y<(int)height; y++){
+		for(x=0; x<(int)width; x++){
 			if(be){
 				HD_SRF_PIXF(srf, x, y) = RGB565toARGB8888( SWITCH_16(rgb565[i]) );
 			}
@@ -195,8 +195,8 @@ hd_surface HD_IPD_ANM_Load (const char *fname, int *retw, int *reth)
 	}
 
 	/* Allocate space for RGBA palette and color index, read it */
-	palette = calloc(1024        , sizeof(int));
-	cindex  = calloc(width*height, sizeof(char));
+	palette = xcalloc(1024        , sizeof(int));
+	cindex  = xcalloc(width*height, sizeof(char));
 	fread(palette, 1, 1024        , in);
 	fread(cindex , 1, width*height, in);
         
@@ -209,8 +209,8 @@ hd_surface HD_IPD_ANM_Load (const char *fname, int *retw, int *reth)
 
 	/* Set pixels */
 	i = 0;
-	for(y=0; y<height; y++){
-		for(x=0; x<width; x++){
+	for(y=0; y<(int)height; y++){
+		for(x=0; x<(int)width; x++){
 			if(be){
 				HD_SRF_PIXF(srf, x, height-y-1) = RGBAtoARGB8888( palette[cindex[i]] );
 			}

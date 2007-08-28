@@ -105,7 +105,7 @@ namespace VFS
             return -EINVAL;
         }
         if (newpos < 0) newpos = 0;
-        if (newpos > (_blocks << _blocksize_bits)) newpos = (_blocks << _blocksize_bits);
+        if (newpos > (s64)(_blocks << _blocksize_bits)) newpos = (_blocks << _blocksize_bits);
         return (_pos = newpos);
     }
 
@@ -208,7 +208,7 @@ namespace VFS
             return -EINVAL;
         }
         if (newpos < 0) newpos = 0;
-        if (newpos > _size) newpos = _size;
+        if (newpos > (s64)_size) newpos = _size;
         return (_pos = newpos);
     }
 

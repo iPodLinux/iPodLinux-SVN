@@ -9,6 +9,7 @@
 #include "rawpod/device.h"
 #include "rawpod/fat32.h"
 #include "rawpod/ext2.h"
+#include "scsi_inquiry.h"
 
 #include <QLabel>
 #include <QLineEdit>
@@ -208,6 +209,10 @@ PodLocationPage::PodLocationPage (Installer *wizard)
         goto err;
     }
 
+    if ((hw_ver = scsi_inquiry_get_hw_ver (podloc)) > 0) {
+        goto err; // Not an error, but jump over the SysInfo code.
+    }
+
     sysinfo = fat32->open ("/IPOD_C~1/DEVICE/SYSINFO", O_RDONLY);
     if (!sysinfo || sysinfo->error()) {
         if (!sysinfo)
@@ -272,12 +277,12 @@ PodLocationPage::PodLocationPage (Installer *wizard)
 	fprintf (stderr, "sysinfo OK, rev %05x\n", rev);
     }
 
-    if (!(INSTALLER_WORKING_IPODS & (1 << hw_ver)))
-        status = UnsupPod;
-
  err:
     delete fat32;
     delete part;
+    
+    if (!(INSTALLER_WORKING_IPODS & (1 << hw_ver)))
+        status = UnsupPod;
     
     if (!hw_ver || (hw_ver >= 0xA && status == SLinPod)) { // error
         blurb = new QLabel;

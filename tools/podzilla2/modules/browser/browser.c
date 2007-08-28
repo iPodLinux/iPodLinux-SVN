@@ -23,6 +23,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <sys/param.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -51,14 +52,19 @@ static TWindow *previous_directory(ttk_menu_item *item)
 
 static TWindow *handle_file(ttk_menu_item *item)
 {
-	return pz_browser_open(item->name);
+	char path[MAXPATHLEN];
+	snprintf(path, MAXPATHLEN-1, "%s/%s",
+		getcwd(path, MAXPATHLEN), item->name);
+	return pz_browser_open( path );
 }
 
-static TWindow *list_actions(const char *path)
+static TWindow *list_actions(const char *lpath)
 {
 	TWindow *ret;
 	TWidget *menu;
+	char path[MAXPATHLEN];
 
+	snprintf( path, MAXPATHLEN, "%s/%s", getcwd(path, MAXPATHLEN), lpath);
 	ret = pz_new_window(path, PZ_WINDOW_NORMAL);
 	menu = pz_browser_get_actions(path);
 	ttk_add_widget(ret, menu);

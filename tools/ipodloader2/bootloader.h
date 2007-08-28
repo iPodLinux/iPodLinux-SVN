@@ -39,6 +39,15 @@ typedef struct {
 	uint16	MBR_signature;		/* the MBR signature */
 }  __attribute__((__packed__)) mbr_t;
 
+typedef struct {
+  uint8 unused1[56];
+  uint16 ext2magic; /* ext2 magic bytes */
+  uint8 unused2[198];
+  uint8 fwfsmagic[4]; /* fwfs magic bytes */
+  uint8 unused3[250];
+  uint16 fat32magic; /* FAT32 magic bytes */
+}  __attribute__((__packed__)) fs_header_t;
+
 
 #endif
 

@@ -15,9 +15,9 @@ void HD_SetAnimation (hd_object *obj, void (*setup)(hd_object *), void (*animate
         if (obj->pending_animations) {
             next = obj->pending_animations;
             while (next->next) next = next->next;
-            next = next->next = malloc (sizeof(hd_pending_animation));
+            next = next->next = xmalloc (sizeof(hd_pending_animation));
         } else {
-            next = obj->pending_animations = malloc (sizeof(hd_pending_animation));
+            next = obj->pending_animations = xmalloc (sizeof(hd_pending_animation));
         }
         next->setup = setup;
         next->animate = animate;
@@ -90,9 +90,8 @@ static void HD_SetupLinearAnimation (hd_object *obj)
 void HD_AnimateLinear (hd_object *obj, int sx, int sy, int sw, int sh,
                        int dx, int dy, int dw, int dh, int frames, void (*done)(hd_object *))
 {
-    anim_lineardata *a = malloc (sizeof(anim_lineardata));
+    anim_lineardata *a = xmalloc (sizeof(anim_lineardata));
     assert (obj != NULL);
-    assert (a != NULL);
 
     int absolute = frames & HD_ANIM_ABSOLUTE;
     frames &= ~HD_ANIM_ABSOLUTE;
@@ -338,9 +337,8 @@ void HD_SetupCircleAnimation (hd_object *obj)
 void HD_AnimateCircle (hd_object *obj, int32 x, int32 y, int32 r, int32 fbot, int32 ftop,
                        int32 astart, int32 adist, int frames) 
 {
-    anim_circledata *a = malloc (sizeof(anim_circledata));
+    anim_circledata *a = xmalloc (sizeof(anim_circledata));
     assert (obj != NULL);
-    assert (a != NULL);
 
     if (frames < 0) {
         a->frames = 0;

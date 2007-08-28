@@ -25,7 +25,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef IPOD
+#if defined(IPOD) || defined(CHUMBY)
 	
 	.section .text
 	
@@ -120,7 +120,7 @@ _HD_ARM_Convert16:
 	@@ Combine first+second, third+fourth.
 	orr	r0, r0, r11, lsl #16	@ r0 = (second << 16) | first
 	orr	r12, r12, r14, lsl #16	@ r12 = (fourth << 16) | third
-	subs	r10, r10, #2		@ Step counter down
+	subs	r10, r10, #4		@ Step counter down
 	stmia	r9!, {r0, r12}		@ Save these four pixels. 1S + 2N cyc.
 	bne	1b			@ Keep looping until counter = 0. 3 cyc.
 
