@@ -731,8 +731,8 @@ _HD_ARM_LowerBlit_Fast:
 	@@ Copy 4-byte units till we're done. 4S if done, 3N + 2I + 5S if not done
 	cmp	r12, #0
 	beq	4f
-3:	ldrne	r8, [r2], #4		@ If r8 was != 16, and we're still here (so it's < 16),
-	strne	r8, [r3], #4		@ transfer 4 bytes. 2N+2I+2S for these two.
+3:	ldrne	r8, [r0], #4		@ If r8 was != 16, and we're still here (so it's < 16),
+	strne	r8, [r1], #4		@ transfer 4 bytes. 2N+2I+2S for these two.
 	subnes	r12, r12, #1		@ and update r12.
 	bne	3b			@ If we're now <16 bytes, just repeat the word-copying part till
 					@ we're done.
