@@ -37,7 +37,7 @@ OBJCOPY ?= objcopy
 TARGET = x11
 ifeq ($(shell uname),Darwin)
 PIC = -dynamic
-MAKESO = ld -bundle /usr/lib/bundle1.o -flat_namespace -undefined suppress `gcc -print-libgcc-file-name`
+MAKESO = ld -bundle /usr/lib/bundle1.o -flat_namespace `gcc -print-libgcc-file-name` -lSystemStubs -undefined suppress -bundle_loader $(PZPATH)/core/built-in.o
 else
 PIC = -fPIC -DPIC
 MAKESO = cc -shared
