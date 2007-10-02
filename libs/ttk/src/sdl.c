@@ -166,6 +166,44 @@ int ttk_get_event (int *arg)
 	    ttk_quit();
 	    exit (0);
 	    break;
+
+	// let's try to convert mouse movement to podzilla controls...
+	case SDL_MOUSEBUTTONUP:
+		switch( ev.button.button ) {
+		case SDL_BUTTON_WHEELUP:
+			tev = TTK_SCROLL;
+			(*arg)--;
+			if( ev.type == SDL_MOUSEBUTTONUP )
+				return tev;
+			break;
+		case SDL_BUTTON_WHEELDOWN:
+			tev = TTK_SCROLL;
+			(*arg)++;
+			if( ev.type == SDL_MOUSEBUTTONUP )
+				return tev;
+			break;
+		}
+		// intentional fall-through...
+
+	case SDL_MOUSEBUTTONDOWN:
+		switch( ev.button.button ) {
+		case SDL_BUTTON_MIDDLE:
+			// okay.  I admit, I'm tailoring this specifically
+			// for VORTEX.  middle button will fire the 
+			// superzapper.  Tee-hee!
+			*arg = TTK_BUTTON_NEXT;
+			break;
+		case SDL_BUTTON_LEFT:
+			*arg = TTK_BUTTON_ACTION;
+			break;
+		case SDL_BUTTON_RIGHT:
+			*arg = TTK_BUTTON_MENU; // dunno about this one
+			break;
+		}
+	    	return (ev.type == SDL_MOUSEBUTTONDOWN)? TTK_BUTTON_DOWN : TTK_BUTTON_UP;
+
+
+	// okay. now we'll do keyboard/ipod input
 	case SDL_KEYDOWN:
 	case SDL_KEYUP:
 	    switch (ev.key.keysym.sym) {
