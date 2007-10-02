@@ -169,12 +169,13 @@ int ttk_get_event (int *arg)
 	case SDL_KEYDOWN:
 	case SDL_KEYUP:
 	    switch (ev.key.keysym.sym) {
+	    case SDLK_e:
 	    case SDLK_l:
 	    case SDLK_r:
 		if (ev.type == SDL_KEYUP) continue;
 		tev = TTK_SCROLL;
-		if (ev.key.keysym.sym == SDLK_l) (*arg)--;
-		else (*arg)++;
+		if (ev.key.keysym.sym == SDLK_r) (*arg)++;
+		else (*arg)--;
 		continue;
 	    case SDLK_w:
 	    case SDLK_LEFT:
