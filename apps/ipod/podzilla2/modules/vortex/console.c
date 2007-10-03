@@ -78,6 +78,7 @@ void Vortex_Console_Init( void )
 	static_is_hidden = 0;
 }
 
+/* get the number of text strings zooming */
 int Vortex_Console_GetZoomCount( void )
 {
 	int x, c=0;
@@ -85,6 +86,8 @@ int Vortex_Console_GetZoomCount( void )
 		if( consolebuf[x].state == VORTEX_CONSOLE_ZOOM ) c++;
 	return c;
 }
+
+/* get the number of text strings static in the bottom corner */
 int Vortex_Console_GetStaticCount( void )
 {
 	int x, c=0;
@@ -149,6 +152,7 @@ void Vortex_Console_AddItemAt( char * text, int xs, int ys,
 	consolebuf[pos].buf[VORTEX_CONSOLE_BUFSIZE-1] = '\0'; //just in case 
 }
 
+/* add an item at the center */
 void Vortex_Console_AddItem( char * text, int xs, int ys,
 				int style, ttk_color color )
 {

@@ -49,6 +49,8 @@ static enemy enemies[ VGO_ENEMIES_NUM ];
 static bolt bolts[ VGO_BOLTS_NUM ];
 static powerup powerups[ VGO_POWERUPS_NUM ];
 
+#define CONRAND (Vortex_Rand( 2 )-1)
+
 /* ********************************************************************** */
 
 void Vortex_CollisionDetection( void )
@@ -115,7 +117,8 @@ void Vortex_CollisionDetection( void )
 				vglob.score += 42;
 				vglob.hasParticleLaser = 1;
 				Vortex_Console_AddItemAt(
-					"Particle Laser!", 0, 0,
+					"Particle Laser!",
+					CONRAND, CONRAND,
 					vglob.wxC, vglob.wyC,
 					VORTEX_STYLE_NORMAL,
 					vglob.color.bonus );
@@ -130,7 +133,8 @@ void Vortex_CollisionDetection( void )
 				else if ( r > 0x40 )	buf = "EXCELLENT!";
 				else			buf = "+2000!";
 				Vortex_Console_AddItemAt(
-					buf, 0, 0,
+					buf,
+					CONRAND, CONRAND,
 					vglob.wxC, vglob.wyC,
 					VORTEX_STYLE_NORMAL,
 					vglob.color.bonus );
@@ -140,7 +144,8 @@ void Vortex_CollisionDetection( void )
 				vglob.score += 333;
 				vglob.hasAutoFire = 1;
 				Vortex_Console_AddItemAt(
-					"AUTO FIRE", 0, 0,
+					"AUTO FIRE",
+					CONRAND, CONRAND,
 					vglob.wxC, vglob.wyC,
 					VORTEX_STYLE_NORMAL,
 					vglob.color.bonus );
@@ -149,7 +154,8 @@ void Vortex_CollisionDetection( void )
 			case( VORTEX_PU_BUD ):
 				vglob.score += 333;
 				Vortex_Console_AddItemAt(
-					"LITTLE BUDDY!", 0, 0,
+					"LITTLE BUDDY!",
+					CONRAND, CONRAND,
 					vglob.wxC, vglob.wyC,
 					VORTEX_STYLE_NORMAL,
 					vglob.color.bonus );
@@ -159,7 +165,8 @@ void Vortex_CollisionDetection( void )
 				vglob.lives++;
 				vglob.score += 151;
 				Vortex_Console_AddItemAt(
-					"1UP!", 0, 0,
+					"1UP!",
+					CONRAND, CONRAND,
 					vglob.wxC, vglob.wyC,
 					VORTEX_STYLE_NORMAL,
 					vglob.color.bonus );
@@ -167,7 +174,8 @@ void Vortex_CollisionDetection( void )
 
 			case( VORTEX_PU_OUTTA ):
 				Vortex_Console_AddItemAt(
-					"OUTTA HERE!", 0, 0,
+					"OUTTA HERE!",
+					CONRAND, CONRAND,
 					vglob.wxC, vglob.wyC,
 					VORTEX_STYLE_NORMAL,
 					vglob.color.bonus );
@@ -260,7 +268,7 @@ void Vortex_Bolt_poll( void )
 		{
 			bolts[b].z -= bolts[b].v;
 
-			if( bolts[b].z < 9.0 )
+			if( bolts[b].z < 7.0 )
 				bolts[b].active = 0;
 		}
 	}
@@ -300,7 +308,7 @@ void Vortex_Bolt_add( void )
 		{
 			bolts[b].active = 1;
 			bolts[b].web    = vglob.wPosMajor;
-			bolts[b].z 	= NUM_Z_POINTS-2;
+			bolts[b].z 	= NUM_Z_POINTS-3; /* Fix? */
 
 			if( vglob.hasParticleLaser == 1 ) {
 				bolts[b].v    = 1.7; /* particles go quicker */
@@ -524,7 +532,8 @@ void Vortex_Enemy_poll( void )
 							vglob.lives = 0;
 						}
 						Vortex_Console_AddItemAt(
-							"OUCH", 0, 0,
+							"OUCH",
+							CONRAND, CONRAND,
 							vglob.wxC, vglob.wyC,
 							VORTEX_STYLE_NORMAL,
 							vglob.color.bonus );

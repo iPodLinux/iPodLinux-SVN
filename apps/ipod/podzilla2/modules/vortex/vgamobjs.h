@@ -73,6 +73,7 @@ typedef struct enemy {
 } enemy;
 
 
+/* Power-ups */
 #define VORTEX_PU_PART	(0)	/* Particle laser */
 #define VORTEX_PU_2000	(1)	/* Zappo 2000 - even numbered powerups */
 #define VORTEX_PU_BUD	(2)	/* little buddy */
@@ -85,7 +86,7 @@ typedef struct enemy {
 #define VORTEX_PU_EDGE		(2)	/* powerup is sitting on the edge */
 
 typedef struct powerup {
-	int type;		/* what kind of enemy it is */
+	int type;		/* what kind of power up it is */
 	int state;		/* what state is it in? */
 	int web;		/* where it is, rotationally */
 	int zStart;		/* starting z position */
