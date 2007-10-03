@@ -34,9 +34,9 @@
 
 /* known bugs:
 
-    play game, go back to menu, go back to game, bolts not rendered properly
-
     sometimes 'ouch' appears on startup
+
+    levels don't self-advance
 */
 
 #include <stdio.h>
@@ -51,8 +51,14 @@
 #include "render.h"
 #include "starfield.h"
 
-/* version number */
-#define VORTEX_VERSION	"06041814"
+/* versioning 
+** v0.51 2007-10-02	revival
+** v0.50 0604xxxx 	Last major SVN checkin
+** v0.xx		Rewrite for podzilla2
+*/
+
+/*                       YYMMDDhh */
+#define VORTEX_VERSION	"v0.51"
 
 /* change this #define to an #undef if you want the header bar to show */
 #define VORTEX_FULLSCREEN
@@ -385,8 +391,9 @@ void Vortex_timerTick( PzEvent * ev )
 	case( VORTEX_STATE_STARTUP ):
 		/* pseudo animated title screen */
 		if( vglob.timer < 5 )
-			Vortex_Console_AddItem( "VORTEX", 0, 0,
-				    VORTEX_STYLE_NORMAL, vglob.color.title );
+			Vortex_Console_AddItem( "VORTEX", 
+				0, 0,
+				VORTEX_STYLE_NORMAL, vglob.color.title );
 		if( Vortex_Console_GetZoomCount() == 0 )
 			Vortex_stateChange( VORTEX_STATE_STYLESEL );
 		break;
