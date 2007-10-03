@@ -143,7 +143,7 @@ void config_init(void)
         p = configdata;
         while (p && *p) {
             char *nextline = mlc_strchr (p, '\n');
-            char *value, *keyend;
+            char *value, *keyend, *white;
 
             if (nextline) {
                 *nextline = 0;
@@ -203,6 +203,7 @@ void config_init(void)
                   firstitem = 0;
                   config.items = 0;
                 }
+                while(*(white = (value + mlc_strlen(value) - 1)) == ' ' || *(white = (value + mlc_strlen(value) - 1)) == '\t') *white = '\0'; // Remove trailing whitespace
                 config.image[config.items].type  = CONFIG_IMAGE_BINARY;
                 config.image[config.items].title = p;
                 config.image[config.items].path  = value;

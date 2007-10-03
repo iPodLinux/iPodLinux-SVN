@@ -23,7 +23,6 @@ uint32 maxHandle;
 int vfs_open(char *fname) {
   uint8 part;
   int   i;
-  char  *white;
 
   /* (hd0,0)/ == 8 chars */
   if( mlc_strncmp(fname,"(hd0,",5) != 0 ) return(-1);
@@ -33,8 +32,6 @@ int vfs_open(char *fname) {
     i = 0;
     while( (vfs_handle[i].fd != -1) && (i<MAX_FILES) ) i++;
   
-    if((white = mlc_strchr(fname+8, ' ')) != 0 || (white = mlc_strchr(fname+8, '\t')) != 0) *white = '\0'; // Remove trailing whitespace
-    
     vfs_handle[i].fsIdx = part;
     vfs_handle[i].fd = fs[part]->open(fs[part]->fsdata,fname+8);
 
