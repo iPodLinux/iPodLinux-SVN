@@ -36,26 +36,63 @@ static const char * find_somewhere (const char **names, const char *what, int *f
     return *names;
 }
 
-const char *confnames[] = { // the following are for the music partition:
-                            "(hd0,1)/ipodloader.conf", "(hd0,1)/Notes/ipodloader.conf",
-                            "(hd0,1)/loader.cfg", "(hd0,1)/Notes/loader.cfg",
-                            // the following are for the ext2 partition (WinPods only):
-                            "(hd0,2)/ipodloader.conf", "(hd0,2)/boot/ipodloader.conf",
-                            "(hd0,2)/loader.cfg", "(hd0,2)/boot/loader.cfg",
-                            // we can also read from the firmware partition:
-                            "(hd0,0)/lcnf",
-                            0 };
-const char *kernnames[] = { // the following are for the music partition:
-                            "(hd0,1)/kernel.bin", "(hd0,1)/Notes/kernel.bin",
-                            "(hd0,1)/linux.bin", "(hd0,1)/Notes/linux.bin",
-                            "(hd0,1)/vmlinux", "(hd0,1)/Notes/vmlinux",
-                            // the following are for the ext2 partition (WinPods only):
-                            "(hd0,2)/kernel.bin", "(hd0,2)/boot/kernel.bin",
-                            "(hd0,2)/linux.bin", "(hd0,2)/boot/linux.bin",
-                            "(hd0,2)/vmlinux", "(hd0,2)/boot/vmlinux",
-                            // we can also read the kernel from the firmware partition:
-                            "(hd0,0)/linx",
-                            0 };
+const char *confnames[] = {
+	// the following are for the music partition:
+        "(hd0,1)/ipodloader.conf",
+	"(hd0,1)/Notes/ipodloader.conf",
+	"(hd0,1)/loader.cfg",
+	"(hd0,1)/Notes/loader.cfg",
+	// now, more of the same for people who haven't figured out file renaming
+        "(hd0,1)/ipodloader.conf.txt",
+	"(hd0,1)/Notes/ipodloader.conf.txt",
+	"(hd0,1)/loader.cfg.txt",
+	"(hd0,1)/Notes/loader.cfg.txt",
+	// and some plain ones
+        "(hd0,1)/ipodloader.txt",
+        "(hd0,1)/Notes/ipodloader.txt",
+	"(hd0,1)/loader.txt",
+	"(hd0,1)/Notes/loader.txt",
+
+	// the following are for the ext2 partition (WinPods only):
+	"(hd0,2)/ipodloader.conf",
+	"(hd0,2)/boot/ipodloader.conf",
+	"(hd0,2)/loader.cfg",
+	"(hd0,2)/boot/loader.cfg",
+	// and again...
+	"(hd0,2)/ipodloader.conf.txt",
+	"(hd0,2)/boot/ipodloader.conf.txt",
+	"(hd0,2)/loader.cfg.txt",
+	"(hd0,2)/boot/loader.cfg.txt",
+	// and againer...
+        "(hd0,2)/ipodloader.txt",
+        "(hd0,2)/Notes/ipodloader.txt",
+	"(hd0,2)/loader.txt",
+	"(hd0,2)/Notes/loader.txt",
+
+	// we can also read from the firmware partition:
+	"(hd0,0)/lcnf",
+	0 };
+
+const char *kernnames[] = {
+	// the following are for the music partition:
+	"(hd0,1)/kernel.bin",
+	"(hd0,1)/Notes/kernel.bin",
+	"(hd0,1)/linux.bin",
+	"(hd0,1)/Notes/linux.bin",
+	"(hd0,1)/vmlinux",
+	"(hd0,1)/Notes/vmlinux",
+
+	// the following are for the ext2 partition (WinPods only):
+	"(hd0,2)/kernel.bin",
+	"(hd0,2)/boot/kernel.bin",
+	"(hd0,2)/linux.bin",
+	"(hd0,2)/boot/linux.bin",
+	"(hd0,2)/vmlinux",
+	"(hd0,2)/boot/vmlinux",
+
+	// we can also read the kernel from the firmware partition:
+	"(hd0,0)/linx",
+	0 };
 
 int is_applefw_img (char *firstblock);
 
@@ -203,7 +240,9 @@ void config_init(void)
                   firstitem = 0;
                   config.items = 0;
                 }
-                while(*(white = (value + mlc_strlen(value) - 1)) == ' ' || *(white = (value + mlc_strlen(value) - 1)) == '\t') *white = '\0'; // Remove trailing whitespace
+                while(	   *(white = (value + mlc_strlen(value) - 1)) == ' '
+			|| *(white = (value + mlc_strlen(value) - 1)) == '\t')
+				*white = '\0'; // Remove trailing whitespace
                 config.image[config.items].type  = CONFIG_IMAGE_BINARY;
                 config.image[config.items].title = p;
                 config.image[config.items].path  = value;
