@@ -43,8 +43,9 @@ void usage (int exitcode)
              "  -b FILE  Back up the iPod firmware to FILE during the install.\n"
              "  -r FILE  Open, restore a backup from FILE, and quit.\n\n"
              " Options:\n"
-             "   -d DIR  Store temporary files in DIR instead of the current directory.\n"
-             "  -l FILE  Use FILE as the package list file.\n"
+             "   -d DIR   Store temporary files in DIR instead of the current directory.\n"
+             "   -l FILE  Use FILE as the package list file.\n"
+             "   -p PROXY Use PROXY as proxy for fetching package list file. Example: user:pass@ip:8080\n"
              "\n"
              RAWPOD_OPTIONS_USAGE);
     exit (exitcode);
@@ -54,6 +55,7 @@ int main (int argc, char *argv[])
 {
     InstallerHome = QDir::currentPath();
     PackageListFile = "http://ipodlinux.org/iPodLinux:Installation_sources?action=raw";
+    ProxyString = "";
 
 #ifdef __linux__
     BlockCache::disable();
@@ -62,7 +64,7 @@ int main (int argc, char *argv[])
     QApplication app (argc, argv);
 
     char ch;
-    while ((ch = getopt (argc, argv, "haAL2b:r:" "d:l:" RAWPOD_OPTIONS_STR)) != EOF) switch (ch) {
+    while ((ch = getopt (argc, argv, "haAL2b:r:" "d:l:p:" RAWPOD_OPTIONS_STR)) != EOF) switch (ch) {
     case 'a':
         InstallAutomatically = true;
         Mode = StandardInstall;
@@ -96,6 +98,9 @@ int main (int argc, char *argv[])
         break;
     case 'l':
         PackageListFile = QString (optarg);
+        break;
+    case 'p':
+        ProxyString = QString (optarg);
         break;
     default:
         if (rawpod_parse_option (ch, optarg))

@@ -48,6 +48,7 @@ bool iPodDoBackup;
 QString iPodBackupLocation;
 QString InstallerHome;
 QString PackageListFile;
+QString ProxyString;
 bool InstallAutomatically;
 Installer *installer;
 
