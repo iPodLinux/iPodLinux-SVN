@@ -140,6 +140,10 @@ static void do_dither (SDL_Surface *src, SDL_Surface *dst)
     Uint8 *p, *pline, *q, *qline;
 
     p = pline = src->pixels; q = qline = dst->pixels;
+
+    /* this is redundant, but it eliminates a compiler warning */
+    fserr.thiserr = fserr.nexterr = NULL;
+    fserr.fsForward = 0;
     
     initFserr (src, &fserr);
 
