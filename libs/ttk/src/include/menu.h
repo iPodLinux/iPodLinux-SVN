@@ -44,6 +44,9 @@
 #define TTK_MENU_TEXT_SRIGHT    0400
 #define TTK_MENU_TEXT_SCROLLING 0600
 
+/* flags for the groupings */
+#define TTK_MENU_GROUPING_HIDENAME	(0x01)
+
 typedef struct ttk_menu_item 
 {
     const char *name; // required
@@ -71,6 +74,10 @@ typedef struct ttk_menu_item
     /* readonly */ TWidget *menu;
     void *data2;
     void (*predraw)(struct ttk_menu_item *item);
+
+    /* for groups */
+    char * grouping_name;
+    int grouping_flags;
 } ttk_menu_item;
 
 TWidget *ttk_new_menu_widget (ttk_menu_item *items, ttk_font font, int w, int h);

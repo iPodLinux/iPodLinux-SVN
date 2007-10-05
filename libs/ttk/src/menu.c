@@ -420,14 +420,17 @@ static int sort_compare (const void *a, const void *b)
 }
 void ttk_menu_sort_my_way (TWidget *this, int (*cmp)(const void *, const void *))
 {
+    /* GROUPS:	Need to first sort by grouping,
+		then sort the items in each group by name, as below */
     _MAKETHIS;
-    
     qsort (data->menu, data->items, sizeof(void*), cmp);
     MakeVIXI (this);
     render (this, data->top, data->visible);
 }
 void ttk_menu_sort (TWidget *this) 
 {
+    /* GROUPS:	Need to first sort by grouping,
+		then sort the items in each group by name, as below */
     _MAKETHIS;
     if (data->i18nable)
         ttk_menu_sort_my_way (this, sort_compare_i18n);
@@ -607,6 +610,11 @@ void ttk_menu_set_i18nable (TWidget *this, int i18nable)
 
 void ttk_menu_draw (TWidget *this, ttk_surface srf)
 {
+    /* GROUPS:  Need to change render behavior based on:
+	    If the current item is a different grouping
+		render the proper grouping header (or a spacer)
+	    Then render the current item
+    */
     _MAKETHIS;
     int i, y = this->y;
     int ofs = (data->itemheight - ttk_text_height (data->font)) / 2;

@@ -21,7 +21,13 @@
 #ifndef _ALL_TTK_H_
 #define _ALL_TTK_H_
 
-#define TTK_API_VERSION  0x10107
+/* version is 0xMMMmm  MAJOR minor */
+/* so, 0x10117 is v101.17 */
+/* Major will change when there are structural changes */
+/* Major bumps will require software to be recompiled */
+/* Minor will change when there are implementation/minor chages */
+
+#define TTK_API_VERSION  0x10200
 #define TTK_VERSION_CHECK() ttk_version_check(TTK_API_VERSION)
 
 #ifdef __cplusplus
