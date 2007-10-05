@@ -1294,6 +1294,10 @@ typedef struct ttk_menu_item
     int free_name;
     int free_data;
 
+    /* for groups */
+    char * grouping_name;
+    int grouping_flags;
+
     /* readonly */ int menuwidth, menuheight;
 } ttk_menu_item;
 \end{verbatim}
@@ -1343,6 +1347,9 @@ will always be displayed. Changes in displayedness may take about a second to sh
 this is used by the submenu handler function, among others.
 \item[{\tt free_name} and {\tt free_data}] indicate whether the name and the data fields should be respectively
 freed when the menu is.
+\item[{\tt grouping_name} and {\tt grouping_flags}] determine what group the menu item should
+be associated with in the menu.  These will sort alphabetically, then the items within them will be sorted alphabetically.  If there is none specified, it will be in a grouping which
+will be sorted after all other groupings.
 \end{description}
 
 \subsection{Flags}
