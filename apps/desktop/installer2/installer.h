@@ -54,6 +54,8 @@ extern QString iPodBackupLocation;
 extern QString InstallerHome;
 // The first package list to be loaded.
 extern QString PackageListFile;
+// Proxy to use.
+extern QString ProxyString;
 // Installing on autopilot?
 extern bool InstallAutomatically;
 
