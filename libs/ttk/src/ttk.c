@@ -287,6 +287,10 @@ void ttk_done_font (ttk_font f)
 TWindow *ttk_init() 
 {
     TWindow *ret;
+    ttk_color dots_b;
+    ttk_color dots_1;
+    ttk_color dots_2;
+    ttk_color dots_3;
 
     if (!ttk_screen) {
 	int ver;
@@ -340,10 +344,27 @@ TWindow *ttk_init()
 
     ttk_gfx_init();
     ttk_ap_load (SCHEMESDIR "/default.cs");
-    ttk_fillrect (ttk_screen->srf, 0, 0, ttk_screen->w, ttk_screen->h, ttk_makecol (255, 255, 255));
-    ttk_fillellipse (ttk_screen->srf, ttk_screen->w/2 - 35, ttk_screen->h/2, 5, 5, ttk_makecol (0, 0, 0));
-    ttk_fillellipse (ttk_screen->srf, ttk_screen->w/2, ttk_screen->h/2, 5, 5, ttk_makecol (0, 0, 0));
-    ttk_fillellipse (ttk_screen->srf, ttk_screen->w/2 + 35, ttk_screen->h/2, 5, 5, ttk_makecol (0, 0, 0));
+
+    /* the startup screen dots */
+    if( ttk_screen->bpp == 2 )
+    {
+    	dots_b = ttk_makecol( 255, 255, 255 );
+    	dots_1 = ttk_makecol( 0, 0, 0 );
+    	dots_2 = ttk_makecol( 128, 128, 128 );
+    	dots_3 = ttk_makecol( 0, 0, 0 );
+    } else {
+    	dots_b = ttk_makecol( 0, 0, 0 );
+    	dots_1 = ttk_makecol( 255, 128, 128 );
+    	dots_2 = ttk_makecol( 128, 255, 128 );
+    	dots_3 = ttk_makecol( 128, 128, 255 );
+    }
+    ttk_fillrect (ttk_screen->srf, 0, 0, ttk_screen->w, ttk_screen->h, dots_b );
+    ttk_fillellipse (ttk_screen->srf, ttk_screen->w/2 - 35, ttk_screen->h/2, 
+			5, 5, dots_1 );
+    ttk_fillellipse (ttk_screen->srf, ttk_screen->w/2, ttk_screen->h/2, 
+			5, 5, dots_2 );
+    ttk_fillellipse (ttk_screen->srf, ttk_screen->w/2 + 35, ttk_screen->h/2, 
+			5, 5, dots_3 );
     ttk_gfx_update (ttk_screen->srf);
 
     int nfonts = 0;
