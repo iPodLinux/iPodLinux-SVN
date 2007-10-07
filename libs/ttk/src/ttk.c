@@ -349,22 +349,49 @@ TWindow *ttk_init()
     if( ttk_screen->bpp == 2 )
     {
     	dots_b = ttk_makecol( 255, 255, 255 );
-    	dots_1 = ttk_makecol( 0, 0, 0 );
-    	dots_2 = ttk_makecol( 128, 128, 128 );
-    	dots_3 = ttk_makecol( 0, 0, 0 );
+    	dots_1 = dots_2 = dots_3 = ttk_makecol( 0, 0, 0 );
     } else {
-    	dots_b = ttk_makecol( 0, 0, 0 );
-    	dots_1 = ttk_makecol( 255, 128, 128 );
-    	dots_2 = ttk_makecol( 128, 255, 128 );
-    	dots_3 = ttk_makecol( 128, 128, 255 );
+    	dots_b = ttk_makecol(   0,   0,   0 );
+    	dots_1 = ttk_makecol( 255,  64,  64 );
+    	dots_2 = ttk_makecol(  64, 255,  64 );
+    	dots_3 = ttk_makecol(  64,  64, 255 );
     }
     ttk_fillrect (ttk_screen->srf, 0, 0, ttk_screen->w, ttk_screen->h, dots_b );
-    ttk_fillellipse (ttk_screen->srf, ttk_screen->w/2 - 35, ttk_screen->h/2, 
-			5, 5, dots_1 );
-    ttk_fillellipse (ttk_screen->srf, ttk_screen->w/2, ttk_screen->h/2, 
-			5, 5, dots_2 );
-    ttk_fillellipse (ttk_screen->srf, ttk_screen->w/2 + 35, ttk_screen->h/2, 
-			5, 5, dots_3 );
+
+    if( ttk_screen->bpp == 2 )
+    {
+	    ttk_draw_icon_color( ttk_icon_tux, ttk_screen->srf,
+			 ttk_screen->w/2-16-40, ttk_screen->h/2 - 16,
+			 dots_1, dots_b );
+	    ttk_draw_icon_color( ttk_icon_tux, ttk_screen->srf,
+			 ttk_screen->w/2-16, ttk_screen->h/2 - 16,
+			 dots_1, dots_b );
+	    ttk_draw_icon_color( ttk_icon_tux, ttk_screen->srf,
+			 ttk_screen->w/2+16+8, ttk_screen->h/2 - 16,
+			 dots_1, dots_b );
+    } else {
+	    ttk_fillellipse (ttk_screen->srf, 
+			ttk_screen->w/2 - 40, ttk_screen->h/2, 
+			18, 18, dots_1 );
+	    ttk_fillellipse (ttk_screen->srf, 
+			ttk_screen->w/2, ttk_screen->h/2, 
+			18, 18, dots_2 );
+
+	    ttk_fillellipse (ttk_screen->srf, 
+			ttk_screen->w/2 + 40, ttk_screen->h/2, 
+			18, 18, dots_3 );
+
+	    ttk_draw_icon_color( ttk_icon_tux, ttk_screen->srf,
+			 ttk_screen->w/2+2-16-40, ttk_screen->h/2 - 16,
+			 dots_b, dots_1 );
+	    ttk_draw_icon_color( ttk_icon_tux, ttk_screen->srf,
+			 ttk_screen->w/2+2-16, ttk_screen->h/2 - 16,
+			 dots_b, dots_2 );
+	    ttk_draw_icon_color( ttk_icon_tux, ttk_screen->srf,
+			 ttk_screen->w/2+2+16+8, ttk_screen->h/2 - 16,
+			 dots_b, dots_3 );
+    }
+
     ttk_gfx_update (ttk_screen->srf);
 
     int nfonts = 0;
