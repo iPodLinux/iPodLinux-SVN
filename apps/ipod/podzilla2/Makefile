@@ -28,10 +28,21 @@ else
 ifeq ($(shell which ttk-config 2>/dev/null >/dev/null && echo yes),yes)
 TTKCONF = ttk-config
 else
-ifneq ($(wildcard ../ttk/ttk-config-here),)
-TTKCONF = ../ttk/ttk-config-here
+ifneq ($(wildcard ttk/ttk-config-here),)
+TTKDIR = ttk
+TTKCONF = $(TTKDIR)/ttk-config-here
 else
-$(error Cannot find TTK. Specify TTKDIR,  put it in ../ttk, or install it.)
+ifneq ($(wildcard ../ttk/ttk-config-here),)
+TTKDIR = ../ttk
+TTKCONF = $(TTKDIR)/ttk-config-here
+else
+ifneq ($(wildcard ../../../libs/ttk/ttk-config-here),)
+TTKDIR = ../../../libs/ttk
+TTKCONF = $(TTKDIR)/ttk-config-here
+else
+$(error Cannot find TTK. Specify TTKDIR,  put it in ttk, ../ttk, ../../../libs/ttk, or install it.)
+endif
+endif
 endif
 endif
 endif
@@ -139,7 +150,7 @@ else
 	@echo
 	@echo "---------------------------------------------------------------"
 	@echo "Podzilla and modules have been built. First, set up some stuff:"
-	@echo "  make dev-env    (assuming you have ttk in ../ttk)"
+	@echo "  make dev-env    (assuming you have ttk in ttk, ../ttk or ../../../libs/ttk)"
 	@echo "Then, to run it,"
 	@echo "  ./podzilla"
 	@echo "or, for a different screen size,"
@@ -191,10 +202,14 @@ mrproper: clean
 	@rm -f podzilla2.pot
 
 dev-env:
+ifndef TTKDIR
+	$(error Cannot find TTK. Specify TTKDIR,  put it in ttk, ../ttk, ../../../libs/ttk, or install it.)
+else
 	mkdir -p config pods xpods
-	-ln -sf ../ttk/fonts
-	-ln -sf ../ttk/schemes
+	-ln -sf $(TTKDIR)/fonts
+	-ln -sf $(TTKDIR)/schemes
 	-ln -s mono.cs schemes/default.cs
+endif
 
 xpods:
 	@echo
