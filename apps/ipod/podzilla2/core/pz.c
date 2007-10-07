@@ -39,7 +39,7 @@ const char *PZ_Developers[] = {
     "James Jacobsson",
     "Adam Johnston",
     "Alastair Stuart",
-    "Jonathynne Bettencourt",
+    "Rebecca Bettencourt",
     0
 };
 
@@ -187,9 +187,8 @@ void pz_handled_hold (unsigned char ch)
 int pz_event_handler (int ev, int earg, int time)
 {
     static int vtswitched = 0;
-
-    pz_set_backlight_timer (PZ_BL_RESET);
-    pz_reset_idle_timer();
+    int reset_backlight = 1;
+    int retval = 0;
 
     /* unset setting_debounce if we're not anymore */
     if (pz_setting_debounce && (ttk_windows->w->focus->draw != ttk_slider_draw)) {
@@ -203,6 +202,7 @@ int pz_event_handler (int ev, int earg, int time)
 	case TTK_BUTTON_HOLD:
 	    pz_hold_is_on = 1;
 	    pz_header_fix_hold();
+	    reset_backlight = 0; // turning on hold does not trigger backlight
 	    break;
 	case TTK_BUTTON_MENU:
 	    vtswitched = 0;
@@ -220,8 +220,9 @@ int pz_event_handler (int ev, int earg, int time)
 	}
 	if (held_ignores[earg]) {
 	    held_ignores[earg] = 0;
-	    return 1;
+	    retval = 1;
 	}
+
 	switch (earg) {
 	case TTK_BUTTON_HOLD:
 	    pz_hold_is_on = 0;
@@ -233,13 +234,13 @@ int pz_event_handler (int ev, int earg, int time)
 		// vt switch code <<
 		printf ("VT SWITCH <<\n");
 		vtswitched = 1;
-		return 1;
+		retval = 1;
 	    } else if (pz_get_int_setting (pz_global_config, ENABLE_VTSWITCH) &&
 		       ttk_button_pressed (TTK_BUTTON_MENU) && ttk_button_pressed (TTK_BUTTON_NEXT)) {
 		// vt switch code [0]
 		printf ("VT SWITCH 0 (N-P)\n");
 		vtswitched = 1;
-		return 1;
+		retval = 1;
 	    } else if (pz_get_int_setting (pz_global_config, ENABLE_WINDOWMGMT) &&
                        ttk_button_pressed (TTK_BUTTON_MENU) && !vtswitched) {
 		TWindowStack *lastwin = ttk_windows;
@@ -249,7 +250,7 @@ int pz_event_handler (int ev, int earg, int time)
 		    printf ("WINDOW CYCLE >>\n");
 		} else
 		    printf ("WINDOW CYCLE >> DIDN'T\n");
-		return 1;
+		retval = 1;
 	    }
 	    break;
 	case TTK_BUTTON_NEXT:
@@ -258,19 +259,20 @@ int pz_event_handler (int ev, int earg, int time)
 		// vt switch code >>
 		printf ("VT SWITCH >>\n");
 		vtswitched = 1;
-		return 1;
+		retval = 1;
 	    } else if (pz_get_int_setting (pz_global_config, ENABLE_VTSWITCH) &&
 		       ttk_button_pressed (TTK_BUTTON_MENU) && ttk_button_pressed (TTK_BUTTON_PREVIOUS)) {
 		// vt switch code [0]
 		printf ("VT SWITCH 0 (P-N)\n");
 		vtswitched = 1;
-		return 1;
+		retval = 1;
+
 	    } else if (pz_get_int_setting (pz_global_config, ENABLE_WINDOWMGMT) &&
                        ttk_button_pressed (TTK_BUTTON_MENU) && !vtswitched) {
 		printf ("WINDOW CYCLE <<\n");
 		if (ttk_windows->next) {
 		    ttk_move_window (ttk_windows->w, 0, TTK_MOVE_END);
-		    return 1;
+		    retval = 1;
 		}
 	    }
 	    break;
@@ -280,13 +282,19 @@ int pz_event_handler (int ev, int earg, int time)
 		printf ("WINDOW MINIMIZE\n");
 		if (ttk_windows->next) {
 		    ttk_windows->minimized = 1;
-		    return 1;
+		    retval = 1;
 		}
 	    }
 	}
 	break;
     }
-    return 0; // keep event
+
+    if( reset_backlight ) {
+	pz_set_backlight_timer (PZ_BL_RESET);
+    }
+    pz_reset_idle_timer();
+
+    return retval; // keep event if 0
 }
 
 
