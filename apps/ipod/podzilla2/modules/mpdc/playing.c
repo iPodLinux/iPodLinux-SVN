@@ -163,6 +163,11 @@ static void mcp_draw_position(PzWidget *wid, ttk_surface srf)
 			ttk_ap_getx("window.fg")->color, tmp);
 }
 
+static void mcp_clear_background(PzWidget *wid, ttk_surface srf)
+{
+	ttk_fillrect(srf, 0, 0, wid->w, wid->h, ttk_ap_getx("window.bg")->color);
+}
+
 static void mcp_draw_screen(PzWidget *wid, ttk_surface srf)
 {
 	int posmod, i = 0;
@@ -174,6 +179,8 @@ static void mcp_draw_screen(PzWidget *wid, ttk_surface srf)
 	posmod = (wid->h - 30)
 		/ ((current_song->artist ? 1: 0)
 		+ ((current_song->album) ? 1: 0) + 2); 
+
+	mcp_clear_background(wid, srf);
 
 	switch (multibar.state) {
 	case VOLUME_S:
