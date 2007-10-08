@@ -115,10 +115,15 @@ static void mcp_draw_percent(PzWidget *wid, ttk_surface srf, int per)
 		break;
 	}
 
-	ttk_ap_hline(srf, ttk_ap_get("window.fg"), x, x + w, y - 1);
-	ttk_ap_hline(srf, ttk_ap_get("window.fg"), x, x + w, y + h);
-	ttk_ap_vline(srf, ttk_ap_get("window.fg"), x - 1, y, y +(h - 1));
-	ttk_ap_vline(srf, ttk_ap_get("window.fg"), x+w+1, y, y +(h - 1));
+	if (ttk_ap_get("music.bar.border")) {
+		ttk_ap_rect(srf, ttk_ap_get("music.bar.border"), x,y,x+w+1,y+h);
+	}
+	else {
+		ttk_ap_hline(srf, ttk_ap_get("window.fg"), x, x + w, y - 1);
+		ttk_ap_hline(srf, ttk_ap_get("window.fg"), x, x + w, y + h);
+		ttk_ap_vline(srf, ttk_ap_get("window.fg"), x - 1, y, y +(h - 1));
+		ttk_ap_vline(srf, ttk_ap_get("window.fg"), x+w+1, y, y +(h - 1));
+	}
 }
 
 static void mcp_place_text(PzWidget *wid, ttk_surface srf, void *text,
