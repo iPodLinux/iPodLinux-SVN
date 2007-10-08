@@ -20,7 +20,7 @@ MYCFLAGS = -O3 -fomit-frame-pointer -funroll-loops `$(TTKCONF) --ipod --sdl --cf
 else
 CC ?= cc
 LD ?= ld
-MYCFLAGS = `$(TTKCONF) --x11 --sdl --cflags` -DVERSION=\"$(VERSION)\" -Wall
+MYCFLAGS = -g `$(TTKCONF) --x11 --sdl --cflags` -DVERSION=\"$(VERSION)\" -Wall
 endif
 MYCFLAGS += -I/sw/include
 
