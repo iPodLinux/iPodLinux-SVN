@@ -17,8 +17,9 @@
   header: bg => <graptop, grapmid, grapbot with #f0f4f8 @:1,0,50%,0>,
           fg => black, line => #808888, accent => #6ae,
           shadow => #0039b3, shine => #87d0ff
-   music: bar => @familiar-(music.bar).png ,
-          bar.bg => @familiar-(music.bar.bg).png
+   music: bar => @familiar-(music.bar).png -2,
+          bar.bg => @familiar-(music.bar.bg).png -2,
+	  bar.border =>
  battery: border => #606C78,
           bg => <vert #a0adb8 to #d8e2e6>,
           fill.normal => <#80e141, #6dd433, #258208 with #aefa73 @:1,0,5,0>,
@@ -49,7 +50,8 @@
           selfg => white, selchoice => white,
 # WTF are these used for?
           icon0 => #3b79da, icon1 => #28503c, icon2 => #50a078, icon3 => #ffffff
-  slider: border => black, bg => @familiar-(music.bar.bg).png , full => @familiar-(music.bar).png
+  slider: border => @familiar-(music.bar.bg).png -1,
+          full => @familiar-(music.bar).png -2, bg =>
 textarea: bg => #ffffff, fg => nearblack
 
 box:
