@@ -32,6 +32,7 @@
    input: bg => white, fg => black, selbg => dkgray, selfg => white, border => gray, cursor => dkgray
 
     menu: bg => white, fg => black, choice => black, icon => black,
+	  hdrfg => white, hdrbg => dkgray,
           selbg => black, selfg => white, selchoice => white,
           icon0 => black, icon1 => dkgray, icon2 => gray, icon3 => white
   slider: border => black, bg => white, full => black

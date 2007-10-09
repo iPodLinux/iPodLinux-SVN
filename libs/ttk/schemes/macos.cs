@@ -33,6 +33,7 @@
   window: bg => white, fg => black, border => ltgray
 
     menu: bg => white, fg => black, choice => black, icon => black,
+	  hdrbg => ltgray, hdrfg => black,
           selbg => dkgray, selfg => white,
 	  selchoice => white, 
 	  icon0 => dkgray, icon1 => gray, icon2 => ltgray, icon3 => white
