@@ -483,4 +483,4 @@ static void steroids_GameOverAnimation()
 {
 }
 
-PZ_SIMPLE_MOD ("steroids", new_steroids_window, "/Extras/Games/Steroids")
+PZ_SIMPLE_MOD_GROUP ("steroids", new_steroids_window, "/Extras/Games/Steroids", "Arcade" )

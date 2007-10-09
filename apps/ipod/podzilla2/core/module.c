@@ -195,6 +195,24 @@ static void load_modinf (PzModule *mod)
                 // nothing
             } else if (strcmp (key, "Category") == 0) {
                 // nothing
+/*
+		if( mod->group == NULL ) {
+		    if( strrchr( value, '/' ) ) { 
+			// copy the last bit over ie "Games/Arcade" -> "Arcade"
+			mod->group = malloc (strlen (strrchr(value,'/')) + 1);
+			strcpy (mod->group, strrchr( value,'/')+1 );
+		    } else {
+			// copy the entire string over
+			mod->group = malloc (strlen (value) + 1);
+			strcpy (mod->group, value);
+		    }
+		}
+            } else if (strcmp (key, "Group") == 0) {
+		if( mod->group ) free( mod->group );
+		mod->group = malloc (strlen (value) + 1);
+		strcpy (mod->group, value);
+*/
+
             } else if (strcmp (key, "Description") == 0) {
                 // nothing
             } else if (strcmp (key, "License") == 0) {
@@ -411,6 +429,9 @@ static void free_module (PzModule *mod)
     if (mod->deps) free (mod->deps);
     if (mod->depsstr) free (mod->depsstr);
     if (mod->providesstr) free (mod->providesstr);
+/*
+    if (mod->group) free (mod->group);
+*/
     
 #ifdef MountPods
     if (mod->mountnr) {

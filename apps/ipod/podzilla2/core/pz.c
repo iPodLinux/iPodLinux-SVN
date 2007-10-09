@@ -581,18 +581,30 @@ main(int argc, char **argv)
 	if (!SET(COLORSCHEME))      pz_ipod_set (COLORSCHEME, 0);
 	pz_save_config (pz_global_config);
 	pz_ipod_fix_settings (pz_global_config);
+
+	/* load some fonts */
+	/* NOTE: we should probably do something if these fail! */
 	pz_load_font (&ttk_textfont, "Espy Sans", TEXT_FONT, pz_global_config);
 	pz_load_font (&ttk_menufont, "Chicago",   MENU_FONT, pz_global_config);
+
+	/* set up the menus and initialize the modules */
 	pz_menu_init();
 	pz_modules_init();
 	pz_header_init();
+
+	/* sort the menus */
 	pz_menu_sort ("/Extras/Demos");
 	pz_menu_sort ("/Extras/Games");
 	pz_menu_sort ("/Extras/Utilities");
 	pz_menu_sort ("/Extras");
-    pz_menuconf_init();
+//	pz_menu_sort ("/");
+
+
+	/* finish up GUI stuff */
+	pz_menuconf_init();
 	ttk_show_window (pz_menu_get());
 
+	/* Start timers and flags */
 	connection_timer = ttk_create_timer (1000, check_connection);
 	usb_connected = pz_ipod_usb_is_connected();
 	fw_connected = pz_ipod_fw_is_connected();

@@ -752,7 +752,7 @@ void wumpus_module_init( void )
 	glob.config = NULL;
 	glob.initialized = 0;
 
-	pz_menu_add_action( "/Extras/Games/Hunt the Wumpus", wumpus_new_game );
+	pz_menu_add_action_group( "/Extras/Games/Hunt the Wumpus", "Strategy", wumpus_new_game );
 }
 
 PZ_MOD_INIT( wumpus_module_init )

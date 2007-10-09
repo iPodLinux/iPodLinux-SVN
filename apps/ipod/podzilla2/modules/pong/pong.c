@@ -404,7 +404,7 @@ void new_pong_window()
 static void init_module() 
 {
     (void) pz_register_module ("pong", 0);
-    pz_menu_add_legacy ("/Extras/Games/Pong", new_pong_window);
+    pz_menu_add_legacy_group ("/Extras/Games/Pong", "Arcade", new_pong_window);
 }
 
 PZ_MOD_INIT (init_module)

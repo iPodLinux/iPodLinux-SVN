@@ -375,7 +375,7 @@ void tetris_write_score()
 static void bluecube_init() 
 {
     bluecube_module = pz_register_module ("bluecube", 0);
-    pz_menu_add_legacy ("/Extras/Games/BlueCube", new_bluecube_window);
+    pz_menu_add_legacy_group ("/Extras/Games/BlueCube", "Puzzle", new_bluecube_window);
 }
 
 PZ_MOD_INIT (bluecube_init)
