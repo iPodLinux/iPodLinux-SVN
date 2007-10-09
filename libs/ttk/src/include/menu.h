@@ -45,7 +45,13 @@
 #define TTK_MENU_TEXT_SCROLLING 0600
 
 /* flags for the groups */
-#define TTK_MENU_GROUP_HIDENAME	(0x01)
+#define TTK_MENU_GROUP_HIDENAME	(0x01)	/* should the group name be hidden? */
+#define TTK_MENU_GROUP_HEADER	(0x02)	/* the header item itself */
+#define TTK_MENU_GROUP_ONLY	(0x10)	/* item is the only one */
+#define TTK_MENU_GROUP_FIRST	(0x20)	/* item is the first menu item in a group */
+#define TTK_MENU_GROUP_MIDDLE	(0x40)	/* item is in a group */
+#define TTK_MENU_GROUP_LAST	(0x80)	/* item is the last menu item in a group */
+#define TTK_MENU_GROUP_SET	(TTK_MENU_GROUP_FIRST|TTK_MENU_GROUP_MIDDLE|TTK_MENU_GROUP_LAST|TTK_MENU_GROUP_ONLY)	/* has F/M/L been set yet? */
 
 typedef struct ttk_menu_item 
 {
