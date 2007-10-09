@@ -54,6 +54,7 @@
    input: bg => black, fg => red, selbg => red, selfg => black, border => dkred, cursor => red
 
     menu: bg => black, fg => red, choice => red, icon => red,
+	  hdrbg => dkred, hdrfg => yellow,
           selbg => dkred, selfg => red, selchoice => dkred,
           icon0 => red-3, icon1 => red-2, icon2 => red, icon3 => red+1
 

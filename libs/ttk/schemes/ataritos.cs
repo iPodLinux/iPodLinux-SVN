@@ -15,6 +15,7 @@
    music: bar => green +2
 
     menu: bg => white, fg => black, choice => black, icon => black,
+	  hdrbg => green, hdrfg => black,
           selbg => black, selfg => white,
 	  selchoice => white, 
 	  icon0 => black, icon1 => white, icon2 => black, icon3 => white
