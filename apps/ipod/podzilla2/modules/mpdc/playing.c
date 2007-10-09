@@ -168,9 +168,22 @@ static void mcp_draw_position(PzWidget *wid, ttk_surface srf)
 			ttk_ap_getx("window.fg")->color, tmp);
 }
 
+static void mcp_draw_queue(PzWidget *wid, ttk_surface srf)
+{
+	char tmp[20];
+
+	sprintf(tmp, "%d of %d", status.song + 1, status.playlistLength);
+	ttk_text(srf, ttk_textfont, 0, 0, ttk_ap_getx("window.fg")->color, tmp);
+}
+
 static void mcp_clear_background(PzWidget *wid, ttk_surface srf)
 {
 	ttk_fillrect(srf, 0, 0, wid->w, wid->h, ttk_ap_getx("window.bg")->color);
+}
+
+static void mcp_draw_art(PzWidget *wid, ttk_surface srf)
+{
+	//ttk_blit_image(def_image, srf, 0, 0);
 }
 
 static void mcp_draw_screen(PzWidget *wid, ttk_surface srf)
@@ -186,6 +199,10 @@ static void mcp_draw_screen(PzWidget *wid, ttk_surface srf)
 		+ ((current_song->album) ? 1: 0) + 2); 
 
 	mcp_clear_background(wid, srf);
+
+	mcp_draw_art(wid, srf);
+
+	mcp_draw_queue(wid, srf);
 
 	switch (multibar.state) {
 	case VOLUME_S:
