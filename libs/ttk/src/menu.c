@@ -75,11 +75,33 @@ static void MakeVIXI (TWidget *this)
     data->scroll = (vi > data->visible);
 }
 
+ttk_color _get_ap_color( char * primary, char * secondary, ttk_color def )
+{
+    if( primary && ttk_ap_getx( primary ))
+	return( ttk_ap_getx( primary )->color );
+
+    if( secondary && ttk_ap_getx( secondary ))
+	return( ttk_ap_getx( secondary )->color );
+
+    return def;
+}
+
+#define _GET_AP_COLOR2( a, d )  _get_ap_color( a, NULL, d )
+
+TApItem *ttk_ap_getx_2( char * primary, char * secondary )
+{
+    TApItem * ta = ttk_ap_getx( primary );
+    if( ta ) return ta;
+    return ttk_ap_getx( secondary );
+}
+
 static void render (TWidget *this, int first, int n)
 {
-    int vi, xi, ofs;
+    int ih, vi, xi, ofs;
+    TApItem *ta;
     ttk_color menu_bg_color=0, menu_fg_color=0;
     ttk_color menu_selbg_color=0, menu_selfg_color=0;
+    ttk_color menu_hdrbg_color=0, menu_hdrfg_color=0;
     _MAKETHIS;
     int wid = this->w - 10*data->scroll;
 
@@ -101,31 +123,25 @@ static void render (TWidget *this, int first, int n)
      * and black.  If they are (Black box issue) then set them to be
      * something sane instead.
      */
-    if( ttk_ap_getx( "menu.bg" ))
-	    menu_bg_color = ttk_ap_getx( "menu.bg" )->color;
-    if( ttk_ap_getx( "menu.fg" ))
-	    menu_fg_color = ttk_ap_getx( "menu.fg" )->color;
-    if( ttk_ap_getx( "menu.selbg" ))
-	    menu_selbg_color = ttk_ap_getx ("menu.selbg")->color;
-    if( ttk_ap_getx( "menu.selfg" ))
-	    menu_selfg_color = ttk_ap_getx ("menu.selfg")->color;
-    if( menu_bg_color == menu_fg_color ) {
-	if( menu_bg_color == 0 || menu_bg_color == 3 ) { /* why 3? */
-		menu_bg_color = ttk_makecol( WHITE );
-		menu_fg_color = ttk_makecol( BLACK );
-	}
-    }
-    if( menu_selbg_color == menu_selfg_color ) {
-	if( menu_selbg_color == 0 || menu_selbg_color == 3 ) { /* why 3? */
-		menu_selbg_color = ttk_makecol( DKGREY );
-		menu_selfg_color = ttk_makecol( WHITE );
-	}
-    }
+    menu_bg_color = _GET_AP_COLOR2( "menu.bg", ttk_makecol( WHITE ) );
+    menu_fg_color = _GET_AP_COLOR2( "menu.fg", ttk_makecol( BLACK ) );
+    menu_selbg_color = _GET_AP_COLOR2( "menu.selbg", ttk_makecol( BLACK ) );
+    menu_selfg_color = _GET_AP_COLOR2( "menu.selfg", ttk_makecol( WHITE ) );
+    menu_hdrbg_color = _get_ap_color( "menu.hdrbg", "header.bg", ttk_makecol( GREY ) );
+    menu_hdrfg_color = _get_ap_color( "menu.hdrfg", "header.fg", ttk_makecol( BLACK ) );
+
+    /* avoid black boxes based on bad colors */
+    /* these aren't pretty, but they're functional */
+    if( menu_bg_color == menu_fg_color ) menu_fg_color = ~menu_fg_color;
+    if( menu_selbg_color == menu_selfg_color ) menu_selfg_color = ~menu_selfg_color;
+    if( menu_hdrbg_color == menu_hdrfg_color ) menu_hdrfg_color = ~menu_hdrfg_color; 
 
     for (xi = 0, vi = data->vixi[0]; data->menu[xi] && vi < first+n; xi++, vi = data->vixi[xi]) {
         char *truncname;
 
 	if (vi < first) continue;
+
+	ih = data->menu[xi]->group_flags & TTK_MENU_GROUP_HEADER;
 
         data->menu[xi]->linewidth = this->w - 10*data->scroll;
         if (data->menu[xi]->flags & TTK_MENU_ICON)
@@ -139,12 +155,13 @@ static void render (TWidget *this, int first, int n)
         else if (data->menu[xi]->flags & TTK_MENU_TEXT_SCROLLING)
             data->menu[xi]->flags &= ~TTK_MENU_TEXT_SCROLLING;
 
-	// Unselected
+	/* setup the Unselected cache */
+
 	if (data->itemsrf[xi]) ttk_free_surface (data->itemsrf[xi]);
 	data->itemsrf[xi] = ttk_new_surface (data->menu[xi]->textwidth + 6,
 					    data->itemheight, ttk_screen->bpp);
 	ttk_fillrect (data->itemsrf[xi], 0, 0, data->menu[xi]->textwidth + 6, 
-			data->itemheight, menu_bg_color );
+			data->itemheight, ih?menu_hdrbg_color:menu_bg_color );
 
         if (data->i18nable)
             truncname = strdup (gettext (data->menu[xi]->name));
@@ -161,27 +178,37 @@ static void render (TWidget *this, int first, int n)
 	    }
         }
         
-        ttk_text (data->itemsrf[xi], data->font, 3, ofs, menu_fg_color, truncname);
+        ttk_text (data->itemsrf[xi], data->font, 3, ofs, 
+			ih?menu_hdrfg_color:menu_fg_color, truncname);
 	free(truncname);
 
-	// Selected
+	/* setup the Selected cache */
+
 	if (data->itemsrfI[xi]) ttk_free_surface (data->itemsrfI[xi]);
 	data->itemsrfI[xi] = ttk_new_surface (data->menu[xi]->textwidth + 6,
 					     data->itemheight, ttk_screen->bpp);
-	if (ttk_ap_getx("menu.selbg")->type & TTK_AP_GRADIENT &&
-			!(ttk_ap_getx("menu.selbg")->type & TTK_AP_GRAD_HORIZ))
-	    ttk_ap_rect (data->itemsrfI[xi], ttk_ap_getx ("menu.selbg"), 0,
+
+	// selected background
+	ta = ttk_ap_getx_2(ih?"menu.hdrbg":"menu.selbg", "header.bg");
+	if(   ta->type & TTK_AP_GRADIENT &&
+	    !(ta->type & TTK_AP_GRAD_HORIZ) )
+	{
+	    // ap surface
+	    ttk_ap_rect (data->itemsrfI[xi], ta, 0,
 				0, data->menu[xi]->textwidth + 6 +
-				ttk_ap_getx("menu.selbg")->rounding, data->itemheight); 
-	else
+				ta->rounding, data->itemheight); 
+	} else {
+	    // solid
 	    ttk_fillrect (data->itemsrfI[xi], 0, 0, data->menu[xi]->textwidth + 6,
-				data->itemheight, menu_selbg_color );
+				data->itemheight, ih?menu_hdrbg_color:menu_selbg_color );
+	}
+	// selected text
         if (data->i18nable)
             ttk_text (data->itemsrfI[xi], data->font, 3, ofs, 
-			menu_selfg_color, gettext (data->menu[xi]->name));
+			ih?menu_hdrfg_color:menu_selfg_color, gettext (data->menu[xi]->name));
         else
             ttk_text (data->itemsrfI[xi], data->font, 3, ofs, 
-			menu_selfg_color, data->menu[xi]->name);
+			ih?menu_hdrfg_color:menu_selfg_color, data->menu[xi]->name);
     }
 }
 
@@ -407,36 +434,186 @@ void ttk_menu_append (TWidget *this, ttk_menu_item *item)
     }
 }
 
+/* menu sorting functions */
+/* These need to compare both the "name" and the "group" in the two
+    elements, and base the comparison value on them.
+    The priority is: (Group A-Z, NULL) then (Name A-Z)
+*/
+static int my_strcasecmp_nulls( const char * s1, const char * s2 )
+{
+    /* is s1 greater, less or equal to s2? */
+    if( (s1 == NULL) && (s2 == NULL) ) return 0;
+    if( s1 == NULL ) return -1;
+    if( s2 == NULL ) return 1;
+
+    /* no nulls! Yay! */
+    return strcasecmp( s1, s2 );
+}
+
 static int sort_compare_i18n (const void *a, const void *b) 
 {
+    int compared_group;
     ttk_menu_item *A = *(ttk_menu_item **)a, *B = *(ttk_menu_item **)b;
     
-    return strcasecmp (gettext (A->name), gettext (B->name));
+    compared_group = my_strcasecmp_nulls( gettext(A->group_name), gettext(B->group_name) );
+    if( compared_group == 0 )
+    	return my_strcasecmp_nulls( gettext(A->name), gettext(B->name) );
+
+    return( compared_group );
 }
 static int sort_compare (const void *a, const void *b) 
 {
+    int compared_group;
     ttk_menu_item *A = *(ttk_menu_item **)a, *B = *(ttk_menu_item **)b;
-    return strcasecmp (A->name, B->name);
+
+    compared_group = my_strcasecmp_nulls( A->group_name, B->group_name );
+    if( compared_group == 0 )
+    	return my_strcasecmp_nulls( A->name, B->name );
+
+    return( compared_group );
 }
+
+
+/* ttk_menu_hint_groups
+	- put the FIRST, MIDDLE, LAST, etc hints on the structure
+*/
+int ttk_menu_hint_groups( TWidget *this )
+{
+    int nGroups = 0;
+    int count = 0;
+    _MAKETHIS;
+    ttk_menu_item * tmi = NULL;
+    ttk_menu_item * pmi = NULL;
+    
+    for( count=0 ; count < data->items ; count++ ) {
+	tmi = data->menu[count];
+
+	tmi->group_flags &= ~TTK_MENU_GROUP_SET;
+
+	if( count == 0 ) {
+	    tmi->group_flags |= TTK_MENU_GROUP_FIRST;
+	    nGroups++;
+
+	} else {
+	    if( my_strcasecmp_nulls( tmi->group_name, pmi->group_name )) {
+		tmi->group_flags |= TTK_MENU_GROUP_FIRST;
+		nGroups++;
+
+		if( pmi->group_flags & TTK_MENU_GROUP_FIRST ) {
+		    pmi->group_flags &= ~TTK_MENU_GROUP_SET; /* clear bits */
+		    pmi->group_flags |= TTK_MENU_GROUP_ONLY;
+		} else {
+		    pmi->group_flags &= ~TTK_MENU_GROUP_SET; /* clear bits */
+		    pmi->group_flags |= TTK_MENU_GROUP_LAST;
+		}
+	    } else {
+		tmi->group_flags |= TTK_MENU_GROUP_MIDDLE;
+	    }
+	}
+	pmi = tmi;
+    }
+
+    /* and tweak the final one */
+    if( pmi->group_flags & TTK_MENU_GROUP_FIRST ) {
+	pmi->group_flags &= ~TTK_MENU_GROUP_SET; /* clear bits */
+	pmi->group_flags |= TTK_MENU_GROUP_ONLY;
+    } else {
+	pmi->group_flags &= ~TTK_MENU_GROUP_SET; /* clear bits */
+	pmi->group_flags |= TTK_MENU_GROUP_LAST;
+    }
+
+
+#ifdef SNOWING_IN_HELL
+    for( count=0 ; count < data->items ; count++ )
+    {
+	tmi = data->menu[count];
+	printf( " %2d >>> %02x %10s  %s  %s\n", 
+		count, tmi->group_flags,
+		 (tmi->group_flags == TTK_MENU_GROUP_FIRST)? "FIRST"
+		:(tmi->group_flags == TTK_MENU_GROUP_MIDDLE)? "MIDDLE"
+		:(tmi->group_flags == TTK_MENU_GROUP_LAST)? "LAST"
+		:(tmi->group_flags == TTK_MENU_GROUP_ONLY)? "ONLY" : "-",
+		tmi->group_name?  tmi->group_name:"-",
+		tmi->name );
+    }
+#endif
+    return nGroups;
+}
+
+/* ttk_menu_create_group_headers
+	- create the special entries in the list for the group headers
+*/
+void ttk_menu_create_group_headers( TWidget *this )
+{
+    int count = 0;
+    int offset;
+    _MAKETHIS;
+    ttk_menu_item * tmi = NULL;
+    ttk_menu_item * pmi = NULL;
+    
+    for( count=0 ; count < data->items ; count++ ) {
+	tmi = data->menu[count];
+	if(    (tmi->group_flags & TTK_MENU_GROUP_FIRST) 
+	    || (tmi->group_flags & TTK_MENU_GROUP_ONLY) ) {
+
+	    if( (tmi->group_flags & TTK_MENU_GROUP_HEADER)== 0 ) {
+		/* create the header item */
+		pmi = (ttk_menu_item *) malloc( sizeof( ttk_menu_item ));
+		pmi->group_flags |= TTK_MENU_GROUP_HEADER;
+		if( tmi->group_name ) {
+		    offset = 0;
+		    if(    tmi->group_name[0] == '#' // sort first
+			|| tmi->group_name[0] == '~' // sort last
+			|| tmi->group_name[0] == '_' ) // ignore string (future)
+				offset=1;
+		    pmi->group_name = strdup( tmi->group_name+offset );
+		    pmi->name = strdup( tmi->group_name+offset );
+		    //pmi->name = (char*)malloc( strlen( tmi->group_name+offset ) + 6);
+		    //pmi->name = strdup( "=[ " );
+		    //pmi->name = strcat( (char *)pmi->name, tmi->group_name+offset );
+		    //pmi->name = strcat( (char *)pmi->name, " ]=" );
+		} else {
+		    pmi->group_name = strdup( "" );
+		    pmi->name = strdup( "" );
+		}
+		ttk_menu_insert (this, pmi, count); 
+		count++;
+	    }
+	}
+    }
+}
+
+
+
 void ttk_menu_sort_my_way (TWidget *this, int (*cmp)(const void *, const void *))
 {
-    /* GROUPS:	Need to first sort by grouping,
-		then sort the items in each group by name, as below */
+    int nGroups;
     _MAKETHIS;
     qsort (data->menu, data->items, sizeof(void*), cmp);
+    nGroups = ttk_menu_hint_groups( this ); /* put the header hints on the groups */
+
+    /* if there are 0 groups, chances are, it doesn't have a header,
+       but if there is a group_name, there was, so we need to re-hint it */
+    if( nGroups > 1 || (data->menu[0]->group_name != NULL) )
+    {
+	ttk_menu_create_group_headers( this );
+    }
+    
+
     MakeVIXI (this);
     render (this, data->top, data->visible);
 }
+
 void ttk_menu_sort (TWidget *this) 
 {
-    /* GROUPS:	Need to first sort by grouping,
-		then sort the items in each group by name, as below */
     _MAKETHIS;
     if (data->i18nable)
         ttk_menu_sort_my_way (this, sort_compare_i18n);
     else
         ttk_menu_sort_my_way (this, sort_compare);
 }
+
+/* other menu stuff */
 
 void ttk_menu_updated (TWidget *this)
 {
@@ -610,13 +787,10 @@ void ttk_menu_set_i18nable (TWidget *this, int i18nable)
 
 void ttk_menu_draw (TWidget *this, ttk_surface srf)
 {
-    /* GROUPS:  Need to change render behavior based on:
-	    If the current item is a different grouping
-		render the proper grouping header (or a spacer)
-	    Then render the current item
-    */
     _MAKETHIS;
     int i, y = this->y;
+    int ih = 0;
+    int hoffs = 0;
     int ofs = (data->itemheight - ttk_text_height (data->font)) / 2;
     int nivis = 0;
     int spos, sheight;
@@ -662,7 +836,7 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
     for (vi = data->top, xi = data->xivi[data->top];
 	 data->menu[xi] && vi < MIN (data->top + data->visible, data->vitems);
 	 vi++, xi = data->xivi[vi]) {
-	ttk_color col;
+	ttk_color col = 0;
         int selected = (vi == data->top + data->sel);
 
 	if (data->menu[xi]->visible && !data->menu[xi]->visible (data->menu[xi]))
@@ -671,37 +845,52 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
         if (data->menu[xi]->predraw)
             data->menu[xi]->predraw (data->menu[xi]);
 
+	/* if it's a header item, center it */
+	ih = data->menu[xi]->group_flags & TTK_MENU_GROUP_HEADER;
+	hoffs = ih?(this->w - data->menu[xi]->textwidth)/2:0;
+
+	/* draw out the menu listing */
 	if (vi == data->top + data->sel && !(data->menu[xi]->textflash % 2)) {
 	    if (!data->itemsrfI[xi]) {
 		fprintf (stderr, "Null pointer (I)\n");
 		abort();
 	    }
 	    
-	    ttk_ap_fillrect (srf, ttk_ap_get ("menu.selbg"), this->x, y, this->x + this->w - 11*data->scroll,
-			     y + data->itemheight);
+	    /* fill the background of the item */
+	    ttk_ap_fillrect (srf, ttk_ap_get ("menu.selbg"),
+				this->x, y,
+				this->x + this->w - 11*data->scroll,
+				y + data->itemheight);
 	    ttk_blit_image_ex (data->itemsrfI[xi], data->menu[xi]->textofs, 0,
 			       data->menu[xi]->linewidth, data->itemheight,
-			       srf, this->x, y);
+			       srf, this->x+hoffs, y);
 	    col = ttk_ap_getx ("menu.selfg") -> color;
+
 	} else {
+	    /* Draw it selected */
 	    if (!data->itemsrf[xi]) {
 		fprintf (stderr, "Null pointer (N)\n");
 		abort();
 	    }
-
-	    ttk_ap_fillrect (srf, ttk_ap_get ("menu.bg"), this->x, y, this->x + this->w - 11*data->scroll,
-			     y + data->itemheight);
-	    ttk_blit_image_ex (data->itemsrf[xi], 0, 0, data->menu[xi]->linewidth, data->itemheight,
-			       srf, this->x, y);
-	    col = ttk_ap_getx ("menu.fg") -> color;
+	    
+	    ttk_ap_fillrect (srf, ttk_ap_get (ih?"menu.hdrbg":"menu.bg"), 
+				this->x, y,
+				this->x + this->w - 11*data->scroll, y + data->itemheight);
+	    ttk_blit_image_ex (data->itemsrf[xi], 
+				0, 0,
+				data->menu[xi]->linewidth, data->itemheight,
+				srf, this->x+hoffs, y);
+	    col = ttk_ap_getx (ih?"menu.hdrfg":"menu.fg") -> color;
 	}
 
+	/* overlay input choices */
 	if (data->menu[xi]->choices) {
 	    ttk_text (srf, data->font, this->x + this->w - 4 - 11*data->scroll -
 		      ttk_text_width (data->font, data->menu[xi]->choices[data->menu[xi]->choice]),
 		      y + ofs, col, data->menu[xi]->choices[data->menu[xi]->choice]);
 	}
 
+	/* overlay an icon if needed */
 	if (data->menu[xi]->flags & TTK_MENU_ICON) {
             const char *prop =
                 (!selected)? "menu.icon" :
@@ -715,13 +904,19 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
                 
                 switch (data->menu[xi]->flags & TTK_MENU_ICON) {
                 case TTK_MENU_ICON_SUB:
-                    ttk_draw_icon (ttk_icon_sub, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, ap, bgcol);
+                    ttk_draw_icon (ttk_icon_sub, srf, 
+					this->x + this->w + 1 - 11*data->scroll - 11, 
+					y + (data->itemheight - 13) / 2, ap, bgcol);
                     break;
                 case TTK_MENU_ICON_EXE:
-                    ttk_draw_icon (ttk_icon_exe, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, ap, bgcol);
+                    ttk_draw_icon (ttk_icon_exe, srf,
+					this->x + this->w + 1 - 11*data->scroll - 11, 
+					y + (data->itemheight - 13) / 2, ap, bgcol);
                     break;
                 case TTK_MENU_ICON_SND:
-                    ttk_draw_icon (ttk_icon_spkr, srf, this->x + this->w + 1 - 11*data->scroll - 11, y + (data->itemheight - 13) / 2, ap, bgcol);
+                    ttk_draw_icon (ttk_icon_spkr, srf, 
+					this->x + this->w + 1 - 11*data->scroll - 11, 
+					y + (data->itemheight - 13) / 2, ap, bgcol);
                     break;
                 }
             }
@@ -730,6 +925,7 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
 	y += data->itemheight;
     }
 
+    /* draw scrollbar */
     if (data->scroll) {
 	sheight = data->visible * (this->h) / nivis;
 	spos = data->top * (this->h - 2*ttk_ap_getx ("header.line") -> spacing) / nivis - 1;
@@ -764,6 +960,8 @@ int ttk_menu_scroll (TWidget *this, int dir)
 
     // Check whether we need to scroll the list. Adjust bounds accordingly.
     data->sel += dir;
+
+    // XXX Need to adjust for unselectable items (group headers)
     
     if (data->sel >= data->visible) {
 	data->top += (data->sel - data->visible + 1);
