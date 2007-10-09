@@ -224,7 +224,7 @@ void init_browser()
 {
 	module = pz_register_module("browser", cleanup_browser);
 	pz_browser_set_handler(is_dir, open_directory);
-	pz_menu_add_action("/File Browser", new_browser_window);
+	pz_menu_add_action_group("/File Browser", "Utility", new_browser_window);
 }
 
 PZ_MOD_INIT(init_browser)

@@ -597,7 +597,7 @@ main(int argc, char **argv)
 	pz_menu_sort ("/Extras/Games");
 	pz_menu_sort ("/Extras/Utilities");
 	pz_menu_sort ("/Extras");
-//	pz_menu_sort ("/");
+	pz_menu_sort ("/");
 
 
 	/* finish up GUI stuff */

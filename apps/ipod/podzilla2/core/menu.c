@@ -237,10 +237,17 @@ void pz_menu_init()
     ttk_menu_item * item;
 
     check_init();
-    pz_menu_add_stub ("/Music");
-    pz_menu_add_stub ("/Extras");
-    pz_menu_add_stub ("/Settings/About");
-    pz_menu_add_stub ("/Settings/Credits");
+    pz_menu_add_stub_group ("/Music", "Media");
+    pz_menu_add_stub ("/Music/Now Playing...");
+    pz_menu_add_stub_group ("/Extras", "Utility");
+    pz_menu_add_stub_group ("/Run...", "Utility");
+    pz_menu_add_stub_group ("/~Power", "~System");
+    pz_menu_add_stub_group ("/Settings", "~System");
+
+    pz_menu_add_stub_group ("/Settings/About", "#podzilla");
+    pz_menu_add_stub_group ("/Settings/Credits", "#podzilla");
+
+    pz_menu_add_stub_group ("/Settings/Date & Time", "System");
     pz_menu_add_stub ("/Settings/Date & Time/Clock");
     pz_menu_add_stub ("/Settings/Date & Time/Set Time");
     pz_menu_add_stub ("/Settings/Date & Time/Set Time & Date");
@@ -248,13 +255,15 @@ void pz_menu_init()
     pz_menu_add_setting ("/Settings/Date & Time/DST Offset", TIME_DST, pz_global_config, clocks_dsts);
     pz_menu_add_setting ("/Settings/Date & Time/Time Style", TIME_1224, pz_global_config, time1224_options);
     pz_menu_add_setting ("/Settings/Date & Time/Time Tick Noise", TIME_TICKER, pz_global_config, 0);
-    pz_menu_add_setting ("/Settings/Repeat", REPEAT, pz_global_config, repeat_options);
-    pz_menu_add_setting ("/Settings/Shuffle", SHUFFLE, pz_global_config, shuffle_options);
-    pz_menu_add_action ("/Settings/Contrast", set_contrast);
-    pz_menu_add_action ("/Settings/Wheel Sensitivity", set_wheeldebounce);
-    pz_menu_add_setting ("/Settings/Backlight Timer", BACKLIGHT_TIMER, pz_global_config, backlight_options);
-    pz_menu_add_setting ("/Settings/Clicker", CLICKER, pz_global_config, 0);
-    pz_menu_add_setting ("/Settings/USB & FW Popup", USB_FW_POPUP, pz_global_config, 0);
+    pz_menu_add_setting_group ("/Settings/Repeat", "Music", REPEAT, pz_global_config, repeat_options);
+    pz_menu_add_setting_group ("/Settings/Shuffle", "Music", SHUFFLE, pz_global_config, shuffle_options);
+    pz_menu_add_action_group ("/Settings/Contrast", "System", set_contrast);
+    pz_menu_add_action_group ("/Settings/Wheel Sensitivity", "System", set_wheeldebounce);
+    pz_menu_add_setting_group ("/Settings/Backlight Timer",  "System", BACKLIGHT_TIMER, pz_global_config, backlight_options);
+    pz_menu_add_setting_group ("/Settings/Clicker", "System", CLICKER, pz_global_config, 0);
+    pz_menu_add_setting_group ("/Settings/USB & FW Popup", "System", USB_FW_POPUP, pz_global_config, 0);
+
+    pz_menu_add_stub_group ("/Settings/Appearance", "Interface" );
 
     item = pz_menu_add_action ("/Settings/Appearance/Color Scheme", pz_select_color_scheme);
     item->flags |= TTK_MENU_ICON_SUB;
@@ -312,18 +321,19 @@ void pz_menu_init()
     item = pz_menu_add_ttkh ("/Settings/Appearance/Text Font", pz_select_font, &ttk_textfont);
     item->cdata |= TEXT_FONT;
     item->flags |= TTK_MENU_ICON_SUB;
+    pz_menu_add_stub_group( "/Settings/Verbosity", "Interface" );
     pz_menu_add_setting ("/Settings/Verbosity", VERBOSITY, pz_global_config, verbosity_options);
-    pz_menu_add_setting ("/Settings/Browser Path Display", BROWSER_PATH, pz_global_config, 0);
-    pz_menu_add_setting ("/Settings/Browser Show Hidden", BROWSER_HIDDEN, pz_global_config, 0);
+    pz_menu_add_setting_group ("/Settings/Browser Path Display", "Browser", BROWSER_PATH, pz_global_config, 0);
+    pz_menu_add_setting_group ("/Settings/Browser Show Hidden", "Browser", BROWSER_HIDDEN, pz_global_config, 0);
     pz_menu_add_stub ("/File Browser");
-    pz_menu_add_action ("/Power/Quit podzilla", quit_podzilla);
-    pz_menu_add_action ("/Power/Reboot iPod/Cancel", PZ_MENU_UPONE);
-    pz_menu_add_action ("/Power/Reboot iPod/Absolutely", reboot_ipod);
-    pz_menu_add_action ("/Power/Turn Off iPod/Cancel", PZ_MENU_UPONE);
-    pz_menu_add_action ("/Power/Turn Off iPod/Absolutely", poweroff_ipod);
-    pz_menu_add_action ("/Power/Diskmode/Cancel", PZ_MENU_UPONE);
-    pz_menu_add_action ("/Power/Diskmode/Absolutely", diskmode_ipod);
-    pz_get_menu_item ("/Power/Diskmode")->visible = usb_fw_connected;
+    pz_menu_add_action ("/~Power/Quit podzilla", quit_podzilla);
+    pz_menu_add_action ("/~Power/Reboot iPod/Cancel", PZ_MENU_UPONE);
+    pz_menu_add_action ("/~Power/Reboot iPod/Absolutely", reboot_ipod);
+    pz_menu_add_action ("/~Power/Turn Off iPod/Cancel", PZ_MENU_UPONE);
+    pz_menu_add_action ("/~Power/Turn Off iPod/Absolutely", poweroff_ipod);
+    pz_menu_add_action ("/~Power/Diskmode/Cancel", PZ_MENU_UPONE);
+    pz_menu_add_action ("/~Power/Diskmode/Absolutely", diskmode_ipod);
+    pz_get_menu_item ("/~Power/Diskmode")->visible = usb_fw_connected;
 
     ((TWidget *)pz_get_menu_item ("/Settings")->data)->button = settings_button;
 }
@@ -353,16 +363,19 @@ TWindow *pz_menu_get()
      "      VT Switching enables you to switch virtual terminals. Use MENU+PLAY+<< to switch "
      "left, MENU+PLAY+>> to switch right, and MENU+<<+>> to switch back to terminal 0.\n");     
 
+    pz_menu_add_stub_group( "/Settings/Advanced", "Interface" );
     pz_menu_add_ttkh ("/Settings/Advanced/What's this?", ttk_mh_textarea,
                       ttk_md_textarea (strdup (advanced_settings_info), ttk_text_height (ttk_textfont) + 2));
     pz_menu_add_setting ("/Settings/Advanced/Load Unstable Modules", MODULE_TESTING, pz_global_config, 0);
     pz_menu_add_setting ("/Settings/Advanced/Window Management", ENABLE_WINDOWMGMT, pz_global_config, 0);
     pz_menu_add_setting ("/Settings/Advanced/VT Switching", ENABLE_VTSWITCH, pz_global_config, 0);
-    pz_menu_add_action ("/Settings/Exit Without Saving", PZ_MENU_UPONE);
+
+    pz_menu_add_action_group ("/Settings/Exit Without Saving", "~Save", PZ_MENU_UPONE);
+    pz_menu_add_stub_group( "/Settings/Reset All Settings", "~Save" );
     pz_menu_add_action ("/Settings/Reset All Settings/Cancel", PZ_MENU_UPONE);
     pz_menu_add_action ("/Settings/Reset All Settings/Absolutely", reset_settings);
 
-    //XXXX pz_menu_sort ("/Settings");
+    pz_menu_sort ("/Settings");
     return pz_new_menu_window (root_menu);
 }
 
@@ -638,6 +651,20 @@ ttk_menu_item *pz_menu_add_stub (const char *menupath)
 	return item;
 }
 
+ttk_menu_item *pz_menu_add_stub_group( const char *menupath, const char *group )
+{
+    ttk_menu_item *tmi = pz_menu_add_stub( menupath );
+    if( tmi ) {
+	// free the old one, if it exists
+	if( tmi->group_name ) free( tmi->group_name );
+
+	// strdup the group name into place (or set NULL)
+	if( group ) tmi->group_name = strdup( group );
+	else        tmi->group_name = NULL;
+    }
+    return( tmi );
+}
+
 
 ttk_menu_item *pz_menu_add_option (const char *menupath, const char **choices) 
 {
@@ -683,6 +710,19 @@ ttk_menu_item *pz_menu_add_setting (const char *menupath, unsigned int sid, PzCo
     item->data = conf;
     ttk_menu_item_updated (item->menu, item);
     return item;
+}
+ttk_menu_item *pz_menu_add_setting_group (const char *menupath, const char *group,unsigned int sid, PzConfig *conf, const char **choices) 
+{
+    ttk_menu_item * tmi = pz_menu_add_setting( menupath, sid, conf, choices );
+    if( tmi ) {
+	// free the old one, if it exists
+	if( tmi->group_name ) free( tmi->group_name );
+
+	// strdup the group name into place (or set NULL)
+	if( group ) tmi->group_name = strdup( group );
+	else        tmi->group_name = NULL;
+    }
+    return( tmi );
 }
 
 void pz_menu_sort (const char *menupath)
