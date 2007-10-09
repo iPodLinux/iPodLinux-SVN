@@ -558,7 +558,7 @@ void ttk_menu_create_group_headers( TWidget *this )
 
 	    if( (tmi->group_flags & TTK_MENU_GROUP_HEADER)== 0 ) {
 		/* create the header item */
-		pmi = (ttk_menu_item *) malloc( sizeof( ttk_menu_item ));
+		pmi = (ttk_menu_item *) calloc( 1, sizeof( ttk_menu_item ));
 		pmi->group_flags |= TTK_MENU_GROUP_HEADER;
 		if( tmi->group_name ) {
 		    offset = 0;
