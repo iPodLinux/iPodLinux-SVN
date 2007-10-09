@@ -863,4 +863,4 @@ void new_ipobble_window()
 	draw_first();
 }
 
-PZ_SIMPLE_MOD ("ipobble", new_ipobble_window, "/Extras/Games/iPobble")
+PZ_SIMPLE_MOD_GROUP ("ipobble", new_ipobble_window, "/Extras/Games/iPobble", "Puzzle" )

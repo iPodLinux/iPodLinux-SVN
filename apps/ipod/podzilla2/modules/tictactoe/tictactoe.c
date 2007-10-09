@@ -361,4 +361,4 @@ static void find_move()
 	drawXO(besti[i], BLACK,'o');
 }
 
-PZ_SIMPLE_MOD ("tictactoe", new_tictactoe_window, "/Extras/Games/Tic-Tac-Toe")
+PZ_SIMPLE_MOD_GROUP ("tictactoe", new_tictactoe_window, "/Extras/Games/Tic-Tac-Toe", "Classic")

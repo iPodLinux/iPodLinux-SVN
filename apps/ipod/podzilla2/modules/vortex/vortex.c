@@ -806,7 +806,7 @@ void init_vortex()
 	vglob.module = pz_register_module ("vortex", cleanup_vortex);
 
 	/* menu item display name */
-	pz_menu_add_action ("/Extras/Games/Vortex", new_vortex_window);
+	pz_menu_add_action_group ("/Extras/Games/Vortex", "Arcade",  new_vortex_window);
 
 	/* Starfield setup */
 	Module_Starfield_init();

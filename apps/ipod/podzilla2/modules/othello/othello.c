@@ -361,7 +361,7 @@ static PzWindow *new_othello_window()
 static void init_othello()
 {
 	module = pz_register_module("othello", NULL);
-	pz_menu_add_action("/Extras/Games/Othello", new_othello_window);
+	pz_menu_add_action_group("/Extras/Games/Othello", "Classic", new_othello_window);
 }
 
 PZ_MOD_INIT(init_othello)

@@ -361,6 +361,8 @@ TWindow *pz_menu_get()
     pz_menu_add_action ("/Settings/Exit Without Saving", PZ_MENU_UPONE);
     pz_menu_add_action ("/Settings/Reset All Settings/Cancel", PZ_MENU_UPONE);
     pz_menu_add_action ("/Settings/Reset All Settings/Absolutely", reset_settings);
+
+    //XXXX pz_menu_sort ("/Settings");
     return pz_new_menu_window (root_menu);
 }
 
@@ -536,6 +538,21 @@ ttk_menu_item *pz_menu_add_legacy (const char *menupath, void (*handler)())
     return item;
 }
 
+ttk_menu_item *pz_menu_add_legacy_group( const char *menupath, const char *group, void (*handler)())
+{
+    ttk_menu_item *tmi = pz_menu_add_legacy( menupath, handler );
+    if( tmi ) {
+	// free the old one, if it exists
+	if( tmi->group_name ) free( tmi->group_name );
+
+	// strdup the group name into place (or set NULL)
+	if( group ) tmi->group_name = strdup( group );
+	else        tmi->group_name = NULL;
+	tmi->group_flags = 0;
+    }
+    return( tmi );
+}
+
 ttk_menu_item *pz_menu_add_ttkh (const char *menupath, TWindow *(*handler)(ttk_menu_item *), void *data) 
 {
     ttk_menu_item *item = resolve_menupath (menupath, LOC_END);
@@ -546,6 +563,22 @@ ttk_menu_item *pz_menu_add_ttkh (const char *menupath, TWindow *(*handler)(ttk_m
     return item;
 }
 
+
+ttk_menu_item *pz_menu_add_ttkh_group (const char *menupath, const char *group, TWindow *(*handler)(ttk_menu_item *), void *data) 
+{
+    ttk_menu_item *tmi = pz_menu_add_ttkh( menupath, handler, data );
+    if( tmi ) {
+	// free the old one, if it exists
+	if( tmi->group_name ) free( tmi->group_name );
+
+	// strdup the group name into place (or set NULL)
+	if( group ) tmi->group_name = strdup( group );
+	else        tmi->group_name = NULL;
+	tmi->group_flags = 0;
+    }
+    return( tmi );
+}
+
 ttk_menu_item *pz_menu_add_action (const char *menupath, PzWindow *(*handler)()) 
 {
     ttk_menu_item *item = resolve_menupath (menupath, LOC_END);
@@ -554,6 +587,39 @@ ttk_menu_item *pz_menu_add_action (const char *menupath, PzWindow *(*handler)())
     item->flags = 0;
     ttk_menu_item_updated (item->menu, item);
     return item;
+}
+
+
+
+ttk_menu_item *pz_menu_add_action_group (const char *menupath, const char *group, PzWindow *(*handler)() )
+{
+    ttk_menu_item *tmi = pz_menu_add_action( menupath, handler );
+    if( tmi ) {
+	// free the old one, if it exists
+	if( tmi->group_name ) free( tmi->group_name );
+
+	// strdup the group name into place (or set NULL)
+	if( group ) tmi->group_name = strdup( group );
+	else        tmi->group_name = NULL;
+	tmi->group_flags = 0;
+    }
+    return( tmi );
+}
+
+
+/* set or replace/change the group and group flags */
+void pz_menu_set_group( const char *menupath, const char *group, int flags )
+{
+    ttk_menu_item *tmi = resolve_menupath( menupath, LOC_END );
+    if( tmi ) {
+	// free the old one, if it exists
+	if( tmi->group_name ) free( tmi->group_name );
+
+	// strdup the group name into place (or set NULL)
+	if( group ) tmi->group_name = strdup( group );
+	else        tmi->group_name = NULL;
+	tmi->group_flags = flags;
+    }
 }
 
 static int invisible() { return 0; }

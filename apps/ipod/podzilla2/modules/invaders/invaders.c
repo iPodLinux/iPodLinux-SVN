@@ -670,4 +670,4 @@ void new_invaders_window()
 	draw_first();
 }
 
-PZ_SIMPLE_MOD ("invaders", new_invaders_window, "/Extras/Games/Invaders")
+PZ_SIMPLE_MOD_GROUP ("invaders", new_invaders_window, "/Extras/Games/Invaders", "Arcade")

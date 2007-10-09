@@ -416,7 +416,7 @@ static void reset_chasm_queue(QUEUENODE **head,  QUEUENODE **middle, QUEUENODE *
 static void tunnel_init() 
 {
     tunnel_module = pz_register_module ("tunnel", 0);
-    pz_menu_add_legacy ("/Extras/Games/Tunnel", new_tunnel_window);
+    pz_menu_add_legacy_group ("/Extras/Games/Tunnel", "Arcade", new_tunnel_window);
 }
 
 PZ_MOD_INIT (tunnel_init)

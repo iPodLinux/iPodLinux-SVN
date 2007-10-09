@@ -785,4 +785,4 @@ void new_mines_window( void )
 	mines_init_vars();
 }
 
-PZ_SIMPLE_MOD ("minesweeper", new_mines_window, "/Extras/Games/Minesweeper")
+PZ_SIMPLE_MOD_GROUP ("minesweeper", new_mines_window, "/Extras/Games/Minesweeper", "Classic")

@@ -115,6 +115,15 @@ extern int __pz_builtin_number_of_init_functions;
         pz_menu_add_legacy (p, f); \
     } \
     PZ_MOD_INIT(init_mod)
+
+#define PZ_SIMPLE_MOD_GROUP(n,f,p,g) \
+    static void init_mod() \
+    { \
+        (void) pz_register_module (n, 0); \
+        pz_menu_add_legacy_group (p, g, f); \
+    } \
+    PZ_MOD_INIT(init_mod)
+
 #endif
 
 PzModule *pz_register_module (const char *name, void (*cleanup)());
@@ -211,12 +220,17 @@ TWindow *pz_menu_get (void);
 #endif
 #ifdef PZ_COMPAT
 ttk_menu_item *pz_menu_add_legacy (const char *menupath, void (*handler)());
+ttk_menu_item *pz_menu_add_legacy_group( const char *menupath, const char *group, void (*handler)());
 #endif
 ttk_menu_item *pz_menu_add_ttkh (const char *menupath, TWindow *(*handler)(), void *data);
+ttk_menu_item *pz_menu_add_ttkh_group (const char *menupath, const char *group, TWindow *(*handler)(), void *data);
 ttk_menu_item *pz_menu_add_stub (const char *menupath); // adds invisible stub to preserve order
 ttk_menu_item *pz_menu_add_after (const char *menupath, PzWindow *(*handler)(), const char *after);
 ttk_menu_item *pz_menu_add_top (const char *menupath, PzWindow *(*handler)());
 ttk_menu_item *pz_menu_add_action (const char *menupath, PzWindow *(*handler)());
+/* the next one also specifies a group */
+ttk_menu_item *pz_menu_add_action_group (const char *menupath, const char *group, PzWindow *(*handler)() );
+void pz_menu_set_group( const char *menupath, const char *group, int flags );
 ttk_menu_item *pz_menu_add_option (const char *menupath, const char **choices);
 int pz_menu_get_option (const char *menupath);
 void pz_menu_set_option (const char *menupath, int choice);
@@ -511,24 +525,27 @@ void pz_reset_idle_timer();
 
 
 /** Locale **/
-#define LOCALE
-#ifdef IPOD
-#ifndef __UCLIBC_HAS_LOCALE__
-// insert warning here
-#undef LOCALE
+#if defined( IPOD ) || defined( __linux__ ) /* hopefully fix for OS X */
+  #define LOCALE
 #endif
-#define LOCALEDIR "/usr/share/locale"
+#ifdef IPOD
+  #ifndef __UCLIBC_HAS_LOCALE__
+    // insert warning here
+    #undef LOCALE
+  #endif
+  #define LOCALEDIR "/usr/share/locale"
 #else
-#define LOCALEDIR "./locale"
+  #define LOCALEDIR "./locale"
 #endif
 #ifdef LOCALE
-#define _(str) gettext(str)
-#include <libintl.h>
-#include <locale.h>
+  #define _(str) gettext(str)
+  #include "libintl.h"
+  #include <locale.h>
 #else
-#define _(str) str
-#define gettext(str) str
+  #define _(str) str
+  #define gettext(str) str
 #endif
+
 #define N_(str) str
 
 /************* Global settings values *************/

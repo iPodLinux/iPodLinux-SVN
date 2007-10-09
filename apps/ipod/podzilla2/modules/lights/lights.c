@@ -600,7 +600,7 @@ ttk_menu_item lights_menu[] = {
 
 static void lights_init() 
 {
-    pz_menu_add_ttkh ("/Extras/Games/Lights", ttk_mh_sub, lights_menu);
+    pz_menu_add_ttkh_group ("/Extras/Games/Lights", "Strategy", ttk_mh_sub, lights_menu);
 }
 
 PZ_MOD_INIT (lights_init)
