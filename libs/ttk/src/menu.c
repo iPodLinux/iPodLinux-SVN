@@ -176,8 +176,20 @@ static void render (TWidget *this, int first, int n)
 	if (data->itemsrf[xi]) ttk_free_surface (data->itemsrf[xi]);
 	data->itemsrf[xi] = ttk_new_surface (data->menu[xi]->textwidth + 6,
 					    data->itemheight, ttk_screen->bpp);
-	ttk_fillrect (data->itemsrf[xi], 0, 0, data->menu[xi]->textwidth + 6, 
-			data->itemheight, ih?menu_hdrbg_color:menu_bg_color );
+
+	ta = ttk_ap_getx(ih?"menu.hdrbg":"menu.bg");
+	if(   ta->type & TTK_AP_GRADIENT &&
+	    !(ta->type & TTK_AP_GRAD_HORIZ) )
+	{
+	    // ap surface
+	    ttk_ap_rect (data->itemsrf[xi], ta, 0,
+				0, data->menu[xi]->textwidth + 6 +
+				ta->rounding, data->itemheight); 
+	} else {
+	    // solid
+	    ttk_fillrect (data->itemsrf[xi], 0, 0, data->menu[xi]->textwidth + 6,
+				data->itemheight, ih?menu_hdrbg_color:menu_bg_color );
+	}
 
         if (data->i18nable)
             truncname = strdup( _ttk_clean_txt( (gettext (data->menu[xi]->name))) );
@@ -901,14 +913,14 @@ void ttk_menu_draw (TWidget *this, ttk_surface srf)
 	    }
 	    
 	    /* fill the background of the item */
-	    ttk_ap_fillrect (srf, ttk_ap_get ("menu.selbg"),
+	    ttk_ap_fillrect (srf, ttk_ap_get (ih?"menu.hdrbg":"menu.selbg"),
 				this->x, y,
 				this->x + this->w - 11*data->scroll,
 				y + data->itemheight);
 	    ttk_blit_image_ex (data->itemsrfI[xi], data->menu[xi]->textofs, 0,
 			       data->menu[xi]->linewidth, data->itemheight,
 			       srf, this->x+hoffs, y);
-	    col = ttk_ap_getx ("menu.selfg") -> color;
+	    col = ttk_ap_getx (ih?"menu.hdrfg":"menu.selfg") -> color;
 
 	} else {
 	    /* Draw it selected */
