@@ -582,6 +582,7 @@ main(int argc, char **argv)
 	pz_save_config (pz_global_config);
 	pz_ipod_fix_settings (pz_global_config);
 
+
 	/* load some fonts */
 	/* NOTE: we should probably do something if these fail! */
 	pz_load_font (&ttk_textfont, "Espy Sans", TEXT_FONT, pz_global_config);
@@ -596,8 +597,10 @@ main(int argc, char **argv)
 	pz_menu_sort ("/Extras/Demos");
 	pz_menu_sort ("/Extras/Games");
 	pz_menu_sort ("/Extras/Utilities");
-	pz_menu_sort ("/Extras");
-	pz_menu_sort ("/");
+	if( pz_get_int_setting( pz_global_config, GROUPED_MENUS )) {
+		pz_menu_sort ("/Extras");
+		pz_menu_sort ("/");
+	}
 
 
 	/* finish up GUI stuff */
