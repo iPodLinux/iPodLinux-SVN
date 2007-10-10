@@ -75,6 +75,22 @@ static void MakeVIXI (TWidget *this)
     data->scroll = (vi > data->visible);
 }
 
+
+/* some utility functions first... */
+
+/* this will clean strings that have sorting hints:
+	#string		sorts first
+	~string		sorts last
+	_string		sorts, is hidden
+*/
+const char * _ttk_clean_txt( const char * nam )
+{
+    if( !nam ) return( 0 );
+    if( (nam[0] == '#') || (nam[0] == '~') || (nam[0] == '_') )
+	return( nam+1 );
+    return( nam );
+}
+
 ttk_color _get_ap_color( char * primary, char * secondary, ttk_color def )
 {
     if( primary && ttk_ap_getx( primary ))
@@ -164,9 +180,9 @@ static void render (TWidget *this, int first, int n)
 			data->itemheight, ih?menu_hdrbg_color:menu_bg_color );
 
         if (data->i18nable)
-            truncname = strdup (gettext (data->menu[xi]->name));
+            truncname = strdup( _ttk_clean_txt( (gettext (data->menu[xi]->name))) );
         else
-            truncname = strdup (data->menu[xi]->name);
+            truncname = strdup( _ttk_clean_txt(data->menu[xi]->name) );
 
         if (ttk_text_width (data->font, truncname) > data->menu[xi]->linewidth) {
 	    int len = strlen(truncname);
@@ -205,10 +221,12 @@ static void render (TWidget *this, int first, int n)
 	// selected text
         if (data->i18nable)
             ttk_text (data->itemsrfI[xi], data->font, 3, ofs, 
-			ih?menu_hdrfg_color:menu_selfg_color, gettext (data->menu[xi]->name));
+			ih?menu_hdrfg_color:menu_selfg_color, 
+			_ttk_clean_txt(gettext (data->menu[xi]->name)));
         else
             ttk_text (data->itemsrfI[xi], data->font, 3, ofs, 
-			ih?menu_hdrfg_color:menu_selfg_color, data->menu[xi]->name);
+			ih?menu_hdrfg_color:menu_selfg_color, 
+			_ttk_clean_txt(data->menu[xi]->name));
     }
 }
 
@@ -271,9 +289,9 @@ void ttk_menu_item_updated (TWidget *this, ttk_menu_item *p)
     p->menuheight = this->h;
     
     if (data->i18nable)
-        p->textwidth = ttk_text_width (data->font, gettext (p->name)) + 4;
+        p->textwidth = ttk_text_width (data->font, _ttk_clean_txt(gettext (p->name))) + 4;
     else
-        p->textwidth = ttk_text_width (data->font, p->name) + 4;
+        p->textwidth = ttk_text_width (data->font, _ttk_clean_txt(p->name)) + 4;
     
     p->iconflash = 3;
     p->flags |= TTK_MENU_ICON_FLASHOFF;
@@ -452,6 +470,16 @@ static int my_strcasecmp_nulls( const char * s1, const char * s2 )
 
 static int sort_compare_i18n (const void *a, const void *b) 
 {
+    ttk_menu_item *A = *(ttk_menu_item **)a, *B = *(ttk_menu_item **)b;
+    return my_strcasecmp_nulls( gettext(A->name), gettext(B->name) );
+}
+static int sort_compare (const void *a, const void *b) 
+{
+    ttk_menu_item *A = *(ttk_menu_item **)a, *B = *(ttk_menu_item **)b;
+    return my_strcasecmp_nulls( A->name, B->name );
+}
+static int sort_compare_i18n_g (const void *a, const void *b) 
+{
     int compared_group;
     ttk_menu_item *A = *(ttk_menu_item **)a, *B = *(ttk_menu_item **)b;
     
@@ -461,7 +489,7 @@ static int sort_compare_i18n (const void *a, const void *b)
 
     return( compared_group );
 }
-static int sort_compare (const void *a, const void *b) 
+static int sort_compare_g (const void *a, const void *b) 
 {
     int compared_group;
     ttk_menu_item *A = *(ttk_menu_item **)a, *B = *(ttk_menu_item **)b;
@@ -540,13 +568,13 @@ int ttk_menu_hint_groups( TWidget *this )
     return nGroups;
 }
 
+
 /* ttk_menu_create_group_headers
 	- create the special entries in the list for the group headers
 */
 void ttk_menu_create_group_headers( TWidget *this )
 {
     int count = 0;
-    int offset;
     _MAKETHIS;
     ttk_menu_item * tmi = NULL;
     ttk_menu_item * pmi = NULL;
@@ -561,17 +589,8 @@ void ttk_menu_create_group_headers( TWidget *this )
 		pmi = (ttk_menu_item *) calloc( 1, sizeof( ttk_menu_item ));
 		pmi->group_flags |= TTK_MENU_GROUP_HEADER;
 		if( tmi->group_name ) {
-		    offset = 0;
-		    if(    tmi->group_name[0] == '#' // sort first
-			|| tmi->group_name[0] == '~' // sort last
-			|| tmi->group_name[0] == '_' ) // ignore string (future)
-				offset=1;
-		    pmi->group_name = strdup( tmi->group_name+offset );
-		    pmi->name = strdup( tmi->group_name+offset );
-		    //pmi->name = (char*)malloc( strlen( tmi->group_name+offset ) + 6);
-		    //pmi->name = strdup( "=[ " );
-		    //pmi->name = strcat( (char *)pmi->name, tmi->group_name+offset );
-		    //pmi->name = strcat( (char *)pmi->name, " ]=" );
+		    pmi->group_name = strdup( _ttk_clean_txt(tmi->group_name) );
+		    pmi->name = strdup( _ttk_clean_txt(tmi->group_name) );
 		} else {
 		    pmi->group_name = strdup( "" );
 		    pmi->name = strdup( "" );
@@ -587,19 +606,8 @@ void ttk_menu_create_group_headers( TWidget *this )
 
 void ttk_menu_sort_my_way (TWidget *this, int (*cmp)(const void *, const void *))
 {
-    int nGroups;
     _MAKETHIS;
     qsort (data->menu, data->items, sizeof(void*), cmp);
-    nGroups = ttk_menu_hint_groups( this ); /* put the header hints on the groups */
-
-    /* if there are 0 groups, chances are, it doesn't have a header,
-       but if there is a group_name, there was, so we need to re-hint it */
-    if( nGroups > 1 || (data->menu[0]->group_name != NULL) )
-    {
-	ttk_menu_create_group_headers( this );
-    }
-    
-
     MakeVIXI (this);
     render (this, data->top, data->visible);
 }
@@ -611,6 +619,34 @@ void ttk_menu_sort (TWidget *this)
         ttk_menu_sort_my_way (this, sort_compare_i18n);
     else
         ttk_menu_sort_my_way (this, sort_compare);
+}
+
+void ttk_menu_sort_my_way_groups (TWidget *this, int (*cmp)(const void *, const void *))
+{
+    int nGroups = 0;
+    _MAKETHIS;
+    qsort (data->menu, data->items, sizeof(void*), cmp);
+
+    nGroups = ttk_menu_hint_groups( this ); /* put the header hints on the groups */
+
+    /* if there are 0 groups, chances are, it doesn't have a header,
+       but if there is a group_name, there was, so we need to re-hint it */
+    if( nGroups > 1 || (data->menu[0]->group_name != NULL) )
+    {
+	ttk_menu_create_group_headers( this );
+    }
+
+    MakeVIXI (this);
+    render (this, data->top, data->visible);
+}
+
+void ttk_menu_sort_groups (TWidget *this) 
+{
+    _MAKETHIS;
+    if (data->i18nable)
+        ttk_menu_sort_my_way_groups (this, sort_compare_i18n_g);
+    else
+        ttk_menu_sort_my_way_groups (this, sort_compare_g);
 }
 
 /* other menu stuff */
