@@ -15,6 +15,7 @@
 
 \def gray      #b2b2b2
 \def dkgray    #8d8d8d
+\def dkrgray   #707070
 \def ltgray    #ededed
 
 
@@ -30,7 +31,7 @@
   window: bg => gray, fg => black, border => ltgray
 
     menu: bg => gray, fg => black, choice => black, icon => ltgray,
-	  hdrbg => dkgray, hdrfg => ltgray,
+	  hdrbg => dkrgray, hdrfg => ltgray,
           selbg => dkgray, selfg => black,
 	  selchoice => white, 
 	  icon0 => black, icon1 => dkgray, icon2 => gray, icon3 => ltgray
