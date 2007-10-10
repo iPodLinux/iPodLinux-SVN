@@ -622,6 +622,7 @@ void pz_reset_idle_timer();
 
 #define DECORATION_RATE   (62)   /* update rate for decorations */
 #define HEADER_WIDGETS    (63)	 /* settings for header widgets */
+#define GROUPED_MENUS	  (64)	 /* display menus with groups? */
 
 /**** ADVANCED SETTINGS ****/
 #define MODULE_TESTING    (70)   /* don't warn for modules in beta */

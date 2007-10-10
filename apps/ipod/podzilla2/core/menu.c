@@ -240,12 +240,13 @@ void pz_menu_init()
     pz_menu_add_stub_group ("/Music", "Media");
     pz_menu_add_stub ("/Music/Now Playing...");
     pz_menu_add_stub_group ("/Extras", "Utility");
+    pz_menu_add_stub_group ("/File Browser", "Utility");
+    pz_menu_add_stub_group ("/Settings", "~System");
     pz_menu_add_stub_group ("/Run...", "Utility");
     pz_menu_add_stub_group ("/~Power", "~System");
-    pz_menu_add_stub_group ("/Settings", "~System");
 
-    pz_menu_add_stub_group ("/Settings/About", "#podzilla");
-    pz_menu_add_stub_group ("/Settings/Credits", "#podzilla");
+    pz_menu_add_stub_group ("/Settings/About", "#General");
+    pz_menu_add_stub_group ("/Settings/Credits", "#General");
 
     pz_menu_add_stub_group ("/Settings/Date & Time", "System");
     pz_menu_add_stub ("/Settings/Date & Time/Clock");
@@ -265,9 +266,11 @@ void pz_menu_init()
 
     pz_menu_add_stub_group ("/Settings/Appearance", "Interface" );
 
+
     item = pz_menu_add_action ("/Settings/Appearance/Color Scheme", pz_select_color_scheme);
     item->flags |= TTK_MENU_ICON_SUB;
 
+    pz_menu_add_setting("/Settings/Appearance/Menu Groups", GROUPED_MENUS, pz_global_config, boolean_options);
 
     /* select from the available widgets */
     item = pz_menu_add_action( "/Settings/Appearance/Widgets/L Sel,Rate", 
@@ -325,7 +328,6 @@ void pz_menu_init()
     pz_menu_add_setting ("/Settings/Verbosity", VERBOSITY, pz_global_config, verbosity_options);
     pz_menu_add_setting_group ("/Settings/Browser Path Display", "Browser", BROWSER_PATH, pz_global_config, 0);
     pz_menu_add_setting_group ("/Settings/Browser Show Hidden", "Browser", BROWSER_HIDDEN, pz_global_config, 0);
-    pz_menu_add_stub ("/File Browser");
     pz_menu_add_action ("/~Power/Quit podzilla", quit_podzilla);
     pz_menu_add_action ("/~Power/Reboot iPod/Cancel", PZ_MENU_UPONE);
     pz_menu_add_action ("/~Power/Reboot iPod/Absolutely", reboot_ipod);
@@ -375,7 +377,9 @@ TWindow *pz_menu_get()
     pz_menu_add_action ("/Settings/Reset All Settings/Cancel", PZ_MENU_UPONE);
     pz_menu_add_action ("/Settings/Reset All Settings/Absolutely", reset_settings);
 
-    pz_menu_sort ("/Settings");
+    if( pz_get_int_setting( pz_global_config, GROUPED_MENUS )) {
+    	pz_menu_sort ("/Settings");
+    }
     return pz_new_menu_window (root_menu);
 }
 
@@ -733,7 +737,12 @@ void pz_menu_sort (const char *menupath)
 	pz_error ("Can't sort a non-menu");
 	return;
     }
-    ttk_menu_sort (item->data);
+
+    if( pz_get_int_setting( pz_global_config, GROUPED_MENUS ) ) {
+	ttk_menu_sort_groups (item->data);
+    } else {
+	ttk_menu_sort( item->data );
+    }
 }
 
 void pz_menu_remove (const char *menupath)
