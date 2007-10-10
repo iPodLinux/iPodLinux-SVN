@@ -461,8 +461,16 @@ static int my_strcasecmp_nulls( const char * s1, const char * s2 )
 {
     /* is s1 greater, less or equal to s2? */
     if( (s1 == NULL) && (s2 == NULL) ) return 0;
-    if( s1 == NULL ) return -1;
-    if( s2 == NULL ) return 1;
+
+    /* this will put nulls at the bottom, but ~ still below even that */
+    if( s1 == NULL ) {
+	if( s2[0] == '~' ) return( -1 );
+	return( 1 );
+    }
+    if( s2 == NULL ) {
+	if( s1[0] == '~' ) return( 1 );
+	return( -1 );
+    }
 
     /* no nulls! Yay! */
     return strcasecmp( s1, s2 );
