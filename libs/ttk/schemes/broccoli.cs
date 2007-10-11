@@ -19,7 +19,7 @@
 \def ltgray    #c0c0c0
 
 
-  header: bg => midgreen, fg => black, line => gray, accent => green
+  header: bg => <midgreen to gray>, fg => black, line => gray, accent => green
 	  shine => ltgreen, shadow => dkgreen,
 	  gradient.top => ltgreen,
 	  gradient.middle => green,
@@ -32,7 +32,7 @@
 
     menu: bg => gray, fg => black, choice => green, icon => dkgreen,
 	  hdrbg => <gray to black to gray>, hdrfg => ltgreen,
-          selbg => <gray to dkgreen to gray>, selfg => black,
+          selbg => <gray to green to gray>, selfg => dkgreen,
 	  selchoice => green, 
 	  icon0 => black, icon1 => dkgreen,
 	  icon2 => midgreen , icon3 => ltgreen
