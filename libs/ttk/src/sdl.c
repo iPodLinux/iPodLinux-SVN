@@ -43,6 +43,8 @@ typedef struct Bitmap_Font
 
 extern ttk_screeninfo *ttk_screen;
 
+
+
 static void palettize (SDL_Surface *srf)
 {
     if (ttk_screen->bpp == 2) {
@@ -150,6 +152,69 @@ static int wait_event(SDL_Event *e, unsigned int ms)
     return 0;
 }
 
+#ifndef IPOD
+
+/* available image types */
+#define TTK_IMAGE_PPM   (0) /* PPM only for now */
+
+int _internal_save_image( char * filename, ttk_surface srf, int type )
+{
+    /* note - heavily based on/copied from FXB's capture module */
+    int x, y, w, h;
+    int r, g, b;
+    ttk_color c;
+    FILE * fp;
+
+    /* doublecheck file type */
+    if( type != TTK_IMAGE_PPM ) return -1;
+
+    /* open the file for output */
+    fp = fopen( filename, "w" );
+    if( !fp ) return -2;
+
+    /* PPM only for now, but i wanted to leave it open for future use */
+
+    /* get the image data, and save it out */
+    ttk_surface_get_dimen( srf, &w, &h );
+
+    /* Much of this was borrowed from Felix Bruns' "Screen Capture" module */
+    fprintf( fp, "P3\n" );
+    fprintf( fp, "# screenshot from ttk/podzilla2\n" );
+    fprintf( fp, "%d %d 255\n", w, h );
+    for( y=0 ; y<h ; y++ )
+	for( x=0 ; x<w ; x++ ) {
+	    c = ttk_getpixel( ttk_screen->srf, x, y );
+	    ttk_unmakecol( c, &r, &g, &b );
+	    fprintf( fp, "%3d %3d %3d\n", r, g, b );
+    }
+    fclose( fp );
+    return 0;
+}
+
+void _internal_save_screenshot( void )
+{
+    int retval = 0;
+    int picno = 0;
+    int available = 0;
+    char filename[64];
+    FILE * fp = NULL;
+
+    /* attempt to find an unused image number 0000..9999 */
+    for( picno=0 ; picno<10000 && available==0 ; picno++ )
+    {
+	snprintf( filename, 64, "Screen_%04d.ppm", picno );
+	fp = fopen( filename, "r" );
+	if( !fp ) available = 1;
+	else fclose( fp );
+    }
+    if( picno >= 10000 ) return; /* arbitrary stop */
+    
+    retval = _internal_save_image( filename, ttk_screen->srf, TTK_IMAGE_PPM );
+    if( !retval ) printf( "Screenshot saved to \"%s\".\n", filename );
+    else	  printf( "Error %d saving to \"%s\".\n", retval, filename );
+}
+#endif
+
 int ttk_get_event (int *arg) 
 {
 #define TIME 30
@@ -202,7 +267,6 @@ int ttk_get_event (int *arg)
 		}
 	    	return (ev.type == SDL_MOUSEBUTTONDOWN)? TTK_BUTTON_DOWN : TTK_BUTTON_UP;
 
-
 	// okay. now we'll do keyboard/ipod input
 	case SDL_KEYDOWN:
 	case SDL_KEYUP:
@@ -237,6 +301,12 @@ int ttk_get_event (int *arg)
 	    case SDLK_RETURN:
 		*arg = TTK_BUTTON_ACTION;
 		break;
+#ifndef IPOD
+	    case SDLK_s:
+		if( ev.type == SDL_KEYUP ) _internal_save_screenshot();
+		break;
+#endif
+
 #ifndef IPOD
 	    case SDLK_KP0: *arg = '0'; break;
 	    case SDLK_KP1: *arg = '1'; break;
@@ -2411,6 +2481,8 @@ ttk_surface ttk_load_image (const char *path)
 {
     return IMG_Load (path);
 }
+
+
 void ttk_free_image (ttk_surface img)
 {
     SDL_FreeSurface (img);
