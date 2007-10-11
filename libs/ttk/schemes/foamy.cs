@@ -4,10 +4,10 @@
 # thanks to c0nsumer for the name
 # 2007-10-10 by BleuLlama
 
-\def yellow    #22C8f9
-\def dkyellow  #147Cb5
-\def ltyellow  #0ff
-\def midyellow #1dA9eb
+\def foamgreen    #22C8f9
+\def dkfoamgreen  #147Cb5
+\def ltfoamgreen  #0ff
+\def midfoamgreen #1dA9eb
 \def black     #000
 
 \def white     #fff
@@ -21,54 +21,54 @@
 \def ltgray    #c0eded
 
 
-  header: bg => yellow, fg => black, line => gray, accent => midyellow
-	  shine => ltyellow, shadow => dkyellow,
-	  gradient.top => ltyellow,
-	  gradient.middle => yellow,
-	  gradient.bottom => dkyellow,
+  header: bg => foamgreen, fg => black, line => gray, accent => midfoamgreen
+	  shine => ltfoamgreen, shadow => dkfoamgreen,
+	  gradient.top => ltfoamgreen,
+	  gradient.middle => foamgreen,
+	  gradient.bottom => dkfoamgreen,
 	  gradient.bar => white -3 
 
-   music: bar => yellow +2
+   music: bar => foamgreen +2
 
   window: bg => gray, fg => black, border => ltgray
 
     menu: bg => gray, fg => black, choice => black, icon => ltgray,
-	  hdrbg => <gray to black to gray>, hdrfg => ltyellow,
-          selbg => <gray to dkyellow to gray>, selfg => black,
+	  hdrbg => <gray to black to gray>, hdrfg => ltfoamgreen,
+          selbg => <gray to dkfoamgreen to gray>, selfg => black,
 	  selchoice => white, 
 	  icon0 => black, icon1 => dkgray, icon2 => gray, icon3 => ltgray
 
- battery: border => dkyellow, bg => <dkgray to gray>,
-		fill.normal => <ltyellow to dkyellow>,
-		fill.low => red, fill.charge => <ltyellow to yellow>,
-		bg.low => <dkyellow to white>,
+ battery: border => dkfoamgreen, bg => <dkgray to gray>,
+		fill.normal => <ltfoamgreen to dkfoamgreen>,
+		fill.low => red, fill.charge => <ltfoamgreen to foamgreen>,
+		bg.low => <dkfoamgreen to white>,
 		bg.charging => <dkgray to gray>,
-                chargingbolt => dkyellow
+                chargingbolt => dkfoamgreen
 
-    lock: border => dkyellow, fill => black
+    lock: border => dkfoamgreen, fill => black
 
   scroll: box => black, bg => <horiz black to dkgray>+1,
-	  bar => <horiz dkgray to ltyellow to dkgray>+1
+	  bar => <horiz dkgray to ltfoamgreen to dkgray>+1
 
-  slider: border => black, bg => dkgray, full => <vert ltyellow to yellow>
+  slider: border => black, bg => dkgray, full => <vert ltfoamgreen to foamgreen>
 
- loadavg: bg => yellow, fg => dkyellow, spike => ltyellow
+ loadavg: bg => foamgreen, fg => dkfoamgreen, spike => ltfoamgreen
 
 
-  dialog: bg => gray, fg => black, line => yellow,
+  dialog: bg => gray, fg => black, line => foamgreen,
           title.fg => black,
           button.bg => ltgray, button.fg => black, button.border => black,
-	  button.sel.bg => yellow, button.sel.fg => black, button.sel.border => dkyellow, button.sel.inner => ltyellow +1
+	  button.sel.bg => foamgreen, button.sel.fg => black, button.sel.border => dkfoamgreen, button.sel.inner => ltfoamgreen +1
 
-  error:  bg => yellow, fg => black, line => ltyellow,
+  error:  bg => foamgreen, fg => black, line => ltfoamgreen,
           title.fg => white,
           button.bg => ltgray, button.fg => black, button.border => black,
-	  button.sel.bg => yellow, button.sel.fg => black, button.sel.border => dkyellow, button.sel.inner => ltyellow +1
+	  button.sel.bg => foamgreen, button.sel.fg => black, button.sel.border => dkfoamgreen, button.sel.inner => ltfoamgreen +1
 
-   input: bg => ltgray, fg => black, selbg => yellow, selfg => black,
-	  border => dkyellow, cursor => white
+   input: bg => ltgray, fg => black, selbg => foamgreen, selfg => black,
+	  border => dkfoamgreen, cursor => white
 
-textarea: bg => ltyellow, fg => black
+textarea: bg => ltfoamgreen, fg => black
 
 
 # calendar uses "default" for most days, "selected" for selected (duh)
@@ -78,11 +78,11 @@ box:
 	default.fg => black,
 	default.border => dkgray,
 
-	selected.bg => <vert yellow to dkyellow>,
+	selected.bg => <vert foamgreen to dkfoamgreen>,
 	selected.fg => black,
-	selected.border => dkyellow,
+	selected.border => dkfoamgreen,
 
-	special.bg => <horiz dkyellow to yellow>,
+	special.bg => <horiz dkfoamgreen to foamgreen>,
 	special.fg => black,
 	special.border => black
 
@@ -90,6 +90,6 @@ button:
 	default.bg => <vert ltgray to gray>,
 	default.fg => black,
 	default.border => black,
-	selected.bg => <vert yellow to dkyellow>,
+	selected.bg => <vert foamgreen to dkfoamgreen>,
 	selected.fg => black,
-	selected.border => dkyellow
+	selected.border => dkfoamgreen
