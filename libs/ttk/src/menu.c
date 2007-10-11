@@ -174,7 +174,7 @@ static void render (TWidget *this, int first, int n)
 	/* setup the Unselected cache */
 
 	if (data->itemsrf[xi]) ttk_free_surface (data->itemsrf[xi]);
-	data->itemsrf[xi] = ttk_new_surface (data->menu[xi]->textwidth + 6,
+	data->itemsrf[xi] = ttk_new_surface (data->menu[xi]->textwidth + 3,
 					    data->itemheight, ttk_screen->bpp);
 
 	ta = ttk_ap_getx(ih?"menu.hdrbg":"menu.bg");
@@ -183,11 +183,11 @@ static void render (TWidget *this, int first, int n)
 	{
 	    // ap surface
 	    ttk_ap_rect (data->itemsrf[xi], ta, 0,
-				0, data->menu[xi]->textwidth + 6 +
+				0, data->menu[xi]->textwidth + 3 +
 				ta->rounding, data->itemheight); 
 	} else {
 	    // solid
-	    ttk_fillrect (data->itemsrf[xi], 0, 0, data->menu[xi]->textwidth + 6,
+	    ttk_fillrect (data->itemsrf[xi], 0, 0, data->menu[xi]->textwidth + 3,
 				data->itemheight, ih?menu_hdrbg_color:menu_bg_color );
 	}
 
@@ -213,7 +213,7 @@ static void render (TWidget *this, int first, int n)
 	/* setup the Selected cache */
 
 	if (data->itemsrfI[xi]) ttk_free_surface (data->itemsrfI[xi]);
-	data->itemsrfI[xi] = ttk_new_surface (data->menu[xi]->textwidth + 6,
+	data->itemsrfI[xi] = ttk_new_surface (data->menu[xi]->textwidth + 3,
 					     data->itemheight, ttk_screen->bpp);
 
 	// selected background
@@ -223,11 +223,11 @@ static void render (TWidget *this, int first, int n)
 	{
 	    // ap surface
 	    ttk_ap_rect (data->itemsrfI[xi], ta, 0,
-				0, data->menu[xi]->textwidth + 6 +
+				0, data->menu[xi]->textwidth + 3 +
 				ta->rounding, data->itemheight); 
 	} else {
 	    // solid
-	    ttk_fillrect (data->itemsrfI[xi], 0, 0, data->menu[xi]->textwidth + 6,
+	    ttk_fillrect (data->itemsrfI[xi], 0, 0, data->menu[xi]->textwidth + 3,
 				data->itemheight, ih?menu_hdrbg_color:menu_selbg_color );
 	}
 	// selected text
@@ -612,8 +612,8 @@ void ttk_menu_create_group_headers( TWidget *this )
 		    pmi->group_name = strdup( _ttk_clean_txt(tmi->group_name) );
 		    pmi->name = strdup( _ttk_clean_txt(tmi->group_name) );
 		} else {
-		    pmi->group_name = strdup( "" );
-		    pmi->name = strdup( "" );
+		    pmi->group_name = strdup( "Unsorted" );
+		    pmi->name = strdup( "Unsorted" );
 		}
 		ttk_menu_insert (this, pmi, count); 
 		count++;
