@@ -31,7 +31,7 @@
   window: bg => gray, fg => black, border => ltgray
 
     menu: bg => gray, fg => black, choice => black, icon => ltgray,
-	  hdrbg => yellow, hdrfg => black,
+	  hdrbg => dkrgray+7, hdrfg => yellow,
           selbg => dkgray, selfg => black,
 	  selchoice => white, 
 	  icon0 => black, icon1 => dkgray, icon2 => gray, icon3 => ltgray
