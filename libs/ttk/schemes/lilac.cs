@@ -79,6 +79,8 @@
 
     menu: bg => creme,
 	  fg => black,
+	  hdrbg => <light, medium, lightish with medium @:1,0,50%,0>,
+	  hdrfg => black,
 	  choice => black,
 	  icon => black,
 	  selbg => <vert light to lightish>,

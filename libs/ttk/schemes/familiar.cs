@@ -46,6 +46,7 @@
    input: bg => white, fg => black, selbg => aquadbtn, selfg => black, border => aquawinbdr, cursor => #808080
 
     menu: bg => white, fg => black, choice => nearblack, icon => nearblack,
+          hdrbg => <vert #148fc8 to #0066af>, hdrfg => white,
           selbg => <vert #209bd6 to #0073bc>,
           selfg => white, selchoice => white,
 # WTF are these used for?
