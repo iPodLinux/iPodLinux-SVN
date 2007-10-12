@@ -711,15 +711,23 @@ void ttk_menu_updated (TWidget *this)
     data->ds = 0;
 }
 
-
 int ttk_menu_frame (TWidget *this) 
 {   
+    static int pos = -42;
     int oldflags, oldflash;
+    ttk_menu_item *selected;
     _MAKETHIS;
 
     if (!data->menu || !data->items) return 0;
 
-    ttk_menu_item *selected = data->menu[data->xivi[data->top + data->sel]];
+    // only do this when our position has changed
+    if( pos != (data->top + data->sel) )
+    {
+    	ttk_menu_scroll( this, 0 ); // adjust for header group headings
+	pos = data->top + data->sel;
+    }
+
+    selected = data->menu[data->xivi[data->top + data->sel]];
 
     data->ds++;
 
@@ -1009,7 +1017,8 @@ int ttk_menu_scroll (TWidget *this, int dir)
     TTK_SCROLLMOD (dir, 5);
     TTK_SCROLL_ACCEL(dir, 10, 50); /* TODO: Tune these constants */
 
-    if (!data->menu || !data->items) return 0;
+    if( !data || !data->menu || !data->items) return 0;
+    if( !data->vitems ) return 0;
 
     oldtop = data->top;
     oldsel = data->sel;
@@ -1017,8 +1026,6 @@ int ttk_menu_scroll (TWidget *this, int dir)
     // Check whether we need to scroll the list. Adjust bounds accordingly.
     data->sel += dir;
 
-    // XXX Need to adjust for unselectable items (group headers)
-    
     if (data->sel >= data->visible) {
 	data->top += (data->sel - data->visible + 1);
 	data->sel -= (data->sel - data->visible + 1);
@@ -1045,8 +1052,34 @@ int ttk_menu_scroll (TWidget *this, int dir)
     if (data->sel >= MIN (data->visible, data->vitems)) {
 	data->sel = MIN (data->visible, data->vitems) - 1;
     }
+
+    // If we have a group header, we need to skip it.
+    if (data->menu[data->xivi[data->top + data->sel]]->group_flags 
+		& TTK_MENU_GROUP_HEADER) {
+
+	// If it's a header and it's index is 0 (first item), we need to
+	// increment scroll position to the next menu item
+	if( dir == 0 ) {
+	    if (data->sel + 1 < data->vitems) data->sel++;
+	} else
+
+	// if we're already at the first item (header), bump it
+	if (data->sel == 0) {
+	    if (data->vitems) data->sel += dir;
+	} else
+
+
+	// Check if sel + dir is valid. If yes add dir.
+	if(   (data->sel + dir < data->vitems) && (data->sel + dir > 0) ) {
+	    data->sel += dir;
+	}
+    }
     
-    data->spos = data->top * (this->h - 2*ttk_ap_getx ("header.line") -> spacing) / data->vitems;
+    // Divide by zero check
+    if( data->vitems )
+	data->spos = data->top * (this->h - 2*ttk_ap_getx ("header.line") -> spacing) / data->vitems;
+    else
+	data->spos = 0;
     
     if ((oldtop != data->top) || (oldsel != data->sel)) {
 	this->dirty++;
@@ -1232,4 +1265,3 @@ void *ttk_md_sub (ttk_menu_item *submenu)
 {
     return (void *)submenu;
 }
-
