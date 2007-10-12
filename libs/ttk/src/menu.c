@@ -1077,7 +1077,7 @@ int ttk_menu_scroll (TWidget *this, int dir)
 
     // This only happens for menus with a group header at index 0, so we can set
     // sel to 1 (item after group header) not 0 (would work but cause flickering)
-    if (data->sel < 0) data->sel = 1;
+    if (data->top + data->sel < 0) data->sel = 1;
     
     // Divide by zero check
     if( data->vitems )
