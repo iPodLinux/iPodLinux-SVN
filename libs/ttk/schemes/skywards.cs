@@ -71,6 +71,8 @@
 
     menu: bg => unwhite,
 	  fg => black,
+	  hdrbg => <vert #7f838d to #7f838d to #94969c with #8a8c92 @:1,0,50%,0>,
+	  hdrfg => unwhite,
 	  choice => black,
 	  icon => black,
 	  selbg => <vert #9599a3 to #9599a3 to #aaacb2 with #a0a2a8 @:1,0,50%,0>,
