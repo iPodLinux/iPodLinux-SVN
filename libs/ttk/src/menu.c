@@ -1070,10 +1070,14 @@ int ttk_menu_scroll (TWidget *this, int dir)
 
 
 	// Check if sel + dir is valid. If yes add dir.
-	if(   (data->sel + dir < data->vitems) && (data->sel + dir > 0) ) {
+	if( (data->sel + dir < data->vitems) && (data->sel + dir > 0) ) {
 	    data->sel += dir;
 	}
     }
+
+    // This only happens for menus with a group header at index 0, so we can set
+    // sel to 1 (item after group header) not 0 (would work but cause flickering)
+    if (data->sel < 0) data->sel = 1;
     
     // Divide by zero check
     if( data->vitems )
