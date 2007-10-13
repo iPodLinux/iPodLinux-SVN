@@ -42,7 +42,7 @@ static void populate_credits() {
 			"David Carne", "Nik Rolls", "Filippo Forlani", 
 			"Martin Kaltenbrunner", "Adam Johnston",
 		        "Matthew Westcott", "Nils Schneider", "Damien Marchal",
-			"Jonathan Bettencourt", "Joshua Oreman", 0};
+			"Rebecca Bettencourt", "Joshua Oreman", 0};
 	for (i = 0; cnames[i] != 0; i++)
 		len += strlen(cnames[i]) + 9;
 	buf = malloc(sizeof(char) * (len + 47));
