@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2005 Jonathan Bettencourt
- * http://kreativekorp.cjb.net
+ * Copyright (C) 2005 Rebecca G. Bettencourt
+ * http://www.kreativekorp.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2005 Stefan Lange-Hegermann (BlackMac)
- * Modifications by Jonathan Bettencourt (jonrelay)
+ * Modifications by Rebecca G. Bettencourt
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

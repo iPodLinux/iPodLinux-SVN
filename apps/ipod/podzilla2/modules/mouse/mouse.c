@@ -1,6 +1,6 @@
 /*
  * TTK Mouse Emulation Widget
- * Copyright (C) 2005 Jonathan Bettencourt (jonrelay)
+ * Copyright (C) 2005 Rebecca G. Bettencourt
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
