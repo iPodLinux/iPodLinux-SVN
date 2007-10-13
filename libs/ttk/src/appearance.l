@@ -447,6 +447,62 @@ TApItem *ttk_ap_getx (const char *prop)
     return ret;
 }
 
+
+/* this next one is used for group items 
+	- tries primary
+	- if it fails, tries secondary
+	- if that fails, returns black
+*/
+TApItem *ttk_ap_getx_fb_dc(	const char *primary, 
+				const char *secondary, 
+				ttk_color def_color )
+{
+    TApItem *ret = NULL;
+
+    /* try the primary */
+    if( primary ) {
+	ret = ttk_ap_get( primary );
+	if( ret ) return( ret );
+    }
+
+    /* nope? try the secondary */
+    if( secondary ) {
+	ret = ttk_ap_get( secondary );
+	if( ret ) return( ret );
+    }
+
+    /* nope? return the passed in color */
+    ret = &empty;
+    ret->color = def_color;
+    return ret;
+}
+
+
+/* and some helpers for getting just the color out of the elements */
+ttk_color ttk_ap_getx_color_fb(	const char *primary, 
+				const char *secondary, 
+				ttk_color def_color )
+{
+    TApItem *ret = NULL;
+
+    /* try the primary */
+    if( primary ) {
+	ret = ttk_ap_get( primary );
+	if( ret ) return( ret->color );
+    }
+
+    /* nope? try the secondary */
+    if( secondary ) {
+	ret = ttk_ap_get( secondary );
+	if( ret ) return( ret->color );
+    }
+
+    /* nope? return the passed-in color */
+    return( def_color );
+}
+
+
+
 void ttk_ap_hline (ttk_surface srf, TApItem *ap, int x1, int x2, int y) 
 {
     ttk_color col;

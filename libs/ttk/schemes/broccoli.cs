@@ -35,7 +35,11 @@
           selbg => <gray to green to gray>, selfg => dkgreen,
 	  selchoice => green, 
 	  icon0 => black, icon1 => dkgreen,
-	  icon2 => midgreen , icon3 => ltgreen
+	  icon2 => midgreen , icon3 => ltgreen,
+	first_bg => <gray to ltgreen>,
+	middle_bg => <ltgreen to midgreen to ltgreen>,
+	last_bg => <ltgreen to gray>,
+	only_bg => <gray to ltgreen to gray>
 
  battery: border => dkgreen, bg => <dkgray to gray>,
 		fill.normal => <ltgreen to dkgreen>,

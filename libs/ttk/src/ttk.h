@@ -27,7 +27,7 @@
 /* Major bumps will require software to be recompiled */
 /* Minor will change when there are implementation/minor chages */
 
-#define TTK_API_VERSION  0x10302
+#define TTK_API_VERSION  0x10303
 #define TTK_VERSION_CHECK() ttk_version_check(TTK_API_VERSION)
 
 #ifdef __cplusplus
