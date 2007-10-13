@@ -91,25 +91,6 @@ const char * _ttk_clean_txt( const char * nam )
     return( nam );
 }
 
-ttk_color _get_ap_color( char * primary, char * secondary, ttk_color def )
-{
-    if( primary && ttk_ap_getx( primary ))
-	return( ttk_ap_getx( primary )->color );
-
-    if( secondary && ttk_ap_getx( secondary ))
-	return( ttk_ap_getx( secondary )->color );
-
-    return def;
-}
-
-#define _GET_AP_COLOR2( a, d )  _get_ap_color( a, NULL, d )
-
-TApItem *ttk_ap_getx_2( char * primary, char * secondary )
-{
-    TApItem * ta = ttk_ap_getx( primary );
-    if( ta ) return ta;
-    return ttk_ap_getx( secondary );
-}
 
 static void render (TWidget *this, int first, int n)
 {
@@ -139,12 +120,12 @@ static void render (TWidget *this, int first, int n)
      * and black.  If they are (Black box issue) then set them to be
      * something sane instead.
      */
-    menu_bg_color = _GET_AP_COLOR2( "menu.bg", ttk_makecol( WHITE ) );
-    menu_fg_color = _GET_AP_COLOR2( "menu.fg", ttk_makecol( BLACK ) );
-    menu_selbg_color = _GET_AP_COLOR2( "menu.selbg", ttk_makecol( BLACK ) );
-    menu_selfg_color = _GET_AP_COLOR2( "menu.selfg", ttk_makecol( WHITE ) );
-    menu_hdrbg_color = _get_ap_color( "menu.hdrbg", "header.bg", ttk_makecol( GREY ) );
-    menu_hdrfg_color = _get_ap_color( "menu.hdrfg", "header.fg", ttk_makecol( BLACK ) );
+    menu_bg_color = ttk_ap_getx_color( "menu.bg", ttk_makecol( WHITE ) );
+    menu_fg_color = ttk_ap_getx_color( "menu.fg", ttk_makecol( BLACK ) );
+    menu_selbg_color = ttk_ap_getx_color( "menu.selbg", ttk_makecol( BLACK ) );
+    menu_selfg_color = ttk_ap_getx_color( "menu.selfg", ttk_makecol( WHITE ) );
+    menu_hdrbg_color = ttk_ap_getx_color_fb( "menu.hdrbg", "header.bg", ttk_makecol( GREY ) );
+    menu_hdrfg_color = ttk_ap_getx_color_fb( "menu.hdrfg", "header.fg", ttk_makecol( BLACK ) );
 
     /* avoid black boxes based on bad colors */
     /* these aren't pretty, but they're functional */
@@ -217,7 +198,7 @@ static void render (TWidget *this, int first, int n)
 					     data->itemheight, ttk_screen->bpp);
 
 	// selected background
-	ta = ttk_ap_getx_2(ih?"menu.hdrbg":"menu.selbg", "header.bg");
+	ta = ttk_ap_getx_fb_dc(ih?"menu.hdrbg":"menu.selbg", "header.bg", ttk_makecol( WHITE ));
 	if(   ta->type & TTK_AP_GRADIENT &&
 	    !(ta->type & TTK_AP_GRAD_HORIZ) )
 	{
