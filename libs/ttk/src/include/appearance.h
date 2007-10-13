@@ -60,8 +60,28 @@ typedef struct TApItem
 } TApItem;
 
 void ttk_ap_load (const char *filename);
-TApItem *ttk_ap_get (const char *prop);
-TApItem *ttk_ap_getx (const char *prop);
+
+TApItem *ttk_ap_get (const char *prop);  /* get a property, null if fail */
+TApItem *ttk_ap_getx (const char *prop); /* get a property, black if fail */
+
+/* get primary, fall back to secondary, fall back to def_color */
+/* returns a valid TApItem */
+TApItem *ttk_ap_getx_fb_dc(     const char *primary,
+                                const char *secondary,
+                                ttk_color def_color );
+
+/* get primary, fall back to secondary, fall back to def_color */
+/* returns a valid ttk_color */
+ttk_color ttk_ap_getx_color_fb(	const char *primary,
+                                const char *secondary,
+                                ttk_color def_color );
+
+/* macros to help out for simple fallback-to-color*/
+#define ttk_ap_getx_dc( p, c )		ttk_ap_getx_fb_dc( (p), NULL, (c) )
+#define ttk_ap_getx_color( p, c )	ttk_ap_getx_color_fb( (p), NULL, (c) )
+
+
+/* and graphics primitives */
 void ttk_ap_hline (ttk_surface srf, TApItem *ap, int x1, int x2, int y);
 void ttk_ap_vline (ttk_surface srf, TApItem *ap, int x, int y1, int y2);
 void ttk_ap_dorect (ttk_surface srf, TApItem *ap, int x1, int y1, int x2, int y2, int filled);
