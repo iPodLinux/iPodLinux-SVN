@@ -1,9 +1,9 @@
 /*
- * Copyright (C) 2005 Jonathan Bettencourt (jonrelay)
+ * Copyright (C) 2005 Rebecca G. Bettencourt
  *
  * Morse Code concept by mattlivesey. Initially implemented by fre_ber and
- * adopted to text input system by jonrelay, but that version broke months
- * ago and therefore sucked gravy. Reimplemented by jonrelay for pz2.
+ * adopted to text input system by BeckieRGB, but that version broke months
+ * ago and therefore sucked gravy. Reimplemented by BeckieRGB for pz2.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

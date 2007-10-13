@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2005-2006 Jonathan Bettencourt (jonrelay)
+ * Copyright (C) 2005-2006 Rebecca G. Bettencourt
  *
  * Scroll Pad concept by veteran.
  * Dial Type concept by Peter Burk.
  * Fixed Layout and Scroll with Prediction concepts by mp.
- * All implemented by jonrelay.
+ * All implemented by Rebecca G. Bettencourt.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

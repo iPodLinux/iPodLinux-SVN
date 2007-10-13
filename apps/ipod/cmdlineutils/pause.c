@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006 Jonathynne Bett'ncort
+ * Copyright (C) 2006 Rebecca G. Bettencourt
  * http://www.kreativekorp.com
  *
  * This program is free software; you can redistribute it and/or modify
