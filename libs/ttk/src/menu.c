@@ -127,11 +127,20 @@ static void render (TWidget *this, int first, int n)
     menu_hdrbg_color = ttk_ap_getx_color_fb( "menu.hdrbg", "header.bg", ttk_makecol( GREY ) );
     menu_hdrfg_color = ttk_ap_getx_color_fb( "menu.hdrfg", "header.fg", ttk_makecol( BLACK ) );
 
-    /* avoid black boxes based on bad colors */
+    /* avoid black boxes based on bad colors -- only check if they're solid bg */
     /* these aren't pretty, but they're functional */
-    if( menu_bg_color == menu_fg_color ) menu_fg_color = ~menu_fg_color;
-    if( menu_selbg_color == menu_selfg_color ) menu_selfg_color = ~menu_selfg_color;
-    if( menu_hdrbg_color == menu_hdrfg_color ) menu_hdrfg_color = ~menu_hdrfg_color; 
+    ta = ttk_ap_getx( "menu.bg" );
+    if( !(ta->type & TTK_AP_GRADIENT) && (menu_bg_color == menu_fg_color) )
+	menu_fg_color = ~menu_fg_color;
+
+    ta = ttk_ap_getx( "menu.selbg" );
+    if( !(ta->type & TTK_AP_GRADIENT) && (menu_selbg_color == menu_selfg_color) )
+	menu_selfg_color = ~menu_selfg_color;
+
+    ta = ttk_ap_getx( "menu.hdrbg" );
+    if( !(ta->type & TTK_AP_GRADIENT) && (menu_hdrbg_color == menu_hdrfg_color) ) 
+	menu_hdrfg_color = ~menu_hdrfg_color; 
+
 
     for (xi = 0, vi = data->vixi[0]; data->menu[xi] && vi < first+n; xi++, vi = data->vixi[xi]) {
         char *truncname;
