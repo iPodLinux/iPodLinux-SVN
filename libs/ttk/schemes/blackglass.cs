@@ -73,6 +73,8 @@
 	  fg => #999,
 	  choice => #aaa,
 	  icon => #222,
+	  hdrbg => <#222 to #111 to #333 with #555 @:1,0,55%,0> +2 *1,
+	  hdrfg => #999,
           selbg => #333,
 	  selfg => white,
 	  selchoice => black,
