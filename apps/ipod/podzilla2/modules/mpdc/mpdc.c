@@ -434,7 +434,7 @@ static void init_mpdc()
 	pz_menu_add_action("/Music/Genre", new_genre_menu)->flags = flag;
 #endif
 	pz_menu_add_action("/Music/Queue", new_queue_menu)->flags = flag;
-	pz_menu_add_action("/Now Playing", mpd_currently_playing);
+	pz_menu_add_action_group("/Now Playing", "Media", mpd_currently_playing);
 	pz_get_menu_item("/Now Playing")->visible = playing_visible;
 
 	SETUP_MENUITEM("/Settings/Shuffle", set_shuffle, init_shuffle());
