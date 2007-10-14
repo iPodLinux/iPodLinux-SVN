@@ -52,6 +52,9 @@ typedef struct mandglobs {
 	int paletteNo;
 	int block;
 
+	int displayCursor;
+	int cursorX, cursorY;
+
 	double xmin, xmax, ymin, ymax;
 } mandglobs;
 
@@ -62,13 +65,17 @@ static mandglobs globs;
 #define fixpt(a) ((long)(((a)*(1<<FIXSIZE))))
 #define integer(a) (((a)+(1<<(FIXSIZE-1)))>>FIXSIZE)
 
-#define STEPS (64)
+#define STEPS (64)	/* color step levels - more = slower */
+#define ZOOMBLOCKS (8)	/* number of blocks the screen is broken into */
 
 static void force_redraw( void )
 {
+	globs.displayCursor = 0;
 	globs.completed = 0;
 	globs.started = 0;
 	globs.block = 0;
+	globs.cursorX = 0;
+	globs.cursorY = 0;
 }
 
 static void initialize_globals( void )
@@ -101,26 +108,31 @@ static ttk_color lookup_color( int i )
 	int r=0, g=0, b=0;
 	switch( globs.paletteNo ) {
 	case( 0 ):
+		// black to white
 		if( i>=STEPS ) i=STEPS;
 		r = i*255/STEPS;
 		//if( i>=STEPS ) return( ttk_makecol( 255, 255, 0 ));
 		return ttk_makecol( r, r, r );
 	case( 1 ):
+		// white to black
 		if( i>=STEPS ) i=STEPS;
 		r = 255-(i*255/STEPS);
 		//if( i>=STEPS ) return( ttk_makecol( 255, 255, 0 ));
 		return ttk_makecol( r, r, r );
 	case( 2 ):
+		// red to cyan
 		if( i>= STEPS ) i=STEPS;
 		r = 255-(i*255/STEPS);
 		g = i*255/STEPS;
 		b = i*255/STEPS/2;
 		return( ttk_makecol( r, g, b ));
 	case( 3 ):
+		// zebra
 		if( i>= STEPS ) i=STEPS;
-		r = g = b = (i&0x04)?255:0;
+		r = g = b = (i&0x08)?255:0;
 		return( ttk_makecol( r, g, b ));
 	case( 4 ):
+		// black to white to blue 
 		if( i>= STEPS ) i=STEPS;
 		if( i< STEPS/2 ) {
 			r=g=b = i * 255 / (STEPS/2);
@@ -153,6 +165,10 @@ static void render_frame( void )
 
 	w16 = globs.workBuffer->w/16;
 	blockx = globs.block * w16;
+
+	/* draw a thing to know where we are */
+	ttk_fillrect( globs.workBuffer, blockx+w16, 0, blockx+w16+20, globs.workBuffer->h, ttk_makecol( 255, 0, 0 ));
+	ttk_fillrect( globs.workBuffer, blockx+w16+5, 0, blockx+w16+15, globs.workBuffer->h, ttk_makecol( 0, 255, 0 ));
 
 	if( globs.mandelbrot ) {
 		for (y=0;y<globs.workBuffer->h;y++) {
@@ -199,24 +215,67 @@ static void render_frame( void )
 	globs.block++;
 	if( x>=globs.workBuffer->w )
 		globs.completed = 1;
-
 }
 
+#define XHAIR_SZ 	(20)
 void draw_mandelpod( PzWidget *wid, ttk_surface srf )
 {
+	int x,y,w,h,w16, h16;
 	ttk_blit_image( globs.workBuffer, srf, 0, 0 );
+
+	if( globs.displayCursor ) {
+		w = globs.workBuffer->w;
+		h = globs.workBuffer->h;
+		w16 = w/ZOOMBLOCKS;
+		h16 = h/ZOOMBLOCKS;
+		x = w/2 - globs.cursorX*w16;
+		y = h/2 - globs.cursorY*h16;
+
+		// crosshairs - horiz
+		ttk_line( srf, -1, y, x-XHAIR_SZ, y, ttk_makecol( BLACK ));
+		ttk_line( srf, x+XHAIR_SZ, y, w, y, ttk_makecol( BLACK ));
+		ttk_line( srf, -1, y-1, x-XHAIR_SZ, y-1, ttk_makecol( WHITE ));
+		ttk_line( srf, x+XHAIR_SZ, y-1, w, y-1, ttk_makecol( WHITE ));
+
+		// crosshairs - vert
+		ttk_line( srf, x, -1, x, y-XHAIR_SZ, ttk_makecol( WHITE ));
+		ttk_line( srf, x, y+XHAIR_SZ, x, h, ttk_makecol( WHITE ));
+		ttk_line( srf, x-1, -1, x-1, y-XHAIR_SZ, ttk_makecol( BLACK ));
+		ttk_line( srf, x-1, y+XHAIR_SZ, x-1, h, ttk_makecol( BLACK ));
+
+		// circle
+		ttk_ellipse( srf, x, y, XHAIR_SZ, XHAIR_SZ, ttk_makecol( BLACK ));
+		ttk_ellipse( srf, x, y, XHAIR_SZ+1, XHAIR_SZ+1, ttk_makecol( WHITE ));
+	}
 }
+
 
 int event_mandelpod (PzEvent *ev) 
 {
 	switch (ev->type) {
 	case PZ_EVENT_SCROLL:
 		TTK_SCROLLMOD( ev->arg, 5 );
-		if( ev->arg > 0 ) {
-			// move the cursor
-		} else {
-			// move the cursor
+		if( globs.displayCursor ) {
+			if( ev->arg > 0 ) {
+				// move the cursor
+				globs.cursorX--;
+			} else {
+				// move the cursor
+				globs.cursorX++;
+			}
+			// now adjust it for the screen
+			if( globs.cursorX < (-ZOOMBLOCKS/2) ) {
+				globs.cursorY--;
+				globs.cursorX=ZOOMBLOCKS/2;
+			}
+			if( globs.cursorX > ZOOMBLOCKS/2 ) {
+				globs.cursorY++;
+				globs.cursorX=-(ZOOMBLOCKS/2);
+			}
+			if( globs.cursorY < (-ZOOMBLOCKS/2) ) globs.cursorY=ZOOMBLOCKS/2;
+			if( globs.cursorY > ZOOMBLOCKS/2 ) globs.cursorY=-(ZOOMBLOCKS/2);
 		}
+		globs.displayCursor = 1;
 		break;
 
 	case PZ_EVENT_BUTTON_UP:
@@ -232,7 +291,7 @@ int event_mandelpod (PzEvent *ev)
 			break;
 
 		case( PZ_BUTTON_NEXT ):
-			// zoom in
+			// cheesy zoom in
 			globs.xmin /=2;
 			globs.xmax /=2;
 			globs.ymin /=2;
@@ -241,7 +300,7 @@ int event_mandelpod (PzEvent *ev)
 			break;
 
 		case( PZ_BUTTON_PREVIOUS ):
-			// zoom out
+			// cheesy zoom out
 			globs.xmin *=2;
 			globs.xmax *=2;
 			globs.ymin *=2;
