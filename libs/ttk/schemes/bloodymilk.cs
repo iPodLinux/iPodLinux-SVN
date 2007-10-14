@@ -1,28 +1,28 @@
-\name SkyWards
+\name Bloody Milk
 \def black   #000000
 \def unwhite #ebebeb
 \def gray    #a0a0a0
 \def dkgray  #505050
 
-  header: bg => <#e0e0e0, #e0e0e0, #d6d6d6 with #f2f2f2 @:1,0,50%,0>,
-	  fg => black,
-	  line => #9fa2a7 -1,
+  header: bg => <#d22 to #c22 to #d33 with #f99 @:1,1,59%,1> *1,
+	  fg => unwhite,
+	  line => #a22 -1,
 	  accent => gray
 	  shadow => dkgray,
 	  shine => gray
 
-   music: bar.border => #86898f -3,
-	  bar.bg => #f7f7f7 -3,
-	  bar => <vert #d5d7db to #b4b7bd to #aaacb2 with #858993 @:50%,0,1,0> -1
+  music:  bar.bg => <vert #555 to #555 to #666 with #bbb @:1,1,59%,1> *1 -2,
+	  bar => <vert #d22 to #c22 to #d33 with #f99 @:1,1,59%,1> *1 -2,
+	  bar.border =>
 
  battery: border => #86898f,
 	  bg => #f7f7f7,
 	  bg.low => <vert #fdcece to #ec6868>,
 	  bg.charging => <vert #ceedfc to #52b9ef>,
-	  fill.normal => <#c0c2c8 to #b4b7bd to #aaacb2 with #80848e @:3,0,1,0> +1
+	  fill.normal => <horiz #d22 to #c22 to #d33 with #f99 @:1,57%,1,1>,
 	  fill.low => dkgray +1,
 	  fill.charge => <vert #69777f to black> +1,
-          chargingbolt => #86898f
+          chargingbolt => #ff0
 
     lock: border => black,
 	  fill => black
@@ -59,9 +59,9 @@
 	  button.sel.border => #86898f,
 	  button.sel.inner => #86898f
 
-  scroll: box => #86898f -1,
+  scroll: box => #a22,
 	  bg => #f7f7f7,
-	  bar => <horiz #cdcfd3 to #b4b7bd to #aaacb2 with #80848e @:0,1,0,50%> +1
+	  bar => <horiz #d22 to #c22 to #d33 with #f99 @:1,59%,1,1>
 
    input: bg => unwhite,
 	  fg => black,
@@ -71,22 +71,23 @@
 	  cursor => dkgray
 
     menu: bg => unwhite,
-	  fg => black,
+	  fg => #000,
+	  choice => unwhite,
+	  icon => unwhite,
 	  hdrfg => black,
 	  hdrbg => <#e0e0e0, #e0e0e0, #d6d6d6 with #f2f2f2 @:1,0,50%,0>,
-	  choice => black,
-	  icon => black,
-	  selbg => <vert #9599a3 to #9599a3 to #aaacb2 with #a0a2a8 @:1,0,50%,0>,
-	  selfg => black,
+	  selbg => <vert #d22 to #c22 to #d33 with #f99 @:1,1,59%,1> *1,
+	  selfg => unwhite,
 	  selchoice => unwhite,
-	  icon0 => #aaacb2,
-	  icon1 => #bbb,
-	  icon2 => #cbcbcb,
-	  icon3 => unwhite
+	  icon0 => unwhite -3,
+	  icon1 => unwhite -2,
+	  icon2 => unwhite,
+	  icon3 => unwhite +1
 
-  slider: border => #86898f -3,
-	  bg => #f7f7f7 -3,
-	  full => <vert #d5d7db to #b4b7bd to #aaacb2 with #858993 @:50%,0,1,0> -1
+  slider: border => <vert #555 to #555 to #666 with #bbb @:1,1,59%,1> *1 -2,
+	  bg => #f7f7f7 -2,
+	  full => <vert #d22 to #c22 to #d33 with #f99 @:1,1,59%,1> *1 -3
+
 
 textarea: bg => unwhite,
 	  fg => black
