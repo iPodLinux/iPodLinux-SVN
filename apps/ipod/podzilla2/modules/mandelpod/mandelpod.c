@@ -74,6 +74,10 @@ static void force_redraw( void )
 	globs.completed = 0;
 	globs.started = 0;
 	globs.block = 0;
+}
+
+static void recenter_cursor( void )
+{
 	globs.cursorX = 0;
 	globs.cursorY = 0;
 }
@@ -85,6 +89,7 @@ static void initialize_globals( void )
 			globs.workBuffer->w, globs.workBuffer->h, 
 			ttk_makecol( 0, 0, 255 ));
 	globs.paletteNo = 0;
+	recenter_cursor();
 	force_redraw();
 	globs.initted = 1;
 
@@ -166,13 +171,13 @@ static void render_frame( void )
 	w16 = globs.workBuffer->w/16;
 	blockx = globs.block * w16;
 
-	/* draw a thing to know where we are */
-	ttk_fillrect( globs.workBuffer, blockx+w16, 0, blockx+w16+20, globs.workBuffer->h, ttk_makecol( 255, 0, 0 ));
-	ttk_fillrect( globs.workBuffer, blockx+w16+5, 0, blockx+w16+15, globs.workBuffer->h, ttk_makecol( 0, 255, 0 ));
+	/* draw a scannerbar thingy */
+	ttk_fillrect( globs.workBuffer, blockx+w16, 0, blockx+w16+5, globs.workBuffer->h, ttk_makecol( 255, 0, 0 ));
+	ttk_fillrect( globs.workBuffer, blockx+w16+5, 0, blockx+w16+10, globs.workBuffer->h, ttk_makecol( 0, 255, 0 ));
 
 	if( globs.mandelbrot ) {
 		for (y=0;y<globs.workBuffer->h;y++) {
-			for (x=blockx;x<blockx+w16+1;x++) {                        
+			for (x=blockx;x<blockx+w16+1;x++) {
 				p=fixpt(globs.xmin+x*xs);
 				q=fixpt(globs.ymin+y*ys);
 				xn=0;
@@ -181,7 +186,7 @@ static void render_frame( void )
 				i=0;
 				while ((mul(xn,xn)+mul(y0,y0))<fixpt(4) && ++i<STEPS)
 				{
-					xn=mul((x0+y0),(x0-y0)) +p;           
+					xn=mul((x0+y0),(x0-y0)) +p;
 					y0=mul(fixpt(2),mul(x0,y0)) +q;
 					x0=xn;
 				}
@@ -217,7 +222,7 @@ static void render_frame( void )
 		globs.completed = 1;
 }
 
-#define XHAIR_SZ 	(20)
+#define XHAIR_SZ 	(0)
 void draw_mandelpod( PzWidget *wid, ttk_surface srf )
 {
 	int x,y,w,h,w16, h16;
@@ -244,14 +249,18 @@ void draw_mandelpod( PzWidget *wid, ttk_surface srf )
 		ttk_line( srf, x-1, y+XHAIR_SZ, x-1, h, ttk_makecol( BLACK ));
 
 		// circle
+/*
 		ttk_ellipse( srf, x, y, XHAIR_SZ, XHAIR_SZ, ttk_makecol( BLACK ));
 		ttk_ellipse( srf, x, y, XHAIR_SZ+1, XHAIR_SZ+1, ttk_makecol( WHITE ));
+*/
 	}
 }
 
 
 int event_mandelpod (PzEvent *ev) 
 {
+	double xsz=0, ysz=0, wS=0, hS=0, xc=0, yc=0;
+
 	switch (ev->type) {
 	case PZ_EVENT_SCROLL:
 		TTK_SCROLLMOD( ev->arg, 5 );
@@ -291,20 +300,54 @@ int event_mandelpod (PzEvent *ev)
 			break;
 
 		case( PZ_BUTTON_NEXT ):
-			// cheesy zoom in
-			globs.xmin /=2;
-			globs.xmax /=2;
-			globs.ymin /=2;
-			globs.ymax /=2;
+			// field size
+			xsz = globs.xmax - globs.xmin;
+			ysz = globs.ymax - globs.ymin;
+			// cursor field size
+			wS = xsz/ZOOMBLOCKS;
+			hS = ysz/ZOOMBLOCKS;
+
+			// field center
+			xc = globs.xmin + (xsz/2);
+			yc = globs.ymin + (ysz/2);
+
+			// adjust the field center
+			xc -= globs.cursorX * wS;
+			yc -= globs.cursorY * hS;
+
+			// apply it!
+			globs.xmin = xc-(xsz/4);
+			globs.xmax = xc+(xsz/4);
+			globs.ymin = yc-(ysz/4);
+			globs.ymax = yc+(ysz/4);
+
+			recenter_cursor();
 			force_redraw();
 			break;
 
 		case( PZ_BUTTON_PREVIOUS ):
-			// cheesy zoom out
-			globs.xmin *=2;
-			globs.xmax *=2;
-			globs.ymin *=2;
-			globs.ymax *=2;
+			// field size
+			xsz = globs.xmax - globs.xmin;
+			ysz = globs.ymax - globs.ymin;
+			// cursor field size
+			wS = xsz/ZOOMBLOCKS;
+			hS = ysz/ZOOMBLOCKS;
+
+			// field center
+			xc = globs.xmin + (xsz/2);
+			yc = globs.ymin + (ysz/2);
+
+			// adjust the field center
+			xc -= globs.cursorX * wS;
+			yc -= globs.cursorY * hS;
+
+			// apply it!
+			globs.xmin = xc-(xsz);
+			globs.xmax = xc+(xsz);
+			globs.ymin = yc-(ysz);
+			globs.ymax = yc+(ysz);
+
+			recenter_cursor();
 			force_redraw();
 			break;
 
