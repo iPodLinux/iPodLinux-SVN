@@ -246,7 +246,7 @@ int event_mandelpod (PzEvent *ev)
 	case PZ_EVENT_TIMER:
 		if( !globs.completed ) render_frame();
 		ev->wid->dirty = 1;
-		pz_widget_set_timer( globs.widget, 100 );
+		pz_widget_set_timer( globs.widget, 5 ); // restart ourselves. (Yield)
 		break;
 
 	case PZ_EVENT_DESTROY:
@@ -260,7 +260,7 @@ static PzWindow *new_window( int mand )
 	globs.window = pz_new_window( "MandelPod", PZ_WINDOW_NORMAL );
 	ttk_window_hide_header( globs.window );
 	globs.widget = pz_add_widget( globs.window, draw_mandelpod, event_mandelpod );
-	pz_widget_set_timer( globs.widget, 10 );
+	pz_widget_set_timer( globs.widget, 5 );
 	globs.mandelbrot = mand;
 	initialize_globals();
 	return pz_finish_window( globs.window );
