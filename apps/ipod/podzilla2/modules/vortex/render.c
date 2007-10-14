@@ -79,14 +79,14 @@ void Vortex_RenderWeb( ttk_surface srf )
 	/* draw the back */
 	for( p=0 ; p<maxP ; p++ ) {
 		n = (p+1)&0x0f;
-		ttk_aaline( srf,    lv->rx[p], lv->ry[p],
+		DRAW_LINE( srf,    lv->rx[p], lv->ry[p],
 				    lv->rx[n], lv->ry[n],
 				    vglob.color.web_bot );
 	}
 
 	/* draw the arms */
 	for( p=0 ; p<16 ; p++ )
-		ttk_aaline( srf,    lv->fx[p], lv->fy[p],
+		DRAW_LINE( srf,    lv->fx[p], lv->fy[p],
 				    lv->rx[p], lv->ry[p],
 				    vglob.color.web_mid );
 
@@ -97,7 +97,7 @@ void Vortex_RenderWeb( ttk_surface srf )
 	/* draw the front */
 	for( p=0 ; p<maxP ; p++ ) {
 		n = (p+1)&0x0f;
-		ttk_aaline( srf,    lv->fx[p], lv->fy[p],
+		DRAW_LINE( srf,    lv->fx[p], lv->fy[p],
 				    lv->fx[n], lv->fy[n],
 				    vglob.color.web_top );
 	}
@@ -111,12 +111,12 @@ void Vortex_RenderPlayer( ttk_surface srf )
 {
 	if( vglob.gameStyle == VORTEX_STYLE_CLASSIC )
 	{
-		ttk_aapoly( srf, 4, vglob.px, vglob.py,
+		DRAW_POLY( srf, 4, vglob.px, vglob.py,
 				vglob.color.player_fill );
 	} else {
 		ttk_fillpoly( srf, 4, vglob.px, vglob.py, 
 				vglob.color.player_fill );
-		ttk_aapoly( srf, 4, vglob.px, vglob.py,
+		DRAW_POLY( srf, 4, vglob.px, vglob.py,
 				vglob.color.player );
 	}
 }
@@ -133,9 +133,9 @@ void Vortex_RenderAvailableBase( ttk_surface srf, int x, int y )
 	if( vglob.gameStyle != VORTEX_STYLE_CLASSIC )
 	{
 		ttk_fillpoly( srf, 4, xx, yy, vglob.color.baseind_fill );
-		ttk_aapoly( srf, 4, xx, yy, vglob.color.baseind );
+		DRAW_POLY( srf, 4, xx, yy, vglob.color.baseind );
 	} else {
-		ttk_aapoly( srf, 4, xx, yy, vglob.color.baseind_fill );
+		DRAW_POLY( srf, 4, xx, yy, vglob.color.baseind_fill );
 	}
 }
 

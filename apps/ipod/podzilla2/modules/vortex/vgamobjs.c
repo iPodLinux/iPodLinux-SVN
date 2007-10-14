@@ -369,7 +369,7 @@ void Vortex_Enemy_draw( ttk_surface srf )
 			case( VORTEX_ENT_SPIKER ):
 				/* first draw the depth line */
 				if( enemies[e].spikeTop > 9 ) {
-				    ttk_aaline( srf, 
+				    DRAW_LINE( srf, 
 					vglob.ptsX[w][9][1],
 					vglob.ptsY[w][9][1],
 					vglob.ptsX[w][enemies[e].spikeTop][1],
@@ -563,13 +563,13 @@ void Vortex_Powerup_draw( ttk_surface srf )
 
 		
 		if( (z&1) && (powerups[p].state != VORTEX_PU_INACTIVE) ) {
-			ttk_aaline( srf,  
+			DRAW_LINE( srf,  
 					vglob.ptsX[w][powerups[p].zStart][0],
 					vglob.ptsY[w][powerups[p].zStart][0],
 					vglob.ptsX[w][z][1],
 					vglob.ptsY[w][z][1],
 					vglob.color.powerup );
-			ttk_aaline( srf,  
+			DRAW_LINE( srf,  
 					vglob.ptsX[w][z][1],
 					vglob.ptsY[w][z][1],
 					vglob.ptsX[w+1][powerups[p].zStart][0],
