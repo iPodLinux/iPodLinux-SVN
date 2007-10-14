@@ -107,7 +107,7 @@ static void initialize_globals( void )
 }
 
 // -- these should really be just simple lookup tables...
-#define PALETTES (4)
+#define PALETTES (5)
 static ttk_color lookup_color( int i )
 {
 	int r=0, g=0, b=0;
@@ -147,6 +147,18 @@ static ttk_color lookup_color( int i )
 			g=r= 255-( i*255/(STEPS/2));
 		}
 		return( ttk_makecol( r, g, b ));
+	case( 5 ):
+		// black to red to yellow 
+		if( i>= STEPS ) i=0;
+		if( i< STEPS/2 ) {
+			r= i * 255 / (STEPS/2);
+			g=0;
+		} else {
+			i-=STEPS/2;
+			r=255;
+			g= i*255/(STEPS/2);
+		}
+		return( ttk_makecol( r, g, 0 ));
 	}
 	return 0;
 }
