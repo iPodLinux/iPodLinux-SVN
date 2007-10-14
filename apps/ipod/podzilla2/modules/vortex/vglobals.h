@@ -24,6 +24,11 @@
 #ifndef __VORTEX_GLOBALS_H__
 #define __VORTEX_GLOBALS_H__
 
+/* use these to specify regular/antialiased */
+#define DRAW_LINE ttk_line
+#define DRAW_POLY ttk_poly
+
+
 #define VORTEX_STATE_STARS	(-2)
 #define VORTEX_STATE_UNDEFINED	(-1)	/* nothing. */
 #define VORTEX_STATE_STARTUP	(0)	/* intro animation */
