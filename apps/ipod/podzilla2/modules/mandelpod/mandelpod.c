@@ -1,511 +1,294 @@
-/*
+/* MandelPod 2
+
+Based conceptually on the original:
+
  * Copyright (C) 2005 Martin Kaltenbrunner
  * <mkalten@iua.upf.es>
  * due to the present lack of sound support for my 4G iPd
  * just a first little program for trying general issues
  * ... for testing & educational purposes only
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- */
 
-#include <stdlib.h>
-#include <stdio.h> 
-#include <time.h>
-#include <sys/time.h>
-#include <unistd.h>
-#define PZ_COMPAT
+(Originally written for podzilla0, then colorized by Scott Lawrence)
+
+This has been re-ported from the original integer Mandelbrot explorer code,
+available here:
+	http://www.geocities.com/CapeCanaveral/5003/fracprog.htm
+rather than the legacy version by Martin.  Sorry, but it was easier to 
+re-write it as a pz2/ttk module from scratch this time
+*/
+
+/* Revision history
+**
+** 2.00	Scott Lawrence	Initial version, no eploration, julia set nonfunctional
+*/
+
 #include "pz.h"
 
-#define ITERATIONS 24
+typedef struct mandglobs {
+	PzWindow *window;
+	PzModule *module;
+	PzWidget *widget;
+	ttk_surface workBuffer;
 
-// microwindows objects
-static GR_WINDOW_ID mandel_wid;
-#ifdef MANDELPOD_STATUS
-static GR_WINDOW_ID status_wid;
-#endif
-static GR_WINDOW_ID status_image[16];
-static GR_GC_ID mandel_gc;
-static GR_WINDOW_INFO wi;
-static	GR_EVENT break_event;
-static GR_TIMER_ID mandel_timer_id;
-static const GR_COLOR gray_palette[] = { GRAY, GRAY, LTGRAY,  WHITE, LTGRAY, LTGRAY, GRAY, BLACK };
-static const GR_COLOR color_palette[] = { 
-	GR_RGB( 255,   0,   0 ),
-	GR_RGB( 255, 128,   0 ),
-	GR_RGB( 255, 255,   0 ),
-	GR_RGB(   0, 255,   0 ),
-	GR_RGB(   0, 255, 255 ),
-	GR_RGB(   0,   0, 255 ),
-	GR_RGB( 255,   0, 255 ),
-	GR_RGB(   0,   0,   0 )
-};
+	int initted;
+	int mandelbrot;
 
-// function declarations
-void new_mandel_window();
-static int handle_event(GR_EVENT *event);
-static void mandel_quit();
+	int completed;
+	int started;
+	int paletteNo;
+	int block;
 
-static void draw_mandel();
-#ifdef MANDELPOD_STATUS
-static void draw_idle_status();
-static void draw_busy_status();
-#endif
-static void draw_header();
-static void draw_cursor();
-static void create_status();
-static void init_values();
-static void calculate_mandel();
-static void check_event();
-static void pause_drawing();
+	double xmin, xmax, ymin, ymax;
+} mandglobs;
 
-static void move_right();
-static void move_left();
-static void zoom_in();
-static void zoom_out();
+static mandglobs globs;
 
-// level data structure
-typedef struct level
-{
-	int cursor_pos;
-	GR_WINDOW_ID mandel_buffer;
-} LEVEL;
-static LEVEL level[7];
-
-// various variables
-static int screen_width,screen_height;
-static int selection_width,selection_height;
-static const char selection_size = 8;
-static signed char cursor_x, cursor_y;
-static signed char current_depth;
-static const signed char max_depth = 6;
-
-// mandelbrot variables
-static int iterations;
-static double xMin,yMin,xMax,yMax;
-
-// defines for the mandelbrot algorithm
 #define FIXSIZE 25
 #define mul(a,b) ((((long long)a)*(b))>>FIXSIZE)
 #define fixpt(a) ((long)(((a)*(1<<FIXSIZE))))
 #define integer(a) (((a)+(1<<(FIXSIZE-1)))>>FIXSIZE)
 
-// status variables
-static char rendering = 0;
-static char show_cursor = 0;
-static char paused = 0;
-#ifdef MANDELPOD_STATUS
-static int status_counter = 0;
-#endif
-static char active_renderer = 0;
+#define STEPS (64)
 
-// creates a new MandelPod window
-void new_mandel_window(void)
+static void force_redraw( void )
 {
-	// get the graphics context
-	mandel_gc = pz_get_gc(1);
-		
-	// create the main window
-	mandel_wid = pz_new_window (0, ttk_screen->wy,
-			    screen_info.cols, screen_info.rows - ttk_screen->wy,
-			    draw_header, handle_event);
-#ifdef MANDELPOD_STATUS
-	// create the status window
-	status_wid = pz_new_window (22, 4, 12, 12, draw_idle_status, handle_event);
-#endif
-	 // get screen info
-	GrGetWindowInfo(mandel_wid, &wi);
-	
-	// select the event types
-	GrSelectEvents (mandel_wid, GR_EVENT_MASK_EXPOSURE | GR_EVENT_MASK_KEY_DOWN | GR_EVENT_MASK_KEY_UP | GR_EVENT_MASK_TIMER);
-		
-	// display the window
-	GrMapWindow (mandel_wid);
-#ifdef MANDELPOD_STATUS
-	GrMapWindow (status_wid);
-#endif
-
-    // create the timer for the busy status animation
-    mandel_timer_id = GrCreateTimer (mandel_wid, 250);
-
-	// start main app
-	init_values();
-	create_status();
-	draw_header();
-	calculate_mandel();
+	globs.completed = 0;
+	globs.started = 0;
+	globs.block = 0;
 }
-	
-// draw the title bar.
-static void draw_header()
+
+static void initialize_globals( void )
 {
-	pz_draw_header (_("MandelPod"));
-}
+	globs.workBuffer = ttk_new_surface( ttk_screen->w, ttk_screen->h, ttk_screen->bpp );
+	ttk_fillrect( globs.workBuffer, 0, 0, 
+			globs.workBuffer->w, globs.workBuffer->h, 
+			ttk_makecol( 0, 0, 255 ));
+	globs.paletteNo = 0;
+	force_redraw();
+	globs.initted = 1;
 
-// reset the variables to their initial values
-static void init_values() {
-	
-	int i;
-	screen_width=screen_info.cols;
-	screen_height=screen_info.rows - ttk_screen->wy;
-	
-	selection_width = screen_width/selection_size;
-	selection_height = screen_height/selection_size;
-
-	iterations = ITERATIONS;
-
-	xMin=-2.0;
-	yMin=-1.25;
-	xMax=1.25;
-	yMax=1.25;
-
-	cursor_x=0;
-	cursor_y=0;
-	current_depth = 0;
-	level[current_depth].cursor_pos = -1;
-
-	active_renderer=0;
-	
-	GrSetGCForeground(mandel_gc, BLACK);
-	for (i=0;i<max_depth+1;i++)  {
-		level[i].mandel_buffer = GrNewPixmap(screen_width, screen_height,  NULL);
-		GrFillRect(level[i].mandel_buffer,mandel_gc,0,0,screen_width, screen_height);	
+	if( globs.mandelbrot ) {
+		globs.xmin = -2.5;
+		globs.xmax = 1.5;
+		globs.ymin = -1.5;
+		globs.ymax = 1.5;
+	} else {
+		globs.xmin = -1.5;
+		globs.xmax = 1.5;
+		globs.ymin = -1.5;
+		globs.ymax = 1.5;
 	}
 }
 
-int xpie[] = {  0,  3, 6,  3, 0, -3, -6, -3 }; 
-int ypie[] = { -6, -3, 0,  3, 6,  3,  0, -3 }; 
-
-// create the circular status animation
-static void create_status() {
-
-	int i;
-
-	// we need 16 frames
-	GrSetGCForeground (mandel_gc, appearance_get_color( CS_TITLEBG ));
-
-	for (i=0;i<16;i++) {
-		status_image[i] = GrNewPixmap(12, 12,  NULL);
-		GrFillRect(status_image[i],mandel_gc,0,0,12,12);	
+// -- these should really be just simple lookup tables...
+#define PALETTES (4)
+static ttk_color lookup_color( int i )
+{
+	int r=0, g=0, b=0;
+	switch( globs.paletteNo ) {
+	case( 0 ):
+		if( i>=STEPS ) i=STEPS;
+		r = i*255/STEPS;
+		//if( i>=STEPS ) return( ttk_makecol( 255, 255, 0 ));
+		return ttk_makecol( r, r, r );
+	case( 1 ):
+		if( i>=STEPS ) i=STEPS;
+		r = 255-(i*255/STEPS);
+		//if( i>=STEPS ) return( ttk_makecol( 255, 255, 0 ));
+		return ttk_makecol( r, r, r );
+	case( 2 ):
+		if( i>= STEPS ) i=STEPS;
+		r = 255-(i*255/STEPS);
+		g = i*255/STEPS;
+		b = i*255/STEPS/2;
+		return( ttk_makecol( r, g, b ));
+	case( 3 ):
+		if( i>= STEPS ) i=STEPS;
+		r = g = b = (i&0x04)?255:0;
+		return( ttk_makecol( r, g, b ));
+	case( 4 ):
+		if( i>= STEPS ) i=STEPS;
+		if( i< STEPS/2 ) {
+			r=g=b = i * 255 / (STEPS/2);
+		} else {
+			i-=STEPS/2;
+			b=255;
+			g=r= 255-( i*255/(STEPS/2));
+		}
+		return( ttk_makecol( r, g, b ));
 	}
-	
-	// the background
-	for (i=1;i<8;i++) {
-		GrSetGCForeground(mandel_gc, appearance_get_color(CS_TITLEFG));
-		GrFillEllipse(status_image[i],mandel_gc,6,6,6,6);
-		GrSetGCForeground(mandel_gc, appearance_get_color(CS_TITLEBG));
-		GrArc(status_image[i],mandel_gc,6,6,6,6,0,-6,xpie[i],ypie[i],MWPIE);
-	}
-	// the foreground part
-	GrSetGCForeground(mandel_gc, appearance_get_color(CS_TITLEFG));
-	GrFillEllipse(status_image[8],mandel_gc,6,6,6,6);
-	for (i=9;i<16;i++) GrArc(status_image[i],mandel_gc,6,6,6,6,0,-6,xpie[i-8],ypie[i-8],MWPIE);
+	return 0;
 }
 
-// delete the status window contents
-#ifdef MANDELPOD_STATUS
-static void draw_idle_status() {
-	GrSetGCForeground (mandel_gc, appearance_get_color( CS_TITLEBG ));
-	GrFillRect( status_wid, mandel_gc, 0, 0, 12, 12 );
-	status_counter=0;
-}
-
-// update the status window contents
-static void draw_busy_status() {
-	GrCopyArea(status_wid, mandel_gc, 0, 0,  12, 12,status_image[status_counter%16], 0, 0, MWROP_SRCCOPY);
-	status_counter++;
-}
-#endif
-
-
-// calculate the current mandelbrot set
-static void calculate_mandel()
-{		
-	const GR_COLOR * the_palette = gray_palette;
-
-	const int sx = screen_width;
-	const int sy = screen_height;
-	const int iter = iterations-1;
-	
-	const double xmin=xMin;
-	const double ymin=yMin;
-	const double xmax=xMax;
-	const double ymax=yMax;
-
-	const double xs=(xmax-xmin)/sx;
-	const double ys=(ymax-ymin)/sy;
-
-	register long x0,y0,p,q,xn,tot;
+static void render_frame( void )
+{
+	int blockx, w16;
+	long x0,y0,p,q,xn,tot;
+	double xs,ys;
 	register int i=0,x=0,y=0;
+	int xsq, ysq;
+	long a = 0;
 
-	const int depth = current_depth;
 
-	if( screen_info.bpp == 16 )
-		the_palette = color_palette;
-	
-	rendering=1;
-	show_cursor=0;
-	active_renderer++;
-	
-	// start main loop
-	for (y=0;y<sy;y++) {
-		for (x=0;x<sx;x++) { 
-			p=fixpt(xmin+x*xs);
-			q=fixpt(ymin+y*ys);
-			xn=0;
-			x0=0;
-			y0=0;
-			i=0;
-			while ((mul(xn,xn)+mul(y0,y0))<fixpt(4) && ++i<iter)  {
-				xn=mul((x0+y0),(x0-y0)) +p;
-				y0=mul(fixpt(2),mul(x0,y0)) +q;
-				x0=xn;
-			}
-			tot+=i;
-		
-			GrSetGCForeground(mandel_gc, the_palette[i%8]);
-			GrPoint(level[depth].mandel_buffer, mandel_gc,x,y);
-		}
-		
-		// for every line only:
-		// check if we had an event
-		check_event();
-		// check if we need to quit
-		if (!rendering) return;
-		// update the screen
-		draw_mandel();
-	}
-	// end main loop
-	
-	active_renderer--;
-}
-
-// pause
-static void pause_drawing() {
-
-#ifdef MANDELPOD_STATUS
-	draw_idle_status();
-#endif
-	while (paused) {
-		check_event();
-		usleep(100);
+	if( !globs.started ) {
+		globs.started = 1;
 	}
 
-}
+	xs=(globs.xmax-globs.xmin)/globs.workBuffer->w;
+	ys=(globs.ymax-globs.ymin)/globs.workBuffer->h;
 
-extern void pz_event_handler( GR_EVENT * );
+	w16 = globs.workBuffer->w/16;
+	blockx = globs.block * w16;
 
-// check for events & delete the event queue
-static void check_event() {
-		if (GrPeekEvent(&break_event)) { 
-			GrGetNextEventTimeout(&break_event, 1000);
-			if (break_event.type != GR_EVENT_TYPE_TIMEOUT) {
-				pz_event_handler(&break_event);
-				// delete the rest of the event queue
-				while ( break_event.type != GR_EVENT_TYPE_NONE ) 
-				    GrGetNextEventTimeout(&break_event, 0);
+	if( globs.mandelbrot ) {
+		for (y=0;y<globs.workBuffer->h;y++) {
+			for (x=blockx;x<blockx+w16+1;x++) {                        
+				p=fixpt(globs.xmin+x*xs);
+				q=fixpt(globs.ymin+y*ys);
+				xn=0;
+				x0=0;
+				y0=0;
+				i=0;
+				while ((mul(xn,xn)+mul(y0,y0))<fixpt(4) && ++i<STEPS)
+				{
+					xn=mul((x0+y0),(x0-y0)) +p;           
+					y0=mul(fixpt(2),mul(x0,y0)) +q;
+					x0=xn;
+				}
+				tot+=i;
+				if (i>=100) i=1;
+
+				ttk_pixel( globs.workBuffer, x, y, lookup_color( i ));
 			}
 		}
-}
+	} else {
+		a++;
+		p=1.5-sin(a/26.6)*3;
+		q=1.5-cos(a/31.15)*3;
+		for (y=0;y<=globs.workBuffer->h;y++) {
+			for (x=blockx;x<blockx+w16+1;x++) {
+				y0=globs.ymax-y*ys;
+				x0=globs.xmin+x*xs;
 
-// draw the current mandelbro set
-static void draw_mandel() {
-		GrCopyArea(mandel_wid, mandel_gc, 0, 0,
-			   screen_width, screen_height,
-			   level[current_depth].mandel_buffer, 0, 0, MWROP_SRCCOPY);
-			   
-		if (show_cursor) draw_cursor();
-}
+				for (i=1;i<STEPS && (ysq=y0*y0)+(xsq=x0*x0)<4;i++) {
+					y0=q+(x0*y0)+(x0*y0);
+					x0=p+xsq-ysq;
+				}
 
-// draw the selector rectangle
-static void draw_cursor() {
-	show_cursor=1;
-	cursor_x = level[current_depth].cursor_pos%selection_size;
-	cursor_y = level[current_depth].cursor_pos/selection_size;
-
-	// update the screen with last picture
-	GrCopyArea(mandel_wid, mandel_gc, 0, 0,
-			   screen_width, screen_height,
-			   level[current_depth].mandel_buffer, 0, 0, MWROP_SRCCOPY);	
-	GrSetGCForeground(mandel_gc, BLACK);
-	GrRect(mandel_wid, mandel_gc, cursor_x*selection_width-1, cursor_y*selection_height-1, selection_width+2, selection_height+2);
-	GrSetGCForeground(mandel_gc, WHITE);
-	GrRect(mandel_wid, mandel_gc, cursor_x*selection_width-2, cursor_y*selection_height-2, selection_width+4, selection_height+4);
-}
-
-// move cursor right
-static void move_right() {
-	level[current_depth].cursor_pos++;
-	if(level[current_depth].cursor_pos>(selection_size*selection_size-1)) level[current_depth].cursor_pos=0;
-	draw_cursor();
-}
-
-// move cursor left
-static void move_left() {
-	level[current_depth].cursor_pos--;
-	if(level[current_depth].cursor_pos<0) level[current_depth].cursor_pos=(selection_size*selection_size-1);
-	draw_cursor();
-}
-
-// as its name suggests
-static void zoom_in() {
-
-	double dx,dy;
-
-	current_depth++;
-	if (current_depth>max_depth) {
-		current_depth=max_depth;
-		ttk_click();
-		return;
+				//i=(i==STEPS) ? 1 : --i%255; 
+				ttk_pixel( globs.workBuffer, x, y, lookup_color( i ));
+			}
+		} 
 	}
-	if (current_depth%2) iterations=iterations*2;
-
-	if (xMax>xMin) dx = (xMax -xMin)/selection_size;
-	else dx = (xMin -xMax)/selection_size;
-	xMin+=cursor_x*dx;
-	xMax-=(selection_size-1-cursor_x)*dx;
-
-	if (yMax>yMin) dy = (yMax -yMin)/selection_size;
-	else dy = (yMin -yMax)/selection_size;
-	yMin+=(cursor_y)*dy;
-	yMax-=(selection_size-1-cursor_y)*dy;
-		
-	level[current_depth].cursor_pos=0;
-	cursor_x=0;
-	cursor_y=0;
 	
-	GrSetGCForeground(mandel_gc, BLACK);
-	GrFillRect(level[current_depth].mandel_buffer,mandel_gc,0,0,screen_width, screen_height);	
-	calculate_mandel();
+
+	globs.block++;
+	if( x>=globs.workBuffer->w )
+		globs.completed = 1;
+
 }
 
-// as its name suggests
-static void zoom_out() {
-
-	double dx,dy;
-
-	current_depth--;
-	if (current_depth<0) {
-		current_depth=0;
-		mandel_quit();
-		return;
-	}
-	if (!(current_depth%2)) iterations=iterations/2;
-
-	cursor_x = level[current_depth].cursor_pos%selection_size;
-	cursor_y = level[current_depth].cursor_pos/selection_size;
-
-	if (xMax>xMin) dx = xMax-xMin;
-	else dx = xMin -xMax;
-	xMin-=cursor_x*dx;
-	xMax+=(selection_size-1-cursor_x)*dx;
-
-	if (yMax>yMin) dy = yMax -yMin;
-	else dy = yMin -yMax;
-	yMin-=cursor_y*dy;
-	yMax+=(selection_size-1-cursor_y)*dy;
-
-	GrCopyArea(mandel_wid, mandel_gc, 0, 0,
-			   screen_width, screen_height,
-			   level[current_depth].mandel_buffer, 0, 0, MWROP_SRCCOPY);
-
-	draw_cursor();
-}
-
-// clean up & quit
-static void mandel_quit() {
-	int i;
-	rendering=0;
-	paused=0;
-	
-	pz_close_window (mandel_wid);
-#ifdef MANDELPOD_STATUS
-	pz_close_window (status_wid);
-#endif
-	for (i=0;i<max_depth+1;i++) 
-		GrDestroyWindow(level[i].mandel_buffer);
-	for (i=0;i<16;i++) 
-		GrDestroyWindow(status_image[i]);
-	GrDestroyGC(mandel_gc);
-	
-}
-
-// handle key events
-static int handle_event(GR_EVENT *event)
+void draw_mandelpod( PzWidget *wid, ttk_surface srf )
 {
-	 int ret = 0;
-    static int last_active_renderer = -1;
-
-    switch (event->type)
-    {
-		case GR_EVENT_TYPE_TIMER:
-			if( active_renderer != last_active_renderer ) {
-				if( active_renderer ) 
-					pz_draw_header("working...");
-				else
-					draw_header();
-				last_active_renderer = active_renderer;
-			}
-
-#ifdef MANDELPOD_STATUS
-			if (active_renderer) draw_busy_status();
-			else draw_idle_status();
-#endif
-			break;
-
-		case GR_EVENT_TYPE_KEY_DOWN:
-			switch (event->keystroke.ch)
-			{
-				case 'm': // Menu button.
-					mandel_quit();
-					break;
-				case '\r': // action button
-					zoom_in();
-					break;
-				case 'w': // rewind button
-					zoom_out();
-					break;
-				case 'f': // fast forward button
-					zoom_in();
-					break;
-				case 'l': // scroll wheel left
-					if (current_depth<max_depth) move_left();
-					else ret |= KEY_CLICK;
-					break;
-				case 'r': // scroll wheel right
-					if (current_depth<max_depth) move_right();
-					else ret |= KEY_CLICK;
-					break;
-				case 'd': // play button
-					paused=!(paused);
-					if (show_cursor) {
-						show_cursor=0;
-						draw_mandel();
-					}
-					if (paused) pause_drawing();
-				case 'h': // Hold button
-					ret |= KEY_UNUSED;
-					break;
-				default:
-					break;
-			}
-			break; 
-		default:
-			ret |= EVENT_UNUSED;
-			break;
-    }
-	return ret;
+	ttk_blit_image( globs.workBuffer, srf, 0, 0 );
 }
 
+int event_mandelpod (PzEvent *ev) 
+{
+	switch (ev->type) {
+	case PZ_EVENT_SCROLL:
+		TTK_SCROLLMOD( ev->arg, 5 );
+		if( ev->arg > 0 ) {
+			// move the cursor
+		} else {
+			// move the cursor
+		}
+		break;
 
-PZ_SIMPLE_MOD ("mandelpod", new_mandel_window, "/Extras/Demos/MandelPod")
+	case PZ_EVENT_BUTTON_UP:
+		switch( ev->arg ) {
+		case( PZ_BUTTON_MENU ):
+			pz_close_window (ev->wid->win);
+			break;
+
+		case( PZ_BUTTON_ACTION ):
+			force_redraw();
+			globs.paletteNo++;
+			if( globs.paletteNo > PALETTES ) globs.paletteNo = 0;
+			break;
+
+		case( PZ_BUTTON_NEXT ):
+			// zoom in
+			globs.xmin /=2;
+			globs.xmax /=2;
+			globs.ymin /=2;
+			globs.ymax /=2;
+			force_redraw();
+			break;
+
+		case( PZ_BUTTON_PREVIOUS ):
+			// zoom out
+			globs.xmin *=2;
+			globs.xmax *=2;
+			globs.ymin *=2;
+			globs.ymax *=2;
+			force_redraw();
+			break;
+
+		case( PZ_BUTTON_HOLD ):
+		case( PZ_BUTTON_PLAY ):
+		default:
+			break;
+
+		}
+		break;
+
+	case PZ_EVENT_TIMER:
+		if( !globs.completed ) render_frame();
+		ev->wid->dirty = 1;
+		pz_widget_set_timer( globs.widget, 100 );
+		break;
+
+	case PZ_EVENT_DESTROY:
+		break;
+	}
+	return 0;
+}
+
+static PzWindow *new_window( int mand )
+{
+	globs.window = pz_new_window( "MandelPod", PZ_WINDOW_NORMAL );
+	ttk_window_hide_header( globs.window );
+	globs.widget = pz_add_widget( globs.window, draw_mandelpod, event_mandelpod );
+	pz_widget_set_timer( globs.widget, 10 );
+	globs.mandelbrot = mand;
+	initialize_globals();
+	return pz_finish_window( globs.window );
+}
+
+PzWindow *new_mandelpod_window()
+{
+	return( new_window( 1 ));
+}
+
+PzWindow *new_juliapod_window()
+{
+	return( new_window( 0 ));
+}
+
+void cleanup_mandelpod() 
+{
+	if( !globs.initted ) return;
+	if( globs.window ) ttk_window_show_header( globs.window );
+	if( globs.workBuffer ) ttk_free_surface( globs.workBuffer );
+	globs.initted = 0;
+}
+
+void init_mandelpod() 
+{
+	globs.module = pz_register_module ("mandelpod", cleanup_mandelpod);
+	pz_menu_add_action ("/Extras/Demos/MandelPod", new_mandelpod_window);
+//	pz_menu_add_action ("/Extras/Demos/JuliaPod", new_juliapod_window);
+}
+
+PZ_MOD_INIT (init_mandelpod)
