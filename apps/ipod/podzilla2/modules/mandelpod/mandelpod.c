@@ -54,6 +54,7 @@ typedef struct mandglobs {
 
 	int displayCursor;
 	int cursorX, cursorY;
+	int xp;
 
 	double xmin, xmax, ymin, ymax;
 } mandglobs;
@@ -65,8 +66,10 @@ static mandglobs globs;
 #define fixpt(a) ((long)(((a)*(1<<FIXSIZE))))
 #define integer(a) (((a)+(1<<(FIXSIZE-1)))>>FIXSIZE)
 
-#define STEPS (64)	/* color step levels - more = slower */
-#define ZOOMBLOCKS (8)	/* number of blocks the screen is broken into */
+#define STEPS 		(64)	/* color step levels - more = slower */
+#define ZOOMBLOCKS 	(8)	/* number of blocks the screen is broken into */
+#define STRIPES		(32)	/* number of vertical stripes the screen is rendered in */
+#define XHAIR_SZ 	(5)	/* size of the center of the crosshair */
 
 static void force_redraw( void )
 {
@@ -74,6 +77,7 @@ static void force_redraw( void )
 	globs.completed = 0;
 	globs.started = 0;
 	globs.block = 0;
+	globs.xp = 0;
 }
 
 static void recenter_cursor( void )
@@ -180,12 +184,9 @@ static void render_frame( void )
 	xs=(globs.xmax-globs.xmin)/globs.workBuffer->w;
 	ys=(globs.ymax-globs.ymin)/globs.workBuffer->h;
 
-	w16 = globs.workBuffer->w/16;
+	w16 = globs.workBuffer->w/STRIPES;
 	blockx = globs.block * w16;
-
-	/* draw a scannerbar thingy */
-	ttk_fillrect( globs.workBuffer, blockx+w16, 0, blockx+w16+5, globs.workBuffer->h, ttk_makecol( 255, 0, 0 ));
-	ttk_fillrect( globs.workBuffer, blockx+w16+5, 0, blockx+w16+10, globs.workBuffer->h, ttk_makecol( 0, 255, 0 ));
+	globs.xp = blockx+w16;
 
 	if( globs.mandelbrot ) {
 		for (y=0;y<globs.workBuffer->h;y++) {
@@ -234,11 +235,17 @@ static void render_frame( void )
 		globs.completed = 1;
 }
 
-#define XHAIR_SZ 	(0)
 void draw_mandelpod( PzWidget *wid, ttk_surface srf )
 {
 	int x,y,w,h,w16, h16;
 	ttk_blit_image( globs.workBuffer, srf, 0, 0 );
+
+	if( !globs.completed && globs.started ) {
+		/* draw a scannerbar thingy */
+		ttk_fillrect( srf, globs.xp,   0, globs.xp+6, srf->h, ttk_makecol( 255, 0, 0 ));
+		ttk_fillrect( srf, globs.xp+2, 0, globs.xp+2, srf->h, ttk_makecol( 0, 255, 0 ));
+
+	}
 
 	if( globs.displayCursor ) {
 		w = globs.workBuffer->w;
