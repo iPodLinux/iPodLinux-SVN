@@ -800,7 +800,6 @@ ttk_color mc_color( cr, cg, cb,  mr, mg, mb )
 void init_vortex() 
 {
 	int p,q;
-	int i;
 
 	/* internal module name */
 	vglob.module = pz_register_module ("vortex", cleanup_vortex);
