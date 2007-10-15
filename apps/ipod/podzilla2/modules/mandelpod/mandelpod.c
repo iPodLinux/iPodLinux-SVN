@@ -169,12 +169,10 @@ static ttk_color lookup_color( int i )
 
 static void render_frame( void )
 {
+	long x0,y0,p,q,xn;
 	int blockx, w16;
 	double xs,ys;
 	register int i=0,x=0,y=0;
-	int xsq, ysq;
-	long a = 0;
-
 
 	if( !globs.started ) {
 		globs.started = 1;
@@ -188,7 +186,6 @@ static void render_frame( void )
 	globs.xp = blockx+w16;
 
 	if( globs.mandelbrot ) {
-		long x0,y0,p,q,xn,tot;
 		for (y=0;y<globs.workBuffer->h;y++) {
 			for (x=blockx;x<blockx+w16+1;x++) {
 				p=fixpt(globs.xmin+x*xs);
@@ -203,29 +200,28 @@ static void render_frame( void )
 					y0=mul(fixpt(2),mul(x0,y0)) +q;
 					x0=xn;
 				}
-				tot+=i;
 				if (i>=100) i=1;
 
 				ttk_pixel( globs.workBuffer, x, y, lookup_color( i ));
 			}
 		}
 	} else {
-		float x0,y0,p,q,xn,tot;
-		a++;
-		p=1.5-sin(a/26.6)*3;
-		q=1.5-cos(a/31.15)*3;
+		long xsq, ysq;
+		p = fixpt(globs.xmin + sin(-0.8));
+		q = fixpt(globs.ymin + cos(0.156));
 		for (y=0;y<=globs.workBuffer->h;y++) {
 			for (x=blockx;x<blockx+w16+1;x++) {
-				y0=globs.ymax-y*ys;
-				x0=globs.xmin+x*xs;
+				y0=fixpt(globs.ymax-y*ys);
+				x0=fixpt(globs.xmin+x*xs);
+				i = 0;
 
-				for (i=1;i<STEPS && (ysq=y0*y0)+(xsq=x0*x0)<4;i++) {
-					y0=q+(x0*y0)+(x0*y0);
-					x0=p+xsq-ysq;
+				while ((ysq=mul(y0,y0))+(xsq=mul(x0,x0))<fixpt(4) && ++i<STEPS) {
+					y0=mul(x0,y0)+mul(x0,y0) +q;
+					x0=xsq-ysq +p;
 				}
 
-				i=(i==STEPS) ? 1 : --i%255; 
-				ttk_pixel( globs.workBuffer, x, y, lookup_color( i ));
+				i = (i==STEPS) ? 1 : --i%255;
+				ttk_pixel( globs.workBuffer, x, y, lookup_color( i + 1));
 			}
 		} 
 	}
