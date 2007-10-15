@@ -207,8 +207,8 @@ static void render_frame( void )
 		}
 	} else {
 		long xsq, ysq;
-		p = fixpt(globs.xmin + sin(-0.8));
-		q = fixpt(globs.ymin + cos(0.156));
+		p = fixpt(-0.8);
+		q = fixpt(0.156);
 		for (y=0;y<=globs.workBuffer->h;y++) {
 			for (x=blockx;x<blockx+w16+1;x++) {
 				y0=fixpt(globs.ymax-y*ys);
