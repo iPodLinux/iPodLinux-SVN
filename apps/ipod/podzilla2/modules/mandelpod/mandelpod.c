@@ -170,7 +170,6 @@ static ttk_color lookup_color( int i )
 static void render_frame( void )
 {
 	int blockx, w16;
-	long x0,y0,p,q,xn,tot;
 	double xs,ys;
 	register int i=0,x=0,y=0;
 	int xsq, ysq;
@@ -189,6 +188,7 @@ static void render_frame( void )
 	globs.xp = blockx+w16;
 
 	if( globs.mandelbrot ) {
+		long x0,y0,p,q,xn,tot;
 		for (y=0;y<globs.workBuffer->h;y++) {
 			for (x=blockx;x<blockx+w16+1;x++) {
 				p=fixpt(globs.xmin+x*xs);
@@ -210,6 +210,7 @@ static void render_frame( void )
 			}
 		}
 	} else {
+		float x0,y0,p,q,xn,tot;
 		a++;
 		p=1.5-sin(a/26.6)*3;
 		q=1.5-cos(a/31.15)*3;
@@ -223,7 +224,7 @@ static void render_frame( void )
 					x0=p+xsq-ysq;
 				}
 
-				//i=(i==STEPS) ? 1 : --i%255; 
+				i=(i==STEPS) ? 1 : --i%255; 
 				ttk_pixel( globs.workBuffer, x, y, lookup_color( i ));
 			}
 		} 
@@ -423,7 +424,7 @@ void init_mandelpod()
 {
 	globs.module = pz_register_module ("mandelpod", cleanup_mandelpod);
 	pz_menu_add_action ("/Extras/Demos/MandelPod", new_mandelpod_window);
-//	pz_menu_add_action ("/Extras/Demos/JuliaPod", new_juliapod_window);
+	pz_menu_add_action ("/Extras/Demos/JuliaPod", new_juliapod_window);
 }
 
 PZ_MOD_INIT (init_mandelpod)
