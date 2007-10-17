@@ -235,12 +235,8 @@ static void render_frame( void )
 		}
 	} else {
 		long xsq, ysq;
-/*
-		p = fixpt(-0.8);
-		q = fixpt(0.156);
-*/
 		p = fixpt( globs.jxc );
-		p = fixpt( globs.jyc );
+		q = fixpt( globs.jyc );
 
 		for (y=0;y<=globs.workBuffer->h;y++) {
 			for (x=blockx;x<blockx+w16+1;x++) {
