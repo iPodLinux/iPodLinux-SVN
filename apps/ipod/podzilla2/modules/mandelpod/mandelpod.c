@@ -44,22 +44,38 @@ typedef struct mandglobs {
 	PzWidget *widget;
 	ttk_surface workBuffer;
 
+	/* have we started things up */
 	int initted;
 	int mandelbrot;
+	int julia_from_mandelbrot;
 
+
+	/* rendering flags */
 	int completed;
 	int started;
 	int paletteNo;
 	int block;
 
+	/* for the various GUI things */
 	int displayCursor;
 	int cursorX, cursorY;
-	int xp;
+	int swipe_xp;
 
-	double xmin, xmax, ymin, ymax;
+	/* window for the mandelbrot */
+	double mnd_xmin, mnd_xmax, mnd_ymin, mnd_ymax;
+
+	/* window for the julia */
+	double jul_xmin, jul_xmax, jul_ymin, jul_ymax;
+	double jxc, jyc;
+	
 } mandglobs;
 
 static mandglobs globs;
+
+/* Arfour is the Windows ME of the Astromech droids - Mike Nelson */
+/* Form a nerdier sentence... no, don't try... it's impossible - Kevin Murphy */
+/* (RiffTrax for Star Wars Episode 2) */
+
 
 #define FIXSIZE 25
 #define mul(a,b) ((((long long)a)*(b))>>FIXSIZE)
@@ -77,13 +93,29 @@ static void force_redraw( void )
 	globs.completed = 0;
 	globs.started = 0;
 	globs.block = 0;
-	globs.xp = 0;
+	globs.swipe_xp = 0;
 }
 
 static void recenter_cursor( void )
 {
 	globs.cursorX = 0;
 	globs.cursorY = 0;
+}
+
+static void reset_mand_zoom( void )
+{
+	globs.mnd_xmin = -2.5;
+	globs.mnd_xmax = 1.5;
+	globs.mnd_ymin = -1.5;
+	globs.mnd_ymax = 1.5;
+}
+
+static void reset_julia_zoom( void )
+{
+	globs.jul_xmin = -1.5;
+	globs.jul_xmax = 1.5;
+	globs.jul_ymin = -1.5;
+	globs.jul_ymax = 1.5;
 }
 
 static void initialize_globals( void )
@@ -97,17 +129,8 @@ static void initialize_globals( void )
 	force_redraw();
 	globs.initted = 1;
 
-	if( globs.mandelbrot ) {
-		globs.xmin = -2.5;
-		globs.xmax = 1.5;
-		globs.ymin = -1.5;
-		globs.ymax = 1.5;
-	} else {
-		globs.xmin = -1.5;
-		globs.xmax = 1.5;
-		globs.ymin = -1.5;
-		globs.ymax = 1.5;
-	}
+	reset_mand_zoom();
+	reset_julia_zoom();
 }
 
 // -- these should really be just simple lookup tables...
@@ -171,25 +194,30 @@ static void render_frame( void )
 {
 	long x0,y0,p,q,xn;
 	int blockx, w16;
-	double xs,ys;
+	double xs=0.0,ys=0.0;
 	register int i=0,x=0,y=0;
 
 	if( !globs.started ) {
 		globs.started = 1;
 	}
 
-	xs=(globs.xmax-globs.xmin)/globs.workBuffer->w;
-	ys=(globs.ymax-globs.ymin)/globs.workBuffer->h;
+	if( globs.mandelbrot ) {
+		xs=(globs.mnd_xmax-globs.mnd_xmin)/globs.workBuffer->w;
+		ys=(globs.mnd_ymax-globs.mnd_ymin)/globs.workBuffer->h;
+	} else {
+		xs=(globs.jul_xmax-globs.jul_xmin)/globs.workBuffer->w;
+		ys=(globs.jul_ymax-globs.jul_ymin)/globs.workBuffer->h;
+	}
 
 	w16 = globs.workBuffer->w/STRIPES;
 	blockx = globs.block * w16;
-	globs.xp = blockx+w16;
+	globs.swipe_xp = blockx+w16;
 
 	if( globs.mandelbrot ) {
 		for (y=0;y<globs.workBuffer->h;y++) {
 			for (x=blockx;x<blockx+w16+1;x++) {
-				p=fixpt(globs.xmin+x*xs);
-				q=fixpt(globs.ymin+y*ys);
+				p=fixpt(globs.mnd_xmin+x*xs);
+				q=fixpt(globs.mnd_ymin+y*ys);
 				xn=0;
 				x0=0;
 				y0=0;
@@ -207,12 +235,17 @@ static void render_frame( void )
 		}
 	} else {
 		long xsq, ysq;
+/*
 		p = fixpt(-0.8);
 		q = fixpt(0.156);
+*/
+		p = fixpt( globs.jxc );
+		p = fixpt( globs.jyc );
+
 		for (y=0;y<=globs.workBuffer->h;y++) {
 			for (x=blockx;x<blockx+w16+1;x++) {
-				y0=fixpt(globs.ymax-y*ys);
-				x0=fixpt(globs.xmin+x*xs);
+				y0=fixpt(globs.jul_ymax-y*ys);
+				x0=fixpt(globs.jul_xmin+x*xs);
 				i = 0;
 
 				while ((ysq=mul(y0,y0))+(xsq=mul(x0,x0))<fixpt(4) && ++i<STEPS) {
@@ -239,8 +272,8 @@ void draw_mandelpod( PzWidget *wid, ttk_surface srf )
 
 	if( !globs.completed && globs.started ) {
 		/* draw a scannerbar thingy */
-		ttk_fillrect( srf, globs.xp,   0, globs.xp+6, srf->h, ttk_makecol( 255, 0, 0 ));
-		ttk_fillrect( srf, globs.xp+2, 0, globs.xp+2, srf->h, ttk_makecol( 0, 255, 0 ));
+		ttk_fillrect( srf, globs.swipe_xp,   0, globs.swipe_xp+6, srf->h, ttk_makecol( 255, 0, 0 ));
+		ttk_fillrect( srf, globs.swipe_xp+2, 0, globs.swipe_xp+2, srf->h, ttk_makecol( 0, 255, 0 ));
 
 	}
 
@@ -316,59 +349,122 @@ int event_mandelpod (PzEvent *ev)
 			break;
 
 		case( PZ_BUTTON_NEXT ):
-			// field size
-			xsz = globs.xmax - globs.xmin;
-			ysz = globs.ymax - globs.ymin;
-			// cursor field size
-			wS = xsz/ZOOMBLOCKS;
-			hS = ysz/ZOOMBLOCKS;
+			if( globs.mandelbrot ) {
+				// field size
+				xsz = globs.mnd_xmax - globs.mnd_xmin;
+				ysz = globs.mnd_ymax - globs.mnd_ymin;
+				// cursor field size
+				wS = xsz/ZOOMBLOCKS;
+				hS = ysz/ZOOMBLOCKS;
 
-			// field center
-			xc = globs.xmin + (xsz/2);
-			yc = globs.ymin + (ysz/2);
+				// field center
+				xc = globs.mnd_xmin + (xsz/2);
+				yc = globs.mnd_ymin + (ysz/2);
 
-			// adjust the field center
-			xc -= globs.cursorX * wS;
-			yc -= globs.cursorY * hS;
+				// adjust the field center
+				xc -= globs.cursorX * wS;
+				yc -= globs.cursorY * hS;
 
-			// apply it!
-			globs.xmin = xc-(xsz/4);
-			globs.xmax = xc+(xsz/4);
-			globs.ymin = yc-(ysz/4);
-			globs.ymax = yc+(ysz/4);
+				// apply it!
+				globs.mnd_xmin = xc-(xsz/4);
+				globs.mnd_xmax = xc+(xsz/4);
+				globs.mnd_ymin = yc-(ysz/4);
+				globs.mnd_ymax = yc+(ysz/4);
+			} else {
+				// field size
+				xsz = globs.jul_xmax - globs.jul_xmin;
+				ysz = globs.jul_ymax - globs.jul_ymin;
+				// cursor field size
+				wS = xsz/ZOOMBLOCKS;
+				hS = ysz/ZOOMBLOCKS;
+
+				// field center
+				xc = globs.jul_xmin + (xsz/2);
+				yc = globs.jul_ymin + (ysz/2);
+
+				// adjust the field center
+				xc -= globs.cursorX * wS;
+				yc += globs.cursorY * hS;
+
+				// apply it!
+				globs.jul_xmin = xc-(xsz/4);
+				globs.jul_xmax = xc+(xsz/4);
+				globs.jul_ymin = yc-(ysz/4);
+				globs.jul_ymax = yc+(ysz/4);
+			}
 
 			recenter_cursor();
 			force_redraw();
 			break;
 
 		case( PZ_BUTTON_PREVIOUS ):
-			// field size
-			xsz = globs.xmax - globs.xmin;
-			ysz = globs.ymax - globs.ymin;
-			// cursor field size
-			wS = xsz/ZOOMBLOCKS;
-			hS = ysz/ZOOMBLOCKS;
+			if( globs.mandelbrot ) {
+				// field size
+				xsz = globs.mnd_xmax - globs.mnd_xmin;
+				ysz = globs.mnd_ymax - globs.mnd_ymin;
+				// cursor field size
+				wS = xsz/ZOOMBLOCKS;
+				hS = ysz/ZOOMBLOCKS;
 
-			// field center
-			xc = globs.xmin + (xsz/2);
-			yc = globs.ymin + (ysz/2);
+				// field center
+				xc = globs.mnd_xmin + (xsz/2);
+				yc = globs.mnd_ymin + (ysz/2);
 
-			// adjust the field center
-			xc -= globs.cursorX * wS;
-			yc -= globs.cursorY * hS;
+				// adjust the field center
+				xc -= globs.cursorX * wS;
+				yc -= globs.cursorY * hS;
 
-			// apply it!
-			globs.xmin = xc-(xsz);
-			globs.xmax = xc+(xsz);
-			globs.ymin = yc-(ysz);
-			globs.ymax = yc+(ysz);
+				// apply it!
+				globs.mnd_xmin = xc-(xsz);
+				globs.mnd_xmax = xc+(xsz);
+				globs.mnd_ymin = yc-(ysz);
+				globs.mnd_ymax = yc+(ysz);
+			} else {
+				// field size
+				xsz = globs.jul_xmax - globs.jul_xmin;
+				ysz = globs.jul_ymax - globs.jul_ymin;
+				// cursor field size
+				wS = xsz/ZOOMBLOCKS;
+				hS = ysz/ZOOMBLOCKS;
+
+				// field center
+				xc = globs.jul_xmin + (xsz/2);
+				yc = globs.jul_ymin + (ysz/2);
+
+				// adjust the field center
+				xc -= globs.cursorX * wS;
+				yc += globs.cursorY * hS;
+
+				// apply it!
+				globs.jul_xmin = xc-(xsz);
+				globs.jul_xmax = xc+(xsz);
+				globs.jul_ymin = yc-(ysz);
+				globs.jul_ymax = yc+(ysz);
+			}
 
 			recenter_cursor();
 			force_redraw();
 			break;
 
-		case( PZ_BUTTON_HOLD ):
 		case( PZ_BUTTON_PLAY ):
+			if( globs.mandelbrot ) {
+				globs.julia_from_mandelbrot = 1;
+				globs.mandelbrot = 0;
+				globs.jxc = globs.mnd_xmax - globs.mnd_xmin;
+				globs.jyc = globs.mnd_ymax - globs.mnd_ymin;
+				reset_julia_zoom();
+				force_redraw();
+				recenter_cursor();
+			} else {
+				if( globs.julia_from_mandelbrot ) {
+					globs.mandelbrot = 1;
+					globs.julia_from_mandelbrot = 0;
+					force_redraw();
+					recenter_cursor();
+				}
+			}
+			break;
+		case( PZ_BUTTON_HOLD ):
 		default:
 			break;
 
@@ -394,6 +490,10 @@ static PzWindow *new_window( int mand )
 	globs.widget = pz_add_widget( globs.window, draw_mandelpod, event_mandelpod );
 	pz_widget_set_timer( globs.widget, 5 );
 	globs.mandelbrot = mand;
+	if( !mand ) {
+		globs.jxc = -0.8;
+		globs.jyc = 0.156;
+	}
 	initialize_globals();
 	return pz_finish_window( globs.window );
 }
