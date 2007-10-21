@@ -1,6 +1,7 @@
 /*
  * about.c - About box module.
  * Copyright (c) 2005 Joshua Oreman
+ * Copyright (c) 2007 Courtney Cavin
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,11 +57,11 @@ static about_stat *new_stat()
 {
     about_stat *cur = about_stats;
     if (!cur) {
-        cur = about_stats = malloc (sizeof (about_stat));
+        cur = about_stats = calloc (1, sizeof (about_stat));
     } else {
         cur = about_stats;
         while (cur->next) cur = cur->next;
-        cur->next = malloc (sizeof (about_stat));
+        cur->next = calloc (1, sizeof (about_stat));
         cur = cur->next;
     }
     cur->next = 0;
@@ -248,6 +249,34 @@ static void count_modules (const char *name, const char *longname, const char *a
     number_of_modules++;
 }
 
+#define MAX_AUTHORS 40
+static const char *PZ_Authors[MAX_AUTHORS + 1];
+static void list_authors (const char *name, const char *longname, const char *author) 
+{
+	if (strcmp(author, "podzilla Team") && strcmp(author, _("Anonymous"))) {
+		int i;
+		for (i = 0; i < MAX_AUTHORS && PZ_Authors[i]; ++i) {
+			if (!strcmp(PZ_Authors[i], author))
+				return;
+		}
+		if (i < MAX_AUTHORS)
+			PZ_Authors[i] = author;
+	}
+}
+
+static void contributors()
+{
+	int i;
+	new_title("Developers");
+	for (i = 0; PZ_Developers[i]; ++i)
+		new_kvstat(PZ_Developers[i]);
+
+	new_title("Module Developers");
+	pz_module_iterate(list_authors);
+	for (i = 0; PZ_Authors[i]; ++i)
+		new_kvstat(PZ_Authors[i]);
+}
+
 static void mpd_stats()
 {
 	int sock, n, c;
@@ -375,6 +404,7 @@ static void populate_stats()
     do_partitions();
 
     mpd_stats();
+    contributors();
 }
 
 typedef struct {
@@ -411,11 +441,14 @@ static void about_render (ttk_surface srf, int width)
             break;
         case ABOUT_KV:
             ttk_text (srf, ttk_textfont, 5, y, col, cur->key);
-            if (ttk_text_width (ttk_textfont, cur->key) + ttk_text_width (ttk_textfont, cur->value) > width)
-                y += tfh;
+            if (cur->value[0]) {
+            	if (ttk_text_width (ttk_textfont, cur->key) +
+			ttk_text_width (ttk_textfont, cur->value) > width)
+                    y += tfh;
             
-            ttk_text (srf, ttk_textfont, width - ttk_text_width (ttk_textfont, cur->value) - 6,
+                ttk_text (srf, ttk_textfont, width - ttk_text_width (ttk_textfont, cur->value) - 6,
                       y, col, cur->value);
+            }
             y += tfh;
             break;
         }
@@ -521,10 +554,64 @@ static TWindow *new_about_window()
     return pz_finish_window (ret);
 }
 
+static TWindow *new_license_window()
+{
+	TWindow *ret;
+	char *buf = NULL;
+	char tmp[4096];
+	FILE *fp;
+	long len, cs;
+
+	if (!(fp = fopen(pz_module_get_datapath(module, "LICENSE"), "r")))
+		return TTK_MENU_DONOTHING;
+	fseek(fp, 0L, SEEK_END);
+	len = ftell(fp);
+	rewind(fp);
+	if (len == 0) {
+		cs = 0;
+		while (fgets(tmp, 4096, fp) != NULL) {
+			len = buf ? strlen(buf) : 0;
+			if (len + (long)strlen(tmp) > cs) {
+				cs += 8192;
+				if ((buf = realloc(buf, cs)) == NULL) {
+					pz_error(_("Memory allocation failed"));
+					fclose(fp);
+					return TTK_MENU_DONOTHING;
+				}
+			}
+			strncpy(buf + len, tmp, cs - len);
+		}
+		if (buf == NULL) {
+			pz_message(_("Empty file"));
+			fclose(fp);
+			return TTK_MENU_DONOTHING;
+		}
+	}
+	else {
+		cs = len;
+		if ((buf = malloc(len + 1)) == NULL) {
+			pz_error(_("Memory allocation failed"));
+			fclose(fp);
+			return TTK_MENU_DONOTHING;
+		}
+		while (cs > 0) cs -= fread(buf + (len - cs), 1, cs, fp);
+		*(buf + len) = '\0'; 
+	}
+	fclose(fp);
+
+	ret = pz_new_window("License", PZ_WINDOW_NORMAL);
+	ret->data = 0x12345678;
+	ttk_add_widget (ret, ttk_new_textarea_widget(ret->w, ret->h, buf,
+		ttk_textfont, ttk_text_height(ttk_textfont)+2));
+	free(buf);
+	return pz_finish_window (ret);
+}
+
 static void init_about() 
 {
     module = pz_register_module ("about", 0);
     pz_menu_add_action ("/Settings/About", new_about_window);
+    pz_menu_add_action_group ("/Settings/License", "#General", new_license_window);
 }
 
 PZ_MOD_INIT(init_about)
