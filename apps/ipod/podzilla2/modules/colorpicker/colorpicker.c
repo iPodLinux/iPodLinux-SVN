@@ -661,7 +661,7 @@ PzWindow * new_colormixer_window(void)
 
 void colorpicker_mod_init(void)
 {
-	pz_menu_add_action("/Extras/Demos/Color Mixer", new_colormixer_window);
+	pz_menu_add_action_group("/Extras/Demos/Color Mixer", "Tech", new_colormixer_window);
 }
 
 PZ_MOD_INIT(colorpicker_mod_init)

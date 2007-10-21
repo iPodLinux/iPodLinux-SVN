@@ -287,7 +287,7 @@ void init_truchet()
 	/* internal module name */
 	tglob.module = pz_register_module( "truchet", cleanup_truchet );
 
-	pz_menu_add_action("/Extras/Demos/Truchet", new_truchet_window_common );
+	pz_menu_add_action_group("/Extras/Demos/Truchet", "Toys", new_truchet_window_common );
 
 	tglob.timer = 0;
 	tglob.clicks = 0;
