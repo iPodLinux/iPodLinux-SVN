@@ -218,7 +218,7 @@ void _internal_save_screenshot( void )
 int ttk_get_event (int *arg) 
 {
 #define TIME 30
-    SDL_Event ev;
+    static SDL_Event ev;
     int ms, tev = TTK_NO_EVENT;
     unsigned int time = SDL_GetTicks();
     
@@ -2533,6 +2533,10 @@ ttk_surface ttk_new_surface (int w, int h, int bpp)
     ret = SDL_CreateRGBSurface (SDL_SWSURFACE,
 				w, h, BPP,
 				Rmask, Gmask, Bmask, Amask);
+    if (!ret) {
+	fprintf(stderr, "ttk_new_surface(SDL): %s\n", SDL_GetError());
+	abort();
+    }
     if (bpp == 2) {
 	palettize (ret);
 	SDL_FillRect (ret, 0, 0); // 0 = white
