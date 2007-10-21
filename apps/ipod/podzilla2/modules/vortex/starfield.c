@@ -311,7 +311,7 @@ static void init_starfield()
 
     //config = pz_load_config(pz_module_get_cfgpath(module, "starfield.conf"));
 
-    pz_menu_add_action ("/Extras/Demos/Starfield", new_starfield_window);
+    pz_menu_add_action_group ("/Extras/Demos/Starfield", "Toys", new_starfield_window);
 
     //pz_menu_add_setting("/Extras/Demos/Starfield/Settings/Start Stars", 1, config, stars_options);
     //pz_menu_add_setting("/Extras/Demos/Starfield/Settings/Start Speed", 2, config, speed_options);

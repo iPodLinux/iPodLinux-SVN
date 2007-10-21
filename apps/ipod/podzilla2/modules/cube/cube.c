@@ -503,7 +503,7 @@ PzWindow *new_cube_window( void )
 static void init_cube( void )
 {
 	module = pz_register_module("cube", NULL);
-	pz_menu_add_action("/Extras/Demos/Cube", new_cube_window);
+	pz_menu_add_action_group("/Extras/Demos/Cube", "Toys", new_cube_window);
 }
 
 PZ_MOD_INIT(init_cube)

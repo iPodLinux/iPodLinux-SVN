@@ -352,10 +352,7 @@ void init_lithpwrap()
 	lglob.module = pz_register_module( "lithp", cleanup_lithpwrap );
 
 	/* menu item display name */
-	pz_menu_add_action( "/Extras/Demos/Lithp Demo", new_lithpwrap_window );
-/*
-	pz_menu_add_action( "Lithp Demo", new_lithpwrap_window );
-*/
+	pz_menu_add_action_group( "/Extras/Demos/Lithp Demo", "Tech",  new_lithpwrap_window );
 
 	/* now the file browser hooks */
 	lithp_fbx.name = N_( "Open with Lithp" );

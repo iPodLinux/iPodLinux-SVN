@@ -273,7 +273,7 @@ PzWindow * new_mouse_demo_window()
 void mouse_module_init()
 {
 	module = pz_register_module("mouse", 0);
-	pz_menu_add_action("/Extras/Demos/Mouse Demo", new_mouse_demo_window);
+	pz_menu_add_action_group("/Extras/Demos/Mouse Demo", "Tech", new_mouse_demo_window);
 }
 
 PZ_MOD_INIT(mouse_module_init)
