@@ -25,19 +25,17 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#define PZ_COMPAT
 #include "pz.h"
 #include "matrixfont.h"
 
-static GR_WINDOW_ID		matrix_wid;
-static GR_WINDOW_INFO	matrix_info;
-static GR_GC_ID			matrix_gc;
-static GR_TIMER_ID		matrix_timer;
+static PzWindow		*matrix_wid;
+static ttk_color	background;
 
 /* Matrix typedef */
 typedef struct cmatrix {
 	int val;
 	int bold;
+	ttk_color col;
 } cmatrix;
 
 /* Global variables, unfortunately */
@@ -46,7 +44,7 @@ static int *length = NULL;                   /* Length of cols in each line */
 static int *spaces = NULL;                   /* spaces left to fill */
 static int *updates = NULL;                  /* What does this do again? :) */
 
-static int inverted = 0, running = 0, tmbeatcmp = 1, photo = 0;
+static int inverted = 0, running = 0, tmbeatcmp = 5, photo = 0;
 static int lines, cols;
 
 static void matrix_free_var(void)
@@ -77,11 +75,9 @@ static void matrix_free_var(void)
 	}
 }
 
-static void matrix_exit(void)
+static void matrix_cleanup(void)
 {
 	matrix_free_var();
-	GrDestroyGC(matrix_gc);
-	GrDestroyTimer(matrix_timer);
 	pz_close_window(matrix_wid);
 }
 
@@ -89,7 +85,7 @@ static void matrix_exit(void)
 static void matrix_die(char *msg)
 {
 	pz_error(msg);
-	matrix_exit();
+	matrix_cleanup();
 }
 
 /* nmalloc from nano by Big Gaute */
@@ -110,12 +106,10 @@ static void matrix_var_init(void)
 {
 	int i, j;
 
-	GrGetWindowInfo(matrix_wid, &matrix_info);
+	background = ttk_makecol(BLACK);
 
-	GrClearWindow(matrix_wid, GR_FALSE);
-
-	lines = (matrix_info.height/COL_H)+1;
-	cols = (matrix_info.width/COL_W)+1;
+	lines = (matrix_wid->h/COL_H)+1;
+	cols = (matrix_wid->w/COL_W)+1;
 
 	matrix = nmalloc(sizeof(cmatrix *) * (lines + 1));
 	for (i = 0; i <= lines; i++)
@@ -173,209 +167,176 @@ static void matrix_init(void)
 	matrix_var_init();
 }
 
-static void matrix_blit_char(const int row, const int col, int cha)
+static void matrix_blit_char(ttk_surface srf, const int r, const int c, int cha, ttk_color col)
 {
 	if (cha == 129)
 		cha = 0;
-	GrBitmap (matrix_wid, matrix_gc, COL_W*col, COL_H*row, COL_W, COL_H,
-	          matrix_code_font[cha]);
+	ttk_bitmap (srf, COL_W*c, COL_H*r, COL_W, COL_H,
+	          matrix_code_font[cha], col);
 }
 
-static void matrix_loop(void)
+static void matrix_draw(PzWidget *wid, ttk_surface srf)
 {
-	int i, j = 0, y, z, firstcoldone = 0;
-	static int count = 0;
-	GR_COLOR fg;
-		
-	count++;
-	if (count > 4)
-		count = 1;
-
+	ttk_color fg;
+	int i, j;
+	ttk_fillrect(matrix_wid->srf, 0,0, matrix_wid->w, matrix_wid->h, background);
 	for (j = 0; j <= cols - 1; j++) {
-		if (count > updates[j]) {
-			/* New style scrolling */
-			if (matrix[0][j].val == -1 && matrix[1][j].val == 129
-			    && spaces[j] > 0) {
-				matrix[0][j].val = -1;
-				spaces[j]--;
-			} else if (matrix[0][j].val == -1 && matrix[1][j].val == 129){
-				length[j] = (int) rand() % (lines - 3) + 3;
-				matrix[0][j].val = (int) rand() % (MAXCHARS-1) + 1;
-				if ((int) rand() % 2 == 1)
-					matrix[0][j].bold = 2;
-				spaces[j] = (int) rand() % lines + 1;
-			}
-			i = 0;
-			y = 0;
-			firstcoldone = 0;
-			while (i <= lines) {
-					/* Skip over spaces */
-				while (i <= lines && (matrix[i][j].val == 129 ||
-				       matrix[i][j].val == -1))
-					i++;
-
-				if (i > lines)
-					break;
-
-				/* Go to the head of this collumn */
-				z = i;
-				y = 0;
-				while (i <= lines && (matrix[i][j].val != 129 &&
-					matrix[i][j].val != -1)) {
-					i++;
-					y++;
-				}
-
-				if (i > lines) {
-					matrix[z][j].val = 129;
-					matrix[lines][j].bold = 1;
-					matrix_blit_char(z - 1, j, matrix[z][j].val);
-					continue;
-				}
-
-				matrix[i][j].val = (int) rand() % (MAXCHARS-1) + 1;
-
-				if (matrix[i - 1][j].bold == 2) {
-					matrix[i - 1][j].bold = 1;
-					matrix[i][j].bold = 2;
-				}
-
-				/* If we're at the top of the collumn and it's reached its
-				 * full length (about to start moving down), we do this
-				 * to get it moving. This is also how we keep segments 
-				 * not already growing from growing accidentally =>
-				 */
-				if (y > length[j] || firstcoldone) {
-					matrix[z][j].val = 129;
-					matrix[0][j].val = -1;
-				}
-				firstcoldone = 1;
-				i++;
-			}
-			for (i = 1; i <= lines; i++) {
-				if (matrix[i][j].val == 0 || matrix[i][j].bold == 2) {
-					fg = inverted ? BLACK : WHITE;
-					GrSetGCForeground(matrix_gc, fg);
-					if (matrix[i][j].val == 0)
-						matrix_blit_char(i - 1, j, 20);
-					else
-						matrix_blit_char(i - 1, j, matrix[i][j].val);
-				} else {
-					if (photo)
-						fg = inverted ?
-							GR_RGB(0, (int) rand() % 35 + 220, 0) :
-							GR_RGB(0, (int) rand() % 100 + 120, 0);
-					else
-						fg = inverted ? LTGRAY : GRAY;
-					GrSetGCForeground(matrix_gc, fg);
-					if (matrix[i][j].val % 2 == 0) {
-						if (photo)
-							fg = inverted ?
-								GR_RGB(0, (int) rand() % 35 + 220, 0) :
-								GR_RGB(0, (int) rand() % 100 + 120, 0);
-						else
-							fg = inverted ? GRAY : LTGRAY;
-						GrSetGCForeground(matrix_gc, fg);
-					}
-					if (matrix[i][j].val == 1) 
-						matrix_blit_char(i - 1, j, 2);
-					else if (matrix[i][j].val == -1)
-						matrix_blit_char(i - 1, j, 129);
-					else
-						matrix_blit_char(i - 1, j, matrix[i][j].val);
-				}
+		for (i = 1; i <= lines; i++) {
+			fg = matrix[i][j].col;
+			if (matrix[i][j].val == 0 || matrix[i][j].bold == 2) {
+				if (matrix[i][j].val == 0)
+					matrix_blit_char(srf, i - 1, j, 20, fg);
+				else
+					matrix_blit_char(srf, i - 1, j, matrix[i][j].val, fg);
+			} else {
+				if (matrix[i][j].val == 1) 
+					matrix_blit_char(srf, i - 1, j, 2, fg);
+				else if (matrix[i][j].val == -1)
+					matrix_blit_char(srf, i - 1, j, 129, fg);
+				else
+					matrix_blit_char(srf, i - 1, j, matrix[i][j].val, fg);
 			}
 		}
 	}
 }
 
-static void matrix_do_draw(void)
+static void matrix_update()
 {
-	pz_draw_header(_("Matrix"));
+	ttk_color fg;
+	int i, j = 0, y, z, firstcoldone = 0;
+	static int count = 0;
+
+	count++;
+	if (count > 4)
+		count = 1;
+
+	for (j = 0; j <= cols - 1; j++) {
+		if (count <= updates[j])
+			continue;
+		/* New style scrolling */
+		if (matrix[0][j].val == -1 && matrix[1][j].val == 129
+		    && spaces[j] > 0) {
+			matrix[0][j].val = -1;
+			spaces[j]--;
+		} else if (matrix[0][j].val == -1 && matrix[1][j].val == 129) {
+			length[j] = (int) rand() % (lines - 3) + 3;
+			matrix[0][j].val = (int) rand() % (MAXCHARS-1) + 1;
+			if ((int) rand() % 2 == 1)
+				matrix[0][j].bold = 2;
+			spaces[j] = (int) rand() % lines + 1;
+		}
+		i = 0;
+		y = 0;
+		firstcoldone = 0;
+		while (i <= lines) {
+				/* Skip over spaces */
+			while (i <= lines && (matrix[i][j].val == 129 ||
+			       matrix[i][j].val == -1))
+				i++;
+
+			if (i > lines)
+				break;
+
+			/* Go to the head of this collumn */
+			z = i;
+			y = 0;
+			while (i <= lines && (matrix[i][j].val != 129 &&
+				matrix[i][j].val != -1)) {
+				i++;
+				y++;
+			}
+
+			if (i > lines) {
+				matrix[z][j].val = 129;
+				matrix[lines][j].bold = 1;
+				//matrix_blit_char(z - 1, j, matrix[z][j].val, fg);
+				continue;
+			}
+
+			matrix[i][j].val = (int) rand() % (MAXCHARS-1) + 1;
+
+			if (matrix[i - 1][j].bold == 2) {
+				matrix[i - 1][j].bold = 1;
+				matrix[i][j].bold = 2;
+			}
+
+			/* If we're at the top of the collumn and it's reached its
+			 * full length (about to start moving down), we do this
+			 * to get it moving. This is also how we keep segments 
+			 * not already growing from growing accidentally =>
+			 */
+			if (y > length[j] || firstcoldone) {
+				matrix[z][j].val = 129;
+				matrix[0][j].val = -1;
+			}
+			firstcoldone = 1;
+			i++;
+		}
+		for (i = 1; i <= lines; i++) {
+			if (matrix[i][j].val == 0 || matrix[i][j].bold == 2) {
+				fg = inverted ? ttk_makecol(BLACK) : ttk_makecol(WHITE);
+			} else {
+				if (photo) {
+					fg = inverted ?
+						ttk_makecol(0, (int) rand() % 35 + 220, 0) :
+						ttk_makecol(0, (int) rand() % 100 + 120, 0);
+				}
+				else if (matrix[i][j].val % 2 != 0)
+					fg = inverted ? ttk_makecol(GREY) : ttk_makecol(DKGREY);
+				else
+					fg = inverted ? ttk_makecol(DKGREY) : ttk_makecol(GREY);
+			}
+			matrix[i][j].col = fg;
+		}
+	}
+	matrix_wid->dirty = 1;
 }
 
-static void matrix_timer_adjust(const int ammount)
+static void matrix_timer_adjust(const int amount)
 {
-	if (tmbeatcmp+ammount>=0) {
-		tmbeatcmp += ammount;
+	if (tmbeatcmp + amount >= 0) {
+		tmbeatcmp += amount;
 	}
 }
 
-static void matrix_clear_screen( void )
+static int matrix_handle_event(PzEvent * event)
 {
-	GR_GC_INFO gc_info;
-	GrGetGCInfo(matrix_gc, &gc_info);
-	GrSetGCForeground(matrix_gc, gc_info.background);
-	GrFillRect(matrix_wid, matrix_gc, 0, 0,
-	           matrix_info.width, matrix_info.height);
-}
-
-static int matrix_handle_event(GR_EVENT * event)
-{
-	GR_COLOR bg;
-	static int tmbeat=5;
+	static int tmbeat = 5;
 	int ret = 0;
 	switch( event->type )
 	{
-	case( GR_EVENT_TYPE_TIMER ):
+	case( PZ_EVENT_TIMER ):
 	tmbeat++;
-	if (tmbeat>tmbeatcmp) {
+	if (tmbeat > tmbeatcmp) {
 		if (running)
-			matrix_loop();
-		tmbeat=0;
+			matrix_update();
+		tmbeat = 0;
 	}
 	break;
 
-	case( GR_EVENT_TYPE_KEY_DOWN ):
-	switch( event->keystroke.ch )
+	case( PZ_EVENT_BUTTON_DOWN ):
+	switch( event->arg )
 	{
-		case 'h': /* hold */
-			running=0;
-			break;
-		case '\r':
-		case '\n': /* action */
+		case PZ_BUTTON_HOLD:
 			running = 0;
+			break;
+		case PZ_BUTTON_ACTION:
 			inverted = 1 - inverted;
-			bg = inverted ? WHITE : BLACK;
-			GrSetGCBackground(matrix_gc, bg);
-			matrix_clear_screen();
-			running = 1;
+			background = inverted ? ttk_makecol(WHITE) : ttk_makecol(BLACK);
+			event->wid->win->dirty = 1;
 			break;
-		case 'p': /* play/pause */
-		case 'd': /*or this */
-			running = 0;
-			//matrix_clear_screen();
-			matrix_free_var();
-			if (matrix_info.height == screen_info.rows) {
-				GrResizeWindow(matrix_wid, screen_info.cols,
-				               screen_info.rows - (HEADER_TOPLINE + 1));
-				GrMoveWindow(matrix_wid, 0, HEADER_TOPLINE + 1);
-				
-			} else {
-				GrResizeWindow(matrix_wid, screen_info.cols, screen_info.rows);
-				GrMoveWindow(matrix_wid, 0, 0);
-			}
-			matrix_var_init();
-			matrix_clear_screen();
-			matrix_loop();
-			running = 1;
+		case PZ_BUTTON_MENU:
+			matrix_cleanup();
 			break;
-		case 'l': /* CCW spin */
-			matrix_timer_adjust(1);
-			break;
-		case 'r': /* CW spin */
-			matrix_timer_adjust(-1);
-			break;
-		case 'm':
-			matrix_exit();
-			ret=1;
-		break;
 	}
 	break;
-	case( GR_EVENT_TYPE_KEY_UP ):
-	switch( event->keystroke.ch )
+	case( PZ_EVENT_SCROLL ):
+		matrix_timer_adjust(event->arg);
+		break;
+	case( PZ_EVENT_BUTTON_UP ):
+	switch( event->arg )
 	{
-		case 'h': /* hold */
+		case PZ_BUTTON_HOLD:
 			running=1;
 			break;
 	}
@@ -385,28 +346,28 @@ static int matrix_handle_event(GR_EVENT * event)
 	return ret;
 }
 
-void new_matrix_window( void )
+PzWindow *new_matrix_window( void )
 {
-	matrix_gc = pz_get_gc(1);
-	photo = (screen_info.bpp == 16) ? 1 : 0;
-		
-	GrSetGCUseBackground(matrix_gc, GR_TRUE);
-	GrSetGCBackground(matrix_gc, BLACK);
 
-	matrix_wid = pz_new_window(0, HEADER_TOPLINE + 1, screen_info.cols,
-	                           screen_info.rows - (HEADER_TOPLINE + 1), 
-	                           matrix_do_draw, matrix_handle_event);
+	PzWindow *ret = matrix_wid = pz_new_window("Matrix", PZ_WINDOW_NORMAL);
+	photo = (ttk_screen->bpp == 16) ? 1 : 0;
 
-	GrSelectEvents( matrix_wid, GR_EVENT_MASK_TIMER|
-	GR_EVENT_MASK_EXPOSURE|GR_EVENT_MASK_KEY_UP|GR_EVENT_MASK_KEY_DOWN);
+	ttk_window_hide_header(ret);
+	PzWidget *wid = pz_add_widget(ret, matrix_draw, matrix_handle_event);
 
-    matrix_timer = GrCreateTimer(matrix_wid, 20);
-
-	GrMapWindow(matrix_wid);
+	pz_widget_set_timer(wid, 20);
 
 	matrix_init();
-	matrix_clear_screen();
-	running=1;
+
+	running = 1;
+	return pz_finish_window(ret);
 }
 
-PZ_SIMPLE_MOD ("matrix", new_matrix_window, "/Extras/Demos/Matrix")
+static void init_matrix()
+{
+	pz_register_module("matrix", NULL);
+	pz_menu_add_action_group ("/Extras/Demos/Matrix", "Toys",
+			new_matrix_window);
+}
+
+PZ_MOD_INIT (init_matrix)

@@ -24,7 +24,7 @@
 
 #define MAXCHARS 63
 
-static GR_BITMAP matrix_code_font[MAXCHARS+1][10] = {
+static unsigned short matrix_code_font[MAXCHARS+1][10] = {
 	{0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 
 	 0x0000, 0x0000, 0x0000, 0x0000, 0x0000}, // blank
 
