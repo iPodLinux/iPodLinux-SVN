@@ -1392,7 +1392,7 @@ void podpaint_mod_init()
 {
 	podpaint_module = pz_register_module("podpaint", podpaint_free);
 	podpaint_arrowcur = ttk_get_cursor("arrow.png");
-	pz_menu_add_action_group("/Extras/Utilities/PodPaint", "Tools", new_podpaint_window);
+	pz_menu_add_action("/Extras/Applications/PodPaint", new_podpaint_window);
 	
 	podpaint_fbx.name = _("Open with PodPaint");
 	podpaint_fbx.makesub = podpaint_open_handler;
