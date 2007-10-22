@@ -282,4 +282,4 @@ void new_poddraw_window( void )
 	poddraw_cls();
 }
 
-PZ_SIMPLE_MOD ("poddraw", new_poddraw_window, "/Extras/Utilities/PodDraw")
+PZ_SIMPLE_MOD_GROUP ("poddraw", new_poddraw_window, "/Extras/Utilities/PodDraw", "Tools")
