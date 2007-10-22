@@ -14,14 +14,16 @@
 \def blue      #00f
 \def red       #f00
 \def green     #0f0
+\def yellow    #ff8
 
-\def gray      #90b2b2
-\def dkgray    #608d8d
-\def dkrgray   #507070
-\def ltgray    #c0eded
+\def ltgray    #ccffff
+\def gray      #00ffff
+\def dkgray    #448888
+\def dkrgray   #224444
 
 
-  header: bg => foamgreen, fg => black, line => gray, accent => midfoamgreen
+  header: bg => <dkgray to dkgray to gray>, fg => yellow, 
+	  line => gray, accent => midfoamgreen
 	  shine => ltfoamgreen, shadow => dkfoamgreen,
 	  gradient.top => ltfoamgreen,
 	  gradient.middle => foamgreen,
@@ -33,8 +35,8 @@
   window: bg => gray, fg => black, border => ltgray
 
     menu: bg => gray, fg => black, choice => black, icon => ltgray,
-	  hdrbg => <gray to black to gray>, hdrfg => ltfoamgreen,
-          selbg => <gray to dkfoamgreen to gray>, selfg => black,
+	  hdrbg => <gray to ltgray to gray>, hdrfg => black,
+          selbg => <gray to dkrgray to gray>, selfg => white,
 	  selchoice => white, 
 	  icon0 => black, icon1 => dkgray, icon2 => gray, icon3 => ltgray
 
@@ -45,12 +47,14 @@
 		bg.charging => <dkgray to gray>,
                 chargingbolt => dkfoamgreen
 
-    lock: border => dkfoamgreen, fill => black
+    lock: border => white, fill => black
 
-  scroll: box => black, bg => <horiz black to dkgray>+1,
-	  bar => <horiz dkgray to ltfoamgreen to dkgray>+1
+  scroll: box => gray,
+	  bar => <horiz gray to black to gray>+1*2
+	  bg => <horiz gray to dkgray to gray>
 
-  slider: border => black, bg => dkgray, full => <vert ltfoamgreen to foamgreen>
+  slider: border => black, bg => <vert black to dkrgray to black>,
+	  full => <black to gray to black>
 
  loadavg: bg => foamgreen, fg => dkfoamgreen, spike => ltfoamgreen
 
