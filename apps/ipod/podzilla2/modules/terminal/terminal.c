@@ -1008,7 +1008,7 @@ void terminal_mod_init(void)
 	f = pz_get_string_setting(terminal_conf,TERMINAL_CONF_FONTNAME);
 	s = pz_get_int_setting   (terminal_conf,TERMINAL_CONF_FONTSIZE);
 	terminal_font = ttk_get_font((f?f:"Fixed 6x13"), (s?s:13));
-	pz_menu_add_action("/Extras/Utilities/Terminal", new_terminal_window);
+	pz_menu_add_action_group("/Extras/Utilities/Terminal", "System", new_terminal_window);
 }
 
 PZ_MOD_INIT(terminal_mod_init)
