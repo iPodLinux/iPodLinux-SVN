@@ -388,7 +388,7 @@ void podwrite_mod_init(void)
 	/* This menu path is canonically "/Extras/Productivity/PodWrite", */
 	/* but it may be different in the svn repository depending on the */
 	/* current structure of podzilla2's Extras menu.                  */
-	pz_menu_add_action_group("/Extras/Utilities/PodWrite", "Tools", new_podwrite_window);
+	pz_menu_add_action("/Extras/Applications/PodWrite", new_podwrite_window);
 	
 	podwrite_fbx.name = N_("Open with PodWrite");
 	podwrite_fbx.makesub = podwrite_open_handler;

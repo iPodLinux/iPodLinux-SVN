@@ -597,6 +597,7 @@ main(int argc, char **argv)
 	pz_menu_sort ("/Extras/Demos");
 	pz_menu_sort ("/Extras/Games");
 	pz_menu_sort ("/Extras/Utilities");
+	pz_menu_sort ("/Extras/Applications");
 	if( pz_get_int_setting( pz_global_config, GROUPED_MENUS )) {
 		pz_menu_sort ("/Extras");
 		pz_menu_sort ("/");
