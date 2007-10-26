@@ -276,7 +276,7 @@ mpd_Song * mpd_songDup(mpd_Song * song);
 /* DIRECTORY STUFF */
 
 /* mpd_Directory
- * used to store info fro directory (right now that just the path)
+ * used to store info for directory (right now that just the path)
  */
 typedef struct _mpd_Directory {
 	char * path;
@@ -365,7 +365,7 @@ void mpd_freeInfoEntityInfo_st(void);
 /* returns 1 if the entity is set, 0 if not */
 unsigned int mpd_getNextInfoEntity_st(mpd_InfoEntity *, mpd_Connection *);
 
-/* fetches the currently seeletect song (the song referenced by status->song
+/* fetches the currently selected song (the song referenced by status->song
  * and status->songid*/
 void mpd_sendCurrentSongCommand(mpd_Connection * connection);
 
@@ -378,7 +378,7 @@ void mpd_sendPlaylistIdCommand(mpd_Connection * connection, int songId);
 /* use this to get the changes in the playlist since version _playlist_ */
 void mpd_sendPlChangesCommand(mpd_Connection * connection, long long playlist);
 
-/* recursivel fetches all songs/dir/playlists in "dir* (no metadata is 
+/* recursively fetches all songs/dir/playlists in "dir* (no metadata is 
  * returned) */
 void mpd_sendListallCommand(mpd_Connection * connection, const char * dir);
 
