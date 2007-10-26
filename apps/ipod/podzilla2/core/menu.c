@@ -238,7 +238,7 @@ void pz_menu_init()
 
     check_init();
     pz_menu_add_stub_group ("/Music", "Media");
-    pz_menu_add_stub ("/Music/Now Playing...");
+    pz_menu_add_stub_group ("/Now Playing", "Media");
     pz_menu_add_stub_group ("/Extras", "Utility");
     pz_menu_add_stub_group ("/File Browser", "Utility");
     pz_menu_add_stub_group ("/Settings", "~System");
