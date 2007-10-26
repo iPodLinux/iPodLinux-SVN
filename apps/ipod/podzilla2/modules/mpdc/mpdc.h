@@ -29,6 +29,7 @@ PzWindow *new_queue_menu(void);
 PzWindow *new_song_menu(void);
 PzWindow *new_playlist_menu(void);
 PzWindow *new_genre_menu(void);
+PzWindow *new_folder_menu(void);
 
 TWidget *populate_albums(char *search);
 TWidget *populate_songs(char *search);
