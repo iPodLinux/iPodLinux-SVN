@@ -84,10 +84,10 @@ void ttk_gfx_init()
 
 #ifdef IPOD
     SDL_ShowCursor (SDL_DISABLE);
-    SDL_EnableKeyRepeat (100, 100);
+    //SDL_EnableKeyRepeat (100, 100);
 #else
     palettize (ttk_screen->srf);
-    SDL_EnableKeyRepeat (100, 50);
+    //SDL_EnableKeyRepeat (100, 50);
     SDL_EnableUNICODE (1);
 #endif
 }
@@ -140,16 +140,6 @@ int ttk_get_rawevent (int *arg)
 	}
     }
     return TTK_NO_EVENT;
-}
-
-static int wait_event(SDL_Event *e, unsigned int ms)
-{
-    unsigned int time = SDL_GetTicks();
-    while (SDL_GetTicks() < time + ms) {
-    	if (SDL_PollEvent(e)) return 1;
-    	SDL_Delay(10);
-    }
-    return 0;
 }
 
 #ifndef IPOD
@@ -215,23 +205,34 @@ void _internal_save_screenshot( void )
 }
 #endif
 
+static int wait_event(SDL_Event *e, unsigned int ms)
+{
+    unsigned int time = SDL_GetTicks();
+    while (SDL_GetTicks() < time + ms) {
+    	if (SDL_PollEvent(e)) return 1;
+    	SDL_Delay(10);
+    }
+    return 0;
+}
+
 int ttk_get_event (int *arg) 
 {
 #define TIME 30
     static SDL_Event ev;
     int ms, tev = TTK_NO_EVENT;
-    unsigned int time = SDL_GetTicks();
+    unsigned int time = SDL_GetTicks() + TIME;
     
     *arg = 0;
 
     // We amalgamate adjacent scroll events to reduce lag.
-    while ((ms = TIME - (SDL_GetTicks() - time)) > 0 && wait_event (&ev, ms)) {
+    while ((ms = SDL_GetTicks()) < time && wait_event (&ev, time - ms)) {
 	switch (ev.type) {
 	case SDL_QUIT:
 	    ttk_quit();
 	    exit (0);
 	    break;
 
+#ifndef IPOD
 	// let's try to convert mouse movement to podzilla controls...
 	case SDL_MOUSEBUTTONUP:
 		switch( ev.button.button ) {
@@ -266,6 +267,7 @@ int ttk_get_event (int *arg)
 			break;
 		}
 	    	return (ev.type == SDL_MOUSEBUTTONDOWN)? TTK_BUTTON_DOWN : TTK_BUTTON_UP;
+#endif
 
 	// okay. now we'll do keyboard/ipod input
 	case SDL_KEYDOWN:
