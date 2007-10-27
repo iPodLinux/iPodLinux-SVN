@@ -1410,9 +1410,10 @@ TWidget *ttk_new_widget (int x, int y)
     ret->draw = ttk_widget_nodrawing;
     ret->button = ttk_widget_noaction_2;
     ret->down = ret->held = ret->scroll = ret->stap = ttk_widget_noaction_1;
+    ret->input = ttk_widget_noaction_1;
     ret->frame = ret->timer = ttk_widget_noaction_i0;
     ret->destroy = ttk_widget_noaction_0;
-    ret->data = 0;
+    ret->data = ret->data2 = 0;
 
     return ret;
 }
