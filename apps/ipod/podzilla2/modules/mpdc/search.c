@@ -17,15 +17,26 @@
  */
 
 #include <string.h>
+#include <sys/time.h>
+#include <math.h>
 #include "pz.h"
 #include "mpdc.h"
 
 /* ltinstw == local_ti_new_standard_text_widget */
 static TWidget *(*ltinstw)(int x, int y, int w, int h, int absheight,
 		char *dt, int (*callback)(TWidget *, char *));
+static int (*ltws)(TWidget * wid);
+
 
 static TWidget *lmenu;
 static TWindow *lwindow;
+
+static unsigned int get_ms(void)
+{
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return (unsigned int)((tv.tv_sec % 0x3fffff)*1000 + tv.tv_usec/1000);
+}
 
 static void queue_song(ttk_menu_item *item)
 {
@@ -89,10 +100,50 @@ static TWindow *open_song(ttk_menu_item *item)
 	return mpd_currently_playing();
 }
 
+static void spinner(ttk_surface srf, int x, int y)
+{
+#if YOU_NEED_TO_RECALCULATE
+	int px, py, vx, vy, tx, ty, zx, zy;
+	px = 17 * cos(angle), py = 17 * sin(angle);
+	vx = 17 * cos(M_PI/4 + angle), vy = 17 * sin(M_PI/4 + angle);
+	tx = 17 * cos(M_PI/2 + angle), ty = 17 * sin(M_PI/2 + angle);
+	zx = 17 * cos(M_PI/2 + M_PI/4 + angle), zy = 17 * sin(M_PI/2 + M_PI/4+ angle);
+
+	printf("(%d,%d), (%d,%d), (%d,%d), (%d,%d)\n",
+	         px,py,   vx,vy,   tx,ty,   zx,zy);
+#endif
+	static int pos;
+	int i;
+	struct cir {
+		int x, y;
+	} c[] = {
+		{ 17,  0},
+		{ 12, 12},
+		{  0, 17},
+		{-12, 12}
+	};
+
+	if (++pos == 8) pos = 0;
+
+	for (i = 0; i < sizeof(c) / sizeof(c[0]); ++i) {
+		int s = (i - pos)*31;
+		int t = (((i + 4) % 8) - pos)*31;
+		ttk_color col0 = ttk_makecol(s,s,s);
+		ttk_color col1 = ttk_makecol(t,t,t);
+		ttk_aafillellipse(srf, x + c[i].x, y + c[i].y, 5, 5, col0);
+		ttk_aafillellipse(srf, x - c[i].x, y - c[i].y, 5, 5, col1);
+	}
+}
+
+static void draw_loading(TWindow *win, ttk_surface srf)
+{
+	spinner(srf, win->w / 2, win->h / 2);
+}
+
 static void search_table(long table, const char *string)
 {
 	mpd_InfoEntity entity;
-	int i = 0;
+	unsigned int time = get_ms();
 
 	if (mpdc_tickle() < 0)
 		return;
@@ -105,8 +156,15 @@ static void search_table(long table, const char *string)
 	while ((mpd_getNextInfoEntity_st(&entity, mpdz))) {
 		mpd_Song *song = entity.info.song;
 		ttk_menu_item *item;
+		if (get_ms() - time > 100) {
+			time = get_ms();
+			ttk_menu_draw(lmenu, lwindow->srf);
+			draw_loading(lwindow, lwindow->srf);
+			ttk_draw_window(lwindow);
+			ttk_gfx_update(ttk_screen->srf);
+		}
 		if (entity.type != MPD_INFO_ENTITY_TYPE_SONG)
-				continue;
+			continue;
 		item = calloc(1, sizeof(ttk_menu_item));
 		item->data = strdup(song->file);
 		item->name = strdup(song->title?song->title:song->file);
@@ -114,8 +172,6 @@ static void search_table(long table, const char *string)
 		item->free_name = 1;
 		item->free_data = 1;
 		ttk_menu_append(lmenu, item);
-		if ((++i % 10) == 0)
-			ttk_gfx_update(lwindow->srf);
 	}
 	mpd_finishCommand(mpdz);
 	lmenu->held = held_handler;
@@ -134,6 +190,8 @@ static int initiate_search(TWidget *wid, char *search)
 	wid->destroy(wid);
 	ttk_remove_widget(wid->win, wid);
 	free(wid);
+	if (!search || !search[0])
+		return 0;
 
 	search_table(MPD_TABLE_TITLE, search);
 	search_table(MPD_TABLE_FILENAME, search);
@@ -150,14 +208,14 @@ PzWindow *new_search_window()
 
 	lmenu = wid = ttk_new_menu_widget(NULL, ttk_menufont,
 			ttk_screen->w - ttk_screen->wx,
-			ttk_screen->h - ttk_screen->wy - sheight);
+			ttk_screen->h - ttk_screen->wy);
 	ttk_add_widget(ret, wid);
 
 	wid = ltinstw(0, ttk_screen->h - ttk_screen->wy - sheight,
 			ttk_screen->w - ttk_screen->wx, sheight,
 			1, "", initiate_search);
 	ttk_add_widget(ret, wid);
-	ti_widget_start(wid);
+	ltws(wid);
 
 	ret->data = 0x12345678;
 	return pz_finish_window(ret);
@@ -165,8 +223,10 @@ PzWindow *new_search_window()
 
 int search_available()
 {
+	if (!ltws)
+		ltws = pz_module_softdep("tiwidgets", "ti_widget_start");
 	if (!ltinstw)
 		ltinstw = pz_module_softdep("tiwidgets",
 				"ti_new_standard_text_widget");
-	return (!!ltinstw);
+	return (!!ltinstw & !!ltws);
 }
