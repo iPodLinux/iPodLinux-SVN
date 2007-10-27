@@ -30,8 +30,11 @@ PzWindow *new_song_menu(void);
 PzWindow *new_playlist_menu(void);
 PzWindow *new_genre_menu(void);
 PzWindow *new_folder_menu(void);
+PzWindow *new_search_window(void);
 
 TWidget *populate_albums(char *search);
 TWidget *populate_songs(char *search);
+
+int search_available();
 
 #endif /* _MPDC_H_ */
