@@ -1,0 +1,7 @@
+menu "Libraries"
+config MODULE_pthreadstubs
+    tristate "pthreads stubs"
+    default n
+    --- help ---
+     Pthread stubs to satisfy libstdc++. These will put up an error if
+     you actually try to use them.
