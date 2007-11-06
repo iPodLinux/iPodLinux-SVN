@@ -140,7 +140,7 @@ static void draw_loading(TWindow *win, ttk_surface srf)
 	spinner(srf, win->w / 2, win->h / 2);
 }
 
-static void search_table(long table, const char *string)
+static void search_table(long table, const char *string, unsigned int until)
 {
 	mpd_InfoEntity entity;
 	unsigned int time = get_ms();
@@ -158,6 +158,7 @@ static void search_table(long table, const char *string)
 		ttk_menu_item *item;
 		if (get_ms() - time > 100) {
 			time = get_ms();
+			if (time > until) break;
 			ttk_menu_draw(lmenu, lwindow->srf);
 			draw_loading(lwindow, lwindow->srf);
 			ttk_draw_window(lwindow);
@@ -184,6 +185,7 @@ static void search_table(long table, const char *string)
 static int initiate_search(TWidget *wid, char *search)
 {
 	char title[256];
+	unsigned int time;
 	sprintf(title, "\"%s\"", search);
 	ttk_window_title(lwindow, title);
 
@@ -193,10 +195,11 @@ static int initiate_search(TWidget *wid, char *search)
 	if (!search || !search[0])
 		return 0;
 
-	search_table(MPD_TABLE_TITLE, search);
-	search_table(MPD_TABLE_FILENAME, search);
-	search_table(MPD_TABLE_ALBUM, search);
-	search_table(MPD_TABLE_ARTIST, search);
+	time = get_ms() + 5000;
+	search_table(MPD_TABLE_TITLE, search, time);
+	search_table(MPD_TABLE_FILENAME, search, time);
+	search_table(MPD_TABLE_ALBUM, search, time);
+	search_table(MPD_TABLE_ARTIST, search, time);
 	return 0;
 }
 
