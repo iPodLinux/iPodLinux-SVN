@@ -559,7 +559,8 @@ TWidget *pz_browser_get_actions (const char *path)
     TWidget *ret = ttk_new_menu_widget (empty_menu, ttk_menufont, ttk_screen->w - ttk_screen->wx,
 					ttk_screen->h - ttk_screen->wy);
     // add default handlers XXX
-    empty_menu[1].data = empty_menu[2].data = empty_menu[3].data = empty_menu[4].data = (char *)path;
+    empty_menu[1].data = empty_menu[2].data = empty_menu[3].data = empty_menu[4].data = strdup((char *)path);
+    empty_menu[1].free_data = 1;
     if (stat (path, &st) >= 0) {
 	if (st.st_mode & S_IFDIR) {
 	    ttk_menu_append (ret, empty_menu + 1);
