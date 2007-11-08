@@ -38,6 +38,7 @@
 #else
 #define _GNU_SOURCE /* for RTLD_DEFAULT */
 #include <dlfcn.h>
+#include <sys/param.h>	/* for getcwd() */
 #endif
 
 int __pz_builtin_number_of_init_functions;
@@ -138,6 +139,13 @@ static int mount_pod (PzModule *mod)
 static void load_modinf (PzModule *mod) 
 {
     char *buf = malloc (512);
+#ifdef IPOD
+    char *confdir = "/etc/podzilla";
+    char *moddir = "/etc/podzilla/modules";
+#else
+    char *confdir = malloc( MAXPATHLEN + 10 );
+    char *moddir = malloc( MAXPATHLEN + 20 );
+#endif
     FILE *fp;
 
     if (!mod->podpath) { // static mod, no POD
@@ -249,19 +257,26 @@ static void load_modinf (PzModule *mod)
     }
 
     // Get the config path, now that we know the name.
-#ifdef IPOD
-#define CONFDIR "/etc/podzilla"
-#else
-#define CONFDIR "config"
+#ifndef IPOD
+    confdir = getcwd( mod->cfgpath, MAXPATHLEN );
+    confdir = strcat( confdir, "/config" );
+    sprintf( moddir, "%s/modules", confdir );
 #endif
-    mod->cfgpath = malloc (strlen (CONFDIR "/modules/") + strlen (mod->name) + 1);
-    sprintf (mod->cfgpath, "%s/modules/%s", CONFDIR, mod->name);
-    mkdir (CONFDIR, 0755);
-    mkdir (CONFDIR "/modules", 0755);
-    if (mkdir (mod->cfgpath, 0755) < 0 && errno != EEXIST) {
+
+    mod->cfgpath = malloc( strlen( confdir ) + strlen( mod->name ) + 1);
+    sprintf (mod->cfgpath, "%s/modules/%s", confdir, mod->name);
+
+    mkdir( confdir, 0755 ); /* make the main directory */
+    mkdir( moddir, 0755 );  /* make the modules directory */
+    if (mkdir (mod->cfgpath, 0755) < 0 && errno != EEXIST) { /* make the module subdir */
 	pz_warning (_("Unable to create %s's config dir %s: %s"), mod->name, mod->cfgpath,
 		    strerror (errno));
     }
+
+#ifndef IPOD
+    free( confdir );
+    free( moddir );
+#endif
 
     free (buf);
 }
