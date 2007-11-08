@@ -17,12 +17,66 @@
  */
 
 #include "pz.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 static PzModule *module;
+#define inl(a) (*(volatile unsigned long *) (a))
+#define outl(a,b) (*(volatile unsigned long *) (b) = (a))
+
+#define CLOCK_POLICY   0x60006020
+#define CLOCK_SCALER  0x60006034
+#define CPU_CONTROL	0x60007004
+#define PLL_CONTROL   0x70000020
+
+#define KEYPAD 0x7000c104
+#define LCD_CONTROL 0x70003000
+#define CLOCK_CONTROL 0x6000600c
 
 static void ipod_goto_sleep(void)
 {
-	/* Nothing happening yet */
+#ifndef IPOD
+	puts("Putting your computer to sleep...  Just kidding.");
+#else
+	long hw_ver = pz_ipod_get_hw_version() >> 16;
+	if (hw_ver < 0x4 || hw_ver == 0x5 || hw_ver == 0x6)
+		return;
+	int kbfd = open("/dev/misc/wheel", O_RDONLY | O_NONBLOCK);
+	unsigned long control = inl(CPU_CONTROL);
+	unsigned long pll_power = inl(PLL_CONTROL);
+	unsigned long clock_scaler = inl(CLOCK_SCALER);
+	unsigned long clock_policy = inl(CLOCK_POLICY);
+	unsigned long lcd_control = inl(LCD_CONTROL);
+	unsigned long clock_control = inl(CLOCK_CONTROL);
+	outl(0x0, CPU_CONTROL);
+	outl(pll_power | (1 << 30), PLL_CONTROL);
+	outl(0xf0000000, CLOCK_POLICY);
+	/* 32kHz = (32kHz / 1) * 1 */
+	outl(0xaa000000, CLOCK_SCALER);
+	if (hw_ver == 0x4 || hw_ver == 0x7)
+		outl(0x100 << 3, 0x6000d824);
+	} else if (hw_ver == 0xb || hw_ver == 0xc) {
+		outl(0x100 << 3, 0x6000d824);
+		outl(0x100 << 7, 0x6000d12c);
+	}
+
+	unsigned short ev;
+	while (read(kbfd, &ev, 2) < 2);
+
+	if (hw_ver == 0x04 || hw_ver == 0x7)
+		outl(0x101 << 3, 0x6000d824);
+	} else if (hw_ver == 0xb || hw_ver == 0xc) {
+		outl(0x101 << 3, 0x6000d824);
+		outl(0x101 << 7, 0x6000d12c);
+	}
+
+	outl(control, CPU_CONTROL);
+	outl(pll_power, PLL_CONTROL);
+	outl(clock_policy, CLOCK_POLICY);
+	outl(clock_scaler, CLOCK_SCALER);
+	close(kbfd);
+#endif
 }
 
 
