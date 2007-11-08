@@ -576,7 +576,8 @@ TWidget *pz_browser_get_actions (const char *path)
     }
     while (cur) {
 	if (cur->pred && (*(cur->pred))(path)) {
-	    cur->action->data = (char *)path;
+	    cur->action->data = strdup((char *)path);
+	    cur->action->free_data = 1;
 	    ttk_menu_append (ret, cur->action);
 	}
 	cur = cur->next;
