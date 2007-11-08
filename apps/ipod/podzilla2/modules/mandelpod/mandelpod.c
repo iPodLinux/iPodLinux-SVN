@@ -216,7 +216,6 @@ static ttk_color determine_color_4( int i, ttk_color c1, ttk_color c2, ttk_color
 /* the lookups from value [0..STEPS] to ttk_color */
 static ttk_color lookup_color( int i )
 {
-	gradient_node * gn = NULL;
 	ttk_color c = 0;
 	int r=0, g=0, b=0;
 
@@ -333,6 +332,7 @@ static void render_math_stripe( void )
 		long xsq, ysq;
 		p = fixpt( globs.jxc );
 		q = fixpt( globs.jyc );
+		i = 0;
 
 		for (y=0;y<=globs.workBuffer->h;y++) {
 			for (x=blockx;x<blockx+w16+1;x++) {
@@ -345,7 +345,13 @@ static void render_math_stripe( void )
 					x0=xsq-ysq +p;
 				}
 
-				i = (i==STEPS) ? 1 : --i%STEPS;
+				//i = (i==STEPS) ? 1 : --i%STEPS; // warnings
+				if( i==STEPS ) { // okay
+					i = 1;
+				} else {
+					i--;
+					i %= STEPS;
+				}
 				ttk_pixel( globs.workBuffer, x, y, lookup_color( i + 1));
 			}
 		} 
@@ -492,8 +498,6 @@ static void center_mandelbrot_on_julia( void )
 /* handle the TTK (user input) events, and timer event */
 int event_mandelpod (PzEvent *ev) 
 {
-	double xsz=0, ysz=0, wS=0, hS=0, xc=0, yc=0;
-
 	switch (ev->type) {
 	case PZ_EVENT_SCROLL:
 		TTK_SCROLLMOD( ev->arg, 5 );
