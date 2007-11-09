@@ -27,7 +27,7 @@ static PzModule *module;
 
 #define CLOCK_POLICY   0x60006020
 #define CLOCK_SCALER  0x60006034
-#define CPU_CONTROL	0x60007004
+#define CPU_CONTROL	0x60007000
 #define PLL_CONTROL   0x70000020
 
 #define KEYPAD 0x7000c104
@@ -54,7 +54,7 @@ static void ipod_goto_sleep(void)
 	outl(0xf0000000, CLOCK_POLICY);
 	/* 32kHz = (32kHz / 1) * 1 */
 	outl(0xaa000000, CLOCK_SCALER);
-	if (hw_ver == 0x4 || hw_ver == 0x7)
+	if (hw_ver == 0x4 || hw_ver == 0x7) {
 		outl(0x100 << 3, 0x6000d824);
 	} else if (hw_ver == 0xb || hw_ver == 0xc) {
 		outl(0x100 << 3, 0x6000d824);
@@ -64,7 +64,7 @@ static void ipod_goto_sleep(void)
 	unsigned short ev;
 	while (read(kbfd, &ev, 2) < 2);
 
-	if (hw_ver == 0x04 || hw_ver == 0x7)
+	if (hw_ver == 0x4 || hw_ver == 0x7) {
 		outl(0x101 << 3, 0x6000d824);
 	} else if (hw_ver == 0xb || hw_ver == 0xc) {
 		outl(0x101 << 3, 0x6000d824);
