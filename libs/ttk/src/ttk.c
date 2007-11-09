@@ -763,6 +763,7 @@ int ttk_run()
 	/*** Draw header, if necessary ***/
 
 	if ((ttk_dirty & TTK_DIRTY_HEADER) && win->show_header) {
+	    const char * displayTitle = ttk_filter_sorting_characters( win->title );
 	    /* Clear it */
 	    ttk_ap_fillrect (s->srf, ttk_ap_get ("header.bg"), 0, 0, s->w, s->wy + ttk_ap_getx ("header.line") -> spacing);
 
@@ -777,18 +778,17 @@ int ttk_run()
 	    case( TTK_TEXT_LEFT ):
 		    break;
 	    case( TTK_TEXT_RIGHT ):
-		    textpos -= ttk_text_width( ttk_menufont, win->title);
+		    textpos -= ttk_text_width( ttk_menufont, displayTitle);
 		    break;
 	    case( TTK_TEXT_CENTER ):
 	    default:
-		    textpos -= (ttk_text_width( ttk_menufont, win->title)>>1);
+		    textpos -= (ttk_text_width( ttk_menufont, displayTitle)>>1);
 		    break;
 	    }
 
 	    ttk_text (s->srf, ttk_menufont, textpos,
 		      (s->wy - ttk_text_height (ttk_menufont)) / 2,
-		      ttk_ap_getx ("header.fg") -> color,
-		      win->title);
+		      ttk_ap_getx ("header.fg") -> color, displayTitle );
 
 	    /* Draw line */
 	    ttk_ap_hline (s->srf, ttk_ap_get ("header.line"), 0, s->w, s->wy);

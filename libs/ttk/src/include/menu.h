@@ -94,6 +94,8 @@ void ttk_menu_set_closeable (TWidget *_this, int closeable);
 void ttk_menu_set_i18nable (TWidget *_this, int i18nable);
 void ttk_menu_sort (TWidget *_this);
 void ttk_menu_sort_groups (TWidget *_this);
+const char * ttk_filter_sorting_characters( const char * nam );
+
 
 void ttk_menu_sort_my_way (TWidget *_this, int (*cmp)(const void *, const void *));
 void ttk_menu_sort_my_way_groups (TWidget *_this, int (*cmp)(const void *, const void *));
