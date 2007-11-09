@@ -31,7 +31,7 @@
   window: bg => gray, fg => black, border => ltgray
 
     menu: bg => gray, fg => black, choice => black, icon => ltgray,
-	  hdrbg => dkrgray+7, hdrfg => yellow,
+	  hdrbg => <dkrgray to dkrgray to gray>, hdrfg => yellow,
           selbg => dkgray, selfg => black,
 	  selchoice => white, 
 	  icon0 => black, icon1 => dkgray, icon2 => gray, icon3 => ltgray
@@ -45,7 +45,7 @@
 
     lock: border => dkyellow, fill => black
 
-  scroll: box => black, bg => dkgray +1, bar => <horiz ltyellow to yellow>+1
+  scroll: box => black, bg => dkgray, bar => <horiz ltyellow to yellow>+1
 
   slider: border => black, bg => dkgray, full => <vert ltyellow to yellow>
 

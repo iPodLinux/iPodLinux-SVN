@@ -46,7 +46,7 @@
 	  border => black, cursor => white
 
     menu: bg => gray, fg => black, choice => white, icon => black,
-	  hdrbg => blue, hdrfg => black,
+	  hdrbg => <blue to blue>+2, hdrfg => white,
           selbg => black, selfg => white,
 	  selchoice => blue, icon0 => black, icon1 => #555555, icon2 => #aaaaaa, icon3 => white
 
