@@ -417,11 +417,16 @@ usage( char * exename )
 	fprintf( stderr, "Options:\n" );
 	fprintf( stderr, "  -g gen    set simulated ipod generation.\n" );
 	fprintf( stderr, "            \"gen\" can be one of:\n" );
-	fprintf( stderr, "                1g, 2g, 3g, 4g, 5g, 6g, scroll, touch,\n" );
-	fprintf( stderr, "                dock, mini, photo, color, nano, video, classic\n" );
+	fprintf( stderr, "                1g, 2g, 3g, 4g, 5g, 6g, scroll,\n" );
+	fprintf( stderr, "                scroll, dock, mini,\n" );
+	fprintf( stderr, "                nano, nano1g, nano2g, nano3g,\n" );
+	fprintf( stderr, "                photo, color, video,\n" );
+	fprintf( stderr, "                classic, touch\n" );
 	fprintf( stderr, "\n" );
-	fprintf( stderr, "  -2  W H   use a screen W by H, 2bpp (monochrome)\n" );
-	fprintf( stderr, "  -16 W H   use a screen W by H, 16bpp (color)\n" );
+	fprintf( stderr, "  -2 W H     \tuse a screen W by H, 2bpp (monochrome)\n" );
+	fprintf( stderr, "  -mono W H  \tuse a screen W by H, 2bpp (monochrome)\n" );
+	fprintf( stderr, "  -16 W H    \tuse a screen W by H, 16bpp (color)\n" );
+	fprintf( stderr, "  -color W H \tuse a screen W by H, 16bpp (color)\n" );
 	fprintf( stderr, "\n" );
 
 	fprintf( stderr, "default resolution and color are for 1g-4g mono iPod\n" );
@@ -462,7 +467,6 @@ main(int argc, char **argv)
 				if( !strcmp( argv[2], "6g" ))     ttk_set_emulation( 320, 240, 16 );
 
 				if( !strcmp( argv[2], "scroll" )) ttk_set_emulation( 160, 128, 2 );
-				if( !strcmp( argv[2], "touch" ))  ttk_set_emulation( 160, 128, 2 );
 				if( !strcmp( argv[2], "dock" ))   ttk_set_emulation( 160, 128, 2 );
 				if( !strcmp( argv[2], "mini" ))	  ttk_set_emulation( 138, 110, 2 );
 
@@ -475,6 +479,8 @@ main(int argc, char **argv)
 				if( !strcmp( argv[2], "nano1g" )) ttk_set_emulation( 176, 132, 16 );
 				if( !strcmp( argv[2], "nano2g" )) ttk_set_emulation( 320, 240, 16 );
 				if( !strcmp( argv[2], "nano3g" )) ttk_set_emulation( 320, 240, 16 );
+
+				if( !strcmp( argv[2], "touch" ))  ttk_set_emulation( 320, 480, 16 );
 
 			/* remove these four eventually... */
 			} else if (!strcmp (argv[1], "-photo")) {
@@ -491,14 +497,16 @@ main(int argc, char **argv)
 				exit( -42 );
 
 			/* arbitrary size... */
-			} else if (!strcmp (argv[1], "-2")) {
+			} else if (    (!strcmp (argv[1], "-2"))
+				    || (!strcmp (argv[1], "-mono")) ) {
 				if( argc != 4 ) {
 					usage( argv[0] );
 					exit( -2 );
 				}
 				ttk_set_emulation ( atoi( argv[2] ),
 						    atoi( argv[3] ), 2 );
-			} else if (!strcmp (argv[1], "-16")) {
+			} else if (    (!strcmp (argv[1], "-16"))
+				    || (!strcmp (argv[1], "-color")) ) {
 				if( argc != 4 ) {
 					usage( argv[0] );
 					exit( -2 );
