@@ -83,7 +83,7 @@ static void MakeVIXI (TWidget *this)
 	~string		sorts last
 	_string		sorts, is hidden
 */
-const char * _ttk_clean_txt( const char * nam )
+const char * ttk_filter_sorting_characters( const char * nam )
 {
     if( !nam ) return( 0 );
     if( (nam[0] == '#') || (nam[0] == '~') || (nam[0] == '_') )
@@ -182,9 +182,9 @@ static void render (TWidget *this, int first, int n)
 	}
 
         if (data->i18nable)
-            truncname = strdup( _ttk_clean_txt( (gettext (data->menu[xi]->name))) );
+            truncname = strdup( (const char *)ttk_filter_sorting_characters( (gettext (data->menu[xi]->name))) );
         else
-            truncname = strdup( _ttk_clean_txt(data->menu[xi]->name) );
+            truncname = strdup( (const char *)ttk_filter_sorting_characters(data->menu[xi]->name) );
 
         if (ttk_text_width (data->font, truncname) > data->menu[xi]->linewidth) {
 	    int len = strlen(truncname);
@@ -224,11 +224,11 @@ static void render (TWidget *this, int first, int n)
         if (data->i18nable)
             ttk_text (data->itemsrfI[xi], data->font, 3, ofs, 
 			ih?menu_hdrfg_color:menu_selfg_color, 
-			_ttk_clean_txt(gettext (data->menu[xi]->name)));
+			ttk_filter_sorting_characters(gettext (data->menu[xi]->name)));
         else
             ttk_text (data->itemsrfI[xi], data->font, 3, ofs, 
 			ih?menu_hdrfg_color:menu_selfg_color, 
-			_ttk_clean_txt(data->menu[xi]->name));
+			ttk_filter_sorting_characters(data->menu[xi]->name));
     }
 }
 
@@ -291,9 +291,9 @@ void ttk_menu_item_updated (TWidget *this, ttk_menu_item *p)
     p->menuheight = this->h;
     
     if (data->i18nable)
-        p->textwidth = ttk_text_width (data->font, _ttk_clean_txt(gettext (p->name))) + 4;
+        p->textwidth = ttk_text_width (data->font, ttk_filter_sorting_characters(gettext (p->name))) + 4;
     else
-        p->textwidth = ttk_text_width (data->font, _ttk_clean_txt(p->name)) + 4;
+        p->textwidth = ttk_text_width (data->font, ttk_filter_sorting_characters(p->name)) + 4;
     
     p->iconflash = 3;
     p->flags |= TTK_MENU_ICON_FLASHOFF;
@@ -599,8 +599,8 @@ void ttk_menu_create_group_headers( TWidget *this )
 		pmi = (ttk_menu_item *) calloc( 1, sizeof( ttk_menu_item ));
 		pmi->group_flags |= TTK_MENU_GROUP_HEADER;
 		if( tmi->group_name ) {
-		    pmi->group_name = strdup( _ttk_clean_txt(tmi->group_name) );
-		    pmi->name = strdup( _ttk_clean_txt(tmi->group_name) );
+		    pmi->group_name = strdup( ttk_filter_sorting_characters(tmi->group_name) );
+		    pmi->name = strdup( ttk_filter_sorting_characters(tmi->group_name) );
 		} else {
 		    pmi->group_name = strdup( "Unsorted" );
 		    pmi->name = strdup( "Unsorted" );
