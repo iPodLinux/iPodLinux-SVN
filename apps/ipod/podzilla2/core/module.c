@@ -258,6 +258,7 @@ static void load_modinf (PzModule *mod)
 
     // Get the config path, now that we know the name.
 #ifndef IPOD
+    mod->cfgpath = malloc( MAXPATHLEN + 8 );
     confdir = getcwd( mod->cfgpath, MAXPATHLEN );
     confdir = strcat( confdir, "/config" );
     sprintf( moddir, "%s/modules", confdir );
