@@ -263,8 +263,8 @@ static void load_modinf (PzModule *mod)
     sprintf( moddir, "%s/modules", confdir );
 #endif
 
-    mod->cfgpath = malloc( strlen( confdir ) + strlen( mod->name ) + 1);
-    sprintf (mod->cfgpath, "%s/modules/%s", confdir, mod->name);
+    mod->cfgpath = malloc( strlen( moddir ) + strlen( mod->name ) + 1);
+    sprintf (mod->cfgpath, "%s/%s", moddir, mod->name);
 
     mkdir( confdir, 0755 ); /* make the main directory */
     mkdir( moddir, 0755 );  /* make the modules directory */
