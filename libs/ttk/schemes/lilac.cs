@@ -38,7 +38,7 @@
 	  fg => darkish,
 	  spike => lightish
 
-  window: bg => white,
+  window: bg => creme,
 	  fg => black,
 	  border => gray -3
 
@@ -80,7 +80,7 @@
     menu: bg => creme,
 	  fg => black,
 	  hdrbg => <light, medium, lightish with medium @:1,0,50%,0>,
-	  hdrfg => black,
+	  hdrfg => white,
 	  choice => black,
 	  icon => black,
 	  selbg => <vert light to lightish>,
