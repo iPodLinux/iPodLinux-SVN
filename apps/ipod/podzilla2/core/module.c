@@ -262,9 +262,10 @@ static void load_modinf (PzModule *mod)
     confdir = getcwd( mod->cfgpath, MAXPATHLEN );
     confdir = strcat( confdir, "/config" );
     sprintf( moddir, "%s/modules", confdir );
+#else
+    mod->cfgpath = malloc( strlen( moddir ) + strlen( mod->name ) + 1);
 #endif
 
-    mod->cfgpath = malloc( strlen( moddir ) + strlen( mod->name ) + 1);
     sprintf (mod->cfgpath, "%s/%s", moddir, mod->name);
 
     mkdir( confdir, 0755 ); /* make the main directory */
@@ -275,7 +276,6 @@ static void load_modinf (PzModule *mod)
     }
 
 #ifndef IPOD
-    free( confdir );
     free( moddir );
 #endif
 
