@@ -32,7 +32,7 @@
 
     menu: bg => gray, fg => black, choice => black, icon => ltgray,
 	  hdrbg => <dkrgray to dkrgray to gray>, hdrfg => yellow,
-          selbg => dkgray, selfg => black,
+          selbg => <dkgray to dkgray>+1*2, selfg => black,
 	  selchoice => white, 
 	  icon0 => black, icon1 => dkgray, icon2 => gray, icon3 => ltgray
 
