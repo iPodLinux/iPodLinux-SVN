@@ -45,7 +45,7 @@ ifndef TTKDIR
 $(error Cannot find TTK. Specify TTKDIR,  put it in ttk, ../ttk, ../../../libs/ttk, or install it.)
 else
 MYTTKCONF = $(TTKDIR)/ttk-config-here
-export TTKCONF=../$(MYTTKCONF)
+export TTKCONF=${PWD}/$(TTKDIR)
 endif
 endif
 
