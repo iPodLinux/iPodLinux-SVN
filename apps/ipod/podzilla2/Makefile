@@ -24,7 +24,8 @@ endif
 
 ifndef TTKDIR
 ifeq ($(shell which ttk-config 2>/dev/null >/dev/null && echo yes),yes)
-TTKCONF = ttk-config
+MYTTKCONF = ttk-config
+export TTKCONF := $(MYTTKCONF)
 endif
 ifneq ($(wildcard ttk/ttk-config-here),)
 TTKDIR = ttk
@@ -43,13 +44,14 @@ ifndef TTKCONF
 ifndef TTKDIR
 $(error Cannot find TTK. Specify TTKDIR,  put it in ttk, ../ttk, ../../../libs/ttk, or install it.)
 else
-TTKCONF = $(TTKDIR)/ttk-config-here
+MYTTKCONF = $(TTKDIR)/ttk-config-here
+export TTKCONF=../$(MYTTKCONF)
 endif
 endif
 
 ifdef IPOD
 CC = $(CROSS)-gcc
-LIBS += -Wl,-elf2flt -Wl,-whole-archive -lc `$(TTKCONF) --ipod --sdl --libs` contrib/ucdl/libuCdl.a -lintl `$(CC) -print-libgcc-file-name` -lsupc++ -Wl,-no-whole-archive -mapcs
+LIBS += -Wl,-elf2flt -Wl,-whole-archive -lc `$(MYTTKCONF) --ipod --sdl --libs` contrib/ucdl/libuCdl.a -lintl `$(CC) -print-libgcc-file-name` -lsupc++ -Wl,-no-whole-archive -mapcs
 CROSS ?= arm-uclinux-elf
 else
 ifeq ($(shell uname),Darwin)
@@ -60,7 +62,7 @@ EXPSYM = -Wl,-E
 INTL =
 LIBS += -L/sw/lib
 endif
-LIBS += -g `$(TTKCONF) --x11 --sdl --libs` -L/usr/local/lib -lstdc++ -ldl $(INTL) $(EXPSYM)
+LIBS += -g `$(MYTTKCONF) --x11 --sdl --libs` -L/usr/local/lib -lstdc++ -ldl $(INTL) $(EXPSYM)
 CC ?= cc
 endif
 POD ?= ../../../podfile/pod # relative to two dirs down
