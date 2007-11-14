@@ -290,3 +290,31 @@ help:
 	@echo ""
 
 .PHONY: help
+
+
+modulesourcedist:
+	@if [[ "$(MODULE)" == "" ]]; then echo "make modulesourcedist MODULE=YourModuleName MODVERS=1.0"; false ; fi
+	@if [[ "$(MODVERS)" == "" ]]; then echo "make modulesourcedist MODULE=YourModuleName MODVERS=1.0"; false ; fi
+	@if [ ! -d modules/$(MODULE) ]; then echo "Module $(MODULE) does not exist." ; false; fi
+	@if [ ! -f modules/$(MODULE)/Makefile ]; then echo "No Makefile."; false; fi
+	@if [ ! -f modules/$(MODULE)/Module ]; then echo "No Module file."; false; fi
+	@echo -- Creating directory...
+	@-rm -rf $(MODULE)_$(MODVERS)_src
+	@mkdir -p $(MODULE)_$(MODVERS)_src/$(MODULE)
+	@echo -- Copying files...
+	@cp -r modules/$(MODULE)/* $(MODULE)_$(MODVERS)_src/$(MODULE)
+	@echo -- Removing extraneous files...
+	@-rm -rf $(MODULE)_$(MODVERS)_src/$(MODULE)/*.o
+	@-rm -rf $(MODULE)_$(MODVERS)_src/$(MODULE)/*.so
+	@-rm -rf $(MODULE)_$(MODVERS)_src/$(MODULE)/.svn
+	@-rm -rf $(MODULE)_$(MODVERS)_src/$(MODULE)/CVS
+	@echo -- Building ZIP file...
+	@zip -rp $(MODULE)_$(MODVERS)_src.zip $(MODULE)_$(MODVERS)_src
+	@echo -n -- Cleaning up...
+	@-rm -rf $(MODULE)_$(MODVERS)_src
+	@echo ...done.
+	@echo
+	@echo Your module source archive is:   $(MODULE)_$(MODVERS)_src.zip
+echo
+
+.PHONY: moduledist
