@@ -2,10 +2,13 @@
 #
 # Note by TT: the option "-mstructure-size-boundary=8" is necessary when compiling macpartitions.cc for the structs to get the correct sizes!
 
+# The next line gets the current svn revision.
+VERSION   = r$(shell sh -c "svnversion . | sed 's/[^0-9]//'")
+
 CROSS    ?= arm-uclinux-elf-
 CC        = $(CROSS)gcc
 LD        = $(CROSS)ld
-MYCFLAGS  = -Os -Wall -std=gnu99 -ffreestanding -nostdinc -fomit-frame-pointer
+MYCFLAGS  = -Os -Wall -std=gnu99 -ffreestanding -nostdinc -fomit-frame-pointer -DVERSION=\"$(VERSION)\"
 # -DDEBUG
 MYCPPFLAGS= -Os -Wall -nostdinc -fomit-frame-pointer -mstructure-size-boundary=8
 MYLDFLAGS = -Tarm_elf_40.x `$(CC) -print-libgcc-file-name`
