@@ -315,6 +315,5 @@ modulesourcedist:
 	@echo ...done.
 	@echo
 	@echo Your module source archive is:   $(MODULE)_$(MODVERS)_src.zip
-echo
 
 .PHONY: moduledist
