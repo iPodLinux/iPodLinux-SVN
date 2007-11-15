@@ -512,6 +512,7 @@ static int sort_compare_g (const void *a, const void *b)
 }
 
 
+
 /* ttk_menu_hint_groups
 	- put the FIRST, MIDDLE, LAST, etc hints on the structure
 */
@@ -579,6 +580,34 @@ int ttk_menu_hint_groups( TWidget *this )
 }
 
 
+/* ttk_menu_remove_groups
+	- get rid of the FIRST, MIDDLE, LAST, etc hints on the structure
+	- remove the group header items too
+*/
+void ttk_menu_remove_groups( TWidget *this )
+{
+	int count = 0;
+	_MAKETHIS;
+	ttk_menu_item * tmi = NULL;
+	ttk_menu_item * pmi = NULL;
+
+	for( count=0 ; count < data->items ; count++ ) {
+		tmi = data->menu[count];
+		if( tmi->group_flags & TTK_MENU_GROUP_HEADER ) {
+			tmi->visible = menu_return_false;
+/*
+			pmi->group_name = strdup( ttk_filter_sorting_characters(tmi->group_name) );
+			pmi->name = strdup( ttk_filter_sorting_characters(tmi->group_name) );
+*/
+
+		}
+
+		/* clear the group info */
+		tmi->group_flags &= ~TTK_MENU_GROUP_SET;
+	}
+}
+
+
 /* ttk_menu_create_group_headers
 	- create the special entries in the list for the group headers
 */
@@ -635,6 +664,8 @@ void ttk_menu_sort_my_way_groups (TWidget *this, int (*cmp)(const void *, const 
 {
     int nGroups = 0;
     _MAKETHIS;
+
+    ttk_menu_remove_groups( this );
     qsort (data->menu, data->items, sizeof(void*), cmp);
 
     nGroups = ttk_menu_hint_groups( this ); /* put the header hints on the groups */
@@ -653,6 +684,7 @@ void ttk_menu_sort_my_way_groups (TWidget *this, int (*cmp)(const void *, const 
 void ttk_menu_sort_groups (TWidget *this) 
 {
     _MAKETHIS;
+    ttk_menu_remove_groups( this );
     if (data->i18nable)
         ttk_menu_sort_my_way_groups (this, sort_compare_i18n_g);
     else

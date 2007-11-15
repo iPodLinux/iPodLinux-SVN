@@ -90,12 +90,12 @@ TWidget *ttk_new_menu_widget (ttk_menu_item *items, ttk_font font, int w, int h)
 ttk_menu_item *ttk_menu_get_item (TWidget *_this, int i);
 ttk_menu_item *ttk_menu_get_item_called (TWidget *_this, const char *s);
 ttk_menu_item *ttk_menu_get_selected_item (TWidget *_this);
+void ttk_menu_remove_groups( TWidget *this );
 void ttk_menu_set_closeable (TWidget *_this, int closeable);
 void ttk_menu_set_i18nable (TWidget *_this, int i18nable);
 void ttk_menu_sort (TWidget *_this);
 void ttk_menu_sort_groups (TWidget *_this);
 const char * ttk_filter_sorting_characters( const char * nam );
-
 
 void ttk_menu_sort_my_way (TWidget *_this, int (*cmp)(const void *, const void *));
 void ttk_menu_sort_my_way_groups (TWidget *_this, int (*cmp)(const void *, const void *));
