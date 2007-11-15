@@ -2,12 +2,19 @@ ifeq ($(OSTYPE),)
         OSTYPE := $(shell uname -s)
 endif
 
+ifeq ($(HOST_CPU),)
+        HOST_CPU := $(shell uname -m)
+endif
 ifeq ($(OSTYPE),Darwin)
 	PREFIX =
 ifdef DEBUG
 	MYCFLAGS = -DDARWIN -g -pg
 else
+ifeq ($(HOST_CPU),i386)
+	MYCFLAGS = -DDARWIN -O3 -march=i386 -fomit-frame-pointer -funroll-loops
+else
 	MYCFLAGS = -DDARWIN -O3 -mcpu=750 -maltivec -mabi=altivec -fomit-frame-pointer -funroll-loops
+endif
 endif
 	LDFLAGS = -framework Foundation -framework Cocoa
 endif
