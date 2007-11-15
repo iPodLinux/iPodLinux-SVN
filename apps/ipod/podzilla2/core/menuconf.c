@@ -152,6 +152,19 @@ int pz_menuconf_runargs(int argc, char * argv[])
 		} else if (ttk_windows && ttk_windows->w) {
 			ttk_window_title(ttk_windows->w, argv[1]);
 		}
+	str_case("group")
+		if (argc != 3 ) {
+			pz_error("Incorrect arguments to %s in menu.conf.", argv[0]);
+		} else {
+			ttk_menu_item * nitem;
+			nitem = pz_get_menu_item(argv[1]);
+			if (!nitem) {
+				pz_error("Could not regroup  menu item %s in menu.conf.", argv[1]);
+			} else {
+				if( nitem->group_name ) free( nitem->group_name);
+				nitem->group_name = strdup( argv[2] );
+			}
+		}
 	str_default
 		pz_error("Invalid command %s in menu.conf.", argv[0]);
 	}
