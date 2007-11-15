@@ -52,9 +52,9 @@ static TWindow *previous_directory(ttk_menu_item *item)
 
 static TWindow *handle_file(ttk_menu_item *item)
 {
-	char path[MAXPATHLEN];
+	char path[MAXPATHLEN], cwd[MAXPATHLEN];
 	snprintf(path, MAXPATHLEN-1, "%s/%s",
-		getcwd(NULL, MAXPATHLEN), item->name);
+		getcwd(cwd, MAXPATHLEN), item->name);
 	return pz_browser_open( path );
 }
 
@@ -62,9 +62,9 @@ static TWindow *list_actions(const char *lpath)
 {
 	TWindow *ret;
 	TWidget *menu;
-	char path[MAXPATHLEN];
+	char path[MAXPATHLEN], cwd[MAXPATHLEN];
 
-	snprintf( path, MAXPATHLEN, "%s/%s", getcwd(NULL, MAXPATHLEN), lpath);
+	snprintf( path, MAXPATHLEN, "%s/%s", getcwd(cwd, MAXPATHLEN), lpath);
 	ret = pz_new_window(path, PZ_WINDOW_NORMAL);
 	menu = pz_browser_get_actions(path);
 	ttk_add_widget(ret, menu);
