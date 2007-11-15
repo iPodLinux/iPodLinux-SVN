@@ -64,7 +64,7 @@ static TWindow *list_actions(const char *lpath)
 	TWidget *menu;
 	char path[MAXPATHLEN];
 
-	snprintf( path, MAXPATHLEN, "%s/%s", getcwd(path, MAXPATHLEN), lpath);
+	snprintf( path, MAXPATHLEN, "%s/%s", getcwd(NULL, MAXPATHLEN), lpath);
 	ret = pz_new_window(path, PZ_WINDOW_NORMAL);
 	menu = pz_browser_get_actions(path);
 	ttk_add_widget(ret, menu);
