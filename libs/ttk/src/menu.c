@@ -584,7 +584,7 @@ int ttk_menu_hint_groups( TWidget *this )
 	- get rid of the FIRST, MIDDLE, LAST, etc hints on the structure
 	- remove the group header items too
 */
-void ttk_menu_remove_groups( TWidget *_this )
+void ttk_menu_remove_groups( TWidget *this )
 {
 	int count = 0;
 	_MAKETHIS;
