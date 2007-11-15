@@ -54,7 +54,7 @@ static TWindow *handle_file(ttk_menu_item *item)
 {
 	char path[MAXPATHLEN];
 	snprintf(path, MAXPATHLEN-1, "%s/%s",
-		getcwd(path, MAXPATHLEN), item->name);
+		getcwd(NULL, MAXPATHLEN), item->name);
 	return pz_browser_open( path );
 }
 

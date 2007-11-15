@@ -308,6 +308,7 @@ modulesourcedist:
 	@-rm -rf $(MODULE)_$(MODVERS)_src/$(MODULE)/*.so
 	@-rm -rf $(MODULE)_$(MODVERS)_src/$(MODULE)/.svn
 	@-rm -rf $(MODULE)_$(MODVERS)_src/$(MODULE)/CVS
+	@-rm -rf $(MODULE)_$(MODVERS)_src/$(MODULE)/*~
 	@echo -- Building ZIP file...
 	@zip -rp $(MODULE)_$(MODVERS)_src.zip $(MODULE)_$(MODVERS)_src
 	@echo -n -- Cleaning up...
