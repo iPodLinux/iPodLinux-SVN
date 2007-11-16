@@ -44,6 +44,14 @@ typedef struct Bitmap_Font
 extern ttk_screeninfo *ttk_screen;
 
 
+// these should probably be moved elsewhere later
+typedef struct sdl_additional {
+	Uint32 video_flags;
+	Uint32 video_flags_mask;
+} sdl_additional;
+
+sdl_additional sdl_add;
+
 
 static void palettize (SDL_Surface *srf)
 {
@@ -57,6 +65,7 @@ static void palettize (SDL_Surface *srf)
     }
 }
 
+
 void ttk_gfx_init() 
 {
 #ifdef IPOD
@@ -66,6 +75,7 @@ void ttk_gfx_init()
 #endif
 
     int bpp = ttk_screen->bpp;
+    Uint32 vidflags;
     if (bpp == 2) bpp = 8;
 
     if (SDL_Init (SDL_INIT_VIDEO | SDL_INIT_TIMER | NOPAR) < 0) {
@@ -74,8 +84,13 @@ void ttk_gfx_init()
 	exit (1);
     }
 
+    // set up video flags...
+    vidflags = SDL_SWSURFACE;
+    vidflags &= ~sdl_add.video_flags_mask;
+    vidflags |= (sdl_add.video_flags_mask & sdl_add.video_flags);
+
     if ((ttk_screen->srf = SDL_SetVideoMode (ttk_screen->w, ttk_screen->h,
-					     bpp, SDL_SWSURFACE)) == 0) {
+					     bpp, vidflags)) == 0) {
 	fprintf (stderr, "SDL_SetVideoMode(%d,%d,%d): %s\n", ttk_screen->w,
 		 ttk_screen->h, ttk_screen->bpp, SDL_GetError());
 	SDL_Quit();
