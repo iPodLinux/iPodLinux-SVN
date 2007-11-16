@@ -983,6 +983,18 @@ void ttk_get_screensize (int *w, int *h, int *bpp)
     if (bpp) *bpp = ttk_screen->bpp;
 }
 
+#ifndef IPOD
+typedef struct sdl_additional {
+        Uint32 video_flags;
+        Uint32 video_flags_mask;
+} sdl_additional;
+
+extern sdl_additional sdl_add;
+#endif
+
+#ifndef ABS
+#define ABS( A )  ( ((A)<0)?-(A):(A) )
+#endif
 
 void ttk_set_emulation (int w, int h, int bpp) 
 {
@@ -990,9 +1002,14 @@ void ttk_set_emulation (int w, int h, int bpp)
     if (!ttk_screen)
 	ttk_screen = malloc (sizeof(struct ttk_screeninfo));
     
-    ttk_screen->w = w;
-    ttk_screen->h = h;
-    ttk_screen->bpp = bpp;
+    ttk_screen->w = ABS( w );
+    ttk_screen->h = ABS( h );
+    ttk_screen->bpp = ABS( bpp );
+
+    if( bpp<0 || w<0 || h<0 ) {
+	sdl_add.video_flags = SDL_FULLSCREEN;
+	sdl_add.video_flags_mask = SDL_FULLSCREEN;
+    }
 
     ttk_screen->wx = 0;
     if (ttk_screen->bpp == 16) {
