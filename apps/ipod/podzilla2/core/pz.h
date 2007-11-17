@@ -497,6 +497,9 @@ extern unsigned char pz_icon_usb[],  pz_icon_fw[];
 extern unsigned char pz_icon_hold[], pz_icon_dot[];
 extern unsigned char pz_icon_battery_horiz[], pz_icon_battery_vert[];
 extern unsigned char pz_icon_charging[];
+extern unsigned char pz_icon_spkr_off[];
+extern unsigned char pz_icon_spkr_quiet[];
+extern unsigned char pz_icon_spkr_loud[];
 
 
 /** Other things - pz.c **/
