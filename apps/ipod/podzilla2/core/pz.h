@@ -501,8 +501,8 @@ extern unsigned char pz_icon_spkr_off[];
 extern unsigned char pz_icon_spkr_quiet[];
 extern unsigned char pz_icon_spkr_loud[];
 	/* these will aid in finding the index of the w/h of the icons */
-#define PZ_ICON_W	(0)
-#define PZ_ICON_H	(1)
+#define PZ_ICON_W( I ) ((I)? (I)[0] : 0)
+#define PZ_ICON_H( I ) ((I)? (I)[1] : 0)
 
 
 /** Other things - pz.c **/
