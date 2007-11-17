@@ -139,6 +139,12 @@ install:
 	@install -m 755 podzilla $(DESTDIR)/bin/podzilla
 	@echo " INST   modules:"
 	@$(MAKE) install -sC modules DESTDIR=$(DESTDIR) IPOD=1
+	@if [ ! -d schemes ]; then echo "*** No Schemes directory found. Not installed." ; false; fi
+	@echo " INST   schemes:"
+	@install schemes/* $(DESTDIR)/usr/share/schemes/
+	@echo " INST   fonts:"
+	@if [ ! -d fonts ]; then echo "*** No Fonts directory found. Not installed." ; false; fi
+	@install fonts/* $(DESTDIR)/usr/share/fonts/
 
 .message:
 ifdef IPOD
