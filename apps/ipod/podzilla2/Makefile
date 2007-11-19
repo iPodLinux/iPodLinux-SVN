@@ -133,18 +133,19 @@ endif
 
 install:
 	@if [ "$(DESTDIR)" = "/mnt/ipod" -a -z "$(wildcard $(DESTDIR)/bin)" ]; then echo "*** $(DESTDIR)/bin does not exist. Please verify that you have correctly specified your iPod location. Stop."; false; fi
-	@mkdir -p $(DESTDIR)/bin $(DESTDIR)/usr/share/schemes $(DESTDIR)/usr/lib
+	@mkdir -p $(DESTDIR)/bin $(DESTDIR)/usr/lib
+	@mkdir -p $(DESTDIR)/usr/share/schemes $(DESTDIR)/usr/share/fonts
 	@echo "Installing to $(DESTDIR)."
 	@echo " INST   podzilla"
 	@install -m 755 podzilla $(DESTDIR)/bin/podzilla
 	@echo " INST   modules:"
 	@$(MAKE) install -sC modules DESTDIR=$(DESTDIR) IPOD=1
-	@if [ ! -d schemes ]; then echo "*** No Schemes directory found. Not installed." ; false; fi
+	@if [ ! -d $(TTKDIR)/schemes ]; then echo "*** No Schemes directory found. Not installed." ; false; fi
 	@echo " INST   schemes:"
-	@install schemes/* $(DESTDIR)/usr/share/schemes/
+	@install $(TTKDIR)/schemes/* $(DESTDIR)/usr/share/schemes/
 	@echo " INST   fonts:"
-	@if [ ! -d fonts ]; then echo "*** No Fonts directory found. Not installed." ; false; fi
-	@install fonts/* $(DESTDIR)/usr/share/fonts/
+	@if [ ! -d $(TTKDIR)/fonts ]; then echo "*** No Fonts directory found. Not installed." ; false; fi
+	@install $(TTKDIR)/fonts/* $(DESTDIR)/usr/share/fonts/
 
 .message:
 ifdef IPOD
@@ -293,6 +294,9 @@ help:
 	@echo mrproper ..... a more complete 'clean' which wipes config stuff
 	@echo config ....... text-based module configuration
 	@echo menuconfig ... curses-based module configuration
+	@echo ""
+	@echo == developer ==
+	@echo modulesourcedist MODULE=modulename MODVERS=r24 ... makes a source zip
 	@echo ""
 
 .PHONY: help
