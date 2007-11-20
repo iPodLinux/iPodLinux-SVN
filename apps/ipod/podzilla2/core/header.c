@@ -1623,7 +1623,7 @@ static void w_hold_draw( struct header_info * hdr, ttk_surface srf )
 	if( pz_hold_is_on ) {
 		ttk_draw_icon( pz_icon_hold, srf, hdr->widg->x+3, 
 			       hdr->widg->y  + ((hdr->widg->h - pz_icon_hold[1])>>1),
-			       ttk_ap_getx ("battery.border"),
+			       ttk_ap_getx ("lock.border"),
 			       ttk_ap_getx ("header.bg")->color );
 /* XXX 
 	there's something going wrong here, since this 
