@@ -81,7 +81,7 @@ endif
 ifeq ($(GFXLIB),hotdog)
 MYCFLAGS += -DHDOG
 OBJS += hotdog.o
-MYCFLAGS += -I../../hotdog -I../../../hotdog
+MYCFLAGS += -I../../hotdog -I../../../hotdog `sdl-config --cflags`
 ifdef IPOD
 LIBSA += ../../../hotdog/ipod/libhotdog.a
 else
