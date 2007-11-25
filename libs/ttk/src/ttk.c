@@ -25,6 +25,7 @@
 #include <string.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <SDL.h>
 
 TWindowStack *ttk_windows = 0;
 ttk_font ttk_menufont, ttk_textfont;
