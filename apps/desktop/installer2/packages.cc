@@ -445,26 +445,30 @@ PackagesPage::PackagesPage (Installer *wiz, bool atm)
         packlistHTTP = new QHttp;
         host = packlistURL.host();
         packlistHTTP->setHost (packlistURL.host(), packlistURL.port(80));
-	char *http_proxy;
-	QUrl proxyURL ("");
-	if(!ProxyString.isEmpty()) {
-		if(!ProxyString.contains ("://")) {
-			ProxyString.prepend ("http://");
-		}
-		proxyURL.setUrl (ProxyString);
-	}
-	else if(strlen(http_proxy = getenv("HTTP_PROXY")) > 0) {
-		proxyURL.setUrl (QString (http_proxy));
-	}
-	else if(strlen(http_proxy = getenv("http_proxy")) > 0) {
-		proxyURL.setUrl (QString (http_proxy));
-	}
-	if(proxyURL.isValid()) {
-		packlistHTTP->setProxy (proxyURL.host(), proxyURL.port(8080),
-					proxyURL.userName(), proxyURL.password());
-		printf ("Using proxy '%s' on port %d\n",
-					proxyURL.host().toAscii().data(), proxyURL.port(8080));
-	}
+    
+        char *http_proxy = NULL;
+        QUrl proxyURL ("");
+        if(!ProxyString.isEmpty()) {
+            if(!ProxyString.contains ("://")) {
+                ProxyString.prepend ("http://");
+            }
+            proxyURL.setUrl (ProxyString);
+        }
+        else if((http_proxy = getenv("HTTP_PROXY"))) {
+            proxyURL.setUrl (QString (http_proxy));
+        }
+        else if((http_proxy = getenv("http_proxy"))) {
+            proxyURL.setUrl (QString (http_proxy));
+        }
+        if(proxyURL.isValid()) {
+            packlistHTTP->setProxy (proxyURL.host(), proxyURL.port(8080),
+                                    proxyURL.userName(), proxyURL.password());
+            printf ("Using proxy '%s' on port %d\n",
+                    proxyURL.host().toAscii().data(), proxyURL.port(8080));
+        }
+        if(http_proxy)
+            free(http_proxy);
+    
         connect (packlistHTTP, SIGNAL(dataSendProgress(int, int)), this, SLOT(httpSendProgress(int, int)));
         connect (packlistHTTP, SIGNAL(dataReadProgress(int, int)), this, SLOT(httpReadProgress(int, int)));
         connect (packlistHTTP, SIGNAL(stateChanged(int)), this, SLOT(httpStateChanged(int)));
