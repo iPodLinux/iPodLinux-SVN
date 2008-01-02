@@ -818,7 +818,7 @@ Package *PackagesPage::parsePackageListLine (QString line, bool makeBold, QDir *
         } else
             catitem = categories[crx.cap (1)];
         catitem->setText (0, crx.cap (2));
-        catitem->setFlags (0);
+        catitem->setFlags (Qt::ItemIsEnabled);
         packages->setItemExpanded (catitem, true);
         return 0;
     }
