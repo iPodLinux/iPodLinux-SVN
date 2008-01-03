@@ -40,18 +40,24 @@ const char *confnames[] = {
 	// the following are for the music partition:
         "(hd0,1)/ipodloader.conf",
 	"(hd0,1)/Notes/ipodloader.conf",
+	"(hd0,1)/boot/ipodloader.conf",
 	"(hd0,1)/loader.cfg",
 	"(hd0,1)/Notes/loader.cfg",
+	"(hd0,1)/boot/loader.cfg",
 	// now, more of the same for people who haven't figured out file renaming
         "(hd0,1)/ipodloader.conf.txt",
 	"(hd0,1)/Notes/ipodloader.conf.txt",
+	"(hd0,1)/boot/ipodloader.conf.txt",
 	"(hd0,1)/loader.cfg.txt",
 	"(hd0,1)/Notes/loader.cfg.txt",
+	"(hd0,1)/boot/loader.cfg.txt",
 	// and some plain ones
         "(hd0,1)/ipodloader.txt",
         "(hd0,1)/Notes/ipodloader.txt",
+        "(hd0,1)/boot/ipodloader.txt",
 	"(hd0,1)/loader.txt",
 	"(hd0,1)/Notes/loader.txt",
+	"(hd0,1)/boot/loader.txt",
 
 	// the following are for the ext2 partition (WinPods only):
 	"(hd0,2)/ipodloader.conf",
@@ -77,10 +83,13 @@ const char *kernnames[] = {
 	// the following are for the music partition:
 	"(hd0,1)/kernel.bin",
 	"(hd0,1)/Notes/kernel.bin",
+	"(hd0,1)/boot/kernel.bin",
 	"(hd0,1)/linux.bin",
 	"(hd0,1)/Notes/linux.bin",
+	"(hd0,1)/boot/linux.bin",
 	"(hd0,1)/vmlinux",
 	"(hd0,1)/Notes/vmlinux",
+	"(hd0,1)/boot/vmlinux",
 
 	// the following are for the ext2 partition (WinPods only):
 	"(hd0,2)/kernel.bin",
