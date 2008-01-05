@@ -969,8 +969,8 @@ InstallPage::InstallPage (Installer *wiz)
     ldrblurb->setWordWrap (true);
     loader1apple = new QRadioButton (tr ("Standard loader with Apple firmware default"));
     loader1linux = new QRadioButton (tr ("Standard loader with iPodLinux default"));
-    loader2 = new QRadioButton (tr ("iPodLoader2 (nice menu interface, but still experimental)"));
-    loader1apple->setChecked (true);
+    loader2 = new QRadioButton (tr ("iPodLoader2 - Nice interface, capable of loading iPodLinux, Apple firmware and Rockbox."));
+    loader2->setChecked (true);
     
     ldrchoiceblurb = new QLabel;
     ldrchoiceblurb->setWordWrap (true);
