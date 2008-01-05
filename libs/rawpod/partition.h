@@ -5,6 +5,14 @@
 #include "vfs.h"
 #include "device.h"
 
+#ifdef RAWPOD_BIG_ENDIAN
+#ifdef __APPLE__
+#define bswap_32(x) OSSwapInt32(x)
+#else
+#include <byteswap.h>
+#endif
+#endif
+
 class Partition 
 {
 public:
@@ -46,10 +54,10 @@ public:
     virtual bool active() { return (_desc->active == 0x80); }
 
 #ifdef RAWPOD_BIG_ENDIAN
-    virtual unsigned int offset() { return OSSwapInt32 (_desc->offset); }
-    virtual unsigned int length() { return OSSwapInt32 (_desc->length); }
-    virtual void setOffset (unsigned int off) { _desc->offset = OSSwapInt32 (off); }
-    virtual void setLength (unsigned int len) { _desc->length = OSSwapInt32 (len); }
+    virtual unsigned int offset() { return bswap_32 (_desc->offset); }
+    virtual unsigned int length() { return bswap_32 (_desc->length); }
+    virtual void setOffset (unsigned int off) { _desc->offset = bswap_32 (off); }
+    virtual void setLength (unsigned int len) { _desc->length = bswap_32 (len); }
 #else
     virtual unsigned int offset() { return _desc->offset; }
     virtual unsigned int length() { return _desc->length; }
