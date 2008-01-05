@@ -195,9 +195,9 @@ int scsi_inquiry_get_hw_ver (int dev)
         hw_ver = -1;
     }
     else {
-        ptr = strstr(buffer, "UpdaterFamilyID");
+        ptr = (unsigned char *)strstr((char *)buffer, "UpdaterFamilyID");
         while (!isdigit(*ptr)) ptr++;
-        ufid = atoi(ptr);
+        ufid = atoi((char *)ptr);
         
         int ufid_hw_ver[] = { 0x0, // Unknown
                               0x1, // 1G/2G */*** (0x1 or 0x2)

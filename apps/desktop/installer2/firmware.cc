@@ -20,7 +20,7 @@
 
 int rawpod_open (fw_fileops *fo, const char *name, int writing) 
 {
-    VFS::File *fh;
+    VFS::File *fh = 0;
     if (name[0] == '<') {
         int devnr = 0, part = 0;
         devnr = atoi (name + 1);
