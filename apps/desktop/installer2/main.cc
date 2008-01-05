@@ -63,7 +63,7 @@ int main (int argc, char *argv[])
 
     QApplication app (argc, argv);
 
-    char ch;
+    signed char ch;
     while ((ch = getopt (argc, argv, "haAL2b:r:" "d:l:p:" RAWPOD_OPTIONS_STR)) != EOF) switch (ch) {
     case 'a':
         InstallAutomatically = true;

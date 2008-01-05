@@ -411,6 +411,7 @@ int
 tar_extract_fifo(TAR *t, VFS::Filesystem *fs, const char *realname)
 {
     fprintf (stderr, "Warning! FIFO extraction skipped - not supported\n");
+    return 1;
 }
 
 

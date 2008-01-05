@@ -121,7 +121,7 @@ PodLocationPage::PodLocationPage (Installer *wizard)
     int podloc = find_iPod();
     int ipodtype = PART_NOT_IPOD;
     unsigned char mbr[512];
-    PartitionTable *ptbl;
+    PartitionTable *ptbl = 0;
     char *p = 0;
     int rev = 0;
     VFS::Device *part = 0;
