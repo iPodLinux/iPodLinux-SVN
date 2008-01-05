@@ -17,6 +17,7 @@ class Partition
 {
 public:
     Partition() {}
+    virtual ~Partition() {}
 
     enum Type { Firmware, FAT32, Ext2, HFS, Other };
     
@@ -48,6 +49,7 @@ public:
         : Partition(), _desc (desc)
     {
     }
+    virtual ~DOSPartition() {}
 
     virtual Type type() { return ((_desc->type == 0)? Firmware : (_desc->type == 0xB)? FAT32 :
                                   (_desc->type == 0x83)? Ext2 : Other); }
@@ -97,7 +99,7 @@ public:
     virtual void readFrom (VFS::Device *dev) = 0;
     virtual int writeTo (VFS::Device *dev) = 0;
     virtual int figureOutType (unsigned char *mbr) = 0;
-    int shrinkAndAdd (int oldnr, int newnr, Partition::Type newtype, int newsize);
+    int shrinkAndAdd (int oldnr, int newnr, Partition::Type newtype, unsigned int newsize);
 
     static PartitionTable *create (int devnr, bool writable) { LocalRawDevice dev (devnr, writable); return create (&dev); }
     static PartitionTable *create (VFS::Device *dev);

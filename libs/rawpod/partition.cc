@@ -122,13 +122,13 @@ int DOSPartitionTable::figureOutType (unsigned char *mbr)
     return PART_NOT_IPOD;
 }
 
-int PartitionTable::shrinkAndAdd (int oldnr, int newnr, Partition::Type newtype, int newsize) 
+int PartitionTable::shrinkAndAdd (int oldnr, int newnr, Partition::Type newtype, unsigned int newsize) 
 {
     oldnr--; newnr--;
     
     if (oldnr >= 4 || newnr >= 4)
         return EINVAL;
-    if (parts[oldnr]->length() < (unsigned int)newsize)
+    if (parts[oldnr]->length() < newsize)
         return ENOSPC;
     if (parts[newnr]->type() != Partition::Firmware) /* == Empty */
         return EEXIST;
