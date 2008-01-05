@@ -24,7 +24,7 @@ void usage (int exitcode)
 
 int main (int argc, char **argv) 
 {
-    char ch;
+    signed char ch;
     while ((ch = getopt (argc, argv, "h" RAWPOD_OPTIONS_STR)) != EOF) switch (ch) {
     case 'h':
         usage (0);
