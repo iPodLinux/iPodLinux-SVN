@@ -270,7 +270,7 @@ static int verbose = 0;		/* Default to verbose mode off */
 static long volume_id;		/* Volume ID number */
 static time_t create_time;	/* Creation time */
 static char volume_name[] = "           "; /* Volume name */
-static int blocks;		/* Number of blocks in filesystem */
+static unsigned int blocks;	/* Number of blocks in filesystem */
 static int sector_size = 512;	/* Size of a logical sector */
 static int sector_size_set = 0; /* User selected sector size */
 static int backup_boot = 0;	/* Sector# of backup boot sector */
@@ -284,7 +284,7 @@ static int  ignore_full_disk = 0; /* Ignore warning about 'full' disk devices */
 static unsigned int currently_testing = 0;	/* Block currently being tested (if autodetect bad blocks) */
 static struct msdos_boot_sector bs;	/* Boot sector data */
 static int start_data_sector;	/* Sector number for the start of the data area */
-static int start_data_block;	/* Block number for the start of the data area */
+static unsigned int start_data_block;	/* Block number for the start of the data area */
 static unsigned char *fat;	/* File allocation table */
 static unsigned char *info_sector;	/* FAT32 info sector */
 static struct msdos_dir_entry *root_dir;	/* Root directory */
@@ -543,7 +543,7 @@ establish_params()
     } geometry;
     // We're just using what basically amounts to guestimated values for sectors and heads here.
     // Modern drives don't have a geometry anyway, so it's pretty much a moot point.
-    int headvalues[] = { 16, 32, 64, 128, 255, 0 }; // from Large-Disk-HOWTO
+    unsigned int headvalues[] = { 16, 32, 64, 128, 255, 0 }; // from Large-Disk-HOWTO
     geometry.heads = 255;
     geometry.sectors = 63;
     for (int hv = 0; headvalues[hv]; hv++) {
@@ -878,7 +878,7 @@ setup_tables (void)
       
       /* last 10 cluster numbers are special (except FAT32: 4 high bits rsvd);
        * first two numbers are reserved */
-      if (maxclust <= (size_fat == 32 ? MAX_CLUST_32 : (1<<size_fat)-0x10) &&
+      if (maxclust <= (unsigned)(size_fat == 32 ? MAX_CLUST_32 : (1<<size_fat)-0x10) &&
 	  clusters <= maxclust-2)
 	break;
       if (verbose >= 2)
@@ -1093,7 +1093,7 @@ setup_tables (void)
 
 #define seekto(pos,errstr)						\
   do {									\
-    u64 __pos = (pos);							\
+    loff_t __pos = (pos);						\
     if (dev->lseek (__pos, SEEK_SET) != __pos)				\
 	Error ("seek to " errstr " failed whilst writing tables");	\
   } while(0)

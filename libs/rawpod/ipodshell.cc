@@ -219,7 +219,7 @@ int main (int argc, char *argv[])
                     fprintf (stderr, "%s: %s\n", args[1], strerror (err));
                 } else {
                     printf ("  File: `%s'\n", args[1]);
-                    printf ("  Size: %-15d Blocks: %-12d %s\n", st.st_size,
+                    printf ("  Size: %-15lld Blocks: %-12d %s\n", st.st_size,
                             st.st_blocks, (S_ISREG (st.st_mode)? "regular file" :
                                            S_ISDIR (st.st_mode)? "directory" :
                                            S_ISLNK (st.st_mode)? "symbolic link" :

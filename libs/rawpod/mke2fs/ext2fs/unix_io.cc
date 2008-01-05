@@ -95,13 +95,13 @@ static errcode_t raw_read_blk(io_channel channel,
         int		ret;
 
         size = (count < 0) ? -count : count * channel->block_size;
-	location = (u64) block * channel->block_size;
-	if ((ret = data->dev->lseek(location, SEEK_SET)) != location) {
+	location = block * channel->block_size;
+	if ((ret = data->dev->lseek(location, SEEK_SET)) != (s64)location) {
 		retval = (ret < 0) ? -ret : EXT2_ET_LLSEEK_FAILED;
 		goto error_out;
 	}
 	actual = data->dev->read(buf, size);
-	if (actual != size) {
+	if (actual != (s32)size) {
 		if (actual < 0)
 			actual = 0;
 		retval = EXT2_ET_SHORT_READ;
@@ -138,13 +138,13 @@ static errcode_t raw_write_blk(io_channel channel,
 	}
 
 	location = (u64) block * channel->block_size;
-	if ((ret = data->dev->lseek(location, SEEK_SET)) != location) {
+	if ((ret = data->dev->lseek(location, SEEK_SET)) != (s64)location) {
 		retval = (ret < 0) ? -ret : EXT2_ET_LLSEEK_FAILED;
 		goto error_out;
 	}
 	
 	actual = data->dev->write(buf, size);
-	if (actual != size) {
+	if (actual != (s32)size) {
 		retval = EXT2_ET_SHORT_WRITE;
 		goto error_out;
 	}

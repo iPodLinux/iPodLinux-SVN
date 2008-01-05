@@ -11,7 +11,7 @@ void process_arg (const char *arg)
 {
     int err;
     if ((err = ext2->unlink (arg)) < 0) {
-        printf ("%s: %s\n", arg, err);
+        printf ("%s: %s\n", arg, strerror(-err));
     }
 }
 

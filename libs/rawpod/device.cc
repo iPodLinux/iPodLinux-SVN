@@ -226,8 +226,7 @@ int gettimeofday (struct timeval *tv, void* tz)
 s64 BlockCache::getTimeval() 
 {
     struct timeval tv;
-    struct { int a; int b; } tz;
-    gettimeofday (&tv, (struct timezone *)&tz);
+    gettimeofday (&tv, NULL);
     return ((s64)tv.tv_sec << 20) + tv.tv_usec;
 }
 
