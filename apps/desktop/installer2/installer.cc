@@ -341,13 +341,12 @@ PodLocationPage::PodLocationPage (Installer *wizard)
             break;
         case MacPod:
             err = tr("<p><b>iPod is a MacPod.</b> Sorry, but those aren't supported for Windows "
-                     "and Linux installations. You may want to use the iPod Updater to convert it "
-                     "to a WinPod.</p>");
+                     "and Linux installations. You may want to use iTunes to convert it to a WinPod.</p>");
             break;
         case SLinPod:
             err = tr("<p><b>Invalid preexisting iPodLinux installation.</b> You have a 5G or nano "
                      "and you did not install Linux correctly when you installed it. Sorry, "
-                     "but I don't know enough to fix the problem myself. Run the iPod Updater or "
+                     "but I don't know enough to fix the problem myself. Restore with iTunes or "
                      "restore your backup, then re-run this installer.</p>");
             restoreOK = true;
             break;
@@ -450,7 +449,7 @@ PodLocationPage::PodLocationPage (Installer *wizard)
             blurb->setText (blurb->text() +
                             tr ("<p>Due to the layout of your iPod's hard drive, I should be able to install "
                                 "Linux without erasing anything on it. However, if this goes wrong, you may need "
-                                "to use the Apple updater to \"restore\" the iPod, which <i>does</i> erase data. "
+                                "to use iTunes to \"Restore\" the iPod, which <i>does</i> erase data. "
                                 "Thus, <b>please</b> ensure that you have a backup of all data on your iPod!</p>\n"));
         }
         wizard->setInfoText (tr ("<b>Installation Information</b>"),
@@ -882,7 +881,7 @@ UninstallPage::UninstallPage (Installer *wiz)
     blurb->setWordWrap (true);
     nobackupblurb = new QLabel (tr ("OK, I guess you didn't make one. In the future, please do so. I'll "
                                     "try my best to restore your iPod to normal, but I may not be able to; "
-                                    "in this case, you'll need to use the Apple updater to restore it, "
+                                    "in this case, you'll need to use iTunes to restore it, "
                                     "erasing all music and data. Sorry. Click Next."));
     nobackupblurb->setWordWrap (true);
     haveBackup = new QCheckBox (tr ("Yes! I made a backup."));

@@ -307,5 +307,5 @@ void ChangeLoaderAction::run()
 
 void HeuristicUninstallAction::run() 
 {
-    emit fatalError ("Heuristic uninstall is not yet implemented. Use the Apple updater.");
+    emit fatalError ("Heuristic uninstall is not yet implemented. Use iTunes.");
 }
