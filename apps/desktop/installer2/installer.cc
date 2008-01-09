@@ -374,6 +374,7 @@ PodLocationPage::PodLocationPage (Installer *wizard)
         TCHAR *p = E;
         char *q = e;
         while (*p) *q++ = *p++;
+        *q = '\0';
 #endif
         err = QString (tr ("<p><b><font color=\"red\">Sorry, but an error occurred. Installation "
                            "cannot continue.</font></b></p>\n")) + err
