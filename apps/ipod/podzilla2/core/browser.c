@@ -52,7 +52,7 @@ void setup_sigchld_handler()
 	sigchld_handler = 1;
 }
 
-void pz_exec(char *filename)
+void pz_execv(const char *path, char *const argv[])
 {
 #ifdef IPOD
 	static const char *const vcs[] = {"/dev/vc/%d", "/dev/tty%d", 0};
@@ -132,7 +132,7 @@ void pz_exec(char *filename)
 			_exit(1);
 		}
 
-		execl("/bin/sh", "sh", "-c", filename, NULL);
+		execv(path, argv);
 		fprintf(stderr, _("Exec failed! (Check Permissions)\n"));
 		_exit(1);
 		break;
@@ -169,8 +169,14 @@ err:
 	if (ttyfd >= 0)
 		close(ttyfd);
 #else
-	pz_message(filename);
+	pz_message(argv[0]);
 #endif /* IPOD */
+}
+
+void pz_exec(const char *file)
+{
+	const char *const argv[] = {"sh", "-c", file, NULL};
+	pz_execv("/bin/sh", (char *const *)argv);
 }
 
 static TWindow *browser_vt_exec (ttk_menu_item *item)
