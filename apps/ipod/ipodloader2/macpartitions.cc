@@ -244,16 +244,17 @@ static char nodeBufInUse = 0;
 static ext_set* gCurrExtents = 0;
 static hfsplus_t* gCurrVolume = 0;
 
-static uint32 fileClusterToBlockNo (uint32 clusterNo)
+static uint32 nodeToBlockNo (uint32 id)
 {
-	// first, find the extent containing the given cluster number
+	uint32 nodeCluster = id * gCurrVolume->catNodeSize;
+	// first, find the extent containing the given node number
 	for (int i = 0; i < ExtentCnt; ++i) {
-		if (clusterNo < (*gCurrExtents)[i].blockCount) {
+		if ((id* gCurrVolume->catNodeSize) < ((*gCurrExtents)[i].blockCount * gCurrVolume->partClusterSize)) {
 			// found the extent
-			uint32 blockNo = ((*gCurrExtents)[i].startBlock + clusterNo) * gCurrVolume->blksInACluster + gCurrVolume->partBlkStart;
+			uint32 blockNo = ((*gCurrExtents)[i].startBlock * gCurrVolume->partClusterSize + id * gCurrVolume->catNodeSize) / 512 + gCurrVolume->partBlkStart;
 			return blockNo;
 		}
-		clusterNo -= (*gCurrExtents)[i].blockCount;
+		nodeCluster -= ((*gCurrExtents)[i].blockCount * gCurrVolume->partClusterSize);
 	}
 	mlc_printf ("!Error: extents overflow\n");
 	mlc_show_critical_error();
@@ -284,7 +285,7 @@ static hfs_node* getNode (uint32 id)
 	if (nodeBufID == id) {
 		// we have this blk still in the buffer, no need to read it again
 	} else {
-		uint32 blkNo = fileClusterToBlockNo (id * (gCurrVolume->catNodeSize / gCurrVolume->partClusterSize));
+		uint32 blkNo = nodeToBlockNo (id);
 		ata_readblocks (nodeBuf, blkNo, gCurrVolume->catNodeSize / 512);
 		nodeBufID = id;
 	}
