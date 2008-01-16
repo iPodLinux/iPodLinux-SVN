@@ -29,6 +29,8 @@
 #ifdef IPOD
 #include "ucdl.h"
 #endif
+#define _GNU_SOURCE
+#include <getopt.h>
 
 const char *PZ_Developers[] = {
     "Bernard Leach",
@@ -415,28 +417,58 @@ usage( char * exename )
 {
 	fprintf( stderr, "Usage: %s [options...]\n", exename );
 	fprintf( stderr, "Options:\n" );
-	fprintf( stderr, "  -g gen    set simulated ipod generation.\n" );
-	fprintf( stderr, "            \"gen\" can be one of:\n" );
+	fprintf( stderr, "  -g <gen>  set simulated ipod generation.\n" );
+	fprintf( stderr, "            <gen> can be one of:\n" );
 	fprintf( stderr, "                1g, 2g, 3g, 4g, 5g, 6g, scroll,\n" );
 	fprintf( stderr, "                scroll, dock, mini,\n" );
 	fprintf( stderr, "                nano, nano1g, nano2g, nano3g,\n" );
 	fprintf( stderr, "                photo, color, video,\n" );
 	fprintf( stderr, "                classic, touch\n" );
 	fprintf( stderr, "\n" );
-	fprintf( stderr, "  -2 W H     \tuse a screen W by H, 2bpp (monochrome)\n" );
-	fprintf( stderr, "  -mono W H  \tuse a screen W by H, 2bpp (monochrome)\n" );
-	fprintf( stderr, "  -16 W H    \tuse a screen W by H, 16bpp (color)\n" );
-	fprintf( stderr, "  -color W H \tuse a screen W by H, 16bpp (color)\n" );
+	fprintf( stderr, "  -2 WxH     \tuse a screen W by H, 2bpp (monochrome)\n" );
+	fprintf( stderr, "  -mono WxH  \tuse a screen W by H, 2bpp (monochrome)\n" );
+	fprintf( stderr, "  -16 WxH    \tuse a screen W by H, 16bpp (color)\n" );
+	fprintf( stderr, "  -color WxH \tuse a screen W by H, 16bpp (color)\n" );
+	fprintf( stderr, "\n" );
+	fprintf( stderr, "  -errout <file> redirect all errors to <file>\n");
+	fprintf( stderr, "                   (not fully implemented)\n");
 	fprintf( stderr, "\n" );
 
-	fprintf( stderr, "default resolution and color are for 1g-4g mono iPod\n" );
+	fprintf( stderr, "default resolution and color are for color/photo iPod\n" );
+
+	exit(2);
 }
 
+static const struct {
+	const char *name;
+	int width, height, bpp;
+} generations[] = {
+	{"1g",      160, 128,  2},
+	{"2g",      160, 128,  2},
+	{"3g",      160, 128,  2},
+	{"4g",      160, 128,  2},
+	{"5g",      320, 240, 16},
+	{"6g",      320, 240, 16},
+	{"scroll",  160, 128,  2},
+	{"dock",    160, 128,  2},
+	{"mini",    138, 110,  2},
+	{"photo",   220, 176, 16},
+	{"color",   220, 176, 16},
+	{"video",   320, 240, 16},
+	{"classic", 320, 240, 16},
+	{"nano",    176, 132, 16},
+	{"nano1g",  176, 132, 16},
+	{"nano2g",  320, 240, 16},
+	{"nano3g",  320, 240, 16},
+	{"touch",   320, 480, 16},
+	{0, 0, 0, 0}
+};
 
 int
 main(int argc, char **argv)
 {
 	TWindow *first;
+	int width = 220, height = 176, bpp = 16;
 	int initialContrast = ipod_get_contrast();
 	if( initialContrast < 1 ) initialContrast = 96;
 
@@ -455,77 +487,58 @@ main(int argc, char **argv)
 
         errout = stderr;
 
-	if (argc > 1) {
-		if (argv[1][0] == '-') {
-			/* predefined sizes */
-			if (!strcmp (argv[1], "-g")) {
-				if( !strcmp( argv[2], "1g" ))	  ttk_set_emulation( 160, 128, 2 );
-				if( !strcmp( argv[2], "2g" ))	  ttk_set_emulation( 160, 128, 2 );
-				if( !strcmp( argv[2], "3g" ))	  ttk_set_emulation( 160, 128, 2 );
-				if( !strcmp( argv[2], "4g" ))	  ttk_set_emulation( 160, 128, 2 );
-				if( !strcmp( argv[2], "5g" ))	  ttk_set_emulation( 320, 240, 16 );
-				if( !strcmp( argv[2], "6g" ))     ttk_set_emulation( 320, 240, 16 );
+	for (;;) {
+		int c;
+		int oindex = 0;
+		static struct option long_options[] = {
+			{"mono",   1, 0, 'm'},
+			{"color",  1, 0, 'c'},
+			{"16",     1, 0, 'c'},
+			{"errout", 0, 0, 'e'},
+			{"gen",    1, 0, 'g'}
+		};
 
-				if( !strcmp( argv[2], "scroll" )) ttk_set_emulation( 160, 128, 2 );
-				if( !strcmp( argv[2], "dock" ))   ttk_set_emulation( 160, 128, 2 );
-				if( !strcmp( argv[2], "mini" ))	  ttk_set_emulation( 138, 110, 2 );
-
-				if( !strcmp( argv[2], "photo" ))  ttk_set_emulation( 220, 176, 16 );
-				if( !strcmp( argv[2], "color" ))  ttk_set_emulation( 220, 176, 16 );
-				if( !strcmp( argv[2], "video" ))  ttk_set_emulation( 320, 240, 16 );
-				if( !strcmp( argv[2], "classic" ))ttk_set_emulation( 320, 240, 16 );
-
-				if( !strcmp( argv[2], "nano" ))	  ttk_set_emulation( 176, 132, 16 );
-				if( !strcmp( argv[2], "nano1g" )) ttk_set_emulation( 176, 132, 16 );
-				if( !strcmp( argv[2], "nano2g" )) ttk_set_emulation( 320, 240, 16 );
-				if( !strcmp( argv[2], "nano3g" )) ttk_set_emulation( 320, 240, 16 );
-
-				if( !strcmp( argv[2], "touch" ))  ttk_set_emulation( 320, 480, 16 );
-
-			/* remove these four eventually... */
-			} else if (!strcmp (argv[1], "-photo")) {
-				fprintf( stderr, "ERROR: \"-photo\" is deprecated, use \"-g photo\" instead.\n" );
-				exit( -42 );
-			} else if (!strcmp (argv[1], "-nano")) {
-				fprintf( stderr, "ERROR: \"-nano\" is deprecated, use \"-g nano\" instead.\n" );
-				exit( -42 );
-			} else if (!strcmp (argv[1], "-mini")) {
-				fprintf( stderr, "ERROR: \"-mini\" is deprecated, use \"-g mini\" instead.\n" );
-				exit( -42 );
-			} else if (!strcmp (argv[1], "-video")) {
-				fprintf( stderr, "ERROR: \"-video\" is deprecated, use \"-g video\" instead.\n" );
-				exit( -42 );
-
-			/* arbitrary size... */
-			} else if (    (!strcmp (argv[1], "-2"))
-				    || (!strcmp (argv[1], "-mono")) ) {
-				if( argc != 4 ) {
-					usage( argv[0] );
-					exit( -2 );
+		c = getopt_long_only(argc, argv, "g:2:", long_options, &oindex);
+		if (c == -1)
+			break;
+		switch (c) {
+		case 'g':
+			for (c = 0; generations[c].name != 0; ++c) {
+				if (!strcmp(generations[c].name, optarg)) {
+					width = generations[c].width;
+					height = generations[c].height;
+					bpp = generations[c].bpp;
+					break;
 				}
-				ttk_set_emulation ( atoi( argv[2] ),
-						    atoi( argv[3] ), 2 );
-			} else if (    (!strcmp (argv[1], "-16"))
-				    || (!strcmp (argv[1], "-color")) ) {
-				if( argc != 4 ) {
-					usage( argv[0] );
-					exit( -2 );
-				}
-				ttk_set_emulation ( atoi( argv[2] ),
-						    atoi( argv[3] ), 16 );
-
-                        } else if (!strcmp (argv[1], "-errout")) {
-                                if( argc != 3 ) {
-                                        usage( argv[0] );
-                                        exit( -2 );
-                                }
-                                errout = fopen (argv[2], "a");
-			} else {
-				usage( argv[0] );
-				exit( -1 );
 			}
+			break;
+		case '2':
+		case 'm':
+			bpp = 2;
+			if (sscanf(optarg, "%dx%d", &width, &height) != 2)
+				usage(argv[0]);
+			break;
+		case 'c':
+			bpp = 16;
+			if (sscanf(optarg, "%dx%d", &width, &height) != 2)
+				usage(argv[0]);
+			break;
+		case 'e':
+			if (!(errout = fopen(optarg, "a"))) {
+				perror(optarg);
+				exit(3);
+			}
+			break;
+		case '?':
+		default:
+			usage(argv[0]);
+			break;
 		}
 	}
+
+#ifndef IPOD
+	ttk_set_emulation(width, height, bpp);
+#endif
 
         if (access (SCHEMESDIR "default.cs", R_OK) < 0)
             symlink ("mono.cs", SCHEMESDIR "default.cs");
