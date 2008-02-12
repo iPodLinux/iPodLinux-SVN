@@ -621,7 +621,7 @@ static void updateprogress( TWindow * sliderwin, TWidget * slider,
 	ttk_gfx_update(ttk_screen->srf);
 //	ttk_delay(10);  //useful for testing
 }
-
+#define strdupa(x) (strcpy(alloca(strlen(x) + 1), (x)))
 void pz_modules_init(char *path) 
 {
 #ifdef IPOD
@@ -661,7 +661,7 @@ void pz_modules_init(char *path)
     if (!path)
 	path = MODULEDIR;
 
-    path = strtok(path, ":");
+    path = strtok(strdupa(path), ":");
     while (path) {
 	find_modules (path);
 	path = strtok(NULL, ":");
