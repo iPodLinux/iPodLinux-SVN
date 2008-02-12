@@ -430,6 +430,9 @@ usage( char * exename )
 	fprintf( stderr, "  -16 WxH    \tuse a screen W by H, 16bpp (color)\n" );
 	fprintf( stderr, "  -color WxH \tuse a screen W by H, 16bpp (color)\n" );
 	fprintf( stderr, "\n" );
+	fprintf( stderr, "  -l <path> set module loading path.\n" ); 
+	fprintf( stderr, "            <path> should be a colon seperated list\n" );
+	fprintf( stderr, "\n" );
 	fprintf( stderr, "  -errout <file> redirect all errors to <file>\n");
 	fprintf( stderr, "                   (not fully implemented)\n");
 	fprintf( stderr, "\n" );
@@ -468,6 +471,7 @@ int
 main(int argc, char **argv)
 {
 	TWindow *first;
+	char *modulepath = NULL;
 	int width = 220, height = 176, bpp = 16;
 	int initialContrast = ipod_get_contrast();
 	if( initialContrast < 1 ) initialContrast = 96;
@@ -498,7 +502,7 @@ main(int argc, char **argv)
 			{"gen",    1, 0, 'g'}
 		};
 
-		c = getopt_long_only(argc, argv, "g:2:", long_options, &oindex);
+		c = getopt_long_only(argc, argv, "l:g:2:", long_options, &oindex);
 		if (c == -1)
 			break;
 		switch (c) {
@@ -522,6 +526,9 @@ main(int argc, char **argv)
 			bpp = 16;
 			if (sscanf(optarg, "%dx%d", &width, &height) != 2)
 				usage(argv[0]);
+			break;
+		case 'l':
+			modulepath = optarg;
 			break;
 		case 'e':
 			if (!(errout = fopen(optarg, "a"))) {
@@ -611,7 +618,7 @@ main(int argc, char **argv)
 
 	/* set up the menus and initialize the modules */
 	pz_menu_init();
-	pz_modules_init();
+	pz_modules_init(modulepath);
 	pz_header_init();
 
 	/* sort the menus */

@@ -622,7 +622,7 @@ static void updateprogress( TWindow * sliderwin, TWidget * slider,
 //	ttk_delay(10);  //useful for testing
 }
 
-void pz_modules_init() 
+void pz_modules_init(char *path) 
 {
 #ifdef IPOD
 #define MODULEDIR "/usr/lib"
@@ -658,7 +658,14 @@ void pz_modules_init()
 
     sliderVal = (MAXSLIDERVAL/SETUPSECTIONS) * 1;
     updateprogress(sliderwin, slider, sliderVal, _("Scanning For Modules"), NULL);
-    find_modules (MODULEDIR);
+    if (!path)
+	path = MODULEDIR;
+
+    path = strtok(path, ":");
+    while (path) {
+	find_modules (path);
+	path = strtok(NULL, ":");
+    }
 
     sliderVal = (MAXSLIDERVAL/SETUPSECTIONS) * 2;
     updateprogress(sliderwin, slider, sliderVal, _("Reading Modules"), NULL);
