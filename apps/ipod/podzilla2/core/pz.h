@@ -133,7 +133,7 @@ void pz_module_iterate (void (*fn)(const char *name, const char *longname, const
 void *pz_module_softdep (const char *modname, const char *symname);
 #ifndef PZ_MOD
 /* called from core */
-void pz_modules_init (void);
+void pz_modules_init (char *path); /* path = NULL for default */
 void pz_modules_cleanup (void);
 #endif
 
