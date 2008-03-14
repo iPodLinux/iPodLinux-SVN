@@ -547,8 +547,24 @@ main(int argc, char **argv)
 	ttk_set_emulation(width, height, bpp);
 #endif
 
-        if (access (SCHEMESDIR "default.cs", R_OK) < 0)
-            symlink ("mono.cs", SCHEMESDIR "default.cs");
+#ifdef IPOD
+#define CONFIG_FILE "/etc/podzilla/podzilla.conf"
+#else
+#define CONFIG_FILE "config/podzilla.conf"
+#endif
+
+	pz_global_config = pz_load_config (CONFIG_FILE);
+
+	/* backwards compat with old symlink method */
+	if (access(SCHEMESDIR "default.cs", R_OK) == 0) {
+		char ltarget[256];
+		if (readlink(SCHEMESDIR "default.cs", ltarget, 256) < 0)
+			perror("default.cs broken");
+		else
+			pz_set_string_setting(pz_global_config,
+					COLORSCHEME, ltarget);
+		unlink(SCHEMESDIR "default.cs");
+	}
 
 	if ((first = ttk_init()) == 0) {
 		fprintf(stderr, _("ttk_init failed\n"));
@@ -591,12 +607,6 @@ main(int argc, char **argv)
 		pz_set_time_from_file();
 	}
 
-#ifdef IPOD
-#define CONFIG_FILE "/etc/podzilla/podzilla.conf"
-#else
-#define CONFIG_FILE "config/podzilla.conf"
-#endif
-	pz_global_config = pz_load_config (CONFIG_FILE);
 	/* Set some sensible defaults */
 #define SET(x) pz_get_setting(pz_global_config,x)
 	if (!SET(WHEEL_DEBOUNCE))   pz_ipod_set (WHEEL_DEBOUNCE, 10);
@@ -606,10 +616,16 @@ main(int argc, char **argv)
 	if (!SET(SLIDE_TRANSIT))    pz_ipod_set (SLIDE_TRANSIT, 1);
 	if (!SET(BACKLIGHT))        pz_ipod_set (BACKLIGHT, 1);
 	if (!SET(BACKLIGHT_TIMER))  pz_ipod_set (BACKLIGHT_TIMER, 3);
-	if (!SET(COLORSCHEME))      pz_ipod_set (COLORSCHEME, 0);
+	if (!SET(COLORSCHEME))
+		pz_set_string_setting (pz_global_config,COLORSCHEME, "mono.cs");
 	pz_save_config (pz_global_config);
 	pz_ipod_fix_settings (pz_global_config);
 
+
+	char colorscheme[256];
+	snprintf(colorscheme, 256, SCHEMESDIR "%s",
+			pz_get_string_setting(pz_global_config, COLORSCHEME));
+	ttk_ap_load(colorscheme);
 
 	/* load some fonts */
 	/* NOTE: we should probably do something if these fail! */
