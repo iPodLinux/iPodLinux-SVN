@@ -888,7 +888,7 @@ int terminal_timer(TWidget * wid)
 #define vfork fork
 #endif
 
-int terminal_pty_open(int * master, int * slave, char * pty_name, struct termios * tios, struct winsize * twin, char * termtype, char * signon, char * exec_path, char * exec_name, char * exec_arg)
+int terminal_pty_open(int * master, int * slave, char * pty_name, struct termios * tios, struct winsize * twin, char * termtype, char * signon, const char *exec_path, char *const exec_argv[])
 {
 	int slavenum;
 	int p;
@@ -928,7 +928,7 @@ int terminal_pty_open(int * master, int * slave, char * pty_name, struct termios
 		if (signon) {
 			printf("%s\n", signon);
 		}
-		if ( execl(exec_path, exec_name, exec_arg, 0) ) {
+		if ( execv(exec_path, exec_argv) ) {
 			close(*slave);
 			_exit(0);
 		}
@@ -946,7 +946,7 @@ int terminal_pty_open(int * master, int * slave, char * pty_name, struct termios
 #define TERMINAL_EXEC_NAME ("sh")
 #endif
 
-PzWindow * new_terminal_window_with(char * path, char * argv0, char * argv1)
+PzWindow * new_terminal_window_with(const char *path, char *const argv[])
 {
 	PzWindow * ret;
 	TWidget * wid;
@@ -982,7 +982,7 @@ PzWindow * new_terminal_window_with(char * path, char * argv0, char * argv1)
 	terminal_escape_seq[0]=0;
 	
 	/* - - open the pseudoterminal - - */
-	p = terminal_pty_open(&terminal_master, &terminal_slave, terminal_pty_name, 0, &terminal_win, "vt102", _("Welcome to iPodLinux!"), path, argv0, argv1);
+	p = terminal_pty_open(&terminal_master, &terminal_slave, terminal_pty_name, 0, &terminal_win, "vt102", _("Welcome to iPodLinux!"), path, argv);
 	if (p < 0) {
 		pz_error("Could not open a pseudoterminal.");
 		terminal_child = 0;
@@ -997,17 +997,24 @@ PzWindow * new_terminal_window_with(char * path, char * argv0, char * argv1)
 
 PzWindow * new_terminal_window(void)
 {
-	return new_terminal_window_with(TERMINAL_EXEC_PATH, TERMINAL_EXEC_NAME, 0);
+	const char *f;
+	static char cmd[256];
+	const char *const argv[] = {TERMINAL_EXEC_NAME, "-c", cmd, NULL};
+	int s;
+
+	f = pz_get_string_setting(terminal_conf,TERMINAL_CONF_FONTNAME);
+	s = pz_get_int_setting   (terminal_conf,TERMINAL_CONF_FONTSIZE);
+	if (!f || !s) terminal_font = ttk_textfont;
+	else terminal_font = ttk_get_font(f, s);
+
+	snprintf(cmd, 256, "stty erase \"^H\"; %s", TERMINAL_EXEC_PATH);
+	return new_terminal_window_with(TERMINAL_EXEC_PATH, (char *const *)argv);
 }
 
 void terminal_mod_init(void)
 {
-	const char * f; int s;
 	terminal_module = pz_register_module("terminal", 0);
 	terminal_conf = pz_load_config(pz_module_get_cfgpath(terminal_module, "terminal.conf"));
-	f = pz_get_string_setting(terminal_conf,TERMINAL_CONF_FONTNAME);
-	s = pz_get_int_setting   (terminal_conf,TERMINAL_CONF_FONTSIZE);
-	terminal_font = ttk_get_font((f?f:"Fixed 6x13"), (s?s:13));
 	pz_menu_add_action_group("/Extras/Utilities/Terminal", "System", new_terminal_window);
 }
 
