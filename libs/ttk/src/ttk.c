@@ -344,7 +344,6 @@ TWindow *ttk_init()
     }
 
     ttk_gfx_init();
-    ttk_ap_load (SCHEMESDIR "/default.cs");
 
     /* the startup screen dots */
     if( ttk_screen->bpp == 2 )
