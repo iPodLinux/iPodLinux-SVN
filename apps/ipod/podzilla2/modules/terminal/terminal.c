@@ -951,6 +951,13 @@ PzWindow * new_terminal_window_with(const char *path, char *const argv[])
 	PzWindow * ret;
 	TWidget * wid;
 	pid_t p;
+	const char *f;
+	int s;
+
+	/* - - set up font - - */
+	f = pz_get_string_setting(terminal_conf,TERMINAL_CONF_FONTNAME);
+	s = pz_get_int_setting   (terminal_conf,TERMINAL_CONF_FONTSIZE);
+	terminal_font = ttk_get_font((f?f:"Fixed 6x13"), (s?s:13));
 	
 	/* - - create window - - */
 	terminal_window = ret = pz_new_window(_("Terminal"), PZ_WINDOW_NORMAL);
@@ -997,15 +1004,8 @@ PzWindow * new_terminal_window_with(const char *path, char *const argv[])
 
 PzWindow * new_terminal_window(void)
 {
-	const char *f;
 	static char cmd[256];
 	const char *const argv[] = {TERMINAL_EXEC_NAME, "-c", cmd, NULL};
-	int s;
-
-	f = pz_get_string_setting(terminal_conf,TERMINAL_CONF_FONTNAME);
-	s = pz_get_int_setting   (terminal_conf,TERMINAL_CONF_FONTSIZE);
-	if (!f || !s) terminal_font = ttk_textfont;
-	else terminal_font = ttk_get_font(f, s);
 
 	snprintf(cmd, 256, "stty erase \"^H\"; %s", TERMINAL_EXEC_PATH);
 	return new_terminal_window_with(TERMINAL_EXEC_PATH, (char *const *)argv);
