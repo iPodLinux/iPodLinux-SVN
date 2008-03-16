@@ -178,7 +178,7 @@ static void mcp_draw_queue(PzWidget *wid, ttk_surface srf)
 
 static void mcp_clear_background(PzWidget *wid, ttk_surface srf)
 {
-	ttk_fillrect(srf, 0, 0, wid->w, wid->h, ttk_ap_getx("window.bg")->color);
+	ttk_ap_fillrect(srf, ttk_ap_getx("window.bg"), 0, 0, wid->w, wid->h);
 }
 
 static void mcp_draw_art(PzWidget *wid, ttk_surface srf)
