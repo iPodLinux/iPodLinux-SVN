@@ -44,6 +44,7 @@ static void render (TWidget *this)
     int wid = this->w - 2;
     int line;
     char *End;
+    ttk_color color;
 
     // *wrapat[] stores pointers to the char we wrap *after* on each line.
     // (If it's a space, tab, or nl, it's eaten.)
@@ -178,24 +179,25 @@ static void render (TWidget *this)
     End = data->text + strlen (data->text);
 
     data->textsrf = ttk_new_surface (wid, (lines + 1) * data->baselineskip, ttk_screen->bpp);
+    color = ttk_ap_getx("window.fg")->color;
 
     end = wrapat;
     p = data->text;
     while (p < End) {
 	if (!*end) {
 	    ttk_text (data->textsrf, data->font, 0, line * data->baselineskip,
-		      ttk_makecol (BLACK), p);
+		      color, p);
 	    break;
 	} else {
 	    char *nextstart = *end + 1;
 	    char svch = *nextstart;
 	    *nextstart = 0;
 	    ttk_text (data->textsrf, data->font, 0, line * data->baselineskip,
-		      ttk_makecol (BLACK), p);
+		      color, p);
 	    if ((**end != ' ') && (**end != '\t') && (**end != '\n') && (**end != '-')) { // midword brk
 		ttk_pixel (data->textsrf, wid - 2,
 			   line * data->baselineskip + (data->baselineskip / 2),
-			   ttk_makecol (BLACK));
+			   color);
 	    }
 	    p = nextstart;
 	    *nextstart = svch;
