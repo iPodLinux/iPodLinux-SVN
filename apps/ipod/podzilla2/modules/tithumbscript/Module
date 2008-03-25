@@ -2,5 +2,5 @@ Module: tithumbscript
 Display-name: Thumbscript
 Description: A text input method that allows you to tap areas of the click wheel as on a telephone keypad to input characters using Thumbscript (TM).
 Category: Text Input/Text Input Methods
-Author: Jonathan Bettencourt
+Author: Rebecca G. Bettencourt
 Dependencies: textinput

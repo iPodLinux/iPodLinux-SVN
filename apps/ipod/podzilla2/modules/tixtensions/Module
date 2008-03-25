@@ -2,5 +2,5 @@ Module: tixtensions
 Display-name: Text Input Extensions
 Description: Provides the Run, Rename, Make Directory, Cut, Copy, Paste, and Paste Shortcut commands for the file browser.
 Category: Text Input
-Author: Jonathan Bettencourt
+Author: Rebecca G. Bettencourt
 Dependencies: textinput,tiwidgets

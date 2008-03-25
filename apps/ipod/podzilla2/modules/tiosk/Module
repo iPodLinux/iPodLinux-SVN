@@ -2,5 +2,5 @@ Module: tiosk
 Display-name: On-Screen Keyboard
 Description: A text input method that allows you to scroll through keys on an on-screen keyboard to select the character you want.
 Category: Text Input/Text Input Methods
-Author: Jonathan Bettencourt
+Author: Rebecca G. Bettencourt
 Dependencies: textinput

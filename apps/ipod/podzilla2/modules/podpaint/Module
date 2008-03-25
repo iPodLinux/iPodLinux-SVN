@@ -2,5 +2,5 @@ Module: podpaint
 Display-name: PodPaint
 Description: A traditional painting program including most of the usual tools.
 Category: Applications
-Author: Jonathan Bettencourt
+Author: Rebecca G. Bettencourt
 Dependencies: mouse,textinput,tiwidgets
