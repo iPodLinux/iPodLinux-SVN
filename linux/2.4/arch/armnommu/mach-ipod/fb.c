@@ -40,7 +40,7 @@
 #define LCD_CMD  0x08
 
 #define IPOD_5G_LCD_WIDTH	320
-#define IPOD_5G_LCD_HEIGHT	240	
+#define IPOD_5G_LCD_HEIGHT	240
 
 #define IPOD_STD_LCD_WIDTH	160
 #define IPOD_STD_LCD_HEIGHT	128
@@ -56,6 +56,8 @@
 
 static int ipod_hw_ver;
 
+static u16 ipod_fbcon_cmap[16];
+
 
 static unsigned long ipod_rtc;
 static unsigned long lcd_base;
@@ -67,7 +69,7 @@ static unsigned long lcd_height;
 static unsigned long lcd_type;
 
 /* allow for 16bpp for photo res */ /* Sized to max we could possibly need */
-static char ipod_scr[IPOD_PHOTO_LCD_HEIGHT * IPOD_PHOTO_LCD_WIDTH * 8];
+static char ipod_scr[IPOD_5G_LCD_HEIGHT * IPOD_5G_LCD_WIDTH * 8];
 
 static unsigned int lcd_contrast = 0x6a;	/* required for mini2 */
 
@@ -277,6 +279,31 @@ read_controller_id(void)
 	return ((data_hi & 0xff) << 8) | (data_lo & 0xff);
 }
 
+static void lcd_send_lo(int v)
+{
+	lcd_wait_write();
+	outl(v | 0x80000000, 0x70008A0C);
+}
+
+static void lcd_send_hi(int v)
+{
+	lcd_wait_write();
+	outl(v | 0x81000000, 0x70008A0C);
+}
+
+static void lcd_cmd_data(int cmd, int data)
+{
+	if (lcd_type == 0) {
+		lcd_send_lo(cmd);
+		lcd_send_lo(data);
+	} else {
+		lcd_send_lo(0x0);
+		lcd_send_lo(cmd);
+		lcd_send_hi((data >> 8) & 0xff);
+		lcd_send_hi(data & 0xff);
+	}
+}
+
 /* initialise the LCD */
 static void
 init_lcd(void)
@@ -357,31 +384,6 @@ static void ipod_update_display(struct display *p, int sx, int sy, int mx, int m
 
 		/* update cursor pos counter */
 		cursor_pos += 0x20;
-	}
-}
-
-static void lcd_send_lo(int v)
-{
-	lcd_wait_write();
-	outl(v | 0x80000000, 0x70008A0C);
-}
-
-static void lcd_send_hi(int v)
-{
-	lcd_wait_write();
-	outl(v | 0x81000000, 0x70008A0C);
-}
-
-static void lcd_cmd_data(int cmd, int data)
-{
-	if (lcd_type == 0) {
-		lcd_send_lo(cmd);
-		lcd_send_lo(data);
-	} else {
-		lcd_send_lo(0x0);
-		lcd_send_lo(cmd);
-		lcd_send_hi((data >> 8) & 0xff);
-		lcd_send_hi(data & 0xff);
 	}
 }
 
@@ -508,7 +510,6 @@ static void ipod_update_photo(struct display *p, int sx, int sy, int mx, int my)
 	while (height > 0) {
 		int x, y;
 		int h, pixels_to_write;
-		unsigned curpixel = 0;
 
 		pixels_to_write = (width * height) * 2;
 
@@ -528,8 +529,10 @@ static void ipod_update_photo(struct display *p, int sx, int sy, int mx, int my)
 			/* for each column */
 			for (y = 0; y < width; y += 2) {
 				unsigned two_pixels;
-
-				two_pixels = addr[0] | (addr[1] << 16);
+				two_pixels =  (((addr[0]&0x00FF) << 8) |
+					       ((addr[0]&0xFF00) >> 8)) |
+					     ((((addr[1]&0x00FF) << 8) |
+					       ((addr[1]&0xFF00) >> 8)) << 16);
 				addr += 2;
 
 				while ((inl(0x70008a20) & 0x1000000) == 0);
@@ -734,6 +737,12 @@ void ipod_fb16_revc(struct display *p, int xx, int yy)
 		
 }
 
+void ipod_fb16_clear_margins(struct vc_data *conp, struct display *p,
+			       int bottom_only)
+{
+	fbcon_cfb16.clear_margins(conp, p, bottom_only);
+}
+
 
 /*
  *  `switch' for the low level operations
@@ -746,6 +755,7 @@ struct display_switch fbcon_ipod16 = {
 	putc:		ipod_fb16_putc,
 	putcs:		ipod_fb16_putcs,
 	revc:		ipod_fb16_revc,
+	clear_margins:	ipod_fb16_clear_margins,
 	fontwidthmask:	FONTWIDTH(4)|FONTWIDTH(8)|FONTWIDTH(12)|FONTWIDTH(16)
 };
 static struct ipodfb_info fb_info;
@@ -788,7 +798,7 @@ static int ipod_encode_fix(struct fb_fix_screeninfo *fix, struct ipodfb_par *par
 
 	strcpy(fix->id, "iPod");
 	/* required for mmap() */
-	fix->smem_start = ipod_scr;
+	fix->smem_start = (unsigned long)ipod_scr;
 
 	fix->type = FB_TYPE_PACKED_PIXELS;
 
@@ -862,6 +872,23 @@ static int ipod_encode_var(struct fb_var_screeninfo *var, struct ipodfb_par *par
 
 	if (ipod_hw_ver == 0x6 || ipod_hw_ver == 0xb || ipod_hw_ver == 0xc) {
 		var->bits_per_pixel = 16;
+
+		var->red.offset = 0;
+		var->red.length = 5;
+
+		var->green.offset = 5;
+		var->green.length = 6;
+
+		var->blue.offset = 11;
+		var->blue.length = 5;
+
+		var->transp.offset = 0;
+		var->transp.length = 0;
+
+		var->red.msb_right = 0;
+		var->green.msb_right = 0;
+		var->blue.msb_right = 0;
+		var->transp.msb_right = 0;
 	} else {
 		var->bits_per_pixel = 2;
 		var->grayscale = 1;
@@ -906,7 +933,13 @@ static int ipod_getcolreg(unsigned regno, unsigned *red, unsigned *green,
 	 *  Return != 0 for invalid regno.
 	 */
 
-	/* ... */
+	if (regno >= 16) return 1;
+	if (ipod_hw_ver == 0x6 || ipod_hw_ver == 0xb || ipod_hw_ver == 0xc) {
+		*red   = (ipod_fbcon_cmap[regno]      ) & 0xf800;
+		*green = (ipod_fbcon_cmap[regno] <<  5) & 0xfc00;
+		*blue  = (ipod_fbcon_cmap[regno] << 11) & 0xf800;
+		*transp = 0;
+	}
 	return 0;
 }
 
@@ -920,7 +953,12 @@ static int ipod_setcolreg(unsigned regno, unsigned red, unsigned green,
 	 *  Return != 0 for invalid regno.
 	 */
 
-	/* ... */
+	if (regno >= 16) return 1;
+	if (ipod_hw_ver == 0x6 || ipod_hw_ver == 0xb || ipod_hw_ver == 0xc) {
+		ipod_fbcon_cmap[regno] = ((red & 0xf800) |
+					 ((green & 0xfc00) >> 5) |
+					 ((blue & 0xf800) >> 11));
+	}
 	return 0;
 }
 
@@ -1009,6 +1047,7 @@ static void ipod_set_disp(const void *par, struct display *disp,
 	disp->screen_base = ipod_scr;
 	if (ipod_hw_ver == 0x6 || ipod_hw_ver == 0xb || ipod_hw_ver == 0xc) {
 		disp->dispsw = &fbcon_ipod16;
+		disp->dispsw_data = ipod_fbcon_cmap;
 	}
 	else {
 		disp->dispsw = &fbcon_ipod;
