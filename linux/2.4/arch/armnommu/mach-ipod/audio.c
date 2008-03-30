@@ -1324,7 +1324,10 @@ static int ipod_mixer_ioctl(struct inode *inode, struct file *filp, unsigned int
 			return put_user(ipod_active_rec, (int *)arg);
 
 		case SOUND_MIXER_PCM:		/* codec output level */
-			val = (ipod_pcm_level - 0x2f) * 100 / 80;
+			if (codec_chip >= WM8758)
+				val = (ipod_pcm_level * 100) / 63;
+			else
+				val = (ipod_pcm_level - 0x2f) * 100 / 80;
 			val = val << 8 | val;
 			return put_user(val, (int *)arg);
 
