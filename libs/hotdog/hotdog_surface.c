@@ -278,14 +278,6 @@ hd_surface HD_SurfaceRotate (hd_surface srf, int degrees)
     w = HD_SRF_WIDTH(srf);
     h = HD_SRF_HEIGHT(srf);
 
-    /* 
-     * Surface which contains rotated image.
-     * Corners will be cut off. Calculation of
-     * new width and height to be added later
-     * when automatic resizing of an objects
-     * surface can be stopped on desktop builds.
-     */
-    rtd = HD_NewSurface (w, h);
 
     /* Prepare for switch statemant. */
     degrees =  degrees % 360;
@@ -298,6 +290,7 @@ hd_surface HD_SurfaceRotate (hd_surface srf, int degrees)
             break;
         case 180:
         case -180:
+            rtd = HD_NewSurface (w, h);
             memcpy(rtd, srf, (h+2+w*h)*sizeof(uint32));
             HD_SurfaceFlipVertical (rtd);
             HD_SurfaceFlipHorizontal (rtd);
@@ -309,13 +302,20 @@ hd_surface HD_SurfaceRotate (hd_surface srf, int degrees)
             return HD_SurfaceFlipDiagonal (srf, HD_FLIP_ROTATE_90_CCW);
             break;
         case 0:
-            memcpy(rtd, srf, (h+2+w*h)*sizeof(uint32));
-            HD_FreeSurface (srf);
-            return rtd;
+            return srf;
             break;
         default:
             break;
     }
+
+    /* 
+     * Surface which contains rotated image.
+     * Corners will be cut off. Calculation of
+     * new width and height to be added later
+     * when automatic resizing of an objects
+     * surface can be stopped on desktop builds.
+     */
+    rtd = HD_NewSurface (w, h);
 
     /* Rotate around this point (center of image). */
     xraxis = w / 2;
