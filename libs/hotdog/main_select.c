@@ -38,30 +38,13 @@
 #define XRADIUS 60
 #define YRADIUS 40
 
-#if defined(NANO)
-#define LCD_TYPE 2
-#define WIDTH   176
-#define HEIGHT  132
-#define SWIDTH  176
-#define SHEIGHT 132
-#elif defined(PHOTO) || defined(COLOR)
-#ifdef PHOTO
-#define LCD_TYPE 0
+#ifdef IPOD
+static uint32 WIDTH, HEIGHT;
 #else
-#define LCD_TYPE 1
+#define WIDTH 220
+#define HEIGHT 176
 #endif
-#define WIDTH   220
-#define HEIGHT  176
-#define SWIDTH  220
-#define SHEIGHT 176
-#else /* 5g */
-/* width/height of the region we draw */
-#define WIDTH   320
-#define HEIGHT  240
-/* width/height of the screen */
-#define SWIDTH  320
-#define SHEIGHT 240
-#endif
+
 
 static uint32 object_topwid, object_bottomwid;
 static uint32 rotation_angle, rotation_frames;
@@ -94,7 +77,7 @@ void reset_keypress(void)
 
 static void update (hd_engine *eng, int x, int y, int w, int h) 
 {
-	HD_LCD_Update (eng->screen.framebuffer, 0, 0, SWIDTH, SHEIGHT);
+	HD_LCD_Update (eng->screen.framebuffer, 0, 0, WIDTH, HEIGHT);
 }
 
 uint32 GetTimeMillis(void)
@@ -193,19 +176,19 @@ int main(int argc, char *argv[]) {
 	}
 	atexit(SDL_Quit);
 
-	screen = SDL_SetVideoMode(SWIDTH, SHEIGHT,16,SDL_SWSURFACE);
+	screen = SDL_SetVideoMode(WIDTH, HEIGHT,16,SDL_SWSURFACE);
 	if (screen == NULL) {
 		fprintf(stderr,"Unable to init SDL video: %s\n",SDL_GetError());
 		exit(1);
 	}
-	engine = HD_Initialize (SWIDTH, SHEIGHT, 16, screen->pixels, update);
+	engine = HD_Initialize (WIDTH, HEIGHT, 16, screen->pixels, update);
 #define IMGPREFIX ""
 #else
-
-	screen = xmalloc (SWIDTH * SHEIGHT * 2);
-	engine = HD_Initialize (SWIDTH, SHEIGHT, 16, screen, update);
 	HD_LCD_Init();
-#define IMGPREFIX "/mnt/"
+	HD_LCD_GetInfo (0, &WIDTH, &HEIGHT, 0);
+	screen = xmalloc (WIDTH * HEIGHT * 2);
+	engine = HD_Initialize (WIDTH, HEIGHT, 16, screen, update);
+#define IMGPREFIX ""
 #endif
 
 	obj = objp = xcalloc (sizeof(circle_object), strlen (objlist) + 1);
@@ -296,7 +279,7 @@ int main(int argc, char *argv[]) {
 				case SDLK_DOWN:
 				case SDLK_UP:
 					break;
-				case SDLK_LEFT:
+				case SDLK_RIGHT:
 					if (benchmark) break;
 					if (obj[0].object->animating) {
 						add_pending(1);
@@ -305,7 +288,7 @@ int main(int argc, char *argv[]) {
 					for (objp = obj; objp->object; objp++)
 						circle_rotate (objp, 1);
 					break;
-				case SDLK_RIGHT:
+				case SDLK_LEFT:
 					if (benchmark) break;
 					if (obj[0].object->animating) {
 						add_pending(-1);
