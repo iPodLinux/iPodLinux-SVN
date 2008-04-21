@@ -20,12 +20,9 @@ PNGINCLUDE ?= ../libs/libpng
 PNGLIB ?= ../libs/libpng
 ZINCLUDE ?= ../libs/zlib
 ZLIB ?= ../libs/zlib
-SDLINCLUDE ?= ../../ttk/sdlincludes
-SDLLIB ?= ../../ttk/libs/SDL
 LDFLAGS = -Wl,-elf2flt
 MYCFLAGS = -DIPOD -I$(PNGINCLUDE) -I$(ZINCLUDE) -I.. -O3 -fomit-frame-pointer -funroll-loops
-MYCFLAGS += -I$(SDLINCLUDE)
-LDFLAGS += $(SDLLIB)/libSDL.a $(PNGLIB)/libpng.a $(ZLIB)/libz.a -lm
+LDFLAGS += $(PNGLIB)/libpng.a $(ZLIB)/libz.a -lm
 HDLIB = ../ipod/libhotdog.a
 else
 MYCFLAGS+= `libpng-config --cflags` `freetype-config --cflags` -I..
@@ -60,7 +57,7 @@ $(OBJS):
 	$(CC) $(CFLAGS) $(MYCFLAGS) -c -o $@ $*.c
 
 $(APP): $(OBJS) 
-	$(CC) $? -o $@ $(LIB) $(LDFLAGS) $(MYLDFLAGS) $(HDLIB)
+	$(CC) $? -o $@ $(LIB) $(HDLIB) $(LDFLAGS) $(MYLDFLAGS)
 
 clean:
 	$(RM) *.o *.elf *.elf2flt *.gdb *~ $(APP)
