@@ -38,12 +38,8 @@ MYCFLAGS = -DIPOD -I$(PNGINCLUDE) -I$(JPEGINCLUDE) -I$(ZINCLUDE) -O3 -funroll-lo
 ifdef DEBUG
 LDFLAGS = -pg
 endif
-DEMOCFLAGS =
-DEMOLDFLAGS = $(PNGLIB)/libpng.a $(JPEGLIB)/libjpeg.a $(ZLIB)/libz.a -lm
 else
-MYCFLAGS+= `libpng-config --cflags` `freetype-config --cflags`
-DEMOLDFLAGS = `sdl-config --libs` `libpng-config --ldflags` `freetype-config --libs` -ljpeg
-DEMOCFLAGS = `sdl-config --cflags`
+MYCFLAGS+= `libpng-config --cflags`
 endif
 
 ifdef IPOD
@@ -73,17 +69,12 @@ ifdef IPOD
 LIBOBJS += $(OBJDIR)/hotdog_lcd.o
 endif
 
-DEMO = hd-demo
-
 all: $(LIB)
 
 $(LIB): $(OBJDIR) $(LIBOBJS)
 	$(RM) $(LIB)
 	$(AR) $(LIB) $(LIBOBJS)
 	$(AR2) $(LIB)
-
-main_anim.o main_select.o main_prim.o: %.o: %.c
-	$(CC) $(CFLAGS) $(MYCFLAGS) $(DEMOCFLAGS) -c -o $@ $<
 
 $(OBJDIR):
 	mkdir $(OBJDIR)
@@ -94,15 +85,6 @@ $(OBJDIR)/%.o: %.c
 $(OBJDIR)/%.o: %.S
 	$(CC) $(CPPFLAGS) -c -o $@ $<
 
-$(DEMO): $(LIB) main_anim.o
-	$(CC) main_anim.o -o $@ $(LIB) $(LDFLAGS) $(DEMOLDFLAGS)
-
-hd-demo2: $(LIB) main_select.o
-	$(CC) main_select.o -o $@ $(LIB) $(LDFLAGS) $(DEMOLDFLAGS)
-
-prim-demo: $(LIB) main_prim.o
-	$(CC) main_prim.o -o $@ $(LIB) $(LDFLAGS) $(DEMOLDFLAGS)
-
 clean:
-	$(RM) *.o *.elf *.elf2flt *.a *.gdb *~ $(DEMO) prim-demo hd-demo2
+	$(RM) *.o *.elf *.elf2flt *.a *.gdb *~
 	$(RM) -rf ipod x11
