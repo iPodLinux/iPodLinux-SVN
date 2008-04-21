@@ -25,22 +25,24 @@
 
 #include "hotdog.h"
 
+#ifdef IPOD
+static uint32 WIDTH, HEIGHT;
+uint32 *screen;
+#else
 #include "SDL.h"
+SDL_Surface *screen;
+#define WIDTH 220
+#define HEIGHT 176
+#endif
 
 #define RBEGIN  0
 #define INGAME  1
 #define GOVER   2
-
-#define WIDTH  220
-#define HEIGHT 176
 #define BATW   12
 #define BATH   48
 #define BALLD  10
 #define BALLR  BALLD/2
 #define BATMV  3
-
-SDL_Surface *screen;
-uint16      *renderBuffer;
 
 struct velocity {
 	double x;
@@ -56,8 +58,38 @@ static inline int constrain(int min, int max, int val)
 
 static void update (hd_engine *eng, int x, int y, int w, int h) 
 {
-    SDL_UpdateRect (SDL_GetVideoSurface(), x, y, w, h);
+#ifdef IPOD
+	HD_LCD_Update (eng->screen.framebuffer, 0, 0, WIDTH, HEIGHT);
+#else
+	SDL_UpdateRect (SDL_GetVideoSurface(), x, y, w, h);
+#endif
 }
+
+#ifdef IPOD
+#include <termios.h> 
+#include <sys/time.h>
+
+static struct termios stored_settings; 
+
+static void set_keypress()
+{
+	struct termios new_settings;
+	tcgetattr(0,&stored_settings);
+	new_settings = stored_settings;
+	new_settings.c_lflag &= ~(ICANON | ECHO | ISIG);
+	new_settings.c_iflag &= ~(ISTRIP | IGNCR | ICRNL | INLCR | IXOFF | IXON);
+	new_settings.c_cc[VTIME] = 0;
+	tcgetattr(0,&stored_settings);
+	new_settings.c_cc[VMIN] = 1;
+	tcsetattr(0,TCSANOW,&new_settings);
+}
+
+static void reset_keypress()
+{
+	tcsetattr(0,TCSANOW,&stored_settings);
+}
+
+#endif
 
 int main(int argc, char *argv[]) {
 	int done = 0;
@@ -69,6 +101,7 @@ int main(int argc, char *argv[]) {
 	hd_object *bg, *lbat, *rbat, *ball;
 	/* hd_object lscore; */
 	
+#ifndef IPOD
 	if( SDL_Init(SDL_INIT_VIDEO) < 0 ) {
 		fprintf(stderr,"Unable to init SDL: %s\n",SDL_GetError());
 		exit(1);
@@ -80,34 +113,38 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr,"Unable to init SDL video: %s\n",SDL_GetError());
 		exit(1);
 	}
-  
-	renderBuffer = (uint16 *)malloc(WIDTH*HEIGHT*2);
-	assert(renderBuffer != NULL);
-
 	engine = HD_Initialize(WIDTH,HEIGHT,16,screen->pixels,update);
+#define IMGPREFIX ""
+#else
+	HD_LCD_Init();
+	HD_LCD_GetInfo (0, &WIDTH, &HEIGHT, 0);
+	screen = xmalloc (WIDTH * HEIGHT * 2);
+	engine = HD_Initialize (WIDTH, HEIGHT, 16, screen, update);
+#define IMGPREFIX ""
+#endif
 	
-	bg = HD_PNG_Create("bg.png");
+	bg = HD_PNG_Create(IMGPREFIX "bg.png");
 	bg->x = 0;
 	bg->y = 0;
 	bg->w = WIDTH;
 	bg->h = HEIGHT;
 	bg->z = 3;
 	
-	lbat = HD_PNG_Create("bat.png");
+	lbat = HD_PNG_Create(IMGPREFIX "bat.png");
 	lbat->x = 0;
 	lbat->y = 0;
 	lbat->w = BATW;
 	lbat->h = BATH;
 	lbat->z = 2;
 	
-	rbat = HD_PNG_Create("bat.png");
+	rbat = HD_PNG_Create(IMGPREFIX "bat.png");
 	rbat->x = WIDTH-BATW;
 	rbat->y = HEIGHT/2-BATH/2;
 	rbat->w = BATW;
 	rbat->h = BATH;
 	rbat->z = 2;
 
-	ball = HD_PNG_Create("ball.png");
+	ball = HD_PNG_Create(IMGPREFIX "ball.png");
 	ball->x = WIDTH/2-BALLR;
 	ball->y = HEIGHT/2-BALLR;
 	ball->w = ball->h = BALLD;
@@ -133,16 +170,23 @@ int main(int argc, char *argv[]) {
 	HD_Register(engine,rbat);
 	HD_Register(engine,ball);
 
+#ifdef IPOD
+	set_keypress();
+	fd_set rd;
+	struct timeval tv;
+	int n;
+	char ch;
+#endif
 	done = 0;
 	while(!done) {
-		SDL_Event event;
 		static int turn;
 		static int inc = 0;
 		static int rev_timestep = 25;
 		static int comppoint = 0, userpoint = 0;
 		int mv_amount = 0;
 		
-		
+#ifndef IPOD
+		SDL_Event event;
 		while(SDL_PollEvent(&event)) {
 			switch(event.type) {
 			case SDL_KEYDOWN:
@@ -182,6 +226,50 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 		}
+#else
+
+#define SCROLL_MOD(n) \
+  ({ \
+    static int sofar = 0; \
+    int use = 0; \
+    if (++sofar >= n) { \
+      sofar -= n; \
+      use = 1; \
+    } \
+    (use == 1); \
+  })
+  		for (;;) {
+			FD_ZERO(&rd);
+			FD_SET(0, &rd);
+			tv.tv_sec = 0;
+			tv.tv_usec = 100;
+			n = select(0+1, &rd, NULL, NULL, &tv);
+			if (!FD_ISSET(0, &rd) || (n <= 0))
+				break;
+			read(0, &ch, 1);
+			switch(ch) {
+			case 'r':
+				if (SCROLL_MOD(4))
+					batmv = 1;
+				break;
+			case 'l':
+				if (SCROLL_MOD(4))
+					batmv = -1;
+				break;
+			case 'h':
+			case 'm':
+				done = 1;
+				break;
+			case 'f': // Start game
+			case 'w':
+			case 'd':
+				if (state==RBEGIN) state = INGAME;
+				break;
+			default:
+				break;
+			}
+		}
+#endif
 
 		switch(state) {
 		case RBEGIN:
@@ -258,6 +346,9 @@ int main(int argc, char *argv[]) {
 			if (batmv != 0) {
 				rbat->y += batmv * BATMV;
 				rbat->y = constrain(0, HEIGHT-BATH, rbat->y);
+#ifdef IPOD
+				batmv = 0;
+#endif
 			}
 		} else {
 			if(ball->x < BATW/2) {
@@ -288,13 +379,17 @@ int main(int argc, char *argv[]) {
 		break;
 		}
 
+#ifndef IPOD
 		if( SDL_MUSTLOCK(screen) ) 
 			SDL_LockSurface(screen);
+#endif
 
 		HD_Render(engine);
 
+#ifndef IPOD
 		if( SDL_MUSTLOCK(screen) ) 
 			SDL_UnlockSurface(screen);
+#endif
 		usleep(10000);
 	}
 
@@ -304,5 +399,9 @@ int main(int argc, char *argv[]) {
 	HD_Destroy(ball);
 	free(engine->buffer);
 	free(engine);
+#ifdef IPOD
+	HD_LCD_Quit();
+	reset_keypress();
+#endif
 	return(0);
 }
