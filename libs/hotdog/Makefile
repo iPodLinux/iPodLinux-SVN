@@ -33,26 +33,13 @@ JPEGINCLUDE ?= ./libs/libjpeg
 JPEGLIB ?= ./libs/libjpeg
 ZINCLUDE ?= ./libs/zlib
 ZLIB ?= ./libs/zlib
-SDLINCLUDE ?= ../ttk/sdlincludes
-SDLLIB ?= ../ttk/libs/SDL
 LDFLAGS = -Wl,-elf2flt
 MYCFLAGS = -DIPOD -I$(PNGINCLUDE) -I$(JPEGINCLUDE) -I$(ZINCLUDE) -O3 -funroll-loops
 ifdef DEBUG
 LDFLAGS = -pg
 endif
-ifneq ($(PHOTO),)
-MYCFLAGS += -DPHOTO
-else
-ifneq ($(COLOR),)
-MYCFLAGS += -DCOLOR
-else
-ifneq ($(NANO),)
-MYCFLAGS += -DNANO
-endif
-endif
-endif
-DEMOCFLAGS = -I$(SDLINCLUDE)
-DEMOLDFLAGS = $(SDLLIB)/libSDL.a $(PNGLIB)/libpng.a $(JPEGLIB)/libjpeg.a $(ZLIB)/libz.a -lm
+DEMOCFLAGS =
+DEMOLDFLAGS = $(PNGLIB)/libpng.a $(JPEGLIB)/libjpeg.a $(ZLIB)/libz.a -lm
 else
 MYCFLAGS+= `libpng-config --cflags` `freetype-config --cflags`
 DEMOLDFLAGS = `sdl-config --libs` `libpng-config --ldflags` `freetype-config --libs` -ljpeg

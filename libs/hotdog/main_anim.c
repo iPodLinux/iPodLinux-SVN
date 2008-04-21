@@ -173,7 +173,7 @@ int main(int argc, char *argv[]) {
 	HD_LCD_GetInfo (0, &WIDTH, &HEIGHT, 0);
 	screen = xmalloc (WIDTH * HEIGHT * 2);
 	engine = HD_Initialize (WIDTH, HEIGHT, 16, screen, update);
-#define IMGPREFIX "/mnt/"
+#define IMGPREFIX ""
 #endif
 
 	obj[4].object    = HD_PNG_Create (IMGPREFIX "bg.png");
@@ -216,7 +216,7 @@ int main(int argc, char *argv[]) {
 		obj[5].object = NULL;
 	}
 	else {
-		HD_Font_Draw (obj[5].object->canvas, f, 10, 10,
+		HD_Font_Draw (obj[5].object->canvas, f, 0, 10,
 				HD_RGBA (255, 0, 0, 128), "Hello World!");
 		HD_Font_Free(f);
 	}
@@ -282,7 +282,7 @@ int main(int argc, char *argv[]) {
 				case SDLK_DOWN:
 				case SDLK_UP:
 					break;
-				case SDLK_LEFT:
+				case SDLK_RIGHT:
 					if (benchmark) break;
 					if (obj[0].object->animating) {
 						add_pending(1);
@@ -293,7 +293,7 @@ int main(int argc, char *argv[]) {
 					circle_rotate(&obj[2], 1);
 					circle_rotate(&obj[3], 1);
 					break;
-				case SDLK_RIGHT:
+				case SDLK_LEFT:
 					if (benchmark) break;
 					if (obj[0].object->animating) {
 						add_pending(-1);

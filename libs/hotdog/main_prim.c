@@ -36,7 +36,7 @@ int main(int argc, char **argv)
 {
 	char eop = 0;
 	hd_surface srf;
-	hd_object *obj;
+	hd_object *canv, *obj;
 #ifndef IPOD
 #define IMGPREFIX ""
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -51,45 +51,40 @@ int main(int argc, char **argv)
 	}
 	engine = HD_Initialize (WIDTH, HEIGHT, 16, screen->pixels, update);
 #else
-#define IMGPREFIX "/mnt/"
+#define IMGPREFIX ""
 	HD_LCD_Init();
 	HD_LCD_GetInfo(0, &WIDTH, &HEIGHT, 0);
 	screen = xmalloc(WIDTH * HEIGHT * 2);
 	engine = HD_Initialize(WIDTH, HEIGHT, 16, screen, update);
 #endif
-#
-
-	if (!access(IMGPREFIX "bg2.png", R_OK))
-		obj = HD_PNG_Create(IMGPREFIX "bg2.png");
-	else {
-		obj = HD_New_Object();
-		obj->type = HD_TYPE_CANVAS;
-		obj->canvas = HD_NewSurface(WIDTH, HEIGHT);
-		obj->natw = WIDTH;
-		obj->nath = HEIGHT;
+	if (!access("bg2.png", R_OK)) {
+		obj = HD_PNG_Create("bg2.png");
+		obj->x = 0;
+		obj->y = 0;
+		obj->w = WIDTH;
+		obj->h = HEIGHT;
+		HD_Register(engine, obj);
 	}
-	obj->x = 0;
-	obj->y = 0;
-	obj->w = WIDTH;
-	obj->h = HEIGHT;
-	obj->render = HD_Canvas_Render;
-        obj->destroy = HD_Canvas_Destroy;
-	HD_Register(engine, obj);
+
+	canv = HD_New_Object();
+	canv->type = HD_TYPE_CANVAS;
+	canv->canvas = HD_NewSurface(WIDTH, HEIGHT);
+	canv->natw = WIDTH;
+	canv->nath = HEIGHT;
+	canv->x = 0;
+	canv->y = 0;
+	canv->w = WIDTH;
+	canv->h = HEIGHT;
+	canv->render = HD_Canvas_Render;
+	canv->destroy = HD_Canvas_Destroy;
+	HD_Register(engine, canv);
 #define PREM(a) (HD_RGBA(((a) & 0x00ff0000) >> 16, \
 			 ((a) & 0x0000ff00) >> 8,  \
 			 ((a) & 0x000000ff),       \
 			 ((a) & 0xff000000) >> 24))
 
-	srf = obj->canvas;
-
-#if 0
-	obj = HD_PNG_Create("bg.png");
-	obj->x = obj->y = 0;
-	obj->w = 60;
-	obj->h = 60;
-	HD_Register(engine, obj);
-#endif
-
+	srf = canv->canvas;
+	
 	HD_Rect(srf, WIDTH/4, HEIGHT/3, WIDTH/2, HEIGHT/2, PREM(0xff808080));
 	HD_AALine(srf, 0, 0, WIDTH/2, HEIGHT/2, PREM(0xffff0000));
 	HD_Line(srf, WIDTH/2, HEIGHT/2, WIDTH/2, HEIGHT, PREM(0xffff0000));
