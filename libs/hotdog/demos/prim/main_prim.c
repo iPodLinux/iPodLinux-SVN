@@ -57,8 +57,8 @@ int main(int argc, char **argv)
 	screen = xmalloc(WIDTH * HEIGHT * 2);
 	engine = HD_Initialize(WIDTH, HEIGHT, 16, screen, update);
 #endif
-	if (!access("bg2.png", R_OK)) {
-		obj = HD_PNG_Create("bg2.png");
+	if (!access("bg.png", R_OK)) {
+		obj = HD_PNG_Create("bg.png");
 		obj->x = 0;
 		obj->y = 0;
 		obj->w = WIDTH;
