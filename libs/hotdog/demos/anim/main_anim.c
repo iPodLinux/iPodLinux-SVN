@@ -209,17 +209,6 @@ int main(int argc, char *argv[]) {
 	obj[5].object    = HD_Canvas_Create (100, 100);
 	obj[5].object->x = 100;
 	obj[5].object->y = 100;
-	hd_font *f = HD_Font_LoadFNT ("Chicago.fnt");
-	if (!f) {
-		fprintf (stderr, "error loading Chicago.fnt\n");
-		HD_Destroy (obj[5].object);
-		obj[5].object = NULL;
-	}
-	else {
-		HD_Font_Draw (obj[5].object->canvas, f, 0, 10,
-				HD_RGBA (255, 0, 0, 128), "Hello World!");
-		HD_Font_Free(f);
-	}
 
 	HD_Register(engine,obj[4].object);
 	HD_Register(engine,obj[0].object);
