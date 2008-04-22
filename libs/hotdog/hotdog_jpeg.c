@@ -123,8 +123,7 @@ hd_surface HD_JPEG_Load (const char *fname, int *retw, int *reth)
         jpeg_finish_decompress(&cinfo);
         
  done:
-        if (&cinfo)
-            jpeg_destroy_decompress(&cinfo);
+        jpeg_destroy_decompress(&cinfo);
         if (in)
             fclose(in);
         if (rgb)
