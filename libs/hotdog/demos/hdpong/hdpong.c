@@ -44,6 +44,13 @@ SDL_Surface *screen;
 #define BALLR  BALLD/2
 #define BATMV  3
 
+#define ROYAL_BLUE \
+	HD_RGBA(65, 105, 225, 200)
+#define ORANGE_BOLD \
+	HD_RGBA(255, 165, 0, 250)
+#define RED_BOLD \
+	HD_RGBA(255, 0, 0, 250)
+
 struct velocity {
 	double x;
 	double y;
@@ -95,11 +102,14 @@ int main(int argc, char *argv[]) {
 	int done = 0;
 	int batmv = 0;
 	int state = RBEGIN;
+	char score[256] = "COM: 0 | PLAYER: 0";
 	struct velocity vball, vlbat, vrbat;
 
 	hd_engine *engine;
 	hd_object *bg, *lbat, *rbat, *ball;
-	/* hd_object lscore; */
+	hd_font *f;
+	hd_surface srf;
+	hd_object *lscore;
 	
 #ifndef IPOD
 	if( SDL_Init(SDL_INIT_VIDEO) < 0 ) {
@@ -150,25 +160,23 @@ int main(int argc, char *argv[]) {
 	ball->w = ball->h = BALLD;
 	ball->z = 1;
 
-/*
-	lscore.y = 2;
-	lscore.h = 40;
-	lscore.z = 2;
-	lscore.type = HD_TYPE_FONT;
-	lscore.sub.font  = HD_Font_Create("../font.ttf", lscore.h, "0");
-	lscore.w = lscore.sub.font->w;
-	lscore.x = (WIDTH/3)-(lscore.w/2);
-	for(done=0;done<(lscore.h*lscore.w);done++)
-		lscore.sub.font->argb[done] &|= 0x0000FF00;
-*/
+	f = HD_Font_LoadSFont ("Aiken14.png");
+	lscore = HD_Canvas_Create (WIDTH, HEIGHT);
+	lscore->x = 0;
+	lscore->y = 0;
+	lscore->z = 2;
+	srf = lscore->canvas;
+	HD_Font_Draw (srf, f, WIDTH/2-60, // Roughly centred
+		BATW, ROYAL_BLUE, score);
+	HD_Font_Draw (srf, f, WIDTH/2-25, // Roughly centred
+		BATW*2+5, ROYAL_BLUE, "hd-pong");
 
 	HD_Register(engine,bg);
 	HD_Register(engine,lbat);
-/*
-	HD_Register(engine,&lscore);
-*/
 	HD_Register(engine,rbat);
 	HD_Register(engine,ball);
+	HD_Register(engine,lscore);
+	
 
 #ifdef IPOD
 	set_keypress();
@@ -362,17 +370,33 @@ int main(int argc, char *argv[]) {
 				turn = 1;
 			}
 			state = RBEGIN;
-			printf("COM: %d | PLAYER: %d\n", comppoint, userpoint);
-			
-			if (comppoint == 10 || userpoint == 10) state = GOVER;
+
+			snprintf(score, 256, "COM: %d | PLAYER: %d", comppoint, userpoint);
+			if (comppoint == 10 || userpoint == 10) {
+				state = GOVER;
+			} else {
+				HD_FillRect (srf, 0,0, WIDTH, HEIGHT, HD_CLEAR);
+				HD_Font_Draw (srf, f, WIDTH/2-60, // Roughly centred
+					BATW, ROYAL_BLUE, score);
+				HD_Font_Draw (srf, f, WIDTH/2-25, // Roughly centred
+					BATW*2+5, ROYAL_BLUE, "hd-pong");
+			}
 		}
 
 		break;
 		case GOVER:
 		if (comppoint == 10) {
-			printf("You lose!\n");
+			HD_FillRect (srf, 0,0, WIDTH, HEIGHT, HD_CLEAR);
+			HD_Font_Draw (srf, f, WIDTH/2-65, // Roughly centred
+				BATW, ROYAL_BLUE, score);
+			HD_Font_Draw (srf, f, WIDTH/2-30, // Roughly centred
+				BATW*2+5, RED_BOLD, "You lose!");
 		} else if (userpoint == 10) {
-			printf("You win!\n");
+			HD_FillRect (srf, 0,0, WIDTH, HEIGHT, HD_CLEAR);
+			HD_Font_Draw (srf, f, WIDTH/2-65, // Roughly centred
+				BATW, ROYAL_BLUE, score);
+			HD_Font_Draw (srf, f, WIDTH/2-30, // Roughly centred
+				BATW*2+5, ORANGE_BOLD, "You win!");
 		}
 		state = RBEGIN;
 		comppoint = userpoint = 0;
