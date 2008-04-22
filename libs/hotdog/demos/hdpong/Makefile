@@ -1,12 +1,19 @@
 include ../config.mk
 
 APP = hd-pong
-OBJS = hdpong.o
+OBJ = hdpong.o
 
 all: $(APP)
 
-$(APP): $(OBJS) 
-	$(CC) $^ -o $@ $(LDFLAGS)
+FONT = Aiken14.png
+
+$(FONT):
+	svn export https://ipodlinux.svn.sourceforge.net/svnroot/ipodlinux/libs/ttk/fonts/$@
+	
+
+
+$(APP): $(OBJ) $(FONT)
+	$(CC) $< -o $@ $(LDFLAGS)
 
 clean:
-	$(RM) $(OBJS) $(APP).elf $(APP).elf2flt $(APP).gdb $(APP)
+	$(RM) $(OBJ) $(APP).elf $(APP).elf2flt $(APP).gdb $(APP)
