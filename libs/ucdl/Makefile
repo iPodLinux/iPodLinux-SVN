@@ -6,9 +6,11 @@ all: libuCdl.a libdl.a modtest testmod.o
 
 libdl.a: ucdl.o flat.o dlfcn.o
 	$(CROSS)ar cru $@ $^
+	$(CROSS)ranlib $@
 
 libuCdl.a: ucdl.o flat.o
 	$(CROSS)ar cru $@ $^
+	$(CROSS)ranlib $@
 
 clean:
 	$(RM) *.o libdl.a libuCdl.a modtest symadd modtest.gdb
