@@ -429,6 +429,7 @@ usage( char * exename )
 	fprintf( stderr, "  -mono WxH  \tuse a screen W by H, 2bpp (monochrome)\n" );
 	fprintf( stderr, "  -16 WxH    \tuse a screen W by H, 16bpp (color)\n" );
 	fprintf( stderr, "  -color WxH \tuse a screen W by H, 16bpp (color)\n" );
+	fprintf( stderr, "  -rotate    \tRotate the screen 90 degrees\n" );
 	fprintf( stderr, "\n" );
 	fprintf( stderr, "  -l <path> set module loading path.\n" ); 
 	fprintf( stderr, "            <path> should be a colon seperated list\n" );
@@ -472,7 +473,7 @@ main(int argc, char **argv)
 {
 	TWindow *first;
 	char *modulepath = NULL;
-	int width = 220, height = 176, bpp = 16;
+	int width = 220, height = 176, bpp = 16, rotate = 0;
 	int initialContrast = ipod_get_contrast();
 	if( initialContrast < 1 ) initialContrast = 96;
 
@@ -499,7 +500,8 @@ main(int argc, char **argv)
 			{"color",  1, 0, 'c'},
 			{"16",     1, 0, 'c'},
 			{"errout", 0, 0, 'e'},
-			{"gen",    1, 0, 'g'}
+			{"gen",    1, 0, 'g'},
+			{"rotate", 0, 0, 'r'}
 		};
 
 		c = getopt_long_only(argc, argv, "l:g:2:", long_options, &oindex);
@@ -536,6 +538,9 @@ main(int argc, char **argv)
 				exit(3);
 			}
 			break;
+		case 'r':
+			rotate = 1;
+			break;
 		case '?':
 		default:
 			usage(argv[0]);
@@ -544,6 +549,11 @@ main(int argc, char **argv)
 	}
 
 #ifndef IPOD
+	if( rotate ) {
+		width ^= height;
+		height ^= width;
+		width ^= height;
+	}
 	ttk_set_emulation(width, height, bpp);
 #endif
 
