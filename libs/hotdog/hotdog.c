@@ -412,10 +412,12 @@ void HD_Render(hd_engine *eng) {
 #endif
 
         // Tack on the deregistered dirties
-        if (rect) rect->next = eng->deregistered;
-        else rect = eng->deregistered;
-        eng->deregistered = 0;
-
+        if (eng->deregistered) {
+            needrender = 1;
+            if (rect) rect->next = eng->deregistered;
+            else rect = eng->deregistered;
+            eng->deregistered = 0;
+        }
         // Sort 'em if necessary
         if (needsort)
             eng->list = HD_StackObjects (eng->list);
