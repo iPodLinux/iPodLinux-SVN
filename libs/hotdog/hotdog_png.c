@@ -98,8 +98,14 @@ hd_surface HD_PNG_Load (const char *fname, int *retw, int *reth)
         if (png_get_valid (png_ptr, info_ptr, PNG_INFO_tRNS))
             png_set_tRNS_to_alpha (png_ptr);
         /* Convert gray to RGB: */
-        if (color_type == PNG_COLOR_TYPE_GRAY || color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
-            png_set_gray_to_rgb (png_ptr), color_type = PNG_COLOR_TYPE_RGB;
+        if (color_type == PNG_COLOR_TYPE_GRAY)
+            png_set_gray_to_rgb (png_ptr),
+            color_type = PNG_COLOR_TYPE_RGB;
+
+        if (color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
+            png_set_gray_to_rgb (png_ptr),
+            color_type = PNG_COLOR_TYPE_RGB_ALPHA;
+
 #ifndef _BIG_ENDIAN
         /* Convert RGB(A) to BGR(A), for little-endian reasons. */
         if (color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_RGB_ALPHA)
