@@ -1103,7 +1103,8 @@ hd_font *HD_Font_LoadPCF (const char *fname)
 	    carry_shift = 16 - bearing;
 	    
 	    for (w = 0; w < lwidth; w++) {
-		*output++ = (val[w] >> bearing) | carry;
+	    	uint16 two = (val[w] >> bearing) | carry;
+		*output++ = ((two & 0xff) << 8) | ((two & 0xff00) >> 8);
 		carry = val[w] << carry_shift;
 	    }
 	    ptr += (xwidth + 1) / 2;
