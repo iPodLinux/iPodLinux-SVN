@@ -28,6 +28,10 @@
 #ifndef _HOTDOG_H_
 #define _HOTDOG_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define HD_TYPE_CANVAS    0x01
 #define HD_TYPE_PRIMITIVE 0x02
 #define HD_TYPE_BAG       0x03
@@ -455,5 +459,9 @@ void *xcalloc(size_t nmemb, size_t size);
 char *xstrdup(const char *s);
 void xfree(void *ptr); // doesn't do anything special, but feel -free- to use
 #define safe_free(x) do { if (x) free(x), x = 0; } while (0)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
