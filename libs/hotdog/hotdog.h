@@ -82,7 +82,7 @@ typedef uint32 *hd_surface;
 #define HD_SRF_ROW(srf,y) (((y)<(int)((srf)[1]))?((srf) + ((srf)[2 + (y)])):0)
 #define HD_SRF_ROWF(srf,y) ((srf) + ((srf)[2 + (y)]))
 #define HD_SRF_PIXF(srf,x,y) ((srf)[((srf)[2 + (y)]) + (x)])
-#define HD_SRF_SETPIX(srf,x,y,pix) (((x)>0)&&((y)>0)&&((x)<(int)((srf)[0]))&&((y)<(int)((srf)[1]))? (HD_SRF_PIXF(srf,x,y) = (pix)) : (pix))
+#define HD_SRF_SETPIX(srf,x,y,pix) (((x)>=0)&&((y)>=0)&&((x)<(int)((srf)[0]))&&((y)<(int)((srf)[1]))? (HD_SRF_PIXF(srf,x,y) = (pix)) : (pix))
 #define HD_SRF_GETPIX(srf,x,y) (((x)<(int)((srf)[0]))&&((y)<(int)((srf)[1]))? HD_SRF_PIXF(srf,x,y) : 0)
 #define HD_SRF_PIXPTR(srf,x,y) (((x)<(int)((srf)[0]))&&((y)<(int)((srf)[1]))? &HD_SRF_PIXF(srf,x,y) : 0)
 #define HD_SRF_PIXELS(srf) ((srf) + 2 + ((srf)[1]))
