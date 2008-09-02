@@ -272,6 +272,14 @@ static void lcd_update_color_display (uint16 *fb, int sx, int sy, int width, int
 	}
 }
 
+#define LCD_FB_BASE_REG (*(volatile unsigned long *)(0xc2000028))
+static void lcd_update_sansa_display(uint16 *fb, int sx, int sy, int width, int height)
+{
+	const uint16 *src = fb;
+	uint16 *dst = (uint16 *)(LCD_FB_BASE_REG & 0x0fffffff);
+	memcpy(dst, src, 176 * 220 * sizeof(uint16));
+}
+
 static long iPod_GetGeneration() 
 {
 	static long gen = 0;
@@ -308,6 +316,14 @@ void HD_LCD_Init()
 {
 	hw_ver = iPod_GetGeneration() >> 16;
 	switch (hw_ver) {
+	case 0x0: // Sansa e200
+		lcd_width = 176;
+		lcd_height = 220;
+		lcd_type = 4;
+		// lcd_base and rtc not used for now, but here anyway
+		//ipod_lcd_base = 0xc0001000;
+		//ipod_rtc = 0xcf001110;
+		break;
 	case 0xB: // video
 		lcd_width = 320;
 		lcd_height = 240;
@@ -389,6 +405,9 @@ void HD_LCD_Update (void *fb, int x, int y, int w, int h)
 	case 2: // mono
 	case 3: // new mono (mini2g)
 		lcd_update_mono_display (fb, x, y, w, h);
+		break;
+	case 4: // Sansa e200
+		lcd_update_sansa_display (fb, x, y, w, h);
 		break;
 	case 5: // video
 		_HD_ARM_Update5G (fb, x, y, w, h);
