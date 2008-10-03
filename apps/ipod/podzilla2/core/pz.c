@@ -623,7 +623,7 @@ main(int argc, char **argv)
 	if (!SET(CONTRAST))         pz_ipod_set (CONTRAST, initialContrast);
 	if (!SET(CLICKER))          pz_ipod_set (CLICKER, 1);
 	if (!SET(DSPFREQUENCY))     pz_ipod_set (DSPFREQUENCY, 0);
-	if (!SET(SLIDE_TRANSIT))    pz_ipod_set (SLIDE_TRANSIT, 1);
+	if (!SET(SLIDE_TRANSIT))    pz_ipod_set (SLIDE_TRANSIT, 2);
 	if (!SET(BACKLIGHT))        pz_ipod_set (BACKLIGHT, 1);
 	if (!SET(BACKLIGHT_TIMER))  pz_ipod_set (BACKLIGHT_TIMER, 3);
 	if (!SET(COLORSCHEME))
