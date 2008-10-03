@@ -426,17 +426,17 @@ static void init_mpdc()
 	pz_register_global_unused_handler(PZ_BUTTON_NEXT, mpdc_unused_handler);
 	pz_register_global_unused_handler(PZ_BUTTON_PREVIOUS,
 			mpdc_unused_handler);
-	pz_menu_add_action("/Music/Playlists", new_playlist_menu)->flags = flag;
-	pz_menu_add_action("/Music/Artists", new_artist_menu)->flags = flag;
-	pz_menu_add_action("/Music/Albums", new_album_menu)->flags = flag;
-	pz_menu_add_action("/Music/Songs", new_song_menu)->flags = flag;
+	pz_menu_add_action_group("/Music/Playlists", "Playlists", new_playlist_menu)->flags = flag;
+	pz_menu_add_action_group("/Music/Artists", "Browse", new_artist_menu)->flags = flag;
+	pz_menu_add_action_group("/Music/Albums", "Browse", new_album_menu)->flags = flag;
+	pz_menu_add_action_group("/Music/Songs", "Browse", new_song_menu)->flags = flag;
 #if 0
-	pz_menu_add_action("/Music/Genre", new_genre_menu)->flags = flag;
+	pz_menu_add_action_group("/Music/Genre", "Browse", new_genre_menu)->flags = flag;
 #endif
-	pz_menu_add_action("/Music/Folders", new_folder_menu)->flags = flag;
+	pz_menu_add_action_group("/Music/Folders", "Browse", new_folder_menu)->flags = flag;
 	if (search_available())
-		pz_menu_add_action("/Music/Search...", new_search_window);
-	pz_menu_add_action("/Music/Queue", new_queue_menu)->flags = flag;
+		pz_menu_add_action_group("/Music/Search...", "Browse", new_search_window);
+	pz_menu_add_action_group("/Music/Queue", "Playlists", new_queue_menu)->flags = flag;
 	pz_menu_add_action_group("/Now Playing", "Media", mpd_currently_playing);
 	pz_get_menu_item("/Now Playing")->visible = playing_visible;
 
