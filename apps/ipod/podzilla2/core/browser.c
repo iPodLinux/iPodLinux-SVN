@@ -263,7 +263,7 @@ static int is_ascii_file(const char *filename)
 	return 1;
 }
 
-static TWindow *new_textview_window(char *filename)
+TWindow *pz_new_textview_window(char *filename)
 {
 	TWindow *ret;
 	char *buf = NULL;
@@ -322,7 +322,7 @@ static TWindow *new_textview_window(char *filename)
 
 static TWindow *browser_textview (ttk_menu_item *item)
 {
-	return new_textview_window((char *)item->data);
+	return pz_new_textview_window((char *)item->data);
 }
 
 typedef struct browser_handler
