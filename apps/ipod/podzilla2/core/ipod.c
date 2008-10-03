@@ -512,6 +512,7 @@ int pz_ipod_usb_is_connected(void)
 int pz_ipod_fw_is_connected(void)
 {
 #ifdef IPOD
+	if (pz_ipod_get_hw_version() != 0x00000) { // Sansa e200
 	if (pz_ipod_get_hw_version() < 0x40000)
 	{	
 		if ((inl(0xcf000038) & (1<<4)))
@@ -519,6 +520,7 @@ int pz_ipod_fw_is_connected(void)
 		else
 			return 1;  // we're connected - yay!
 	} 
+	}
 #endif
 	return 0;
 }
