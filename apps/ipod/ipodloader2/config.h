@@ -15,6 +15,8 @@ typedef struct {
 
 typedef struct {
   config_image_t *image;
+  char *boot_tune;
+  int16 disable_boot_tune;
   int16 timeout;
   int16 def;       // default item index in menu, 1-based
   int16 items;
