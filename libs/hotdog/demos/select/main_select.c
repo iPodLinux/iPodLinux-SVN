@@ -314,6 +314,17 @@ int main(int argc, char *argv[]) {
 
 		SDL_Delay (30);
 #else
+#define SCROLL_MOD_NUM	24 // 100/25 - 1
+#define SCROLL_MOD(n) \
+  ({ \
+    static int sofar = 0; \
+    int use = 0; \
+    if (++sofar >= n) { \
+      sofar -= n; \
+      use = 1; \
+    } \
+    (use == 1); \
+  })
 		if (!noinput) {
 			FD_ZERO(&rd);
 			FD_SET(0, &rd);
@@ -329,6 +340,7 @@ int main(int argc, char *argv[]) {
 					done = 1;
 					break;
 				case 'r':
+					if (SCROLL_MOD(SCROLL_MOD_NUM)) {
 					if (benchmark) break;
 					if (obj[0].object->animating) {
 						add_pending(1);
@@ -338,8 +350,10 @@ int main(int argc, char *argv[]) {
 					circle_rotate(&obj[1], 1);
 					circle_rotate(&obj[2], 1);
 					circle_rotate(&obj[3], 1);
+					}
 					break;
 				case 'l':
+					if (SCROLL_MOD(SCROLL_MOD_NUM)) {
 					if (benchmark) break;
 					if (obj[0].object->animating) {
 						add_pending(-1);
@@ -349,6 +363,7 @@ int main(int argc, char *argv[]) {
 					circle_rotate(&obj[1], -1);
 					circle_rotate(&obj[2], -1);
 					circle_rotate(&obj[3], -1);
+					}
 					break;
 				case 'w':
 				case 'f':

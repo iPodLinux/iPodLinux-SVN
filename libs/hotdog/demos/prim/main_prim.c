@@ -32,6 +32,32 @@ static void update(hd_engine *e, int x, int y, int w, int h)
 #endif
 }
 
+#ifdef IPOD
+#include <termios.h> 
+#include <sys/time.h>
+
+static struct termios stored_settings; 
+
+static void set_keypress()
+{
+	struct termios new_settings;
+	tcgetattr(0,&stored_settings);
+	new_settings = stored_settings;
+	new_settings.c_lflag &= ~(ICANON | ECHO | ISIG);
+	new_settings.c_iflag &= ~(ISTRIP | IGNCR | ICRNL | INLCR | IXOFF | IXON);
+	new_settings.c_cc[VTIME] = 0;
+	tcgetattr(0,&stored_settings);
+	new_settings.c_cc[VMIN] = 1;
+	tcsetattr(0,TCSANOW,&new_settings);
+}
+
+static void reset_keypress()
+{
+	tcsetattr(0,TCSANOW,&stored_settings);
+}
+
+#endif
+
 int main(int argc, char **argv)
 {
 	char eop = 0;
@@ -146,6 +172,13 @@ int main(int argc, char **argv)
 		HD_Font_Draw(srf, font, 20, 15, 0xffffffff, "This is a FFF.");
 	}
 
+#ifdef IPOD
+	set_keypress();
+	fd_set rd;
+	struct timeval tv;
+	int n;
+	char ch;
+#endif
 	while (!eop) {
 #ifndef IPOD
 		SDL_Event e;
@@ -166,6 +199,24 @@ int main(int argc, char **argv)
 		}
 		SDL_Delay(30);
 
+#else
+  		for (;;) {
+			FD_ZERO(&rd);
+			FD_SET(0, &rd);
+			tv.tv_sec = 0;
+			tv.tv_usec = 100;
+			n = select(0+1, &rd, NULL, NULL, &tv);
+			if (!FD_ISSET(0, &rd) || (n <= 0))
+				break;
+			read(0, &ch, 1);
+			switch(ch) {
+				case 'm':
+					eop = 1;
+					break;
+				default:
+					break;
+			}
+		}
 #endif
 #ifndef IPOD
 		if( SDL_MUSTLOCK(screen) )
@@ -180,6 +231,10 @@ int main(int argc, char **argv)
 #endif
 		
 	}
+#ifdef IPOD
+	HD_LCD_Quit();
+	reset_keypress();
+#endif
 	return 0;
 	
 }
