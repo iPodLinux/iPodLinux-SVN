@@ -277,7 +277,7 @@ static void lcd_update_sansa_display(uint16 *fb, int sx, int sy, int width, int 
 {
 	const uint16 *src = fb;
 	uint16 *dst = (uint16 *)(LCD_FB_BASE_REG & 0x0fffffff);
-	memcpy(dst, src, 176 * 220 * sizeof(uint16));
+	memcpy(dst, src, 220 * 176 * sizeof(uint16));
 }
 
 static long iPod_GetGeneration() 
@@ -317,8 +317,8 @@ void HD_LCD_Init()
 	hw_ver = iPod_GetGeneration() >> 16;
 	switch (hw_ver) {
 	case 0x0: // Sansa e200
-		lcd_width = 176;
-		lcd_height = 220;
+		lcd_width = 220;
+		lcd_height = 176;
 		lcd_type = 4;
 		// lcd_base and rtc not used for now, but here anyway
 		//ipod_lcd_base = 0xc0001000;

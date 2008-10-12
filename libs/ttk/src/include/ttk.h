@@ -29,6 +29,7 @@
 #define TTK_POD_4G        010
 #define TTK_POD_MINI_1G   020
 #define TTK_POD_PHOTO     040
+#define TTK_POD_SANSA     044
 #define TTK_POD_PP5020    070
 #define TTK_POD_MINI_2G   0100
 #define TTK_POD_MINI      0120

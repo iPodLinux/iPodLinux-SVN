@@ -311,6 +311,10 @@ TWindow *ttk_init()
 	    ttk_screen->w = 220;
 	    ttk_screen->h = 176;
 	    ttk_screen->bpp = 16;
+	} else if (ver & TTK_POD_SANSA) {
+	    ttk_screen->w = 220;
+	    ttk_screen->h = 176;
+	    ttk_screen->bpp = 16;
         } else if (ver & TTK_POD_NANO) {
             ttk_screen->w = 176;
             ttk_screen->h = 132;
@@ -949,7 +953,7 @@ static int ttk_get_podversion_raw()
     static int ver;
     if (!ver) ver = iPod_GetGeneration();
     switch (ver >> 16) {
-    case 0x0: return 0;
+    case 0x0: return TTK_POD_SANSA;
     case 0x1: return TTK_POD_1G;
     case 0x2: return TTK_POD_2G;
     case 0x3: return TTK_POD_3G;
@@ -1785,6 +1789,8 @@ void ttk_update_lcd (int xstart, int ystart, int xend, int yend, unsigned char *
 	    ttk_quit();
 	    exit (1);
 	}
+	if (ver & TTK_POD_SANSA)
+	    return; // SDL handles LCD code
 	if (ver & (TTK_POD_1G|TTK_POD_2G|TTK_POD_3G)) {
 	    lcd_base = IPOD_OLD_LCD_BASE;
 	    lcd_rtc = IPOD_OLD_LCD_RTC;
