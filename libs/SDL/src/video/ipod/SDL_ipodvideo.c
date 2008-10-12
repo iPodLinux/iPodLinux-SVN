@@ -18,10 +18,10 @@
 #include "SDL_error.h"
 #include "SDL_video.h"
 #include "SDL_mouse.h"
-#include "SDL_sysvideo.h"
-#include "SDL_pixels_c.h"
-#include "SDL_events_c.h"
-#include "SDL_sysevents.h"
+#include "../SDL_sysvideo.h"
+#include "../SDL_pixels_c.h"
+#include "../../events/SDL_events_c.h"
+#include "../../events/SDL_sysevents.h"
 #include "SDL_ipodvideo.h"
 
 #define _THIS SDL_VideoDevice *this
@@ -276,7 +276,7 @@ static int iPod_VideoInit (_THIS, SDL_PixelFormat *vformat)
 
 	fcntl (kbfd, F_SETFL, O_RDWR | O_NONBLOCK);
 
-	if ((generation >> 16) == 0x6) {
+	if ((generation >> 16) == 0x6 || (generation >> 16) == 0x0) {
 	    vformat->BitsPerPixel = 16;
 	    vformat->Rmask = 0xF800;
 	    vformat->Gmask = 0x07E0;
@@ -304,6 +304,8 @@ static int iPod_VideoInit (_THIS, SDL_PixelFormat *vformat)
 
         if (generation == 0x60000) {
             lcd_type = 0;
+		} else if ((generation >> 16) == 0x0) {
+           lcd_type = 4;
         } else {
             if ((generation >> 16) == 0x6) {
                 int gpio_a01, gpio_a04;
@@ -789,10 +791,6 @@ static void C_update_display(int sx, int sy, int mx, int my)
 }
 
 
-
-
-
-
 /* 5g functions!  */
 #define outw(v, p) (*(volatile unsigned short *)(p) = (v))
 #define inw(p) (*(volatile unsigned short *)(p))
@@ -845,8 +843,6 @@ static void lcd_bcm_finishup(void) {
 }
 
 
-
-
 static void C_update_display_5g(int sx, int sy, int mx, int my)
 {
 	int height = (my - sy) + 1;
@@ -872,9 +868,6 @@ static void C_update_display_5g(int sx, int sy, int mx, int my)
 
 	while ((inw(0x30030000) & 0x2) == 0);
 
-
-
-
 	for (y = 0; y < height; y++) {
 		for (x = 0; x < width; x+=2) {
 			outw(*(addr++), 0x30000000);
@@ -887,20 +880,25 @@ static void C_update_display_5g(int sx, int sy, int mx, int my)
 }
 
 
-
-
-
-
+static void C_update_display_sansa(int sx, int sy, int mx, int my)
+{
+	const uint16 *src = (uint16 *)SDL_VideoSurface->pixels;
+	uint16 *dst = (uint16 *)(LCD_FB_BASE_REG & 0x0fffffff);
+	memcpy(dst, src, 220 * 176 * sizeof(uint16));
+}
 
 
 // Should work with photo. However, I don't have one, so I'm not sure.
 static void iPod_UpdateRects (_THIS, int nrects, SDL_Rect *rects) 
 {
     if (SDL_VideoSurface->format->BitsPerPixel == 16) {
-	if ((generation >> 16)==0xb)
-	    C_update_display_5g (0, 0, lcd_width - 1, lcd_height - 1);
-	else
+		if ((generation >> 16)==0xb) {
+		    C_update_display_5g (0, 0, lcd_width - 1, lcd_height - 1);
+		} else if ((generation >> 16) == 0x0) {
+		    C_update_display_sansa (0, 0, lcd_width - 1, lcd_height - 1);
+		} else {
             C_update_display (0, 0, lcd_width - 1, lcd_height - 1);
+		}
     } else {
 #ifndef IPOD
 #error Cant get here from there
