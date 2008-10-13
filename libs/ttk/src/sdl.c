@@ -316,7 +316,7 @@ int ttk_get_event (int *arg)
 	    case SDLK_h:
 		*arg = TTK_BUTTON_HOLD;
 		break;
-	    case SDLK_e:
+	    case SDLK_c:
 	    case SDLK_RETURN:
 		*arg = TTK_BUTTON_ACTION;
 		break;
