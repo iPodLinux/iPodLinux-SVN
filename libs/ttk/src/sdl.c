@@ -304,6 +304,7 @@ int ttk_get_event (int *arg)
 	    case SDLK_RIGHT:
 		*arg = TTK_BUTTON_NEXT;
 		break;
+	    case SDLK_p:
 	    case SDLK_m:
 	    case SDLK_UP:
 		*arg = TTK_BUTTON_MENU;
@@ -315,6 +316,7 @@ int ttk_get_event (int *arg)
 	    case SDLK_h:
 		*arg = TTK_BUTTON_HOLD;
 		break;
+	    case SDLK_e:
 	    case SDLK_RETURN:
 		*arg = TTK_BUTTON_ACTION;
 		break;
