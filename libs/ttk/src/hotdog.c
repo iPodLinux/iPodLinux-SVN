@@ -329,7 +329,7 @@ int ttk_get_event (int *arg)
 	    else if (ev.key.keysym.sym == SDLK_p || ev.key.keysym.sym == SDLK_m || ev.key.keysym.sym == SDLK_UP) *arg = TTK_BUTTON_MENU;
 	    else if (ev.key.keysym.sym == SDLK_d || ev.key.keysym.sym == SDLK_DOWN) *arg = TTK_BUTTON_PLAY;
 	    else if (ev.key.keysym.sym == SDLK_h) *arg = TTK_BUTTON_HOLD;
-	    else if (ev.key.keysym.sym == SDLK_e || ev.key.keysym.sym == SDLK_RETURN) *arg = TTK_BUTTON_ACTION;
+	    else if (ev.key.keysym.sym == SDLK_c || ev.key.keysym.sym == SDLK_RETURN) *arg = TTK_BUTTON_ACTION;
 	    else if (ev.key.keysym.sym == SDLK_KP0) *arg = '0';
 	    else if (ev.key.keysym.sym == SDLK_KP1) *arg = '1';
 	    else if (ev.key.keysym.sym == SDLK_KP2) *arg = '2';
