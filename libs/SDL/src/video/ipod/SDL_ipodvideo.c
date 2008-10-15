@@ -883,9 +883,9 @@ static void C_update_display_5g(int sx, int sy, int mx, int my)
 #define LCD_FB_BASE_REG (*(volatile unsigned long *)(0xc2000028))
 static void C_update_display_sansa(int sx, int sy, int mx, int my)
 {
-	const uint16_t *src = (uint16_t *)SDL_VideoSurface->pixels;
-	uint16_t *dst = (uint16_t *)(LCD_FB_BASE_REG & 0x0fffffff);
-	memcpy(dst, src, 220 * 176 * sizeof(uint16_t));
+	const Uint16 *src = (Uint16 *)SDL_VideoSurface->pixels;
+	Uint16 *dst = (Uint16 *)(LCD_FB_BASE_REG & 0x0fffffff);
+	memcpy(dst, src, 220 * 176 * sizeof(Uint16));
 }
 
 
