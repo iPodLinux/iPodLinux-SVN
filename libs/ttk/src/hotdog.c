@@ -190,6 +190,8 @@ void ttk_gfx_update (ttk_surface srf)
 #define BTN_PLAY         0x0008
 #define BTN_MENU         0x0010
 #define BTN_HOLD         0x0020
+#define BTN_REC          0x0040
+#define BTN_POWER        0x0080
 #define BTN_MASK         0x00ff
 
 #define SCROLL_LEFT      0x0080

@@ -29,14 +29,15 @@
 #define TTK_POD_4G        010
 #define TTK_POD_MINI_1G   020
 #define TTK_POD_PHOTO     040
-#define TTK_POD_SANSA     044
 #define TTK_POD_PP5020    070
 #define TTK_POD_MINI_2G   0100
 #define TTK_POD_MINI      0120
 #define TTK_POD_NANO      0200
 #define TTK_POD_VIDEO     0400
 #define TTK_POD_PP5022    0700 /* also includes 5021 */
-#define TTK_POD_PP502X    0770
+#define TTK_POD_SANSA     01000
+#define TTK_POD_PP5024    07000
+#define TTK_POD_PP502X    07770
 
 #define TTK_BUTTON_ACTION   '\n'
 #define TTK_BUTTON_PREVIOUS 'w'
