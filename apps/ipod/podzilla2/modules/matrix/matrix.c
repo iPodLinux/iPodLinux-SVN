@@ -331,7 +331,7 @@ static int matrix_handle_event(PzEvent * event)
 	}
 	break;
 	case( PZ_EVENT_SCROLL ):
-		matrix_timer_adjust(event->arg);
+		matrix_timer_adjust((0-event->arg)/2); // More logical scrolling-acceleration
 		break;
 	case( PZ_EVENT_BUTTON_UP ):
 	switch( event->arg )
