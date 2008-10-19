@@ -332,6 +332,7 @@ void ext2_newfs(uint8 part,uint32 offset) {
   myfs.read       = ext2_read;
   myfs.getinfo    = 0;
   myfs.partnum    = part;
+  myfs.type       = EXT2;
 
   vfs_registerfs(&myfs);
 }

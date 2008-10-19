@@ -672,14 +672,15 @@ static void hfsplus_newfs (uint8 part, uint32 offset) {
 		mlc_show_critical_error();
 		return;
 	}
-	myfs.open		= hfsplus_open;
-	myfs.close		= hfsplus_close;
-	myfs.tell		= hfsplus_tell;
-	myfs.seek		= hfsplus_seek;
-	myfs.read		= hfsplus_read;
-	myfs.getinfo		= 0;
-	myfs.fsdata		= (void*)fsData;
+	myfs.open	= hfsplus_open;
+	myfs.close	= hfsplus_close;
+	myfs.tell	= hfsplus_tell;
+	myfs.seek	= hfsplus_seek;
+	myfs.read	= hfsplus_read;
+	myfs.getinfo	= 0;
+	myfs.fsdata	= (void*)fsData;
 	myfs.partnum	= part;
+	myfs.type	= HFSPLUS;
 
 	/* set up the fs data for this partition */
 	fsData->numHandles = 0;

@@ -258,7 +258,7 @@ void config_init(void)
                 if (!mlc_strncasecmp (value, "rb:", 3)) {
                     config.image[config.items].path += 3;
                     config.image[config.items].type = CONFIG_IMAGE_ROCKBOX;
-                } else if (value[0] != '(') { // no partition specifier -> it's not a path but command
+                } else if (value[0] != '(' && value[0] != '[') { // no partition specifier -> it's not a path but command
                     config.image[config.items].type = CONFIG_IMAGE_SPECIAL;
                 }
                 config.items++;

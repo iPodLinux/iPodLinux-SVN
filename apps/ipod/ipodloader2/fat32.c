@@ -461,14 +461,15 @@ void fat32_newfs(uint8 part,uint32 offset) {
     clusterBuffer = (uint8*)mlc_malloc( fat.bytes_per_cluster );
   }
 
-  myfs.open   = fat32_open;
-  myfs.close  = fat32_close;
-  myfs.tell   = fat32_tell;
-  myfs.seek   = fat32_seek;
-  myfs.read   = fat32_read;
-  myfs.getinfo= 0;
-  myfs.fsdata = (void*)&fat;
+  myfs.open    = fat32_open;
+  myfs.close   = fat32_close;
+  myfs.tell    = fat32_tell;
+  myfs.seek    = fat32_seek;
+  myfs.read    = fat32_read;
+  myfs.getinfo = 0;
+  myfs.fsdata  = (void*)&fat;
   myfs.partnum = part;
+  myfs.type    = FAT32;
 
   vfs_registerfs( &myfs);
 }
