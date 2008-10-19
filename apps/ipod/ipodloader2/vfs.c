@@ -8,8 +8,9 @@
 #include "macpartitions.h"
 
 #define MAX_FILES 10
+#define MAX_FS    4
 
-static filesystem *fs[4]; /* Hardlimit of 4 registered filesystems */
+static filesystem *fs[MAX_FS]; /* Hardlimit of 4 registered filesystems */
 static uint32 fsCnt;
 
 typedef struct {
@@ -20,20 +21,58 @@ typedef struct {
 vfs_handle_t vfs_handle[MAX_FILES]; /* Hardlimit of 10 open files */
 uint32 maxHandle;
 
-int vfs_open(char *fname) {
-  uint8 part;
-  int   i;
+int vfs_find_part(vfs_type type) {
+  int i;
 
-  /* (hd0,0)/ == 8 chars */
-  if( mlc_strncmp(fname,"(hd0,",5) != 0 ) return(-1);
-  part = fname[5] - '0'; /* atoi, the old-fashioned way */
+  for(i = 0; i < MAX_FS; i++){
+    if(fs[i] && fs[i]->type == type){
+      return (i);
+    }
+  }
+
+  return (-1);
+}
+
+int vfs_open(char *fname) {
+  int8 part;
+  int  i;
+
+  part = -1;
+
+  /* FAT32: [dos], [fat], [win], [vfat], [fat32]
+     EXT2:  [ext], [ext2], [linux]
+     HFS+:  [hfs], [hfs+], [linux] */
+  if( fname[0] == '[' ){
+      if( !mlc_strncmp(fname,"[dos]",5) || !mlc_strncmp(fname,"[fat]",5) ||
+          !mlc_strncmp(fname,"[win]",5) || !mlc_strncmp(fname,"[vfat]",6) ||
+          !mlc_strncmp(fname,"[fat32]",7) ){
+          part = vfs_find_part(FAT32);
+      }
+      if( !mlc_strncmp(fname,"[ext]",5) || !mlc_strncmp(fname,"[ext2]",6) ||
+          !mlc_strncmp(fname,"[linux]",7) ){
+          part = vfs_find_part(EXT2);
+      }
+      if( !mlc_strncmp(fname,"[hfs]",5) || !mlc_strncmp(fname,"[hfs+]",6) ||
+          (part == -1 && !mlc_strncmp(fname,"[linux]",7)) ){
+          part = vfs_find_part(HFSPLUS);
+      }
+      /* [xxx]/ == position of ] + 2 chars */
+      fname = mlc_strchr(fname, ']') + 2;
+  }
+  else if( !mlc_strncmp(fname,"(hd0,",5) ){
+      part = fname[5] - '0'; /* atoi, the old-fashioned way */
+      /* (hd0,0)/ == 8 chars */
+      fname = fname + 8;
+  }
+
+  if( part == -1 ) return(-1);
 
   if (fs[part]) {
     i = 0;
     while( (vfs_handle[i].fd != -1) && (i<MAX_FILES) ) i++;
   
     vfs_handle[i].fsIdx = part;
-    vfs_handle[i].fd = fs[part]->open(fs[part]->fsdata,fname+8);
+    vfs_handle[i].fd = fs[part]->open(fs[part]->fsdata,fname);
 
     if( vfs_handle[i].fd != -1 )
       return(i);
@@ -126,7 +165,7 @@ void vfs_init( void) {
     if((logBlkMultiplier < 1) | (logBlkMultiplier > 4)) logBlkMultiplier = 1;
 	
     /* Check each primary partition for a supported FS */
-    for(i=0;i<4;i++) {
+    for(i=0;i<MAX_FS;i++) {
       uint32 offset,validoffset;
       uint8  type;
 

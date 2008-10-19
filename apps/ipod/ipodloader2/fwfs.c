@@ -245,6 +245,7 @@ void fwfs_newfs(uint8 part,uint32 offset) {
   myfs.getinfo = fwfs_getinfo;
   myfs.fsdata  = (void*)&fwfs;
   myfs.partnum = part;
+  myfs.type    = FWFS;
 
   //mlc_printf("Registering..\n");
 
