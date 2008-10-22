@@ -137,7 +137,7 @@ sub handle_pkglist($$$) {
 
 if ($#ARGV < 2 || $#ARGV > 3) {
     print STDERR ("Usage: $0 package-list-file local-path remote-path [packages-dir]\n".
-                  "  e.g. $0 http://ipodlinux.org/iPodLinux:Installation_sources \\\n".
+                  "  e.g. $0 http://ipodlinux.org/w/index.php?title=iPodLinux:Installation_sources&action=raw \\\n".
                   "             ~/public_html/ipl_packages http://my.server/~me/ipl_packages\n".
                   "To make a mirror for networkless installation, use the same local-path\n".
                   "as remote-path.\n".

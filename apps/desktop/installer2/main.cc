@@ -54,7 +54,7 @@ void usage (int exitcode)
 int main (int argc, char *argv[]) 
 {
     InstallerHome = QDir::currentPath();
-    PackageListFile = "http://ipodlinux.org/iPodLinux:Installation_sources?action=raw";
+    PackageListFile = "http://ipodlinux.org/w/index.php?title=iPodLinux:Installation_sources&action=raw";
     ProxyString = "";
 
 #ifdef __linux__
