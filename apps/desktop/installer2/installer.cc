@@ -81,7 +81,7 @@ IntroductionPage::IntroductionPage (Installer *wizard)
                         "before continuing.</p>\n"
                         "<p>If something goes wrong during this process, and your iPod refuses to boot "
                         "normally, <i>don't panic!</i> Follow the directions at "
-                        "<a href=\"http://ipodlinux.org/Key_Combinations\">the iPodLinux website</a> "
+                        "<a href=\"http://ipodlinux.org/wiki/Key_Combinations\">the iPodLinux website</a> "
                         "to reboot the iPod to disk mode, then rerun this installer and choose to "
                         "restore the backup you hopefully made. <i>It is impossible to permanently "
                         "damage your iPod by installing iPodLinux!</i></p>\n"
@@ -1165,7 +1165,7 @@ DonePage::DonePage (Installer *wiz)
                             "at <a href=\"http://ipodlinux.org/forums\">http://ipodlinux.org/forums/</a> "
                             "and an IRC channel (<b>#ipodlinux</b> on irc.freenode.net). "
                             "<b><i>Please</b></i> thoroughly search the wiki "
-                            "(<a href=\"http://ipodlinux.org\">http://ipodlinux.org</a>) "
+                            "(<a href=\"http://ipodlinux.org/wiki\">http://ipodlinux.org/wiki/</a>) "
                             "and forums before asking us for help!</p>\n"
                             "<p>Thank you, and have fun!</p>"));
         break;
