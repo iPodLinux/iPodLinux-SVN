@@ -78,6 +78,91 @@ static int is_dir(const char *filename)
 	return S_ISDIR(st.st_mode);
 }
 
+static int is_binary(const char *filename)
+{
+	FILE *fp;
+	unsigned char header[4];
+	struct stat st;
+
+	stat(filename, &st); 
+	if (S_ISBLK(st.st_mode) || S_ISCHR(st.st_mode))
+		return 0;
+	if ((fp = fopen(filename, "r")) == NULL) {
+		perror(filename);
+		return 0;
+	}
+
+	fread(header, sizeof(char), 4, fp);
+	
+	fclose(fp);
+	return !memcmp(header, "bFLT", 4);
+}
+
+static int is_script(const char *filename)
+{
+	FILE *fp;
+	char header[256];
+	struct stat st;
+	int len;
+
+	stat(filename, &st); 
+	if (S_ISBLK(st.st_mode) || S_ISCHR(st.st_mode))
+		return 0;
+	if ((fp = fopen(filename, "r")) == NULL) {
+		perror(filename);
+		return 0;
+	}
+
+	if ((len = fread(header, sizeof(char), 256, fp)) > 0)
+		header[len - 1] = 0;
+	
+	fclose(fp);
+	if (memcmp(header, "#!", 2) != 0)
+		return 0;
+	if (strchr(header, '\n'))
+		*strchr(header, '\n') = 0;
+	if (strchr(header, '\r'))
+		*strchr(header, '\r') = 0;
+	return !access(header + 2, X_OK);
+}
+
+static TWindow *exec_binary(const char *filename) 
+{
+	pz_exec(filename);
+	return NULL;
+}
+
+static TWindow *exec_script(const char *filename) 
+{
+	FILE *fp;
+	char header[256];
+	const char *argv[11];
+	char *tok;
+	int i, len;
+
+	if ((fp = fopen(filename, "r")) == NULL) {
+		perror(filename);
+		return NULL;
+	}
+	if ((len = fread(header, sizeof(char), 256, fp)) > 0)
+		header[len - 1] = 0;
+	
+	fclose(fp);
+	if (strchr(header, '\n'))
+		*strchr(header, '\n') = 0;
+	if (strchr(header, '\r'))
+		*strchr(header, '\r') = 0;
+	
+	argv[0] = strtok_r(header+2, " \t", &tok);
+	for (i = 1; i < 10; ++i) {
+		if (!(argv[i] = strtok_r(NULL, " \t", &tok)))
+			break;
+	}
+	argv[i] = filename;
+	pz_execv(argv[0], (char *const *)argv);
+	return NULL;
+}
+
 static int entry_cmp(const void *x, const void *y)
 {
 	Entry *a = (Entry *)(*(ttk_menu_item **)x)->data;
@@ -218,12 +303,16 @@ PzWindow *new_browser_window()
 static void cleanup_browser()
 {
 	pz_browser_remove_handler(is_dir);
+	pz_browser_remove_handler(is_script);
+	pz_browser_remove_handler(is_binary);
 }
 
 void init_browser()
 {
 	module = pz_register_module("browser", cleanup_browser);
 	pz_browser_set_handler(is_dir, open_directory);
+	pz_browser_set_handler(is_script, exec_script);
+	pz_browser_set_handler(is_binary, exec_binary);
 	pz_menu_add_action_group("/File Browser", "Utility", new_browser_window);
 }
 
