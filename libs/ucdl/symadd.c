@@ -37,7 +37,7 @@ int main(int argc, char **argv)
 	FILE *fp, *symp;
 	char *buf;
 	struct flat_hdr header;
-	char line[1024];
+	char line[4096];
 
 	if (argc > 2) {
 		fp = fopen (argv[2], "r+");
@@ -72,11 +72,11 @@ int main(int argc, char **argv)
 	}
 	fseek(fp, header.reloc_start + 4*header.reloc_count + 4, SEEK_SET);
 
-	while (fgets(line, 1023, symp)) {
+	while (fgets(line, 4095, symp)) {
 		char offsets[9];
 		char type, t;
 		unsigned int offset;
-		char sym[256]; /* overflow not unlikely */
+		char sym[1024]; /* overflow unlikely, but possible */
 		sscanf(line, "%s %c %s", &offsets, &type, &sym);
                 t = toupper (type);
 		if (t == 'T' || t == 'W') t = 0;

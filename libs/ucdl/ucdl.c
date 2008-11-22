@@ -724,9 +724,9 @@ void uCdl_close (void *handle)
 	while (prev && prev->next && (prev->next != h))
 	    prev = prev->next;
 	
-	if (!prev->next) { // off the end
-	    sprintf (error = errbuf, "Warning: I don't think %%%p is loaded.", handle);
-	    prev = 0;
+	if (!prev || !prev->next) { // off the end
+	    sprintf (error = errbuf, "Error: handle %%%p is not loaded.", handle);
+	    return;
 	}
     }
 
@@ -740,7 +740,7 @@ void uCdl_close (void *handle)
     for (rel = h->relocs; rel; rel = rel->next) {
 	reloc *next = rel->next;
 	free (rel);
-	rel = rel->next;
+	rel = next;
     }
 
     if (h == uCdl_loaded_modules) {
