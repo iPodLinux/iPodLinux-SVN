@@ -18,6 +18,9 @@ clean:
 symadd: symadd.c flat.c
 	gcc -o $@ $^
 
+symread: symread.c flat.c
+	gcc -o $@ $^
+
 modtest: symadd
 	$(CROSS)gcc -Wl,-elf2flt -o $@ modtest.c libuCdl.a
 	$(CROSS)nm modtest.gdb | grep ' T ' | ./symadd $@
