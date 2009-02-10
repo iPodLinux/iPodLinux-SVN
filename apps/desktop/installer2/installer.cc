@@ -351,9 +351,12 @@ PodLocationPage::PodLocationPage (Installer *wizard)
             restoreOK = true;
             break;
         case UnsupPod:
-            err = tr("<p><b>Unsupported iPod type.</b> You appear to have a very new iPod that "
-                     "we don't know about and thus can't support. Please be patient, and "
-                     "don't bug the developers about this. Support will be developed eventually.</p>");
+            err = tr("<p><b>Unsupported iPod type.</b> You may either have forgotten to plug in your "
+                     "iPod or have a new model that Installer 2 does not yet support. Note that Installer "
+                     "2 currently works with all iPod models supported by iPodLinux, with the exception of "
+                     "the 5.5G iPod video (for which we need a willing developer to help submit a patch). "
+                     "If you are not sure what model your iPod is, check the "
+                     "<a href=\"http://ipodlinux.org/wiki/Generations\">Generations</a> wiki page.</p>");
             restoreOK = true;
             break;
         case UnmountFailed:
@@ -546,7 +549,7 @@ void PodLocationPage::changeLoaderRadioClicked (bool clicked)
 
 void PodLocationPage::resetPage() 
 {
-    if (advancedCheck) advancedCheck->setChecked (0);
+    if (advancedCheck) advancedCheck->setChecked (1);
     if (upgradeRadio) upgradeRadio->setChecked (0);
     if (changeLoaderRadio) changeLoaderRadio->setChecked (0);
     if (uninstallRadio) uninstallRadio->setChecked (0);
@@ -978,8 +981,11 @@ InstallPage::InstallPage (Installer *wiz)
     bkpblurb = new QLabel (tr ("Second, it is <i>highly</i> recommended that you make a backup of "
                                "your iPod's firmware partition. It will be 40 to 120 MB in size."));
     bkpblurb->setWordWrap (true);
-    bkpchoiceblurb = new QLabel (tr ("Are you sure? A backup is <b>highly recommended</b>. Without one, "
-                                     "we can't guarantee that uninstallation will go smoothly."));
+    bkpchoiceblurb = new QLabel (tr ("A backup is <b>highly recommended</b>. Without one, "
+                                     "we can't guarantee that uninstallation will go smoothly. "
+                                     "If you have an <b>iPod video or nano</b> with a recent firmware, "
+                                     "however, choosing to create a backup <b>may cause Installer 2 "
+                                     "to crash</b> (but not harm your iPod)."));
     bkpchoiceblurb->setWordWrap (true);
     makeBackup = new QCheckBox (tr ("Yes, I want to save a backup."));
     makeBackup->setChecked (true);
@@ -1027,6 +1033,10 @@ InstallPage::InstallPage (Installer *wiz)
             backupPath->setText (iPodBackupLocation);
         else
             makeBackup->animateClick (50);
+    }
+    /* Do not make backup for iPod nanos and videos. This is only a workaround to stop Installer 2 from crashing -  a real fix is needed */
+    if (iPodVersion >= 0xA) {
+        makeBackup->animateClick (0);
     }
 }
 
