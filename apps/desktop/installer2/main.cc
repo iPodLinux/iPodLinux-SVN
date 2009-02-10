@@ -68,7 +68,7 @@ int main (int argc, char *argv[])
     case 'a':
         InstallAutomatically = true;
         Mode = StandardInstall;
-        iPodLoader = Loader1Apple;
+        iPodLoader = Loader2;
         iPodDoBackup = false;
         break;
     case 'A':
