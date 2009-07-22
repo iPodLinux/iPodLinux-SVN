@@ -737,7 +737,7 @@ void uCdl_close (void *handle)
     free (h->sections);
     free (h->loc);
     
-    for (rel = h->relocs; rel; rel = rel->next) {
+    for (rel = h->relocs; rel; ) {
 	reloc *next = rel->next;
 	free (rel);
 	rel = next;
